@@ -1,0 +1,60 @@
+# Test fixture config — minimal project descriptor for unit tests.
+
+project:
+  name: test-project
+  system: Test System
+
+output:
+  model: "output/{project}/architecture-model.yaml"
+  manifest: "output/{project}/reality-manifest.json"
+  artifacts: "output/{project}/artifacts/stage2"
+
+layers:
+  web-layer:
+    dirs: [app/routers, app/templates]
+  services-layer:
+    dirs: [app/services]
+  data-layer:
+    dirs: [app/models]
+
+functional_blocks:
+  F1:
+    name: "Ingest Data"
+    dirs: [scripts/ingestion]
+    files: [scripts/ingest.py]
+    description_source: "process:ingest"
+  F2:
+    name: "Process Data"
+    dirs: [scripts/processing]
+    files: [scripts/process.py]
+    description_source: "process:enrich"
+  F3:
+    name: "Store Data"
+    dirs: [app/models]
+    files: [scripts/store.py]
+    description_source: "process:store"
+  F4:
+    name: "Serve API"
+    dirs: [app/routers]
+    files: [app/main.py]
+    description_source: "process:api"
+  F5:
+    name: "Maintain Integrity"
+    dirs: [alembic]
+    files: [scripts/migrate.py]
+    description_source: "process:integrity"
+  F6:
+    name: "Generate Docs"
+    dirs: [docs]
+    files: [scripts/generate.py]
+    description_source: "process:docs"
+
+metrics:
+  - label: router
+    path: app/routers
+    pattern: "*.py"
+    exclude: [__init__.py]
+  - label: model
+    path: app/models
+    pattern: "*.py"
+    exclude: [__init__.py]

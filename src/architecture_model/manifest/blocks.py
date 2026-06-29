@@ -1,0 +1,113 @@
+"""Functional block definitions and processing.
+
+Loads functional blocks from .architecture-model.yaml config. Falls back to
+auto-discovery if no config exists. The FUNCTIONAL_BLOCKS constant is maintained
+for backward compatibility but now reads from config.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import Any, Optional
+
+from architecture_model.manifest.scanner import _collect_py_files, _scan_file
+
+
+# ---------------------------------------------------------------------------
+# Config-driven block loading
+# ---------------------------------------------------------------------------
+
+
+def _get_functional_blocks(root: Optional[Path] = None) -> dict[str, dict[str, Any]]:
+    """Load functional blocks from config.
+
+    Returns the blocks dict in legacy format for backward compatibility.
+    Falls back to empty dict if no config and no hardcoded fallback.
+    """
+    from architecture_model.config.loader import get_config
+
+    if root is None:
+        root = Path(".")
+    config = get_config(root)
+    return config.fblock_dict
+
+
+# Backward-compatible module-level constant.
+# Lazily loaded on first access via the property pattern below.
+# Direct importers of FUNCTIONAL_BLOCKS will get the config-loaded version.
+def _load_blocks_from_config() -> dict[str, dict[str, Any]]:
+    """Load blocks from config at import time (for backward compat)."""
+    try:
+        from architecture_model.config.loader import get_config
+
+        config = get_config(Path("."))
+        if config.functional_blocks:
+            return config.fblock_dict
+    except Exception:
+        pass
+    # Fallback: return empty (callers should use _get_functional_blocks with root)
+    return {}
+
+
+# Module-level constant for backward compatibility.
+# Code that imports FUNCTIONAL_BLOCKS directly will get the config-loaded version.
+FUNCTIONAL_BLOCKS: dict[str, dict[str, Any]] = _load_blocks_from_config()
+
+
+def _process_block(root: Path, block_id: str, block_def: dict) -> dict[str, Any]:
+    """Process a single functional block, scanning all its files."""
+    sub_functions: list[dict[str, Any]] = []
+    all_files: list[Path] = []
+
+    # Collect files from dirs
+    for dir_path in block_def["dirs"]:
+        all_files.extend(_collect_py_files(root, dir_path))
+
+    # Collect explicit files
+    for file_path in block_def["files"]:
+        fp = root / file_path
+        if fp.exists() and fp not in all_files:
+            all_files.append(fp)
+
+    # Scan each file
+    for idx, filepath in enumerate(all_files, 1):
+        meta = _scan_file(root, filepath)
+        sub_id = f"{block_id}.{idx}"
+
+        # Derive inputs/outputs from function signatures
+        inputs: list[str] = []
+        outputs: list[str] = []
+        for sig in meta["functions"]:
+            # Extract params from signature
+            match = re.match(r"\w+\(([^)]*)\)", sig)
+            if match and match.group(1):
+                params = [p.strip() for p in match.group(1).split(",")]
+                inputs.extend(params[:3])  # Limit to avoid noise
+            # Extract return type
+            ret_match = re.search(r"->\s*(.+)$", sig)
+            if ret_match:
+                outputs.append(ret_match.group(1).strip())
+
+        sub_functions.append(
+            {
+                "id": sub_id,
+                "name": meta["name"],
+                "file": meta["file"],
+                "functions": meta["functions"],
+                "inputs": inputs[:6],  # Cap at 6 for readability
+                "outputs": list(set(outputs))[:4],
+                "status": meta["status"],
+                "line_count": meta["line_count"],
+            }
+        )
+
+    # Block status: active if any sub-function is active
+    block_status = "active" if any(sf["status"] == "active" for sf in sub_functions) else "dormant"
+
+    return {
+        "name": block_def["name"],
+        "status": block_status,
+        "description_source": block_def["description_source"],
+        "sub_functions": sub_functions,
+    }

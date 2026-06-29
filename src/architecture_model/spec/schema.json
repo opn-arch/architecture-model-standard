@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://architecture-model-standard.dev/schema/v0.1.0/model.json",
+  "title": "Architecture Model",
+  "description": "Universal machine-readable architecture model for LLM-driven system engineering",
+  "type": "object",
+  "required": ["meta", "entities", "relationships"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["schema_version", "project", "generated_at"],
+      "properties": {
+        "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "project": { "type": "string" },
+        "system": { "type": "string" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "source_artifacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "manifest_hash": { "type": "string" }
+      }
+    },
+    "entities": {
+      "type": "object",
+      "properties": {
+        "actors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/actor" }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capability" }
+        },
+        "behaviors": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/behavior" }
+        },
+        "interfaces": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/interface" }
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/constraint" }
+        },
+        "layers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/layer" }
+        },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/component" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relationship" }
+    }
+  },
+  "$defs": {
+    "status": {
+      "type": "string",
+      "enum": ["ACTIVE", "PLANNED", "DORMANT", "DEPRECATED"]
+    },
+    "base_entity": {
+      "type": "object",
+      "required": ["id", "name", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z]+-[A-Z]?-?\\d+$|^[a-z][a-z0-9-]+$" },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "status": { "$ref": "#/$defs/status" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "source_file": { "type": "string" },
+        "source_line": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "actor": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "type": { "type": "string", "enum": ["human", "system", "external-service"] },
+        "goals": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "capability": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "f_block": { "type": "string" },
+        "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "requirements": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "behavior": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "trigger": { "type": "string" },
+        "actor": { "type": "string" },
+        "preconditions": { "type": "array", "items": { "type": "string" } },
+        "postconditions": { "type": "array", "items": { "type": "string" } },
+        "steps": { "type": "array", "items": { "type": "string" } },
+        "frequency": { "type": "string" },
+        "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] }
+      },
+      "additionalProperties": false
+    },
+    "interface": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "type": { "type": "string", "enum": ["REST", "WebSocket", "database", "file", "message-queue", "internal", "external"] },
+        "protocol": { "type": "string" },
+        "provider": { "type": "string" },
+        "consumer": { "type": "string" },
+        "data_format": { "type": "string" },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "method": { "type": "string" },
+              "path": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "constraint": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "type": { "type": "string", "enum": ["performance", "security", "reliability", "scalability", "regulatory", "technology", "operational"] },
+        "metric": { "type": "string" },
+        "threshold": { "type": "string" },
+        "rationale": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "layer": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "order": { "type": "integer", "minimum": 0 },
+        "technology": { "type": "array", "items": { "type": "string" } },
+        "directories": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "component": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "layer": { "type": "string" },
+        "f_block": { "type": "string" },
+        "technology": { "type": "string" },
+        "files": { "type": "array", "items": { "type": "string" } },
+        "responsibilities": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "relationship": {
+      "type": "object",
+      "required": ["type", "from", "to"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["realizes", "contains", "depends-on", "exposes", "consumes", "traces-to", "allocated-to", "constrained-by"]
+        },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "description": { "type": "string" },
+        "strength": { "type": "string", "enum": ["strong", "moderate", "weak"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}
