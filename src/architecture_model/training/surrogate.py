@@ -83,7 +83,7 @@ class Surrogate:
 
     def __init__(
         self,
-        model_name: str = "qwen2.5:7b",
+        model_name: str = "gemma2:9b",
         host: str = "http://localhost:11434",
         *,
         model_config: Optional[ModelConfig] = None,

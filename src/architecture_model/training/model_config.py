@@ -62,7 +62,7 @@ def get_model_config(ollama_tag: str) -> ModelConfig:
 
 
 def resolve_config(
-    default: str = "qwen2.5:7b",
+    default: str = "gemma2:9b",
     config_path: Optional[str] = None,
 ) -> ModelConfig:
     """Resolve model config from env var, YAML file, or default (in priority order).
