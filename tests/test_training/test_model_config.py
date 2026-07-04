@@ -224,6 +224,55 @@ class TestTrainerModelConfig:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# resolve_training_targets Tests
+# ---------------------------------------------------------------------------
+
+
+class TestTrainingTargets:
+    def test_resolve_targets_from_config(self, tmp_path):
+        from architecture_model.training.model_config import resolve_training_targets
+        cfg_file = tmp_path / ".architecture-model-training.yaml"
+        cfg_file.write_text(
+            "surrogate_model: gemma2:9b\n"
+            "training_targets:\n"
+            "  - gemma2:9b\n"
+            "  - llama3.1:8b\n"
+        )
+        targets = resolve_training_targets(config_path=cfg_file)
+        assert len(targets) == 2
+        assert targets[0].ollama_tag == "gemma2:9b"
+        assert targets[1].ollama_tag == "llama3.1:8b"
+
+    def test_resolve_targets_from_env(self, monkeypatch):
+        from architecture_model.training.model_config import resolve_training_targets
+        monkeypatch.setenv("ARCHMODEL_TRAINING_TARGETS", "gemma2:9b,llama3.1:8b")
+        targets = resolve_training_targets()
+        assert len(targets) == 2
+        assert targets[0].ollama_tag == "gemma2:9b"
+        assert targets[1].ollama_tag == "llama3.1:8b"
+
+    def test_resolve_targets_default_is_surrogate_model(self, monkeypatch):
+        from architecture_model.training.model_config import resolve_training_targets
+        monkeypatch.delenv("ARCHMODEL_TRAINING_TARGETS", raising=False)
+        targets = resolve_training_targets()
+        assert len(targets) == 1
+        assert targets[0].ollama_tag == "gemma2:9b"  # default surrogate
+
+    def test_resolve_targets_unknown_model_gets_generic(self, monkeypatch):
+        from architecture_model.training.model_config import resolve_training_targets
+        monkeypatch.setenv("ARCHMODEL_TRAINING_TARGETS", "custom:7b")
+        targets = resolve_training_targets()
+        assert len(targets) == 1
+        assert targets[0].ollama_tag == "custom:7b"
+        assert targets[0].hf_model_id == ""  # generic fallback
+
+
+# ---------------------------------------------------------------------------
+# Export Tests
+# ---------------------------------------------------------------------------
+
+
 class TestExports:
     def test_model_config_importable_from_training(self):
         from architecture_model.training import (

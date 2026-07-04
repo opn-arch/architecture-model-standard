@@ -15,6 +15,7 @@ from architecture_model.training.multi_pass import MultiPassExtractor, PassResul
 from architecture_model.training.refiner import ModelRefiner
 from architecture_model.training.model_config import (
     ModelConfig, MODEL_REGISTRY, get_model_config, resolve_config,
+    resolve_training_targets,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "ContextBuilder", "ContextSlices", "MultiPassExtractor", "PassResult",
     "ModelRefiner",
     "ModelConfig", "MODEL_REGISTRY", "get_model_config", "resolve_config",
+    "resolve_training_targets",
 ]

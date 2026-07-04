@@ -89,3 +89,37 @@ def resolve_config(
 
     # 3. Default
     return get_model_config(default)
+
+
+def resolve_training_targets(
+    config_path: Optional[Path] = None,
+) -> list[ModelConfig]:
+    """Resolve list of models to train LoRA adapters for.
+
+    Priority:
+    1. ARCHMODEL_TRAINING_TARGETS env var (comma-separated Ollama tags)
+    2. training_targets list in config file
+    3. Default: just the resolved surrogate model
+    """
+    # 1. Environment variable
+    env_targets = os.environ.get("ARCHMODEL_TRAINING_TARGETS")
+    if env_targets:
+        tags = [t.strip() for t in env_targets.split(",") if t.strip()]
+        return [get_model_config(tag) for tag in tags]
+
+    # 2. Config file
+    if config_path and config_path.exists():
+        try:
+            data = yaml.safe_load(config_path.read_text())
+            if isinstance(data, dict) and "training_targets" in data:
+                tags = data["training_targets"]
+                if isinstance(tags, list):
+                    return [get_model_config(str(t)) for t in tags]
+        except (yaml.YAMLError, OSError):
+            pass
+
+    # 3. Default: just the surrogate model
+    default_cfg = resolve_config(
+        config_path=str(config_path) if config_path else None,
+    )
+    return [default_cfg]
