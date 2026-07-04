@@ -14,6 +14,7 @@ from architecture_model.training.model_config import ModelConfig, get_model_conf
 
 if TYPE_CHECKING:
     from architecture_model.training.dataset import DatasetStore
+    from architecture_model.training.model_config import ModelConfig
 
 # ---------------------------------------------------------------------------
 # Optional dependency imports (torch, transformers, peft, datasets)
@@ -202,3 +203,46 @@ class LoRATrainer:
             raise RuntimeError(
                 f"ollama create failed (exit {result.returncode}): {result.stderr}"
             )
+
+    def train_all(
+        self,
+        dataset: "Dataset",
+        targets: list["ModelConfig"],
+        output_base: Path,
+        epochs: int = 3,
+    ) -> dict[str, Path]:
+        """Fine-tune LoRA adapters for multiple base models.
+
+        Trains a separate adapter for each target model using the same dataset.
+        Exports each to Ollama with naming convention: {model}-arch.
+
+        Args:
+            dataset: HuggingFace Dataset (model-independent training data).
+            targets: List of ModelConfig to train adapters for.
+            output_base: Base directory for adapters (creates subdirs per model).
+            epochs: Training epochs per model.
+
+        Returns:
+            Mapping of ollama_tag -> adapter_path for each successfully trained model.
+        """
+        output_base = Path(output_base)
+        results: dict[str, Path] = {}
+
+        for cfg in targets:
+            # Update trainer config for this target
+            self.update_model(cfg)
+
+            # Adapter output directory: output_base/{tag-sanitized}/
+            safe_tag = cfg.ollama_tag.replace(":", "-")
+            adapter_dir = output_base / safe_tag
+
+            # Train
+            adapter_path = self.train(dataset, output_dir=adapter_dir, epochs=epochs)
+
+            # Export to Ollama: "{model}-arch"
+            ollama_name = f"{safe_tag}-arch"
+            self.export_to_ollama(adapter_path, ollama_name)
+
+            results[cfg.ollama_tag] = adapter_path
+
+        return results

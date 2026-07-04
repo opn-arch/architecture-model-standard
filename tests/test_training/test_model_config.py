@@ -273,6 +273,90 @@ class TestTrainingTargets:
 # ---------------------------------------------------------------------------
 
 
+class TestMultiAdapterTraining:
+    def test_train_all_calls_train_per_target(self):
+        """Verify train_all iterates over targets."""
+        from unittest.mock import patch, MagicMock
+        from architecture_model.training.trainer import LoRATrainer
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        from pathlib import Path
+
+        trainer = LoRATrainer()
+        targets = [MODEL_REGISTRY["gemma2:9b"], MODEL_REGISTRY["llama3.1:8b"]]
+
+        with patch.object(trainer, "train", return_value=Path("/tmp/fake")) as mock_train, \
+             patch.object(trainer, "export_to_ollama") as mock_export:
+            mock_dataset = MagicMock()
+            results = trainer.train_all(mock_dataset, targets, output_base=Path("/tmp/adapters"))
+
+        assert mock_train.call_count == 2
+        assert mock_export.call_count == 2
+        assert "gemma2:9b" in results
+        assert "llama3.1:8b" in results
+
+    def test_train_all_names_models_correctly(self):
+        """Verify Ollama model naming: {model}-arch."""
+        from unittest.mock import patch, MagicMock
+        from architecture_model.training.trainer import LoRATrainer
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        from pathlib import Path
+
+        trainer = LoRATrainer()
+        targets = [MODEL_REGISTRY["gemma2:9b"]]
+
+        with patch.object(trainer, "train", return_value=Path("/tmp/fake")), \
+             patch.object(trainer, "export_to_ollama") as mock_export:
+            trainer.train_all(MagicMock(), targets, output_base=Path("/tmp/adapters"))
+
+        # export_to_ollama(adapter_path, model_name) — check second positional arg
+        mock_export.assert_called_once()
+        args = mock_export.call_args[0]
+        assert args[1] == "gemma2-9b-arch"
+
+    def test_train_all_adapter_paths(self):
+        """Verify adapter directories: output_base/{tag-sanitized}/."""
+        from unittest.mock import patch, MagicMock
+        from architecture_model.training.trainer import LoRATrainer
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        from pathlib import Path
+
+        trainer = LoRATrainer()
+        targets = [MODEL_REGISTRY["gemma2:9b"], MODEL_REGISTRY["llama3.1:8b"]]
+
+        train_calls = []
+        def fake_train(dataset, output_dir, **kwargs):
+            train_calls.append(Path(output_dir))
+            return Path(output_dir)
+
+        with patch.object(trainer, "train", side_effect=fake_train), \
+             patch.object(trainer, "export_to_ollama"):
+            trainer.train_all(MagicMock(), targets, output_base=Path("/tmp/adapters"))
+
+        assert Path("/tmp/adapters/gemma2-9b") in train_calls
+        assert Path("/tmp/adapters/llama3.1-8b") in train_calls
+
+    def test_train_all_returns_paths(self):
+        """Verify return value maps tag to adapter path."""
+        from unittest.mock import patch, MagicMock
+        from architecture_model.training.trainer import LoRATrainer
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        from pathlib import Path
+
+        trainer = LoRATrainer()
+        targets = [MODEL_REGISTRY["gemma2:9b"]]
+
+        with patch.object(trainer, "train", return_value=Path("/tmp/adapters/gemma2-9b")), \
+             patch.object(trainer, "export_to_ollama"):
+            results = trainer.train_all(MagicMock(), targets, output_base=Path("/tmp/adapters"))
+
+        assert results["gemma2:9b"] == Path("/tmp/adapters/gemma2-9b")
+
+
+# ---------------------------------------------------------------------------
+# Export Tests
+# ---------------------------------------------------------------------------
+
+
 class TestExports:
     def test_model_config_importable_from_training(self):
         from architecture_model.training import (
