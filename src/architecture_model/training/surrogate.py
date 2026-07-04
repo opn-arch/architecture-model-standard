@@ -23,6 +23,15 @@ from architecture_model.core.parser import _parse_raw
 from architecture_model.core.types import ArchitectureModel
 
 
+def _strip_fences(text: str) -> str:
+    """Strip markdown code fences from LLM response."""
+    if "```yaml" in text:
+        text = text.split("```yaml", 1)[1].split("```", 1)[0]
+    elif "```" in text:
+        text = text.split("```", 1)[1].split("```", 1)[0]
+    return text.strip()
+
+
 # ---------------------------------------------------------------------------
 # System prompt for architecture extraction
 # ---------------------------------------------------------------------------
@@ -101,6 +110,9 @@ class Surrogate:
 
         # Extract text content from response
         content = response.get("message", {}).get("content", "")
+
+        # Strip markdown fences if present
+        content = _strip_fences(content)
 
         # Attempt YAML parse
         try:

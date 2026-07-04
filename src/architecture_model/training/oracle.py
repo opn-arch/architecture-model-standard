@@ -23,6 +23,15 @@ from architecture_model.core.parser import _parse_raw
 from architecture_model.core.types import ArchitectureModel
 
 
+def _strip_fences(text: str) -> str:
+    """Strip markdown code fences from LLM response."""
+    if "```yaml" in text:
+        text = text.split("```yaml", 1)[1].split("```", 1)[0]
+    elif "```" in text:
+        text = text.split("```", 1)[1].split("```", 1)[0]
+    return text.strip()
+
+
 # ---------------------------------------------------------------------------
 # System prompts
 # ---------------------------------------------------------------------------
@@ -140,6 +149,9 @@ class Oracle:
 
         # Extract content
         content = response.choices[0].message.content
+
+        # Strip markdown fences if present
+        content = _strip_fences(content)
 
         # Track token usage
         if self._budget is not None:
