@@ -106,7 +106,7 @@ def pipeline(
     mock_trainer,
     mock_repo_fetcher,
 ):
-    return TrainingPipeline(
+    p = TrainingPipeline(
         surrogate=mock_surrogate,
         oracle=mock_oracle,
         store=mock_store,
@@ -115,6 +115,11 @@ def pipeline(
         trainer=mock_trainer,
         repo_fetcher=mock_repo_fetcher,
     )
+    # Mock enhanced_extract to return a valid model + confidence
+    p.enhanced_extract = AsyncMock(return_value=(_make_architecture_model(), 0.8))
+    # Mock _read_code_context so it doesn't try to scan filesystem
+    p._read_code_context = MagicMock(return_value="# mock code context")
+    return p
 
 
 # ---------------------------------------------------------------------------
@@ -143,14 +148,14 @@ class TestRunIteration:
         mock_repo_fetcher.discover.assert_called_once_with(5)
 
     @pytest.mark.asyncio
-    async def test_calls_surrogate_for_each_repo(self, pipeline, mock_surrogate, mock_repo_fetcher):
-        """run_iteration runs surrogate.extract_model for each discovered repo."""
+    async def test_calls_enhanced_extract_for_each_repo(self, pipeline, mock_repo_fetcher):
+        """run_iteration runs enhanced_extract for each discovered repo."""
         repos = [_make_repo_info("a/b"), _make_repo_info("c/d"), _make_repo_info("e/f")]
         mock_repo_fetcher.discover = AsyncMock(return_value=repos)
 
         await pipeline.run_iteration(n_repos=3)
 
-        assert mock_surrogate.extract_model.call_count == 3
+        assert pipeline.enhanced_extract.call_count == 3
 
     @pytest.mark.asyncio
     async def test_queries_oracle_when_controller_says_yes(
@@ -281,3 +286,205 @@ class TestRunLoop:
         assert result is mock_controller.state
         # Should stop at 2, not continue to 100
         assert mock_controller.next_iteration.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# Enhanced _process_repo tests
+# ---------------------------------------------------------------------------
+
+
+class TestProcessRepoEnhanced:
+    @pytest.mark.asyncio
+    async def test_process_repo_uses_enhanced_extract(self):
+        """_process_repo should use enhanced_extract, not raw extract_model."""
+        from architecture_model.training.evaluator import LossVector
+
+        mock_model = MagicMock()
+        mock_model.relationships = []
+        mock_model.entities = MagicMock()
+        for attr in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components']:
+            setattr(mock_model.entities, attr, [])
+
+        surrogate = MagicMock()
+        surrogate.confidence = MagicMock(return_value=0.8)
+        oracle = MagicMock()
+        oracle.extract_model = AsyncMock(return_value=mock_model)
+        store = MagicMock()
+        evaluator = MagicMock()
+        evaluator.compute_loss = MagicMock(return_value=LossVector(0.7, 0.8, 0.5, 90))
+        controller = MPCController(MPCState())
+        controller.should_query_oracle = MagicMock(return_value=True)
+        trainer = MagicMock()
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=surrogate,
+            oracle=oracle,
+            store=store,
+            evaluator=evaluator,
+            controller=controller,
+            trainer=trainer,
+            repo_fetcher=repo_fetcher,
+        )
+
+        # Mock enhanced_extract to return our model
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="# code")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=90)
+
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+
+            await pipeline._process_repo(repo)
+
+        # Verify enhanced_extract was called (not surrogate.extract_model directly)
+        pipeline.enhanced_extract.assert_called_once()
+        # surrogate.extract_model should NOT have been called directly by _process_repo
+        surrogate.extract_model.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_process_repo_records_loss(self):
+        """_process_repo should call controller.record_loss() with LossVector."""
+        from architecture_model.training.evaluator import LossVector
+
+        mock_model = MagicMock()
+        mock_model.relationships = []
+        mock_model.entities = MagicMock()
+        for attr in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components']:
+            setattr(mock_model.entities, attr, [])
+
+        surrogate = MagicMock()
+        surrogate.confidence = MagicMock(return_value=0.8)
+        oracle = MagicMock()
+        oracle.extract_model = AsyncMock(return_value=mock_model)
+        store = MagicMock()
+        loss_vec = LossVector(0.7, 0.8, 0.5, 90)
+        evaluator = MagicMock()
+        evaluator.compute_loss = MagicMock(return_value=loss_vec)
+        state = MPCState()
+        controller = MPCController(state)
+        controller.should_query_oracle = MagicMock(return_value=True)
+        trainer = MagicMock()
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=surrogate, oracle=oracle, store=store,
+            evaluator=evaluator, controller=controller,
+            trainer=trainer, repo_fetcher=repo_fetcher,
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="# code")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=90)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            await pipeline._process_repo(repo)
+
+        # Verify record_loss was called (convergence_history gets an entry)
+        assert len(state.convergence_history) == 1
+        assert state.convergence_history[0] == 1.0  # non-dominated (first entry)
+
+    @pytest.mark.asyncio
+    async def test_process_repo_saves_dpo_preference_on_low_accuracy(self):
+        """When structural_accuracy < 0.6, save a DPO preference pair."""
+        from architecture_model.training.evaluator import LossVector
+
+        mock_model = MagicMock()
+        mock_model.relationships = []
+        mock_model.entities = MagicMock()
+        for attr in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components']:
+            setattr(mock_model.entities, attr, [])
+        mock_model.__str__ = MagicMock(return_value="local_yaml")
+
+        mock_oracle_model = MagicMock()
+        mock_oracle_model.relationships = []
+        mock_oracle_model.entities = MagicMock()
+        for attr in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components']:
+            setattr(mock_oracle_model.entities, attr, [])
+        mock_oracle_model.__str__ = MagicMock(return_value="oracle_yaml")
+
+        surrogate = MagicMock()
+        surrogate.confidence = MagicMock(return_value=0.8)
+        oracle = MagicMock()
+        oracle.extract_model = AsyncMock(return_value=mock_oracle_model)
+        store = MagicMock()
+        # Low structural_accuracy → should trigger DPO preference save
+        loss_vec = LossVector(0.3, 0.5, 0.2, 70)
+        evaluator = MagicMock()
+        evaluator.compute_loss = MagicMock(return_value=loss_vec)
+        controller = MPCController(MPCState())
+        controller.should_query_oracle = MagicMock(return_value=True)
+        trainer = MagicMock()
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=surrogate, oracle=oracle, store=store,
+            evaluator=evaluator, controller=controller,
+            trainer=trainer, repo_fetcher=repo_fetcher,
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="# code")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=70)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            await pipeline._process_repo(repo)
+
+        # Verify save_preference was called
+        store.save_preference.assert_called_once()
+        call_args = store.save_preference.call_args
+        assert call_args.kwargs.get('margin') or call_args[1].get('margin', call_args[0][3]) == pytest.approx(0.7)
+
+    @pytest.mark.asyncio
+    async def test_process_repo_no_dpo_when_accuracy_high(self):
+        """When structural_accuracy >= 0.6, NO DPO preference pair saved."""
+        from architecture_model.training.evaluator import LossVector
+
+        mock_model = MagicMock()
+        mock_model.relationships = []
+        mock_model.entities = MagicMock()
+        for attr in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components']:
+            setattr(mock_model.entities, attr, [])
+
+        surrogate = MagicMock()
+        surrogate.confidence = MagicMock(return_value=0.8)
+        oracle = MagicMock()
+        oracle.extract_model = AsyncMock(return_value=mock_model)
+        store = MagicMock()
+        # High structural_accuracy → should NOT trigger DPO
+        loss_vec = LossVector(0.8, 0.9, 0.7, 95)
+        evaluator = MagicMock()
+        evaluator.compute_loss = MagicMock(return_value=loss_vec)
+        controller = MPCController(MPCState())
+        controller.should_query_oracle = MagicMock(return_value=True)
+        trainer = MagicMock()
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=surrogate, oracle=oracle, store=store,
+            evaluator=evaluator, controller=controller,
+            trainer=trainer, repo_fetcher=repo_fetcher,
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="# code")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=95)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            await pipeline._process_repo(repo)
+
+        # save_preference should NOT have been called
+        store.save_preference.assert_not_called()

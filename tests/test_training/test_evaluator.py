@@ -24,6 +24,7 @@ from architecture_model.training.evaluator import (
     Evaluator,
     LossVector,
     compute_entity_f1,
+    compute_entity_match_map,
     compute_relationship_f1,
 )
 
@@ -288,10 +289,11 @@ class TestEvaluator:
             Actor(id="ACT-2", name="Admin", status=Status.ACTIVE, type=ActorType.HUMAN),
         ])
         # local[0] matches oracle[0] by ID. It should NOT also match oracle[1] by name.
-        # Recall should be 1/2 = 0.5 (only 1 of 2 oracle entities found)
+        # Entity recall = 1/2 = 0.5, rel recall = 1.0 (no oracle rels)
+        # Weighted completeness = 0.7*0.5 + 0.3*1.0 = 0.65
         evaluator = Evaluator()
         loss = evaluator.compute_loss(local_model=local, oracle_model=oracle)
-        assert loss.completeness == pytest.approx(0.5)
+        assert loss.completeness == pytest.approx(0.65)
 
     def test_evaluator_compute_loss_no_code(self):
         """Without code args, L3 defaults to 0.0."""
@@ -369,3 +371,185 @@ class TestParetoFront:
         evaluator = Evaluator()
         front = evaluator.compute_pareto_front([])
         assert front == []
+
+
+# ---------------------------------------------------------------------------
+# Reconstruction fidelity (AST+Embedding ensemble) tests
+# ---------------------------------------------------------------------------
+
+
+class TestReconstructionFidelity:
+    def test_identical_code_scores_one(self):
+        from architecture_model.training.evaluator import compute_reconstruction_fidelity
+
+        code = "class Foo:\n    def bar(self): pass\n    def baz(self): pass\n"
+        assert compute_reconstruction_fidelity(code, code) == 1.0
+
+    def test_partial_overlap(self):
+        from architecture_model.training.evaluator import compute_reconstruction_fidelity
+
+        original = "class Foo:\n    def bar(self): pass\n    def baz(self): pass\n"
+        stubs = "class Foo:\n    def bar(self): ...\n    def qux(self): ...\n"
+        score = compute_reconstruction_fidelity(original, stubs)
+        # Signatures: original = {Foo, Foo.bar, Foo.baz}, stubs = {Foo, Foo.bar, Foo.qux}
+        # Jaccard = 2/4 = 0.5
+        assert 0.4 < score < 0.6
+
+    def test_no_overlap_scores_zero(self):
+        from architecture_model.training.evaluator import compute_reconstruction_fidelity
+
+        original = "class Foo:\n    def bar(self): pass\n"
+        stubs = "class Baz:\n    def qux(self): ...\n"
+        assert compute_reconstruction_fidelity(original, stubs) == 0.0
+
+    def test_invalid_syntax_falls_back_to_regex(self):
+        from architecture_model.training.evaluator import compute_reconstruction_fidelity
+
+        original = "class Foo:\n    def bar(self): pass\n"
+        stubs = "class Foo:\n    def bar(self  # invalid syntax\n"
+        score = compute_reconstruction_fidelity(original, stubs)
+        # Should still find "Foo" via regex fallback
+        assert score > 0.0
+
+    def test_embedding_score_ensemble(self):
+        from architecture_model.training.evaluator import compute_reconstruction_fidelity
+
+        original = "class Foo:\n    def bar(self): pass\n    def baz(self): pass\n"
+        stubs = "class Foo:\n    def bar(self): ...\n    def qux(self): ...\n"
+        # AST Jaccard alone = 0.5
+        # With embedding_score=0.9: ensemble = 0.5*0.5 + 0.5*0.9 = 0.7
+        score = compute_reconstruction_fidelity(original, stubs, embedding_score=0.9)
+        assert score == pytest.approx(0.7, abs=0.05)
+
+    def test_functions_outside_class(self):
+        from architecture_model.training.evaluator import compute_reconstruction_fidelity
+
+        original = "def helper(): pass\ndef another(): pass\n"
+        stubs = "def helper(): ...\ndef different(): ...\n"
+        score = compute_reconstruction_fidelity(original, stubs)
+        # Signatures: {helper, another} vs {helper, different} → Jaccard = 1/3
+        assert 0.2 < score < 0.5
+
+
+# ---------------------------------------------------------------------------
+# Entity Match Map tests
+# ---------------------------------------------------------------------------
+
+
+class TestEntityMatchMap:
+    def test_exact_id_match(self):
+        """Pass 1: exact type+ID match."""
+        local = _make_model(components=[
+            Component(id="C01", name="Client", layer="L1", status=Status.ACTIVE),
+        ])
+        oracle = _make_model(components=[
+            Component(id="C01", name="Client", layer="L1", status=Status.ACTIVE),
+        ])
+        m = compute_entity_match_map(local, oracle)
+        assert m == {"C01": "C01"}
+
+    def test_name_match_different_ids(self):
+        """Pass 2: exact type+name (lowercase) with different IDs."""
+        local = _make_model(components=[
+            Component(id="C01", name="HTTP Client", layer="L1", status=Status.ACTIVE),
+        ])
+        oracle = _make_model(components=[
+            Component(id="C05", name="HTTP Client", layer="L1", status=Status.ACTIVE),
+        ])
+        m = compute_entity_match_map(local, oracle)
+        assert m == {"C01": "C05"}
+
+    def test_fuzzy_name_match(self):
+        """Pass 3: fuzzy name match via word Jaccard >= 0.4."""
+        local = _make_model(components=[
+            Component(id="C01", name="http transport", layer="L1", status=Status.ACTIVE),
+        ])
+        oracle = _make_model(components=[
+            Component(id="C03", name="transport http layer", layer="L1", status=Status.ACTIVE),
+        ])
+        m = compute_entity_match_map(local, oracle)
+        # "http transport" vs "transport http layer" — Jaccard({http,transport}, {transport,http,layer}) = 2/3 > 0.4
+        assert "C01" in m and m["C01"] == "C03"
+
+
+# ---------------------------------------------------------------------------
+# Relationship Remapping tests
+# ---------------------------------------------------------------------------
+
+
+class TestRelationshipRemapping:
+    def test_remapped_relationships_match(self):
+        """Relationships match after entity ID remapping."""
+        local = _make_model(
+            components=[
+                Component(id="C01", name="Client", layer="L1", status=Status.ACTIVE),
+                Component(id="C02", name="Server", layer="L1", status=Status.ACTIVE),
+            ],
+            relationships=[
+                Relationship(type=RelationType.DEPENDS_ON, from_id="C01", to_id="C02"),
+            ],
+        )
+        oracle = _make_model(
+            components=[
+                Component(id="C10", name="Client", layer="L1", status=Status.ACTIVE),
+                Component(id="C20", name="Server", layer="L1", status=Status.ACTIVE),
+            ],
+            relationships=[
+                Relationship(type=RelationType.DEPENDS_ON, from_id="C10", to_id="C20"),
+            ],
+        )
+        f1 = compute_relationship_f1(local, oracle)
+        assert f1 == 1.0  # should match after remapping
+
+    def test_unmatched_relationships_reduce_f1(self):
+        """Extra relationships in local reduce F1 below 1.0."""
+        local = _make_model(
+            components=[
+                Component(id="C01", name="Client", layer="L1", status=Status.ACTIVE),
+                Component(id="C02", name="Server", layer="L1", status=Status.ACTIVE),
+            ],
+            relationships=[
+                Relationship(type=RelationType.DEPENDS_ON, from_id="C01", to_id="C02"),
+                Relationship(type=RelationType.REALIZES, from_id="C01", to_id="C02"),
+            ],
+        )
+        oracle = _make_model(
+            components=[
+                Component(id="C10", name="Client", layer="L1", status=Status.ACTIVE),
+                Component(id="C20", name="Server", layer="L1", status=Status.ACTIVE),
+            ],
+            relationships=[
+                Relationship(type=RelationType.DEPENDS_ON, from_id="C10", to_id="C20"),
+            ],
+        )
+        f1 = compute_relationship_f1(local, oracle)
+        assert 0.5 < f1 < 1.0  # one match, one extra in local
+
+
+# ---------------------------------------------------------------------------
+# Weighted Completeness tests
+# ---------------------------------------------------------------------------
+
+
+class TestWeightedCompleteness:
+    def test_completeness_includes_relationship_recall(self):
+        """Completeness = 0.7*entity_recall + 0.3*rel_recall."""
+        local = _make_model(
+            components=[
+                Component(id="C01", name="A", layer="L1", status=Status.ACTIVE),
+            ],
+            relationships=[],
+        )
+        oracle = _make_model(
+            components=[
+                Component(id="C01", name="A", layer="L1", status=Status.ACTIVE),
+            ],
+            relationships=[
+                Relationship(type=RelationType.DEPENDS_ON, from_id="C01", to_id="C01"),
+            ],
+        )
+        evaluator = Evaluator()
+        loss = evaluator.compute_loss(local, oracle)
+        # Entity recall = 1.0, relationship recall = 0.0
+        # completeness = 0.7*1.0 + 0.3*0.0 = 0.7
+        assert loss.completeness == pytest.approx(0.7, abs=0.05)

@@ -61,6 +61,32 @@ except ImportError:
     Dataset = None  # type: ignore[assignment, misc]
 
 
+if HAS_TRANSFORMERS:
+    class WeightedCETrainer(Trainer):
+        """HF Trainer subclass that applies per-sample loss weights.
+
+        Expects dataset rows to include a 'sample_weight' field.
+        During training, multiplies cross-entropy loss by the per-sample weight.
+        """
+
+        def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+            """Multiply CE loss by per-sample weight."""
+            weights = inputs.pop("sample_weight", None)
+            outputs = model(**inputs)
+            loss = outputs.loss
+            if weights is not None:
+                loss = (loss * weights).mean()
+            return (loss, outputs) if return_outputs else loss
+else:
+    class WeightedCETrainer:  # type: ignore[no-redef]
+        """Placeholder when transformers is unavailable."""
+
+        @staticmethod
+        def compute_loss(model, inputs, return_outputs=False, **kwargs):
+            """Multiply CE loss by per-sample weight."""
+            raise RuntimeError("transformers required for WeightedCETrainer")
+
+
 class LoRATrainer:
     """Fine-tunes a base model with LoRA using HF PEFT, exports to Ollama."""
 

@@ -73,9 +73,11 @@ Each relationship must have: type, from, to.
 Output raw YAML only — no markdown fences, no explanation."""
 
 _GENERATE_SYSTEM_PROMPT = """\
-You are a code generation engine. Given an architecture model YAML slice, \
-generate the corresponding source code implementation. Output only code — \
-no explanations, no markdown fences."""
+You are a code stub generation engine. Given an architecture model YAML, \
+generate Python stub code implementing the described architecture. \
+Output class definitions with method signatures and brief docstrings. \
+Do NOT implement method bodies — use 'pass' or '...' for all bodies. \
+Output only Python code — no explanations, no markdown fences."""
 
 
 class Surrogate:

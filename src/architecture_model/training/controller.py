@@ -12,6 +12,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from statistics import stdev
 
+from architecture_model.training.evaluator import LossVector
+
 
 # ---------------------------------------------------------------------------
 # MPCState
@@ -54,6 +56,7 @@ class MPCController:
             self.state.oracle_budget_remaining = oracle_budget
         self._agreement_total = 0
         self._agreement_count = 0
+        self._pareto_front: list[LossVector] = []
 
     def should_query_oracle(
         self, validator_score: float, confidence: float, is_novel: bool
@@ -102,19 +105,50 @@ class MPCController:
 
         self.state.surrogate_accuracy = self._agreement_count / self._agreement_total
 
+    def record_loss(self, loss: LossVector) -> bool:
+        """Check if loss is competitive with Pareto front.
+
+        Returns True if the loss is non-dominated (competitive with best seen).
+        Returns False if dominated (strictly worse than something on the front).
+
+        Also updates the Pareto front and convergence history.
+        """
+        # Check if new loss is dominated by any current front member
+        dominated = any(f.dominates(loss) for f in self._pareto_front)
+        agreed = not dominated
+
+        # Update Pareto front: add candidate, then prune dominated entries
+        candidates = self._pareto_front + [loss]
+        self._pareto_front = [
+            c for c in candidates
+            if not any(o.dominates(c) for o in candidates if o is not c)
+        ]
+
+        # Track in convergence history
+        self.state.convergence_history.append(1.0 if agreed else 0.0)
+
+        # Update agreement tracking for backward compatibility
+        self._agreement_total += 1
+        if agreed:
+            self._agreement_count += 1
+        self.state.surrogate_accuracy = self._agreement_count / self._agreement_total
+
+        return agreed
+
     def is_converged(self) -> bool:
         """
         Check if training has converged.
 
-        Convergence = last N accuracy values have std deviation < threshold.
-        Requires at least CONVERGENCE_WINDOW values in history.
+        Convergence = 80%+ of recent loss vectors are non-dominated
+        (competitive with the Pareto front). Requires at least
+        CONVERGENCE_WINDOW values in history.
         """
         history = self.state.convergence_history
         if len(history) < self._CONVERGENCE_WINDOW:
             return False
 
         recent = history[-self._CONVERGENCE_WINDOW:]
-        return stdev(recent) < self._CONVERGENCE_THRESHOLD
+        return sum(recent) / len(recent) >= 0.8
 
     def next_iteration(self) -> None:
         """

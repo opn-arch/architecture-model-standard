@@ -58,6 +58,16 @@ class DatasetStore:
                 final_loss REAL,
                 pareto_front TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS preferences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                prompt TEXT NOT NULL,
+                chosen TEXT NOT NULL,
+                rejected TEXT NOT NULL,
+                margin REAL NOT NULL,
+                iteration INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         """)
         self._conn.commit()
 
@@ -127,6 +137,11 @@ class DatasetStore:
         ).fetchall()
         return [self._row_to_example(r) for r in rows]
 
+    def count(self) -> int:
+        """Return total number of training examples."""
+        row = self._conn.execute("SELECT COUNT(*) FROM training_examples").fetchone()
+        return row[0]
+
     def new_examples_since_last_train(self) -> int:
         """Count oracle-validated examples added since the last training run."""
         last_run = self._conn.execute(
@@ -176,6 +191,56 @@ class DatasetStore:
                 }
             )
         return results
+
+    def export_weighted(self) -> list[dict]:
+        """Export training examples with sample_weight based on inverse loss.
+
+        Weight formula: 1.0 + (1.0 - structural_accuracy) * 2.0
+        Range: [1.0, 3.0] — harder examples get more gradient contribution.
+        """
+        rows = self._conn.execute(
+            "SELECT * FROM training_examples WHERE oracle_output IS NOT NULL"
+        ).fetchall()
+        results = []
+        for row in rows:
+            loss_raw = row["loss_vector"]
+            if loss_raw:
+                loss = json.loads(loss_raw)
+            else:
+                loss = {}
+            acc = loss.get("structural_accuracy", 0.5)
+            results.append(
+                {
+                    "instruction": "Analyze the following code and describe its architecture.",
+                    "input": row["code_context"],
+                    "output": row["oracle_output"],
+                    "loss_vector": loss or None,
+                    "sample_weight": 1.0 + (1.0 - acc) * 2.0,
+                }
+            )
+        return results
+
+    def save_preference(
+        self, prompt: str, chosen: str, rejected: str, margin: float, iteration: int
+    ) -> None:
+        """Save a DPO preference pair (chosen=oracle output, rejected=surrogate output)."""
+        self._conn.execute(
+            "INSERT INTO preferences (prompt, chosen, rejected, margin, iteration) VALUES (?, ?, ?, ?, ?)",
+            (prompt, chosen, rejected, margin, iteration),
+        )
+        self._conn.commit()
+
+    def export_preferences(self) -> list[dict]:
+        """Export preference pairs for DPO training."""
+        rows = self._conn.execute(
+            "SELECT prompt, chosen, rejected FROM preferences"
+        ).fetchall()
+        return [{"prompt": r[0], "chosen": r[1], "rejected": r[2]} for r in rows]
+
+    def count_preferences(self) -> int:
+        """Return total number of preference pairs."""
+        row = self._conn.execute("SELECT COUNT(*) FROM preferences").fetchone()
+        return row[0]
 
     def close(self) -> None:
         """Close the database connection."""

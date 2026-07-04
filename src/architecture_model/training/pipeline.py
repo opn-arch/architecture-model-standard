@@ -108,20 +108,24 @@ class TrainingPipeline:
     async def _process_repo(self, repo: RepoInfo) -> None:
         """Process a single repo: extract, evaluate, store.
 
+        Uses enhanced extraction (ContextBuilder + MultiPass + Refiner).
+        Records loss in Pareto front. Saves DPO preferences when quality is low.
+
         Args:
             repo: Repository metadata from discovery.
         """
-        # Clone and get code context
+        # Clone and get paths
         clone_path = self.repo_fetcher.clone(repo)
-        code_context = self._read_code_context(clone_path)
 
-        # Run surrogate extraction
-        local_model = await self.surrogate.extract_model(code_context)
+        # Use enhanced extraction pipeline
+        local_model, confidence = await self.enhanced_extract(clone_path)
         if local_model is None:
             return
 
-        # Compute confidence and validator score
-        confidence = self.surrogate.confidence(local_model)
+        # Still need code context for oracle comparison
+        code_context = self._read_code_context(clone_path)
+
+        # Compute validator score
         validation_result = validate_model(local_model)
         validator_score = float(validation_result.score)
 
@@ -152,6 +156,19 @@ class TrainingPipeline:
                     "validator_score": loss.validator_score,
                 }
                 oracle_output = str(oracle_model)
+
+                # Record loss for Pareto-based convergence tracking
+                self.controller.record_loss(loss)
+
+                # Save DPO preference when quality is low
+                if loss.structural_accuracy < 0.6:
+                    self.store.save_preference(
+                        prompt=code_context,
+                        chosen=str(oracle_model),
+                        rejected=str(local_model),
+                        margin=1.0 - loss.structural_accuracy,
+                        iteration=self.controller.state.iteration,
+                    )
 
         # Save training example
         example = TrainingExample(

@@ -140,7 +140,11 @@ class ContextBuilder:
                 parts.append(f"\n# __init__.py (package API)")
                 parts.append(content[:self._per_slice // 4])
 
-        return self._truncate("\n".join(parts))
+        slice_text = self._truncate("\n".join(parts))
+        # Fill remaining budget with raw code from top-ranked files
+        all_py = [f for f in self.repo_path.rglob("*.py") if "__pycache__" not in str(f)]
+        relevant = self._rank_files(all_py)[:15]
+        return self._fill_budget(slice_text, relevant)
 
     def _build_boundaries_slice(self) -> str:
         """API endpoints, external interfaces, actor touchpoints."""
@@ -200,7 +204,13 @@ class ContextBuilder:
                     parts.append(f"\n# __init__.py (public API / boundaries)")
                     parts.append(content[:self._per_slice // 2])
 
-        return self._truncate("\n".join(parts))
+        slice_text = self._truncate("\n".join(parts))
+        # Fill remaining budget with boundary-relevant files
+        boundary_files = self._find_files_matching(
+            patterns=["api", "interface", "endpoint", "route"],
+            extensions=[".py"],
+        )
+        return self._fill_budget(slice_text, boundary_files)
 
     def _build_behavior_slice(self) -> str:
         """Tasks, event handlers, workflows, processing pipelines."""
@@ -245,7 +255,13 @@ class ContextBuilder:
                         for m in methods[:6]:
                             parts.append(f"    def {m}")
 
-        return self._truncate("\n".join(parts))
+        slice_text = self._truncate("\n".join(parts))
+        # Fill remaining budget with behavior-relevant files
+        behavior_files = self._find_files_matching(
+            patterns=["handler", "task", "command", "worker"],
+            extensions=[".py"],
+        )
+        return self._fill_budget(slice_text, behavior_files)
 
     def _build_relationships_slice(self) -> str:
         """Import graph hotspots and cross-module dependencies."""
@@ -280,7 +296,11 @@ class ContextBuilder:
             if all_imports[f]:
                 parts.append(f"  {f} → {', '.join(all_imports[f][:5])}")
 
-        return self._truncate("\n".join(parts))
+        slice_text = self._truncate("\n".join(parts))
+        # Fill remaining budget with most-imported files (top from ranked)
+        all_py = [f for f in self.repo_path.rglob("*.py") if "__pycache__" not in str(f)]
+        relevant = self._rank_files(all_py)[:10]
+        return self._fill_budget(slice_text, relevant)
 
     def _build_constraints_slice(self) -> str:
         """Configs, decorator patterns enforcing rules, settings, type definitions."""
@@ -346,6 +366,38 @@ class ContextBuilder:
                 rel = f.relative_to(self.repo_path)
                 parts.append(f"\n# {rel} (error contracts)")
                 parts.append(content)
+
+        slice_text = self._truncate("\n".join(parts))
+        # Fill remaining budget with constraint-relevant files
+        constraint_files = self._find_files_matching(
+            patterns=["config", "settings", "types", "schema"],
+            extensions=[".py"],
+        )
+        return self._fill_budget(slice_text, constraint_files)
+
+    # -----------------------------------------------------------------------
+    # Budget filling
+    # -----------------------------------------------------------------------
+
+    def _fill_budget(self, slice_text: str, relevant_files: list[Path]) -> str:
+        """If slice uses <70% of per-slice budget, append raw code from relevant files."""
+        budget_target = int(self._per_slice * 0.7)
+        budget_remaining = budget_target - len(slice_text)
+        if budget_remaining < 200:
+            return slice_text
+
+        parts = [slice_text, "\n\n# --- RAW CODE (remaining budget) ---"]
+        for f in relevant_files:
+            if budget_remaining <= 0:
+                break
+            try:
+                content = f.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            rel_path = f.relative_to(self.repo_path)
+            chunk = f"\n# {rel_path}\n{content[:budget_remaining]}"
+            parts.append(chunk)
+            budget_remaining -= len(chunk)
 
         return self._truncate("\n".join(parts))
 

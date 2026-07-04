@@ -353,3 +353,18 @@ class TestExportToOllama:
         cmd = mock_subprocess.run.call_args[0][0]
         modelfile_path = str(adapter_path / "Modelfile")
         assert modelfile_path in cmd
+
+
+# ---------------------------------------------------------------------------
+# WeightedCETrainer Tests
+# ---------------------------------------------------------------------------
+
+
+class TestWeightedCETrainer:
+    def test_weighted_trainer_is_importable(self):
+        from architecture_model.training.trainer import WeightedCETrainer
+        assert WeightedCETrainer is not None
+
+    def test_weighted_trainer_has_compute_loss(self):
+        from architecture_model.training.trainer import WeightedCETrainer
+        assert hasattr(WeightedCETrainer, 'compute_loss')

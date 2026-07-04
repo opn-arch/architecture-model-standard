@@ -127,6 +127,25 @@ class TestContextBuilder:
         # Allow some overflow for headers but should be reasonable
         assert total < 2000  # 4x max_chars as upper bound
 
+    def test_fill_budget_adds_raw_code_when_under_budget(self, tmp_path):
+        """When a slice uses <70% budget, raw code is appended."""
+        (tmp_path / "__init__.py").write_text("from .core import Engine")
+        (tmp_path / "core.py").write_text(
+            "class Engine:\n"
+            "    '''The core processing engine.'''\n"
+            "    def process(self, data):\n"
+            "        '''Process incoming data through the pipeline.'''\n"
+            "        return self._transform(data)\n"
+            "    def _transform(self, data):\n"
+            "        return data.upper()\n"
+        )
+        # Large budget so AST summary fills <70%
+        cb = ContextBuilder(tmp_path, max_chars=50000)
+        slices = cb.build()
+        combined = slices.combined()
+        # With budget fill, raw source code content should appear
+        assert "RAW CODE" in combined or "_transform" in combined
+
     def test_large_repo_prioritizes_significant_files(self, tmp_path):
         """Context builder should prioritize architecturally significant files in large repos."""
         # Create architecturally significant files at root

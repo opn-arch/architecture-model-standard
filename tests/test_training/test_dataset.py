@@ -146,6 +146,20 @@ class TestQuery:
         assert without_oracle[0].oracle_output is None
 
 
+class TestCount:
+    def test_count_returns_total(self, tmp_path):
+        store = DatasetStore(str(tmp_path / "test.db"))
+        assert store.count() == 0
+        store.save(TrainingExample(
+            repo_url="https://github.com/test/test",
+            repo_sha="abc123",
+            code_context="# code",
+            local_output="# model",
+            iteration=1,
+        ))
+        assert store.count() == 1
+
+
 class TestTrainingIntegration:
     def test_count_new_since_last_train(self, store):
         """Counts oracle-validated examples since last training run."""
@@ -247,3 +261,80 @@ class TestTrainingIntegration:
         assert run_id > 0
         # After recording, new count resets
         assert store.new_examples_since_last_train() == 0
+
+
+class TestPreferences:
+    def test_save_and_export_preference(self, tmp_path):
+        store = DatasetStore(str(tmp_path / "test.db"))
+        store.save_preference(
+            prompt="# code context",
+            chosen="entities:\n  components:\n    - id: C01",
+            rejected="entities:\n  components: []",
+            margin=0.7,
+            iteration=1,
+        )
+        prefs = store.export_preferences()
+        assert len(prefs) == 1
+        assert prefs[0]["prompt"] == "# code context"
+        assert prefs[0]["chosen"].startswith("entities:")
+        assert prefs[0]["rejected"].startswith("entities:")
+
+    def test_preference_count(self, tmp_path):
+        store = DatasetStore(str(tmp_path / "test.db"))
+        store.save_preference("a", "b", "c", 0.5, 1)
+        store.save_preference("d", "e", "f", 0.3, 2)
+        assert store.count_preferences() == 2
+
+    def test_preference_empty_initially(self, tmp_path):
+        store = DatasetStore(str(tmp_path / "test.db"))
+        assert store.count_preferences() == 0
+        assert store.export_preferences() == []
+
+
+class TestExportWeighted:
+    def test_export_weighted_includes_sample_weight(self, tmp_path):
+        store = DatasetStore(str(tmp_path / "test.db"))
+        store.save(TrainingExample(
+            repo_url="https://github.com/test/a",
+            repo_sha="abc",
+            code_context="# code",
+            local_output="# model",
+            oracle_output="# oracle",
+            loss_vector={"structural_accuracy": 0.3, "completeness": 0.5,
+                         "reconstruction_fidelity": 0.0, "validator_score": 80},
+            iteration=1,
+        ))
+        examples = store.export_weighted()
+        assert "sample_weight" in examples[0]
+        # structural_accuracy=0.3 → weight = 1.0 + (1-0.3)*2 = 2.4
+        assert examples[0]["sample_weight"] == pytest.approx(2.4, abs=0.1)
+
+    def test_export_weighted_high_accuracy_low_weight(self, tmp_path):
+        store = DatasetStore(str(tmp_path / "test.db"))
+        store.save(TrainingExample(
+            repo_url="https://github.com/test/b",
+            repo_sha="def",
+            code_context="# code",
+            local_output="# model",
+            oracle_output="# oracle",
+            loss_vector={"structural_accuracy": 0.9, "completeness": 0.9,
+                         "reconstruction_fidelity": 0.5, "validator_score": 95},
+            iteration=1,
+        ))
+        examples = store.export_weighted()
+        # structural_accuracy=0.9 → weight = 1.0 + (1-0.9)*2 = 1.2
+        assert examples[0]["sample_weight"] == pytest.approx(1.2, abs=0.1)
+
+    def test_export_weighted_no_loss_defaults(self, tmp_path):
+        store = DatasetStore(str(tmp_path / "test.db"))
+        store.save(TrainingExample(
+            repo_url="https://github.com/test/c",
+            repo_sha="ghi",
+            code_context="# code",
+            local_output="# model",
+            oracle_output="# oracle",
+            iteration=1,
+        ))
+        examples = store.export_weighted()
+        # No loss_vector → default accuracy 0.5 → weight = 1.0 + (1-0.5)*2 = 2.0
+        assert examples[0]["sample_weight"] == pytest.approx(2.0, abs=0.1)
