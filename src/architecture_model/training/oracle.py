@@ -127,9 +127,15 @@ class Oracle:
         self,
         model: str = "gpt-4o",
         budget: BudgetTracker | None = None,
+        system_prompt: str | None = None,
     ) -> None:
         self._model = model
         self._budget = budget
+        self._system_prompt = system_prompt or _EXTRACT_SYSTEM_PROMPT
+
+    def set_system_prompt(self, prompt: str) -> None:
+        """Update the system prompt (used by prompt evolution)."""
+        self._system_prompt = prompt
 
     async def extract_model(self, code_context: str) -> Optional[ArchitectureModel]:
         """Extract architecture model from code using a frontier LLM.
@@ -141,7 +147,7 @@ class Oracle:
             return None
 
         messages = [
-            {"role": "system", "content": _EXTRACT_SYSTEM_PROMPT},
+            {"role": "system", "content": self._system_prompt},
             {"role": "user", "content": code_context},
         ]
 

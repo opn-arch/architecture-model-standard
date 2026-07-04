@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Optional
 
 from architecture_model.training.surrogate import Surrogate
 from architecture_model.training.oracle import Oracle
@@ -18,6 +19,11 @@ from architecture_model.training.evaluator import Evaluator
 from architecture_model.training.controller import MPCController, MPCState
 from architecture_model.training.trainer import LoRATrainer
 from architecture_model.training.repo_fetcher import RepoFetcher, RepoInfo
+from architecture_model.training.oracle_coverage import ManifestCoverageComputer
+from architecture_model.training.oracle_performance import OraclePerformanceStore, OracleResult
+from architecture_model.training.oracle_context import OracleContextBuilder
+from architecture_model.training.oracle_critique import SelfCritiqueRefiner
+from architecture_model.training.oracle_evolution import PromptEvolver
 from architecture_model.core.validator import validate_model
 
 logger = logging.getLogger(__name__)
@@ -43,6 +49,7 @@ class TrainingPipeline:
         trainer: LoRATrainer,
         repo_fetcher: RepoFetcher,
         training_targets: list | None = None,
+        oracle_learning_enabled: bool = False,
     ) -> None:
         self.surrogate = surrogate
         self.oracle = oracle
@@ -52,6 +59,22 @@ class TrainingPipeline:
         self.trainer = trainer
         self.repo_fetcher = repo_fetcher
         self.training_targets = training_targets
+
+        # Oracle self-learning subsystem (optional)
+        self._oracle_learning_enabled = oracle_learning_enabled
+        self._coverage_computer = ManifestCoverageComputer()
+        self._oracle_perf_store: Optional[OraclePerformanceStore] = None
+        self._critique_refiner: Optional[SelfCritiqueRefiner] = None
+        self._prompt_evolver: Optional[PromptEvolver] = None
+        self._oracle_context_builder_class = OracleContextBuilder
+
+        if oracle_learning_enabled:
+            db_path = str(Path("./data/oracle_performance.db"))
+            self._oracle_perf_store = OraclePerformanceStore(db_path)
+            self._critique_refiner = SelfCritiqueRefiner(
+                self.oracle, self._coverage_computer
+            )
+            self._prompt_evolver = PromptEvolver(self._oracle_perf_store)
 
     async def run_iteration(self, n_repos: int = 50) -> MPCState:
         """Run a single MPC iteration.
@@ -140,10 +163,44 @@ class TrainingPipeline:
         loss_vector = None
 
         if should_query:
+            # Build oracle context (manifest-enriched if learning enabled)
+            if self._oracle_learning_enabled:
+                oracle_ctx_builder = self._oracle_context_builder_class(clone_path)
+                oracle_context = oracle_ctx_builder.build()
+            else:
+                oracle_context = code_context
+
             # Query oracle for ground truth
-            oracle_model = await self.oracle.extract_model(code_context)
+            oracle_model = await self.oracle.extract_model(oracle_context)
 
             if oracle_model is not None:
+                # Self-critique refinement (if enabled)
+                if self._critique_refiner is not None:
+                    manifest = oracle_ctx_builder._generate_lightweight_manifest() if self._oracle_learning_enabled else {}
+                    oracle_model = await self._critique_refiner.refine(
+                        oracle_model, manifest, oracle_context
+                    )
+
+                # Record performance (if enabled)
+                if self._oracle_perf_store is not None:
+                    manifest = oracle_ctx_builder._generate_lightweight_manifest() if self._oracle_learning_enabled else {}
+                    coverage = self._coverage_computer.compute(manifest, oracle_model)
+                    validation_result_oracle = validate_model(oracle_model)
+                    self._oracle_perf_store.record(OracleResult(
+                        repo_url=repo.url,
+                        prompt_variant=f"v{self._prompt_evolver.version}" if self._prompt_evolver else "v1",
+                        coverage_score=coverage.overall,
+                        validator_score=float(validation_result_oracle.score),
+                        iteration=self.controller.state.iteration,
+                        uncovered_modules=str(coverage.uncovered_modules) if coverage.uncovered_modules else None,
+                        uncovered_interfaces=str(coverage.uncovered_interfaces) if coverage.uncovered_interfaces else None,
+                    ))
+
+                    # Check prompt evolution trigger
+                    if self._prompt_evolver and self._prompt_evolver.should_evolve(self.controller.state.iteration):
+                        new_prompt = await self._prompt_evolver.evolve(self.oracle)
+                        self.oracle.set_system_prompt(new_prompt)
+
                 # Compute loss between surrogate and oracle
                 loss = self.evaluator.compute_loss(
                     local_model=local_model,

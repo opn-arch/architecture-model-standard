@@ -23,6 +23,8 @@ from architecture_model.training.oracle_coverage import ManifestCoverageComputer
 from architecture_model.training.oracle_performance import OraclePerformanceStore, OracleResult
 from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_few_shot import FewShotRetriever
+from architecture_model.training.oracle_critique import SelfCritiqueRefiner
+from architecture_model.training.oracle_evolution import PromptEvolver
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -38,4 +40,5 @@ __all__ = [
     "OraclePerformanceStore", "OracleResult",
     "OracleContextBuilder",
     "FewShotRetriever",
+    "SelfCritiqueRefiner", "PromptEvolver",
 ]
