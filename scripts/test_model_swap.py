@@ -115,6 +115,15 @@ async def main():
     print("  All deterministic relationships and prompts carry over unchanged.")
     print("─" * 64)
 
+    print("\nMULTI-ADAPTER TRAINING:")
+    print("  Configure in .architecture-model-training.yaml:")
+    print("    training_targets:")
+    print("      - gemma2:9b")
+    print("      - llama3.1:8b")
+    print("  Or via env: ARCHMODEL_TRAINING_TARGETS=gemma2:9b,llama3.1:8b")
+    print("  Adapters saved to: ./adapters/{model-tag}/")
+    print("  Exported to Ollama as: {model-tag}-arch")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
