@@ -21,6 +21,7 @@ except ImportError:
 
 from architecture_model.core.parser import _parse_raw
 from architecture_model.core.types import ArchitectureModel
+from architecture_model.training.model_config import ModelConfig, get_model_config
 
 
 def _strip_fences(text: str) -> str:
@@ -82,19 +83,32 @@ class Surrogate:
 
     def __init__(
         self,
-        model_name: str = "codellama:13b",
+        model_name: str = "qwen2.5:7b",
         host: str = "http://localhost:11434",
+        *,
+        model_config: Optional[ModelConfig] = None,
     ) -> None:
-        self._model_name = model_name
+        if model_config is not None:
+            self._config = model_config
+        else:
+            self._config = get_model_config(model_name)
         self._host = host
 
     @property
-    def model_name(self) -> str:
-        return self._model_name
+    def model_config(self) -> ModelConfig:
+        """Return the active ModelConfig."""
+        return self._config
 
-    def swap_model(self, new_model_name: str) -> None:
+    @property
+    def model_name(self) -> str:
+        return self._config.ollama_tag
+
+    def swap_model(self, new_model: str | ModelConfig) -> None:
         """Change the active model."""
-        self._model_name = new_model_name
+        if isinstance(new_model, ModelConfig):
+            self._config = new_model
+        else:
+            self._config = get_model_config(new_model)
 
     async def extract_model(self, code_context: str) -> Optional[ArchitectureModel]:
         """Send code to Ollama, parse YAML response into ArchitectureModel.
@@ -159,7 +173,7 @@ class Surrogate:
 
         url = f"{self._host}/api/chat"
         payload = {
-            "model": self._model_name,
+            "model": self._config.ollama_tag,
             "messages": messages,
             "stream": False,
         }

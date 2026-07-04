@@ -63,7 +63,7 @@ class TestSurrogateInit:
     def test_surrogate_init(self):
         """Default model name and host are set correctly."""
         s = Surrogate()
-        assert s.model_name == "codellama:13b"
+        assert s.model_name == "qwen2.5:7b"
         assert s._host == "http://localhost:11434"
 
     def test_surrogate_init_custom(self):
@@ -82,7 +82,7 @@ class TestSwapModel:
     def test_swap_model(self):
         """swap_model updates model_name."""
         s = Surrogate()
-        assert s.model_name == "codellama:13b"
+        assert s.model_name == "qwen2.5:7b"
         s.swap_model("llama2:7b")
         assert s.model_name == "llama2:7b"
 

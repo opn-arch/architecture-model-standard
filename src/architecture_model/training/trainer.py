@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
+from architecture_model.training.model_config import ModelConfig, get_model_config
 
 if TYPE_CHECKING:
     from architecture_model.training.dataset import DatasetStore
@@ -63,13 +65,44 @@ class LoRATrainer:
 
     def __init__(
         self,
-        base_model: str = "codellama/CodeLlama-13b-hf",
+        base_model: str = "Qwen/Qwen2.5-7B-Instruct",
         lora_r: int = 16,
         lora_alpha: int = 32,
+        *,
+        model_config: Optional[ModelConfig] = None,
     ) -> None:
-        self.base_model = base_model
-        self.lora_r = lora_r
-        self.lora_alpha = lora_alpha
+        if model_config is not None:
+            self.base_model = model_config.hf_model_id
+            self.lora_r = model_config.lora_r
+            self.lora_alpha = model_config.lora_alpha
+            self._config: Optional[ModelConfig] = model_config
+        else:
+            self.base_model = base_model
+            self.lora_r = lora_r
+            self.lora_alpha = lora_alpha
+            self._config = None
+        self._needs_retrain = False
+
+    @property
+    def needs_retrain(self) -> bool:
+        """Whether the model has changed and requires retraining."""
+        return self._needs_retrain
+
+    @property
+    def lora_target_modules(self) -> list[str]:
+        """Return LoRA target modules from config, or default fallback."""
+        if self._config is not None:
+            return self._config.lora_target_modules
+        return ["q_proj", "v_proj"]
+
+    def update_model(self, new_config: ModelConfig) -> None:
+        """Update trainer to use a new model config, flagging retrain if needed."""
+        if new_config.hf_model_id != self.base_model:
+            self._needs_retrain = True
+        self.base_model = new_config.hf_model_id
+        self.lora_r = new_config.lora_r
+        self.lora_alpha = new_config.lora_alpha
+        self._config = new_config
 
     def prepare_dataset(self, store: "DatasetStore") -> "Dataset":
         """Convert store examples to a HuggingFace Dataset.
@@ -119,7 +152,7 @@ class LoRATrainer:
         lora_config = LoraConfig(
             r=self.lora_r,
             lora_alpha=self.lora_alpha,
-            target_modules=["q_proj", "v_proj"],
+            target_modules=self.lora_target_modules,
             task_type="CAUSAL_LM",
         )
         model = get_peft_model(model, lora_config)

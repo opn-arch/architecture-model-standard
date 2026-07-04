@@ -143,3 +143,77 @@ class TestResolveConfig:
         cfg = resolve_config(default="qwen2.5:7b")
         assert cfg.ollama_tag == "custom:latest"
         assert cfg.hf_model_id == ""
+
+
+# ---------------------------------------------------------------------------
+# Surrogate + ModelConfig Integration Tests
+# ---------------------------------------------------------------------------
+
+
+class TestSurrogateModelConfig:
+    def test_surrogate_accepts_model_config(self):
+        from architecture_model.training.surrogate import Surrogate
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        cfg = MODEL_REGISTRY["llama3.1:8b"]
+        s = Surrogate(model_config=cfg)
+        assert s.model_name == "llama3.1:8b"
+        assert s.model_config.hf_model_id == "meta-llama/Llama-3.1-8B-Instruct"
+
+    def test_surrogate_swap_model_updates_config(self):
+        from architecture_model.training.surrogate import Surrogate
+        s = Surrogate(model_name="qwen2.5:7b")
+        assert s.model_config.ollama_tag == "qwen2.5:7b"
+        s.swap_model("llama3.1:8b")
+        assert s.model_config.ollama_tag == "llama3.1:8b"
+        assert s.model_config.hf_model_id == "meta-llama/Llama-3.1-8B-Instruct"
+
+    def test_surrogate_backward_compat_model_name_string(self):
+        from architecture_model.training.surrogate import Surrogate
+        s = Surrogate(model_name="qwen2.5:7b")
+        assert s.model_name == "qwen2.5:7b"
+
+    def test_surrogate_swap_with_model_config_object(self):
+        from architecture_model.training.surrogate import Surrogate
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        s = Surrogate(model_name="qwen2.5:7b")
+        s.swap_model(MODEL_REGISTRY["gemma2:9b"])
+        assert s.model_name == "gemma2:9b"
+
+
+# ---------------------------------------------------------------------------
+# LoRATrainer + ModelConfig Integration Tests
+# ---------------------------------------------------------------------------
+
+
+class TestTrainerModelConfig:
+    def test_trainer_from_model_config(self):
+        from architecture_model.training.trainer import LoRATrainer
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        cfg = MODEL_REGISTRY["llama3.1:8b"]
+        t = LoRATrainer(model_config=cfg)
+        assert t.base_model == "meta-llama/Llama-3.1-8B-Instruct"
+        assert "k_proj" in t.lora_target_modules
+
+    def test_trainer_detects_model_change(self):
+        from architecture_model.training.trainer import LoRATrainer
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        cfg = MODEL_REGISTRY["qwen2.5:7b"]
+        t = LoRATrainer(model_config=cfg)
+        assert not t.needs_retrain
+        t.update_model(MODEL_REGISTRY["llama3.1:8b"])
+        assert t.needs_retrain
+
+    def test_trainer_backward_compat(self):
+        from architecture_model.training.trainer import LoRATrainer
+        t = LoRATrainer(base_model="some/Model-hf", lora_r=8, lora_alpha=16)
+        assert t.base_model == "some/Model-hf"
+        assert t.lora_r == 8
+        assert t.lora_target_modules == ["q_proj", "v_proj"]
+
+    def test_trainer_same_model_no_retrain(self):
+        from architecture_model.training.trainer import LoRATrainer
+        from architecture_model.training.model_config import MODEL_REGISTRY
+        cfg = MODEL_REGISTRY["qwen2.5:7b"]
+        t = LoRATrainer(model_config=cfg)
+        t.update_model(MODEL_REGISTRY["qwen2.5:7b"])
+        assert not t.needs_retrain
