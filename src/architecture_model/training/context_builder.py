@@ -90,7 +90,7 @@ _MIN_SLICE_CHARS = 100
 class ContextBuilder:
     """Builds architecturally-rich code context from a repository."""
 
-    def __init__(self, repo_path: Path, max_chars: int = 15000) -> None:
+    def __init__(self, repo_path: Path, max_chars: int = 24000) -> None:
         self.repo_path = Path(repo_path)
         self._max_chars = max_chars
         self._per_slice = max_chars // 5  # Budget per slice
@@ -354,15 +354,71 @@ class ContextBuilder:
     # -----------------------------------------------------------------------
 
     def _iter_py_files(self, max_files: int = 100) -> list[Path]:
-        """Iterate Python files in repo, prioritizing shallow files."""
-        files = []
-        for py in sorted(self.repo_path.rglob("*.py")):
+        """Iterate Python files in repo, prioritizing architecturally significant files."""
+        all_files = []
+        for py in self.repo_path.rglob("*.py"):
             if "__pycache__" in str(py):
                 continue
-            files.append(py)
-            if len(files) >= max_files:
-                break
-        return files
+            all_files.append(py)
+        ranked = self._rank_files(all_files)
+        return ranked[:max_files]
+
+    def _rank_files(self, files: list[Path]) -> list[Path]:
+        """Score and rank files by architectural significance.
+
+        Scoring:
+        - Name matches common arch patterns: +3
+        - Depth 0 (root of repo): +3
+        - Depth 1: +2
+        - Depth 2: +1
+        - File size > 5KB: +2, else > 1KB: +1
+        - Has __init__.py sibling (proper package): +1
+
+        Ties broken alphabetically for determinism.
+        """
+        _SIGNIFICANT_NAMES = {
+            "core", "main", "app", "base", "models", "config",
+            "api", "client", "server", "engine",
+        }
+
+        scored: list[tuple[int, str, Path]] = []
+        for f in files:
+            score = 0
+            rel = f.relative_to(self.repo_path)
+            depth = len(rel.parts) - 1  # parts includes the filename
+
+            # Name significance
+            stem = f.stem.lower()
+            if stem in _SIGNIFICANT_NAMES:
+                score += 3
+
+            # Depth bonus
+            if depth == 0:
+                score += 3
+            elif depth == 1:
+                score += 2
+            elif depth == 2:
+                score += 1
+
+            # File size
+            try:
+                size = f.stat().st_size
+                if size > 5120:
+                    score += 2
+                elif size > 1024:
+                    score += 1
+            except OSError:
+                pass
+
+            # Proper package (has __init__.py sibling)
+            if (f.parent / "__init__.py").exists() and f.name != "__init__.py":
+                score += 1
+
+            # Use negative score for descending sort, then alphabetical path for ties
+            scored.append((-score, str(rel), f))
+
+        scored.sort()
+        return [item[2] for item in scored]
 
     def _find_files_matching(self, patterns: list[str], extensions: list[str]) -> list[Path]:
         """Find files whose path contains any of the patterns."""

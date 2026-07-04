@@ -126,3 +126,28 @@ class TestContextBuilder:
         total = len(slices.combined())
         # Allow some overflow for headers but should be reasonable
         assert total < 2000  # 4x max_chars as upper bound
+
+    def test_large_repo_prioritizes_significant_files(self, tmp_path):
+        """Context builder should prioritize architecturally significant files in large repos."""
+        # Create architecturally significant files at root
+        (tmp_path / "__init__.py").write_text("from .core import *\nfrom .client import *")
+        (tmp_path / "core.py").write_text("class CoreEngine:\n    def run(self): pass\n    def stop(self): pass\n    def process(self): pass\n" * 5)
+        (tmp_path / "base.py").write_text("class BaseHandler:\n    def handle(self): pass\n" * 5)
+        (tmp_path / "client.py").write_text("class HTTPClient:\n    def get(self): pass\n    def post(self): pass\n" * 3)
+
+        # Create 150 filler files in a directory that sorts BEFORE the important files
+        # alphabetically ("aaa_plugins" < "base", "client", "core")
+        sub = tmp_path / "aaa_plugins" / "contrib"
+        sub.mkdir(parents=True)
+        (sub / "__init__.py").write_text("")
+        for i in range(150):
+            (sub / f"plugin_{i:03d}.py").write_text(f"# plugin {i}\nclass P{i}: pass\n")
+
+        cb = ContextBuilder(tmp_path)
+        files = cb._iter_py_files(max_files=50)
+
+        # Core files should be in the top 50 despite 150+ total files
+        file_names = [f.name for f in files]
+        assert "core.py" in file_names
+        assert "base.py" in file_names
+        assert "client.py" in file_names
