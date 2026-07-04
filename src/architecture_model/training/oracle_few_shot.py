@@ -13,6 +13,13 @@ class FewShotRetriever:
     """Retrieves similar high-quality past extractions as few-shot examples."""
 
     def __init__(self, performance_store: Any) -> None:
+        """Initialize with a store providing get_high_scoring().
+
+        The store is expected to return dicts with at minimum:
+        - repo_url, coverage_score, validator_score (from OraclePerformanceStore)
+        - modules, code_context, oracle_output (extended in pipeline wiring)
+        Fields accessed via .get() with defaults for forward-compatibility.
+        """
         self._store = performance_store
 
     def retrieve(self, manifest: dict, k: int = 3) -> list[dict]:

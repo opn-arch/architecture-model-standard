@@ -6,14 +6,14 @@ from architecture_model.training.oracle_few_shot import FewShotRetriever
 
 
 class TestFewShotRetriever:
-    def test_retrieve_returns_empty_when_no_examples(self, tmp_path):
+    def test_retrieve_returns_empty_when_no_examples(self):
         store = MagicMock()
         store.get_high_scoring = MagicMock(return_value=[])
         retriever = FewShotRetriever(store)
         examples = retriever.retrieve(manifest={}, k=3)
         assert examples == []
 
-    def test_retrieve_returns_k_examples(self, tmp_path):
+    def test_retrieve_returns_k_examples(self):
         store = MagicMock()
         store.get_high_scoring = MagicMock(return_value=[
             {"repo_url": "a", "code_context": "# a", "oracle_output": "model: a",
@@ -25,7 +25,9 @@ class TestFewShotRetriever:
         ])
         retriever = FewShotRetriever(store)
         examples = retriever.retrieve(manifest={"modules": [{}] * 5}, k=2)
-        assert len(examples) <= 2
+        assert len(examples) == 2
+        # Most similar to 5-module project should rank first (modules=5 exact match)
+        assert examples[0]["modules"] == 5
 
     def test_format_few_shot_section(self):
         store = MagicMock()
