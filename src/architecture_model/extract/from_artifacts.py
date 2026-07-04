@@ -116,10 +116,11 @@ def extract_from_artifacts(
     # Determine source artifacts used
     source_artifacts = [name for name, text in texts.items() if text]
 
+    project_name = project or _guess_project(texts)
     meta = ModelMeta(
         schema_version="0.1.0",
-        project=project or _guess_project(texts),
-        system=system or "logs-db",
+        project=project_name,
+        system=system or project_name,
         generated_at=datetime.now(timezone.utc).isoformat(),
         source_artifacts=source_artifacts,
     )

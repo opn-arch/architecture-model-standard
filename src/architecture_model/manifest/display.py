@@ -17,11 +17,25 @@ def print_summary(manifest: dict[str, Any]) -> None:
     print(f"  Root:      {manifest['project_root']}")
     print()
     print("  METRICS:")
-    print(f"    Routers:      {metrics['router_count']}")
-    print(f"    Models:       {metrics['model_count']}")
-    print(f"    Migrations:   {metrics['migration_count']}")
-    print(f"    Templates:    {metrics['template_count']}")
-    print(f"    Python files: {metrics['total_python_files']}")
+    # Show all available metrics dynamically
+    known_labels = ["router", "model", "migration", "template"]
+    shown = False
+    for label in known_labels:
+        key = f"{label}_count"
+        if key in metrics:
+            print(f"    {label.title() + 's:':<14}{metrics[key]}")
+            shown = True
+    # Show any additional metrics not in known list
+    for key, val in metrics.items():
+        if key == "total_python_files":
+            continue
+        if key.endswith("_count") and key.replace("_count", "") not in known_labels:
+            label = key.replace("_count", "").replace("_", " ").title()
+            print(f"    {label + ':':<14}{val}")
+            shown = True
+    if not shown:
+        print(f"    (no standard metrics detected)")
+    print(f"    Python files: {metrics.get('total_python_files', 'N/A')}")
     print()
     print("  FUNCTIONAL BLOCKS:")
     for block_id, block in blocks.items():

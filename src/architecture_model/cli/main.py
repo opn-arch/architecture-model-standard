@@ -28,7 +28,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # --- extract ---
     p_extract = subparsers.add_parser("extract", help="Extract model from Tier 1 artifacts")
-    p_extract.add_argument("artifact_dir", help="Path to stage2 artifact directory")
+    p_extract.add_argument("artifact_dir", nargs="?", help="Path to stage2 artifact directory")
+    p_extract.add_argument(
+        "--from-code", metavar="PATH",
+        help="Extract model directly from source code (bypasses stage2 artifacts)",
+    )
     p_extract.add_argument("-o", "--output", help="Output YAML path")
     p_extract.add_argument("--project", default="", help="Project name override")
     p_extract.add_argument("--system", default="", help="System identifier override")
@@ -70,11 +74,25 @@ def main(argv: list[str] | None = None) -> int:
     p_stats = subparsers.add_parser("stats", help="Show model statistics")
     p_stats.add_argument("model", help="Path to architecture-model.yaml")
 
+    # --- init ---
+    p_init = subparsers.add_parser(
+        "init", help="Auto-generate .architecture-model.yaml for a project"
+    )
+    p_init.add_argument(
+        "path", nargs="?", default=".", help="Project root directory (default: cwd)"
+    )
+    p_init.add_argument("--force", action="store_true", help="Overwrite existing config file")
+
     # --- impact ---
     p_impact = subparsers.add_parser("impact", help="Impact analysis for an entity")
     p_impact.add_argument("model", help="Path to architecture-model.yaml")
     p_impact.add_argument("entity_id", help="Entity ID to analyze")
     p_impact.add_argument("--depth", type=int, default=2, help="Traversal depth")
+
+    # --- manifest ---
+    p_manifest = subparsers.add_parser("manifest", help="Generate reality-manifest.json from source code")
+    p_manifest.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
+    p_manifest.add_argument("-o", "--output", help="Output JSON path")
 
     args = parser.parse_args(argv)
 
@@ -84,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Dispatch
     handlers = {
+        "init": _cmd_init,
         "extract": _cmd_extract,
         "validate": _cmd_validate,
         "slice": _cmd_slice,
@@ -92,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
         "context": _cmd_context,
         "stats": _cmd_stats,
         "impact": _cmd_impact,
+        "manifest": _cmd_manifest,
     }
     return handlers[args.command](args)
 
@@ -101,16 +121,63 @@ def main(argv: list[str] | None = None) -> int:
 # ---------------------------------------------------------------------------
 
 
+def _cmd_init(args) -> int:
+    from ..config.loader import discover_config, write_config, CONFIG_FILENAME
+
+    root = Path(args.path).resolve()
+    if not root.is_dir():
+        print(f"ERROR: {root} is not a directory")
+        return 1
+
+    config_path = root / CONFIG_FILENAME
+    if config_path.exists() and not args.force:
+        print(f"Config already exists: {config_path}")
+        print("Use --force to overwrite.")
+        return 1
+
+    print(f"Scanning: {root}")
+    config = discover_config(root)
+
+    # Summary
+    print(f"\nProject: {config.name}")
+    print(f"System:  {config.system}")
+    print(f"Layers:  {len(config.layers)}")
+    for layer in config.layers:
+        print(f"  - {layer.id}: {layer.dirs}")
+    print(f"Functional Blocks: {len(config.functional_blocks)}")
+    for fb in config.functional_blocks:
+        print(f"  - [{fb.id}] {fb.name} ({len(fb.files)} files)")
+        if fb.description_source:
+            print(f"    {fb.description_source}")
+    print(f"Metrics: {len(config.metrics)}")
+    for m in config.metrics:
+        print(f"  - {m.label}: {m.path} ({m.pattern})")
+
+    # Write
+    out_path = write_config(config, root)
+    print(f"\nWritten: {out_path}")
+    return 0
+
+
 def _cmd_extract(args) -> int:
     from ..extract.from_artifacts import extract_from_artifacts
+    from ..extract.from_code import extract_from_code
     from ..core.parser import save_model
     from ..core.merger import merge_manifest
 
-    artifact_dir = Path(args.artifact_dir)
-    output = Path(args.output) if args.output else artifact_dir.parent / "architecture-model.yaml"
-
-    print(f"Extracting architecture model from: {artifact_dir}")
-    model = extract_from_artifacts(artifact_dir, project=args.project, system=args.system)
+    if args.from_code:
+        code_path = Path(args.from_code)
+        output = Path(args.output) if args.output else code_path / "architecture-model.yaml"
+        print(f"Extracting architecture model from code: {code_path}")
+        model = extract_from_code(code_path)
+    elif args.artifact_dir:
+        artifact_dir = Path(args.artifact_dir)
+        output = Path(args.output) if args.output else artifact_dir.parent / "architecture-model.yaml"
+        print(f"Extracting architecture model from: {artifact_dir}")
+        model = extract_from_artifacts(artifact_dir, project=args.project, system=args.system)
+    else:
+        print("ERROR: Provide either <artifact_dir> or --from-code PATH")
+        return 1
 
     if args.manifest:
         manifest_path = Path(args.manifest)
@@ -295,6 +362,44 @@ def _cmd_impact(args) -> int:
 
     model = load_model(args.model)
     print(impact_analysis(model, args.entity_id, depth=args.depth))
+    return 0
+
+
+def _cmd_manifest(args) -> int:
+    from ..manifest import generate_manifest
+    from ..config.loader import get_config
+    import json
+
+    root = Path(args.path).resolve()
+    if not root.is_dir():
+        print(f"ERROR: {root} is not a directory")
+        return 1
+
+    print(f"Scanning: {root}")
+    manifest = generate_manifest(root)
+
+    # Determine output path
+    if args.output:
+        out_path = Path(args.output)
+    else:
+        config = get_config(root)
+        resolved = config.resolved_output()
+        out_path = resolved.manifest
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
+
+    # Print summary
+    modules = manifest.get("modules", [])
+    interfaces = manifest.get("interfaces", [])
+    blocks = manifest.get("functional_blocks", {})
+    metrics = manifest.get("metrics", {})
+
+    print(f"\n  Modules: {len(modules)}")
+    print(f"  Interfaces: {len(interfaces)}")
+    print(f"  F-blocks: {len(blocks)}")
+    print(f"  Metrics: {metrics}")
+    print(f"\nSaved: {out_path}")
     return 0
 
 
