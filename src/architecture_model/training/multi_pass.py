@@ -647,6 +647,65 @@ class MultiPassExtractor:
                         })
                         existing_set.add(key)
 
+        # 'realizes': behavior → capability
+        # A behavior realizes a capability if their keywords overlap (≥2 words)
+        behaviors = [b for b in entities.get("behaviors", []) if isinstance(b, dict)]
+        for cap in capabilities:
+            cap_kws = _keywords(cap)
+            cap_id = cap.get("id", "")
+            if not cap_id or len(cap_kws) < 2:
+                continue
+
+            for beh in behaviors:
+                beh_id = beh.get("id", "")
+                if not beh_id:
+                    continue
+                beh_kws = _keywords(beh)
+                overlap = len(cap_kws & beh_kws)
+                if overlap >= 2:
+                    key = ("realizes", beh_id, cap_id)
+                    if key not in existing_set:
+                        existing_rels.append({
+                            "type": "realizes",
+                            "from": beh_id,
+                            "to": cap_id,
+                        })
+                        existing_set.add(key)
+
+        # 'allocated-to': behavior → component (for orphan behaviors only)
+        # If a behavior has NO relationships at all, allocate it to the best-matching component
+        for beh in behaviors:
+            beh_id = beh.get("id", "")
+            if not beh_id:
+                continue
+
+            # Check if behavior already participates in any relationship
+            has_rel = any(
+                beh_id == t[1] or beh_id == t[2] for t in existing_set
+            )
+            if has_rel:
+                continue
+
+            # Find best-matching component by keyword overlap (≥1)
+            beh_kws = _keywords(beh)
+            best_comp = None
+            best_score = 0
+            for comp, kws in comp_kws:
+                overlap = len(beh_kws & kws)
+                if overlap > best_score:
+                    best_score = overlap
+                    best_comp = comp
+
+            if best_comp and best_score >= 1:
+                key = ("allocated-to", beh_id, best_comp["id"])
+                if key not in existing_set:
+                    existing_rels.append({
+                        "type": "allocated-to",
+                        "from": beh_id,
+                        "to": best_comp["id"],
+                    })
+                    existing_set.add(key)
+
     @staticmethod
     def _normalize_merged(merged: dict[str, Any]) -> None:
         """Normalize LLM output to match expected enum values.

@@ -127,3 +127,111 @@ class TestMultiPassExtractor:
         mpe = MultiPassExtractor(mock_client, context, project_name="test")
         await mpe.extract()
         assert mock_client._chat.call_count == 5
+
+
+class TestSemanticRelationships:
+    """Tests for _add_semantic_relationships behavior→capability and behavior→component links."""
+
+    def test_behavior_realizes_capability_on_keyword_overlap(self):
+        """Behavior with ≥2 keyword overlap to a capability gets realizes relationship."""
+        merged = {
+            "entities": {
+                "components": [
+                    {"id": "C01", "name": "auth service", "description": "handles authentication"},
+                ],
+                "capabilities": [
+                    {"id": "CAP01", "name": "user authentication", "description": "login and token management"},
+                ],
+                "behaviors": [
+                    {"id": "B01", "name": "user login", "description": "authentication flow for users"},
+                ],
+                "interfaces": [],
+                "constraints": [],
+            }
+        }
+        existing_rels: list[dict] = []
+        existing_set: set[tuple[str, str, str]] = set()
+
+        MultiPassExtractor._add_semantic_relationships(merged, existing_rels, existing_set)
+
+        # Should have behavior→capability realizes relationship
+        beh_realizes = [
+            r for r in existing_rels
+            if r["type"] == "realizes" and r["from"] == "B01" and r["to"] == "CAP01"
+        ]
+        assert len(beh_realizes) == 1, (
+            f"Expected behavior B01 to realize CAP01, got rels: {existing_rels}"
+        )
+
+    def test_orphan_behavior_gets_allocated_to_component(self):
+        """Behavior with no relationships gets allocated-to its best-matching component."""
+        merged = {
+            "entities": {
+                "components": [
+                    {"id": "C01", "name": "email service", "description": "sends notifications"},
+                    {"id": "C02", "name": "database layer", "description": "data persistence"},
+                ],
+                "capabilities": [
+                    {"id": "CAP01", "name": "data storage", "description": "persist records"},
+                ],
+                "behaviors": [
+                    # This behavior has only 1 keyword overlap with CAP01 ("data")
+                    # so it won't get a realizes to CAP01 (needs ≥2)
+                    # but it shares "email" with C01, so should get allocated-to C01
+                    {"id": "B01", "name": "send email", "description": "email notification dispatch"},
+                ],
+                "interfaces": [],
+                "constraints": [],
+            }
+        }
+        existing_rels: list[dict] = []
+        existing_set: set[tuple[str, str, str]] = set()
+
+        MultiPassExtractor._add_semantic_relationships(merged, existing_rels, existing_set)
+
+        # B01 should get allocated-to C01 (keyword "email" overlap)
+        alloc_rels = [
+            r for r in existing_rels
+            if r["type"] == "allocated-to" and r["from"] == "B01" and r["to"] == "C01"
+        ]
+        assert len(alloc_rels) == 1, (
+            f"Expected B01 allocated-to C01, got rels: {existing_rels}"
+        )
+
+    def test_behavior_with_existing_relationship_not_allocated(self):
+        """Behavior that already has a relationship should NOT get allocated-to."""
+        merged = {
+            "entities": {
+                "components": [
+                    {"id": "C01", "name": "payment service", "description": "handles payments"},
+                ],
+                "capabilities": [
+                    {"id": "CAP01", "name": "payment processing", "description": "process payment transactions"},
+                ],
+                "behaviors": [
+                    {"id": "B01", "name": "process payment", "description": "payment transaction flow"},
+                ],
+                "interfaces": [],
+                "constraints": [],
+            }
+        }
+        existing_rels: list[dict] = []
+        existing_set: set[tuple[str, str, str]] = set()
+
+        MultiPassExtractor._add_semantic_relationships(merged, existing_rels, existing_set)
+
+        # B01 should realize CAP01 (≥2 overlap: "payment", "process")
+        beh_realizes = [
+            r for r in existing_rels
+            if r["type"] == "realizes" and r["from"] == "B01" and r["to"] == "CAP01"
+        ]
+        assert len(beh_realizes) == 1
+
+        # B01 should NOT get allocated-to since it already has a relationship
+        alloc_rels = [
+            r for r in existing_rels
+            if r["type"] == "allocated-to" and r["from"] == "B01"
+        ]
+        assert len(alloc_rels) == 0, (
+            f"B01 already has realizes, should not get allocated-to: {existing_rels}"
+        )
