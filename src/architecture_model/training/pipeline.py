@@ -186,3 +186,38 @@ class TrainingPipeline:
                     continue
 
         return "\n\n".join(code_parts) if code_parts else ""
+
+    async def enhanced_extract(self, repo_path: Path) -> tuple:
+        """Enhanced extraction: context_builder → multi_pass → refiner.
+
+        Uses AST-guided context selection, 5-pass hierarchical extraction,
+        and iterative validator-feedback refinement for higher quality results.
+
+        Args:
+            repo_path: Path to the cloned repository source code.
+
+        Returns:
+            Tuple of (ArchitectureModel | None, confidence: float).
+        """
+        from .context_builder import ContextBuilder
+        from .multi_pass import MultiPassExtractor
+        from .refiner import ModelRefiner
+
+        # Build smart context
+        cb = ContextBuilder(repo_path)
+        slices = cb.build()
+
+        # Multi-pass extraction
+        extractor = MultiPassExtractor(
+            self.surrogate, slices, project_name=repo_path.name
+        )
+        model = await extractor.extract()
+        if model is None:
+            return None, 0.0
+
+        # Refine with validator feedback
+        refiner = ModelRefiner(self.surrogate, max_rounds=2)
+        model = await refiner.refine(model, slices.combined())
+
+        confidence = self.surrogate.confidence(model)
+        return model, confidence

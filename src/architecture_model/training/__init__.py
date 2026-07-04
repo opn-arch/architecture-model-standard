@@ -10,9 +10,14 @@ from architecture_model.training.oracle import Oracle, BudgetTracker
 from architecture_model.training.controller import MPCController, MPCState
 from architecture_model.training.trainer import LoRATrainer
 from architecture_model.training.repo_fetcher import RepoFetcher, RepoInfo
+from architecture_model.training.context_builder import ContextBuilder, ContextSlices
+from architecture_model.training.multi_pass import MultiPassExtractor, PassResult
+from architecture_model.training.refiner import ModelRefiner
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
     "Evaluator", "LossVector", "Surrogate", "Oracle", "BudgetTracker",
     "MPCController", "MPCState", "LoRATrainer", "RepoFetcher", "RepoInfo",
+    "ContextBuilder", "ContextSlices", "MultiPassExtractor", "PassResult",
+    "ModelRefiner",
 ]
