@@ -19,6 +19,10 @@ from architecture_model.training.model_config import (
     resolve_training_targets,
 )
 from architecture_model.training.embeddings import OllamaEmbedder, cosine_similarity
+from architecture_model.training.oracle_coverage import ManifestCoverageComputer, CoverageResult
+from architecture_model.training.oracle_performance import OraclePerformanceStore, OracleResult
+from architecture_model.training.oracle_context import OracleContextBuilder
+from architecture_model.training.oracle_few_shot import FewShotRetriever
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -30,4 +34,8 @@ __all__ = [
     "ModelConfig", "MODEL_REGISTRY", "get_model_config", "resolve_config",
     "resolve_training_targets",
     "OllamaEmbedder", "cosine_similarity",
+    "ManifestCoverageComputer", "CoverageResult",
+    "OraclePerformanceStore", "OracleResult",
+    "OracleContextBuilder",
+    "FewShotRetriever",
 ]

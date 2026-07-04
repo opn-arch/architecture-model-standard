@@ -21,7 +21,7 @@ class TestOracleContextBuilder:
 
         builder = OracleContextBuilder(tmp_path)
         context = builder.build()
-        assert "Source Code Context" in context or "main" in context
+        assert "## Source Code Context" in context
 
     def test_manifest_summary_shows_key_modules(self, tmp_path):
         (tmp_path / "__init__.py").write_text("")
@@ -31,6 +31,8 @@ class TestOracleContextBuilder:
         builder = OracleContextBuilder(tmp_path)
         context = builder.build()
         assert "big_module" in context
+        # Larger module should appear before smaller in the summary
+        assert context.index("big_module") < context.index("tiny")
 
     def test_max_chars_respected(self, tmp_path):
         (tmp_path / "__init__.py").write_text("")
@@ -38,4 +40,4 @@ class TestOracleContextBuilder:
 
         builder = OracleContextBuilder(tmp_path, max_chars=5000)
         context = builder.build()
-        assert len(context) <= 6000  # some tolerance for headers
+        assert len(context) <= 5000  # hard truncation at max_chars

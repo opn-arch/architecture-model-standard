@@ -33,11 +33,14 @@ class OracleContextBuilder:
 
         parts: list[str] = []
 
-        # Part 1: Manifest summary
+        # Part 1: Manifest summary (capped at 20% of budget)
         summary = self._format_manifest_summary(manifest)
+        summary_budget = int(self._max_chars * 0.2)
+        if len(summary) > summary_budget:
+            summary = summary[:summary_budget] + "\n# ... (truncated)"
         parts.append(summary)
 
-        # Part 2: Code context from ContextBuilder
+        # Part 2: Code context from ContextBuilder (fills remainder)
         remaining = self._max_chars - len(summary) - 200  # header overhead
         cb = ContextBuilder(self._repo_path, max_chars=max(remaining, 5000))
         slices = cb.build()
