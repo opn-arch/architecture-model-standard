@@ -692,13 +692,23 @@ class MultiPassExtractor:
 
         entities = merged.get("entities", {})
 
-        # Normalize status fields (always uppercase)
+        # Normalize status fields (must be valid enum: ACTIVE, PLANNED, DORMANT, DEPRECATED)
+        _VALID_STATUSES = {"ACTIVE", "PLANNED", "DORMANT", "DEPRECATED"}
+        _STATUS_MAP = {
+            "INACTIVE": "DORMANT", "DISABLED": "DORMANT", "ARCHIVED": "DEPRECATED",
+            "RETIRED": "DEPRECATED", "DRAFT": "PLANNED", "TODO": "PLANNED",
+            "WIP": "PLANNED", "EXPERIMENTAL": "PLANNED",
+        }
         for etype in entities.values():
             if isinstance(etype, list):
                 for entity in etype:
                     if isinstance(entity, dict):
                         if "status" in entity:
-                            entity["status"] = entity["status"].upper()
+                            raw_status = str(entity["status"]).upper()
+                            if raw_status in _VALID_STATUSES:
+                                entity["status"] = raw_status
+                            else:
+                                entity["status"] = _STATUS_MAP.get(raw_status, "ACTIVE")
 
         # Normalize interface types
         for iface in entities.get("interfaces", []):
