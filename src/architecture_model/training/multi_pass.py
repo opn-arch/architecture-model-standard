@@ -376,6 +376,9 @@ class MultiPassExtractor:
         # Normalize LLM output before parsing
         self._normalize_merged(merged)
 
+        # Add deterministic relationships from code analysis
+        self._add_deterministic_relationships(merged)
+
         # Parse into ArchitectureModel using existing parser
         try:
             return _parse_raw(merged)
@@ -386,6 +389,263 @@ class MultiPassExtractor:
                 entities=Entities(),
                 relationships=[],
             )
+
+    def _add_deterministic_relationships(self, merged: dict[str, Any]) -> None:
+        """Add mechanically derivable relationships from code structure.
+
+        Generates:
+        1. 'contains' — layer contains component (from component.layer field)
+        2. 'depends-on' — component depends on component (from import graph)
+
+        These don't need LLM reasoning and fill the gap between LLM-generated
+        semantic relationships and the complete picture.
+        """
+        entities = merged.get("entities", {})
+        existing_rels = merged.setdefault("relationships", [])
+
+        # Track existing relationships to avoid duplicates
+        existing_set: set[tuple[str, str, str]] = set()
+        for rel in existing_rels:
+            if isinstance(rel, dict):
+                existing_set.add((
+                    rel.get("type", ""),
+                    rel.get("from", ""),
+                    rel.get("to", ""),
+                ))
+
+        # 1. Generate 'contains' relationships: layer → component
+        layer_ids = {l["id"] for l in entities.get("layers", []) if isinstance(l, dict)}
+        for comp in entities.get("components", []):
+            if not isinstance(comp, dict):
+                continue
+            layer_ref = comp.get("layer", "")
+            comp_id = comp.get("id", "")
+            if layer_ref and comp_id and layer_ref in layer_ids:
+                key = ("contains", layer_ref, comp_id)
+                if key not in existing_set:
+                    existing_rels.append({
+                        "type": "contains",
+                        "from": layer_ref,
+                        "to": comp_id,
+                    })
+                    existing_set.add(key)
+
+        # 2. Generate 'depends-on' relationships from import graph
+        import_map = self._context.import_map
+        if not import_map:
+            self._add_semantic_relationships(merged, existing_rels, existing_set)
+            return
+
+        # Build a mapping: module_name → component_id
+        # Match component names to file stems (e.g. component "client" → "_client.py")
+        comp_name_to_id: dict[str, str] = {}
+        for comp in entities.get("components", []):
+            if not isinstance(comp, dict):
+                continue
+            comp_id = comp.get("id", "")
+            comp_name = comp.get("name", "").lower()
+            if comp_id and comp_name:
+                comp_name_to_id[comp_name] = comp_id
+                # Also index by words for multi-word names (e.g. "http client" → "client")
+                for word in comp_name.split():
+                    if word not in comp_name_to_id:
+                        comp_name_to_id[word] = comp_id
+
+        # Build mapping: file_path → component_id (multi-strategy matching)
+        file_to_comp: dict[str, str] = {}
+        for file_path in import_map:
+            # Strategy 1: Match last path segment (file stem)
+            stem = file_path.replace("/", ".").rstrip(".py")
+            clean_stem = stem.lstrip("_").split(".")[-1]  # Take last part
+            # Remove trailing underscores and common suffixes
+            clean_stem = clean_stem.rstrip("_")
+
+            if clean_stem in comp_name_to_id:
+                file_to_comp[file_path] = comp_name_to_id[clean_stem]
+                continue
+
+            # Strategy 2: Match parent directory (e.g. _transports/asgi.py → transport)
+            parts = file_path.split("/")
+            if len(parts) > 1:
+                parent = parts[-2].lstrip("_").rstrip("s")  # "transports" → "transport"
+                if parent in comp_name_to_id:
+                    file_to_comp[file_path] = comp_name_to_id[parent]
+                    continue
+                # Also try plural parent
+                parent_full = parts[-2].lstrip("_")
+                if parent_full in comp_name_to_id:
+                    file_to_comp[file_path] = comp_name_to_id[parent_full]
+                    continue
+
+            # Strategy 3: Partial/prefix matching
+            for comp_name, comp_id in comp_name_to_id.items():
+                if (clean_stem.startswith(comp_name) or
+                        comp_name.startswith(clean_stem)):
+                    file_to_comp[file_path] = comp_id
+                    break
+            else:
+                # Strategy 4: Underscore-separated parts match
+                # e.g. "status_codes" → match "status" component
+                for part in clean_stem.split("_"):
+                    if part in comp_name_to_id:
+                        file_to_comp[file_path] = comp_name_to_id[part]
+                        break
+
+        # Generate depends-on from import edges
+        for file_path, imports in import_map.items():
+            src_comp = file_to_comp.get(file_path)
+            if not src_comp:
+                continue
+
+            for imported_module in imports:
+                # Skip stdlib/external imports
+                clean_import = imported_module.lstrip("_")
+
+                # Find the target component - multi-strategy
+                tgt_comp = comp_name_to_id.get(clean_import)
+                if not tgt_comp:
+                    # Try singular form (e.g. "transports" → "transport")
+                    tgt_comp = comp_name_to_id.get(clean_import.rstrip("s"))
+                if not tgt_comp:
+                    # Try as parent dir import (e.g. importing "base" from transports)
+                    # Skip common non-component imports
+                    if clean_import in ("base", "types", "typing", "enum",
+                                        "io", "os", "re", "sys", "json"):
+                        continue
+                    tgt_comp = comp_name_to_id.get(clean_import)
+
+                if tgt_comp and tgt_comp != src_comp:
+                    key = ("depends-on", src_comp, tgt_comp)
+                    if key not in existing_set:
+                        existing_rels.append({
+                            "type": "depends-on",
+                            "from": src_comp,
+                            "to": tgt_comp,
+                        })
+                        existing_set.add(key)
+
+        # 3. Generate semantic relationships (realizes, exposes)
+        self._add_semantic_relationships(merged, existing_rels, existing_set)
+
+    @staticmethod
+    def _add_semantic_relationships(
+        merged: dict[str, Any],
+        existing_rels: list[dict[str, Any]],
+        existing_set: set[tuple[str, str, str]],
+    ) -> None:
+        """Add semantic relationships derivable from entity cross-references.
+
+        Generates:
+        - 'realizes': component → capability (name/description overlap)
+        - 'exposes': component → interface (if component handles APIs)
+        - 'constrained-by': component → constraint (broad application)
+        """
+        entities = merged.get("entities", {})
+        components = [c for c in entities.get("components", []) if isinstance(c, dict)]
+        capabilities = [c for c in entities.get("capabilities", []) if isinstance(c, dict)]
+        interfaces = [i for i in entities.get("interfaces", []) if isinstance(i, dict)]
+        constraints = [c for c in entities.get("constraints", []) if isinstance(c, dict)]
+
+        # Helper: extract keywords from name/description
+        _STOP_WORDS = {"the", "a", "an", "and", "or", "for", "of", "to", "in",
+                       "is", "it", "on", "at", "by", "with", "from", "as", "be",
+                       "this", "that", "all", "are", "was", "were", "will", "can"}
+
+        def _keywords(entity: dict[str, Any]) -> set[str]:
+            text = f"{entity.get('name', '')} {entity.get('description', '')}".lower()
+            words = set(text.replace("-", " ").replace("_", " ").split())
+            return words - _STOP_WORDS
+
+        # Build component keyword index
+        comp_kws = [(c, _keywords(c)) for c in components]
+
+        # 'realizes': component → capability
+        # A component realizes a capability if their keywords overlap significantly
+        for cap in capabilities:
+            cap_kws = _keywords(cap)
+            cap_id = cap.get("id", "")
+            if not cap_id or len(cap_kws) < 2:
+                continue
+
+            best_comp = None
+            best_score = 0
+            for comp, kws in comp_kws:
+                overlap = len(cap_kws & kws)
+                if overlap > best_score:
+                    best_score = overlap
+                    best_comp = comp
+
+            if best_comp and best_score >= 2:
+                key = ("realizes", best_comp["id"], cap_id)
+                if key not in existing_set:
+                    existing_rels.append({
+                        "type": "realizes",
+                        "from": best_comp["id"],
+                        "to": cap_id,
+                    })
+                    existing_set.add(key)
+
+        # 'exposes': component → interface
+        # Match by name similarity or if component name appears in interface description
+        for iface in interfaces:
+            iface_id = iface.get("id", "")
+            iface_kws = _keywords(iface)
+            if not iface_id:
+                continue
+
+            best_comp = None
+            best_score = 0
+            for comp, kws in comp_kws:
+                overlap = len(iface_kws & kws)
+                if overlap > best_score:
+                    best_score = overlap
+                    best_comp = comp
+
+            if best_comp and best_score >= 1:
+                key = ("exposes", best_comp["id"], iface_id)
+                if key not in existing_set:
+                    existing_rels.append({
+                        "type": "exposes",
+                        "from": best_comp["id"],
+                        "to": iface_id,
+                    })
+                    existing_set.add(key)
+
+        # 'constrained-by': apply each constraint to relevant components
+        # Constraints typically apply to multiple components
+        for con in constraints:
+            con_id = con.get("id", "")
+            con_kws = _keywords(con)
+            if not con_id:
+                continue
+
+            # Apply to components whose keywords overlap, or if no match, to all
+            applied = False
+            for comp, kws in comp_kws:
+                overlap = len(con_kws & kws)
+                if overlap >= 1:
+                    key = ("constrained-by", comp["id"], con_id)
+                    if key not in existing_set:
+                        existing_rels.append({
+                            "type": "constrained-by",
+                            "from": comp["id"],
+                            "to": con_id,
+                        })
+                        existing_set.add(key)
+                        applied = True
+
+            # If constraint is broad (e.g. "security"), apply to all components
+            if not applied and len(components) <= 20:
+                for comp in components:
+                    comp_id = comp.get("id", "")
+                    key = ("constrained-by", comp_id, con_id)
+                    if key not in existing_set:
+                        existing_rels.append({
+                            "type": "constrained-by",
+                            "from": comp_id,
+                            "to": con_id,
+                        })
+                        existing_set.add(key)
 
     @staticmethod
     def _normalize_merged(merged: dict[str, Any]) -> None:

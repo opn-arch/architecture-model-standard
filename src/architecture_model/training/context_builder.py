@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 import os
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -25,12 +25,14 @@ class ContextSlices:
     - behavior: tasks, event handlers, workflows, processing pipelines
     - relationships: import graph, dependency hotspots, cross-module calls
     - constraints: configs, decorators enforcing rules, settings
+    - import_map: raw file→imports mapping for deterministic relationship inference
     """
     structure: str
     boundaries: str
     behavior: str
     relationships: str
     constraints: str
+    import_map: dict[str, list[str]] = field(default_factory=dict)
 
     def combined(self) -> str:
         """Return all slices combined into a single context string."""
@@ -95,12 +97,17 @@ class ContextBuilder:
 
     def build(self) -> ContextSlices:
         """Scan the repo and return structured context slices."""
+        # Build relationships slice first (populates self._import_map)
+        self._import_map: dict[str, list[str]] = {}
+        rel_slice = self._build_relationships_slice()
+
         return ContextSlices(
             structure=self._build_structure_slice(),
             boundaries=self._build_boundaries_slice(),
             behavior=self._build_behavior_slice(),
-            relationships=self._build_relationships_slice(),
+            relationships=rel_slice,
             constraints=self._build_constraints_slice(),
+            import_map=self._import_map,
         )
 
     def _build_structure_slice(self) -> str:
@@ -257,6 +264,9 @@ class ContextBuilder:
             all_imports[rel] = imports
             for imp in imports:
                 import_counts[imp] += 1
+
+        # Store raw import map for deterministic relationship generation
+        self._import_map = all_imports
 
         # Most-imported modules (architectural hotspots)
         parts.append("\n# MOST-IMPORTED MODULES (dependency hotspots)")
