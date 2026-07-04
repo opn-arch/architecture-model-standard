@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from architecture_model.manifest.interfaces import _derive_interfaces
+from architecture_model.manifest.scanner import _scan_file
 from architecture_model.training.context_builder import ContextBuilder
 
 
@@ -23,13 +25,13 @@ class OracleContextBuilder:
         """Build oracle context string.
 
         Args:
-            manifest: Pre-generated manifest dict. If None, generates a lightweight one.
+            manifest: Pre-generated manifest dict. If None, generates one via AST scan.
 
         Returns:
             Combined context string for oracle extraction.
         """
         if manifest is None:
-            manifest = self._generate_lightweight_manifest()
+            manifest = self._generate_manifest()
 
         parts: list[str] = []
 
@@ -49,24 +51,65 @@ class OracleContextBuilder:
 
         return "\n".join(parts)[:self._max_chars]
 
-    def _generate_lightweight_manifest(self) -> dict:
-        """Generate a minimal manifest via AST scan (no config required)."""
-        modules: list[dict] = []
-        interfaces: list[dict] = []
+    def _generate_manifest(self) -> dict:
+        """Generate a proper manifest via AST scan (no config required).
 
-        for py_file in sorted(self._repo_path.rglob("*.py")):
+        Uses the real scanner to extract imports, functions, and docstrings
+        from each Python file, then derives interfaces from the import graph.
+        Infers functional blocks from top-level directory structure.
+        """
+        root = self._repo_path
+        modules: list[dict] = []
+
+        for py_file in sorted(root.rglob("*.py")):
             if "__pycache__" in str(py_file):
                 continue
+            if py_file.name == "__init__.py":
+                continue
             try:
-                content = py_file.read_text(encoding="utf-8", errors="ignore")
-                loc = len(content.splitlines())
-                rel = str(py_file.relative_to(self._repo_path))
-                name = py_file.stem.replace("_", " ").title()
-                modules.append({"file": rel, "name": name, "line_count": loc, "status": "active"})
-            except OSError:
+                mod_meta = _scan_file(root, py_file)
+                modules.append(mod_meta)
+            except (OSError, ValueError):
                 continue
 
-        return {"modules": modules, "interfaces": interfaces, "functional_blocks": {}}
+        # Derive interfaces from the import graph
+        interfaces = _derive_interfaces(modules, root)
+
+        # Infer functional blocks from directory structure
+        blocks = self._infer_blocks(modules)
+
+        return {
+            "modules": modules,
+            "interfaces": interfaces,
+            "functional_blocks": blocks,
+        }
+
+    def _infer_blocks(self, modules: list[dict]) -> dict:
+        """Infer functional blocks from top-level directory groupings."""
+        dir_groups: dict[str, list[dict]] = {}
+
+        for mod in modules:
+            filepath = mod.get("file", "")
+            parts = filepath.split("/")
+            if len(parts) >= 2:
+                # Group by first directory
+                block_dir = parts[0]
+            else:
+                block_dir = "_root"
+            dir_groups.setdefault(block_dir, []).append(mod)
+
+        blocks: dict[str, dict] = {}
+        for i, (dir_name, dir_mods) in enumerate(sorted(dir_groups.items()), 1):
+            if len(dir_mods) < 2:
+                continue  # Skip trivial blocks
+            block_id = f"F{i}"
+            blocks[block_id] = {
+                "name": dir_name.replace("_", " ").strip().title(),
+                "status": "active",
+                "sub_functions": [{"file": m["file"]} for m in dir_mods],
+            }
+
+        return blocks
 
     def _format_manifest_summary(self, manifest: dict) -> str:
         """Format manifest into a concise summary for the oracle."""
@@ -77,21 +120,23 @@ class OracleContextBuilder:
         # Sort modules by LOC
         sorted_mods = sorted(modules, key=lambda m: m.get("line_count", 0), reverse=True)
         total_loc = sum(m.get("line_count", 0) for m in modules)
-        active_mods = [m for m in modules if m.get("status") == "active"]
+        significant_mods = [m for m in modules if m.get("line_count", 0) >= 10]
 
         lines = [
             "## Reality Manifest Summary",
-            f"- **{len(active_mods)} active modules**, {total_loc} total LOC",
+            f"- **{len(significant_mods)} significant modules** ({len(modules)} total), {total_loc} total LOC",
             f"- **{len(interfaces)} import interfaces** (dependency edges)",
             f"- **{len(blocks)} functional blocks**",
             "",
             "### Key Modules (by size):",
         ]
 
-        for mod in sorted_mods[:10]:
+        for mod in sorted_mods[:15]:
+            funcs = mod.get("functions", [])
+            func_summary = f", {len(funcs)} functions" if funcs else ""
             lines.append(
                 f"- `{mod.get('file', '?')}` — {mod.get('name', '?')} "
-                f"({mod.get('line_count', 0)} LOC)"
+                f"({mod.get('line_count', 0)} LOC{func_summary})"
             )
 
         if blocks:
@@ -102,8 +147,12 @@ class OracleContextBuilder:
                 lines.append(f"- **{bname}** ({n_files} files)")
 
         if interfaces:
-            lines.append(f"\n### Cross-Module Dependencies ({len(interfaces)} edges):")
-            for iface in interfaces[:10]:
-                lines.append(f"- `{iface.get('source', '?')}` → `{iface.get('target', '?')}`")
+            # Show most-connected modules (hotspots)
+            from collections import Counter
+            target_counts = Counter(i["target"] for i in interfaces)
+            hotspots = target_counts.most_common(10)
+            lines.append(f"\n### Dependency Hotspots ({len(interfaces)} total edges):")
+            for target, count in hotspots:
+                lines.append(f"- `{target}` ← imported by {count} modules")
 
         return "\n".join(lines)

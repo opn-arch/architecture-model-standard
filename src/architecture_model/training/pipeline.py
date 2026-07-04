@@ -176,14 +176,14 @@ class TrainingPipeline:
             if oracle_model is not None:
                 # Self-critique refinement (if enabled)
                 if self._critique_refiner is not None:
-                    manifest = oracle_ctx_builder._generate_lightweight_manifest() if self._oracle_learning_enabled else {}
+                    manifest = oracle_ctx_builder._generate_manifest() if self._oracle_learning_enabled else {}
                     oracle_model = await self._critique_refiner.refine(
                         oracle_model, manifest, oracle_context
                     )
 
                 # Record performance (if enabled)
                 if self._oracle_perf_store is not None:
-                    manifest = oracle_ctx_builder._generate_lightweight_manifest() if self._oracle_learning_enabled else {}
+                    manifest = oracle_ctx_builder._generate_manifest() if self._oracle_learning_enabled else {}
                     coverage = self._coverage_computer.compute(manifest, oracle_model)
                     validation_result_oracle = validate_model(oracle_model)
                     self._oracle_perf_store.record(OracleResult(
