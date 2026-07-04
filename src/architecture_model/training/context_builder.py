@@ -50,6 +50,9 @@ _ARCH_DECORATORS = {
     "control_silo_endpoint", "region_silo_endpoint", "cell_silo_endpoint",
     # Django patterns
     "receiver", "csrf_exempt",
+    # General patterns
+    "abstractmethod", "overload", "contextmanager", "asynccontextmanager",
+    "cached_property", "property", "staticmethod", "classmethod",
 }
 
 # Base classes that signal architectural boundaries
@@ -64,7 +67,12 @@ _ARCH_BASE_CLASSES = {
     "ProcessingStrategy", "ProcessingStrategyFactory", "StreamProcessor",
     # Custom service patterns
     "Service", "BaseService", "IntegrationInstallation",
+    # General abstract/protocol patterns
+    "ABC", "Protocol",
 }
+
+# Prefixes that indicate a base/abstract class (matched dynamically)
+_BASE_CLASS_PREFIXES = ("Base", "Abstract", "I")  # e.g. BaseTransport, AbstractHandler, IService
 
 # Config keys that reveal infrastructure
 _INFRA_PATTERNS = [
@@ -72,6 +80,9 @@ _INFRA_PATTERNS = [
     "KAFKA_", "REDIS_", "ELASTICSEARCH_", "CLICKHOUSE_",
     "SENTRY_", "SECRET_KEY", "ALLOWED_HOSTS",
 ]
+
+# Minimum useful slice length — below this we add fallback content
+_MIN_SLICE_CHARS = 100
 
 
 class ContextBuilder:
@@ -147,7 +158,7 @@ class ContextBuilder:
                     for m in methods[:5]:
                         parts.append(f"    def {m}")
 
-        # Integration/webhook files
+        # Integration/webhook/client files
         integ_files = self._find_files_matching(
             patterns=["integration", "webhook", "client"],
             extensions=[".py"],
@@ -159,11 +170,34 @@ class ContextBuilder:
                 parts.append(f"\n# {rel}")
                 parts.append(content)
 
+        # General: find abstract/protocol/base classes (library pattern)
+        for py_file in self._iter_py_files(max_files=50):
+            tree = self._parse_ast(py_file)
+            if tree is None:
+                continue
+            abstract_classes = self._extract_abstract_classes(tree)
+            if abstract_classes:
+                rel = py_file.relative_to(self.repo_path)
+                parts.append(f"\n# {rel} (abstract/protocol interfaces)")
+                for cls_name, bases, methods in abstract_classes:
+                    parts.append(f"class {cls_name}({', '.join(bases)}):")
+                    for m in methods[:8]:
+                        parts.append(f"    def {m}")
+
+        # Fallback: if slice is too thin, add __init__.py public exports
+        if len("\n".join(parts)) < _MIN_SLICE_CHARS:
+            init_path = self.repo_path / "__init__.py"
+            if init_path.exists():
+                content = init_path.read_text()
+                if "__all__" in content or "import" in content:
+                    parts.append(f"\n# __init__.py (public API / boundaries)")
+                    parts.append(content[:self._per_slice // 2])
+
         return self._truncate("\n".join(parts))
 
     def _build_behavior_slice(self) -> str:
         """Tasks, event handlers, workflows, processing pipelines."""
-        parts = ["# BEHAVIORS (tasks, event handlers, workflows)"]
+        parts = ["# BEHAVIORS (tasks, event handlers, workflows, key methods)"]
 
         # Find decorated functions (tasks, signals, etc.)
         for py_file in self._iter_py_files(max_files=100):
@@ -187,6 +221,22 @@ class ContextBuilder:
                 if content.strip():
                     parts.append(f"\n# {dirname}/__init__.py")
                     parts.append(content)
+
+        # Fallback: if thin, extract significant classes with their public methods
+        if len("\n".join(parts)) < _MIN_SLICE_CHARS:
+            parts.append("\n# SIGNIFICANT CLASSES (public methods)")
+            for py_file in self._iter_py_files(max_files=50):
+                tree = self._parse_ast(py_file)
+                if tree is None:
+                    continue
+                classes = self._extract_significant_classes(tree)
+                if classes:
+                    rel = py_file.relative_to(self.repo_path)
+                    parts.append(f"\n# {rel}")
+                    for cls_name, methods in classes:
+                        parts.append(f"  class {cls_name}:")
+                        for m in methods[:6]:
+                            parts.append(f"    def {m}")
 
         return self._truncate("\n".join(parts))
 
@@ -223,8 +273,8 @@ class ContextBuilder:
         return self._truncate("\n".join(parts))
 
     def _build_constraints_slice(self) -> str:
-        """Configs, decorator patterns enforcing rules, settings."""
-        parts = ["# CONSTRAINTS (configs, settings, architectural rules)"]
+        """Configs, decorator patterns enforcing rules, settings, type definitions."""
+        parts = ["# CONSTRAINTS (configs, settings, architectural rules, type contracts)"]
 
         # Settings/config files
         config_files = self._find_files_matching(
@@ -257,6 +307,35 @@ class ContextBuilder:
                 parts.append(f"\n# {rel}")
                 for name, decs, _ in decorated[:3]:
                     parts.append(f"  @{', @'.join(decs)} → {name}")
+
+        # Type definition files (library constraint contracts)
+        type_files = self._find_files_matching(
+            patterns=["type", "_types"],
+            extensions=[".py"],
+        )
+        for f in type_files[:3]:
+            content = f.read_text()[:self._per_slice // 3]
+            if "TypeAlias" in content or "Protocol" in content or "=" in content:
+                rel = f.relative_to(self.repo_path)
+                parts.append(f"\n# {rel} (type contracts)")
+                parts.append(content)
+
+        # Fallback: if thin, include _config.py or pyproject.toml dependencies
+        if len("\n".join(parts)) < _MIN_SLICE_CHARS:
+            config_file = self.repo_path / "_config.py"
+            if config_file.exists():
+                parts.append(f"\n# _config.py")
+                parts.append(config_file.read_text()[:self._per_slice // 2])
+            # Also look for exceptions file (reveals error contract)
+            exc_files = self._find_files_matching(
+                patterns=["exception", "error"],
+                extensions=[".py"],
+            )
+            for f in exc_files[:2]:
+                content = f.read_text()[:self._per_slice // 3]
+                rel = f.relative_to(self.repo_path)
+                parts.append(f"\n# {rel} (error contracts)")
+                parts.append(content)
 
         return self._truncate("\n".join(parts))
 
@@ -318,6 +397,55 @@ class ContextBuilder:
                     and not n.name.startswith("_")
                 ]
                 results.append((node.name, bases, methods))
+        return results
+
+    def _extract_abstract_classes(
+        self, tree: ast.Module
+    ) -> list[tuple[str, list[str], list[str]]]:
+        """Extract abstract/protocol classes and classes with Base* prefix."""
+        results = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            bases = []
+            for base in node.bases:
+                if isinstance(base, ast.Name):
+                    bases.append(base.id)
+                elif isinstance(base, ast.Attribute):
+                    bases.append(base.attr)
+
+            # Match if: inherits ABC/Protocol, or name starts with Base/Abstract
+            is_abstract = (
+                any(b in {"ABC", "Protocol"} for b in bases)
+                or any(node.name.startswith(p) for p in _BASE_CLASS_PREFIXES
+                       if len(node.name) > len(p))
+            )
+            if is_abstract:
+                methods = [
+                    n.name for n in node.body
+                    if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+                ]
+                results.append((node.name, bases, methods))
+        return results
+
+    def _extract_significant_classes(
+        self, tree: ast.Module
+    ) -> list[tuple[str, list[str]]]:
+        """Extract classes with 3+ public methods (architecturally significant)."""
+        results = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            # Skip private/test classes
+            if node.name.startswith("_") or node.name.startswith("Test"):
+                continue
+            public_methods = [
+                n.name for n in node.body
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and not n.name.startswith("_")
+            ]
+            if len(public_methods) >= 3:
+                results.append((node.name, public_methods))
         return results
 
     def _extract_decorated_functions(

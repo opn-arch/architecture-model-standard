@@ -290,6 +290,9 @@ class MultiPassExtractor:
             if result.relationships:
                 merged["relationships"].extend(result.relationships)
 
+        # Normalize LLM output before parsing
+        self._normalize_merged(merged)
+
         # Parse into ArchitectureModel using existing parser
         try:
             return _parse_raw(merged)
@@ -300,3 +303,80 @@ class MultiPassExtractor:
                 entities=Entities(),
                 relationships=[],
             )
+
+    @staticmethod
+    def _normalize_merged(merged: dict[str, Any]) -> None:
+        """Normalize LLM output to match expected enum values.
+
+        LLMs often produce lowercase enum values that the parser expects
+        in specific casing (e.g. 'rest' → 'REST', 'active' → 'ACTIVE').
+        """
+        # Known interface type mappings (lowercase → canonical)
+        _INTERFACE_TYPES = {
+            "rest": "REST", "websocket": "WebSocket", "database": "database",
+            "file": "file", "message-queue": "message-queue", "message_queue": "message-queue",
+            "internal": "internal", "external": "external",
+            "grpc": "internal", "graphql": "internal", "event": "internal",
+            "cli": "internal", "http": "REST", "api": "REST",
+        }
+
+        # Known actor type mappings
+        _ACTOR_TYPES = {
+            "human": "human", "system": "system",
+            "external-service": "external-service", "external_service": "external-service",
+            "service": "external-service", "external": "external-service",
+        }
+
+        # Known constraint type mappings
+        _CONSTRAINT_TYPES = {
+            "performance": "performance", "security": "security",
+            "reliability": "reliability", "scalability": "scalability",
+            "regulatory": "regulatory", "technology": "technology",
+            "operational": "operational",
+        }
+
+        # Known relationship type mappings
+        _REL_TYPES = {
+            "realizes": "realizes", "contains": "contains",
+            "depends-on": "depends-on", "depends_on": "depends-on",
+            "exposes": "exposes", "consumes": "consumes",
+            "traces-to": "traces-to", "traces_to": "traces-to",
+            "allocated-to": "allocated-to", "allocated_to": "allocated-to",
+            "constrained-by": "constrained-by", "constrained_by": "constrained-by",
+            "uses": "consumes", "implements": "realizes",
+            "triggers": "depends-on",
+        }
+
+        entities = merged.get("entities", {})
+
+        # Normalize status fields (always uppercase)
+        for etype in entities.values():
+            if isinstance(etype, list):
+                for entity in etype:
+                    if isinstance(entity, dict):
+                        if "status" in entity:
+                            entity["status"] = entity["status"].upper()
+
+        # Normalize interface types
+        for iface in entities.get("interfaces", []):
+            if isinstance(iface, dict) and "type" in iface:
+                raw_type = str(iface["type"]).lower()
+                iface["type"] = _INTERFACE_TYPES.get(raw_type, "internal")
+
+        # Normalize actor types
+        for actor in entities.get("actors", []):
+            if isinstance(actor, dict) and "type" in actor:
+                raw_type = str(actor["type"]).lower()
+                actor["type"] = _ACTOR_TYPES.get(raw_type, "human")
+
+        # Normalize constraint types
+        for con in entities.get("constraints", []):
+            if isinstance(con, dict) and "type" in con:
+                raw_type = str(con["type"]).lower()
+                con["type"] = _CONSTRAINT_TYPES.get(raw_type, "technology")
+
+        # Normalize relationship types
+        for rel in merged.get("relationships", []):
+            if isinstance(rel, dict) and "type" in rel:
+                raw_type = str(rel["type"]).lower()
+                rel["type"] = _REL_TYPES.get(raw_type, "depends-on")
