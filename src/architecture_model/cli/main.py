@@ -94,6 +94,10 @@ def main(argv: list[str] | None = None) -> int:
     p_manifest.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_manifest.add_argument("-o", "--output", help="Output JSON path")
 
+    # --- train (subcommand group) ---
+    from .train import register_train_commands
+    register_train_commands(subparsers)
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -101,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # Dispatch
+    from .train import _cmd_train
     handlers = {
         "init": _cmd_init,
         "extract": _cmd_extract,
@@ -112,6 +117,7 @@ def main(argv: list[str] | None = None) -> int:
         "stats": _cmd_stats,
         "impact": _cmd_impact,
         "manifest": _cmd_manifest,
+        "train": _cmd_train,
     }
     return handlers[args.command](args)
 

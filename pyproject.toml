@@ -12,6 +12,15 @@ license = "MIT"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21"]
+training = [
+    "torch>=2.0",
+    "transformers>=4.40",
+    "peft>=0.10",
+    "datasets>=2.19",
+    "litellm>=1.40",
+    "aiohttp>=3.9",
+    "numpy>=1.26",
+]
 
 [project.scripts]
 architecture-model = "architecture_model.cli.main:main"
