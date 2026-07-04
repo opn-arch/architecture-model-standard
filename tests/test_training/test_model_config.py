@@ -217,3 +217,18 @@ class TestTrainerModelConfig:
         t = LoRATrainer(model_config=cfg)
         t.update_model(MODEL_REGISTRY["qwen2.5:7b"])
         assert not t.needs_retrain
+
+
+# ---------------------------------------------------------------------------
+# Export Tests
+# ---------------------------------------------------------------------------
+
+
+class TestExports:
+    def test_model_config_importable_from_training(self):
+        from architecture_model.training import (
+            ModelConfig, MODEL_REGISTRY, get_model_config, resolve_config,
+        )
+        assert len(MODEL_REGISTRY) == 3
+        assert callable(get_model_config)
+        assert callable(resolve_config)

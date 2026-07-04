@@ -13,6 +13,9 @@ from architecture_model.training.repo_fetcher import RepoFetcher, RepoInfo
 from architecture_model.training.context_builder import ContextBuilder, ContextSlices
 from architecture_model.training.multi_pass import MultiPassExtractor, PassResult
 from architecture_model.training.refiner import ModelRefiner
+from architecture_model.training.model_config import (
+    ModelConfig, MODEL_REGISTRY, get_model_config, resolve_config,
+)
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -20,4 +23,5 @@ __all__ = [
     "MPCController", "MPCState", "LoRATrainer", "RepoFetcher", "RepoInfo",
     "ContextBuilder", "ContextSlices", "MultiPassExtractor", "PassResult",
     "ModelRefiner",
+    "ModelConfig", "MODEL_REGISTRY", "get_model_config", "resolve_config",
 ]
