@@ -257,7 +257,7 @@ class TestTrainingTargets:
         monkeypatch.delenv("ARCHMODEL_TRAINING_TARGETS", raising=False)
         targets = resolve_training_targets()
         assert len(targets) == 1
-        assert targets[0].ollama_tag == "gemma2:9b"  # default surrogate
+        assert targets[0].ollama_tag == "qwen2.5:7b"  # default surrogate
 
     def test_resolve_targets_unknown_model_gets_generic(self, monkeypatch):
         from architecture_model.training.model_config import resolve_training_targets

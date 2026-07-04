@@ -19,7 +19,7 @@ class TestLoRATrainerInit:
     def test_default_params(self):
         """Default base_model, lora_r, lora_alpha are set correctly."""
         trainer = LoRATrainer()
-        assert trainer.base_model == "google/gemma-2-9b-it"
+        assert trainer.base_model == "Qwen/Qwen2.5-7B-Instruct"
         assert trainer.lora_r == 16
         assert trainer.lora_alpha == 32
 

@@ -66,7 +66,7 @@ class LoRATrainer:
 
     def __init__(
         self,
-        base_model: str = "google/gemma-2-9b-it",
+        base_model: str = "Qwen/Qwen2.5-7B-Instruct",
         lora_r: int = 16,
         lora_alpha: int = 32,
         *,
