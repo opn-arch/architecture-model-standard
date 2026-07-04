@@ -42,6 +42,7 @@ class TrainingPipeline:
         controller: MPCController,
         trainer: LoRATrainer,
         repo_fetcher: RepoFetcher,
+        training_targets: list | None = None,
     ) -> None:
         self.surrogate = surrogate
         self.oracle = oracle
@@ -50,6 +51,7 @@ class TrainingPipeline:
         self.controller = controller
         self.trainer = trainer
         self.repo_fetcher = repo_fetcher
+        self.training_targets = training_targets
 
     async def run_iteration(self, n_repos: int = 50) -> MPCState:
         """Run a single MPC iteration.
@@ -164,10 +166,18 @@ class TrainingPipeline:
         self.store.save(example)
 
     def _trigger_training(self) -> None:
-        """Prepare dataset and run LoRA fine-tuning."""
+        """Prepare dataset and run LoRA fine-tuning for all target models."""
         logger.info("Training threshold reached, starting fine-tuning.")
         dataset = self.trainer.prepare_dataset(self.store)
-        self.trainer.train(dataset)
+
+        if self.training_targets:
+            # Multi-adapter training
+            output_base = Path("./adapters")
+            self.trainer.train_all(dataset, self.training_targets, output_base=output_base)
+        else:
+            # Single model training (backward compat)
+            output_dir = Path("./adapters/default")
+            self.trainer.train(dataset, output_dir=output_dir)
 
     def _read_code_context(self, clone_path: Path) -> str:
         """Read code from a cloned repo to produce context for extraction.

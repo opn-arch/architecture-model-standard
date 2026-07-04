@@ -357,6 +357,82 @@ class TestMultiAdapterTraining:
 # ---------------------------------------------------------------------------
 
 
+class TestPipelineMultiAdapter:
+    def test_pipeline_accepts_training_targets(self):
+        """Pipeline can be constructed with training_targets."""
+        from unittest.mock import MagicMock
+        from architecture_model.training.pipeline import TrainingPipeline
+        from architecture_model.training.model_config import MODEL_REGISTRY
+
+        targets = [MODEL_REGISTRY["gemma2:9b"], MODEL_REGISTRY["llama3.1:8b"]]
+        pipeline = TrainingPipeline(
+            surrogate=MagicMock(),
+            oracle=MagicMock(),
+            store=MagicMock(),
+            evaluator=MagicMock(),
+            controller=MagicMock(),
+            trainer=MagicMock(),
+            repo_fetcher=MagicMock(),
+            training_targets=targets,
+        )
+        assert pipeline.training_targets == targets
+
+    def test_pipeline_trigger_training_calls_train_all(self):
+        """When training_targets set, _trigger_training calls train_all."""
+        from unittest.mock import MagicMock
+        from architecture_model.training.pipeline import TrainingPipeline
+        from architecture_model.training.model_config import MODEL_REGISTRY
+
+        targets = [MODEL_REGISTRY["gemma2:9b"], MODEL_REGISTRY["llama3.1:8b"]]
+        mock_trainer = MagicMock()
+        mock_store = MagicMock()
+
+        pipeline = TrainingPipeline(
+            surrogate=MagicMock(),
+            oracle=MagicMock(),
+            store=mock_store,
+            evaluator=MagicMock(),
+            controller=MagicMock(),
+            trainer=mock_trainer,
+            repo_fetcher=MagicMock(),
+            training_targets=targets,
+        )
+        pipeline._trigger_training()
+
+        mock_trainer.prepare_dataset.assert_called_once_with(mock_store)
+        mock_trainer.train_all.assert_called_once()
+        call_args = mock_trainer.train_all.call_args[0]
+        assert call_args[1] == targets  # second positional arg is targets
+
+    def test_pipeline_trigger_training_single_model_fallback(self):
+        """Without training_targets, falls back to single train() call."""
+        from unittest.mock import MagicMock
+        from architecture_model.training.pipeline import TrainingPipeline
+
+        mock_trainer = MagicMock()
+        mock_store = MagicMock()
+
+        pipeline = TrainingPipeline(
+            surrogate=MagicMock(),
+            oracle=MagicMock(),
+            store=mock_store,
+            evaluator=MagicMock(),
+            controller=MagicMock(),
+            trainer=mock_trainer,
+            repo_fetcher=MagicMock(),
+        )
+        pipeline._trigger_training()
+
+        mock_trainer.prepare_dataset.assert_called_once()
+        mock_trainer.train.assert_called_once()
+        mock_trainer.train_all.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Export Tests
+# ---------------------------------------------------------------------------
+
+
 class TestExports:
     def test_model_config_importable_from_training(self):
         from architecture_model.training import (
