@@ -132,6 +132,38 @@ class TestLossVectorDominates:
 
 
 class TestEntityF1:
+    def test_entity_f1_rejects_id_only_match(self):
+        """Two models with same IDs but completely different names should NOT match."""
+        # Model A: C1=Parser, C2=Lexer
+        # Model B: C1=HTTP Client, C2=Connection Pool
+        # F1 should be 0.0 (names don't match at all)
+        local = _make_model(components=[
+            Component(id="C1", name="Parser", layer="L1", status=Status.ACTIVE),
+            Component(id="C2", name="Lexer", layer="L1", status=Status.ACTIVE),
+        ])
+        oracle = _make_model(components=[
+            Component(id="C1", name="HTTP Client", layer="L1", status=Status.ACTIVE),
+            Component(id="C2", name="Connection Pool", layer="L1", status=Status.ACTIVE),
+        ])
+        f1 = compute_entity_f1(local, oracle)
+        assert f1 == 0.0, f"Expected 0.0 but got {f1} — IDs should not cause a match"
+
+    def test_entity_f1_matches_by_name_across_ids(self):
+        """Same names with different IDs should match perfectly."""
+        # Model A: C1=Parser, C2=Lexer
+        # Model B: COMP_A=Parser, COMP_B=Lexer
+        # F1 should be 1.0
+        local = _make_model(components=[
+            Component(id="C1", name="Parser", layer="L1", status=Status.ACTIVE),
+            Component(id="C2", name="Lexer", layer="L1", status=Status.ACTIVE),
+        ])
+        oracle = _make_model(components=[
+            Component(id="COMP_A", name="Parser", layer="L1", status=Status.ACTIVE),
+            Component(id="COMP_B", name="Lexer", layer="L1", status=Status.ACTIVE),
+        ])
+        f1 = compute_entity_f1(local, oracle)
+        assert f1 == 1.0, f"Expected 1.0 but got {f1} — name match should work across IDs"
+
     def test_entity_f1_perfect_match(self):
         """Identical entities produce F1 of 1.0."""
         actors = [
@@ -279,7 +311,7 @@ class TestEvaluator:
         assert 0.0 <= loss.validator_score <= 100.0
 
     def test_entity_recall_no_double_match(self):
-        """A local entity matched by ID in Pass 1 should not re-match by name in Pass 2."""
+        """A local entity matched by name in Pass 1 should not re-match in Pass 2."""
         # local has 1 entity that could match two oracle entities
         local = _make_model(actors=[
             Actor(id="ACT-1", name="Admin", status=Status.ACTIVE, type=ActorType.HUMAN),
@@ -288,7 +320,7 @@ class TestEvaluator:
             Actor(id="ACT-1", name="User", status=Status.ACTIVE, type=ActorType.HUMAN),
             Actor(id="ACT-2", name="Admin", status=Status.ACTIVE, type=ActorType.HUMAN),
         ])
-        # local[0] matches oracle[0] by ID. It should NOT also match oracle[1] by name.
+        # local[0] "Admin" matches oracle[1] "Admin" by name. oracle[0] "User" unmatched.
         # Entity recall = 1/2 = 0.5, rel recall = 1.0 (no oracle rels)
         # Weighted completeness = 0.7*0.5 + 0.3*1.0 = 0.65
         evaluator = Evaluator()
@@ -437,8 +469,8 @@ class TestReconstructionFidelity:
 
 
 class TestEntityMatchMap:
-    def test_exact_id_match(self):
-        """Pass 1: exact type+ID match."""
+    def test_exact_name_match_same_id(self):
+        """Pass 1: exact type+name match (entities happen to share same ID)."""
         local = _make_model(components=[
             Component(id="C01", name="Client", layer="L1", status=Status.ACTIVE),
         ])

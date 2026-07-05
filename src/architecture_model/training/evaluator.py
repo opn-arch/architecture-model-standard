@@ -84,8 +84,11 @@ def _collect_typed_entities(model: ArchitectureModel) -> list[tuple[str, str, st
 
 def compute_entity_f1(local_model: ArchitectureModel, oracle_model: ArchitectureModel) -> float:
     """
-    Match entities by type + ID (exact), falling back to type + name (lowercase).
+    Match entities by type + name (case-insensitive), with fuzzy fallback.
     Compute precision, recall, and F1.
+
+    Pass 1: exact type + name (case-insensitive)
+    Pass 2: fuzzy match unmatched by type + word Jaccard >= 0.4
     """
     local_entities = _collect_typed_entities(local_model)
     oracle_entities = _collect_typed_entities(oracle_model)
@@ -100,20 +103,8 @@ def compute_entity_f1(local_model: ArchitectureModel, oracle_model: Architecture
     oracle_matched: set[int] = set()  # indices of matched oracle entities
     local_matched: set[int] = set()  # indices of matched local entities
 
-    # Pass 1: match by type + ID (exact)
+    # Pass 1: exact type + name (case-insensitive)
     for li, (l_type, l_id, l_name) in enumerate(local_entities):
-        for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
-            if oi in oracle_matched:
-                continue
-            if l_type == o_type and l_id == o_id:
-                local_matched.add(li)
-                oracle_matched.add(oi)
-                break
-
-    # Pass 2: match unmatched by type + name (lowercase)
-    for li, (l_type, l_id, l_name) in enumerate(local_entities):
-        if li in local_matched:
-            continue
         for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
             if oi in oracle_matched:
                 continue
@@ -121,6 +112,29 @@ def compute_entity_f1(local_model: ArchitectureModel, oracle_model: Architecture
                 local_matched.add(li)
                 oracle_matched.add(oi)
                 break
+
+    # Pass 2: fuzzy match unmatched by type + word Jaccard >= 0.4
+    for li, (l_type, l_id, l_name) in enumerate(local_entities):
+        if li in local_matched:
+            continue
+        best_score = 0.0
+        best_oi = -1
+        for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
+            if oi in oracle_matched:
+                continue
+            if l_type != o_type:
+                continue
+            l_words = set(l_name.split())
+            o_words = set(o_name.split())
+            if not l_words or not o_words:
+                continue
+            jaccard = len(l_words & o_words) / len(l_words | o_words)
+            if jaccard >= 0.4 and jaccard > best_score:
+                best_score = jaccard
+                best_oi = oi
+        if best_oi >= 0:
+            local_matched.add(li)
+            oracle_matched.add(best_oi)
 
     true_positives = len(local_matched)
     precision = true_positives / len(local_entities) if local_entities else 0.0
@@ -279,9 +293,8 @@ def compute_entity_match_map(
 ) -> dict[str, str]:
     """Build a mapping from local entity IDs to oracle entity IDs.
 
-    Pass 1: exact type + ID match
-    Pass 2: exact type + name (lowercase) match
-    Pass 3: fuzzy name match via word Jaccard >= 0.4
+    Pass 1: exact type + name (case-insensitive) match
+    Pass 2: fuzzy name match via word Jaccard >= 0.4
     """
     local_entities = _collect_typed_entities(local_model)
     oracle_entities = _collect_typed_entities(oracle_model)
@@ -290,21 +303,8 @@ def compute_entity_match_map(
     oracle_matched: set[int] = set()
     local_matched: set[int] = set()
 
-    # Pass 1: exact type + ID
+    # Pass 1: exact type + name (case-insensitive)
     for li, (l_type, l_id, l_name) in enumerate(local_entities):
-        for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
-            if oi in oracle_matched:
-                continue
-            if l_type == o_type and l_id == o_id:
-                id_map[l_id] = o_id
-                local_matched.add(li)
-                oracle_matched.add(oi)
-                break
-
-    # Pass 2: exact type + name (lowercase)
-    for li, (l_type, l_id, l_name) in enumerate(local_entities):
-        if li in local_matched:
-            continue
         for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
             if oi in oracle_matched:
                 continue
@@ -314,7 +314,7 @@ def compute_entity_match_map(
                 oracle_matched.add(oi)
                 break
 
-    # Pass 3: fuzzy name match via word Jaccard >= 0.4
+    # Pass 2: fuzzy name match via word Jaccard >= 0.4
     for li, (l_type, l_id, l_name) in enumerate(local_entities):
         if li in local_matched:
             continue
@@ -437,20 +437,8 @@ def _compute_entity_recall(local_model: ArchitectureModel, oracle_model: Archite
     oracle_matched: set[int] = set()
     matched_local: set[int] = set()
 
-    # Pass 1: match by type + ID
+    # Pass 1: match by type + name (case-insensitive)
     for li, (l_type, l_id, l_name) in enumerate(local_entities):
-        for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
-            if oi in oracle_matched:
-                continue
-            if l_type == o_type and l_id == o_id:
-                oracle_matched.add(oi)
-                matched_local.add(li)
-                break
-
-    # Pass 2: match by type + name
-    for li, (l_type, l_id, l_name) in enumerate(local_entities):
-        if li in matched_local:
-            continue
         for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
             if oi in oracle_matched:
                 continue
@@ -458,6 +446,29 @@ def _compute_entity_recall(local_model: ArchitectureModel, oracle_model: Archite
                 oracle_matched.add(oi)
                 matched_local.add(li)
                 break
+
+    # Pass 2: fuzzy match by type + word Jaccard >= 0.4
+    for li, (l_type, l_id, l_name) in enumerate(local_entities):
+        if li in matched_local:
+            continue
+        best_score = 0.0
+        best_oi = -1
+        for oi, (o_type, o_id, o_name) in enumerate(oracle_entities):
+            if oi in oracle_matched:
+                continue
+            if l_type != o_type:
+                continue
+            l_words = set(l_name.split())
+            o_words = set(o_name.split())
+            if not l_words or not o_words:
+                continue
+            jaccard = len(l_words & o_words) / len(l_words | o_words)
+            if jaccard >= 0.4 and jaccard > best_score:
+                best_score = jaccard
+                best_oi = oi
+        if best_oi >= 0:
+            oracle_matched.add(best_oi)
+            matched_local.add(li)
 
     return len(oracle_matched) / len(oracle_entities)
 
