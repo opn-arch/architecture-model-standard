@@ -40,17 +40,26 @@ VALID_MODEL_YAML = yaml.dump(
 )
 
 
-def _make_model_with_n_entities(n: int) -> ArchitectureModel:
-    """Build an ArchitectureModel with exactly n actors (simplest entity)."""
-    from architecture_model.core.types import Actor, Status
+def _make_model_with_n_entities(n: int, n_rels: int = 0) -> ArchitectureModel:
+    """Build an ArchitectureModel with n actors and n_rels relationships."""
+    from architecture_model.core.types import Actor, Relationship, RelationType, Status
 
     actors = [
         Actor(id=f"actor-{i}", name=f"Actor {i}", status=Status.ACTIVE)
         for i in range(n)
     ]
+    relationships = [
+        Relationship(
+            type=RelationType.DEPENDS_ON,
+            from_id=f"actor-{i % n}" if n > 0 else "actor-0",
+            to_id=f"actor-{(i + 1) % n}" if n > 1 else "actor-0",
+        )
+        for i in range(n_rels)
+    ]
     return ArchitectureModel(
         meta=ModelMeta(schema_version="1.0", project="test"),
         entities=Entities(actors=actors),
+        relationships=relationships,
     )
 
 
@@ -187,14 +196,72 @@ class TestConfidence:
         model = _make_model_with_n_entities(0)
         assert s.confidence(model) == 0.0
 
-    def test_confidence_full_model(self):
-        """Model with 10+ entities yields confidence 1.0 (capped)."""
-        s = Surrogate()
-        model = _make_model_with_n_entities(15)
-        assert s.confidence(model) == 1.0
+    def test_confidence_entities_only_no_relationships(self):
+        """10 entities but 0 relationships — penalized by rel_density.
 
-    def test_confidence_partial(self):
-        """Model with 5 entities yields confidence 0.5."""
+        entity_density = min(1.0, 10/10) = 1.0
+        expected_rels = 10 * 1.5 + 1 = 16
+        rel_density = min(1.0, 0/16) = 0.0
+        confidence = 0.6 * 1.0 + 0.4 * 0.0 = 0.6
+        """
         s = Surrogate()
-        model = _make_model_with_n_entities(5)
-        assert s.confidence(model) == 0.5
+        model = _make_model_with_n_entities(10, n_rels=0)
+        assert s.confidence(model) == pytest.approx(0.6)
+
+    def test_confidence_well_connected_model(self):
+        """10 entities, 15 relationships — should be ~1.0.
+
+        entity_density = 1.0
+        expected_rels = 10 * 1.5 + 1 = 16
+        rel_density = min(1.0, 15/16) = 0.9375
+        confidence = 0.6 * 1.0 + 0.4 * 0.9375 = 0.975
+        """
+        s = Surrogate()
+        model = _make_model_with_n_entities(10, n_rels=15)
+        assert s.confidence(model) == pytest.approx(0.975)
+
+    def test_confidence_saturated_relationships(self):
+        """10 entities, 20 relationships — rel_density caps at 1.0.
+
+        entity_density = 1.0
+        expected_rels = 16
+        rel_density = min(1.0, 20/16) = 1.0
+        confidence = 0.6 * 1.0 + 0.4 * 1.0 = 1.0
+        """
+        s = Surrogate()
+        model = _make_model_with_n_entities(10, n_rels=20)
+        assert s.confidence(model) == pytest.approx(1.0)
+
+    def test_confidence_partial_model(self):
+        """5 entities, 3 relationships — medium confidence.
+
+        entity_density = min(1.0, 5/10) = 0.5
+        expected_rels = 5 * 1.5 + 1 = 8.5
+        rel_density = min(1.0, 3/8.5) ≈ 0.3529
+        confidence = 0.6 * 0.5 + 0.4 * 0.3529 ≈ 0.4412
+        """
+        s = Surrogate()
+        model = _make_model_with_n_entities(5, n_rels=3)
+        expected = 0.6 * 0.5 + 0.4 * (3 / 8.5)
+        assert s.confidence(model) == pytest.approx(expected)
+
+    def test_confidence_with_coverage_score(self):
+        """With coverage_score, uses 3-way weighted average.
+
+        entity_density = 1.0 (10 entities)
+        expected_rels = 16, rel_density = 15/16 = 0.9375
+        confidence = 0.4 * 1.0 + 0.3 * 0.9375 + 0.3 * 0.8 = 0.92125
+        """
+        s = Surrogate()
+        model = _make_model_with_n_entities(10, n_rels=15)
+        result = s.confidence(model, coverage_score=0.8)
+        expected = 0.4 * 1.0 + 0.3 * (15 / 16) + 0.3 * 0.8
+        assert result == pytest.approx(expected)
+
+    def test_confidence_coverage_score_none_uses_two_signal(self):
+        """Passing coverage_score=None explicitly uses 2-signal formula."""
+        s = Surrogate()
+        model = _make_model_with_n_entities(10, n_rels=15)
+        result_none = s.confidence(model, coverage_score=None)
+        result_default = s.confidence(model)
+        assert result_none == result_default

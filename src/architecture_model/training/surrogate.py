@@ -155,12 +155,24 @@ class Surrogate:
         response = await self._chat(messages)
         return response.get("message", {}).get("content", "")
 
-    def confidence(self, model: ArchitectureModel) -> float:
-        """Estimate extraction confidence (0-1) based on entity density.
+    def confidence(self, model: ArchitectureModel, coverage_score: float | None = None) -> float:
+        """Estimate extraction confidence (0-1) using composite signal.
 
-        Heuristic: min(1.0, total_entities / 10) — caps at 1.0 when 10+ entities.
+        Combines entity density, relationship density, and optionally
+        CoverageScorer.overall for a more meaningful confidence estimate.
+
+        Args:
+            model: The extracted architecture model.
+            coverage_score: Optional CoverageScorer.overall value (0-1).
         """
-        return min(1.0, model.entity_count / 10)
+        entity_density = min(1.0, model.entity_count / 10)
+        # Expect ~1.5 relationships per entity for well-connected model
+        expected_rels = model.entity_count * 1.5 + 1
+        rel_density = min(1.0, model.relationship_count / expected_rels)
+
+        if coverage_score is not None:
+            return 0.4 * entity_density + 0.3 * rel_density + 0.3 * coverage_score
+        return 0.6 * entity_density + 0.4 * rel_density
 
     async def _chat(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
         """Call Ollama's chat API via aiohttp.
