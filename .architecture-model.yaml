@@ -10,27 +10,9 @@ output:
   manifest: output/{project}/reality-manifest.json
   artifacts: output/{project}/artifacts/stage2
 layers:
-  cli-layer:
+  pipeline-layer:
     dirs:
-    - src/architecture_model/cli
-  config-layer:
-    dirs:
-    - src/architecture_model/config
-  core-layer:
-    dirs:
-    - src/architecture_model/core
-  extract-layer:
-    dirs:
-    - src/architecture_model/extract
-  integrations-layer:
-    dirs:
-    - src/architecture_model/integrations
-  manifest-layer:
-    dirs:
-    - src/architecture_model/manifest
-  spec-layer:
-    dirs:
-    - src/architecture_model/spec
+    - scripts
 functional_blocks:
   F1:
     name: Cli
@@ -38,6 +20,7 @@ functional_blocks:
     - src/architecture_model/cli
     files:
     - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/train.py
     description_source: auto-discovered from src/architecture_model/cli/
   F2:
     name: Config
@@ -64,7 +47,10 @@ functional_blocks:
     dirs:
     - src/architecture_model/extract
     files:
+    - src/architecture_model/extract/constraint_detector.py
     - src/architecture_model/extract/from_artifacts.py
+    - src/architecture_model/extract/from_code.py
+    - src/architecture_model/extract/route_detector.py
     - src/architecture_model/extract/table_parser.py
     description_source: auto-discovered from src/architecture_model/extract/
   F5:
@@ -94,4 +80,37 @@ functional_blocks:
     - src/architecture_model/spec
     files: []
     description_source: auto-discovered from src/architecture_model/spec/
+  F8:
+    name: Training
+    dirs:
+    - src/architecture_model/training
+    files:
+    - src/architecture_model/training/backward_validator.py
+    - src/architecture_model/training/context_builder.py
+    - src/architecture_model/training/controller.py
+    - src/architecture_model/training/coverage_scorer.py
+    - src/architecture_model/training/dataset.py
+    - src/architecture_model/training/embeddings.py
+    - src/architecture_model/training/evaluator.py
+    - src/architecture_model/training/few_shot_examples.py
+    - src/architecture_model/training/interface_enforcer.py
+    - src/architecture_model/training/model_comparison.py
+    - src/architecture_model/training/model_config.py
+    - src/architecture_model/training/multi_pass.py
+    - src/architecture_model/training/oracle.py
+    - src/architecture_model/training/oracle_context.py
+    - src/architecture_model/training/oracle_coverage.py
+    - src/architecture_model/training/oracle_critique.py
+    - src/architecture_model/training/oracle_evolution.py
+    - src/architecture_model/training/oracle_few_shot.py
+    - src/architecture_model/training/oracle_performance.py
+    - src/architecture_model/training/pipeline.py
+    - src/architecture_model/training/refiner.py
+    - src/architecture_model/training/repo_fetcher.py
+    - src/architecture_model/training/surrogate.py
+    - src/architecture_model/training/test_analyzer.py
+    - src/architecture_model/training/test_runner.py
+    - src/architecture_model/training/trainer.py
+    - src/architecture_model/training/trainer_dpo.py
+    description_source: MPC Training Loop for Architecture Model extraction.
 metrics: []

@@ -33,6 +33,7 @@ try:
         AutoTokenizer,
         Trainer,
         TrainingArguments,
+        default_data_collator,
     )
 
     HAS_TRANSFORMERS = True
@@ -42,6 +43,7 @@ except ImportError:
     AutoTokenizer = None  # type: ignore[assignment, misc]
     Trainer = None  # type: ignore[assignment, misc]
     TrainingArguments = None  # type: ignore[assignment, misc]
+    default_data_collator = None  # type: ignore[assignment, misc]
 
 try:
     from peft import LoraConfig, get_peft_model  # type: ignore[import-untyped]
@@ -134,8 +136,8 @@ class LoRATrainer:
     def prepare_dataset(self, store: "DatasetStore") -> "Dataset":
         """Convert store examples to a HuggingFace Dataset.
 
-        Calls store.export_for_training() which returns list[dict] with
-        keys: instruction, input, output (instruction-tuning format).
+        Tries store.export_weighted() first (includes sample_weight for
+        hard-example mining), falls back to export_for_training() if empty.
         """
         if not HAS_DATASETS:
             raise RuntimeError(
@@ -143,7 +145,10 @@ class LoRATrainer:
                 "Install with: pip install datasets"
             )
 
-        examples = store.export_for_training()
+        examples = store.export_weighted()
+        if not examples:
+            # Fall back to unweighted if no weighted data available
+            examples = store.export_for_training()
         return Dataset.from_list(examples)
 
     def train(self, dataset: "Dataset", output_dir: Path, epochs: int = 3) -> Path:
@@ -184,6 +189,27 @@ class LoRATrainer:
         )
         model = get_peft_model(model, lora_config)
 
+        # Tokenize dataset
+        def tokenize_fn(example):
+            prompt = example.get("instruction", "") + "\n" + example.get("input", "")
+            target = example.get("output", "")
+
+            model_inputs = tokenizer(
+                prompt, max_length=2048, truncation=True, padding="max_length"
+            )
+            labels = tokenizer(
+                target, max_length=2048, truncation=True, padding="max_length"
+            )
+            model_inputs["labels"] = labels["input_ids"]
+
+            # Preserve sample_weight for WeightedCETrainer
+            if "sample_weight" in example:
+                model_inputs["sample_weight"] = example["sample_weight"]
+
+            return model_inputs
+
+        tokenized = dataset.map(tokenize_fn, remove_columns=dataset.column_names)
+
         # Training arguments
         output_dir = Path(output_dir)
         training_args = TrainingArguments(
@@ -194,11 +220,12 @@ class LoRATrainer:
             logging_steps=10,
         )
 
-        # Train
-        trainer = Trainer(
+        # Train with WeightedCETrainer for per-sample loss weighting
+        trainer = WeightedCETrainer(
             model=model,
             args=training_args,
-            train_dataset=dataset,
+            train_dataset=tokenized,
+            data_collator=default_data_collator,
             tokenizer=tokenizer,
         )
         trainer.train()
