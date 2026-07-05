@@ -262,8 +262,7 @@ async def main():
 
         for label, attr in [("L1 (struct accuracy)", "structural_accuracy"),
                             ("L2 (completeness)", "completeness"),
-                            ("L3 (reconstruction)", "reconstruction_fidelity"),
-                            ("L4 (validator)", "validator_score")]:
+                            ("L3 (validator)", "validator_score")]:
             sp_v = f"{getattr(loss_sp, attr):.3f}" if results.get("single_pass") else "N/A"
             en_v = f"{getattr(loss_en, attr):.3f}" if results.get("enhanced") else "N/A"
             print(f"    {label:<25} {sp_v:<14} {en_v:<14}")

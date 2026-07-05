@@ -62,7 +62,6 @@ def mock_evaluator():
     loss = MagicMock()
     loss.structural_accuracy = 0.9
     loss.completeness = 0.85
-    loss.reconstruction_fidelity = 0.0
     loss.validator_score = 90.0
     ev.compute_loss = MagicMock(return_value=loss)
     return ev
@@ -311,7 +310,7 @@ class TestProcessRepoEnhanced:
         oracle.extract_model = AsyncMock(return_value=mock_model)
         store = MagicMock()
         evaluator = MagicMock()
-        evaluator.compute_loss = MagicMock(return_value=LossVector(0.7, 0.8, 0.5, 90))
+        evaluator.compute_loss = MagicMock(return_value=LossVector(0.7, 0.8, 90))
         controller = MPCController(MPCState())
         controller.should_query_oracle = MagicMock(return_value=True)
         trainer = MagicMock()
@@ -362,7 +361,7 @@ class TestProcessRepoEnhanced:
         oracle = MagicMock()
         oracle.extract_model = AsyncMock(return_value=mock_model)
         store = MagicMock()
-        loss_vec = LossVector(0.7, 0.8, 0.5, 90)
+        loss_vec = LossVector(0.7, 0.8, 90)
         evaluator = MagicMock()
         evaluator.compute_loss = MagicMock(return_value=loss_vec)
         state = MPCState()
@@ -416,7 +415,7 @@ class TestProcessRepoEnhanced:
         oracle.extract_model = AsyncMock(return_value=mock_oracle_model)
         store = MagicMock()
         # Low structural_accuracy → should trigger DPO preference save
-        loss_vec = LossVector(0.3, 0.5, 0.2, 70)
+        loss_vec = LossVector(0.3, 0.5, 70)
         evaluator = MagicMock()
         evaluator.compute_loss = MagicMock(return_value=loss_vec)
         controller = MPCController(MPCState())
@@ -462,7 +461,7 @@ class TestProcessRepoEnhanced:
         oracle.extract_model = AsyncMock(return_value=mock_model)
         store = MagicMock()
         # High structural_accuracy → should NOT trigger DPO
-        loss_vec = LossVector(0.8, 0.9, 0.7, 95)
+        loss_vec = LossVector(0.8, 0.9, 95)
         evaluator = MagicMock()
         evaluator.compute_loss = MagicMock(return_value=loss_vec)
         controller = MPCController(MPCState())

@@ -333,7 +333,6 @@ async def process_repo(
             result["loss"] = {
                 "structural_accuracy": loss.structural_accuracy,
                 "completeness": loss.completeness,
-                "reconstruction_fidelity": loss.reconstruction_fidelity,
                 "validator_score": loss.validator_score,
             }
         else:
@@ -341,7 +340,6 @@ async def process_repo(
             result["loss"] = {
                 "structural_accuracy": 0.0,
                 "completeness": 0.0,
-                "reconstruction_fidelity": 0.0,
                 "validator_score": 0.0,
             }
             result["surrogate_failed"] = True

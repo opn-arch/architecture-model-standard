@@ -220,7 +220,6 @@ class TrainingPipeline:
                 loss_vector = {
                     "structural_accuracy": loss.structural_accuracy,
                     "completeness": loss.completeness,
-                    "reconstruction_fidelity": loss.reconstruction_fidelity,
                     "validator_score": loss.validator_score,
                 }
                 oracle_output = str(oracle_model)

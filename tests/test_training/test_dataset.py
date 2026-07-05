@@ -301,7 +301,7 @@ class TestExportWeighted:
             local_output="# model",
             oracle_output="# oracle",
             loss_vector={"structural_accuracy": 0.3, "completeness": 0.5,
-                         "reconstruction_fidelity": 0.0, "validator_score": 80},
+                         "validator_score": 80},
             iteration=1,
         ))
         examples = store.export_weighted()
@@ -318,7 +318,7 @@ class TestExportWeighted:
             local_output="# model",
             oracle_output="# oracle",
             loss_vector={"structural_accuracy": 0.9, "completeness": 0.9,
-                         "reconstruction_fidelity": 0.5, "validator_score": 95},
+                         "validator_score": 95},
             iteration=1,
         ))
         examples = store.export_weighted()

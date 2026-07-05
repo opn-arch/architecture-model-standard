@@ -253,7 +253,7 @@ class TestParetoAgreement:
         state = MPCState()
         ctrl = MPCController(state)
         loss = LossVector(structural_accuracy=0.5, completeness=0.6,
-                          reconstruction_fidelity=0.3, validator_score=80)
+                          validator_score=80)
         agreed = ctrl.record_loss(loss)
         assert agreed is True
 
@@ -263,11 +263,11 @@ class TestParetoAgreement:
         # First: good across all dimensions
         ctrl.record_loss(LossVector(
             structural_accuracy=0.8, completeness=0.9,
-            reconstruction_fidelity=0.7, validator_score=95))
+            validator_score=95))
         # Second: strictly worse on all dimensions
         agreed = ctrl.record_loss(LossVector(
             structural_accuracy=0.3, completeness=0.4,
-            reconstruction_fidelity=0.2, validator_score=50))
+            validator_score=50))
         assert agreed is False
 
     def test_non_dominated_loss_agrees(self):
@@ -275,11 +275,11 @@ class TestParetoAgreement:
         ctrl = MPCController(state)
         ctrl.record_loss(LossVector(
             structural_accuracy=0.8, completeness=0.5,
-            reconstruction_fidelity=0.7, validator_score=90))
+            validator_score=90))
         # Better on completeness, worse on accuracy — not dominated (tradeoff)
         agreed = ctrl.record_loss(LossVector(
             structural_accuracy=0.6, completeness=0.9,
-            reconstruction_fidelity=0.5, validator_score=85))
+            validator_score=85))
         assert agreed is True
 
     def test_convergence_when_all_agree(self):
@@ -287,9 +287,9 @@ class TestParetoAgreement:
         ctrl = MPCController(state)
         ctrl._CONVERGENCE_WINDOW = 3
         # 3 non-dominated (different tradeoffs, none dominates another)
-        ctrl.record_loss(LossVector(0.9, 0.5, 0.7, 90))
-        ctrl.record_loss(LossVector(0.5, 0.9, 0.7, 90))
-        ctrl.record_loss(LossVector(0.7, 0.7, 0.9, 90))
+        ctrl.record_loss(LossVector(0.9, 0.5, 90))
+        ctrl.record_loss(LossVector(0.5, 0.9, 90))
+        ctrl.record_loss(LossVector(0.7, 0.7, 95))
         assert ctrl.is_converged() is True
 
     def test_no_convergence_when_dominated(self):
@@ -297,18 +297,18 @@ class TestParetoAgreement:
         ctrl = MPCController(state)
         ctrl._CONVERGENCE_WINDOW = 3
         # First is good
-        ctrl.record_loss(LossVector(0.9, 0.9, 0.9, 95))
+        ctrl.record_loss(LossVector(0.9, 0.9, 95))
         # Next two are dominated (worse on everything)
-        ctrl.record_loss(LossVector(0.2, 0.2, 0.2, 30))
-        ctrl.record_loss(LossVector(0.1, 0.1, 0.1, 20))
+        ctrl.record_loss(LossVector(0.2, 0.2, 30))
+        ctrl.record_loss(LossVector(0.1, 0.1, 20))
         # Only 1/3 agreed → below 80% threshold
         assert ctrl.is_converged() is False
 
     def test_pareto_front_grows(self):
         state = MPCState()
         ctrl = MPCController(state)
-        ctrl.record_loss(LossVector(0.9, 0.1, 0.5, 80))
-        ctrl.record_loss(LossVector(0.1, 0.9, 0.5, 80))
+        ctrl.record_loss(LossVector(0.9, 0.1, 80))
+        ctrl.record_loss(LossVector(0.1, 0.9, 80))
         # Both should be on the front (neither dominates the other)
         assert len(ctrl._pareto_front) == 2
 

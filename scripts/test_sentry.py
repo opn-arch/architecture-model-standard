@@ -255,16 +255,14 @@ async def main():
         print(f"    SINGLE-PASS vs Oracle:")
         print(f"      L1 (structural accuracy): {loss_sp.structural_accuracy:.3f}")
         print(f"      L2 (completeness):        {loss_sp.completeness:.3f}")
-        print(f"      L3 (reconstruction):      {loss_sp.reconstruction_fidelity:.3f}")
-        print(f"      L4 (validator score):      {loss_sp.validator_score:.1f}")
+        print(f"      L3 (validator score):      {loss_sp.validator_score:.1f}")
 
     if enhanced_model:
         loss_en = evaluator.compute_loss(local_model=enhanced_model, oracle_model=oracle_model)
         print(f"    ENHANCED vs Oracle:")
         print(f"      L1 (structural accuracy): {loss_en.structural_accuracy:.3f}")
         print(f"      L2 (completeness):        {loss_en.completeness:.3f}")
-        print(f"      L3 (reconstruction):      {loss_en.reconstruction_fidelity:.3f}")
-        print(f"      L4 (validator score):      {loss_en.validator_score:.1f}")
+        print(f"      L3 (validator score):      {loss_en.validator_score:.1f}")
 
     # 6. Save to dataset store
     print("\n[6] Saving to dataset store...")
@@ -281,8 +279,7 @@ async def main():
         loss_vector={
             "L1": loss_sp.structural_accuracy if local_model else 0,
             "L2": loss_sp.completeness if local_model else 0,
-            "L3": loss_sp.reconstruction_fidelity if local_model else 0,
-            "L4": loss_sp.validator_score if local_model else 0,
+            "L3": loss_sp.validator_score if local_model else 0,
         },
         iteration=1,
         metadata={

@@ -136,8 +136,7 @@ async def main():
     loss = evaluator.compute_loss(local_model=local_model, oracle_model=oracle_model)
     print(f"    L1 (structural accuracy): {loss.structural_accuracy:.3f}")
     print(f"    L2 (completeness):        {loss.completeness:.3f}")
-    print(f"    L3 (reconstruction):      {loss.reconstruction_fidelity:.3f}")
-    print(f"    L4 (validator score):      {loss.validator_score:.1f}")
+    print(f"    L3 (validator score):      {loss.validator_score:.1f}")
 
     # 5. Save to dataset store
     print("\n[5] Saving to dataset store...")
@@ -153,8 +152,7 @@ async def main():
         loss_vector={
             "L1": loss.structural_accuracy,
             "L2": loss.completeness,
-            "L3": loss.reconstruction_fidelity,
-            "L4": loss.validator_score,
+            "L3": loss.validator_score,
         },
         iteration=1,
         metadata={"model": "qwen2.5:7b", "oracle": "copilot-relay"},

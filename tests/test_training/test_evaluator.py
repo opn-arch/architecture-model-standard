@@ -79,13 +79,11 @@ class TestLossVectorDominates:
         a = LossVector(
             structural_accuracy=0.9,
             completeness=0.8,
-            reconstruction_fidelity=0.7,
             validator_score=90.0,
         )
         b = LossVector(
             structural_accuracy=0.8,
             completeness=0.7,
-            reconstruction_fidelity=0.6,
             validator_score=80.0,
         )
         assert a.dominates(b) is True
@@ -96,13 +94,11 @@ class TestLossVectorDominates:
         a = LossVector(
             structural_accuracy=0.9,
             completeness=0.5,
-            reconstruction_fidelity=0.7,
             validator_score=90.0,
         )
         b = LossVector(
             structural_accuracy=0.5,
             completeness=0.9,
-            reconstruction_fidelity=0.7,
             validator_score=90.0,
         )
         assert a.dominates(b) is False
@@ -113,13 +109,11 @@ class TestLossVectorDominates:
         a = LossVector(
             structural_accuracy=0.8,
             completeness=0.8,
-            reconstruction_fidelity=0.8,
             validator_score=80.0,
         )
         b = LossVector(
             structural_accuracy=0.8,
             completeness=0.8,
-            reconstruction_fidelity=0.8,
             validator_score=80.0,
         )
         assert a.dominates(b) is False
@@ -268,22 +262,17 @@ class TestRelationshipF1:
 
 class TestEvaluator:
     def test_evaluator_compute_loss(self):
-        """Full loss computation with oracle and code."""
+        """Full loss computation with oracle."""
         actors = [Actor(id="a1", name="User", status=Status.ACTIVE, type=ActorType.HUMAN)]
         rels = [Relationship(type=RelationType.REALIZES, from_id="c1", to_id="cap1")]
 
         local = _make_model(actors=actors, relationships=rels)
         oracle = _make_model(actors=actors, relationships=rels)
 
-        original_code = "def hello():\n    return 'world'\n"
-        reconstructed_code = "def hello():\n    return 'world'\n"
-
         evaluator = Evaluator()
         loss = evaluator.compute_loss(
             local_model=local,
             oracle_model=oracle,
-            original_code=original_code,
-            reconstructed_code=reconstructed_code,
         )
 
         assert isinstance(loss, LossVector)
@@ -291,8 +280,6 @@ class TestEvaluator:
         assert loss.structural_accuracy == 1.0
         # Perfect recall → L2 = 1.0
         assert loss.completeness == 1.0
-        # Identical code → L3 = 1.0
-        assert loss.reconstruction_fidelity == 1.0
         # Validator score should be computed (0-100 normalized to 0-1 not required, raw score)
         assert 0.0 <= loss.validator_score <= 100.0
 
@@ -306,7 +293,6 @@ class TestEvaluator:
 
         assert loss.structural_accuracy == 0.0
         assert loss.completeness == 0.0
-        assert loss.reconstruction_fidelity == 0.0
         # Validator always runs
         assert 0.0 <= loss.validator_score <= 100.0
 
@@ -327,19 +313,6 @@ class TestEvaluator:
         loss = evaluator.compute_loss(local_model=local, oracle_model=oracle)
         assert loss.completeness == pytest.approx(0.65)
 
-    def test_evaluator_compute_loss_no_code(self):
-        """Without code args, L3 defaults to 0.0."""
-        actors = [Actor(id="a1", name="User", status=Status.ACTIVE, type=ActorType.HUMAN)]
-        local = _make_model(actors=actors)
-        oracle = _make_model(actors=actors)
-
-        evaluator = Evaluator()
-        loss = evaluator.compute_loss(local_model=local, oracle_model=oracle)
-
-        assert loss.structural_accuracy == 1.0
-        assert loss.completeness == 1.0
-        assert loss.reconstruction_fidelity == 0.0
-
 
 # ---------------------------------------------------------------------------
 # Pareto front tests
@@ -353,19 +326,16 @@ class TestParetoFront:
         a = LossVector(
             structural_accuracy=0.9,
             completeness=0.9,
-            reconstruction_fidelity=0.9,
             validator_score=90.0,
         )
         b = LossVector(
             structural_accuracy=0.95,
             completeness=0.6,
-            reconstruction_fidelity=0.95,
             validator_score=95.0,
         )
         c = LossVector(
             structural_accuracy=0.5,
             completeness=0.5,
-            reconstruction_fidelity=0.5,
             validator_score=50.0,
         )
 
@@ -382,9 +352,9 @@ class TestParetoFront:
     def test_pareto_front_all_non_dominated(self):
         """If no point dominates another, all are on the front."""
         points = [
-            LossVector(structural_accuracy=1.0, completeness=0.0, reconstruction_fidelity=0.5, validator_score=50.0),
-            LossVector(structural_accuracy=0.0, completeness=1.0, reconstruction_fidelity=0.5, validator_score=50.0),
-            LossVector(structural_accuracy=0.5, completeness=0.5, reconstruction_fidelity=1.0, validator_score=50.0),
+            LossVector(structural_accuracy=1.0, completeness=0.0, validator_score=50.0),
+            LossVector(structural_accuracy=0.0, completeness=1.0, validator_score=50.0),
+            LossVector(structural_accuracy=0.5, completeness=0.5, validator_score=100.0),
         ]
 
         evaluator = Evaluator()
@@ -393,7 +363,7 @@ class TestParetoFront:
 
     def test_pareto_front_single_point(self):
         """Single point is always on the front."""
-        p = LossVector(structural_accuracy=0.5, completeness=0.5, reconstruction_fidelity=0.5, validator_score=50.0)
+        p = LossVector(structural_accuracy=0.5, completeness=0.5, validator_score=50.0)
         evaluator = Evaluator()
         front = evaluator.compute_pareto_front([p])
         assert front == [p]
@@ -403,64 +373,6 @@ class TestParetoFront:
         evaluator = Evaluator()
         front = evaluator.compute_pareto_front([])
         assert front == []
-
-
-# ---------------------------------------------------------------------------
-# Reconstruction fidelity (AST+Embedding ensemble) tests
-# ---------------------------------------------------------------------------
-
-
-class TestReconstructionFidelity:
-    def test_identical_code_scores_one(self):
-        from architecture_model.training.evaluator import compute_reconstruction_fidelity
-
-        code = "class Foo:\n    def bar(self): pass\n    def baz(self): pass\n"
-        assert compute_reconstruction_fidelity(code, code) == 1.0
-
-    def test_partial_overlap(self):
-        from architecture_model.training.evaluator import compute_reconstruction_fidelity
-
-        original = "class Foo:\n    def bar(self): pass\n    def baz(self): pass\n"
-        stubs = "class Foo:\n    def bar(self): ...\n    def qux(self): ...\n"
-        score = compute_reconstruction_fidelity(original, stubs)
-        # Signatures: original = {Foo, Foo.bar, Foo.baz}, stubs = {Foo, Foo.bar, Foo.qux}
-        # Jaccard = 2/4 = 0.5
-        assert 0.4 < score < 0.6
-
-    def test_no_overlap_scores_zero(self):
-        from architecture_model.training.evaluator import compute_reconstruction_fidelity
-
-        original = "class Foo:\n    def bar(self): pass\n"
-        stubs = "class Baz:\n    def qux(self): ...\n"
-        assert compute_reconstruction_fidelity(original, stubs) == 0.0
-
-    def test_invalid_syntax_falls_back_to_regex(self):
-        from architecture_model.training.evaluator import compute_reconstruction_fidelity
-
-        original = "class Foo:\n    def bar(self): pass\n"
-        stubs = "class Foo:\n    def bar(self  # invalid syntax\n"
-        score = compute_reconstruction_fidelity(original, stubs)
-        # Should still find "Foo" via regex fallback
-        assert score > 0.0
-
-    def test_embedding_score_ensemble(self):
-        from architecture_model.training.evaluator import compute_reconstruction_fidelity
-
-        original = "class Foo:\n    def bar(self): pass\n    def baz(self): pass\n"
-        stubs = "class Foo:\n    def bar(self): ...\n    def qux(self): ...\n"
-        # AST Jaccard alone = 0.5
-        # With embedding_score=0.9: ensemble = 0.5*0.5 + 0.5*0.9 = 0.7
-        score = compute_reconstruction_fidelity(original, stubs, embedding_score=0.9)
-        assert score == pytest.approx(0.7, abs=0.05)
-
-    def test_functions_outside_class(self):
-        from architecture_model.training.evaluator import compute_reconstruction_fidelity
-
-        original = "def helper(): pass\ndef another(): pass\n"
-        stubs = "def helper(): ...\ndef different(): ...\n"
-        score = compute_reconstruction_fidelity(original, stubs)
-        # Signatures: {helper, another} vs {helper, different} → Jaccard = 1/3
-        assert 0.2 < score < 0.5
 
 
 # ---------------------------------------------------------------------------
