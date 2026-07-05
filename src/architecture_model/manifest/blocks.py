@@ -55,7 +55,45 @@ def _load_blocks_from_config() -> dict[str, dict[str, Any]]:
 FUNCTIONAL_BLOCKS: dict[str, dict[str, Any]] = _load_blocks_from_config()
 
 
-def _process_block(root: Path, block_id: str, block_def: dict) -> dict[str, Any]:
+def _build_sub_block_manifest(
+    sub_block_cfg: Any, all_sub_functions: list, block_id: str
+) -> dict[str, Any]:
+    """Build manifest entry for a sub-block, claiming matching files from the pool."""
+    claimed_files: set[str] = set()
+    my_sub_functions: list[dict[str, Any]] = []
+
+    for sf in all_sub_functions:
+        filename = sf["file"].split("/")[-1]  # basename
+        rel_path = sf["file"]
+        # Match by filename in files list, or by directory prefix in dirs list
+        if filename in sub_block_cfg.files or any(
+            rel_path.startswith(d) for d in sub_block_cfg.dirs
+        ):
+            my_sub_functions.append(sf)
+            claimed_files.add(sf["file"])
+
+    # Recurse for nested sub-blocks
+    child_blocks: list[dict[str, Any]] = []
+    for child_cfg in sub_block_cfg.sub_blocks:
+        child_manifest = _build_sub_block_manifest(child_cfg, my_sub_functions, sub_block_cfg.id)
+        child_blocks.append(child_manifest)
+
+    # Determine status
+    status = "active" if any(sf["status"] == "active" for sf in my_sub_functions) else "dormant"
+
+    return {
+        "id": sub_block_cfg.id,
+        "name": sub_block_cfg.name,
+        "description": sub_block_cfg.description,
+        "status": status,
+        "sub_functions": my_sub_functions,
+        "sub_blocks": child_blocks,
+    }
+
+
+def _process_block(
+    root: Path, block_id: str, block_def: dict, sub_block_configs: list | None = None
+) -> dict[str, Any]:
     """Process a single functional block, scanning all its files."""
     sub_functions: list[dict[str, Any]] = []
     all_files: list[Path] = []
@@ -105,9 +143,35 @@ def _process_block(root: Path, block_id: str, block_def: dict) -> dict[str, Any]
     # Block status: active if any sub-function is active
     block_status = "active" if any(sf["status"] == "active" for sf in sub_functions) else "dormant"
 
+    # Build hierarchical sub_blocks if config provides them
+    sub_blocks_manifest: list[dict[str, Any]] = []
+    if sub_block_configs:
+        claimed: set[str] = set()
+        for sb_cfg in sub_block_configs:
+            sb_manifest = _build_sub_block_manifest(sb_cfg, sub_functions, block_id)
+            sub_blocks_manifest.append(sb_manifest)
+            claimed.update(sf["file"] for sf in sb_manifest["sub_functions"])
+
+        # Ungrouped files
+        ungrouped = [sf for sf in sub_functions if sf["file"] not in claimed]
+        if ungrouped:
+            sub_blocks_manifest.append(
+                {
+                    "id": f"{block_id}.misc",
+                    "name": "Ungrouped",
+                    "description": "",
+                    "status": "active"
+                    if any(sf["status"] == "active" for sf in ungrouped)
+                    else "dormant",
+                    "sub_functions": ungrouped,
+                    "sub_blocks": [],
+                }
+            )
+
     return {
         "name": block_def["name"],
         "status": block_status,
         "description_source": block_def["description_source"],
         "sub_functions": sub_functions,
+        "sub_blocks": sub_blocks_manifest,
     }

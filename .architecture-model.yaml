@@ -85,32 +85,55 @@ functional_blocks:
     dirs:
     - src/architecture_model/training
     files:
-    - src/architecture_model/training/backward_validator.py
-    - src/architecture_model/training/context_builder.py
-    - src/architecture_model/training/controller.py
-    - src/architecture_model/training/coverage_scorer.py
-    - src/architecture_model/training/dataset.py
-    - src/architecture_model/training/embeddings.py
-    - src/architecture_model/training/evaluator.py
-    - src/architecture_model/training/few_shot_examples.py
-    - src/architecture_model/training/interface_enforcer.py
-    - src/architecture_model/training/model_comparison.py
-    - src/architecture_model/training/model_config.py
-    - src/architecture_model/training/multi_pass.py
-    - src/architecture_model/training/oracle.py
-    - src/architecture_model/training/oracle_context.py
-    - src/architecture_model/training/oracle_coverage.py
-    - src/architecture_model/training/oracle_critique.py
-    - src/architecture_model/training/oracle_evolution.py
-    - src/architecture_model/training/oracle_few_shot.py
-    - src/architecture_model/training/oracle_performance.py
-    - src/architecture_model/training/pipeline.py
-    - src/architecture_model/training/refiner.py
-    - src/architecture_model/training/repo_fetcher.py
-    - src/architecture_model/training/surrogate.py
-    - src/architecture_model/training/test_analyzer.py
-    - src/architecture_model/training/test_runner.py
-    - src/architecture_model/training/trainer.py
-    - src/architecture_model/training/trainer_dpo.py
+    - src/architecture_model/training/__init__.py
     description_source: MPC Training Loop for Architecture Model extraction.
+    sub_blocks:
+      F8.A:
+        name: MPC Pipeline Orchestration
+        description: Top-level training loop coordination, convergence control, and multi-pass extraction
+        files:
+        - pipeline.py
+        - controller.py
+        - multi_pass.py
+      F8.B:
+        name: Oracle System
+        description: Remote LLM oracle for scoring, critique, context assembly, and prompt evolution
+        files:
+        - oracle.py
+        - oracle_context.py
+        - oracle_coverage.py
+        - oracle_critique.py
+        - oracle_evolution.py
+        - oracle_few_shot.py
+        - oracle_performance.py
+        - context_builder.py
+        - refiner.py
+        - few_shot_examples.py
+      F8.C:
+        name: Evaluation and Scoring
+        description: Multi-objective loss vectors, coverage scoring, backward validation, interface enforcement
+        files:
+        - evaluator.py
+        - coverage_scorer.py
+        - backward_validator.py
+        - interface_enforcer.py
+      F8.D:
+        name: Model Training
+        description: Surrogate inference, DPO preference pairs, LoRA fine-tuning, model configuration
+        files:
+        - trainer.py
+        - trainer_dpo.py
+        - surrogate.py
+        - best_of_n.py
+        - model_config.py
+        - model_comparison.py
+      F8.E:
+        name: Data and Infrastructure
+        description: Training dataset storage, embeddings, repo fetching, test integration
+        files:
+        - dataset.py
+        - embeddings.py
+        - repo_fetcher.py
+        - test_runner.py
+        - test_analyzer.py
 metrics: []

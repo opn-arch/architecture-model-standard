@@ -94,6 +94,8 @@ def get_config(root: Path) -> ProjectConfig:
     """Load config from file if it exists, otherwise auto-discover.
 
     This is the recommended entry point — it always returns a valid config.
+    When loading from YAML, auto-discovers sub_blocks for any block that
+    doesn't already define them.
 
     Args:
         root: Project root directory.
@@ -103,7 +105,14 @@ def get_config(root: Path) -> ProjectConfig:
     """
     config_path = root / CONFIG_FILENAME
     if config_path.exists():
-        return load_config(root)
+        config = load_config(root)
+        # Auto-discover sub_blocks for blocks that don't define them in YAML
+        for block in config.functional_blocks:
+            if not block.sub_blocks and block.dirs:
+                block_path = root / block.dirs[0]
+                if block_path.is_dir():
+                    block.sub_blocks = _discover_sub_blocks(block_path, block.id, root)
+        return config
     return discover_config(root)
 
 
@@ -143,7 +152,7 @@ def write_config(config: ProjectConfig, root: Path | None = None) -> Path:
 _LAYER_HEURISTICS: list[tuple[str, list[str]]] = [
     ("web-layer", ["app/routers", "app/views", "app/api", "src/api", "api/"]),
     ("services-layer", ["app/services", "src/services", "services/"]),
-    ("data-layer", ["app/models", "src/models", "models/", "alembic", "app/db", "app/database", "src/db", "db/"]),
+    ("data-layer", ["app/models", "src/models", "models/", "alembic"]),
     ("pipeline-layer", ["scripts", "pipeline", "src/pipeline", "jobs/"]),
     ("scheduling-layer", ["app/tasks", "tasks/", "celery/"]),
 ]
@@ -196,20 +205,14 @@ def _discover_metrics(root: Path) -> list[MetricConfig]:
 
     for heuristic in _METRIC_HEURISTICS:
         for path in heuristic["paths"]:
-            metric_dir = root / path
-            if metric_dir.is_dir():
-                # Use rglob to count files recursively (subdirectories included)
-                pattern = heuristic["pattern"]
-                matched_files = list(metric_dir.rglob(pattern.lstrip("**/") if pattern.startswith("**/") else pattern))
-                if not matched_files:
-                    continue
+            if (root / path).is_dir():
                 metrics.append(
                     MetricConfig(
                         label=heuristic["label"],
                         path=path,
                         pattern=heuristic["pattern"],
                         exclude=heuristic["exclude"],
-                        recursive=True,
+                        recursive=heuristic.get("recursive", False),
                     )
                 )
                 break  # Use first match per label
@@ -218,60 +221,97 @@ def _discover_metrics(root: Path) -> list[MetricConfig]:
 
 
 # ---------------------------------------------------------------------------
-# Functional block auto-discovery
+# Sub-block auto-discovery
 # ---------------------------------------------------------------------------
 
 
-def _infer_block_name_from_imports(package_dir: Path) -> str:
-    """Infer a semantic block name from characteristic imports in the package."""
-    import ast as _ast
+def _discover_sub_blocks(
+    block_dir: Path,
+    block_id: str,
+    root: Path,
+    depth: int = 0,
+    max_depth: int = 3,
+) -> list:
+    """Discover sub-blocks from sub-directories within a block's directory.
 
-    imports: set[str] = set()
-    for py_file in package_dir.rglob("*.py"):
-        try:
-            tree = _ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
-        except SyntaxError:
+    Only creates sub-blocks for directories that contain .py files.
+    Recurses up to max_depth levels.
+    """
+    from .schema import SubBlockConfig
+
+    if depth >= max_depth:
+        return []
+
+    sub_blocks = []
+    sub_idx = 0
+
+    try:
+        children = sorted(block_dir.iterdir())
+    except (PermissionError, OSError):
+        return []
+
+    for child in children:
+        if not child.is_dir():
             continue
-        for node in _ast.walk(tree):
-            if isinstance(node, _ast.Import):
-                for alias in node.names:
-                    imports.add(alias.name.split(".")[0])
-            elif isinstance(node, _ast.ImportFrom) and node.module:
-                imports.add(node.module.split(".")[0])
+        if child.name.startswith(".") or child.name == "__pycache__":
+            continue
 
-    # Heuristic mapping: characteristic imports → semantic names
-    # Dir-name + imports combined rules go FIRST (highest confidence),
-    # generic fallbacks at bottom for packages without descriptive dir names.
-    dir_lower = package_dir.name.lower()
+        # Check if this directory has Python files
+        py_files = list(child.glob("*.py"))
+        if not py_files:
+            continue
 
-    # Strong dir-name signals combined with matching imports (highest priority)
-    # If dir IS "api/routes/endpoints" AND imports web framework → REST API
-    if any(kw in dir_lower for kw in ("api", "route", "endpoint", "view", "handler")) and \
-       imports & {"fastapi", "flask", "starlette", "django"}:
-        return "REST API Endpoints"
+        sub_idx += 1
+        # Use letter suffixes: F8.A, F8.B, etc. For deeper levels: F8.A.1, F8.A.2
+        if depth == 0:
+            sub_id = f"{block_id}.{chr(64 + sub_idx)}"  # A, B, C...
+        else:
+            sub_id = f"{block_id}.{sub_idx}"  # numeric for deeper levels
 
-    # Database-related (by dir name + imports)
-    if any(kw in dir_lower for kw in ("model", "db", "database")) and \
-       imports & {"sqlalchemy", "tortoise", "asyncpg", "psycopg2", "databases"}:
-        return "Database Models" if "model" in dir_lower else "Database Access"
+        # Get name from directory or __init__.py docstring
+        name = child.name.replace("_", " ").title()
+        init_file = child / "__init__.py"
+        if init_file.exists():
+            try:
+                content = init_file.read_text(encoding="utf-8")
+                # Extract module docstring
+                import ast
 
-    # Background tasks
-    if imports & {"celery", "dramatiq", "rq"}:
-        return "Background Tasks"
+                tree = ast.parse(content)
+                if (
+                    tree.body
+                    and isinstance(tree.body[0], ast.Expr)
+                    and isinstance(tree.body[0].value, ast.Constant)
+                ):
+                    docstring = tree.body[0].value.value
+                    first_line = docstring.strip().split("\n")[0].strip()
+                    if first_line and len(first_line) < 80:
+                        name = first_line
+            except Exception:
+                pass
 
-    # Schema packages
-    if imports & {"pydantic"} and "schema" in dir_lower:
-        return "Data Schemas"
+        rel_dir = str(child.relative_to(root))
 
-    # Generic web framework (no API-specific dir name)
-    if imports & {"fastapi", "flask", "django", "starlette"}:
-        return "Web Application"
+        # Recurse into sub-directories
+        nested = _discover_sub_blocks(child, sub_id, root, depth + 1, max_depth)
 
-    # Generic database (no db-specific dir name)
-    if imports & {"sqlalchemy", "asyncpg", "psycopg2", "databases"}:
-        return "Database Access"
+        sub_blocks.append(
+            SubBlockConfig(
+                id=sub_id,
+                name=name,
+                dirs=[rel_dir],
+                files=[],
+                description="",
+                sub_blocks=nested,
+            )
+        )
 
-    return ""
+    return sub_blocks
+
+
+# ---------------------------------------------------------------------------
+# Functional block auto-discovery
+# ---------------------------------------------------------------------------
 
 
 def _discover_functional_blocks(root: Path) -> list[FunctionalBlockConfig]:
@@ -309,24 +349,23 @@ def _discover_functional_blocks(root: Path) -> list[FunctionalBlockConfig]:
             str(f.relative_to(root)) for f in subdir.rglob("*.py") if f.name != "__init__.py"
         )
 
+        # Derive name from directory name
+        dir_name = subdir.name.replace("_", " ").replace("-", " ").title()
+
         # Try to get description from __init__.py docstring
         description = _get_package_description(subdir)
 
-        # Use docstring as name if it's short enough (under 40 chars), otherwise use heuristics
-        if description and len(description) < 40:
-            block_name = description
-        else:
-            # Try import-based semantic naming, fall back to title-cased dir
-            block_name = _infer_block_name_from_imports(subdir) or \
-                         subdir.name.replace("_", " ").replace("-", " ").title()
+        # Auto-discover sub-blocks from sub-directories
+        sub_blocks = _discover_sub_blocks(subdir, block_id, root)
 
         blocks.append(
             FunctionalBlockConfig(
                 id=block_id,
-                name=block_name,
+                name=dir_name,
                 dirs=[rel_dir],
                 files=py_files,
                 description_source=description or f"auto-discovered from {rel_dir}/",
+                sub_blocks=sub_blocks,
             )
         )
 
@@ -460,9 +499,11 @@ def _fblocks_from_top_level_dirs(root: Path) -> list[FunctionalBlockConfig]:
         if not py_files:
             continue
 
-        dir_name = _infer_block_name_from_imports(child) or \
-                   child.name.replace("_", " ").replace("-", " ").title()
+        dir_name = child.name.replace("_", " ").replace("-", " ").title()
         description = _get_package_description(child) if (child / "__init__.py").exists() else ""
+
+        # Auto-discover sub-blocks from sub-directories
+        sub_blocks = _discover_sub_blocks(child, f"F{idx}", root)
 
         blocks.append(
             FunctionalBlockConfig(
@@ -471,6 +512,7 @@ def _fblocks_from_top_level_dirs(root: Path) -> list[FunctionalBlockConfig]:
                 dirs=[child.name],
                 files=py_files,
                 description_source=description or f"auto-discovered from {child.name}/",
+                sub_blocks=sub_blocks,
             )
         )
         idx += 1

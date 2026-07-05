@@ -43,7 +43,12 @@ def generate_manifest(project_root: Path, config: Optional[Any] = None) -> dict[
     scanned_files: set[str] = set()
 
     for block_id, block_def in blocks_dict.items():
-        block_result = _process_block(root, block_id, block_def)
+        # Find matching FunctionalBlockConfig to get sub_block_configs
+        block_cfg = next((b for b in config.functional_blocks if b.id == block_id), None)
+        sub_block_configs = block_cfg.sub_blocks if block_cfg else None
+        block_result = _process_block(
+            root, block_id, block_def, sub_block_configs=sub_block_configs
+        )
         functional_blocks[block_id] = block_result
         for sf in block_result["sub_functions"]:
             if sf["file"] not in scanned_files:

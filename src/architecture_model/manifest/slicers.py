@@ -10,6 +10,26 @@ from pathlib import Path
 from typing import Any
 
 
+def _render_block_tree(sub_blocks: list[dict], indent: int = 1) -> list[str]:
+    """Recursively render sub-block hierarchy as indented markdown lines."""
+    lines: list[str] = []
+    prefix = "  " * indent
+    for sb in sub_blocks:
+        status_tag = f"[{sb['status'].upper()}]" if sb.get("status") else ""
+        desc = f" — {sb['description']}" if sb.get("description") else ""
+        lines.append(f"{prefix}**{sb['id']}: {sb['name']}** {status_tag}{desc}")
+        for sf in sb.get("sub_functions", []):
+            sf_status = f"[{sf['status'].upper()}]" if sf.get("status") else ""
+            loc = f", {sf['line_count']} LOC" if sf.get("line_count") else ""
+            lines.append(f"{prefix}  - {sf['id']} {sf['name']} {sf_status} ({sf['file']}{loc})")
+            for fn in sf.get("functions", [])[:3]:
+                lines.append(f"{prefix}    - `{fn}`")
+        # Recurse into nested sub-blocks
+        if sb.get("sub_blocks"):
+            lines.extend(_render_block_tree(sb["sub_blocks"], indent + 1))
+    return lines
+
+
 def _get_layer_prefixes() -> dict[str, str]:
     """Derive layer prefix map from config for module grouping.
 
@@ -82,12 +102,19 @@ def _slice_functional_architecture(manifest: dict) -> str:
     lines.append("## Functional Blocks")
     for block_id, block in manifest.get("functional_blocks", {}).items():
         lines.append(f"\n### {block_id}: {block['name']} [{block['status']}]")
-        for sf in block.get("sub_functions", []):
-            status_tag = f"[{sf['status'].upper()}]" if sf.get("status") else ""
-            lines.append(f"  - {sf['id']} {sf['name']} {status_tag} ({sf['file']})")
-            if sf.get("functions"):
-                for fn in sf["functions"][:3]:
-                    lines.append(f"    - {fn}")
+
+        sub_blocks = block.get("sub_blocks", [])
+        if sub_blocks:
+            # Use hierarchical rendering
+            lines.extend(_render_block_tree(sub_blocks))
+        else:
+            # Flat rendering (backward compat)
+            for sf in block.get("sub_functions", []):
+                status_tag = f"[{sf['status'].upper()}]" if sf.get("status") else ""
+                lines.append(f"  - {sf['id']} {sf['name']} {status_tag} ({sf['file']})")
+                if sf.get("functions"):
+                    for fn in sf["functions"][:3]:
+                        lines.append(f"    - {fn}")
     return "\n".join(lines)
 
 
@@ -216,14 +243,16 @@ def _slice_readme(manifest: dict) -> str:
     lines.append("## Functional Blocks")
     for block_id, block in manifest.get("functional_blocks", {}).items():
         sf_count = len(block.get("sub_functions", []))
+        sub_block_count = len(block.get("sub_blocks", []))
+        extra = f", {sub_block_count} sub-blocks" if sub_block_count else ""
         lines.append(
-            f"- {block_id}: {block['name']} [{block['status']}] ({sf_count} sub-functions)"
+            f"- {block_id}: {block['name']} [{block['status']}] ({sf_count} modules{extra})"
         )
     return "\n".join(lines)
 
 
 def _slice_testing(manifest: dict) -> str:
-    """Test files + coverage reference."""
+    """Test files + coverage reference + sub-block mapping."""
     lines = ["# Testing (from manifest)", ""]
     test_modules = [m for m in manifest.get("modules", []) if "test" in m["file"].lower()]
     if test_modules:
@@ -232,6 +261,15 @@ def _slice_testing(manifest: dict) -> str:
             lines.append(f"  - {mod['file']} ({mod['line_count']} lines)")
     else:
         lines.append("No test files found in scanned modules.")
+
+    # Sub-block test mapping
+    lines.append("\n## Functional Block Test Coverage")
+    for block_id, block in manifest.get("functional_blocks", {}).items():
+        sub_blocks = block.get("sub_blocks", [])
+        if sub_blocks:
+            lines.append(f"\n### {block_id}: {block['name']}")
+            lines.extend(_render_block_tree(sub_blocks))
+
     return "\n".join(lines)
 
 
@@ -295,7 +333,9 @@ def _slice_use_cases(manifest: dict) -> str:
     for block_id, block in manifest.get("functional_blocks", {}).items():
         sf_count = len(block.get("sub_functions", []))
         active = sum(1 for sf in block.get("sub_functions", []) if sf["status"] == "active")
-        lines.append(f"- {block_id}: {block['name']} ({active}/{sf_count} active)")
+        sub_block_count = len(block.get("sub_blocks", []))
+        extra = f", {sub_block_count} sub-blocks" if sub_block_count else ""
+        lines.append(f"- {block_id}: {block['name']} ({active}/{sf_count} active{extra})")
     lines.append("")
 
     # Router endpoints (user-facing capabilities)
@@ -358,8 +398,15 @@ def _slice_requirements_analysis(manifest: dict) -> str:
         lines.append(
             f"\n### {block_id}: {block['name']} [{block['status']}] ({active}/{len(sfs)} active)"
         )
-        for sf in sfs:
-            lines.append(f"  - {sf['name']} [{sf['status']}]")
+
+        sub_blocks = block.get("sub_blocks", [])
+        if sub_blocks:
+            # Use hierarchical rendering for requirement traceability
+            lines.extend(_render_block_tree(sub_blocks))
+        else:
+            # Flat rendering (backward compat)
+            for sf in sfs:
+                lines.append(f"  - {sf['name']} [{sf['status']}]")
 
     # --- All router capabilities (what the system CAN do via API) ---
     lines.append("\n## API Capabilities (30 routers)")

@@ -47,6 +47,18 @@ class LayerConfig:
 
 
 @dataclass
+class SubBlockConfig:
+    """A sub-block within a functional block. Recursive — can contain children."""
+
+    id: str
+    name: str
+    files: list[str] = field(default_factory=list)
+    dirs: list[str] = field(default_factory=list)
+    description: str = ""
+    sub_blocks: list["SubBlockConfig"] = field(default_factory=list)
+
+
+@dataclass
 class FunctionalBlockConfig:
     """A functional block (capability) and its implementing files/directories."""
 
@@ -55,6 +67,7 @@ class FunctionalBlockConfig:
     dirs: list[str] = field(default_factory=list)
     files: list[str] = field(default_factory=list)
     description_source: str = ""
+    sub_blocks: list[SubBlockConfig] = field(default_factory=list)
 
 
 @dataclass
@@ -66,6 +79,35 @@ class MetricConfig:
     pattern: str = "*.py"
     exclude: list[str] = field(default_factory=list)
     recursive: bool = False
+
+
+def _parse_sub_blocks(data: dict[str, Any]) -> list[SubBlockConfig]:
+    """Recursively parse sub_blocks from YAML dict."""
+    return [
+        SubBlockConfig(
+            id=sb_id,
+            name=sb_def.get("name", ""),
+            files=sb_def.get("files", []),
+            dirs=sb_def.get("dirs", []),
+            description=sb_def.get("description", ""),
+            sub_blocks=_parse_sub_blocks(sb_def.get("sub_blocks", {})),
+        )
+        for sb_id, sb_def in data.items()
+    ]
+
+
+def _serialize_sub_blocks(sbs: list[SubBlockConfig]) -> dict:
+    """Recursively serialize sub_blocks to YAML-compatible dict."""
+    return {
+        sb.id: {
+            "name": sb.name,
+            **({"files": sb.files} if sb.files else {}),
+            **({"dirs": sb.dirs} if sb.dirs else {}),
+            **({"description": sb.description} if sb.description else {}),
+            **({"sub_blocks": _serialize_sub_blocks(sb.sub_blocks)} if sb.sub_blocks else {}),
+        }
+        for sb in sbs
+    }
 
 
 @dataclass
@@ -167,6 +209,7 @@ class ProjectConfig:
                 dirs=block_def.get("dirs", []),
                 files=block_def.get("files", []),
                 description_source=block_def.get("description_source", ""),
+                sub_blocks=_parse_sub_blocks(block_def.get("sub_blocks", {})),
             )
             for block_id, block_def in blocks_data.items()
         ]
@@ -215,6 +258,11 @@ class ProjectConfig:
                     "dirs": block.dirs,
                     "files": block.files,
                     "description_source": block.description_source,
+                    **(
+                        {"sub_blocks": _serialize_sub_blocks(block.sub_blocks)}
+                        if block.sub_blocks
+                        else {}
+                    ),
                 }
                 for block in self.functional_blocks
             },
