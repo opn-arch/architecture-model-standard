@@ -29,6 +29,11 @@ from architecture_model.training.interface_enforcer import InterfaceEnforcer, En
 from architecture_model.training.backward_validator import BackwardValidator, BackwardResult
 from architecture_model.training.model_comparison import compare_models
 from architecture_model.training.coverage_scorer import CoverageScorer, CoverageScore
+from architecture_model.training.test_runner import TestRunner, TestRunResult
+from architecture_model.training.test_analyzer import (
+    TestStructureAnalyzer, TestStructure,
+    TestCoverageAnalyzer, TestCoverage,
+)
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -49,4 +54,7 @@ __all__ = [
     "BackwardValidator", "BackwardResult",
     "compare_models",
     "CoverageScorer", "CoverageScore",
+    "TestRunner", "TestRunResult",
+    "TestStructureAnalyzer", "TestStructure",
+    "TestCoverageAnalyzer", "TestCoverage",
 ]
