@@ -222,7 +222,7 @@ class TrainingPipeline:
                     "completeness": loss.completeness,
                     "validator_score": loss.validator_score,
                 }
-                oracle_output = str(oracle_model)
+                oracle_output = oracle_model.to_yaml()
 
                 # Record loss for Pareto-based convergence tracking
                 self.controller.record_loss(loss)
@@ -231,8 +231,8 @@ class TrainingPipeline:
                 if loss.structural_accuracy < 0.6:
                     self.store.save_preference(
                         prompt=code_context,
-                        chosen=str(oracle_model),
-                        rejected=str(local_model),
+                    chosen=oracle_model.to_yaml(),
+                    rejected=local_model.to_yaml(),
                         margin=1.0 - loss.structural_accuracy,
                         iteration=self.controller.state.iteration,
                     )
@@ -242,7 +242,7 @@ class TrainingPipeline:
             repo_url=repo.url,
             repo_sha=repo.default_branch,
             code_context=code_context,
-            local_output=str(local_model),
+            local_output=local_model.to_yaml(),
             oracle_output=oracle_output,
             loss_vector=loss_vector,
             iteration=self.controller.state.iteration,

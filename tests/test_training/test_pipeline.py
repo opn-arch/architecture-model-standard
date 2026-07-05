@@ -30,6 +30,7 @@ def _make_architecture_model():
     """Create a minimal mock ArchitectureModel."""
     model = MagicMock()
     model.entity_count = 5
+    model.to_yaml = MagicMock(return_value="entities: {}\nrelationships: []\n")
     return model
 
 
@@ -400,14 +401,14 @@ class TestProcessRepoEnhanced:
         mock_model.entities = MagicMock()
         for attr in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components']:
             setattr(mock_model.entities, attr, [])
-        mock_model.__str__ = MagicMock(return_value="local_yaml")
+        mock_model.to_yaml = MagicMock(return_value="local_yaml")
 
         mock_oracle_model = MagicMock()
         mock_oracle_model.relationships = []
         mock_oracle_model.entities = MagicMock()
         for attr in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components']:
             setattr(mock_oracle_model.entities, attr, [])
-        mock_oracle_model.__str__ = MagicMock(return_value="oracle_yaml")
+        mock_oracle_model.to_yaml = MagicMock(return_value="oracle_yaml")
 
         surrogate = MagicMock()
         surrogate.confidence = MagicMock(return_value=0.8)
