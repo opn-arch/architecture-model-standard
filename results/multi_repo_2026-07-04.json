@@ -1,0 +1,368 @@
+{
+  "timestamp": "2026-07-04T22:44:53.101489",
+  "config": {
+    "oracle": "copilot-relay (localhost:8400)",
+    "surrogate": "qwen2.5:7b",
+    "repos_processed": 10
+  },
+  "results": [
+    {
+      "name": "click",
+      "url": "https://github.com/pallets/click",
+      "status": "ok",
+      "error": null,
+      "sha": "16fc00e2f4a2",
+      "manifest": {
+        "modules": 16,
+        "interfaces": 53,
+        "blocks": 1
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 1.0,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 1.0
+      },
+      "loss": {
+        "structural_accuracy": 0.16030927835051545,
+        "completeness": 0.13473837209302322,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 90.0
+      },
+      "backward": {
+        "test_coverage": 0.625,
+        "doc_coverage": 0.47619047619047616,
+        "structural_coverage": 1.0,
+        "consistency": 0.5890827922422959,
+        "overall": 0.6987587932986692
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 90.74010396003723
+    },
+    {
+      "name": "typer",
+      "url": "https://github.com/tiangolo/typer",
+      "status": "ok",
+      "error": null,
+      "sha": "7fb978fbf44c",
+      "manifest": {
+        "modules": 29,
+        "interfaces": 53,
+        "blocks": 2
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 0.9985542865404077,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 0.9992771432702039
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 0.0
+      },
+      "backward": {
+        "test_coverage": 0.52,
+        "doc_coverage": 0.2641509433962264,
+        "structural_coverage": 0.9992771432702039,
+        "consistency": 0.824813005668446,
+        "overall": 0.688816583077418
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 204.17008471488953
+    },
+    {
+      "name": "httpcore",
+      "url": "https://github.com/encode/httpcore",
+      "status": "ok",
+      "error": null,
+      "sha": "10a658221deb",
+      "manifest": {
+        "modules": 27,
+        "interfaces": 83,
+        "blocks": 4
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 1.0,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 1.0
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 98.0
+      },
+      "backward": {
+        "test_coverage": 0.0,
+        "doc_coverage": 0.5614035087719298,
+        "structural_coverage": 1.0,
+        "consistency": 0.8275157577614135,
+        "overall": 0.6191596411947393
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 147.04829096794128
+    },
+    {
+      "name": "anyio",
+      "url": "https://github.com/agronholm/anyio",
+      "status": "ok",
+      "error": null,
+      "sha": "85b8b6eb2e21",
+      "manifest": {
+        "modules": 38,
+        "interfaces": 93,
+        "blocks": 5
+      },
+      "validator_score": 96,
+      "coverage": {
+        "module": 1.0,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 1.0
+      },
+      "loss": {
+        "structural_accuracy": 0.23198970840480276,
+        "completeness": 0.2592516753536858,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 68.0
+      },
+      "backward": {
+        "test_coverage": 0.3333333333333333,
+        "doc_coverage": 1.0,
+        "structural_coverage": 1.0,
+        "consistency": 0.7404588382991949,
+        "overall": 0.768448042908132
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 183.43075585365295
+    },
+    {
+      "name": "python-dotenv",
+      "url": "https://github.com/theskumar/python-dotenv",
+      "status": "ok",
+      "error": null,
+      "sha": "751f8c148222",
+      "manifest": {
+        "modules": 7,
+        "interfaces": 6,
+        "blocks": 1
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 1.0,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 1.0
+      },
+      "loss": {
+        "structural_accuracy": 0.11538461538461539,
+        "completeness": 0.12,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 98.0
+      },
+      "backward": {
+        "test_coverage": 0.7142857142857143,
+        "doc_coverage": 0.13333333333333333,
+        "structural_coverage": 1.0,
+        "consistency": 0.7941024142281156,
+        "overall": 0.703763698795124
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 68.27032017707825
+    },
+    {
+      "name": "pydantic",
+      "url": "https://github.com/pydantic/pydantic",
+      "status": "ok",
+      "error": null,
+      "sha": "c9688f493b05",
+      "manifest": {
+        "modules": 98,
+        "interfaces": 324,
+        "blocks": 6
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 0.9305964818287347,
+        "interface": 0.8302469135802469,
+        "block": 1.0,
+        "overall": 0.9143723149884413
+      },
+      "loss": {
+        "structural_accuracy": 0.05940594059405941,
+        "completeness": 0.04827586206896552,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 72.0
+      },
+      "backward": {
+        "test_coverage": 0.696969696969697,
+        "doc_coverage": 0.5714285714285714,
+        "structural_coverage": 0.9143723149884413,
+        "consistency": 0.8909937193965948,
+        "overall": 0.7855882628738196
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 172.50684189796448
+    },
+    {
+      "name": "fastapi",
+      "url": "https://github.com/tiangolo/fastapi",
+      "status": "ok",
+      "error": null,
+      "sha": "dd17e4f723a2",
+      "manifest": {
+        "modules": 42,
+        "interfaces": 9,
+        "blocks": 6
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 0.9923403025339628,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 0.9961701512669814
+      },
+      "loss": {
+        "structural_accuracy": 0.03157894736842105,
+        "completeness": 0.034426229508196717,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 68.0
+      },
+      "backward": {
+        "test_coverage": 0.75,
+        "doc_coverage": 0.23893805309734514,
+        "structural_coverage": 0.9961701512669814,
+        "consistency": 0.9111002912660993,
+        "overall": 0.7619137288160882
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 144.9294991493225
+    },
+    {
+      "name": "rich",
+      "url": "https://github.com/Textualize/rich",
+      "status": "ok",
+      "error": null,
+      "sha": "9d8f9a372cc5",
+      "manifest": {
+        "modules": 98,
+        "interfaces": 313,
+        "blocks": 2
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 0.8409518828451883,
+        "interface": 0.41533546325878595,
+        "block": 1.0,
+        "overall": 0.74507658040023
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 96.0
+      },
+      "backward": {
+        "test_coverage": 0.8518518518518519,
+        "doc_coverage": 0.6666666666666666,
+        "structural_coverage": 0.74507658040023,
+        "consistency": 0.9004311972650603,
+        "overall": 0.7949270697326303
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 120.77216291427612
+    },
+    {
+      "name": "httpx",
+      "url": "https://github.com/encode/httpx",
+      "status": "ok",
+      "error": null,
+      "sha": "b5addb64f016",
+      "manifest": {
+        "modules": 21,
+        "interfaces": 64,
+        "blocks": 2
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 1.0,
+        "interface": 0.984375,
+        "block": 1.0,
+        "overall": 0.9953125
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 68.0
+      },
+      "backward": {
+        "test_coverage": 0.1,
+        "doc_coverage": 0.6129032258064516,
+        "structural_coverage": 0.9953125,
+        "consistency": 0.8603427891127532,
+        "overall": 0.6612600924394786
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 118.08052182197571
+    },
+    {
+      "name": "black",
+      "url": "https://github.com/psf/black",
+      "status": "ok",
+      "error": null,
+      "sha": "d7587ce9f52f",
+      "manifest": {
+        "modules": 23,
+        "interfaces": 0,
+        "blocks": 1
+      },
+      "validator_score": 98,
+      "coverage": {
+        "module": 0.8186039065001601,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 0.8704313617858287
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 0.0
+      },
+      "surrogate_failed": true,
+      "backward": {
+        "test_coverage": 0.47619047619047616,
+        "doc_coverage": 0.2631578947368421,
+        "structural_coverage": 0.8704313617858287,
+        "consistency": 0.6876862164012114,
+        "overall": 0.6047301606310389
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 107.75449180603027
+    }
+  ],
+  "summary": {
+    "total_time_s": 1357.7043838500977,
+    "successful": 10,
+    "failed": 0,
+    "training_examples": 20,
+    "dpo_preferences": 0
+  }
+}
