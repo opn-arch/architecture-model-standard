@@ -2,8 +2,49 @@
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from architecture_model.training.oracle_evolution import PromptEvolver
+from architecture_model.training.oracle_evolution import PromptEvolver, _BASE_EXTRACTION_PROMPT
 from architecture_model.training.oracle_performance import OracleResult
+
+
+class TestPromptPrecisionGuidance:
+    """Tests that the extraction prompt provides precision guidance."""
+
+    def test_prompt_contains_relationship_precision_guidance(self):
+        """Prompt must instruct LLM to only create evidence-backed relationships."""
+        prompt_lower = _BASE_EXTRACTION_PROMPT.lower()
+        assert "import" in prompt_lower or "evidence" in prompt_lower
+        assert "do not invent" in prompt_lower or "only create" in prompt_lower
+
+    def test_prompt_contains_granularity_guidance(self):
+        """Prompt must provide granularity targets."""
+        prompt_lower = _BASE_EXTRACTION_PROMPT.lower()
+        assert "module" in prompt_lower or "file" in prompt_lower
+        assert "granularity" in prompt_lower or "one component per" in prompt_lower
+
+    def test_prompt_contains_example_reference(self):
+        """Prompt should reference examples."""
+        prompt_lower = _BASE_EXTRACTION_PROMPT.lower()
+        assert "example" in prompt_lower or "---" in _BASE_EXTRACTION_PROMPT
+
+    def test_prompt_ends_with_raw_yaml_instruction(self):
+        """Prompt must still end with the raw YAML output instruction."""
+        assert _BASE_EXTRACTION_PROMPT.rstrip().endswith(
+            "Output raw YAML only — no markdown fences, no explanation."
+        )
+
+    def test_prompt_contains_all_entity_types(self):
+        """Prompt must list all 7 entity types."""
+        prompt_lower = _BASE_EXTRACTION_PROMPT.lower()
+        for entity in ["actors", "capabilities", "behaviors", "interfaces",
+                       "constraints", "layers", "components"]:
+            assert entity in prompt_lower, f"Missing entity type: {entity}"
+
+    def test_prompt_contains_all_relationship_types(self):
+        """Prompt must list all 8 relationship types."""
+        prompt_lower = _BASE_EXTRACTION_PROMPT.lower()
+        for rel in ["realizes", "contains", "depends-on", "exposes",
+                    "consumes", "traces-to", "allocated-to", "constrained-by"]:
+            assert rel in prompt_lower, f"Missing relationship type: {rel}"
 
 
 class TestPromptEvolver:

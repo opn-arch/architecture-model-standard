@@ -30,10 +30,18 @@ class OracleContextBuilder:
         Returns:
             Combined context string for oracle extraction.
         """
+        from architecture_model.training.few_shot_examples import MANUAL_EXAMPLE
+
         if manifest is None:
             manifest = self._generate_manifest()
 
         parts: list[str] = []
+
+        # Part 0: Few-shot example (prepended for precision guidance)
+        if MANUAL_EXAMPLE:
+            few_shot_section = f"## Few-Shot Example\n{MANUAL_EXAMPLE}"
+            parts.append(few_shot_section)
+            parts.append("\n## Your Task\n")
 
         # Part 1: Manifest summary (capped at 20% of budget)
         summary = self._format_manifest_summary(manifest)
@@ -43,7 +51,7 @@ class OracleContextBuilder:
         parts.append(summary)
 
         # Part 2: Code context from ContextBuilder (fills remainder)
-        remaining = self._max_chars - len(summary) - 200  # header overhead
+        remaining = self._max_chars - sum(len(p) for p in parts) - 200  # header overhead
         cb = ContextBuilder(self._repo_path, max_chars=max(remaining, 5000))
         slices = cb.build()
         parts.append("\n## Source Code Context\n")

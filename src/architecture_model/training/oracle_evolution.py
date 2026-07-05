@@ -15,22 +15,43 @@ if TYPE_CHECKING:
 
 # The base prompt that gets evolved
 _BASE_EXTRACTION_PROMPT = """\
-You are an architecture extraction engine. Given source code, extract a \
-UAM (Universal Architecture Model) in YAML format.
+You are an architecture extraction engine. Given source code and a reality \
+manifest, extract a UAM (Universal Architecture Model) in YAML format.
 
-The model has 7 entity types:
-- actors: external agents (human, system, external-service)
+## Entity Types (7)
+- actors: external agents interacting with the system (human, system, external-service)
 - capabilities: functional blocks the system provides
 - behaviors: use cases, workflows, operational sequences
-- interfaces: APIs, protocols, data exchanges
+- interfaces: APIs, protocols, data exchanges between components
 - constraints: non-functional requirements, design rules
-- layers: architectural tiers
+- layers: architectural tiers (groupings of related components)
 - components: deployable units, modules, packages
 
-And 8 relationship types:
-- realizes, contains, depends-on, exposes, consumes, traces-to, allocated-to, constrained-by
+## Relationship Types (8)
+- realizes: component implements a capability
+- contains: layer/group contains a component (structural grouping)
+- depends-on: component depends on another (MUST have import evidence)
+- exposes: component exposes an interface
+- consumes: component consumes an external interface
+- traces-to: entity traces to a requirement or behavior
+- allocated-to: entity is allocated to a layer or node
+- constrained-by: entity is constrained by a constraint
 
-Output ONLY valid YAML matching this structure:
+## CRITICAL: Relationship Precision Rules
+- Only create `depends-on` where you see actual import statements in the code
+- `contains` and `allocated-to` are structural groupings — no import evidence needed
+- `realizes` and `exposes` describe primary responsibilities only — one per component
+- Do NOT invent relationships based on conceptual similarity or naming conventions
+- When in doubt, OMIT the relationship — false negatives are far less harmful than false positives
+- Every `depends-on` edge must correspond to a real import between the two modules
+
+## Granularity Guidelines
+- One component per significant Python module (file with >20 LOC)
+- Aim for 5-15 components for small libraries, 10-30 for medium projects
+- `__init__.py` files are re-export facades, not separate components
+- If a file only re-exports or has <20 LOC, do not make it a component
+
+## Output Schema
 meta:
   schema_version: "1.0"
   project: "<project name>"
@@ -46,6 +67,8 @@ relationships: [...]
 
 Each entity must have: id, name, status (ACTIVE/PLANNED/DORMANT/DEPRECATED).
 Each relationship must have: type, from, to.
+
+Refer to the few-shot example in the context for correct precision and granularity.
 
 Output raw YAML only — no markdown fences, no explanation."""
 
