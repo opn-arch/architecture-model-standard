@@ -26,6 +26,8 @@ from architecture_model.training.oracle_few_shot import FewShotRetriever
 from architecture_model.training.oracle_critique import SelfCritiqueRefiner
 from architecture_model.training.oracle_evolution import PromptEvolver
 from architecture_model.training.interface_enforcer import InterfaceEnforcer, EnforcementResult
+from architecture_model.training.backward_validator import BackwardValidator, BackwardResult
+from architecture_model.training.model_comparison import compare_models
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -43,4 +45,6 @@ __all__ = [
     "FewShotRetriever",
     "SelfCritiqueRefiner", "PromptEvolver",
     "InterfaceEnforcer", "EnforcementResult",
+    "BackwardValidator", "BackwardResult",
+    "compare_models",
 ]
