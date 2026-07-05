@@ -30,6 +30,7 @@ from architecture_model.core.validator import validate_model
 from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_coverage import ManifestCoverageComputer
 from architecture_model.training.oracle_evolution import _BASE_EXTRACTION_PROMPT
+from architecture_model.training.interface_enforcer import InterfaceEnforcer
 
 
 COPILOT_RELAY_URL = "http://localhost:8400/chat"
@@ -407,19 +408,34 @@ async def main():
         print_model_summary(model, f"Run {i+1}")
         print()
 
-    # Compare
-    print("   STRUCTURAL COMPARISON:")
+    # Compare (before enforcement, raw LLM output)
+    print("   STRUCTURAL COMPARISON (raw LLM output):")
     sim = compare_models(models[0], models[1])
     for key, val in sim.items():
         bar = "█" * int(val * 20) + "░" * (20 - int(val * 20))
         print(f"   {key:30s} {bar} {val:.2%}")
     print()
 
-    # Step 3: Coverage analysis
-    print("3. MANIFEST COVERAGE")
+    # Step 3: Interface enforcement
+    print("3. INTERFACE ENFORCEMENT (manifest-derived dependencies)")
+    print("-" * 40)
+    enforcer = InterfaceEnforcer()
+    enforced_models = []
+    for i, model in enumerate(models):
+        rels_before = len(model.relationships)
+        enforcement = enforcer.enforce(model, manifest)
+        enforced_models.append(enforcement.model)
+        print(f"   [Run {i+1}] +{enforcement.added_count} rels, "
+              f"{enforcement.skipped_count} skipped, "
+              f"{enforcement.internal_count} internal "
+              f"({rels_before} → {len(enforcement.model.relationships)} total)")
+    print()
+
+    # Step 4: Coverage analysis (after enforcement)
+    print("4. MANIFEST COVERAGE (after enforcement)")
     print("-" * 40)
     computer = ManifestCoverageComputer()
-    for i, model in enumerate(models):
+    for i, model in enumerate(enforced_models):
         coverage = computer.compute(manifest, model)
         print(f"   [Run {i+1}]")
         print(f"     Module coverage:    {coverage.module_coverage:.2%}")
@@ -431,12 +447,12 @@ async def main():
             uncov_ifaces = coverage.uncovered_interfaces
     print()
 
-    # Step 4: Self-critique (using best model)
-    best_model = models[0]
+    # Step 5: Self-critique (using best enforced model)
+    best_model = enforced_models[0]
     best_coverage = computer.compute(manifest, best_model)
 
     if best_coverage.overall < 0.85:
-        print("4. SELF-CRITIQUE REFINEMENT")
+        print("5. SELF-CRITIQUE REFINEMENT")
         print("-" * 40)
         print(f"   Coverage {best_coverage.overall:.2%} < 85%, running critique...")
 
@@ -481,7 +497,7 @@ async def main():
         else:
             print("   FAILED — critique extraction returned None")
     else:
-        print("4. Self-critique SKIPPED (coverage >= 85%)")
+        print("5. Self-critique SKIPPED (coverage >= 85%)")
 
     print(f"\n{'='*60}")
     print(f"  COMPLETE")
