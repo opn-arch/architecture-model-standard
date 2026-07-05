@@ -1,0 +1,506 @@
+{
+  "timestamp": "2026-07-05T00:05:29.804920",
+  "config": {
+    "oracle": "copilot-relay (localhost:8400)",
+    "surrogate": "qwen2.5:7b",
+    "repos_processed": 10
+  },
+  "results": [
+    {
+      "name": "click",
+      "url": "https://github.com/pallets/click",
+      "status": "ok",
+      "error": null,
+      "sha": "16fc00e2f4a2",
+      "manifest": {
+        "modules": 17,
+        "interfaces": 62,
+        "blocks": 1
+      },
+      "validator_score": 98,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 0.5245901639344263,
+        "edge_precision": 0.3380281690140845,
+        "cohesion": 0.9375,
+        "directionality": 1.0,
+        "overall": 0.6524885996305704,
+        "missing_edges_count": 29,
+        "spurious_rels_count": 47,
+        "low_cohesion_components": []
+      },
+      "coverage": {
+        "module": 1.0,
+        "interface": 0.7741935483870968,
+        "block": 1.0,
+        "overall": 0.9322580645161289
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 68.0
+      },
+      "backward": {
+        "test_coverage": 0.6470588235294118,
+        "doc_coverage": 0.4126984126984127,
+        "structural_coverage": 0.9322580645161289,
+        "consistency": 0.8090808060515869,
+        "overall": 0.726252009289771
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 96.09044289588928
+    },
+    {
+      "name": "typer",
+      "url": "https://github.com/tiangolo/typer",
+      "status": "ok",
+      "error": null,
+      "sha": "7fb978fbf44c",
+      "manifest": {
+        "modules": 31,
+        "interfaces": 61,
+        "blocks": 2
+      },
+      "validator_score": 98,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 0.5245901639344263,
+        "edge_precision": 0.2616822429906542,
+        "cohesion": 0.9285714285714286,
+        "directionality": 0.9642857142857143,
+        "overall": 0.6258128324104271,
+        "missing_edges_count": 29,
+        "spurious_rels_count": 79,
+        "low_cohesion_components": [
+          "_click/core.py"
+        ]
+      },
+      "coverage": {
+        "module": 1.0,
+        "interface": 0.8360655737704918,
+        "block": 1.0,
+        "overall": 0.9508196721311475
+      },
+      "loss": {
+        "structural_accuracy": 0.11436769829883173,
+        "completeness": 0.09894080996884734,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 86.0
+      },
+      "backward": {
+        "test_coverage": 0.5357142857142857,
+        "doc_coverage": 0.2830188679245283,
+        "structural_coverage": 0.9508196721311475,
+        "consistency": 0.496311836930816,
+        "overall": 0.5998562058855254
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 115.85399985313416
+    },
+    {
+      "name": "httpcore",
+      "url": "https://github.com/encode/httpcore",
+      "status": "ok",
+      "error": null,
+      "sha": "10a658221deb",
+      "manifest": {
+        "modules": 31,
+        "interfaces": 94,
+        "blocks": 4
+      },
+      "validator_score": 98,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 0.4857142857142857,
+        "edge_precision": 0.13821138211382114,
+        "cohesion": 0.7349206349206349,
+        "directionality": 1.0,
+        "overall": 0.538283004258614,
+        "missing_edges_count": 18,
+        "spurious_rels_count": 106,
+        "low_cohesion_components": [
+          "AsyncHTTPConnection",
+          "SyncBackend"
+        ]
+      },
+      "coverage": {
+        "module": 0.9597475455820477,
+        "interface": 0.46808510638297873,
+        "block": 1.0,
+        "overall": 0.8202993047059175
+      },
+      "loss": {
+        "structural_accuracy": 0.13333333333333333,
+        "completeness": 0.11666666666666665,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 86.0
+      },
+      "backward": {
+        "test_coverage": 0.0,
+        "doc_coverage": 0.5614035087719298,
+        "structural_coverage": 0.8202993047059175,
+        "consistency": 0.8031447961797902,
+        "overall": 0.5591566922111088
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 126.87791323661804
+    },
+    {
+      "name": "anyio",
+      "url": "https://github.com/agronholm/anyio",
+      "status": "ok",
+      "error": null,
+      "sha": "85b8b6eb2e21",
+      "manifest": {
+        "modules": 43,
+        "interfaces": 113,
+        "blocks": 5
+      },
+      "validator_score": 98,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 0.14545454545454545,
+        "edge_precision": 0.12096774193548387,
+        "cohesion": 0.8823529411764706,
+        "directionality": 0.8666666666666667,
+        "overall": 0.43173926168707955,
+        "missing_edges_count": 94,
+        "spurious_rels_count": 109,
+        "low_cohesion_components": [
+          "__init__.py",
+          "_core/_streams.py"
+        ]
+      },
+      "coverage": {
+        "module": 1.0,
+        "interface": 0.45132743362831856,
+        "block": 1.0,
+        "overall": 0.8353982300884955
+      },
+      "loss": {
+        "structural_accuracy": 0.21929824561403508,
+        "completeness": 0.23648648648648646,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 0.0
+      },
+      "backward": {
+        "test_coverage": 0.35294117647058826,
+        "doc_coverage": 1.0,
+        "structural_coverage": 0.8353982300884955,
+        "consistency": 0.6931260126367105,
+        "overall": 0.7121362663033735
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 179.6866421699524
+    },
+    {
+      "name": "python-dotenv",
+      "url": "https://github.com/theskumar/python-dotenv",
+      "status": "ok",
+      "error": null,
+      "sha": "751f8c148222",
+      "manifest": {
+        "modules": 8,
+        "interfaces": 8,
+        "blocks": 1
+      },
+      "validator_score": 98,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 0.625,
+        "edge_precision": 0.14705882352941177,
+        "cohesion": 0.8571428571428571,
+        "directionality": 1.0,
+        "overall": 0.6198004201680672,
+        "missing_edges_count": 3,
+        "spurious_rels_count": 29,
+        "low_cohesion_components": []
+      },
+      "coverage": {
+        "module": 1.0,
+        "interface": 0.75,
+        "block": 1.0,
+        "overall": 0.925
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 0.0
+      },
+      "surrogate_failed": true,
+      "backward": {
+        "test_coverage": 0.75,
+        "doc_coverage": 0.6153846153846154,
+        "structural_coverage": 0.925,
+        "consistency": 0.9705537642274984,
+        "overall": 0.8307153641337978
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 81.22712874412537
+    },
+    {
+      "name": "pydantic",
+      "url": "https://github.com/pydantic/pydantic",
+      "status": "ok",
+      "error": null,
+      "sha": "c9688f493b05",
+      "manifest": {
+        "modules": 104,
+        "interfaces": 347,
+        "blocks": 6
+      },
+      "validator_score": 98,
+      "quality_gate": "rejected",
+      "coverage_score": {
+        "edge_coverage": 0.18840579710144928,
+        "edge_precision": 0.152317880794702,
+        "cohesion": 0.4838709677419355,
+        "directionality": 0.8260869565217391,
+        "overall": 0.3489022845979275,
+        "missing_edges_count": 112,
+        "spurious_rels_count": 128,
+        "low_cohesion_components": [
+          "_internal/_config.py",
+          "_internal/_utils.py",
+          "_internal/_generate_schema.py",
+          "generics.py",
+          "functional_validators.py",
+          "json_schema.py (JSON Schema)",
+          "experimental/pipeline.py",
+          "v1/main.py",
+          "mypy.py (Plugin)"
+        ]
+      },
+      "coverage": {
+        "module": 0.9358009522346797,
+        "interface": 0.3804034582132565,
+        "block": 1.0,
+        "overall": 0.7820215135813169
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 0.0
+      },
+      "surrogate_failed": true,
+      "backward": {
+        "test_coverage": 0.6764705882352942,
+        "doc_coverage": 0.5714285714285714,
+        "structural_coverage": 0.7820215135813169,
+        "consistency": 0.8366229071005444,
+        "overall": 0.727165542194069
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 163.34222412109375
+    },
+    {
+      "name": "fastapi",
+      "url": "https://github.com/tiangolo/fastapi",
+      "status": "ok",
+      "error": null,
+      "sha": "dd17e4f723a2",
+      "manifest": {
+        "modules": 48,
+        "interfaces": 18,
+        "blocks": 6
+      },
+      "validator_score": 98,
+      "quality_gate": "rejected",
+      "coverage_score": {
+        "edge_coverage": 0.16666666666666666,
+        "edge_precision": 0.03125,
+        "cohesion": 0.8333333333333334,
+        "directionality": 0.3333333333333333,
+        "overall": 0.32447916666666665,
+        "missing_edges_count": 15,
+        "spurious_rels_count": 93,
+        "low_cohesion_components": [
+          "dependencies/utils.py",
+          "middleware/__init__.py",
+          "openapi/utils.py",
+          "security/oauth2.py"
+        ]
+      },
+      "coverage": {
+        "module": 1.0,
+        "interface": 0.5,
+        "block": 1.0,
+        "overall": 0.8500000000000001
+      },
+      "loss": {
+        "structural_accuracy": 0.16666666666666666,
+        "completeness": 0.15999999999999998,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 98.0
+      },
+      "backward": {
+        "test_coverage": 0.7666666666666667,
+        "doc_coverage": 0.3893805309734513,
+        "structural_coverage": 0.8500000000000001,
+        "consistency": 0.7961695037739281,
+        "overall": 0.723585148804839
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 182.51628637313843
+    },
+    {
+      "name": "rich",
+      "url": "https://github.com/Textualize/rich",
+      "status": "ok",
+      "error": null,
+      "sha": "9d8f9a372cc5",
+      "manifest": {
+        "modules": 100,
+        "interfaces": 315,
+        "blocks": 2
+      },
+      "validator_score": 98,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 0.3467741935483871,
+        "edge_precision": 0.3469387755102041,
+        "cohesion": 0.8888888888888888,
+        "directionality": 0.9705882352941176,
+        "overall": 0.5759161191358264,
+        "missing_edges_count": 81,
+        "spurious_rels_count": 64,
+        "low_cohesion_components": [
+          "_unicode_data (package)"
+        ]
+      },
+      "coverage": {
+        "module": 0.8484549467670734,
+        "interface": 0.32063492063492066,
+        "block": 1.0,
+        "overall": 0.7204179495740128
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 86.0
+      },
+      "backward": {
+        "test_coverage": 0.8928571428571429,
+        "doc_coverage": 0.6666666666666666,
+        "structural_coverage": 0.7204179495740128,
+        "consistency": 0.7796174237813023,
+        "overall": 0.7675773598651485
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 121.70505595207214
+    },
+    {
+      "name": "httpx",
+      "url": "https://github.com/encode/httpx",
+      "status": "ok",
+      "error": null,
+      "sha": "b5addb64f016",
+      "manifest": {
+        "modules": 23,
+        "interfaces": 77,
+        "blocks": 2
+      },
+      "validator_score": 96,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 0.49206349206349204,
+        "edge_precision": 0.3010752688172043,
+        "cohesion": 0.95,
+        "directionality": 1.0,
+        "overall": 0.6349910394265232,
+        "missing_edges_count": 32,
+        "spurious_rels_count": 65,
+        "low_cohesion_components": []
+      },
+      "coverage": {
+        "module": 0.9879873073436083,
+        "interface": 0.7272727272727273,
+        "block": 1.0,
+        "overall": 0.9121754718536224
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 90.0
+      },
+      "backward": {
+        "test_coverage": 0.1,
+        "doc_coverage": 0.5645161290322581,
+        "structural_coverage": 0.9121754718536224,
+        "consistency": 0.5004952766896961,
+        "overall": 0.5366796865349623
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 116.3981249332428
+    },
+    {
+      "name": "black",
+      "url": "https://github.com/psf/black",
+      "status": "ok",
+      "error": null,
+      "sha": "d7587ce9f52f",
+      "manifest": {
+        "modules": 25,
+        "interfaces": 0,
+        "blocks": 1
+      },
+      "validator_score": 98,
+      "quality_gate": "accepted",
+      "coverage_score": {
+        "edge_coverage": 1.0,
+        "edge_precision": 0.0,
+        "cohesion": 0.9166666666666666,
+        "directionality": 1.0,
+        "overall": 0.7291666666666666,
+        "missing_edges_count": 0,
+        "spurious_rels_count": 70,
+        "low_cohesion_components": [
+          "__init__.py (Main Orchestrator)"
+        ]
+      },
+      "coverage": {
+        "module": 0.4542000844238075,
+        "interface": 1.0,
+        "block": 1.0,
+        "overall": 0.6101429174455769
+      },
+      "loss": {
+        "structural_accuracy": 0.0,
+        "completeness": 0.0,
+        "reconstruction_fidelity": 0.0,
+        "validator_score": 98.0
+      },
+      "backward": {
+        "test_coverage": 0.42857142857142855,
+        "doc_coverage": 0.25,
+        "structural_coverage": 0.6101429174455769,
+        "consistency": 0.7298635316923404,
+        "overall": 0.5226516152996153
+      },
+      "training_saved": true,
+      "dpo_saved": false,
+      "elapsed_s": 80.15758681297302
+    }
+  ],
+  "summary": {
+    "total_time_s": 1263.8573451042175,
+    "successful": 10,
+    "failed": 0,
+    "training_examples": 30,
+    "dpo_preferences": 0
+  }
+}

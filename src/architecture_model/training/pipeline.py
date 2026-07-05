@@ -24,7 +24,7 @@ from architecture_model.training.oracle_performance import OraclePerformanceStor
 from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_critique import SelfCritiqueRefiner
 from architecture_model.training.oracle_evolution import PromptEvolver
-from architecture_model.training.interface_enforcer import InterfaceEnforcer
+from architecture_model.training.coverage_scorer import CoverageScorer
 from architecture_model.core.validator import validate_model
 
 logger = logging.getLogger(__name__)
@@ -182,14 +182,14 @@ class TrainingPipeline:
                         oracle_model, manifest, oracle_context
                     )
 
-                # Interface enforcement: inject manifest-derived dependencies
+                # Coverage scoring: measure quality as penalty signal (no model modification)
                 if self._oracle_learning_enabled:
                     manifest = oracle_ctx_builder._generate_manifest() if 'manifest' not in dir() else manifest
-                    enforcement = InterfaceEnforcer().enforce(oracle_model, manifest)
-                    oracle_model = enforcement.model
+                    cov_score = CoverageScorer().score(oracle_model, manifest)
                     logger.info(
-                        "Interface enforcement: +%d rels, %d skipped, %d internal",
-                        enforcement.added_count, enforcement.skipped_count, enforcement.internal_count,
+                        "Coverage score: edge=%.2f prec=%.2f coh=%.2f dir=%.2f overall=%.2f",
+                        cov_score.edge_coverage, cov_score.edge_precision,
+                        cov_score.cohesion, cov_score.directionality, cov_score.overall,
                     )
 
                 # Record performance (if enabled)

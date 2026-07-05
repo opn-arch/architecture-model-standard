@@ -26,7 +26,7 @@ def _collect_py_files(root: Path, directory: str) -> list[Path]:
     if not target.is_dir():
         return []
     return sorted(
-        p for p in target.rglob("*.py") if "__pycache__" not in str(p) and p.name != "__init__.py"
+        p for p in target.rglob("*.py") if "__pycache__" not in str(p)
     )
 
 
@@ -132,6 +132,173 @@ def _extract_imports(tree: ast.Module) -> list[str]:
     return imports
 
 
+def _extract_exports(tree: ast.Module, filepath: Path) -> list[str]:
+    """Extract public API exports from __init__.py."""
+    if filepath.name != "__init__.py":
+        return []
+
+    # Check for __all__
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    if isinstance(node.value, (ast.List, ast.Tuple)):
+                        try:
+                            return [
+                                elt.value
+                                for elt in node.value.elts
+                                if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+                            ]
+                        except (AttributeError, TypeError):
+                            pass
+
+    # Fallback: collect symbols from relative imports
+    exports: list[str] = []
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.ImportFrom) and node.level > 0:
+            for alias in node.names:
+                if not alias.name.startswith("_"):
+                    exports.append(alias.name)
+    return exports
+
+
+def _extract_classes(tree: ast.Module) -> list[dict[str, Any]]:
+    """Extract class definitions with inheritance and method info."""
+    classes: list[dict[str, Any]] = []
+    for node in ast.iter_child_nodes(tree):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if node.name.startswith("_"):
+            continue
+
+        # Extract bases
+        bases: list[str] = []
+        for base in node.bases:
+            if isinstance(base, ast.Name):
+                bases.append(base.id)
+            elif isinstance(base, ast.Attribute):
+                bases.append(base.attr)
+            else:
+                try:
+                    bases.append(ast.unparse(base))
+                except Exception:
+                    pass
+
+        # Extract methods (public + __init__)
+        methods: list[str] = []
+        has_abstractmethod = False
+        for item in node.body:
+            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if not item.name.startswith("_") or item.name == "__init__":
+                    methods.append(item.name)
+                for dec in item.decorator_list:
+                    dec_name = None
+                    if isinstance(dec, ast.Name):
+                        dec_name = dec.id
+                    elif isinstance(dec, ast.Attribute):
+                        dec_name = dec.attr
+                    if dec_name == "abstractmethod":
+                        has_abstractmethod = True
+
+        # Determine if abstract
+        is_abstract = (
+            has_abstractmethod
+            or any(b in ("ABC", "Protocol") for b in bases)
+            or any(node.name.startswith(p) for p in ("Base", "Abstract", "I")
+                   if len(node.name) > len(p))
+        )
+
+        # Class decorators
+        decorators: list[str] = []
+        for dec in node.decorator_list:
+            if isinstance(dec, ast.Name):
+                decorators.append(dec.id)
+            elif isinstance(dec, ast.Attribute):
+                decorators.append(dec.attr)
+            elif isinstance(dec, ast.Call):
+                if isinstance(dec.func, ast.Name):
+                    decorators.append(dec.func.id)
+                elif isinstance(dec.func, ast.Attribute):
+                    decorators.append(dec.func.attr)
+
+        classes.append({
+            "name": node.name,
+            "bases": bases,
+            "methods": methods,
+            "is_abstract": is_abstract,
+            "decorators": decorators,
+        })
+    return classes
+
+
+def _get_decorator_names(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
+    """Extract decorator names from a function node."""
+    names: list[str] = []
+    for dec in node.decorator_list:
+        if isinstance(dec, ast.Name):
+            names.append(dec.id)
+        elif isinstance(dec, ast.Attribute):
+            names.append(dec.attr)
+        elif isinstance(dec, ast.Call):
+            if isinstance(dec.func, ast.Name):
+                names.append(dec.func.id)
+            elif isinstance(dec.func, ast.Attribute):
+                names.append(dec.func.attr)
+    # Filter trivial decorators
+    trivial = {"property", "staticmethod", "classmethod", "cached_property", "override"}
+    return [n for n in names if n not in trivial]
+
+
+def _extract_decorated_functions_from_tree(tree: ast.Module) -> list[dict[str, Any]]:
+    """Extract decorated functions (module-level and class methods)."""
+    results: list[dict[str, Any]] = []
+
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            decs = _get_decorator_names(node)
+            if decs:
+                results.append({
+                    "name": node.name,
+                    "decorators": decs,
+                    "is_method": False,
+                    "class_name": None,
+                })
+        elif isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    decs = _get_decorator_names(item)
+                    if decs and item.name != "__init__":
+                        results.append({
+                            "name": item.name,
+                            "decorators": decs,
+                            "is_method": True,
+                            "class_name": node.name,
+                        })
+    return results
+
+
+def _extract_imports_detailed(tree: ast.Module) -> list[dict[str, Any]]:
+    """Extract imports with symbol-level detail."""
+    imports: list[dict[str, Any]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                imports.append({
+                    "module": alias.name,
+                    "symbols": [],
+                    "is_relative": False,
+                })
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            symbols = [alias.name for alias in node.names] if node.names else []
+            imports.append({
+                "module": module,
+                "symbols": symbols,
+                "is_relative": node.level > 0,
+            })
+    return imports
+
+
 def _file_line_count(filepath: Path) -> int:
     """Count lines in a file."""
     try:
@@ -175,4 +342,9 @@ def _scan_file(root: Path, filepath: Path) -> dict[str, Any]:
         "imports": imports,
         "line_count": line_count,
         "status": status,
+        # NEW fields
+        "classes": _extract_classes(tree) if tree else [],
+        "exports": _extract_exports(tree, filepath) if tree else [],
+        "decorated_functions": _extract_decorated_functions_from_tree(tree) if tree else [],
+        "imports_detailed": _extract_imports_detailed(tree) if tree else [],
     }

@@ -64,8 +64,7 @@ class OracleContextBuilder:
         for py_file in sorted(root.rglob("*.py")):
             if "__pycache__" in str(py_file):
                 continue
-            if py_file.name == "__init__.py":
-                continue
+
             try:
                 mod_meta = _scan_file(root, py_file)
                 modules.append(mod_meta)

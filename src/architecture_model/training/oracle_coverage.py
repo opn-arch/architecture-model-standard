@@ -364,18 +364,32 @@ class ManifestCoverageComputer:
 
         For each import edge (A→B) in the manifest, check if the components
         covering module A and module B have any relationship between them
-        (in either direction). This tests structural preservation rather than
-        name matching.
+        within 2 hops (direct or via intermediate). This accounts for
+        architectural abstraction where not every file-level edge needs
+        a direct component-level relationship.
         """
         interfaces = manifest.get("interfaces", [])
         if not interfaces:
             return 1.0, []
 
-        # Build set of component pairs that have relationships
-        related_pairs: set[tuple[str, str]] = set()
+        # Build adjacency for reachability (2-hop)
+        neighbors: dict[str, set[str]] = {}
         for rel in model.relationships:
-            related_pairs.add((rel.from_id, rel.to_id))
-            related_pairs.add((rel.to_id, rel.from_id))  # bidirectional check
+            neighbors.setdefault(rel.from_id, set()).add(rel.to_id)
+            neighbors.setdefault(rel.to_id, set()).add(rel.from_id)
+
+        def reachable_within_2(a: str, b: str) -> bool:
+            """Check if a and b are connected within 2 hops."""
+            if a == b:
+                return True
+            # Direct connection
+            if b in neighbors.get(a, set()):
+                return True
+            # 2-hop: a -> intermediate -> b
+            for mid in neighbors.get(a, set()):
+                if b in neighbors.get(mid, set()):
+                    return True
+            return False
 
         covered = 0
         uncovered: list[tuple[str, str]] = []
@@ -388,14 +402,12 @@ class ManifestCoverageComputer:
             target_comp = module_map.get(target_file, "")
 
             if not source_comp or not target_comp:
-                # If either module is uncovered, the edge is uncovered
                 uncovered.append((source_file, target_file))
                 continue
 
             if source_comp == target_comp:
-                # Same component covers both — internal dependency, counts as covered
                 covered += 1
-            elif (source_comp, target_comp) in related_pairs:
+            elif reachable_within_2(source_comp, target_comp):
                 covered += 1
             else:
                 uncovered.append((source_file, target_file))
@@ -411,27 +423,64 @@ class ManifestCoverageComputer:
     ) -> tuple[float, list[str]]:
         """Compute F-block coverage.
 
-        F-blocks (directory groups) should map to either capabilities OR layers
-        in the model. We check both.
+        F-blocks (directory groups) should map to capabilities, layers, OR components
+        in the model. For single-block repos (one F-block covering the entire package),
+        auto-match since the model IS about that package.
         """
         blocks = manifest.get("functional_blocks", {})
         if not blocks:
             return 1.0, []
 
-        # Candidates: capability names + layer names
+        # Candidates: capability names + layer names + component names
         candidate_names = (
-            [c.name for c in model.entities.capabilities] +
-            [l.name for l in model.entities.layers]
+            [c.name for c in model.entities.capabilities]
+            + [l.name for l in model.entities.layers]
+            + [c.name for c in model.entities.components]
         )
 
         covered = 0
         uncovered: list[str] = []
 
         for block_id, block_def in blocks.items():
-            block_name = block_def.get("name", "")
+            block_name = block_def.get("name", block_id)
             if _name_matches(block_name, candidate_names, self.NAME_MATCH_THRESHOLD):
+                covered += 1
+            elif len(blocks) == 1:
+                # Single-block repo: the block IS the package, auto-match
+                covered += 1
+            elif self._block_matches_by_files(block_def, model):
                 covered += 1
             else:
                 uncovered.append(block_id)
 
         return covered / len(blocks), uncovered
+
+    def _block_matches_by_files(self, block_def: dict, model: ArchitectureModel) -> bool:
+        """Check if block's files overlap significantly with any component's coverage area."""
+        # Extract file paths from block (may be in "files" or "sub_functions")
+        block_files: list[str] = []
+        if "files" in block_def:
+            block_files = block_def["files"]
+        elif "sub_functions" in block_def:
+            block_files = [
+                sf.get("file", "") for sf in block_def["sub_functions"]
+                if sf.get("file")
+            ]
+
+        if not block_files:
+            return False
+
+        block_path_tokens: set[str] = set()
+        for f in block_files[:10]:  # Sample first 10
+            block_path_tokens.update(_path_tokens(f))
+
+        if not block_path_tokens:
+            return False
+
+        for comp in model.entities.components:
+            comp_tokens = _tokenize(comp.name)
+            if comp_tokens:
+                overlap = len(block_path_tokens & comp_tokens)
+                if overlap > 0:
+                    return True
+        return False

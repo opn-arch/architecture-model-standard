@@ -28,6 +28,7 @@ from architecture_model.training.oracle_evolution import PromptEvolver
 from architecture_model.training.interface_enforcer import InterfaceEnforcer, EnforcementResult
 from architecture_model.training.backward_validator import BackwardValidator, BackwardResult
 from architecture_model.training.model_comparison import compare_models
+from architecture_model.training.coverage_scorer import CoverageScorer, CoverageScore
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -47,4 +48,5 @@ __all__ = [
     "InterfaceEnforcer", "EnforcementResult",
     "BackwardValidator", "BackwardResult",
     "compare_models",
+    "CoverageScorer", "CoverageScore",
 ]

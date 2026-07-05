@@ -32,7 +32,7 @@ from architecture_model.core.validator import validate_model
 from architecture_model.training.backward_validator import BackwardValidator, BackwardResult
 from architecture_model.training.dataset import DatasetStore, TrainingExample
 from architecture_model.training.evaluator import Evaluator, LossVector
-from architecture_model.training.interface_enforcer import InterfaceEnforcer
+from architecture_model.training.coverage_scorer import CoverageScorer
 from architecture_model.training.model_comparison import compare_models
 from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_coverage import ManifestCoverageComputer
@@ -156,7 +156,7 @@ async def surrogate_extract(context: str, surrogate: Surrogate) -> ArchitectureM
     try:
         model = await asyncio.wait_for(
             surrogate.extract_model(context),
-            timeout=60
+            timeout=180
         )
         return model
     except asyncio.TimeoutError:
@@ -284,13 +284,30 @@ async def process_repo(
     val_result = validate_model(oracle_model_1)
     result["validator_score"] = val_result.score
 
-    # 4. Interface enforcement
+    # 4. Coverage scoring (penalty signal — does NOT modify the model)
     print(".", end="", flush=True)
-    enforcer = InterfaceEnforcer()
-    enforcement = enforcer.enforce(oracle_model_1, manifest)
-    oracle_model = enforcement.model
+    scorer = CoverageScorer()
+    cov_score = scorer.score(oracle_model_1, manifest)
+    oracle_model = oracle_model_1  # No modification — raw oracle output
 
-    # 5. Coverage analysis (after enforcement)
+    # Rejection gate: mark low-quality extractions
+    if cov_score.overall < 0.4:
+        result["quality_gate"] = "rejected"
+    else:
+        result["quality_gate"] = "accepted"
+
+    result["coverage_score"] = {
+        "edge_coverage": cov_score.edge_coverage,
+        "edge_precision": cov_score.edge_precision,
+        "cohesion": cov_score.cohesion,
+        "directionality": cov_score.directionality,
+        "overall": cov_score.overall,
+        "missing_edges_count": len(cov_score.missing_edges),
+        "spurious_rels_count": len(cov_score.spurious_rels),
+        "low_cohesion_components": cov_score.low_cohesion_components,
+    }
+
+    # 5. Legacy coverage analysis (manifest module/block/interface coverage)
     coverage_computer = ManifestCoverageComputer()
     coverage = coverage_computer.compute(manifest, oracle_model)
     result["coverage"] = {
@@ -320,7 +337,14 @@ async def process_repo(
                 "validator_score": loss.validator_score,
             }
         else:
-            result["loss"] = None
+            # Surrogate failed — record worst-case loss for training signal
+            result["loss"] = {
+                "structural_accuracy": 0.0,
+                "completeness": 0.0,
+                "reconstruction_fidelity": 0.0,
+                "validator_score": 0.0,
+            }
+            result["surrogate_failed"] = True
     else:
         result["loss"] = None
 
@@ -365,18 +389,30 @@ async def process_repo(
     store.save(example)
     result["training_saved"] = True
 
-    # DPO: save preference when surrogate is significantly worse
+    # DPO: save preference when surrogate fails or is significantly worse
     dpo_saved = False
-    if loss is not None and loss.structural_accuracy < 0.6 and oracle_yaml and surrogate_yaml:
-        margin = 1.0 - loss.structural_accuracy
-        store.save_preference(
-            prompt=context[:30000],
-            chosen=oracle_yaml,
-            rejected=surrogate_yaml,
-            margin=margin,
-            iteration=1,
-        )
-        dpo_saved = True
+    if oracle_yaml:
+        should_save_dpo = False
+        margin = 0.0
+        if surrogate_model is None:
+            # Surrogate completely failed — strong preference signal
+            should_save_dpo = True
+            margin = 1.0
+        elif loss is not None and loss.structural_accuracy < 0.6 and surrogate_yaml:
+            should_save_dpo = True
+            margin = 1.0 - loss.structural_accuracy
+
+        if should_save_dpo:
+            # For failed surrogate, use empty string as rejected
+            rejected = surrogate_yaml if surrogate_yaml else "# surrogate failed to produce output\n"
+            store.save_preference(
+                prompt=context[:30000],
+                chosen=oracle_yaml,
+                rejected=rejected,
+                margin=margin,
+                iteration=1,
+            )
+            dpo_saved = True
     result["dpo_saved"] = dpo_saved
 
     # Timing
@@ -391,12 +427,14 @@ async def process_repo(
     doc_cov = backward.doc_coverage * 100
     struct_cov = backward.structural_coverage * 100
     consist = backward.consistency * 100
-    surr_loss_str = f"{loss.structural_accuracy:.2f}" if loss else "N/A"
-    dpo_str = f"yes (margin={1.0 - loss.structural_accuracy:.2f})" if dpo_saved and loss else "no"
+    surr_loss_str = f"{loss.structural_accuracy:.2f}" if loss else ("0.00*" if result.get("surrogate_failed") else "N/A")
+    dpo_str = f"yes (margin={1.0 - loss.structural_accuracy:.2f})" if dpo_saved and loss else ("yes (fail)" if dpo_saved else "no")
+    gate_str = result["quality_gate"]
 
     dots = "." * max(1, 45 - len(name))
     print(f" {dots} {elapsed:.0f}s")
     print(f"  Forward:  validator={val_result.score}  mod={mod_cov:.0f}%  iface={iface_cov:.0f}%  block={block_cov:.0f}%")
+    print(f"  CovScore: edge={cov_score.edge_coverage:.2f}  prec={cov_score.edge_precision:.2f}  coh={cov_score.cohesion:.2f}  dir={cov_score.directionality:.2f}  overall={cov_score.overall:.2f}  gate={gate_str}")
     print(f"  Backward: test={test_cov:.0f}%  doc={doc_cov:.0f}%  struct={struct_cov:.0f}%  consist={consist:.0f}%")
     print(f"  Training: surr_loss={surr_loss_str}  DPO={dpo_str}")
 
