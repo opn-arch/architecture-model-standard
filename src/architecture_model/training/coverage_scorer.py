@@ -4,19 +4,23 @@ CoverageScorer: measures how well a model's relationships match manifest import 
 Unlike InterfaceEnforcer (which silently patches), this ONLY produces scores.
 It is a penalty signal for the training loop — not a repair mechanism.
 
-Four dimensions:
+Five dimensions:
 1. edge_coverage — fraction of manifest import edges backed by model relationships
 2. edge_precision — fraction of model relationships backed by manifest import edges
 3. cohesion — mean internal coupling per component
 4. directionality — fraction of relationships with correct import direction
+5. test_alignment — fuzzy overlap between test-implied components and model components
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from architecture_model.core.types import ArchitectureModel, RelationType
+
+if TYPE_CHECKING:
+    from architecture_model.training.test_analyzer import TestStructure
 
 
 @dataclass
@@ -27,6 +31,7 @@ class CoverageScore:
     edge_precision: float = 0.0     # model relationships backed by manifest edges
     cohesion: float = 0.0           # mean internal edges / possible internal per component
     directionality: float = 0.0     # relationships with correct import direction
+    test_alignment: float = 0.0     # fuzzy overlap: test-implied components vs model components
     overall: float = 0.0            # weighted average
 
     # Detail for debugging/analysis
@@ -41,21 +46,29 @@ class CoverageScorer:
     Does NOT modify the model. Only produces a CoverageScore.
     """
 
-    # Weights for overall score
-    EDGE_COVERAGE_WEIGHT: float = 0.35
-    EDGE_PRECISION_WEIGHT: float = 0.25
-    COHESION_WEIGHT: float = 0.25
+    # Weights for overall score (sum to 1.0)
+    EDGE_COVERAGE_WEIGHT: float = 0.30
+    EDGE_PRECISION_WEIGHT: float = 0.20
+    COHESION_WEIGHT: float = 0.20
     DIRECTIONALITY_WEIGHT: float = 0.15
+    TEST_ALIGNMENT_WEIGHT: float = 0.15
 
-    def score(self, model: ArchitectureModel, manifest: dict[str, Any]) -> CoverageScore:
+    def score(
+        self,
+        model: ArchitectureModel,
+        manifest: dict[str, Any],
+        *,
+        test_structure: TestStructure | None = None,
+    ) -> CoverageScore:
         """Score the model's relationship coverage against manifest reality.
 
         Args:
             model: The architecture model to evaluate.
             manifest: Reality Manifest dict with modules, interfaces.
+            test_structure: Optional test structure for test_alignment scoring.
 
         Returns:
-            CoverageScore with 4 dimensions + detail.
+            CoverageScore with 5 dimensions + detail.
         """
         # Build module→component mapping (reuse existing logic from oracle_coverage)
         module_map = self._build_module_map(manifest, model)
@@ -78,12 +91,16 @@ class CoverageScorer:
         # 4. Directionality: are relationships in the right direction?
         dir_score = self._compute_directionality(model_rels, edge_directions)
 
+        # 5. Test alignment: do model components match test-implied components?
+        test_align = self._compute_test_alignment(model, test_structure)
+
         # Overall weighted average
         overall = (
             self.EDGE_COVERAGE_WEIGHT * edge_cov
             + self.EDGE_PRECISION_WEIGHT * edge_prec
             + self.COHESION_WEIGHT * cohesion_score
             + self.DIRECTIONALITY_WEIGHT * dir_score
+            + self.TEST_ALIGNMENT_WEIGHT * test_align
         )
 
         return CoverageScore(
@@ -91,6 +108,7 @@ class CoverageScorer:
             edge_precision=edge_prec,
             cohesion=cohesion_score,
             directionality=dir_score,
+            test_alignment=test_align,
             overall=overall,
             missing_edges=missing,
             spurious_rels=spurious,
@@ -262,3 +280,56 @@ class CoverageScorer:
                 correct += 1
 
         return correct / total if total > 0 else 1.0
+
+    def _compute_test_alignment(
+        self, model: ArchitectureModel, test_structure: TestStructure | None
+    ) -> float:
+        """Fuzzy overlap between test-implied components and model components.
+
+        Uses word-level Jaccard matching: each test-implied name and model component
+        name is normalized to a lowercase word set, then we find the best match
+        for each test-implied component and average the scores.
+
+        Returns 1.0 if no test_structure provided (neutral — doesn't penalize).
+        """
+        if test_structure is None or not test_structure.implied_components:
+            return 1.0
+
+        # Get model component names
+        model_names = [c.name for c in model.entities.components]
+        if not model_names:
+            return 0.0
+
+        # Normalize to lowercase word sets
+        def to_word_set(name: str) -> set[str]:
+            import re
+            # Split on whitespace, underscores, hyphens, camelCase boundaries
+            words = re.split(r'[\s_\-]+', name.lower())
+            # Also split camelCase
+            expanded: list[str] = []
+            for word in words:
+                parts = re.sub(r'([A-Z])', r' \1', word).split()
+                expanded.extend(p.lower() for p in parts if p)
+            return set(expanded) if expanded else {name.lower()}
+
+        model_word_sets = [(name, to_word_set(name)) for name in model_names]
+
+        # For each test-implied component, find best Jaccard match in model
+        alignment_scores: list[float] = []
+        for test_comp in test_structure.implied_components:
+            test_words = to_word_set(test_comp)
+            if not test_words:
+                continue
+
+            best_jaccard = 0.0
+            for _model_name, model_words in model_word_sets:
+                if not model_words:
+                    continue
+                intersection = test_words & model_words
+                union = test_words | model_words
+                jaccard = len(intersection) / len(union) if union else 0.0
+                best_jaccard = max(best_jaccard, jaccard)
+
+            alignment_scores.append(best_jaccard)
+
+        return sum(alignment_scores) / len(alignment_scores) if alignment_scores else 0.0

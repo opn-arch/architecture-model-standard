@@ -148,7 +148,7 @@ class TestCoverageScorer:
         assert result.overall >= 0.0
 
     def test_overall_is_weighted_average(self):
-        """Overall score should be weighted combination of 4 dimensions."""
+        """Overall score should be weighted combination of 5 dimensions."""
         scorer = CoverageScorer()
         # Verify weights sum to 1.0
         total_weight = (
@@ -156,6 +156,7 @@ class TestCoverageScorer:
             + scorer.EDGE_PRECISION_WEIGHT
             + scorer.COHESION_WEIGHT
             + scorer.DIRECTIONALITY_WEIGHT
+            + scorer.TEST_ALIGNMENT_WEIGHT
         )
         assert abs(total_weight - 1.0) < 0.001
 

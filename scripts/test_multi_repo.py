@@ -38,6 +38,8 @@ from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_coverage import ManifestCoverageComputer
 from architecture_model.training.oracle_evolution import _BASE_EXTRACTION_PROMPT
 from architecture_model.training.surrogate import Surrogate
+from architecture_model.training.test_runner import TestRunner
+from architecture_model.training.test_analyzer import TestStructureAnalyzer, TestCoverageAnalyzer
 
 
 # ---------------------------------------------------------------------------
@@ -243,12 +245,39 @@ async def process_repo(
     sha = get_repo_sha(repo_root)
     result["sha"] = sha
 
+    # 1.5. Run tests and analyze test structure
+    print(" t", end="", flush=True)
+    runner = TestRunner(timeout=120)
+    run_result = runner.run(repo_root, repo["name"])
+
+    structure_analyzer = TestStructureAnalyzer()
+    test_structure = structure_analyzer.analyze(
+        repo_root, run_result.test_files if run_result.success else None
+    )
+
+    coverage_analyzer = TestCoverageAnalyzer()
+    test_coverage = (
+        coverage_analyzer.analyze(run_result, test_structure)
+        if run_result.success
+        else None
+    )
+
+    result["test_run"] = {
+        "success": run_result.success,
+        "tests_collected": run_result.tests_collected,
+        "pass_rate": run_result.pass_rate,
+        "overall_coverage": run_result.overall_coverage,
+        "implied_components": test_structure.implied_components,
+    }
+
     # 2. Build manifest + context
     print(" .", end="", flush=True)
     try:
         builder = OracleContextBuilder(source_path, max_chars=40000)
         manifest = builder._generate_manifest()
-        context = builder.build(manifest)
+        context = builder.build(
+            manifest, test_structure=test_structure, test_coverage=test_coverage
+        )
     except Exception as e:
         result["status"] = "manifest_failed"
         result["error"] = str(e)
@@ -287,7 +316,7 @@ async def process_repo(
     # 4. Coverage scoring (penalty signal — does NOT modify the model)
     print(".", end="", flush=True)
     scorer = CoverageScorer()
-    cov_score = scorer.score(oracle_model_1, manifest)
+    cov_score = scorer.score(oracle_model_1, manifest, test_structure=test_structure)
     oracle_model = oracle_model_1  # No modification — raw oracle output
 
     # Rejection gate: mark low-quality extractions
@@ -301,6 +330,7 @@ async def process_repo(
         "edge_precision": cov_score.edge_precision,
         "cohesion": cov_score.cohesion,
         "directionality": cov_score.directionality,
+        "test_alignment": cov_score.test_alignment,
         "overall": cov_score.overall,
         "missing_edges_count": len(cov_score.missing_edges),
         "spurious_rels_count": len(cov_score.spurious_rels),
@@ -432,7 +462,7 @@ async def process_repo(
     dots = "." * max(1, 45 - len(name))
     print(f" {dots} {elapsed:.0f}s")
     print(f"  Forward:  validator={val_result.score}  mod={mod_cov:.0f}%  iface={iface_cov:.0f}%  block={block_cov:.0f}%")
-    print(f"  CovScore: edge={cov_score.edge_coverage:.2f}  prec={cov_score.edge_precision:.2f}  coh={cov_score.cohesion:.2f}  dir={cov_score.directionality:.2f}  overall={cov_score.overall:.2f}  gate={gate_str}")
+    print(f"  CovScore: edge={cov_score.edge_coverage:.2f}  prec={cov_score.edge_precision:.2f}  coh={cov_score.cohesion:.2f}  dir={cov_score.directionality:.2f}  test={cov_score.test_alignment:.2f}  overall={cov_score.overall:.2f}  gate={gate_str}")
     print(f"  Backward: test={test_cov:.0f}%  doc={doc_cov:.0f}%  struct={struct_cov:.0f}%  consist={consist:.0f}%")
     print(f"  Training: surr_loss={surr_loss_str}  DPO={dpo_str}")
 
