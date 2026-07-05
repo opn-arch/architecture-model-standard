@@ -25,6 +25,7 @@ from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_critique import SelfCritiqueRefiner
 from architecture_model.training.oracle_evolution import PromptEvolver
 from architecture_model.training.coverage_scorer import CoverageScorer
+from architecture_model.training.best_of_n import BestOfNGenerator
 from architecture_model.core.validator import validate_model
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,14 @@ class TrainingPipeline:
         self._critique_refiner: Optional[SelfCritiqueRefiner] = None
         self._prompt_evolver: Optional[PromptEvolver] = None
         self._oracle_context_builder_class = OracleContextBuilder
+
+        # Best-of-N DPO preference pair generator
+        self._best_of_n: Optional[BestOfNGenerator] = BestOfNGenerator(
+            surrogate=self.surrogate,
+            evaluator=self.evaluator,
+            n=4,
+            temperature=0.8,
+        )
 
         if oracle_learning_enabled:
             db_path = str(Path("./data/oracle_performance.db"))
@@ -230,15 +239,19 @@ class TrainingPipeline:
                 # Record loss for Pareto-based convergence tracking
                 self.controller.record_loss(loss)
 
-                # Save DPO preference when quality is low
-                if loss.structural_accuracy < 0.6:
-                    self.store.save_preference(
-                        prompt=code_context,
-                    chosen=oracle_model.to_yaml(),
-                    rejected=local_model.to_yaml(),
-                        margin=1.0 - loss.structural_accuracy,
-                        iteration=self.controller.state.iteration,
-                    )
+                # Generate Best-of-N DPO preference pairs
+                if loss.structural_accuracy < 0.8 and self._best_of_n is not None:
+                    pair = await self._best_of_n.generate(code_context, oracle_model)
+                    if pair is not None:
+                        best, worst = pair
+                        margin = best.loss.structural_accuracy - worst.loss.structural_accuracy
+                        self.store.save_preference(
+                            prompt=code_context,
+                            chosen=best.yaml_output,
+                            rejected=worst.yaml_output,
+                            margin=margin,
+                            iteration=self.controller.state.iteration,
+                        )
 
         # Save training example
         example = TrainingExample(

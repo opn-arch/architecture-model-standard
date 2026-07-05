@@ -331,6 +331,9 @@ class TestProcessRepoEnhanced:
         # Mock enhanced_extract to return our model
         pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
         pipeline._read_code_context = MagicMock(return_value="# code")
+        # Mock Best-of-N to prevent surrogate calls from BestOfNGenerator
+        pipeline._best_of_n = MagicMock()
+        pipeline._best_of_n.generate = AsyncMock(return_value=None)
 
         with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
             mock_validate.return_value = MagicMock(score=90)
@@ -393,8 +396,9 @@ class TestProcessRepoEnhanced:
 
     @pytest.mark.asyncio
     async def test_process_repo_saves_dpo_preference_on_low_accuracy(self):
-        """When structural_accuracy < 0.6, save a DPO preference pair."""
+        """When structural_accuracy < 0.8, Best-of-N generates DPO preference pair."""
         from architecture_model.training.evaluator import LossVector
+        from architecture_model.training.best_of_n import RankedExtraction
 
         mock_model = MagicMock()
         mock_model.relationships = []
@@ -415,7 +419,7 @@ class TestProcessRepoEnhanced:
         oracle = MagicMock()
         oracle.extract_model = AsyncMock(return_value=mock_oracle_model)
         store = MagicMock()
-        # Low structural_accuracy → should trigger DPO preference save
+        # Low structural_accuracy → should trigger Best-of-N DPO preference save
         loss_vec = LossVector(0.3, 0.5, 70)
         evaluator = MagicMock()
         evaluator.compute_loss = MagicMock(return_value=loss_vec)
@@ -433,21 +437,35 @@ class TestProcessRepoEnhanced:
         pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
         pipeline._read_code_context = MagicMock(return_value="# code")
 
+        # Mock Best-of-N to return a valid pair
+        best = RankedExtraction(
+            model=MagicMock(), loss=LossVector(0.7, 0.6, 80), yaml_output="best_yaml"
+        )
+        worst = RankedExtraction(
+            model=MagicMock(), loss=LossVector(0.2, 0.3, 55), yaml_output="worst_yaml"
+        )
+        pipeline._best_of_n = MagicMock()
+        pipeline._best_of_n.generate = AsyncMock(return_value=(best, worst))
+
         with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
             mock_validate.return_value = MagicMock(score=70)
+
             repo = MagicMock()
             repo.url = "https://github.com/test/test"
             repo.default_branch = "main"
+
             await pipeline._process_repo(repo)
 
-        # Verify save_preference was called
+        # Verify save_preference was called with Best-of-N outputs
         store.save_preference.assert_called_once()
-        call_args = store.save_preference.call_args
-        assert call_args.kwargs.get('margin') or call_args[1].get('margin', call_args[0][3]) == pytest.approx(0.7)
+        call_kwargs = store.save_preference.call_args[1]
+        assert call_kwargs["chosen"] == "best_yaml"
+        assert call_kwargs["rejected"] == "worst_yaml"
+        assert call_kwargs["margin"] == pytest.approx(0.5)  # 0.7 - 0.2
 
     @pytest.mark.asyncio
     async def test_process_repo_no_dpo_when_accuracy_high(self):
-        """When structural_accuracy >= 0.6, NO DPO preference pair saved."""
+        """When structural_accuracy >= 0.8, NO DPO preference pair saved."""
         from architecture_model.training.evaluator import LossVector
 
         mock_model = MagicMock()
@@ -461,7 +479,7 @@ class TestProcessRepoEnhanced:
         oracle = MagicMock()
         oracle.extract_model = AsyncMock(return_value=mock_model)
         store = MagicMock()
-        # High structural_accuracy → should NOT trigger DPO
+        # High structural_accuracy → should NOT trigger Best-of-N DPO
         loss_vec = LossVector(0.8, 0.9, 95)
         evaluator = MagicMock()
         evaluator.compute_loss = MagicMock(return_value=loss_vec)
@@ -478,6 +496,8 @@ class TestProcessRepoEnhanced:
         )
         pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
         pipeline._read_code_context = MagicMock(return_value="# code")
+        # Mock _best_of_n to verify it's NOT called
+        pipeline._best_of_n = MagicMock()
 
         with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
             mock_validate.return_value = MagicMock(score=95)
@@ -488,3 +508,5 @@ class TestProcessRepoEnhanced:
 
         # save_preference should NOT have been called
         store.save_preference.assert_not_called()
+        # Best-of-N should NOT have been called
+        pipeline._best_of_n.generate.assert_not_called()
