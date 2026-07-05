@@ -4,6 +4,94 @@ All notable changes to the Architecture Model Standard package.
 
 ---
 
+## [0.2.0] - 2026-07-05
+
+### MPC Training Loop
+
+The major addition is the **Model-Predictive Control (MPC) training loop** — a self-improving extraction system that uses oracle feedback to train a local surrogate model.
+
+**Core Training Pipeline:**
+- Surrogate model (qwen2.5:7b default) generates architecture extractions
+- Oracle (remote LLM) scores extractions against ground truth
+- DPO preference pairs generated from Best-of-N sampling
+- LoRA fine-tuning adapts surrogate toward oracle quality
+- Pareto convergence tracking (multi-objective loss vector)
+- Budget-capped oracle calls with automatic decrement
+
+**Extraction Improvements:**
+- Multi-pass extraction with AST-guided context
+- Precision guidance + few-shot examples in extraction prompts
+- SelfCritiqueRefiner for oracle gap-targeted re-extraction
+- PromptEvolver with self-reflective meta-learning
+- Deterministic + semantic relationship generation
+- Behavior-to-capability `realizes` relationships and orphan behavior `allocated-to`
+
+**Evaluation & Scoring:**
+- CoverageScorer replaces InterfaceEnforcer (manifest-derived scoring)
+- Semantic matching in loss signal (not ID-based)
+- Pareto objectives enriched with CoverageScorer signals
+- Composite confidence signal replaces naive heuristic
+- Dropped `reconstruction_fidelity` from LossVector
+
+**Context Building:**
+- OracleContextBuilder with manifest summary + code slices (20% budget cap)
+- Smart file ranking for large repos (ContextBuilder improvement)
+- Block-level dependency matrix injection
+- Test analysis integrated into extraction context
+
+**Model Configuration:**
+- ModelConfig registry with 3 tested models
+- Multi-adapter LoRA training targets (`resolve_training_targets()`, `train_all()`)
+- Configurable model swap via benchmark script
+
+**Validation & Testing:**
+- BackwardValidator for docs/tests/structural validation
+- Multi-repo validation harness with backward testing
+- TestRunner and TestAnalyzer for repo test suite integration
+- End-to-end integration test for surrogate training plumbing
+- Best-of-N DPO preference pair unit tests (495 lines)
+
+**Core Enhancements:**
+- `ArchitectureModel.to_dict()` and `to_yaml()` serialization
+- Status normalization maps non-standard values to valid enum
+- Facade-pattern imports resolved through `__init__.py` re-exports
+
+**Infrastructure:**
+- Training SQLite database (`data/training.db`, 856K)
+- Implementation plans in `.opencode/plans/`
+- Multi-repo test results tracking (`results/`)
+
+**Bug Fixes:**
+- Strip markdown fences from LLM responses before YAML parse
+- Generalize context builder + enum normalization
+- Remove convergence_history dual-write
+- Fix ID-based entity matching (prevent sequential ID collision)
+- Serialize models with `to_yaml()` instead of `str()`
+
+### Pipeline Test Results (2026-07-05)
+
+Re-tested against the package itself (now with training/ subpackage):
+
+| Stage | Result |
+|-------|--------|
+| Ingest | 120 files (with EXCLUDE_DIRS fix) |
+| Seed | 101 modules with code intelligence (AST analysis) |
+| Synthesize | 9 subsystems, 8 interfaces, 7 states, 9 requirements |
+| Manifest | 8 F-blocks (7 active, F7 dormant), 108 Python files |
+| Artifacts | 27 MBSE documents generated |
+| PDF | 27 rendered (PlantUML SVG + Mermaid JS via headless Chrome) |
+| Validation | 55 PASS, 0 FAIL, 20 SKIP |
+
+### Known Issues Resolved
+- Ollama `/v1/chat/completions` 404: confirmed working (was transient)
+- Artifact generation for external projects no longer hallucinates host-project content (manifest loaded from correct output dir)
+
+### Known Issues
+- Seed classification hangs when called within pipeline context (DB session conflict)
+- `logical-architecture` artifact scores 40/100 (missing: Component Diagram, Technology Stack, API Layer)
+
+---
+
 ## [0.1.0] - 2026-07-02
 
 ### Initial Release (Extraction from logs-db)
