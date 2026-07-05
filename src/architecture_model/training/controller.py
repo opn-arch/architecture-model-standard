@@ -10,7 +10,6 @@ unnecessary).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from statistics import stdev
 
 from architecture_model.training.evaluator import LossVector
 
@@ -150,14 +149,16 @@ class MPCController:
         recent = history[-self._CONVERGENCE_WINDOW:]
         return sum(recent) / len(recent) >= 0.8
 
+    def record_oracle_query(self, tokens_used: int = 1) -> None:
+        """Record that an oracle query was made, decrementing budget."""
+        self.state.oracle_budget_remaining -= tokens_used
+
     def next_iteration(self) -> None:
         """
         Advance to the next iteration.
 
         - Increments iteration counter
         - Increments total_repos_processed
-        - Records current surrogate_accuracy in convergence_history
         """
         self.state.iteration += 1
         self.state.total_repos_processed += 1
-        self.state.convergence_history.append(self.state.surrogate_accuracy)

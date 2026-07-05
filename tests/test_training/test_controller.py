@@ -218,14 +218,14 @@ class TestNextIteration:
 
         assert controller.state.total_repos_processed == 1
 
-    def test_appends_accuracy_to_convergence_history(self):
-        """next_iteration records current surrogate_accuracy in convergence_history."""
+    def test_does_not_modify_convergence_history(self):
+        """next_iteration should NOT append to convergence_history (that's record_loss's job)."""
         state = MPCState(surrogate_accuracy=0.85)
         controller = MPCController(state=state)
 
         controller.next_iteration()
 
-        assert controller.state.convergence_history == [0.85]
+        assert controller.state.convergence_history == []
 
     def test_multiple_iterations(self):
         """Multiple iterations accumulate correctly."""
@@ -240,7 +240,53 @@ class TestNextIteration:
 
         assert controller.state.iteration == 3
         assert controller.state.total_repos_processed == 3
-        assert len(controller.state.convergence_history) == 3
+        assert controller.state.convergence_history == []
+
+
+# ---------------------------------------------------------------------------
+# record_oracle_query tests
+# ---------------------------------------------------------------------------
+
+
+class TestRecordOracleQuery:
+    def test_decrements_budget_by_default(self):
+        """record_oracle_query decrements budget by 1 by default."""
+        state = MPCState(oracle_budget_remaining=100)
+        controller = MPCController(state=state)
+
+        controller.record_oracle_query()
+
+        assert controller.state.oracle_budget_remaining == 99
+
+    def test_decrements_budget_by_custom_amount(self):
+        """record_oracle_query decrements budget by specified tokens_used."""
+        state = MPCState(oracle_budget_remaining=100)
+        controller = MPCController(state=state)
+
+        controller.record_oracle_query(tokens_used=10)
+
+        assert controller.state.oracle_budget_remaining == 90
+
+    def test_budget_can_go_negative(self):
+        """Budget can go below zero (checked by should_query_oracle)."""
+        state = MPCState(oracle_budget_remaining=1)
+        controller = MPCController(state=state)
+
+        controller.record_oracle_query(tokens_used=5)
+
+        assert controller.state.oracle_budget_remaining == -4
+
+    def test_budget_exhaustion_blocks_further_queries(self):
+        """After budget reaches 0, should_query_oracle returns False."""
+        state = MPCState(oracle_budget_remaining=1)
+        controller = MPCController(state=state)
+
+        controller.record_oracle_query()
+
+        assert controller.state.oracle_budget_remaining == 0
+        assert controller.should_query_oracle(
+            validator_score=50.0, confidence=0.3, is_novel=True
+        ) is False
 
 
 # ---------------------------------------------------------------------------

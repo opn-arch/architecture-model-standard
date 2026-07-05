@@ -173,6 +173,7 @@ class TrainingPipeline:
 
             # Query oracle for ground truth
             oracle_model = await self.oracle.extract_model(oracle_context)
+            self.controller.record_oracle_query()
 
             if oracle_model is not None:
                 # Self-critique refinement (if enabled)
