@@ -25,6 +25,7 @@ from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_few_shot import FewShotRetriever
 from architecture_model.training.oracle_critique import SelfCritiqueRefiner
 from architecture_model.training.oracle_evolution import PromptEvolver
+from architecture_model.training.interface_enforcer import InterfaceEnforcer, EnforcementResult
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -41,4 +42,5 @@ __all__ = [
     "OracleContextBuilder",
     "FewShotRetriever",
     "SelfCritiqueRefiner", "PromptEvolver",
+    "InterfaceEnforcer", "EnforcementResult",
 ]

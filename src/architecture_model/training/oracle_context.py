@@ -147,12 +147,41 @@ class OracleContextBuilder:
                 lines.append(f"- **{bname}** ({n_files} files)")
 
         if interfaces:
-            # Show most-connected modules (hotspots)
+            # Block-level dependency matrix (structural hint for LLM)
             from collections import Counter
+
+            # Build file→block mapping
+            file_to_block: dict[str, str] = {}
+            for bid, bdata in blocks.items():
+                bname = bdata.get("name", bid)
+                for sf in bdata.get("sub_functions", []):
+                    file_to_block[sf.get("file", "")] = bname
+
+            # Aggregate interface edges at block level
+            block_edges: Counter[tuple[str, str]] = Counter()
+            for iface in interfaces:
+                src_block = file_to_block.get(iface.get("source", ""), "")
+                tgt_block = file_to_block.get(iface.get("target", ""), "")
+                if src_block and tgt_block and src_block != tgt_block:
+                    block_edges[(src_block, tgt_block)] += 1
+
+            if block_edges:
+                lines.append(f"\n### Block-Level Dependencies ({len(interfaces)} total import edges):")
+                lines.append("Components in these blocks MUST have depends-on/consumes relationships:")
+                for (src, tgt), count in block_edges.most_common():
+                    if count >= 10:
+                        strength = "strong"
+                    elif count >= 5:
+                        strength = "moderate"
+                    else:
+                        strength = "weak"
+                    lines.append(f"- **{src}** -> **{tgt}**: {count} edges ({strength})")
+
+            # Also show most-connected modules (hotspots)
             target_counts = Counter(i["target"] for i in interfaces)
             hotspots = target_counts.most_common(10)
-            lines.append(f"\n### Dependency Hotspots ({len(interfaces)} total edges):")
+            lines.append(f"\n### Dependency Hotspots:")
             for target, count in hotspots:
-                lines.append(f"- `{target}` ← imported by {count} modules")
+                lines.append(f"- `{target}` <- imported by {count} modules")
 
         return "\n".join(lines)

@@ -24,6 +24,7 @@ from architecture_model.training.oracle_performance import OraclePerformanceStor
 from architecture_model.training.oracle_context import OracleContextBuilder
 from architecture_model.training.oracle_critique import SelfCritiqueRefiner
 from architecture_model.training.oracle_evolution import PromptEvolver
+from architecture_model.training.interface_enforcer import InterfaceEnforcer
 from architecture_model.core.validator import validate_model
 
 logger = logging.getLogger(__name__)
@@ -179,6 +180,16 @@ class TrainingPipeline:
                     manifest = oracle_ctx_builder._generate_manifest() if self._oracle_learning_enabled else {}
                     oracle_model = await self._critique_refiner.refine(
                         oracle_model, manifest, oracle_context
+                    )
+
+                # Interface enforcement: inject manifest-derived dependencies
+                if self._oracle_learning_enabled:
+                    manifest = oracle_ctx_builder._generate_manifest() if 'manifest' not in dir() else manifest
+                    enforcement = InterfaceEnforcer().enforce(oracle_model, manifest)
+                    oracle_model = enforcement.model
+                    logger.info(
+                        "Interface enforcement: +%d rels, %d skipped, %d internal",
+                        enforcement.added_count, enforcement.skipped_count, enforcement.internal_count,
                     )
 
                 # Record performance (if enabled)

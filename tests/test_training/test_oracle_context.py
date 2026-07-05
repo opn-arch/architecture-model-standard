@@ -41,3 +41,28 @@ class TestOracleContextBuilder:
         builder = OracleContextBuilder(tmp_path, max_chars=5000)
         context = builder.build()
         assert len(context) <= 5000  # hard truncation at max_chars
+
+    def test_block_level_dependencies_in_summary(self, tmp_path):
+        """Summary includes block-level dependency matrix when blocks and interfaces exist."""
+        # Create two blocks with cross-imports (each needs 2+ files to be a block)
+        block_a = tmp_path / "alpha"
+        block_b = tmp_path / "beta"
+        block_a.mkdir()
+        block_b.mkdir()
+        (tmp_path / "__init__.py").write_text("")
+        (block_a / "__init__.py").write_text("")
+        (block_b / "__init__.py").write_text("")
+        (block_a / "sender.py").write_text(
+            "import beta.receiver\n\ndef send(): pass\n" + "# pad\n" * 15
+        )
+        (block_a / "helper.py").write_text("def help(): pass\n" + "# pad\n" * 15)
+        (block_b / "receiver.py").write_text("def receive(): pass\n" + "# pad\n" * 15)
+        (block_b / "utils.py").write_text("def util(): pass\n" + "# pad\n" * 15)
+
+        builder = OracleContextBuilder(tmp_path)
+        manifest = builder._generate_manifest()
+        summary = builder._format_manifest_summary(manifest)
+
+        # Should have block-level deps section
+        assert "Block-Level Dependencies" in summary
+        assert "MUST have depends-on/consumes" in summary
