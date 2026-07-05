@@ -162,6 +162,7 @@ class TrainingPipeline:
 
         oracle_output = None
         loss_vector = None
+        cov_score = None
 
         if should_query:
             # Build oracle context (manifest-enriched if learning enabled)
@@ -217,6 +218,7 @@ class TrainingPipeline:
                 loss = self.evaluator.compute_loss(
                     local_model=local_model,
                     oracle_model=oracle_model,
+                    coverage_score=cov_score if self._oracle_learning_enabled else None,
                 )
                 loss_vector = {
                     "structural_accuracy": loss.structural_accuracy,

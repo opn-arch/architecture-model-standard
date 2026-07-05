@@ -27,6 +27,7 @@ from architecture_model.training.evaluator import (
     compute_entity_match_map,
     compute_relationship_f1,
 )
+from architecture_model.training.coverage_scorer import CoverageScore
 
 
 # ---------------------------------------------------------------------------
@@ -312,6 +313,54 @@ class TestEvaluator:
         evaluator = Evaluator()
         loss = evaluator.compute_loss(local_model=local, oracle_model=oracle)
         assert loss.completeness == pytest.approx(0.65)
+
+    def test_compute_loss_with_coverage_score(self):
+        """Coverage score enriches structural_accuracy and completeness with weighted signals."""
+        actors = [Actor(id="a1", name="User", status=Status.ACTIVE, type=ActorType.HUMAN)]
+        rels = [Relationship(type=RelationType.REALIZES, from_id="c1", to_id="cap1")]
+
+        local = _make_model(actors=actors, relationships=rels)
+        oracle = _make_model(actors=actors, relationships=rels)
+
+        # Perfect entity/rel match: entity_f1=1.0, rel_f1=1.0, entity_recall=1.0, rel_recall=1.0
+        cov = CoverageScore(
+            edge_coverage=0.8,
+            edge_precision=0.7,
+            cohesion=0.6,
+            directionality=0.9,
+            test_alignment=0.5,
+            overall=0.72,
+        )
+
+        evaluator = Evaluator()
+        loss = evaluator.compute_loss(
+            local_model=local, oracle_model=oracle, coverage_score=cov
+        )
+
+        # L1: 0.40*1.0 + 0.30*0.72 + 0.30*1.0 = 0.40 + 0.216 + 0.30 = 0.916
+        assert loss.structural_accuracy == pytest.approx(0.916, abs=0.001)
+
+        # L2: 0.50*1.0 + 0.30*0.8 + 0.20*1.0 = 0.50 + 0.24 + 0.20 = 0.94
+        assert loss.completeness == pytest.approx(0.94, abs=0.001)
+
+    def test_compute_loss_without_coverage_falls_back(self):
+        """Without coverage_score, old behavior is preserved (simple averages)."""
+        actors = [Actor(id="a1", name="User", status=Status.ACTIVE, type=ActorType.HUMAN)]
+        rels = [Relationship(type=RelationType.REALIZES, from_id="c1", to_id="cap1")]
+
+        local = _make_model(actors=actors, relationships=rels)
+        oracle = _make_model(actors=actors, relationships=rels)
+
+        evaluator = Evaluator()
+        loss = evaluator.compute_loss(
+            local_model=local, oracle_model=oracle, coverage_score=None
+        )
+
+        # L1: (entity_f1 + rel_f1) / 2.0 = (1.0 + 1.0) / 2.0 = 1.0
+        assert loss.structural_accuracy == pytest.approx(1.0)
+
+        # L2: 0.7*entity_recall + 0.3*rel_recall = 0.7*1.0 + 0.3*1.0 = 1.0
+        assert loss.completeness == pytest.approx(1.0)
 
 
 # ---------------------------------------------------------------------------

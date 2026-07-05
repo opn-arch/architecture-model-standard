@@ -15,6 +15,7 @@ from typing import Optional
 
 from architecture_model.core.types import ArchitectureModel
 from architecture_model.core.validator import validate_model
+from architecture_model.training.coverage_scorer import CoverageScore
 
 
 # ---------------------------------------------------------------------------
@@ -252,12 +253,13 @@ class Evaluator:
         self,
         local_model: ArchitectureModel,
         oracle_model: Optional[ArchitectureModel] = None,
+        coverage_score: Optional[CoverageScore] = None,
     ) -> LossVector:
         """
         Compute multi-objective loss vector.
 
-        L1: structural_accuracy — average of entity F1 and relationship F1
-        L2: completeness — entity recall vs oracle
+        L1: structural_accuracy — entity/rel F1, enriched with coverage.overall when available
+        L2: completeness — entity/rel recall, enriched with edge_coverage when available
         L3: validator_score — existing validator score (0-100)
         """
         # L3: always computable
@@ -269,12 +271,28 @@ class Evaluator:
             id_map = compute_entity_match_map(local_model, oracle_model)
             entity_f1 = compute_entity_f1(local_model, oracle_model)
             rel_f1 = compute_relationship_f1(local_model, oracle_model, id_map=id_map)
-            structural_accuracy = (entity_f1 + rel_f1) / 2.0
-
-            # Weighted completeness: 0.7*entity + 0.3*relationship
             entity_recall = _compute_entity_recall(local_model, oracle_model)
             rel_recall = _compute_relationship_recall(local_model, oracle_model, id_map=id_map)
-            completeness = 0.7 * entity_recall + 0.3 * rel_recall
+
+            # L1: structural_accuracy — enriched with coverage signals
+            if coverage_score is not None:
+                structural_accuracy = (
+                    0.40 * entity_f1
+                    + 0.30 * coverage_score.overall
+                    + 0.30 * rel_f1
+                )
+            else:
+                structural_accuracy = (entity_f1 + rel_f1) / 2.0
+
+            # L2: completeness — enriched with edge_coverage
+            if coverage_score is not None:
+                completeness = (
+                    0.50 * entity_recall
+                    + 0.30 * coverage_score.edge_coverage
+                    + 0.20 * rel_recall
+                )
+            else:
+                completeness = 0.7 * entity_recall + 0.3 * rel_recall
         else:
             structural_accuracy = 0.0
             completeness = 0.0
