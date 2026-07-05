@@ -34,6 +34,11 @@ from architecture_model.training.test_analyzer import (
     TestStructureAnalyzer, TestStructure,
     TestCoverageAnalyzer, TestCoverage,
 )
+from architecture_model.training.code_structure import (
+    parse_code_structure, parse_multi_file_code,
+    StructuralGraph, ClassInfo, FunctionInfo, ImportEdge,
+)
+from architecture_model.training.semantic_matcher import SemanticMatcher, SemanticMatch
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -57,4 +62,7 @@ __all__ = [
     "TestRunner", "TestRunResult",
     "TestStructureAnalyzer", "TestStructure",
     "TestCoverageAnalyzer", "TestCoverage",
+    "parse_code_structure", "parse_multi_file_code",
+    "StructuralGraph", "ClassInfo", "FunctionInfo", "ImportEdge",
+    "SemanticMatcher", "SemanticMatch",
 ]
