@@ -73,11 +73,22 @@ Each relationship must have: type, from, to.
 Output raw YAML only — no markdown fences, no explanation."""
 
 _GENERATE_SYSTEM_PROMPT = """\
-You are a code stub generation engine. Given an architecture model YAML, \
-generate Python stub code implementing the described architecture. \
-Output class definitions with method signatures and brief docstrings. \
-Do NOT implement method bodies — use 'pass' or '...' for all bodies. \
-Output only Python code — no explanations, no markdown fences."""
+You are an architecture-to-code compiler. Given a UAM (Universal Architecture Model) \
+YAML, generate Python code that realizes the described architecture.
+
+Rules:
+1. Create one class per component entity. Class name = component name in PascalCase.
+2. Create methods on each class matching the behaviors/capabilities it realizes.
+3. Add import statements reflecting depends-on and uses relationships.
+4. Organize code into modules matching the layers (one module per layer).
+5. Use type hints on all methods.
+6. Do NOT implement method bodies — use 'pass' for all bodies.
+7. Include a brief docstring on each class describing its responsibility.
+
+Output format:
+- Separate modules with '# module_name.py' comment headers
+- Import statements at the top of each module
+- Output ONLY Python code — no markdown fences, no explanations."""
 
 
 class Surrogate:
