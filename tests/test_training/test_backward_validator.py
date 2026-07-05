@@ -244,6 +244,214 @@ class TestValidateCombined:
         assert result.untested_components == []
 
 
+class TestFacadePatternTestMapping:
+    """Facade-pattern repos: tests import the package name which resolves to __init__.py.
+
+    When __init__.py re-exports from submodules, those re-exports should be followed
+    to map test imports to components (instead of returning 0% test coverage).
+    """
+
+    def test_bare_package_import_resolves_through_reexports(self, tmp_path):
+        """import httpcore resolves through __init__.py re-exports to submodule components.
+
+        Bug: httpcore gets 0% test mapping because ALL tests do `import httpcore`.
+        This resolves to `__init__.py` which maps to no component.
+        Fix: Follow imports_detailed (is_relative=True) in __init__.py to find
+        the actual submodule files.
+        """
+        # Setup: facade-pattern package (httpcore-like)
+        pkg_dir = tmp_path / "src" / "httpcore"
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "__init__.py").write_text(
+            "from ._client import HTTPClient\n"
+            "from ._pool import ConnectionPool\n"
+        )
+        (pkg_dir / "_client.py").write_text("class HTTPClient: pass\n")
+        (pkg_dir / "_pool.py").write_text("class ConnectionPool: pass\n")
+
+        # Test file does bare package import
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "__init__.py").write_text("")
+        (tests_dir / "test_client.py").write_text(
+            "import httpcore\n"
+            "def test_client():\n"
+            "    c = httpcore.HTTPClient()\n"
+        )
+
+        # Model: components own the submodule files
+        model = ArchitectureModel(
+            meta=_make_meta(),
+            entities=Entities(
+                components=[
+                    Component(
+                        id="C1", name="HTTP Client", layer="L1",
+                        status=Status.ACTIVE, files=["_client.py"],
+                    ),
+                    Component(
+                        id="C2", name="Connection Pool", layer="L1",
+                        status=Status.ACTIVE, files=["_pool.py"],
+                    ),
+                ],
+                capabilities=[],
+                layers=[Layer(id="L1", name="core", status=Status.ACTIVE)],
+            ),
+        )
+
+        # Manifest includes imports_detailed with is_relative: True on __init__.py
+        manifest = {
+            "modules": [
+                {
+                    "file": "__init__.py",
+                    "name": "__init__",
+                    "line_count": 5,
+                    "functions": [],
+                    "imports": ["_client", "_pool"],
+                    "imports_detailed": [
+                        {"module": "_client", "names": ["HTTPClient"], "is_relative": True},
+                        {"module": "_pool", "names": ["ConnectionPool"], "is_relative": True},
+                    ],
+                    "exports": ["HTTPClient", "ConnectionPool"],
+                    "status": "active",
+                },
+                {
+                    "file": "_client.py",
+                    "name": "_client",
+                    "line_count": 50,
+                    "functions": ["HTTPClient"],
+                    "imports": [],
+                    "status": "active",
+                },
+                {
+                    "file": "_pool.py",
+                    "name": "_pool",
+                    "line_count": 80,
+                    "functions": ["ConnectionPool"],
+                    "imports": [],
+                    "status": "active",
+                },
+            ],
+            "interfaces": [],
+            "functional_blocks": {},
+        }
+
+        validator = BackwardValidator()
+        score, tested, untested = validator._check_test_mapping(
+            model, manifest, tmp_path
+        )
+
+        # Should find components through facade re-exports
+        assert score > 0.0, (
+            f"Expected score > 0.0 but got {score}. "
+            f"Facade re-exports should resolve to components. "
+            f"Tested: {tested}, Untested: {untested}"
+        )
+        assert len(tested) > 0
+
+    def test_facade_resolution_fallback_without_imports_detailed(self, tmp_path):
+        """When imports_detailed is missing, fall back to plain imports list."""
+        pkg_dir = tmp_path / "src" / "mypkg"
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "__init__.py").write_text("from ._core import Engine\n")
+        (pkg_dir / "_core.py").write_text("class Engine: pass\n")
+
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "__init__.py").write_text("")
+        (tests_dir / "test_core.py").write_text(
+            "import mypkg\n"
+            "def test_engine(): pass\n"
+        )
+
+        model = ArchitectureModel(
+            meta=_make_meta(),
+            entities=Entities(
+                components=[
+                    Component(
+                        id="C1", name="Core Engine", layer="L1",
+                        status=Status.ACTIVE, files=["_core.py"],
+                    ),
+                ],
+                capabilities=[],
+                layers=[Layer(id="L1", name="core", status=Status.ACTIVE)],
+            ),
+        )
+
+        # No imports_detailed — only plain imports list
+        manifest = {
+            "modules": [
+                {
+                    "file": "__init__.py",
+                    "name": "__init__",
+                    "line_count": 3,
+                    "functions": [],
+                    "imports": ["_core"],
+                    "status": "active",
+                },
+                {
+                    "file": "_core.py",
+                    "name": "_core",
+                    "line_count": 30,
+                    "functions": ["Engine"],
+                    "imports": [],
+                    "status": "active",
+                },
+            ],
+            "interfaces": [],
+            "functional_blocks": {},
+        }
+
+        validator = BackwardValidator()
+        score, tested, untested = validator._check_test_mapping(
+            model, manifest, tmp_path
+        )
+
+        # Should still resolve through plain imports fallback
+        assert score > 0.0, (
+            f"Expected score > 0.0 but got {score}. "
+            f"Plain imports fallback should resolve to components. "
+            f"Tested: {tested}, Untested: {untested}"
+        )
+
+    def test_non_facade_repos_unaffected(self, tmp_path):
+        """Normal imports (not through __init__.py) still work correctly."""
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (src_dir / "client.py").write_text("class Client: pass\n")
+
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "__init__.py").write_text("")
+        (tests_dir / "test_client.py").write_text(
+            "from src.client import Client\n"
+            "def test_client(): pass\n"
+        )
+
+        model = ArchitectureModel(
+            meta=_make_meta(),
+            entities=Entities(
+                components=[
+                    Component(
+                        id="C1", name="Client", layer="L1",
+                        status=Status.ACTIVE, files=["src/client.py"],
+                    ),
+                ],
+                capabilities=[],
+                layers=[Layer(id="L1", name="core", status=Status.ACTIVE)],
+            ),
+        )
+
+        manifest = _make_manifest_with_modules(["src/client.py"])
+
+        validator = BackwardValidator()
+        score, tested, untested = validator._check_test_mapping(
+            model, manifest, tmp_path
+        )
+
+        assert score == 1.0
+        assert "Client" in tested
+
+
 class TestOverallWeightedAverage:
     """BackwardResult.overall property."""
 

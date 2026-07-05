@@ -134,6 +134,18 @@ class BackwardValidator:
                     comp_id = module_map.get(file_path, "")
                     if comp_id:
                         tested_comp_ids.add(comp_id)
+                        continue
+
+                    # Facade pattern: import resolves to __init__.py with no component.
+                    # Follow re-exports to find actual submodule components.
+                    if "__init__.py" in file_path and not comp_id:
+                        reexport_files = self._resolve_facade_imports(
+                            file_path, manifest, import_to_file
+                        )
+                        for reexport_file in reexport_files:
+                            sub_comp_id = module_map.get(reexport_file, "")
+                            if sub_comp_id:
+                                tested_comp_ids.add(sub_comp_id)
                     continue
 
                 # Prefix match: test import is more specific than map entry
@@ -152,6 +164,127 @@ class BackwardValidator:
 
         score = len(tested_comp_ids) / len(model.entities.components)
         return score, tested, untested
+
+    def _resolve_facade_imports(
+        self,
+        init_file: str,
+        manifest: dict,
+        import_to_file: dict[str, str],
+    ) -> list[str]:
+        """Resolve facade-pattern re-exports from an __init__.py to submodule file paths.
+
+        When a test does `import httpcore`, it resolves to `__init__.py` which owns
+        no component. This method follows the re-exports declared in __init__.py
+        (via `imports_detailed` with `is_relative: True`) to find the actual
+        submodule files that contain the real implementations.
+
+        Resolution strategies (tried in order):
+        1. imports_detailed entries with is_relative=True → resolve module name to file
+        2. Fallback: plain imports list → try filename-based resolution (module + ".py")
+
+        Args:
+            init_file: The manifest file path for __init__.py (e.g., "__init__.py").
+            manifest: The reality manifest dict.
+            import_to_file: The import name → file path map (for cross-reference).
+
+        Returns:
+            List of manifest file paths for re-exported submodules.
+        """
+        modules = manifest.get("modules", [])
+
+        # Find the __init__.py module entry in the manifest
+        init_module = None
+        for mod in modules:
+            if mod["file"] == init_file:
+                init_module = mod
+                break
+
+        if init_module is None:
+            return []
+
+        resolved_files: list[str] = []
+
+        # Determine the directory prefix for the __init__.py
+        # e.g., "subpkg/__init__.py" → "subpkg/", "__init__.py" → ""
+        if "/" in init_file:
+            dir_prefix = init_file.rsplit("/", 1)[0] + "/"
+        else:
+            dir_prefix = ""
+
+        # Strategy 1: Use imports_detailed with is_relative=True
+        imports_detailed = init_module.get("imports_detailed", [])
+        if imports_detailed:
+            for entry in imports_detailed:
+                if not entry.get("is_relative", False):
+                    continue
+                rel_module = entry.get("module", "")
+                if not rel_module:
+                    continue
+                # Resolve relative module name to file path
+                # Strip leading underscores/dots for matching, try as-is first
+                candidate_file = self._resolve_relative_module(
+                    rel_module, dir_prefix, modules, import_to_file
+                )
+                if candidate_file:
+                    resolved_files.append(candidate_file)
+            if resolved_files:
+                return resolved_files
+
+        # Strategy 2: Fallback to plain imports list
+        plain_imports = init_module.get("imports", [])
+        for imp_name in plain_imports:
+            candidate_file = self._resolve_relative_module(
+                imp_name, dir_prefix, modules, import_to_file
+            )
+            if candidate_file:
+                resolved_files.append(candidate_file)
+
+        return resolved_files
+
+    def _resolve_relative_module(
+        self,
+        module_name: str,
+        dir_prefix: str,
+        modules: list[dict],
+        import_to_file: dict[str, str],
+    ) -> str | None:
+        """Resolve a relative module name to a manifest file path.
+
+        Tries multiple resolution strategies:
+        1. Direct filename match: dir_prefix + module_name + ".py"
+        2. Module name without leading underscore
+        3. Cross-reference in import_to_file map
+
+        Args:
+            module_name: The relative module name (e.g., "_client", "core").
+            dir_prefix: Directory prefix from __init__.py location.
+            modules: List of manifest module entries.
+            import_to_file: The import name → file path map.
+
+        Returns:
+            Manifest file path if resolved, None otherwise.
+        """
+        # Build set of known manifest files for quick lookup
+        manifest_files = {mod["file"] for mod in modules}
+
+        # Strategy 1: Direct file path: dir_prefix + module_name + ".py"
+        candidate = f"{dir_prefix}{module_name}.py"
+        if candidate in manifest_files:
+            return candidate
+
+        # Strategy 2: Try without leading underscore
+        if module_name.startswith("_"):
+            candidate = f"{dir_prefix}{module_name[1:]}.py"
+            if candidate in manifest_files:
+                return candidate
+
+        # Strategy 3: Check if it's in the import_to_file map
+        for mapped_import, mapped_file in import_to_file.items():
+            if mapped_import.endswith("." + module_name) or mapped_import == module_name:
+                if mapped_file in manifest_files:
+                    return mapped_file
+
+        return None
 
     def _check_doc_coverage(
         self, model: ArchitectureModel, repo_path: Path
