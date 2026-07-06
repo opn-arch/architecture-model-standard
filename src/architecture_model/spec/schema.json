@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://architecture-model-standard.dev/schema/v0.1.0/model.json",
+  "$id": "https://architecture-model-standard.dev/schema/v1.1.0/model.json",
   "title": "Architecture Model",
   "description": "Universal machine-readable architecture model for LLM-driven system engineering",
   "type": "object",
@@ -65,6 +65,13 @@
       "type": "string",
       "enum": ["ACTIVE", "PLANNED", "DORMANT", "DEPRECATED"]
     },
+    "extensions": {
+      "type": "object",
+      "patternProperties": {
+        "^x-": {}
+      },
+      "additionalProperties": false
+    },
     "base_entity": {
       "type": "object",
       "required": ["id", "name", "status"],
@@ -84,7 +91,8 @@
         "id": true, "name": true, "description": true, "status": true,
         "tags": true, "source_file": true, "source_line": true,
         "type": { "type": "string", "enum": ["human", "system", "external-service"] },
-        "goals": { "type": "array", "items": { "type": "string" } }
+        "goals": { "type": "array", "items": { "type": "string" } },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     },
@@ -95,7 +103,8 @@
         "tags": true, "source_file": true, "source_line": true,
         "f_block": { "type": "string" },
         "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
-        "requirements": { "type": "array", "items": { "type": "string" } }
+        "requirements": { "type": "array", "items": { "type": "string" } },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     },
@@ -110,7 +119,43 @@
         "postconditions": { "type": "array", "items": { "type": "string" } },
         "steps": { "type": "array", "items": { "type": "string" } },
         "frequency": { "type": "string" },
-        "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] }
+        "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "pattern": {
+          "type": "string",
+          "enum": ["sequential", "event-driven", "state-machine", "saga", "pipeline", "parallel"]
+        },
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "transitions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "to": { "type": "string" },
+                    "trigger": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "compensations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["step", "compensate"],
+            "properties": {
+              "step": { "type": "string" },
+              "compensate": { "type": "string" }
+            }
+          }
+        },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     },
@@ -131,10 +176,14 @@
             "properties": {
               "method": { "type": "string" },
               "path": { "type": "string" },
-              "description": { "type": "string" }
+              "description": { "type": "string" },
+              "request_schema": { "type": "string" },
+              "response_schema": { "type": "string" }
             }
           }
-        }
+        },
+        "schema": { "type": "string" },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     },
@@ -146,7 +195,8 @@
         "type": { "type": "string", "enum": ["performance", "security", "reliability", "scalability", "regulatory", "technology", "operational"] },
         "metric": { "type": "string" },
         "threshold": { "type": "string" },
-        "rationale": { "type": "string" }
+        "rationale": { "type": "string" },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     },
@@ -157,7 +207,8 @@
         "tags": true, "source_file": true, "source_line": true,
         "order": { "type": "integer", "minimum": 0 },
         "technology": { "type": "array", "items": { "type": "string" } },
-        "directories": { "type": "array", "items": { "type": "string" } }
+        "directories": { "type": "array", "items": { "type": "string" } },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     },
@@ -170,7 +221,27 @@
         "f_block": { "type": "string" },
         "technology": { "type": "string" },
         "files": { "type": "array", "items": { "type": "string" } },
-        "responsibilities": { "type": "array", "items": { "type": "string" } }
+        "responsibilities": { "type": "array", "items": { "type": "string" } },
+        "kind": {
+          "type": "string",
+          "enum": ["service", "library", "data-model", "data-store", "infrastructure", "framework", "ui", "pipeline"]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "required": { "type": "boolean" },
+              "description": { "type": "string" }
+            }
+          }
+        },
+        "region": { "type": "string" },
+        "replicas": { "type": "integer", "minimum": 0 },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     },
@@ -185,7 +256,8 @@
         "from": { "type": "string" },
         "to": { "type": "string" },
         "description": { "type": "string" },
-        "strength": { "type": "string", "enum": ["strong", "moderate", "weak"] }
+        "strength": { "type": "string", "enum": ["strong", "moderate", "weak"] },
+        "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
     }

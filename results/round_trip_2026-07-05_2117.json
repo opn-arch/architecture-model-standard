@@ -1,0 +1,857 @@
+{
+  "timestamp": "2026-07-05T21:17:08.618622",
+  "config": {
+    "surrogate": "qwen2.5:7b",
+    "copilot": "copilot-relay",
+    "semantic": "nomic-embed-text",
+    "repos": 18
+  },
+  "results": [
+    {
+      "repo": "arrow",
+      "repo_url": "https://github.com/arrow-py/arrow",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 4,
+        "imports": 6,
+        "modules": 9
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.16666666666666666,
+        "module_ratio": 0.2222222222222222,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.03888888888888889
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.2222222222222222,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.022222222222222223
+      },
+      "surrogate_generated": {
+        "classes": 5,
+        "methods": 14,
+        "functions": 0,
+        "imports": 1,
+        "modules": 2
+      },
+      "copilot_generated": {
+        "classes": 8,
+        "methods": 11,
+        "functions": 0,
+        "imports": 7,
+        "modules": 2
+      },
+      "elapsed_s": 66.3049647808075
+    },
+    {
+      "repo": "starlette",
+      "repo_url": "https://github.com/encode/starlette",
+      "status": "ok",
+      "original": {
+        "classes": 6,
+        "methods": 5,
+        "functions": 0,
+        "imports": 15,
+        "modules": 18
+      },
+      "surrogate": {
+        "class_overlap": 0.02702702702702703,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.06666666666666667,
+        "module_ratio": 0.16666666666666666,
+        "semantic_class_match": 0.9158448227770836,
+        "intent_coverage": 0.3333333333333333,
+        "overall": 0.33278212882196795
+      },
+      "copilot": {
+        "class_overlap": 0.02702702702702703,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.06666666666666667,
+        "module_ratio": 0.16666666666666666,
+        "semantic_class_match": 0.9158448227770836,
+        "intent_coverage": 0.3333333333333333,
+        "overall": 0.33278212882196795
+      },
+      "surrogate_generated": {
+        "classes": 32,
+        "methods": 33,
+        "functions": 0,
+        "imports": 1,
+        "modules": 3
+      },
+      "copilot_generated": {
+        "classes": 32,
+        "methods": 17,
+        "functions": 0,
+        "imports": 2,
+        "modules": 3
+      },
+      "elapsed_s": 81.05370712280273
+    },
+    {
+      "repo": "jinja",
+      "repo_url": "https://github.com/pallets/jinja",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 14
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 1.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.07142857142857142,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.3571428571428571
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.35714285714285715,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.23571428571428574
+      },
+      "surrogate_generated": {
+        "classes": 1,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 24,
+        "methods": 52,
+        "functions": 0,
+        "imports": 2,
+        "modules": 5
+      },
+      "elapsed_s": 57.742438316345215
+    },
+    {
+      "repo": "flask",
+      "repo_url": "https://github.com/pallets/flask",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 16
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.0625,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.20625000000000002
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.1875,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.21875
+      },
+      "surrogate_generated": {
+        "classes": 12,
+        "methods": 14,
+        "functions": 0,
+        "imports": 1,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 22,
+        "methods": 7,
+        "functions": 0,
+        "imports": 4,
+        "modules": 3
+      },
+      "elapsed_s": 45.22649693489075
+    },
+    {
+      "repo": "marshmallow",
+      "repo_url": "https://github.com/marshmallow-code/marshmallow",
+      "status": "ok",
+      "original": {
+        "classes": 1,
+        "methods": 0,
+        "functions": 2,
+        "imports": 22,
+        "modules": 9
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.09090909090909091,
+        "module_ratio": 0.6428571428571429,
+        "semantic_class_match": 0.741816269305152,
+        "intent_coverage": 1.0,
+        "overall": 0.38464906377239616
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.09090909090909091,
+        "module_ratio": 0.2222222222222222,
+        "semantic_class_match": 0.8266963610943826,
+        "intent_coverage": 1.0,
+        "overall": 0.3553175854772887
+      },
+      "surrogate_generated": {
+        "classes": 15,
+        "methods": 14,
+        "functions": 0,
+        "imports": 7,
+        "modules": 14
+      },
+      "copilot_generated": {
+        "classes": 12,
+        "methods": 15,
+        "functions": 0,
+        "imports": 2,
+        "modules": 2
+      },
+      "elapsed_s": 42.41335892677307
+    },
+    {
+      "repo": "black",
+      "repo_url": "https://github.com/psf/black",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 1,
+        "imports": 3,
+        "modules": 10
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.1,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.010000000000000002
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.3333333333333333,
+        "module_ratio": 0.6,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.09333333333333332
+      },
+      "surrogate_generated": {
+        "classes": 1,
+        "methods": 3,
+        "functions": 0,
+        "imports": 0,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 23,
+        "methods": 54,
+        "functions": 0,
+        "imports": 5,
+        "modules": 6
+      },
+      "elapsed_s": 60.914151191711426
+    },
+    {
+      "repo": "httpx",
+      "repo_url": "https://github.com/encode/httpx",
+      "status": "ok",
+      "original": {
+        "classes": 4,
+        "methods": 2,
+        "functions": 0,
+        "imports": 4,
+        "modules": 16
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.25,
+        "module_ratio": 0.1875,
+        "semantic_class_match": 0.7370877410250618,
+        "intent_coverage": 0.5,
+        "overall": 0.3543131611537592
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.25,
+        "module_ratio": 0.1875,
+        "semantic_class_match": 0.7660237481104681,
+        "intent_coverage": 0.5,
+        "overall": 0.3586535622165702
+      },
+      "surrogate_generated": {
+        "classes": 20,
+        "methods": 22,
+        "functions": 0,
+        "imports": 2,
+        "modules": 3
+      },
+      "copilot_generated": {
+        "classes": 20,
+        "methods": 27,
+        "functions": 0,
+        "imports": 2,
+        "modules": 3
+      },
+      "elapsed_s": 49.72314476966858
+    },
+    {
+      "repo": "rich",
+      "repo_url": "https://github.com/Textualize/rich",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 26
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.038461538461538464,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.20384615384615384
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.15384615384615385,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.2153846153846154
+      },
+      "surrogate_generated": {
+        "classes": 8,
+        "methods": 9,
+        "functions": 0,
+        "imports": 0,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 31,
+        "methods": 72,
+        "functions": 0,
+        "imports": 4,
+        "modules": 4
+      },
+      "elapsed_s": 95.45921611785889
+    },
+    {
+      "repo": "fastapi",
+      "repo_url": "https://github.com/tiangolo/fastapi",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 6,
+        "modules": 13
+      },
+      "surrogate": {
+        "class_overlap": 1.0,
+        "method_overlap": 1.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.0,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.44999999999999996
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.16666666666666666,
+        "module_ratio": 0.46153846153846156,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.16282051282051282
+      },
+      "surrogate_generated": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 0
+      },
+      "copilot_generated": {
+        "classes": 26,
+        "methods": 12,
+        "functions": 0,
+        "imports": 1,
+        "modules": 6
+      },
+      "elapsed_s": 35.87298393249512
+    },
+    {
+      "repo": "pydantic",
+      "repo_url": "https://github.com/pydantic/pydantic",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 15
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 1.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.06666666666666667,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.35666666666666663
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.3333333333333333,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.23333333333333334
+      },
+      "surrogate_generated": {
+        "classes": 9,
+        "methods": 0,
+        "functions": 0,
+        "imports": 1,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 49,
+        "methods": 27,
+        "functions": 0,
+        "imports": 2,
+        "modules": 5
+      },
+      "elapsed_s": 58.285825967788696
+    },
+    {
+      "repo": "structlog",
+      "repo_url": "https://github.com/hynek/structlog",
+      "status": "ok",
+      "original": {
+        "classes": 1,
+        "methods": 5,
+        "functions": 0,
+        "imports": 5,
+        "modules": 10
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.2,
+        "module_ratio": 0.1,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.13
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.4,
+        "module_ratio": 0.5,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.19
+      },
+      "surrogate_generated": {
+        "classes": 1,
+        "methods": 2,
+        "functions": 0,
+        "imports": 1,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 20,
+        "methods": 54,
+        "functions": 0,
+        "imports": 2,
+        "modules": 5
+      },
+      "elapsed_s": 63.89400315284729
+    },
+    {
+      "repo": "attrs",
+      "repo_url": "https://github.com/python-attrs/attrs",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 8,
+        "modules": 12
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.125,
+        "module_ratio": 0.25,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.1375
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.08333333333333333,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.10833333333333334
+      },
+      "surrogate_generated": {
+        "classes": 3,
+        "methods": 11,
+        "functions": 0,
+        "imports": 2,
+        "modules": 3
+      },
+      "copilot_generated": {
+        "classes": 1,
+        "methods": 7,
+        "functions": 0,
+        "imports": 1,
+        "modules": 1
+      },
+      "elapsed_s": 17.195778131484985
+    },
+    {
+      "repo": "tqdm",
+      "repo_url": "https://github.com/tqdm/tqdm",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 4,
+        "imports": 11,
+        "modules": 14
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.14285714285714285,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.014285714285714285
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 0.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.21428571428571427,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.02142857142857143
+      },
+      "surrogate_generated": {
+        "classes": 11,
+        "methods": 11,
+        "functions": 0,
+        "imports": 0,
+        "modules": 2
+      },
+      "copilot_generated": {
+        "classes": 22,
+        "methods": 49,
+        "functions": 0,
+        "imports": 3,
+        "modules": 3
+      },
+      "elapsed_s": 51.14837193489075
+    },
+    {
+      "repo": "colorama",
+      "repo_url": "https://github.com/tartley/colorama",
+      "status": "ok",
+      "original": {
+        "classes": 2,
+        "methods": 5,
+        "functions": 0,
+        "imports": 6,
+        "modules": 5
+      },
+      "surrogate": {
+        "class_overlap": 0.09090909090909091,
+        "method_overlap": 0.041666666666666664,
+        "function_overlap": 1.0,
+        "import_similarity": 0.5,
+        "module_ratio": 0.4,
+        "semantic_class_match": 1.0000000000000002,
+        "intent_coverage": 0.5,
+        "overall": 0.4644318181818182
+      },
+      "copilot": {
+        "class_overlap": 0.08333333333333333,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.4,
+        "semantic_class_match": 1.0000000000000002,
+        "intent_coverage": 0.5,
+        "overall": 0.40666666666666673
+      },
+      "surrogate_generated": {
+        "classes": 10,
+        "methods": 20,
+        "functions": 0,
+        "imports": 6,
+        "modules": 2
+      },
+      "copilot_generated": {
+        "classes": 11,
+        "methods": 2,
+        "functions": 0,
+        "imports": 2,
+        "modules": 2
+      },
+      "elapsed_s": 38.34896183013916
+    },
+    {
+      "repo": "python-dotenv",
+      "repo_url": "https://github.com/theskumar/python-dotenv",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 6
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.16666666666666666,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.21666666666666667
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.3333333333333333,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.23333333333333334
+      },
+      "surrogate_generated": {
+        "classes": 2,
+        "methods": 4,
+        "functions": 0,
+        "imports": 0,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 6,
+        "methods": 26,
+        "functions": 0,
+        "imports": 2,
+        "modules": 2
+      },
+      "elapsed_s": 28.3560049533844
+    },
+    {
+      "repo": "typer",
+      "repo_url": "https://github.com/tiangolo/typer",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 17
+      },
+      "surrogate": {
+        "class_overlap": 1.0,
+        "method_overlap": 1.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.0,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.5499999999999999
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.11764705882352941,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.21176470588235297
+      },
+      "surrogate_generated": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 15,
+        "modules": 0
+      },
+      "copilot_generated": {
+        "classes": 27,
+        "methods": 10,
+        "functions": 0,
+        "imports": 1,
+        "modules": 2
+      },
+      "elapsed_s": 83.32374882698059
+    },
+    {
+      "repo": "httpcore",
+      "repo_url": "https://github.com/encode/httpcore",
+      "status": "ok",
+      "original": {
+        "classes": 0,
+        "methods": 0,
+        "functions": 0,
+        "imports": 0,
+        "modules": 10
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.1,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.21000000000000002
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 1.0,
+        "module_ratio": 0.4,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.24000000000000002
+      },
+      "surrogate_generated": {
+        "classes": 4,
+        "methods": 4,
+        "functions": 0,
+        "imports": 5,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 27,
+        "methods": 37,
+        "functions": 0,
+        "imports": 4,
+        "modules": 4
+      },
+      "elapsed_s": 60.809237003326416
+    },
+    {
+      "repo": "click",
+      "repo_url": "https://github.com/pallets/click",
+      "status": "ok",
+      "original": {
+        "classes": 2,
+        "methods": 0,
+        "functions": 0,
+        "imports": 14,
+        "modules": 16
+      },
+      "surrogate": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.07142857142857142,
+        "module_ratio": 0.0625,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.11339285714285716
+      },
+      "copilot": {
+        "class_overlap": 0.0,
+        "method_overlap": 0.0,
+        "function_overlap": 1.0,
+        "import_similarity": 0.0,
+        "module_ratio": 0.1875,
+        "semantic_class_match": 0.0,
+        "intent_coverage": 0.0,
+        "overall": 0.11875000000000001
+      },
+      "surrogate_generated": {
+        "classes": 1,
+        "methods": 8,
+        "functions": 0,
+        "imports": 1,
+        "modules": 1
+      },
+      "copilot_generated": {
+        "classes": 16,
+        "methods": 8,
+        "functions": 0,
+        "imports": 10,
+        "modules": 3
+      },
+      "elapsed_s": 38.05942702293396
+    }
+  ]
+}

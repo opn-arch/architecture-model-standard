@@ -50,12 +50,29 @@ The model has 7 entity types:
 - layers: architectural tiers
 - components: deployable units, modules, packages
 
+Components have a 'kind' field:
+- service: runtime service, API, daemon
+- library: reusable package/module
+- data-model: schema, domain object, event payload (include 'fields' list)
+- data-store: database, cache, message broker instance
+- infrastructure: host, cluster, network, CDN (include 'region' if known)
+- framework: framework/platform dependency
+- ui: frontend, CLI, dashboard
+- pipeline: ETL, CI/CD, batch job
+
+Behaviors have a 'pattern' field:
+- sequential (default), event-driven, state-machine, saga, pipeline, parallel
+- For state-machine: include 'states' with transitions
+- For saga: include 'compensations'
+
+Interfaces may reference a 'schema' (component ID of kind data-model).
+
 And 8 relationship types:
 - realizes, contains, depends-on, exposes, consumes, traces-to, allocated-to, constrained-by
 
 Output ONLY valid YAML matching this structure:
 meta:
-  schema_version: "1.0"
+  schema_version: "1.1"
   project: "<project name>"
 entities:
   actors: [...]
@@ -70,25 +87,63 @@ relationships: [...]
 Each entity must have: id, name, status (ACTIVE/PLANNED/DORMANT/DEPRECATED).
 Each relationship must have: type, from, to.
 
-Output raw YAML only — no markdown fences, no explanation."""
+Output raw YAML only -- no markdown fences, no explanation."""
 
 _GENERATE_SYSTEM_PROMPT = """\
 You are an architecture-to-code compiler. Given a UAM (Universal Architecture Model) \
-YAML, generate Python code that realizes the described architecture.
+YAML, generate Python source code that faithfully realizes the described architecture.
 
 Rules:
-1. Create one class per component entity. Class name = component name in PascalCase.
-2. Create methods on each class matching the behaviors/capabilities it realizes.
-3. Add import statements reflecting depends-on and uses relationships.
-4. Organize code into modules matching the layers (one module per layer).
-5. Use type hints on all methods.
-6. Do NOT implement method bodies — use 'pass' for all bodies.
-7. Include a brief docstring on each class describing its responsibility.
+1. Each component entity becomes ONE Python module (file). Use the component name \
+as the filename (e.g., component "parser" → parser.py, component "__init__" → __init__.py).
+2. Each module should contain 2-6 classes reflecting the component's responsibilities. \
+Include: a primary class implementing core logic, plus supporting classes \
+(dataclasses for data models, exceptions for error states, base/abstract classes \
+for interfaces the component exposes, enums for type discrimination).
+3. Class names should reflect domain terminology from the capabilities and behaviors \
+the component realizes/implements — NOT just the component name. For example, \
+a "parser" component might contain: Parser, Token, ParseError, Binding.
+4. Create methods on each class matching the behaviors it implements and capabilities \
+it realizes. A behavior named "Parse Dotenv Stream" on component "parser" → \
+Parser.parse_stream(), Parser.read_line(), etc.
+5. Add import statements between modules reflecting depends_on and uses relationships. \
+Use relative imports (from .module import Class) for intra-package dependencies.
+6. Include top-level functions in modules where behaviors don't map cleanly to classes \
+(e.g., utility functions, factory functions, module-level API like load_dotenv()).
+7. Use type hints on all methods and functions.
+8. Do NOT implement method/function bodies — use 'pass' or '...' for all bodies.
+9. Include a brief docstring on each class and public function describing its role.
 
 Output format:
-- Separate modules with '# module_name.py' comment headers
-- Import statements at the top of each module
-- Output ONLY Python code — no markdown fences, no explanations."""
+- Separate modules with '# component_name.py' comment headers (matching component names exactly)
+- Import statements at the top of each module (stdlib first, then relative)
+- Output ONLY Python code — no markdown fences, no explanations.
+
+Example structure for a component named "parser" that realizes "File Parsing" capability \
+and implements "Parse Stream" behavior:
+# parser.py
+from typing import Iterator, Optional
+from .variables import Variable
+
+class ParseError(Exception):
+    \"\"\"Raised when parsing encounters invalid syntax.\"\"\"
+    pass
+
+class Token:
+    \"\"\"Represents a parsed key-value token.\"\"\"
+    key: str
+    value: str
+    def __init__(self, key: str, value: str) -> None:
+        pass
+
+class Parser:
+    \"\"\"Core parser for dotenv-format streams.\"\"\"
+    def __init__(self, stream: Iterator[str]) -> None:
+        pass
+    def parse_stream(self) -> list[Token]:
+        pass
+    def read_line(self, line: str) -> Optional[Token]:
+        pass"""
 
 
 class Surrogate:
@@ -164,7 +219,13 @@ class Surrogate:
         ]
 
         response = await self._chat(messages)
-        return response.get("message", {}).get("content", "")
+        content = response.get("message", {}).get("content", "")
+        # Strip markdown fences (LLMs often ignore "no fences" instructions)
+        if "```python" in content:
+            content = content.split("```python", 1)[1].split("```", 1)[0]
+        elif "```" in content:
+            content = content.split("```", 1)[1].split("```", 1)[0]
+        return content.strip()
 
     def confidence(self, model: ArchitectureModel, coverage_score: float | None = None) -> float:
         """Estimate extraction confidence (0-1) using composite signal.

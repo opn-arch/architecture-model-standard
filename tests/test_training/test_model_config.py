@@ -386,6 +386,7 @@ class TestPipelineMultiAdapter:
         targets = [MODEL_REGISTRY["gemma2:9b"], MODEL_REGISTRY["llama3.1:8b"]]
         mock_trainer = MagicMock()
         mock_store = MagicMock()
+        mock_store.count_preferences.return_value = 0
 
         pipeline = TrainingPipeline(
             surrogate=MagicMock(),
@@ -411,6 +412,7 @@ class TestPipelineMultiAdapter:
 
         mock_trainer = MagicMock()
         mock_store = MagicMock()
+        mock_store.count_preferences.return_value = 0
 
         pipeline = TrainingPipeline(
             surrogate=MagicMock(),

@@ -26,6 +26,7 @@ from architecture_model.training.oracle_critique import SelfCritiqueRefiner
 from architecture_model.training.oracle_evolution import PromptEvolver
 from architecture_model.training.coverage_scorer import CoverageScorer
 from architecture_model.training.best_of_n import BestOfNGenerator
+from architecture_model.training.autoencoder import RoundTripEvaluator, RoundTripScore
 from architecture_model.core.validator import validate_model
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,7 @@ class TrainingPipeline:
         repo_fetcher: RepoFetcher,
         training_targets: list | None = None,
         oracle_learning_enabled: bool = False,
+        round_trip_evaluator: Optional[RoundTripEvaluator] = None,
     ) -> None:
         self.surrogate = surrogate
         self.oracle = oracle
@@ -61,6 +63,9 @@ class TrainingPipeline:
         self.trainer = trainer
         self.repo_fetcher = repo_fetcher
         self.training_targets = training_targets
+
+        # Round-trip (autoencoder) evaluator: self-supervised quality signal
+        self._round_trip_evaluator = round_trip_evaluator
 
         # Oracle self-learning subsystem (optional)
         self._oracle_learning_enabled = oracle_learning_enabled
@@ -158,6 +163,31 @@ class TrainingPipeline:
         # Still need code context for oracle comparison
         code_context = self._read_code_context(clone_path)
 
+        # Round-trip evaluation: self-supervised quality signal
+        round_trip_score: Optional[RoundTripScore] = None
+        if self._round_trip_evaluator is not None and code_context:
+            try:
+                round_trip_score = await self._round_trip_evaluator.evaluate(
+                    original_code=code_context,
+                    model=local_model,
+                )
+                logger.info(
+                    "Round-trip score: class=%.2f method=%.2f func=%.2f "
+                    "import=%.2f module=%.2f semantic=%.2f intent=%.2f overall=%.3f",
+                    round_trip_score.class_overlap,
+                    round_trip_score.method_overlap,
+                    round_trip_score.function_overlap,
+                    round_trip_score.import_similarity,
+                    round_trip_score.module_ratio,
+                    round_trip_score.semantic_class_match,
+                    round_trip_score.intent_coverage,
+                    round_trip_score.overall,
+                )
+                # Modulate confidence: low round-trip → lower confidence → more oracle queries
+                confidence = 0.6 * confidence + 0.4 * round_trip_score.overall
+            except Exception as e:
+                logger.warning("Round-trip evaluation failed: %s", e)
+
         # Compute validator score
         validation_result = validate_model(local_model)
         validator_score = float(validation_result.score)
@@ -254,6 +284,19 @@ class TrainingPipeline:
                         )
 
         # Save training example
+        metadata: dict = {}
+        if round_trip_score is not None:
+            metadata["round_trip"] = {
+                "class_overlap": round_trip_score.class_overlap,
+                "method_overlap": round_trip_score.method_overlap,
+                "function_overlap": round_trip_score.function_overlap,
+                "import_similarity": round_trip_score.import_similarity,
+                "module_ratio": round_trip_score.module_ratio,
+                "semantic_class_match": round_trip_score.semantic_class_match,
+                "intent_coverage": round_trip_score.intent_coverage,
+                "overall": round_trip_score.overall,
+            }
+
         example = TrainingExample(
             repo_url=repo.url,
             repo_sha=repo.default_branch,
@@ -262,11 +305,14 @@ class TrainingPipeline:
             oracle_output=oracle_output,
             loss_vector=loss_vector,
             iteration=self.controller.state.iteration,
+            metadata=metadata,
         )
         self.store.save(example)
 
+    _DPO_THRESHOLD = 10  # Minimum preference pairs before DPO training
+
     def _trigger_training(self) -> None:
-        """Prepare dataset and run LoRA fine-tuning for all target models."""
+        """Prepare dataset and run LoRA fine-tuning + DPO if enough data."""
         logger.info("Training threshold reached, starting fine-tuning.")
         dataset = self.trainer.prepare_dataset(self.store)
 
@@ -278,6 +324,34 @@ class TrainingPipeline:
             # Single model training (backward compat)
             output_dir = Path("./adapters/default")
             self.trainer.train(dataset, output_dir=output_dir)
+
+        # DPO training: trigger when enough preference pairs accumulated
+        pref_count = self.store.count_preferences()
+        if pref_count >= self._DPO_THRESHOLD:
+            logger.info(
+                "DPO threshold reached (%d preferences), starting DPO fine-tuning.",
+                pref_count,
+            )
+            try:
+                from .trainer_dpo import DPOLoRATrainer
+
+                prefs = self.store.export_preferences()
+                try:
+                    from datasets import Dataset as HFDataset
+                except ImportError:
+                    logger.warning("datasets not installed, skipping DPO training.")
+                    return
+                pref_dataset = HFDataset.from_list(prefs)
+                dpo_trainer = DPOLoRATrainer(
+                    base_model=self.trainer._config.hf_name
+                    if hasattr(self.trainer, "_config")
+                    else "Qwen/Qwen2.5-7B-Instruct",
+                )
+                dpo_output = Path("./adapters/dpo")
+                dpo_trainer.train(pref_dataset, output_dir=dpo_output, epochs=1)
+                logger.info("DPO training complete, adapter saved to %s", dpo_output)
+            except Exception as e:
+                logger.warning("DPO training failed: %s", e)
 
     def _read_code_context(self, clone_path: Path) -> str:
         """Read code from a cloned repo to produce context for extraction.

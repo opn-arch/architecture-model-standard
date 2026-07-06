@@ -65,6 +65,8 @@ class DPOLoRATrainer:
         base_model: str = "Qwen/Qwen2.5-7B-Instruct",
         model_config: Optional[ModelConfig] = None,
         beta: float = 0.1,
+        max_length: int = 4096,
+        max_prompt_length: int = 6144,
     ) -> None:
         if model_config:
             self.base_model = model_config.hf_model_id
@@ -73,8 +75,10 @@ class DPOLoRATrainer:
             self.base_model = base_model
             self._config = None
         self.beta = beta
+        self.max_length = max_length
+        self.max_prompt_length = max_prompt_length
 
-    def train(self, preference_dataset: "Dataset", output_dir: Path, epochs: int = 1) -> Path:
+    def train(self, preference_dataset: "Dataset", output_dir: Path, epochs: int = 3) -> Path:
         """Run DPO training on preference pairs.
 
         Args:
@@ -99,6 +103,8 @@ class DPOLoRATrainer:
 
         model = AutoModelForCausalLM.from_pretrained(self.base_model)
         tokenizer = AutoTokenizer.from_pretrained(self.base_model)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
 
         lora_config = LoraConfig(
             r=16,
@@ -116,14 +122,20 @@ class DPOLoRATrainer:
             output_dir=str(output_dir),
             num_train_epochs=epochs,
             beta=self.beta,
-            per_device_train_batch_size=2,
+            per_device_train_batch_size=1,
+            max_length=self.max_length,
+            learning_rate=5e-5,
+            logging_steps=1,
+            gradient_accumulation_steps=4,
+            dataloader_pin_memory=False,
+            warmup_steps=2,
         )
 
         trainer = DPOTrainer(
             model=model,
             args=dpo_config,
             train_dataset=preference_dataset,
-            tokenizer=tokenizer,
+            processing_class=tokenizer,
             peft_config=lora_config,
         )
         trainer.train()

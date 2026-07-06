@@ -23,10 +23,14 @@ from .types import (
     ActorType,
     ArchitectureModel,
     Behavior,
+    BehaviorPattern,
     Capability,
+    Compensation,
     Component,
+    ComponentKind,
     Constraint,
     ConstraintType,
+    DataField,
     Entities,
     Interface,
     InterfaceType,
@@ -35,6 +39,7 @@ from .types import (
     Priority,
     Relationship,
     RelationType,
+    StateTransition,
     Status,
     Strength,
 )
@@ -111,7 +116,7 @@ def _parse_raw(raw: dict) -> ArchitectureModel:
 
 def _parse_meta(d: dict) -> ModelMeta:
     return ModelMeta(
-        schema_version=d.get("schema_version", "0.1.0"),
+        schema_version=d.get("schema_version", "1.1"),
         project=d.get("project", ""),
         system=d.get("system", ""),
         generated_at=d.get("generated_at", datetime.now(timezone.utc).isoformat()),
@@ -141,6 +146,7 @@ def _parse_base(d: dict) -> dict:
         "tags": d.get("tags", []),
         "source_file": d.get("source_file"),
         "source_line": d.get("source_line"),
+        "extensions": d.get("extensions", {}),
     }
 
 
@@ -165,6 +171,28 @@ def _parse_capability(d: dict) -> Capability:
 
 def _parse_behavior(d: dict) -> Behavior:
     base = _parse_base(d)
+    pattern_str = d.get("pattern", "sequential")
+    try:
+        pattern = BehaviorPattern(pattern_str)
+    except ValueError:
+        pattern = BehaviorPattern.SEQUENTIAL
+
+    states = [
+        StateTransition(
+            name=s.get("name", ""),
+            transitions=s.get("transitions", []),
+        )
+        for s in d.get("states", [])
+    ]
+
+    compensations = [
+        Compensation(
+            step=c.get("step", ""),
+            compensate=c.get("compensate", ""),
+        )
+        for c in d.get("compensations", [])
+    ]
+
     return Behavior(
         **base,
         trigger=d.get("trigger", ""),
@@ -174,6 +202,9 @@ def _parse_behavior(d: dict) -> Behavior:
         steps=d.get("steps", []),
         frequency=d.get("frequency", ""),
         priority=_parse_priority(d.get("priority")),
+        pattern=pattern,
+        states=states,
+        compensations=compensations,
     )
 
 
@@ -187,6 +218,7 @@ def _parse_interface(d: dict) -> Interface:
         consumer=d.get("consumer", ""),
         data_format=d.get("data_format", ""),
         endpoints=d.get("endpoints", []),
+        schema=d.get("schema", ""),
     )
 
 
@@ -213,6 +245,22 @@ def _parse_layer(d: dict) -> Layer:
 
 def _parse_component(d: dict) -> Component:
     base = _parse_base(d)
+    kind_str = d.get("kind", "service")
+    try:
+        kind = ComponentKind(kind_str)
+    except ValueError:
+        kind = ComponentKind.SERVICE
+
+    fields = [
+        DataField(
+            name=f.get("name", ""),
+            type=f.get("type", "string"),
+            required=f.get("required", False),
+            description=f.get("description", ""),
+        )
+        for f in d.get("fields", [])
+    ]
+
     return Component(
         **base,
         layer=d.get("layer", ""),
@@ -220,6 +268,10 @@ def _parse_component(d: dict) -> Component:
         technology=d.get("technology", ""),
         files=d.get("files", []),
         responsibilities=d.get("responsibilities", []),
+        kind=kind,
+        fields=fields,
+        region=d.get("region", ""),
+        replicas=d.get("replicas"),
     )
 
 
@@ -230,6 +282,7 @@ def _parse_relationship(d: dict) -> Relationship:
         to_id=d.get("to", ""),
         description=d.get("description", ""),
         strength=Strength(d.get("strength", "moderate")),
+        extensions=d.get("extensions", {}),
     )
 
 
@@ -286,6 +339,8 @@ def _dump_base(entity: Any) -> dict:
         d["source_file"] = entity.source_file
     if entity.source_line is not None:
         d["source_line"] = entity.source_line
+    if entity.extensions:
+        d["extensions"] = entity.extensions
     return d
 
 
@@ -324,6 +379,18 @@ def _dump_behavior(b: Behavior) -> dict:
         d["frequency"] = b.frequency
     if b.priority != Priority.MEDIUM:
         d["priority"] = b.priority.value
+    if b.pattern != BehaviorPattern.SEQUENTIAL:
+        d["pattern"] = b.pattern.value
+    if b.states:
+        d["states"] = [
+            {"name": s.name, "transitions": s.transitions}
+            for s in b.states
+        ]
+    if b.compensations:
+        d["compensations"] = [
+            {"step": c.step, "compensate": c.compensate}
+            for c in b.compensations
+        ]
     return d
 
 
@@ -340,6 +407,8 @@ def _dump_interface(i: Interface) -> dict:
         d["data_format"] = i.data_format
     if i.endpoints:
         d["endpoints"] = i.endpoints
+    if i.schema:
+        d["schema"] = i.schema
     return d
 
 
@@ -377,6 +446,18 @@ def _dump_component(c: Component) -> dict:
         d["files"] = c.files
     if c.responsibilities:
         d["responsibilities"] = c.responsibilities
+    if c.kind != ComponentKind.SERVICE:
+        d["kind"] = c.kind.value
+    if c.fields:
+        d["fields"] = [
+            {"name": f.name, "type": f.type, "required": f.required}
+            | ({"description": f.description} if f.description else {})
+            for f in c.fields
+        ]
+    if c.region:
+        d["region"] = c.region
+    if c.replicas is not None:
+        d["replicas"] = c.replicas
     return d
 
 
@@ -390,4 +471,6 @@ def _dump_relationship(r: Relationship) -> dict:
         d["description"] = r.description
     if r.strength != Strength.MODERATE:
         d["strength"] = r.strength.value
+    if r.extensions:
+        d["extensions"] = r.extensions
     return d

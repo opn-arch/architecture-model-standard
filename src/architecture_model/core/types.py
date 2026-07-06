@@ -75,6 +75,26 @@ class Strength(str, Enum):
     WEAK = "weak"
 
 
+class ComponentKind(str, Enum):
+    SERVICE = "service"
+    LIBRARY = "library"
+    DATA_MODEL = "data-model"
+    DATA_STORE = "data-store"
+    INFRASTRUCTURE = "infrastructure"
+    FRAMEWORK = "framework"
+    UI = "ui"
+    PIPELINE = "pipeline"
+
+
+class BehaviorPattern(str, Enum):
+    SEQUENTIAL = "sequential"
+    EVENT_DRIVEN = "event-driven"
+    STATE_MACHINE = "state-machine"
+    SAGA = "saga"
+    PIPELINE = "pipeline"
+    PARALLEL = "parallel"
+
+
 # ---------------------------------------------------------------------------
 # Base
 # ---------------------------------------------------------------------------
@@ -89,6 +109,7 @@ class BaseEntity:
     tags: list[str] = field(default_factory=list)
     source_file: Optional[str] = None
     source_line: Optional[int] = None
+    extensions: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +131,20 @@ class Capability(BaseEntity):
 
 
 @dataclass
+class StateTransition:
+    """A state in a state-machine behavior."""
+    name: str
+    transitions: list[dict[str, str]] = field(default_factory=list)
+
+
+@dataclass
+class Compensation:
+    """A compensation pair for saga behaviors."""
+    step: str
+    compensate: str
+
+
+@dataclass
 class Behavior(BaseEntity):
     trigger: str = ""
     actor: str = ""
@@ -118,6 +153,9 @@ class Behavior(BaseEntity):
     steps: list[str] = field(default_factory=list)
     frequency: str = ""
     priority: Priority = Priority.MEDIUM
+    pattern: BehaviorPattern = BehaviorPattern.SEQUENTIAL
+    states: list[StateTransition] = field(default_factory=list)
+    compensations: list[Compensation] = field(default_factory=list)
 
 
 @dataclass
@@ -136,6 +174,7 @@ class Interface(BaseEntity):
     consumer: str = ""
     data_format: str = ""
     endpoints: list[dict] = field(default_factory=list)
+    schema: str = ""
 
 
 @dataclass
@@ -154,12 +193,25 @@ class Layer(BaseEntity):
 
 
 @dataclass
+class DataField:
+    """Schema field for data-model components."""
+    name: str
+    type: str = "string"
+    required: bool = False
+    description: str = ""
+
+
+@dataclass
 class Component(BaseEntity):
     layer: str = ""
     f_block: str = ""
     technology: str = ""
     files: list[str] = field(default_factory=list)
     responsibilities: list[str] = field(default_factory=list)
+    kind: ComponentKind = ComponentKind.SERVICE
+    fields: list[DataField] = field(default_factory=list)
+    region: str = ""
+    replicas: Optional[int] = None
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +226,7 @@ class Relationship:
     to_id: str  # 'to' kept as to_id for symmetry
     description: str = ""
     strength: Strength = Strength.MODERATE
+    extensions: dict[str, Any] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +355,8 @@ class ArchitectureModel:
             d["source_file"] = entity.source_file
         if entity.source_line is not None:
             d["source_line"] = entity.source_line
+        if entity.extensions:
+            d["extensions"] = entity.extensions
         return d
 
     @classmethod
@@ -340,6 +395,18 @@ class ArchitectureModel:
             d["frequency"] = b.frequency
         if b.priority != Priority.MEDIUM:
             d["priority"] = b.priority.value
+        if b.pattern != BehaviorPattern.SEQUENTIAL:
+            d["pattern"] = b.pattern.value
+        if b.states:
+            d["states"] = [
+                {"name": s.name, "transitions": s.transitions}
+                for s in b.states
+            ]
+        if b.compensations:
+            d["compensations"] = [
+                {"step": c.step, "compensate": c.compensate}
+                for c in b.compensations
+            ]
         return d
 
     @classmethod
@@ -356,6 +423,8 @@ class ArchitectureModel:
             d["data_format"] = i.data_format
         if i.endpoints:
             d["endpoints"] = i.endpoints
+        if i.schema:
+            d["schema"] = i.schema
         return d
 
     @classmethod
@@ -393,6 +462,18 @@ class ArchitectureModel:
             d["files"] = c.files
         if c.responsibilities:
             d["responsibilities"] = c.responsibilities
+        if c.kind != ComponentKind.SERVICE:
+            d["kind"] = c.kind.value
+        if c.fields:
+            d["fields"] = [
+                {"name": f.name, "type": f.type, "required": f.required}
+                | ({"description": f.description} if f.description else {})
+                for f in c.fields
+            ]
+        if c.region:
+            d["region"] = c.region
+        if c.replicas is not None:
+            d["replicas"] = c.replicas
         return d
 
     @staticmethod
@@ -406,4 +487,6 @@ class ArchitectureModel:
             d["description"] = r.description
         if r.strength != Strength.MODERATE:
             d["strength"] = r.strength.value
+        if r.extensions:
+            d["extensions"] = r.extensions
         return d

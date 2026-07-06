@@ -99,6 +99,7 @@ def validate_model(
     _check_status_consistency(model, result)
     _check_capability_realization(model, result)
     _check_meta_completeness(model, result)
+    _check_v11_semantics(model, result)
 
     if strict:
         # Promote warnings to errors
@@ -329,3 +330,35 @@ def _is_known_external(entity_id: str) -> bool:
         pass
 
     return False
+
+
+def _check_v11_semantics(model: ArchitectureModel, result: ValidationResult) -> None:
+    """v1.1 semantic checks: data-model completeness, state-machine integrity."""
+    from .types import ComponentKind, BehaviorPattern
+
+    # Data-model components without fields: INFO hint
+    for comp in model.entities.components:
+        if hasattr(comp, 'kind') and comp.kind == ComponentKind.DATA_MODEL and not comp.fields:
+            result.issues.append(ValidationIssue(
+                severity=Severity.INFO,
+                code="DATA_MODEL_NO_FIELDS",
+                message="Data-model component has no fields defined",
+                entity_id=comp.id,
+            ))
+
+    # State-machine: check for unreachable states
+    for beh in model.entities.behaviors:
+        if hasattr(beh, 'pattern') and beh.pattern == BehaviorPattern.STATE_MACHINE and beh.states:
+            all_targets = set()
+            for state in beh.states:
+                for t in state.transitions:
+                    all_targets.add(t.get("to", ""))
+            reachable = {beh.states[0].name} | all_targets
+            for state in beh.states:
+                if state.name not in reachable:
+                    result.issues.append(ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="STATE_UNREACHABLE",
+                        message=f"Orphan state '{state.name}' has no incoming transitions",
+                        entity_id=beh.id,
+                    ))

@@ -17,6 +17,7 @@ training = [
     "transformers>=4.40",
     "peft>=0.10",
     "datasets>=2.19",
+    "trl>=0.8",
     "litellm>=1.40",
     "aiohttp>=3.9",
     "numpy>=1.26",

@@ -54,6 +54,7 @@ def mock_store():
     store = MagicMock()
     store.save = MagicMock(return_value=1)
     store.new_examples_since_last_train = MagicMock(return_value=10)
+    store.count_preferences = MagicMock(return_value=0)
     return store
 
 
@@ -510,3 +511,242 @@ class TestProcessRepoEnhanced:
         store.save_preference.assert_not_called()
         # Best-of-N should NOT have been called
         pipeline._best_of_n.generate.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Round-trip evaluator integration tests
+# ---------------------------------------------------------------------------
+
+
+class TestRoundTripIntegration:
+    """Tests for round-trip evaluator integration in pipeline."""
+
+    @pytest.mark.asyncio
+    async def test_round_trip_evaluator_called_when_configured(self):
+        """RoundTripEvaluator.evaluate() is called during _process_repo."""
+        from architecture_model.training.autoencoder import RoundTripScore
+
+        mock_model = _make_architecture_model()
+        mock_rt = AsyncMock()
+        mock_rt.evaluate = AsyncMock(return_value=RoundTripScore(
+            class_overlap=0.7,
+            method_overlap=0.5,
+            function_overlap=0.6,
+            import_similarity=0.4,
+            module_ratio=0.8,
+            semantic_class_match=0.6,
+            intent_coverage=0.5,
+            overall=0.58,
+        ))
+
+        surrogate = MagicMock()
+        oracle = MagicMock()
+        oracle.extract_model = AsyncMock(return_value=None)
+        store = MagicMock()
+        store.save = MagicMock(return_value=1)
+        store.count_preferences = MagicMock(return_value=0)
+        evaluator = MagicMock()
+        controller = MagicMock()
+        controller.state = MPCState()
+        controller.should_query_oracle = MagicMock(return_value=False)
+        trainer = MagicMock()
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=surrogate, oracle=oracle, store=store,
+            evaluator=evaluator, controller=controller,
+            trainer=trainer, repo_fetcher=repo_fetcher,
+            round_trip_evaluator=mock_rt,
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="class Foo:\n    pass")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=90)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            await pipeline._process_repo(repo)
+
+        # Round-trip evaluator was called with the code and model
+        mock_rt.evaluate.assert_called_once_with(
+            original_code="class Foo:\n    pass",
+            model=mock_model,
+        )
+
+    @pytest.mark.asyncio
+    async def test_round_trip_modulates_confidence(self):
+        """Low round-trip score reduces effective confidence."""
+        from architecture_model.training.autoencoder import RoundTripScore
+
+        mock_model = _make_architecture_model()
+        # Low round-trip score (0.3 overall)
+        mock_rt = AsyncMock()
+        mock_rt.evaluate = AsyncMock(return_value=RoundTripScore(
+            class_overlap=0.2,
+            method_overlap=0.3,
+            function_overlap=0.1,
+            import_similarity=0.3,
+            module_ratio=0.5,
+            semantic_class_match=0.2,
+            intent_coverage=0.3,
+            overall=0.3,
+        ))
+
+        store = MagicMock()
+        store.save = MagicMock(return_value=1)
+        store.count_preferences = MagicMock(return_value=0)
+        controller = MagicMock()
+        controller.state = MPCState()
+        controller.should_query_oracle = MagicMock(return_value=False)
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=MagicMock(), oracle=MagicMock(), store=store,
+            evaluator=MagicMock(), controller=controller,
+            trainer=MagicMock(), repo_fetcher=repo_fetcher,
+            round_trip_evaluator=mock_rt,
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.9))
+        pipeline._read_code_context = MagicMock(return_value="class Foo:\n    pass")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=90)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            await pipeline._process_repo(repo)
+
+        # Confidence passed to should_query_oracle:
+        # Original confidence = 0.9, round_trip = 0.3
+        # Modulated = 0.6 * 0.9 + 0.4 * 0.3 = 0.54 + 0.12 = 0.66
+        call_kwargs = controller.should_query_oracle.call_args[1]
+        assert abs(call_kwargs["confidence"] - 0.66) < 0.01
+
+    @pytest.mark.asyncio
+    async def test_round_trip_score_stored_in_metadata(self):
+        """Round-trip score is persisted in training example metadata."""
+        from architecture_model.training.autoencoder import RoundTripScore
+
+        mock_model = _make_architecture_model()
+        mock_rt = AsyncMock()
+        mock_rt.evaluate = AsyncMock(return_value=RoundTripScore(
+            class_overlap=0.8,
+            method_overlap=0.6,
+            function_overlap=0.7,
+            import_similarity=0.5,
+            module_ratio=0.9,
+            semantic_class_match=0.7,
+            intent_coverage=0.6,
+            overall=0.69,
+        ))
+
+        store = MagicMock()
+        store.save = MagicMock(return_value=1)
+        store.count_preferences = MagicMock(return_value=0)
+        controller = MagicMock()
+        controller.state = MPCState()
+        controller.should_query_oracle = MagicMock(return_value=False)
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=MagicMock(), oracle=MagicMock(), store=store,
+            evaluator=MagicMock(), controller=controller,
+            trainer=MagicMock(), repo_fetcher=repo_fetcher,
+            round_trip_evaluator=mock_rt,
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="class Foo:\n    pass")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=90)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            await pipeline._process_repo(repo)
+
+        # Check metadata in saved example
+        saved_example = store.save.call_args[0][0]
+        assert "round_trip" in saved_example.metadata
+        assert saved_example.metadata["round_trip"]["overall"] == 0.69
+        assert saved_example.metadata["round_trip"]["class_overlap"] == 0.8
+
+    @pytest.mark.asyncio
+    async def test_no_round_trip_when_evaluator_not_configured(self):
+        """Without round_trip_evaluator, pipeline works normally."""
+        mock_model = _make_architecture_model()
+
+        store = MagicMock()
+        store.save = MagicMock(return_value=1)
+        store.count_preferences = MagicMock(return_value=0)
+        controller = MagicMock()
+        controller.state = MPCState()
+        controller.should_query_oracle = MagicMock(return_value=False)
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=MagicMock(), oracle=MagicMock(), store=store,
+            evaluator=MagicMock(), controller=controller,
+            trainer=MagicMock(), repo_fetcher=repo_fetcher,
+            # No round_trip_evaluator
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="class Foo:\n    pass")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=90)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            await pipeline._process_repo(repo)
+
+        # Confidence should not be modulated (original 0.8 passed through)
+        call_kwargs = controller.should_query_oracle.call_args[1]
+        assert call_kwargs["confidence"] == 0.8
+
+        # Metadata should be empty
+        saved_example = store.save.call_args[0][0]
+        assert saved_example.metadata == {}
+
+    @pytest.mark.asyncio
+    async def test_round_trip_failure_does_not_crash_pipeline(self):
+        """If round-trip evaluator throws, pipeline continues gracefully."""
+        mock_model = _make_architecture_model()
+        mock_rt = AsyncMock()
+        mock_rt.evaluate = AsyncMock(side_effect=RuntimeError("Ollama down"))
+
+        store = MagicMock()
+        store.save = MagicMock(return_value=1)
+        store.count_preferences = MagicMock(return_value=0)
+        controller = MagicMock()
+        controller.state = MPCState()
+        controller.should_query_oracle = MagicMock(return_value=False)
+        repo_fetcher = MagicMock()
+        repo_fetcher.clone = MagicMock(return_value=Path("/tmp/test"))
+
+        pipeline = TrainingPipeline(
+            surrogate=MagicMock(), oracle=MagicMock(), store=store,
+            evaluator=MagicMock(), controller=controller,
+            trainer=MagicMock(), repo_fetcher=repo_fetcher,
+            round_trip_evaluator=mock_rt,
+        )
+        pipeline.enhanced_extract = AsyncMock(return_value=(mock_model, 0.8))
+        pipeline._read_code_context = MagicMock(return_value="class Foo:\n    pass")
+
+        with patch('architecture_model.training.pipeline.validate_model') as mock_validate:
+            mock_validate.return_value = MagicMock(score=90)
+            repo = MagicMock()
+            repo.url = "https://github.com/test/test"
+            repo.default_branch = "main"
+            # Should NOT raise
+            await pipeline._process_repo(repo)
+
+        # Pipeline continued — example was still saved
+        store.save.assert_called_once()
+        # Confidence unchanged (exception caught)
+        call_kwargs = controller.should_query_oracle.call_args[1]
+        assert call_kwargs["confidence"] == 0.8

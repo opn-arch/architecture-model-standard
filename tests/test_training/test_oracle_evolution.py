@@ -28,7 +28,10 @@ class TestPromptPrecisionGuidance:
 
     def test_prompt_ends_with_raw_yaml_instruction(self):
         """Prompt must still end with the raw YAML output instruction."""
-        assert _BASE_EXTRACTION_PROMPT.rstrip().endswith(
+        ending = _BASE_EXTRACTION_PROMPT.rstrip()
+        assert ending.endswith(
+            "Output raw YAML only -- no markdown fences, no explanation."
+        ) or ending.endswith(
             "Output raw YAML only — no markdown fences, no explanation."
         )
 

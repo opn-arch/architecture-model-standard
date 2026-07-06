@@ -27,6 +27,27 @@ manifest, extract a UAM (Universal Architecture Model) in YAML format.
 - layers: architectural tiers (groupings of related components)
 - components: deployable units, modules, packages
 
+## Component Kinds (required 'kind' field)
+- service: runtime service, API, daemon
+- library: reusable package/module
+- data-model: schema, domain object, event payload (include 'fields' list with name/type/required)
+- data-store: database, cache, message broker instance
+- infrastructure: host, cluster, network, CDN (include 'region' if known)
+- framework: framework/platform dependency
+- ui: frontend, CLI, dashboard
+- pipeline: ETL, CI/CD, batch job
+
+## Behavior Patterns (required 'pattern' field)
+- sequential (default): linear step-by-step flow
+- event-driven: reactive, pub/sub, callback-based
+- state-machine: discrete states with transitions (include 'states' list)
+- saga: distributed transaction with compensations (include 'compensations')
+- pipeline: data transformation chain
+- parallel: concurrent execution
+
+## Interface Schema References
+- Interfaces may include a 'schema' field referencing a component ID of kind data-model
+
 ## Relationship Types (8)
 - realizes: component implements a capability
 - contains: layer/group contains a component (structural grouping)
@@ -53,7 +74,7 @@ manifest, extract a UAM (Universal Architecture Model) in YAML format.
 
 ## Output Schema
 meta:
-  schema_version: "1.0"
+  schema_version: "1.1"
   project: "<project name>"
 entities:
   actors: [...]
@@ -66,11 +87,13 @@ entities:
 relationships: [...]
 
 Each entity must have: id, name, status (ACTIVE/PLANNED/DORMANT/DEPRECATED).
+Each component must have: kind.
+Each behavior must have: pattern.
 Each relationship must have: type, from, to.
 
 Refer to the few-shot example in the context for correct precision and granularity.
 
-Output raw YAML only — no markdown fences, no explanation."""
+Output raw YAML only -- no markdown fences, no explanation."""
 
 
 _REFLECTION_PROMPT = """\

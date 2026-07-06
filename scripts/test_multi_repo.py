@@ -58,12 +58,22 @@ REPOS = [
     {"url": "https://github.com/encode/httpcore", "name": "httpcore", "subdir": "httpcore"},
     {"url": "https://github.com/agronholm/anyio", "name": "anyio", "subdir": "src/anyio"},
     {"url": "https://github.com/theskumar/python-dotenv", "name": "python-dotenv", "subdir": "src/dotenv"},
+    {"url": "https://github.com/tartley/colorama", "name": "colorama", "subdir": "colorama"},
+    {"url": "https://github.com/tqdm/tqdm", "name": "tqdm", "subdir": "tqdm"},
+    {"url": "https://github.com/python-attrs/attrs", "name": "attrs", "subdir": "src/attrs"},
+    {"url": "https://github.com/hynek/structlog", "name": "structlog", "subdir": "src/structlog"},
+    {"url": "https://github.com/aio-libs/aiofiles", "name": "aiofiles", "subdir": "src/aiofiles"},
     # Medium (5-50K LOC)
     {"url": "https://github.com/pydantic/pydantic", "name": "pydantic", "subdir": "pydantic"},
     {"url": "https://github.com/tiangolo/fastapi", "name": "fastapi", "subdir": "fastapi"},
     {"url": "https://github.com/Textualize/rich", "name": "rich", "subdir": "rich"},
     {"url": "https://github.com/encode/httpx", "name": "httpx", "subdir": "httpx"},
     {"url": "https://github.com/psf/black", "name": "black", "subdir": "src/black"},
+    {"url": "https://github.com/marshmallow-code/marshmallow", "name": "marshmallow", "subdir": "src/marshmallow"},
+    {"url": "https://github.com/pallets/flask", "name": "flask", "subdir": "src/flask"},
+    {"url": "https://github.com/pallets/jinja", "name": "jinja", "subdir": "src/jinja2"},
+    {"url": "https://github.com/encode/starlette", "name": "starlette", "subdir": "starlette"},
+    {"url": "https://github.com/arrow-py/arrow", "name": "arrow", "subdir": "arrow"},
 ]
 
 
