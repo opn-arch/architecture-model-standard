@@ -98,6 +98,10 @@ def main(argv: list[str] | None = None) -> int:
     from .train import register_train_commands
     register_train_commands(subparsers)
 
+    # --- generate ---
+    from .generate import register_generate_command
+    register_generate_command(subparsers)
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -106,6 +110,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Dispatch
     from .train import _cmd_train
+    from .generate import _cmd_generate
     handlers = {
         "init": _cmd_init,
         "extract": _cmd_extract,
@@ -118,6 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         "impact": _cmd_impact,
         "manifest": _cmd_manifest,
         "train": _cmd_train,
+        "generate": _cmd_generate,
     }
     return handlers[args.command](args)
 
