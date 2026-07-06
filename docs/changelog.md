@@ -4,6 +4,63 @@ All notable changes to the Architecture Model Standard package.
 
 ---
 
+## [0.3.0] - 2026-07-06
+
+### Test-Guided Code Generation
+
+The major addition is **test-guided code generation** — a system that generates deployable Python code from architecture models using the target repo's test suite as behavioral specification and verification oracle.
+
+**Core Components (Tasks 1-8):**
+- `TestContractMiner` — AST-based extraction of behavioral contracts from test files (assertions, fixtures, parametrize data). Extracted 87 contracts from python-dotenv, 708 from arrow, 504 from click
+- `FailureParser` — Structured parsing of pytest output into `TestFailure` objects with component-level attribution. Handles collection errors (ImportError, ModuleNotFoundError)
+- `PromptBuilder` — Generation and retry prompt construction with behavioral contracts injection
+- `CodeWriter` — Materializes multi-module generated code into testable Python packages. Auto-fixes relative imports for known sibling modules
+- `TestGuidedGenerator` — Core orchestrator: generate → test → parse failures → retry loop with convergence detection (threshold=3). Per-component targeted regeneration of worst-failing modules
+- Training signal integration: test pass rate delta feeds into DPO preference pairs via `TrainingPipeline.record_test_guided_signal()`
+- CLI command: `architecture-model generate --test-guided`
+
+**Copilot-Relay Integration (PoC):**
+- `CopilotRelaySurrogate` — SSE adapter for copilot-relay frontier model (POST /chat endpoint)
+- `PerComponentGenerator` — Focused per-module generation for frontier models (avoids truncation)
+- Regression guard: retries only known components, prevents phantom module regeneration
+- Response post-processing: markdown fence stripping, non-Python preamble removal
+
+**PoC Results (4 open-source repos):**
+
+| Repo | qwen2.5:7b (local) | copilot-relay (frontier) |
+|------|-------------------|------------------------|
+| python-dotenv | 11.1% | **33.3%** (3x improvement) |
+| colorama | 0% | DNF (rate limited) |
+| arrow | 0% | 0% (import errors) |
+| click | 0% | DNF (rate limited) |
+
+**Infrastructure Fixes:**
+- Package name detection uses importable name (e.g., `dotenv`) not distribution name (`python_dotenv`)
+- Test files filtered from architecture model (no `comp-test_*` or `comp-conftest`)
+- `--continue-on-collection-errors` flag in pytest runs
+- Fallback component identification when `by_component` is empty
+- Import auto-fix: `from module import X` → `from .module import X` for siblings
+
+### Schema Evolution
+- Schema v1.2: code-grounded model with `enrich_from_manifest()`, symbol-level detail (classes, methods, supers, functions)
+- Schema v1.3: `System` entity type with parser/validator support, `auto_assign_f_blocks()`, `decompose_model()`
+- Adaptive `compact_for_generation()` for large enriched models
+
+### Code Quality
+- 904+ tests passing (619 in training module)
+- Training module: 39 source files, 10,662 lines
+- Training tests: 42 files, 12,048 lines
+- Zero TODO/FIXME/HACK comments in codebase
+
+### Known Issues
+- Inter-module import resolution incomplete for complex packages (arrow: 60K chars generated, 0% pass rate due to ImportErrors)
+- Architecture model includes irrelevant files (demo scripts, test fixtures) for some repos
+- copilot-relay rate limits prevent running on repos with 15+ components
+- Convergence threshold (3) may be too aggressive for complex repos
+- 1 pre-existing test failure in `test_config_loader.py`
+
+---
+
 ## [0.2.0] - 2026-07-05
 
 ### MPC Training Loop

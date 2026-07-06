@@ -70,24 +70,48 @@ The pipeline requires no manual configuration to analyze a new project:
 4. Writes `.architecture-model.yaml` with layers, F-blocks, and metrics
 5. Subsequent pipeline stages refine this config with LLM-synthesized groupings
 
+### MPC Training Loop
+The package includes a self-improving extraction system:
+1. **Surrogate** (local LLM via Ollama) generates architecture extractions
+2. **Oracle** (frontier model) scores extractions against ground truth
+3. **Evaluator** computes multi-objective loss (structural accuracy, completeness, validator score)
+4. **LoRA Trainer** fine-tunes the surrogate toward oracle quality using DPO preference pairs
+5. **Test-Guided Generator** validates extractions by generating code and running tests
+
+### Test-Guided Code Generation
+Generates deployable code from architecture models using target repo test suites:
+1. Mine behavioral contracts from test ASTs (assertions, fixtures, parametrize)
+2. Generate code per-component with contracts as specification
+3. Materialize into testable package and run pytest
+4. Parse failures, identify failing components, regenerate with failure context
+5. Iterate until convergence or max retries
+
 ## Package Structure
 
 ```
 src/architecture_model/
-├── cli/          — CLI commands (init, extract, validate, slice, diff, query, context, stats, impact)
+├── cli/          — CLI commands (init, extract, validate, slice, diff, query, context, stats, impact, generate)
 ├── config/       — Configuration loading, auto-discovery, schema definition
-├── core/         — Parser, validator, slicer, differ, type system
+├── core/         — Parser, validator, slicer, differ, merger, decomposer, type system
 ├── extract/      — Extract model from generated Tier 1 artifacts
 ├── integrations/ — LLM context formatting, pipeline bridge
 ├── manifest/     — Reality Manifest generator (AST scanning, metrics, blocks, interfaces)
-└── spec/         — JSON Schema for model validation
+├── spec/         — JSON Schema for model validation
+└── training/     — MPC training loop (39 modules, 10.6K lines)
+    ├── Surrogate/Oracle — Local + frontier model clients
+    ├── Pipeline         — Training orchestrator with convergence detection
+    ├── Evaluator        — Multi-objective loss with Pareto front
+    ├── Test-Guided      — Generate → test → retry loop
+    └── LoRA Trainer     — HF PEFT fine-tuning with DPO
 ```
 
 ## Status
 
-- Schema version: 1.0
-- Package version: 0.1.0
-- Test suite: 34 unit tests (standalone), 140 total with integration fixtures
+- Schema version: 1.3
+- Package version: 0.3.0
+- Test suite: 904+ tests (619 in training module, 42 test files)
+- Training module: 39 source files, 10,662 lines
 - Validation score: 100/100, 0 orphaned entities
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
+- Training extras: `pip install architecture-model-standard[training]`
