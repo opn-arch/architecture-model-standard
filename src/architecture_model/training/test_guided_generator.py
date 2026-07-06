@@ -173,26 +173,13 @@ class TestGuidedGenerator:
                 iteration += 1
                 t0 = time.time()
 
-                # Identify worst-failing components
-                components_to_fix = self._identify_failing_components(failures)
-                regenerated = []
-
-                for component in components_to_fix:
-                    # Extract current code for this component
-                    component_code = self._extract_component_code(code, component)
-
-                    # Regenerate
-                    fixed_code = await self._retry_component(
-                        component=component,
-                        model_yaml=model_yaml,
-                        previous_code=component_code,
-                        failures=failures,
-                        contracts=contracts,
-                    )
-
-                    # Replace component code in full code
-                    code = self._replace_component_code(code, component, fixed_code)
-                    regenerated.append(component)
+                # Per-component targeted regeneration
+                code, regenerated = await self._targeted_retry(
+                    failures=failures,
+                    model_yaml=model_yaml,
+                    contracts=contracts,
+                    current_code=code,
+                )
 
                 retry_time = time.time() - t0
 
@@ -261,6 +248,40 @@ class TestGuidedGenerator:
             model_yaml, previous_code, failure_text, component
         )
         return await self._surrogate.generate_with_prompt(system, user)
+
+    async def _targeted_retry(
+        self,
+        failures: FailureReport,
+        model_yaml: str,
+        contracts: TestContracts,
+        current_code: str,
+    ) -> tuple[str, list[str]]:
+        """Regenerate only the failing component(s), returning updated full code.
+
+        Identifies the worst-failing components, regenerates each via the
+        surrogate LLM with failure context, and splices the new code back
+        into the full multi-module output.
+
+        Returns:
+            Tuple of (updated_code, list_of_regenerated_component_names).
+        """
+        components_to_fix = self._identify_failing_components(failures)
+        regenerated: list[str] = []
+
+        code = current_code
+        for component in components_to_fix:
+            component_code = self._extract_component_code(code, component)
+            fixed_code = await self._retry_component(
+                component=component,
+                model_yaml=model_yaml,
+                previous_code=component_code,
+                failures=failures,
+                contracts=contracts,
+            )
+            code = self._splice_component(code, component, fixed_code)
+            regenerated.append(component)
+
+        return code, regenerated
 
     def _check_convergence(self, attempts: list[GenerationAttempt]) -> bool:
         """True if last N attempts show no pass_rate improvement.
@@ -342,10 +363,13 @@ class TestGuidedGenerator:
         # Fallback: return all code if component not found
         return full_code
 
-    def _replace_component_code(
+    def _splice_component(
         self, full_code: str, component: str, new_code: str
     ) -> str:
-        """Replace a component's code in the multi-module code string."""
+        """Replace a component's section with new implementation.
+
+        If the component is not found in the code, appends it as a new section.
+        """
         header_pattern = re.compile(
             r"^#\s*([\w._/\-]+\.py)\s*$",
             re.MULTILINE,

@@ -682,3 +682,283 @@ class TestGenerateWithPromptOnSurrogate:
             {"role": "system", "content": "my system"},
             {"role": "user", "content": "my user"},
         ]
+
+
+class TestExtractComponentCode:
+    """Tests for TestGuidedGenerator._extract_component_code."""
+
+    __test__ = True
+
+    def _make_generator(self):
+        return TestGuidedGenerator(
+            surrogate=MagicMock(),
+            test_runner=MagicMock(),
+            contract_miner=MagicMock(),
+            prompt_builder=MagicMock(),
+            code_writer=MagicMock(),
+            failure_parser=MagicMock(),
+        )
+
+    def test_extracts_correct_component_from_multi_module(self):
+        """Extracts the right component from multi-module code."""
+        gen = self._make_generator()
+        full_code = (
+            "# core.py\n"
+            "class Core:\n"
+            "    pass\n"
+            "# utils.py\n"
+            "def helper():\n"
+            "    return 42\n"
+        )
+        result = gen._extract_component_code(full_code, "core")
+        assert "class Core:" in result
+        assert "def helper" not in result
+
+    def test_extracts_last_component(self):
+        """Extracts the last component in multi-module code."""
+        gen = self._make_generator()
+        full_code = (
+            "# core.py\n"
+            "class Core:\n"
+            "    pass\n"
+            "# utils.py\n"
+            "def helper():\n"
+            "    return 42\n"
+        )
+        result = gen._extract_component_code(full_code, "utils")
+        assert "def helper" in result
+        assert "class Core" not in result
+
+    def test_returns_full_code_when_component_not_found(self):
+        """Fallback: returns all code if component not found."""
+        gen = self._make_generator()
+        full_code = "# core.py\nclass Core:\n    pass\n"
+        result = gen._extract_component_code(full_code, "nonexistent")
+        assert result == full_code
+
+    def test_handles_single_module_code(self):
+        """When code has only one module header, extracts that module."""
+        gen = self._make_generator()
+        full_code = "# main.py\ndef main():\n    print('hello')\n"
+        result = gen._extract_component_code(full_code, "main")
+        assert "def main():" in result
+        assert "# main.py" not in result
+
+
+class TestSpliceComponent:
+    """Tests for TestGuidedGenerator._splice_component."""
+
+    __test__ = True
+
+    def _make_generator(self):
+        return TestGuidedGenerator(
+            surrogate=MagicMock(),
+            test_runner=MagicMock(),
+            contract_miner=MagicMock(),
+            prompt_builder=MagicMock(),
+            code_writer=MagicMock(),
+            failure_parser=MagicMock(),
+        )
+
+    def test_replaces_existing_component(self):
+        """Replaces code for an existing component."""
+        gen = self._make_generator()
+        full_code = (
+            "# core.py\n"
+            "class Core:\n"
+            "    pass\n"
+            "# utils.py\n"
+            "def helper():\n"
+            "    return 42\n"
+        )
+        new_code = "class CoreV2:\n    value = True"
+        result = gen._splice_component(full_code, "core", new_code)
+        assert "class CoreV2:" in result
+        assert "class Core:" not in result
+        # utils should still be there
+        assert "# utils.py" in result
+        assert "def helper" in result
+
+    def test_appends_component_when_not_found(self):
+        """Appends a new component when the target doesn't exist."""
+        gen = self._make_generator()
+        full_code = "# core.py\nclass Core:\n    pass\n"
+        new_code = "def new_func():\n    return True"
+        result = gen._splice_component(full_code, "extras", new_code)
+        # Original preserved
+        assert "# core.py" in result
+        assert "class Core:" in result
+        # New component appended
+        assert "# extras.py" in result
+        assert "def new_func" in result
+
+    def test_preserves_other_components_unchanged(self):
+        """Replacing one component doesn't affect others."""
+        gen = self._make_generator()
+        full_code = (
+            "# alpha.py\n"
+            "class Alpha:\n"
+            "    x = 1\n"
+            "# beta.py\n"
+            "class Beta:\n"
+            "    y = 2\n"
+            "# gamma.py\n"
+            "class Gamma:\n"
+            "    z = 3\n"
+        )
+        new_code = "class BetaFixed:\n    y = 99"
+        result = gen._splice_component(full_code, "beta", new_code)
+        # Alpha untouched
+        assert "class Alpha:" in result
+        assert "x = 1" in result
+        # Beta replaced
+        assert "class BetaFixed:" in result
+        assert "class Beta:" not in result
+        # Gamma untouched
+        assert "class Gamma:" in result
+        assert "z = 3" in result
+
+
+class TestTargetedRetry:
+    """Tests for TestGuidedGenerator._targeted_retry."""
+
+    __test__ = True
+
+    def _make_generator(self):
+        surrogate = MagicMock()
+        surrogate.generate_with_prompt = AsyncMock(return_value="class Fixed: pass")
+        prompt_builder = MagicMock()
+        prompt_builder.build_retry_prompt.return_value = ("sys", "usr")
+        return TestGuidedGenerator(
+            surrogate=surrogate,
+            test_runner=MagicMock(),
+            contract_miner=MagicMock(),
+            prompt_builder=prompt_builder,
+            code_writer=MagicMock(),
+            failure_parser=MagicMock(),
+        )
+
+    def test_identifies_and_retries_failing_components(self):
+        """Targeted retry identifies worst components and regenerates them."""
+        from architecture_model.training.failure_parser import FailureReport, TestFailure
+
+        gen = self._make_generator()
+
+        failures = FailureReport(
+            failures=[TestFailure(
+                test_name="test_x", test_file="tests/test_core.py",
+                error_type="AssertionError", error_message="x != y",
+                relevant_component="core",
+            )],
+            total_passed=5, total_failed=5, total_collected=10,
+            pass_rate=0.5,
+            by_component={"core": [TestFailure(
+                test_name="test_x", test_file="tests/test_core.py",
+                error_type="AssertionError", error_message="x != y",
+                relevant_component="core",
+            )]},
+        )
+        contracts = MagicMock()
+        contracts.summary_for_prompt.return_value = "contracts"
+
+        current_code = "# core.py\nclass Core:\n    pass\n"
+        model_yaml = "meta:\n  project: test\n"
+
+        updated_code, regenerated = asyncio.run(
+            gen._targeted_retry(
+                failures=failures,
+                model_yaml=model_yaml,
+                contracts=contracts,
+                current_code=current_code,
+            )
+        )
+
+        # Should have regenerated the core component
+        assert "core" in regenerated
+        # Code should have been updated
+        assert "class Fixed: pass" in updated_code
+
+    def test_returns_updated_code_with_spliced_components(self):
+        """Multiple failing components are each retried and spliced."""
+        from architecture_model.training.failure_parser import FailureReport, TestFailure
+
+        gen = self._make_generator()
+
+        # Two failing components
+        failures = FailureReport(
+            failures=[
+                TestFailure(
+                    test_name="test_a", test_file="tests/test_core.py",
+                    error_type="AssertionError", error_message="a",
+                    relevant_component="core",
+                ),
+                TestFailure(
+                    test_name="test_b", test_file="tests/test_utils.py",
+                    error_type="TypeError", error_message="b",
+                    relevant_component="utils",
+                ),
+            ],
+            total_passed=3, total_failed=7, total_collected=10,
+            pass_rate=0.3,
+            by_component={
+                "core": [TestFailure(
+                    test_name="test_a", test_file="tests/test_core.py",
+                    error_type="AssertionError", error_message="a",
+                    relevant_component="core",
+                )],
+                "utils": [TestFailure(
+                    test_name="test_b", test_file="tests/test_utils.py",
+                    error_type="TypeError", error_message="b",
+                    relevant_component="utils",
+                )],
+            },
+        )
+        contracts = MagicMock()
+        contracts.summary_for_prompt.return_value = "contracts"
+
+        current_code = (
+            "# core.py\nclass Core:\n    pass\n"
+            "# utils.py\ndef util():\n    pass\n"
+        )
+        model_yaml = "meta:\n  project: test\n"
+
+        updated_code, regenerated = asyncio.run(
+            gen._targeted_retry(
+                failures=failures,
+                model_yaml=model_yaml,
+                contracts=contracts,
+                current_code=current_code,
+            )
+        )
+
+        # Both components regenerated
+        assert "core" in regenerated
+        assert "utils" in regenerated
+        assert len(regenerated) == 2
+
+    def test_returns_empty_list_when_no_failing_components(self):
+        """When no components identified, returns code unchanged."""
+        from architecture_model.training.failure_parser import FailureReport
+
+        gen = self._make_generator()
+
+        failures = FailureReport(
+            failures=[],
+            total_passed=10, total_failed=0, total_collected=10,
+            pass_rate=1.0,
+            by_component={},
+        )
+        contracts = MagicMock()
+        current_code = "# core.py\nclass Core:\n    pass\n"
+
+        updated_code, regenerated = asyncio.run(
+            gen._targeted_retry(
+                failures=failures,
+                model_yaml="yaml",
+                contracts=contracts,
+                current_code=current_code,
+            )
+        )
+
+        assert regenerated == []
+        assert updated_code == current_code
