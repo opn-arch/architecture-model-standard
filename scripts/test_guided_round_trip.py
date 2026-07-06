@@ -108,6 +108,7 @@ def build_model_from_manifest(manifest: dict, project_name: str) -> Architecture
     """Build an ArchitectureModel from manifest data.
 
     Maps each source module to a Component with symbols derived from classes/functions.
+    Excludes test files and conftest to produce a clean generation model.
     """
     components: list[Component] = []
     seen_modules: set[str] = set()
@@ -120,10 +121,16 @@ def build_model_from_manifest(manifest: dict, project_name: str) -> Architecture
 
         # Derive component name from file path
         stem = Path(file_path).stem
-        if stem == "__init__":
+        if stem == "__init__" or stem == "__main__":
             continue
 
-        comp_id = f"comp-{stem}"
+        # Skip test files and conftest
+        if stem.startswith("test_") or stem == "conftest":
+            continue
+        if "/tests/" in file_path or "/test/" in file_path:
+            continue
+
+        comp_id = stem  # Use plain name as ID (LLMs confuse id/name otherwise)
 
         # Build symbols from classes
         symbols: list[Symbol] = []
@@ -388,26 +395,29 @@ async def run_test_guided(args: argparse.Namespace) -> dict:
 
 
 def _detect_package_name(repo_root: Path, fallback: str) -> str:
-    """Detect package name from pyproject.toml or directory structure."""
-    pyproject = repo_root / "pyproject.toml"
-    if pyproject.exists():
-        try:
-            content = pyproject.read_text(encoding="utf-8")
-            for line in content.splitlines():
-                stripped = line.strip()
-                if stripped.startswith("name") and "=" in stripped:
-                    value = stripped.split("=", 1)[1].strip().strip("\"'")
-                    if value:
-                        return value.replace("-", "_")
-        except (OSError, ValueError):
-            pass
-
-    # Try to find the source package directory
+    """Detect the importable package name.
+    
+    Priority: REPO_SUBDIRS (known mappings) > source directory detection > pyproject.toml.
+    The pyproject.toml 'name' is the DISTRIBUTION name (e.g., "python-dotenv")
+    which differs from the importable name (e.g., "dotenv").
+    """
+    # 1. Use known source subdirectory (most reliable — gives importable name)
     subdir = REPO_SUBDIRS.get(fallback)
     if subdir:
-        # Last part of subdir is usually the package name
         parts = subdir.split("/")
         return parts[-1].replace("-", "_")
+
+    # 2. Look for a src/X/ directory
+    src_dir = repo_root / "src"
+    if src_dir.exists():
+        for child in sorted(src_dir.iterdir()):
+            if child.is_dir() and (child / "__init__.py").exists():
+                return child.name.replace("-", "_")
+
+    # 3. Look for a top-level package directory matching repo name
+    candidate = repo_root / fallback.replace("-", "_")
+    if candidate.is_dir() and (candidate / "__init__.py").exists():
+        return fallback.replace("-", "_")
 
     return fallback.replace("-", "_")
 

@@ -265,7 +265,9 @@ class TestGuidedGenerator:
         Returns:
             Tuple of (updated_code, list_of_regenerated_component_names).
         """
-        components_to_fix = self._identify_failing_components(failures)
+        # Discover all component names from code headers for fallback
+        all_components = self._list_components(current_code)
+        components_to_fix = self._identify_failing_components(failures, all_components)
         regenerated: list[str] = []
 
         code = current_code
@@ -313,7 +315,9 @@ class TestGuidedGenerator:
                     "tests/",
                     "--tb=short",
                     "-v",
-                    "--timeout=60",
+                    "--no-header",
+                    "-p", "no:timeout",  # Avoid failure if pytest-timeout not installed
+                    "--continue-on-collection-errors",  # Run tests that DO collect
                 ],
                 capture_output=True,
                 text=True,
@@ -326,19 +330,43 @@ class TestGuidedGenerator:
         except OSError as e:
             return f"ERROR: {e}\n0 passed, 0 failed in 0s"
 
-    def _identify_failing_components(self, failures: FailureReport) -> list[str]:
-        """Identify components with the most failures, ordered by severity."""
-        if not failures.by_component:
-            return []
+    def _identify_failing_components(
+        self, failures: FailureReport, all_components: list[str] | None = None
+    ) -> list[str]:
+        """Identify components with the most failures, ordered by severity.
+        
+        If no component-level failures are found (e.g., all errors are ImportErrors
+        at collection time), falls back to returning all known components.
+        """
+        if failures.by_component:
+            # Sort by number of failures descending
+            sorted_components = sorted(
+                failures.by_component.items(),
+                key=lambda x: len(x[1]),
+                reverse=True,
+            )
+            # Return top worst components (limited to avoid over-retrying)
+            return [comp for comp, _ in sorted_components[:self._MAX_COMPONENTS_PER_RETRY]]
 
-        # Sort by number of failures descending
-        sorted_components = sorted(
-            failures.by_component.items(),
-            key=lambda x: len(x[1]),
-            reverse=True,
+        # Fallback: if pass_rate < 1.0 but no component mapping (e.g., collection
+        # errors, import failures), retry the top components
+        if failures.pass_rate < 1.0 and all_components:
+            return all_components[:self._MAX_COMPONENTS_PER_RETRY]
+
+        return []
+
+    def _list_components(self, full_code: str) -> list[str]:
+        """Extract all component names from module headers in generated code."""
+        header_pattern = re.compile(
+            r"^#\s*([\w._/\-]+\.py)\s*$",
+            re.MULTILINE,
         )
-        # Return top worst components (limited to avoid over-retrying)
-        return [comp for comp, _ in sorted_components[:self._MAX_COMPONENTS_PER_RETRY]]
+        components = []
+        for match in header_pattern.finditer(full_code):
+            stem = Path(match.group(1)).stem
+            if stem != "__init__":
+                components.append(stem)
+        return components
 
     def _extract_component_code(self, full_code: str, component: str) -> str:
         """Extract code for a specific component from multi-module code.
