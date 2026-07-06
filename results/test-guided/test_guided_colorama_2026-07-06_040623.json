@@ -1,0 +1,50 @@
+{
+  "test": "test_guided_round_trip",
+  "timestamp": "2026-07-06_040623",
+  "repo": "colorama",
+  "package": "colorama",
+  "backend": "copilot-relay",
+  "model": "copilot-relay (frontier)",
+  "max_retries": 5,
+  "results": {
+    "pass_rate": 0.0,
+    "iterations": 3,
+    "converged": true,
+    "total_time_seconds": 9.041934251785278,
+    "structural_score": null
+  },
+  "attempts": [
+    {
+      "iteration": 1,
+      "pass_rate": 0.0,
+      "time_seconds": 8.142132997512817,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 2,
+      "pass_rate": 0.0,
+      "time_seconds": 1.3113021850585938e-05,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 3,
+      "pass_rate": 0.0,
+      "time_seconds": 1.3113021850585938e-05,
+      "components_regenerated": [],
+      "n_failures": 0
+    }
+  ],
+  "contracts": {
+    "total_tests": 14,
+    "total_assertions": 0,
+    "n_contracts": 14,
+    "public_api": []
+  },
+  "model_info": {
+    "n_components": 15,
+    "n_relationships": 12,
+    "n_manifest_modules": 23
+  }
+}

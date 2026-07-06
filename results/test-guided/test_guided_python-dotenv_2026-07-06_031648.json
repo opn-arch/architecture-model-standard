@@ -1,0 +1,49 @@
+{
+  "test": "test_guided_round_trip",
+  "timestamp": "2026-07-06_031648",
+  "repo": "python-dotenv",
+  "package": "python_dotenv",
+  "model": "qwen2.5:7b",
+  "max_retries": 5,
+  "results": {
+    "pass_rate": 0.0,
+    "iterations": 3,
+    "converged": true,
+    "total_time_seconds": 72.98233914375305,
+    "structural_score": null
+  },
+  "attempts": [
+    {
+      "iteration": 1,
+      "pass_rate": 0.0,
+      "time_seconds": 72.04015469551086,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 2,
+      "pass_rate": 0.0,
+      "time_seconds": 6.9141387939453125e-06,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 3,
+      "pass_rate": 0.0,
+      "time_seconds": 4.0531158447265625e-06,
+      "components_regenerated": [],
+      "n_failures": 0
+    }
+  ],
+  "contracts": {
+    "total_tests": 87,
+    "total_assertions": 126,
+    "n_contracts": 87,
+    "public_api": []
+  },
+  "model_info": {
+    "n_components": 18,
+    "n_relationships": 13,
+    "n_manifest_modules": 20
+  }
+}

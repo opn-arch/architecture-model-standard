@@ -1,0 +1,49 @@
+{
+  "test": "v1.3_decomposed_round_trip",
+  "timestamp": "2026-07-06_0123",
+  "repo": "arrow",
+  "naming_accuracy": 1.0,
+  "decomposition": {
+    "n_systems": 2,
+    "n_remaining_components": 2,
+    "systems": [
+      {
+        "name": "F1",
+        "complexity_score": 227.0,
+        "n_components": 5
+      },
+      {
+        "name": "F3",
+        "complexity_score": 12.2,
+        "n_components": 1
+      }
+    ]
+  },
+  "baseline_score": {
+    "class_overlap": 0.13829787234042554,
+    "fuzzy_class": 0.989247311827957,
+    "method_overlap": 0.3793103448275862,
+    "function_overlap": 0.5833333333333334,
+    "module_name_overlap": 0.9,
+    "module_count_ratio": 0.8,
+    "overall": 0.6693616626827287
+  },
+  "decomposed_score": {
+    "class_overlap": 0.13978494623655913,
+    "fuzzy_class": 0.989247311827957,
+    "method_overlap": 0.4125,
+    "function_overlap": 1.0,
+    "module_name_overlap": 0.9,
+    "module_count_ratio": 0.8,
+    "overall": 0.7162298387096774
+  },
+  "timing": {
+    "baseline_seconds": 70.35072302818298,
+    "decomposed_seconds": 45.11839199066162,
+    "per_system": {
+      "F1": 15.039463996887207,
+      "F3": 15.039463996887207
+    }
+  },
+  "improvement": 0.046868176026948705
+}

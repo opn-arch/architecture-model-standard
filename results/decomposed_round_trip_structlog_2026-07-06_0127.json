@@ -1,0 +1,79 @@
+{
+  "test": "v1.3_decomposed_round_trip",
+  "timestamp": "2026-07-06_0127",
+  "repo": "structlog",
+  "naming_accuracy": 1.0,
+  "decomposition": {
+    "n_systems": 7,
+    "n_remaining_components": 8,
+    "systems": [
+      {
+        "name": "F1",
+        "complexity_score": 119.9,
+        "n_components": 5
+      },
+      {
+        "name": "F8",
+        "complexity_score": 17.7,
+        "n_components": 1
+      },
+      {
+        "name": "F5",
+        "complexity_score": 28.1,
+        "n_components": 1
+      },
+      {
+        "name": "F6",
+        "complexity_score": 27.5,
+        "n_components": 2
+      },
+      {
+        "name": "F3",
+        "complexity_score": 39.5,
+        "n_components": 1
+      },
+      {
+        "name": "F10",
+        "complexity_score": 14.8,
+        "n_components": 1
+      },
+      {
+        "name": "F7",
+        "complexity_score": 20.8,
+        "n_components": 1
+      }
+    ]
+  },
+  "baseline_score": {
+    "class_overlap": 0.3050847457627119,
+    "fuzzy_class": 0.4406779661016949,
+    "method_overlap": 0.20300751879699247,
+    "function_overlap": 0.41333333333333333,
+    "module_name_overlap": 0.8571428571428571,
+    "module_count_ratio": 0.9047619047619048,
+    "overall": 0.5788869631706385
+  },
+  "decomposed_score": {
+    "class_overlap": 0.734375,
+    "fuzzy_class": 0.8305084745762712,
+    "method_overlap": 0.34394904458598724,
+    "function_overlap": 0.5753424657534246,
+    "module_name_overlap": 0.8095238095238095,
+    "module_count_ratio": 0.9545454545454546,
+    "overall": 0.7371491677397245
+  },
+  "timing": {
+    "baseline_seconds": 100.93982696533203,
+    "decomposed_seconds": 145.8799328804016,
+    "per_system": {
+      "F1": 18.2349916100502,
+      "F8": 18.2349916100502,
+      "F5": 18.2349916100502,
+      "F6": 18.2349916100502,
+      "F3": 18.2349916100502,
+      "F10": 18.2349916100502,
+      "F7": 18.2349916100502
+    }
+  },
+  "improvement": 0.15826220456908602
+}

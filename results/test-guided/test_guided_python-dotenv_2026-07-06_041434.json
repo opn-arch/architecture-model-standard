@@ -1,0 +1,70 @@
+{
+  "test": "test_guided_round_trip",
+  "timestamp": "2026-07-06_041434",
+  "repo": "python-dotenv",
+  "package": "dotenv",
+  "backend": "copilot-relay",
+  "model": "copilot-relay (frontier)",
+  "max_retries": 5,
+  "results": {
+    "pass_rate": 0.1111111111111111,
+    "iterations": 3,
+    "converged": true,
+    "total_time_seconds": 328.9937529563904,
+    "structural_score": null
+  },
+  "attempts": [
+    {
+      "iteration": 1,
+      "pass_rate": 0.1111111111111111,
+      "time_seconds": 278.5072441101074,
+      "components_regenerated": [],
+      "n_failures": 8
+    },
+    {
+      "iteration": 2,
+      "pass_rate": 0.1111111111111111,
+      "time_seconds": 25.205286979675293,
+      "components_regenerated": [
+        "__init__",
+        "zip_imports"
+      ],
+      "n_failures": 8
+    },
+    {
+      "iteration": 3,
+      "pass_rate": 0.1111111111111111,
+      "time_seconds": 23.61912703514099,
+      "components_regenerated": [
+        "__init__",
+        "zip_imports"
+      ],
+      "n_failures": 8
+    }
+  ],
+  "contracts": {
+    "total_tests": 87,
+    "total_assertions": 126,
+    "n_contracts": 87,
+    "public_api": [
+      "Binding",
+      "DotEnv",
+      "Literal",
+      "Original",
+      "Variable",
+      "__version__",
+      "cli",
+      "dotenv",
+      "find_dotenv",
+      "get_cli_string",
+      "load_dotenv",
+      "parse_stream",
+      "parse_variables"
+    ]
+  },
+  "model_info": {
+    "n_components": 6,
+    "n_relationships": 5,
+    "n_manifest_modules": 20
+  }
+}

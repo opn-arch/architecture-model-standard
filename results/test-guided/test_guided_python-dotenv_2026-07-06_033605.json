@@ -1,0 +1,69 @@
+{
+  "test": "test_guided_round_trip",
+  "timestamp": "2026-07-06_033605",
+  "repo": "python-dotenv",
+  "package": "dotenv",
+  "model": "qwen2.5:7b",
+  "max_retries": 5,
+  "results": {
+    "pass_rate": 0.0,
+    "iterations": 3,
+    "converged": true,
+    "total_time_seconds": 118.16818308830261,
+    "structural_score": null
+  },
+  "attempts": [
+    {
+      "iteration": 1,
+      "pass_rate": 0.0,
+      "time_seconds": 59.04868412017822,
+      "components_regenerated": [],
+      "n_failures": 7
+    },
+    {
+      "iteration": 2,
+      "pass_rate": 0.0,
+      "time_seconds": 6.3646979331970215,
+      "components_regenerated": [
+        "__init__"
+      ],
+      "n_failures": 6
+    },
+    {
+      "iteration": 3,
+      "pass_rate": 0.0,
+      "time_seconds": 51.27422380447388,
+      "components_regenerated": [
+        "__init__",
+        "main",
+        "parser"
+      ],
+      "n_failures": 5
+    }
+  ],
+  "contracts": {
+    "total_tests": 87,
+    "total_assertions": 126,
+    "n_contracts": 87,
+    "public_api": [
+      "Binding",
+      "DotEnv",
+      "Literal",
+      "Original",
+      "Variable",
+      "__version__",
+      "cli",
+      "dotenv",
+      "find_dotenv",
+      "get_cli_string",
+      "load_dotenv",
+      "parse_stream",
+      "parse_variables"
+    ]
+  },
+  "model_info": {
+    "n_components": 6,
+    "n_relationships": 5,
+    "n_manifest_modules": 20
+  }
+}

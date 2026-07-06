@@ -1,0 +1,27 @@
+{
+  "test": "v1.3_decomposed_round_trip",
+  "timestamp": "2026-07-06_0110",
+  "repo": "click",
+  "naming_accuracy": 1.0,
+  "decomposition": {
+    "n_systems": 0,
+    "n_remaining_components": 16,
+    "systems": []
+  },
+  "baseline_score": {
+    "class_overlap": 0.32098765432098764,
+    "fuzzy_class": 0.5432098765432098,
+    "method_overlap": 0.23426573426573427,
+    "function_overlap": 0.24793388429752067,
+    "module_name_overlap": 0.9411764705882353,
+    "module_count_ratio": 0.9411764705882353,
+    "overall": 0.6130922899639477
+  },
+  "decomposed_score": null,
+  "timing": {
+    "baseline_seconds": 77.91238594055176,
+    "decomposed_seconds": 0.0,
+    "per_system": {}
+  },
+  "improvement": null
+}

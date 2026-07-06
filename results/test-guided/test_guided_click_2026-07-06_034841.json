@@ -1,0 +1,70 @@
+{
+  "test": "test_guided_round_trip",
+  "timestamp": "2026-07-06_034841",
+  "repo": "click",
+  "package": "click",
+  "model": "qwen2.5:7b",
+  "max_retries": 5,
+  "results": {
+    "pass_rate": 0.0,
+    "iterations": 3,
+    "converged": true,
+    "total_time_seconds": 197.58673095703125,
+    "structural_score": null
+  },
+  "attempts": [
+    {
+      "iteration": 1,
+      "pass_rate": 0.0,
+      "time_seconds": 196.21152997016907,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 2,
+      "pass_rate": 0.0,
+      "time_seconds": 1.1205673217773438e-05,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 3,
+      "pass_rate": 0.0,
+      "time_seconds": 1.0728836059570312e-05,
+      "components_regenerated": [],
+      "n_failures": 0
+    }
+  ],
+  "contracts": {
+    "total_tests": 504,
+    "total_assertions": 1236,
+    "n_contracts": 504,
+    "public_api": [
+      "Argument",
+      "BadParameter",
+      "BytesIOCopy",
+      "Choice",
+      "CliRunner",
+      "ClickException",
+      "Command",
+      "CompletionItem",
+      "Context",
+      "Editor",
+      "File",
+      "FileError",
+      "FishComplete",
+      "Group",
+      "MissingParameter",
+      "Option",
+      "Parameter",
+      "ParameterSource",
+      "Path",
+      "ShellComplete"
+    ]
+  },
+  "model_info": {
+    "n_components": 38,
+    "n_relationships": 139,
+    "n_manifest_modules": 63
+  }
+}

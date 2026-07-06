@@ -1,0 +1,57 @@
+{
+  "test": "test_guided_round_trip",
+  "timestamp": "2026-07-06_034250",
+  "repo": "colorama",
+  "package": "colorama",
+  "model": "qwen2.5:7b",
+  "max_retries": 8,
+  "results": {
+    "pass_rate": 0.0,
+    "iterations": 3,
+    "converged": true,
+    "total_time_seconds": 90.01693224906921,
+    "structural_score": null
+  },
+  "attempts": [
+    {
+      "iteration": 1,
+      "pass_rate": 0.0,
+      "time_seconds": 32.89265012741089,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 2,
+      "pass_rate": 0.0,
+      "time_seconds": 33.65815091133118,
+      "components_regenerated": [
+        "ansi",
+        "ansitowin32",
+        "initialise"
+      ],
+      "n_failures": 0
+    },
+    {
+      "iteration": 3,
+      "pass_rate": 0.0,
+      "time_seconds": 22.44968605041504,
+      "components_regenerated": [
+        "ansi",
+        "ansitowin32",
+        "initialise"
+      ],
+      "n_failures": 0
+    }
+  ],
+  "contracts": {
+    "total_tests": 14,
+    "total_assertions": 0,
+    "n_contracts": 14,
+    "public_api": []
+  },
+  "model_info": {
+    "n_components": 15,
+    "n_relationships": 12,
+    "n_manifest_modules": 23
+  }
+}

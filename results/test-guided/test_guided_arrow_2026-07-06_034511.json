@@ -1,0 +1,78 @@
+{
+  "test": "test_guided_round_trip",
+  "timestamp": "2026-07-06_034511",
+  "repo": "arrow",
+  "package": "arrow",
+  "model": "qwen2.5:7b",
+  "max_retries": 5,
+  "results": {
+    "pass_rate": 0.0,
+    "iterations": 3,
+    "converged": true,
+    "total_time_seconds": 124.51755690574646,
+    "structural_score": null
+  },
+  "attempts": [
+    {
+      "iteration": 1,
+      "pass_rate": 0.0,
+      "time_seconds": 74.58947992324829,
+      "components_regenerated": [],
+      "n_failures": 0
+    },
+    {
+      "iteration": 2,
+      "pass_rate": 0.0,
+      "time_seconds": 29.917793035507202,
+      "components_regenerated": [
+        "_version",
+        "api",
+        "arrow"
+      ],
+      "n_failures": 0
+    },
+    {
+      "iteration": 3,
+      "pass_rate": 0.0,
+      "time_seconds": 18.647567749023438,
+      "components_regenerated": [
+        "_version",
+        "api",
+        "arrow"
+      ],
+      "n_failures": 0
+    }
+  ],
+  "contracts": {
+    "total_tests": 708,
+    "total_assertions": 2175,
+    "n_contracts": 708,
+    "public_api": [
+      "Arrow",
+      "DateTimeParser",
+      "FORMAT_ATOM",
+      "FORMAT_COOKIE",
+      "FORMAT_RFC1036",
+      "FORMAT_RFC1123",
+      "FORMAT_RFC2822",
+      "FORMAT_RFC3339",
+      "FORMAT_RFC3339_STRICT",
+      "FORMAT_RFC822",
+      "FORMAT_RFC850",
+      "FORMAT_RSS",
+      "FORMAT_W3C",
+      "MAX_TIMESTAMP_US",
+      "ParserError",
+      "ParserMatchError",
+      "arrow",
+      "formatter",
+      "locales",
+      "parser"
+    ]
+  },
+  "model_info": {
+    "n_components": 11,
+    "n_relationships": 15,
+    "n_manifest_modules": 21
+  }
+}
