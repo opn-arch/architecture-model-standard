@@ -12,7 +12,12 @@ from dataclasses import dataclass
 from architecture_model.core.types import (
     ArchitectureModel,
     Component,
+    Entities,
+    ModelMeta,
+    Relationship,
     RelationType,
+    Status,
+    System,
 )
 
 # Aggregate complexity score above which an F-block group becomes a System
@@ -100,3 +105,160 @@ def identify_systems(
             ))
 
     return candidates
+
+
+def _slugify(name: str) -> str:
+    """Lowercase and replace spaces/underscores with hyphens."""
+    return name.lower().replace(" ", "-").replace("_", "-")
+
+
+@dataclass
+class DecompositionResult:
+    """Result of model decomposition into system hierarchy."""
+    top_level: ArchitectureModel
+    sub_models: dict[str, ArchitectureModel]  # system_id → sub-model
+
+
+def decompose_model(
+    model: ArchitectureModel,
+    manifest: dict,
+    output_dir: str = "systems",
+) -> DecompositionResult:
+    """Decompose a flat model into top-level + system sub-models.
+
+    1. Identifies system candidates via F-block complexity
+    2. For each system:
+       - Creates System entity with sub_model_ref
+       - Extracts system's components into a sub-model
+       - Partitions relationships: intra-system stay in sub-model,
+         inter-system get promoted to top-level (from/to rewritten to system ID)
+    3. Remaining components stay in top-level
+
+    Args:
+        model: Flat architecture model (v1.2+ with enriched components).
+        manifest: Manifest dict with functional_blocks metadata.
+        output_dir: Directory name for sub-model refs (default "systems").
+
+    Returns:
+        DecompositionResult with top-level model and sub-models dict.
+    """
+    candidates = identify_systems(model, manifest)
+
+    if not candidates:
+        return DecompositionResult(top_level=model, sub_models={})
+
+    # Build mapping: component_id → system_id for all systems
+    comp_to_system: dict[str, str] = {}
+    system_ids: dict[str, SystemCandidate] = {}
+    for candidate in candidates:
+        sys_id = f"sys-{_slugify(candidate.name)}"
+        system_ids[sys_id] = candidate
+        for comp_id in candidate.component_ids:
+            comp_to_system[comp_id] = sys_id
+
+    # Collect all component IDs that are promoted into systems
+    promoted_comp_ids = set(comp_to_system.keys())
+
+    # Partition components: top-level vs sub-model
+    top_level_components = [
+        c for c in model.entities.components if c.id not in promoted_comp_ids
+    ]
+
+    # Build sub-models and system entities
+    sub_models: dict[str, ArchitectureModel] = {}
+    systems: list[System] = []
+
+    for sys_id, candidate in system_ids.items():
+        slug = _slugify(candidate.name)
+        sub_model_ref = f"{output_dir}/{slug}.yaml"
+
+        # Create System entity for top-level
+        sys_entity = System(
+            id=sys_id,
+            name=candidate.name,
+            status=Status.ACTIVE,
+            f_block=candidate.f_block,
+            complexity_score=candidate.complexity_score,
+            sub_model_ref=sub_model_ref,
+            component_ids=candidate.component_ids,
+        )
+        systems.append(sys_entity)
+
+        # Extract components belonging to this system
+        sys_comp_ids = set(candidate.component_ids)
+        sys_components = [
+            c for c in model.entities.components if c.id in sys_comp_ids
+        ]
+
+        # Partition relationships for this system's sub-model (intra-system only)
+        intra_rels = [
+            r for r in model.relationships
+            if r.from_id in sys_comp_ids and r.to_id in sys_comp_ids
+        ]
+
+        # Create sub-model with system-scoped meta
+        sub_meta = ModelMeta(
+            schema_version=model.meta.schema_version,
+            project=model.meta.project,
+            system=candidate.name,
+            generated_at=model.meta.generated_at,
+            source_artifacts=model.meta.source_artifacts,
+            manifest_hash=model.meta.manifest_hash,
+        )
+        sub_model = ArchitectureModel(
+            meta=sub_meta,
+            entities=Entities(components=sys_components),
+            relationships=intra_rels,
+        )
+        sub_models[sys_id] = sub_model
+
+    # Partition relationships for top-level:
+    # - Both ends outside all systems → keep as-is
+    # - Inter-system (one end inside, other outside or in different system) → promote
+    top_level_rels: list[Relationship] = []
+    promoted_rel_keys: set[tuple[RelationType, str, str]] = set()
+
+    for rel in model.relationships:
+        from_sys = comp_to_system.get(rel.from_id)
+        to_sys = comp_to_system.get(rel.to_id)
+
+        if from_sys and to_sys and from_sys == to_sys:
+            # Intra-system: already in sub-model, skip from top-level
+            continue
+        elif from_sys is None and to_sys is None:
+            # Both ends outside all systems: keep in top-level as-is
+            top_level_rels.append(rel)
+        else:
+            # Inter-system: rewrite the inside end to system ID
+            new_from = from_sys if from_sys else rel.from_id
+            new_to = to_sys if to_sys else rel.to_id
+
+            # Deduplicate: same (type, from, to) only appears once
+            key = (rel.type, new_from, new_to)
+            if key not in promoted_rel_keys:
+                promoted_rel_keys.add(key)
+                promoted_rel = Relationship(
+                    type=rel.type,
+                    from_id=new_from,
+                    to_id=new_to,
+                )
+                top_level_rels.append(promoted_rel)
+
+    # Build top-level model
+    top_level_entities = Entities(
+        actors=model.entities.actors,
+        capabilities=model.entities.capabilities,
+        behaviors=model.entities.behaviors,
+        interfaces=model.entities.interfaces,
+        constraints=model.entities.constraints,
+        layers=model.entities.layers,
+        components=top_level_components,
+        systems=systems,
+    )
+    top_level_model = ArchitectureModel(
+        meta=model.meta,
+        entities=top_level_entities,
+        relationships=top_level_rels,
+    )
+
+    return DecompositionResult(top_level=top_level_model, sub_models=sub_models)
