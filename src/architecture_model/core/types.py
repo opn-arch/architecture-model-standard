@@ -238,6 +238,16 @@ class Component(BaseEntity):
     functions: list[str] = field(default_factory=list)
 
 
+@dataclass
+class System(BaseEntity):
+    """A system-level entity that aggregates components into a logical subsystem."""
+    layer: str = ""
+    f_block: str = ""
+    complexity_score: float = 0.0
+    sub_model_ref: str = ""
+    component_ids: list[str] = field(default_factory=list)
+
+
 # ---------------------------------------------------------------------------
 # Relationships
 # ---------------------------------------------------------------------------
@@ -279,6 +289,7 @@ class Entities:
     constraints: list[Constraint] = field(default_factory=list)
     layers: list[Layer] = field(default_factory=list)
     components: list[Component] = field(default_factory=list)
+    systems: list[System] = field(default_factory=list)
 
 
 @dataclass
@@ -305,6 +316,8 @@ class ArchitectureModel:
             ids.add(layer.id)
         for comp in self.entities.components:
             ids.add(comp.id)
+        for sys in self.entities.systems:
+            ids.add(sys.id)
         return ids
 
     @property
@@ -364,6 +377,8 @@ class ArchitectureModel:
             d["layers"] = [self._dump_layer(l) for l in self.entities.layers]
         if self.entities.components:
             d["components"] = [self._dump_component(c) for c in self.entities.components]
+        if self.entities.systems:
+            d["systems"] = [self._dump_system(s) for s in self.entities.systems]
         return d
 
     @staticmethod
@@ -500,6 +515,21 @@ class ArchitectureModel:
             d["region"] = c.region
         if c.replicas is not None:
             d["replicas"] = c.replicas
+        return d
+
+    @classmethod
+    def _dump_system(cls, s: "System") -> dict[str, Any]:
+        d = cls._dump_base(s)
+        if s.layer:
+            d["layer"] = s.layer
+        if s.f_block:
+            d["f_block"] = s.f_block
+        if s.complexity_score:
+            d["complexity_score"] = s.complexity_score
+        if s.sub_model_ref:
+            d["sub_model_ref"] = s.sub_model_ref
+        if s.component_ids:
+            d["component_ids"] = s.component_ids
         return d
 
     @staticmethod

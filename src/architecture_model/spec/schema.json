@@ -52,6 +52,10 @@
         "components": {
           "type": "array",
           "items": { "$ref": "#/$defs/component" }
+        },
+        "systems": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/system" }
         }
       },
       "additionalProperties": false
@@ -260,6 +264,20 @@
           }
         },
         "functions": { "type": "array", "items": { "type": "string" } },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "system": {
+      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "properties": {
+        "id": true, "name": true, "description": true, "status": true,
+        "tags": true, "source_file": true, "source_line": true,
+        "layer": { "type": "string" },
+        "f_block": { "type": "string" },
+        "complexity_score": { "type": "number", "minimum": 0 },
+        "sub_model_ref": { "type": "string" },
+        "component_ids": { "type": "array", "items": { "type": "string" } },
         "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false

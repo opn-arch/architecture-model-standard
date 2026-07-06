@@ -44,6 +44,7 @@ from .types import (
     Strength,
     Symbol,
     SymbolKind,
+    System,
 )
 
 SCHEMA_PATH = Path(__file__).parent.parent / "spec" / "schema.json"
@@ -137,6 +138,7 @@ def _parse_entities(d: dict) -> Entities:
         constraints=[_parse_constraint(c) for c in d.get("constraints", [])],
         layers=[_parse_layer(l) for l in d.get("layers", [])],
         components=[_parse_component(c) for c in d.get("components", [])],
+        systems=[_parse_system(s) for s in d.get("systems", [])],
     )
 
 
@@ -294,6 +296,18 @@ def _parse_component(d: dict) -> Component:
     )
 
 
+def _parse_system(d: dict) -> System:
+    base = _parse_base(d)
+    return System(
+        **base,
+        layer=d.get("layer", ""),
+        f_block=d.get("f_block", ""),
+        complexity_score=float(d.get("complexity_score", 0.0)),
+        sub_model_ref=d.get("sub_model_ref", ""),
+        component_ids=d.get("component_ids", []),
+    )
+
+
 def _parse_relationship(d: dict) -> Relationship:
     return Relationship(
         type=RelationType(d.get("type", "depends-on")),
@@ -344,6 +358,8 @@ def _dump_entities(e: Entities) -> dict:
         d["layers"] = [_dump_layer(l) for l in e.layers]
     if e.components:
         d["components"] = [_dump_component(c) for c in e.components]
+    if e.systems:
+        d["systems"] = [_dump_system(s) for s in e.systems]
     return d
 
 
@@ -489,6 +505,21 @@ def _dump_component(c: Component) -> dict:
         ]
     if c.functions:
         d["functions"] = c.functions
+    return d
+
+
+def _dump_system(s: System) -> dict:
+    d = _dump_base(s)
+    if s.layer:
+        d["layer"] = s.layer
+    if s.f_block:
+        d["f_block"] = s.f_block
+    if s.complexity_score:
+        d["complexity_score"] = s.complexity_score
+    if s.sub_model_ref:
+        d["sub_model_ref"] = s.sub_model_ref
+    if s.component_ids:
+        d["component_ids"] = s.component_ids
     return d
 
 
