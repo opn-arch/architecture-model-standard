@@ -14,24 +14,32 @@ A universal, machine-readable **Architecture-as-Code** standard that serves as t
 - An **LLM integration protocol** enabling AI agents to load, query, and update architectural models
 - **Self-bootstrapping** configuration — no manual setup required; `architecture-model init` auto-generates the project descriptor from directory structure
 
-## Role in the Knowledge OS
+## Role in the Three-Repo Architecture
 
-The Knowledge OS is a multi-modal knowledge architecture combining:
-- Structured data (PostgreSQL + pgvector)
-- Code intelligence (AST analysis, import graphs, domain tagging)
-- LLM synthesis (architecture generation, artifact production)
-- MBSE artifacts (27 system engineering documents generated per project)
-
-This package is the **architectural layer** — it sits between raw code analysis and artifact generation:
+This package is the **schema + library layer** in a three-repo system:
 
 ```
-Code → [AST Scan] → Reality Manifest → [Architecture Model] → LLM Context → Artifact Generation
+architecture-model-standard (this repo)     — Schema, validator, CLI, manifest generator
+        ↑ dependency
+opencode-arch (../opencode-arch/)           — MCP extension wrapping these APIs
+        ↑ used by
+OpenCode agent (frontier model)             — Consumes compressed context, produces models
+
+arch-agent (../arch-agent/)                 — Training pipeline + surrogate (future)
+        ↑ dependency
+architecture-model-standard (this repo)
 ```
 
-When the pipeline's `synthesize` stage produces architecture JSON via LLM, this package:
-1. Validates the output against the schema (7 entity types, 8 relationship types)
-2. Writes/refines `.architecture-model.yaml` (the project descriptor)
-3. Provides structured context slices to downstream artifact generators via `enrich_manifest_slice()`
+**Core flow:**
+```
+Code → [AST Scan] → Reality Manifest → [Context Formatter] → Agent → [Validator] → .architecture-model.yaml
+```
+
+The `opencode-arch` MCP server wraps this package's APIs:
+- `generate_manifest()` → `architect_scan` tool
+- `format_model_context()` / slicer → `architect_slice` tool
+- `validate_model()` → `architect_validate` tool
+- `_parse_raw()` → used by `architect_extract` for storage
 
 ## Key Capabilities
 
@@ -70,22 +78,6 @@ The pipeline requires no manual configuration to analyze a new project:
 4. Writes `.architecture-model.yaml` with layers, F-blocks, and metrics
 5. Subsequent pipeline stages refine this config with LLM-synthesized groupings
 
-### MPC Training Loop
-The package includes a self-improving extraction system:
-1. **Surrogate** (local LLM via Ollama) generates architecture extractions
-2. **Oracle** (frontier model) scores extractions against ground truth
-3. **Evaluator** computes multi-objective loss (structural accuracy, completeness, validator score)
-4. **LoRA Trainer** fine-tunes the surrogate toward oracle quality using DPO preference pairs
-5. **Test-Guided Generator** validates extractions by generating code and running tests
-
-### Test-Guided Code Generation
-Generates deployable code from architecture models using target repo test suites:
-1. Mine behavioral contracts from test ASTs (assertions, fixtures, parametrize)
-2. Generate code per-component with contracts as specification
-3. Materialize into testable package and run pytest
-4. Parse failures, identify failing components, regenerate with failure context
-5. Iterate until convergence or max retries
-
 ## Package Structure
 
 ```
@@ -96,22 +88,90 @@ src/architecture_model/
 ├── extract/      — Extract model from generated Tier 1 artifacts
 ├── integrations/ — LLM context formatting, pipeline bridge
 ├── manifest/     — Reality Manifest generator (AST scanning, metrics, blocks, interfaces)
-├── spec/         — JSON Schema for model validation
-└── training/     — MPC training loop (39 modules, 10.6K lines)
-    ├── Surrogate/Oracle — Local + frontier model clients
-    ├── Pipeline         — Training orchestrator with convergence detection
-    ├── Evaluator        — Multi-objective loss with Pareto front
-    ├── Test-Guided      — Generate → test → retry loop
-    └── LoRA Trainer     — HF PEFT fine-tuning with DPO
+└── spec/         — JSON Schema for model validation
+```
+
+## Key APIs (used by opencode-arch)
+
+### Manifest Generation
+```python
+from architecture_model.manifest.generator import generate_manifest
+manifest = generate_manifest(project_root: Path) -> dict
+# Returns: {project_root, modules, metrics, functional_blocks, ...}
+```
+
+### Model Parsing
+```python
+from architecture_model.core.parser import load_model, _parse_raw
+model = load_model(path: Path) -> ArchitectureModel  # from file
+model = _parse_raw(raw: dict) -> ArchitectureModel   # from dict (no public string parser)
+```
+
+### Validation
+```python
+from architecture_model.core.validator import validate_model
+result = validate_model(model: ArchitectureModel) -> ValidationResult
+# result.score: int (0-100)
+# result.issues: list[ValidationIssue]
+# result.is_valid: bool
+```
+
+### Context Formatting (the token compressor)
+```python
+from architecture_model.integrations.llm_context import format_model_context, format_fblock_context
+context = format_model_context(model, max_tokens=4000, detail_level="standard") -> str
+context = format_fblock_context(model, f_block="F1", max_tokens=4000) -> str
+```
+
+### Slicing
+```python
+from architecture_model.core.slicer import slice_by_fblock, slice_by_layer
+sliced = slice_by_fblock(model, fblock_id="F1") -> ArchitectureModel
+sliced = slice_by_layer(model, layer_id="web") -> ArchitectureModel
+```
+
+## Model YAML Format
+
+**Important:** Entities must be nested under the `entities:` key:
+```yaml
+meta:
+  project: my-project
+  schema_version: '1.3'
+entities:
+  components:
+    - id: COMP-1
+      name: MyComponent
+      status: ACTIVE
+  capabilities:
+    - id: CAP-F1
+      name: MyCapability
+      status: ACTIVE
+relationships:
+  - from: COMP-1
+    to: CAP-F1
+    type: realizes
 ```
 
 ## Status
 
 - Schema version: 1.3
 - Package version: 0.3.0
-- Test suite: 904+ tests (619 in training module, 42 test files)
-- Training module: 39 source files, 10,662 lines
+- Test suite: 271 passed, 106 skipped
 - Validation score: 100/100, 0 orphaned entities
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
-- Training extras: `pip install architecture-model-standard[training]`
+
+## Development Instructions
+
+- Always run tests with: `pytest tests/ -v --ignore=tests/test_config_loader.py` (pre-existing failure)
+- Training module has been moved to `arch-agent` repo — do not add training code here
+- This is the schema-only open standard — keep it focused on parse/validate/slice/format
+- The `opencode-arch` package depends on this — API changes need coordination
+
+## Related Repos
+
+| Repo | Path | Purpose | Tests |
+|------|------|---------|-------|
+| architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 271 passed |
+| opencode-arch | `../opencode-arch/` | MCP extension (token broker) | 28 passed |
+| arch-agent | `../arch-agent/` | Training pipeline + surrogate | 574 passed |
