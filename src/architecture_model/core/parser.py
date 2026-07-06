@@ -42,6 +42,8 @@ from .types import (
     StateTransition,
     Status,
     Strength,
+    Symbol,
+    SymbolKind,
 )
 
 SCHEMA_PATH = Path(__file__).parent.parent / "spec" / "schema.json"
@@ -122,6 +124,7 @@ def _parse_meta(d: dict) -> ModelMeta:
         generated_at=d.get("generated_at", datetime.now(timezone.utc).isoformat()),
         source_artifacts=d.get("source_artifacts", []),
         manifest_hash=d.get("manifest_hash", ""),
+        source_language=d.get("source_language", ""),
     )
 
 
@@ -261,6 +264,20 @@ def _parse_component(d: dict) -> Component:
         for f in d.get("fields", [])
     ]
 
+    symbols = []
+    for s in d.get("symbols", []):
+        sk_str = s.get("kind", "class")
+        try:
+            sk = SymbolKind(sk_str)
+        except ValueError:
+            sk = SymbolKind.CLASS
+        symbols.append(Symbol(
+            name=s.get("name", ""),
+            kind=sk,
+            members=s.get("members", []),
+            supers=s.get("supers", []),
+        ))
+
     return Component(
         **base,
         layer=d.get("layer", ""),
@@ -272,6 +289,8 @@ def _parse_component(d: dict) -> Component:
         fields=fields,
         region=d.get("region", ""),
         replicas=d.get("replicas"),
+        symbols=symbols,
+        functions=d.get("functions", []),
     )
 
 
@@ -283,6 +302,7 @@ def _parse_relationship(d: dict) -> Relationship:
         description=d.get("description", ""),
         strength=Strength(d.get("strength", "moderate")),
         extensions=d.get("extensions", {}),
+        imports=d.get("imports", []),
     )
 
 
@@ -303,6 +323,8 @@ def _dump_meta(m: ModelMeta) -> dict:
         d["source_artifacts"] = m.source_artifacts
     if m.manifest_hash:
         d["manifest_hash"] = m.manifest_hash
+    if m.source_language:
+        d["source_language"] = m.source_language
     return d
 
 
@@ -458,6 +480,15 @@ def _dump_component(c: Component) -> dict:
         d["region"] = c.region
     if c.replicas is not None:
         d["replicas"] = c.replicas
+    if c.symbols:
+        d["symbols"] = [
+            {"name": s.name, "kind": s.kind.value}
+            | ({"members": s.members} if s.members else {})
+            | ({"supers": s.supers} if s.supers else {})
+            for s in c.symbols
+        ]
+    if c.functions:
+        d["functions"] = c.functions
     return d
 
 
@@ -473,4 +504,6 @@ def _dump_relationship(r: Relationship) -> dict:
         d["strength"] = r.strength.value
     if r.extensions:
         d["extensions"] = r.extensions
+    if r.imports:
+        d["imports"] = r.imports
     return d

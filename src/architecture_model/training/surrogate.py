@@ -60,6 +60,14 @@ Components have a 'kind' field:
 - ui: frontend, CLI, dashboard
 - pipeline: ETL, CI/CD, batch job
 
+Components MUST have a 'symbols' field listing code types in that module:
+  symbols:
+    - name: ClassName
+      kind: class|dataclass|exception|protocol|enum
+      members: [public_method_1, public_method_2]
+      supers: [BaseClass]
+  functions: [top_level_func_1, top_level_func_2]
+
 Behaviors have a 'pattern' field:
 - sequential (default), event-driven, state-machine, saga, pipeline, parallel
 - For state-machine: include 'states' with transitions
@@ -70,10 +78,17 @@ Interfaces may reference a 'schema' (component ID of kind data-model).
 And 8 relationship types:
 - realizes, contains, depends-on, exposes, consumes, traces-to, allocated-to, constrained-by
 
+For 'depends-on' relationships, include 'imports' listing symbols imported:
+  - type: depends-on
+    from: comp-parser
+    to: comp-variables
+    imports: [Variable, EnvVariable]
+
 Output ONLY valid YAML matching this structure:
 meta:
-  schema_version: "1.1"
+  schema_version: "1.2"
   project: "<project name>"
+  source_language: "python"
 entities:
   actors: [...]
   capabilities: [...]
@@ -85,65 +100,40 @@ entities:
 relationships: [...]
 
 Each entity must have: id, name, status (ACTIVE/PLANNED/DORMANT/DEPRECATED).
+Each component must have: kind, symbols.
 Each relationship must have: type, from, to.
 
 Output raw YAML only -- no markdown fences, no explanation."""
 
 _GENERATE_SYSTEM_PROMPT = """\
 You are an architecture-to-code compiler. Given a UAM (Universal Architecture Model) \
-YAML, generate Python source code that faithfully realizes the described architecture.
+YAML with code-level detail, generate Python source code that precisely realizes \
+the described architecture.
 
 Rules:
 1. Each component entity becomes ONE Python module (file). Use the component name \
-as the filename (e.g., component "parser" → parser.py, component "__init__" → __init__.py).
-2. Each module should contain 2-6 classes reflecting the component's responsibilities. \
-Include: a primary class implementing core logic, plus supporting classes \
-(dataclasses for data models, exceptions for error states, base/abstract classes \
-for interfaces the component exposes, enums for type discrimination).
-3. Class names should reflect domain terminology from the capabilities and behaviors \
-the component realizes/implements — NOT just the component name. For example, \
-a "parser" component might contain: Parser, Token, ParseError, Binding.
-4. Create methods on each class matching the behaviors it implements and capabilities \
-it realizes. A behavior named "Parse Dotenv Stream" on component "parser" → \
-Parser.parse_stream(), Parser.read_line(), etc.
-5. Add import statements between modules reflecting depends_on and uses relationships. \
-Use relative imports (from .module import Class) for intra-package dependencies.
-6. Include top-level functions in modules where behaviors don't map cleanly to classes \
-(e.g., utility functions, factory functions, module-level API like load_dotenv()).
-7. Use type hints on all methods and functions.
-8. Do NOT implement method/function bodies — use 'pass' or '...' for all bodies.
-9. Include a brief docstring on each class and public function describing its role.
+as the filename (e.g., component "parser" → parser.py).
+2. If the component has a 'symbols' field, use EXACTLY those class/type names:
+   - kind=class → class ClassName
+   - kind=dataclass → @dataclass class ClassName
+   - kind=exception → class ClassName(BaseException)
+   - kind=protocol → class ClassName(Protocol)
+   - kind=enum → class ClassName(Enum)
+   Each symbol's 'members' become methods/fields. Each symbol's 'supers' become base classes.
+3. If the component has a 'functions' field, create those exact top-level functions.
+4. If no 'symbols' field, generate 2-6 classes reflecting the component's responsibilities \
+from capabilities/behaviors it realizes/implements.
+5. For each depends-on relationship with an 'imports' field, add:
+   from .{target_component_name} import {comma-separated imports}
+   If no 'imports' field, infer reasonable imports from the relationship.
+6. Use type hints on all methods and functions.
+7. Do NOT implement method/function bodies — use 'pass' or '...' for all bodies.
+8. Include a brief docstring on each class and public function.
 
 Output format:
 - Separate modules with '# component_name.py' comment headers (matching component names exactly)
 - Import statements at the top of each module (stdlib first, then relative)
-- Output ONLY Python code — no markdown fences, no explanations.
-
-Example structure for a component named "parser" that realizes "File Parsing" capability \
-and implements "Parse Stream" behavior:
-# parser.py
-from typing import Iterator, Optional
-from .variables import Variable
-
-class ParseError(Exception):
-    \"\"\"Raised when parsing encounters invalid syntax.\"\"\"
-    pass
-
-class Token:
-    \"\"\"Represents a parsed key-value token.\"\"\"
-    key: str
-    value: str
-    def __init__(self, key: str, value: str) -> None:
-        pass
-
-class Parser:
-    \"\"\"Core parser for dotenv-format streams.\"\"\"
-    def __init__(self, stream: Iterator[str]) -> None:
-        pass
-    def parse_stream(self) -> list[Token]:
-        pass
-    def read_line(self, line: str) -> Optional[Token]:
-        pass"""
+- Output ONLY Python code — no markdown fences, no explanations."""
 
 
 class Surrogate:

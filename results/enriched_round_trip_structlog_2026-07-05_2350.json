@@ -1,0 +1,30 @@
+{
+  "test": "v1.2_enriched_round_trip",
+  "timestamp": "2026-07-05_2350",
+  "repo": "structlog",
+  "naming_accuracy": 1.0,
+  "enrichment_stats": {
+    "symbols": 60,
+    "functions": 47,
+    "import_entries": 0
+  },
+  "raw_score": {
+    "class_overlap": 0.0,
+    "fuzzy_class": 0.11864406779661017,
+    "method_overlap": 0.0,
+    "function_overlap": 0.0,
+    "module_name_overlap": 0.8571428571428571,
+    "module_count_ratio": 0.8571428571428571,
+    "overall": 0.4035108958837772
+  },
+  "enriched_score": {
+    "class_overlap": 0.8,
+    "fuzzy_class": 0.864406779661017,
+    "method_overlap": 0.3543307086614173,
+    "function_overlap": 0.527027027027027,
+    "module_name_overlap": 0.8571428571428571,
+    "module_count_ratio": 0.9047619047619048,
+    "overall": 0.7507514211891632
+  },
+  "improvement": 0.34724052530538596
+}

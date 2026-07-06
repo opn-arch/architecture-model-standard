@@ -1,0 +1,30 @@
+{
+  "test": "v1.2_enriched_round_trip",
+  "timestamp": "2026-07-05_2344",
+  "repo": "python-dotenv",
+  "naming_accuracy": 1.0,
+  "enrichment_stats": {
+    "symbols": 10,
+    "functions": 29,
+    "import_entries": 0
+  },
+  "raw_score": {
+    "class_overlap": 0.0,
+    "fuzzy_class": 0.1,
+    "method_overlap": 0.0,
+    "function_overlap": 0.0,
+    "module_name_overlap": 0.625,
+    "module_count_ratio": 0.875,
+    "overall": 0.34625000000000006
+  },
+  "enriched_score": {
+    "class_overlap": 0.7272727272727273,
+    "fuzzy_class": 0.8,
+    "method_overlap": 0.9090909090909091,
+    "function_overlap": 0.2903225806451613,
+    "module_name_overlap": 0.625,
+    "module_count_ratio": 0.75,
+    "overall": 0.7007368035190616
+  },
+  "improvement": 0.3544868035190616
+}

@@ -18,7 +18,8 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "manifest_hash": { "type": "string" }
+        "manifest_hash": { "type": "string" },
+        "source_language": { "type": "string" }
       }
     },
     "entities": {
@@ -241,6 +242,24 @@
         },
         "region": { "type": "string" },
         "replicas": { "type": "integer", "minimum": 0 },
+        "symbols": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string" },
+              "kind": {
+                "type": "string",
+                "enum": ["class", "dataclass", "exception", "protocol", "struct", "interface", "enum", "trait", "type-alias"]
+              },
+              "members": { "type": "array", "items": { "type": "string" } },
+              "supers": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          }
+        },
+        "functions": { "type": "array", "items": { "type": "string" } },
         "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
@@ -257,6 +276,7 @@
         "to": { "type": "string" },
         "description": { "type": "string" },
         "strength": { "type": "string", "enum": ["strong", "moderate", "weak"] },
+        "imports": { "type": "array", "items": { "type": "string" } },
         "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false

@@ -11,10 +11,12 @@ decisions. It adds source_file/source_line provenance and fills in component fil
 from __future__ import annotations
 
 import json
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .types import ArchitectureModel, Component, Relationship, RelationType, Status
+from .types import ArchitectureModel, Component, Relationship, RelationType, Status, Symbol, SymbolKind
 
 
 def merge_manifest(
@@ -212,3 +214,250 @@ def _add_missing_components(model: ArchitectureModel, manifest: dict, project_ro
                     )
                 )
                 existing_rels.add(key)
+
+
+# ---------------------------------------------------------------------------
+# Enrichment from manifest (AST ground-truth correction)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class EnrichmentResult:
+    """Result of enrich_from_manifest — model plus accuracy metrics."""
+
+    _model: ArchitectureModel
+    naming_accuracy: float = 1.0
+
+    @property
+    def model(self) -> ArchitectureModel:
+        return self._model
+
+    @property
+    def entities(self):
+        return self._model.entities
+
+    @property
+    def relationships(self):
+        return self._model.relationships
+
+    @property
+    def meta(self):
+        return self._model.meta
+
+
+def enrich_from_manifest(model: ArchitectureModel, manifest: dict) -> EnrichmentResult:
+    """
+    Enrich an ArchitectureModel with ground-truth symbols and functions from an AST manifest.
+
+    Replaces component symbols/functions with manifest-derived data, enriches
+    relationship imports, and computes naming accuracy vs prior predictions.
+
+    Args:
+        model: The architecture model to enrich (mutated in-place).
+        manifest: Manifest dict as produced by the manifest generator.
+
+    Returns:
+        EnrichmentResult with the enriched model and naming_accuracy score.
+    """
+    modules = manifest.get("modules", [])
+    interfaces = manifest.get("interfaces", [])
+
+    # Build module lookup: filename stem → module dict
+    stem_to_module: dict[str, dict] = {}
+    for mod in modules:
+        path = mod.get("file", "")
+        stem = Path(path).stem  # e.g., "dotenv/parser.py" → "parser"
+        stem_to_module[stem] = mod
+
+    # Track naming accuracy
+    total_predicted = 0
+    total_matched = 0
+
+    # Enrich each component
+    for comp in model.entities.components:
+        matched_module = _find_matching_module(comp, stem_to_module)
+        if matched_module is None:
+            continue
+
+        # Compute naming accuracy before replacing
+        if comp.symbols:
+            manifest_names = {cls["name"] for cls in matched_module.get("classes", [])}
+            predicted_names = [s.name for s in comp.symbols]
+            total_predicted += len(predicted_names)
+            total_matched += sum(1 for n in predicted_names if n in manifest_names)
+
+        # Replace symbols with ground truth
+        comp.symbols = _build_symbols(matched_module.get("classes", []))
+
+        # Replace functions with ground truth
+        comp.functions = _extract_function_names(matched_module.get("functions", []))
+
+    # Enrich relationship imports
+    _enrich_relationship_imports(model, modules, interfaces, stem_to_module)
+
+    # Compute overall naming accuracy
+    if total_predicted == 0:
+        naming_accuracy = 1.0
+    else:
+        naming_accuracy = total_matched / total_predicted
+
+    return EnrichmentResult(_model=model, naming_accuracy=naming_accuracy)
+
+
+def _find_matching_module(comp: Component, stem_to_module: dict[str, dict]) -> dict | None:
+    """Find the manifest module matching a component by name or id stem."""
+    # Try component name directly
+    if comp.name in stem_to_module:
+        return stem_to_module[comp.name]
+
+    # Try id stem: strip "comp-" prefix
+    id_stem = comp.id
+    if id_stem.startswith("comp-"):
+        id_stem = id_stem[5:]
+
+    if id_stem in stem_to_module:
+        return stem_to_module[id_stem]
+
+    return None
+
+
+def _infer_symbol_kind(cls: dict) -> SymbolKind:
+    """Infer SymbolKind from class metadata."""
+    bases = cls.get("bases", [])
+    decorators = cls.get("decorators", [])
+    is_abstract = cls.get("is_abstract", False)
+
+    # Protocol: is_abstract or ABC/Protocol in bases
+    if is_abstract or any(b in ("ABC", "Protocol") for b in bases):
+        return SymbolKind.PROTOCOL
+
+    # Exception: any base containing "Exception" or "Error"
+    if any("Exception" in b or "Error" in b for b in bases):
+        return SymbolKind.EXCEPTION
+
+    # Dataclass: "dataclass" in decorators
+    if any("dataclass" in d for d in decorators):
+        return SymbolKind.DATACLASS
+
+    return SymbolKind.CLASS
+
+
+def _filter_methods(methods: list[str]) -> list[str]:
+    """Keep public methods + __init__, skip other dunders and private methods."""
+    result = []
+    for m in methods:
+        if m == "__init__":
+            result.append(m)
+        elif m.startswith("__") and m.endswith("__"):
+            # Other dunder → skip
+            continue
+        elif m.startswith("_"):
+            # Private → skip
+            continue
+        else:
+            result.append(m)
+    return result
+
+
+def _filter_supers(bases: list[str]) -> list[str]:
+    """Filter out 'object' from bases."""
+    return [b for b in bases if b != "object"]
+
+
+def _build_symbols(classes: list[dict]) -> list[Symbol]:
+    """Convert manifest class dicts to Symbol instances."""
+    symbols = []
+    for cls in classes:
+        kind = _infer_symbol_kind(cls)
+        members = _filter_methods(cls.get("methods", []))
+        supers = _filter_supers(cls.get("bases", []))
+        symbols.append(Symbol(
+            name=cls["name"],
+            kind=kind,
+            members=members,
+            supers=supers,
+        ))
+    return symbols
+
+
+def _extract_function_names(signatures: list[str]) -> list[str]:
+    """Extract function names from signature strings like 'make_parser(stream) -> Parser'."""
+    names = []
+    for sig in signatures:
+        # Extract name before first '('
+        match = re.match(r"([a-zA-Z_][a-zA-Z0-9_]*)", sig)
+        if match:
+            names.append(match.group(1))
+    return names
+
+
+def _enrich_relationship_imports(
+    model: ArchitectureModel,
+    modules: list[dict],
+    interfaces: list[dict],
+    stem_to_module: dict[str, dict],
+) -> None:
+    """Enrich depends-on relationships with imported symbols from manifest."""
+    # Build file→stem lookup for interface matching
+    file_to_stem: dict[str, str] = {}
+    for mod in modules:
+        path = mod.get("file", "")
+        stem = Path(path).stem
+        file_to_stem[path] = stem
+
+    # Build interface lookup: (source_stem, target_stem) → True
+    interface_pairs: set[tuple[str, str]] = set()
+    for iface in interfaces:
+        src_stem = file_to_stem.get(iface.get("source", ""), "")
+        tgt_stem = file_to_stem.get(iface.get("target", ""), "")
+        if src_stem and tgt_stem:
+            interface_pairs.add((src_stem, tgt_stem))
+
+    for rel in model.relationships:
+        if rel.type != RelationType.DEPENDS_ON:
+            continue
+
+        # Resolve from/to component stems
+        from_stem = _component_stem(rel.from_id, model)
+        to_stem = _component_stem(rel.to_id, model)
+
+        if not from_stem or not to_stem:
+            continue
+
+        # Check if interface exists between these
+        if (from_stem, to_stem) not in interface_pairs:
+            continue
+
+        # Find source module and collect imports targeting to_stem
+        source_mod = stem_to_module.get(from_stem)
+        if not source_mod:
+            continue
+
+        imports_detailed = source_mod.get("imports_detailed", [])
+        imported_symbols: list[str] = []
+        for imp in imports_detailed:
+            imp_module = imp.get("module", "")
+            # Match if import module name matches target stem
+            if imp_module == to_stem or imp_module.endswith(f".{to_stem}"):
+                imported_symbols.extend(imp.get("symbols", []))
+
+        rel.imports = imported_symbols
+
+
+def _component_stem(comp_id: str, model: ArchitectureModel) -> str:
+    """Get the matching stem for a component id."""
+    # Try finding the component to get its name
+    for comp in model.entities.components:
+        if comp.id == comp_id:
+            # Use component name if it looks like a stem
+            name = comp.name
+            if name and not " " in name:
+                return name
+            # Fallback to id stem
+            break
+
+    # Strip comp- prefix from id
+    stem = comp_id
+    if stem.startswith("comp-"):
+        stem = stem[5:]
+    return stem

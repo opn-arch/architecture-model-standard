@@ -95,6 +95,19 @@ class BehaviorPattern(str, Enum):
     PARALLEL = "parallel"
 
 
+class SymbolKind(str, Enum):
+    """Kind of code symbol (language-neutral type discrimination)."""
+    CLASS = "class"
+    DATACLASS = "dataclass"
+    EXCEPTION = "exception"
+    PROTOCOL = "protocol"
+    STRUCT = "struct"
+    INTERFACE = "interface"
+    ENUM = "enum"
+    TRAIT = "trait"
+    TYPE_ALIAS = "type-alias"
+
+
 # ---------------------------------------------------------------------------
 # Base
 # ---------------------------------------------------------------------------
@@ -193,6 +206,15 @@ class Layer(BaseEntity):
 
 
 @dataclass
+class Symbol:
+    """A code-level type definition within a component (language-neutral)."""
+    name: str
+    kind: SymbolKind = SymbolKind.CLASS
+    members: list[str] = field(default_factory=list)
+    supers: list[str] = field(default_factory=list)
+
+
+@dataclass
 class DataField:
     """Schema field for data-model components."""
     name: str
@@ -212,6 +234,8 @@ class Component(BaseEntity):
     fields: list[DataField] = field(default_factory=list)
     region: str = ""
     replicas: Optional[int] = None
+    symbols: list[Symbol] = field(default_factory=list)
+    functions: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -227,6 +251,7 @@ class Relationship:
     description: str = ""
     strength: Strength = Strength.MODERATE
     extensions: dict[str, Any] = field(default_factory=dict)
+    imports: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -242,6 +267,7 @@ class ModelMeta:
     generated_at: str = ""
     source_artifacts: list[str] = field(default_factory=list)
     manifest_hash: str = ""
+    source_language: str = ""
 
 
 @dataclass
