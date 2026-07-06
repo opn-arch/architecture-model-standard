@@ -38,7 +38,14 @@ from architecture_model.training.code_structure import (
     parse_code_structure, parse_multi_file_code,
     StructuralGraph, ClassInfo, FunctionInfo, ImportEdge,
 )
+from architecture_model.training.decomposed_evaluator import (
+    DecomposedRoundTripEvaluator, DecomposedRoundTripScore,
+)
 from architecture_model.training.semantic_matcher import SemanticMatcher, SemanticMatch
+from architecture_model.training.failure_parser import FailureParser, FailureReport, TestFailure
+from architecture_model.training.test_guided_generator import (
+    TestGuidedGenerator, TestGuidedResult, GenerationAttempt,
+)
 
 __all__ = [
     "TrainingPipeline", "DatasetStore", "TrainingExample",
@@ -64,5 +71,8 @@ __all__ = [
     "TestCoverageAnalyzer", "TestCoverage",
     "parse_code_structure", "parse_multi_file_code",
     "StructuralGraph", "ClassInfo", "FunctionInfo", "ImportEdge",
+    "DecomposedRoundTripEvaluator", "DecomposedRoundTripScore",
     "SemanticMatcher", "SemanticMatch",
+    "FailureParser", "FailureReport", "TestFailure",
+    "TestGuidedGenerator", "TestGuidedResult", "GenerationAttempt",
 ]

@@ -217,6 +217,25 @@ class Surrogate:
             content = content.split("```", 1)[1].split("```", 1)[0]
         return content.strip()
 
+    async def generate_with_prompt(self, system: str, user: str) -> str:
+        """Generate code with custom system/user prompts.
+
+        Unlike generate_code() which uses a hardcoded system prompt, this
+        allows callers (e.g., TestGuidedGenerator) to supply their own prompts.
+        """
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ]
+        response = await self._chat(messages)
+        content = response.get("message", {}).get("content", "")
+        # Strip markdown fences
+        if "```python" in content:
+            content = content.split("```python", 1)[1].split("```", 1)[0]
+        elif "```" in content:
+            content = content.split("```", 1)[1].split("```", 1)[0]
+        return content.strip()
+
     def confidence(self, model: ArchitectureModel, coverage_score: float | None = None) -> float:
         """Estimate extraction confidence (0-1) using composite signal.
 
