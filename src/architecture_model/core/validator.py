@@ -7,6 +7,9 @@ Validates:
 3. Status consistency — PLANNED entities shouldn't be depended on by ACTIVE ones
 4. ID uniqueness — no duplicate entity IDs across types
 5. Completeness — all capabilities have at least one realizing behavior
+6. Meta completeness — project and schema_version are set
+7. v1.1 semantics — data-model fields, state-machine reachability
+8. Regen readiness — constant/signature coverage for code regeneration
 """
 
 from __future__ import annotations
@@ -100,6 +103,7 @@ def validate_model(
     _check_capability_realization(model, result)
     _check_meta_completeness(model, result)
     _check_v11_semantics(model, result)
+    _check_regen_readiness(model, result)
 
     if strict:
         # Promote warnings to errors
@@ -290,6 +294,92 @@ def _check_meta_completeness(model: ArchitectureModel, result: ValidationResult)
                 message="Model meta.source_artifacts is empty",
             )
         )
+
+
+def _check_regen_readiness(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Rule 8: Assess whether components have enough detail for code regeneration.
+
+    Only applies to components that have test_contracts defined. Checks:
+    1. Constant coverage — referenced constants in assertions vs defined constants
+    2. Signature coverage — called functions in assertions vs defined signatures
+    """
+    import re
+
+    for comp in model.entities.components:
+        if not comp.test_contracts:
+            continue
+
+        # --- Constant coverage ---
+        # Parse assertions for patterns like Obj.ATTR == literal → ATTR is a referenced constant
+        referenced_constants: set[str] = set()
+        for tc in comp.test_contracts:
+            # Match patterns: Identifier.CONSTANT_NAME (uppercase with underscores)
+            matches = re.findall(r'\b\w+\.([A-Z][A-Z0-9_]+)\b', tc.assertion)
+            referenced_constants.update(matches)
+
+        if referenced_constants:
+            defined_names = {c.name for c in comp.constants}
+            covered = len(referenced_constants & defined_names)
+            coverage = covered / len(referenced_constants)
+
+            if coverage < 0.3:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.ERROR,
+                        code="REGEN_UNREADY",
+                        message=(
+                            f"Component '{comp.name}' has {coverage:.0%} constant coverage "
+                            f"({covered}/{len(referenced_constants)} referenced constants defined)"
+                        ),
+                        entity_id=comp.id,
+                        context="regen_readiness",
+                    )
+                )
+            elif coverage < 0.7:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="REGEN_PARTIAL",
+                        message=(
+                            f"Component '{comp.name}' has {coverage:.0%} constant coverage "
+                            f"({covered}/{len(referenced_constants)} referenced constants defined)"
+                        ),
+                        entity_id=comp.id,
+                        context="regen_readiness",
+                    )
+                )
+
+        # --- Signature coverage ---
+        # Parse assertions for function calls: identifier(args)
+        called_functions: set[str] = set()
+        for tc in comp.test_contracts:
+            # Match function calls: name(...) — excluding assert, common builtins
+            matches = re.findall(r'\b([a-z_]\w*)\s*\(', tc.assertion)
+            # Filter out Python keywords/builtins that aren't component functions
+            excluded = {"assert", "len", "str", "int", "float", "bool", "list",
+                        "dict", "set", "tuple", "type", "isinstance", "print",
+                        "repr", "sorted", "reversed", "enumerate", "range", "zip",
+                        "map", "filter", "hasattr", "getattr", "setattr"}
+            called_functions.update(m for m in matches if m not in excluded)
+
+        if called_functions:
+            defined_sigs = {s.name for s in comp.signatures}
+            covered = len(called_functions & defined_sigs)
+            coverage = covered / len(called_functions)
+
+            if coverage < 0.5:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="REGEN_LOW_SIG_COVERAGE",
+                        message=(
+                            f"Component '{comp.name}' has {coverage:.0%} signature coverage "
+                            f"({covered}/{len(called_functions)} called functions have signatures)"
+                        ),
+                        entity_id=comp.id,
+                        context="regen_readiness",
+                    )
+                )
 
 
 # ---------------------------------------------------------------------------
