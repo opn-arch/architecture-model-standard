@@ -22,7 +22,7 @@ import yaml as pyyaml
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from architecture_model.core.parser import _parse_raw, dump_model
-from architecture_model.core.merger import enrich_from_manifest
+from architecture_model.core.merger import enrich_from_manifest, compact_for_generation
 from architecture_model.manifest.scanner import _scan_file, _extract_classes
 from architecture_model.training.code_structure import (
     parse_code_structure,
@@ -302,12 +302,17 @@ async def run_test(repo_name: str, timeout: int = 300):
         import traceback; traceback.print_exc()
         return None
 
-    # 5. Dump enriched YAML
+    # 5. Dump enriched YAML (with compaction for large models)
     print("[5] Serializing enriched model to YAML...", end=" ")
     try:
-        enriched_dict = dump_model(enriched_model)
+        # Compact large models to fit within 7B model context
+        gen_model = compact_for_generation(enriched_model)
+        enriched_dict = dump_model(gen_model)
         enriched_yaml = pyyaml.dump(enriched_dict, default_flow_style=False, sort_keys=False, allow_unicode=True, width=120)
-        print(f"OK ({len(enriched_yaml)} chars)")
+        if len(enriched_yaml) > 12000:
+            print(f"OK ({len(enriched_yaml)} chars, compacted from full)")
+        else:
+            print(f"OK ({len(enriched_yaml)} chars)")
     except Exception as e:
         print(f"FAILED — {e}")
         import traceback; traceback.print_exc()
@@ -428,11 +433,60 @@ async def run_test(repo_name: str, timeout: int = 300):
 
 async def main():
     parser = argparse.ArgumentParser(description="v1.2 Enriched Round-Trip Test")
-    parser.add_argument("--repo", default="python-dotenv", help="Repo to test")
+    parser.add_argument("--repo", default="python-dotenv", help="Repo to test (or 'all' for batch)")
     parser.add_argument("--timeout", type=int, default=300, help="Generation timeout (seconds)")
+    parser.add_argument("--sample", type=int, default=None, help="Random sample of N repos")
     args = parser.parse_args()
 
-    await run_test(args.repo, args.timeout)
+    if args.repo == "all":
+        repos = list(REPO_SUBDIRS.keys())
+    elif args.sample:
+        import random
+        repos = random.sample(list(REPO_SUBDIRS.keys()), min(args.sample, len(REPO_SUBDIRS)))
+    else:
+        repos = [args.repo]
+
+    all_results = []
+    for repo in repos:
+        result = await run_test(repo, args.timeout)
+        if result:
+            all_results.append(result)
+
+    if len(all_results) > 1:
+        # Print aggregate summary
+        print(f"\n{'='*70}")
+        print(f"  AGGREGATE RESULTS ({len(all_results)} repos)")
+        print(f"{'='*70}")
+
+        raw_scores = [r["raw_score"]["overall"] for r in all_results if r.get("raw_score") and "overall" in r["raw_score"]]
+        enriched_scores = [r["enriched_score"]["overall"] for r in all_results if r.get("enriched_score") and "overall" in r["enriched_score"]]
+        improvements = [r["improvement"] for r in all_results if r.get("improvement") is not None]
+
+        if raw_scores:
+            print(f"  RAW mean:      {sum(raw_scores)/len(raw_scores):.3f} (n={len(raw_scores)})")
+        if enriched_scores:
+            print(f"  ENRICHED mean: {sum(enriched_scores)/len(enriched_scores):.3f} (n={len(enriched_scores)})")
+        if improvements:
+            print(f"  Mean improvement: {sum(improvements)/len(improvements):+.3f}")
+            print(f"  Min improvement:  {min(improvements):+.3f}")
+            print(f"  Max improvement:  {max(improvements):+.3f}")
+
+        # Save aggregate
+        RESULTS_DIR.mkdir(exist_ok=True)
+        ts = datetime.now().strftime("%Y-%m-%d_%H%M")
+        agg_path = RESULTS_DIR / f"enriched_batch_{ts}.json"
+        agg_path.write_text(json.dumps({
+            "test": "v1.2_enriched_batch",
+            "timestamp": ts,
+            "n_repos": len(all_results),
+            "aggregate": {
+                "raw_mean": sum(raw_scores)/len(raw_scores) if raw_scores else None,
+                "enriched_mean": sum(enriched_scores)/len(enriched_scores) if enriched_scores else None,
+                "mean_improvement": sum(improvements)/len(improvements) if improvements else None,
+            },
+            "results": all_results,
+        }, indent=2, default=str))
+        print(f"\n  Batch results saved: {agg_path}")
 
 
 if __name__ == "__main__":

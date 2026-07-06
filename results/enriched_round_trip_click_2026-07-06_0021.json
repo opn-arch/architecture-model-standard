@@ -1,0 +1,30 @@
+{
+  "test": "v1.2_enriched_round_trip",
+  "timestamp": "2026-07-06_0021",
+  "repo": "click",
+  "naming_accuracy": 1.0,
+  "enrichment_stats": {
+    "symbols": 62,
+    "functions": 90,
+    "import_entries": 78
+  },
+  "raw_score": {
+    "class_overlap": 0.020202020202020204,
+    "fuzzy_class": 0.14814814814814814,
+    "method_overlap": 0.003472222222222222,
+    "function_overlap": 0.0,
+    "module_name_overlap": 0.5882352941176471,
+    "module_count_ratio": 0.8235294117647058,
+    "overall": 0.33753806446821155
+  },
+  "enriched_score": {
+    "class_overlap": 0.30864197530864196,
+    "fuzzy_class": 0.5432098765432098,
+    "method_overlap": 0.25435540069686413,
+    "function_overlap": 0.06611570247933884,
+    "module_name_overlap": 0.5882352941176471,
+    "module_count_ratio": 0.5862068965517241,
+    "overall": 0.43684286096999786
+  },
+  "improvement": 0.09930479650178631
+}

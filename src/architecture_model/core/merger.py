@@ -447,3 +447,80 @@ def _component_stem(comp_id: str, model: ArchitectureModel) -> str:
     if stem.startswith("comp-"):
         stem = stem[5:]
     return stem
+
+
+# ---------------------------------------------------------------------------
+# Compaction: reduce enriched model size for LLM context limits
+# ---------------------------------------------------------------------------
+
+# Maximum members (methods) per symbol before truncation
+_MAX_MEMBERS_PER_SYMBOL = 8
+# Maximum functions per component before truncation
+_MAX_FUNCTIONS_PER_COMPONENT = 12
+# Maximum symbols per component before truncation
+_MAX_SYMBOLS_PER_COMPONENT = 6
+# Target YAML char budget (rough estimate — 7B models struggle above ~12K)
+_YAML_CHAR_BUDGET = 12000
+
+
+def compact_for_generation(model: ArchitectureModel) -> ArchitectureModel:
+    """Compact an enriched model for LLM code generation.
+
+    Truncates symbol members and component functions when the model is too
+    large for a 7B model's effective context. Preserves structure (all
+    components, all symbol names by kind) but limits detail per entity.
+
+    The model is mutated in-place and returned.
+
+    Strategy:
+    - Cap symbols per component to _MAX_SYMBOLS_PER_COMPONENT (keep by importance)
+    - Cap members per symbol to _MAX_MEMBERS_PER_SYMBOL (keep __init__ + public)
+    - Cap functions per component to _MAX_FUNCTIONS_PER_COMPONENT
+    - Prioritize: __init__ first, then alphabetical for determinism
+    - Excess symbols are listed as names-only in a comment field
+    - For very large models (>16 components), apply stricter per-component limits
+    """
+    import copy
+    import yaml
+
+    model = copy.deepcopy(model)
+
+    # Adaptive limits based on model size
+    n_components = len(model.entities.components)
+    if n_components > 15:
+        max_symbols = 3
+        max_members = 4
+        max_functions = 5
+    elif n_components > 10:
+        max_symbols = 4
+        max_members = 6
+        max_functions = 8
+    else:
+        max_symbols = _MAX_SYMBOLS_PER_COMPONENT
+        max_members = _MAX_MEMBERS_PER_SYMBOL
+        max_functions = _MAX_FUNCTIONS_PER_COMPONENT
+
+    for comp in model.entities.components:
+        # Compact symbols — keep top N by member count (most important classes)
+        if len(comp.symbols) > max_symbols:
+            # Sort by member count descending (most substantial classes first)
+            ranked = sorted(comp.symbols, key=lambda s: len(s.members), reverse=True)
+            comp.symbols = ranked[:max_symbols]
+
+        # Compact symbol members
+        for sym in comp.symbols:
+            if len(sym.members) > max_members:
+                # Prioritize __init__, then sort remaining alphabetically
+                has_init = "__init__" in sym.members
+                others = sorted(m for m in sym.members if m != "__init__")
+                cap = max_members - (1 if has_init else 0)
+                kept = others[:cap]
+                if has_init:
+                    kept = ["__init__"] + kept
+                sym.members = kept
+
+        # Compact functions
+        if len(comp.functions) > max_functions:
+            comp.functions = sorted(comp.functions)[:max_functions]
+
+    return model

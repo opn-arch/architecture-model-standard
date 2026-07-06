@@ -1,0 +1,22 @@
+{
+  "test": "v1.2_enriched_round_trip",
+  "timestamp": "2026-07-05_2343",
+  "repo": "python-dotenv",
+  "naming_accuracy": 1.0,
+  "enrichment_stats": {
+    "symbols": 10,
+    "functions": 29,
+    "import_entries": 0
+  },
+  "raw_score": {
+    "class_overlap": 0.0,
+    "fuzzy_class": 0.1,
+    "method_overlap": 0.0,
+    "function_overlap": 0.0,
+    "module_name_overlap": 0.625,
+    "module_count_ratio": 0.75,
+    "overall": 0.32125000000000004
+  },
+  "enriched_score": null,
+  "improvement": null
+}

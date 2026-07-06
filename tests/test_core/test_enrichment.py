@@ -544,3 +544,125 @@ class TestNamingAccuracy:
 
         # Only comp_matched had pre-existing symbols and a match: 1/1 = 1.0
         assert result.naming_accuracy == 1.0
+
+
+# ---------------------------------------------------------------------------
+# Tests for compact_for_generation()
+# ---------------------------------------------------------------------------
+
+
+class TestCompactForGeneration:
+    """Tests for compact_for_generation() truncation logic."""
+
+    def test_truncates_large_members(self):
+        from architecture_model.core.merger import compact_for_generation
+
+        # Symbol with 20 methods (above _MAX_MEMBERS_PER_SYMBOL=8)
+        many_methods = [f"method_{i}" for i in range(20)]
+        comp = Component(
+            id="comp-core", name="core", status=Status.ACTIVE,
+            symbols=[Symbol(name="BigClass", kind=SymbolKind.CLASS, members=many_methods)],
+        )
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="1.2", project="test"),
+            entities=Entities(components=[comp]),
+            relationships=[],
+        )
+        compacted = compact_for_generation(model)
+        sym = compacted.entities.components[0].symbols[0]
+        assert len(sym.members) == 8
+        # Sorted alphabetically (no __init__ in this case)
+        assert sym.members == sorted(sym.members)
+
+    def test_truncates_many_symbols(self):
+        from architecture_model.core.merger import compact_for_generation
+
+        # 10 symbols (above _MAX_SYMBOLS_PER_COMPONENT=6)
+        symbols = [
+            Symbol(name=f"Class_{i}", kind=SymbolKind.CLASS, members=[f"m{j}" for j in range(i)])
+            for i in range(10)
+        ]
+        comp = Component(
+            id="comp-big", name="big", status=Status.ACTIVE,
+            symbols=symbols,
+        )
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="1.2", project="test"),
+            entities=Entities(components=[comp]),
+            relationships=[],
+        )
+        compacted = compact_for_generation(model)
+        # Should keep top 6 by member count (Class_9, Class_8, ..., Class_4)
+        assert len(compacted.entities.components[0].symbols) == 6
+        # Verify they're the ones with most members
+        names = [s.name for s in compacted.entities.components[0].symbols]
+        assert "Class_9" in names
+        assert "Class_0" not in names  # fewest members
+
+    def test_preserves_init_method(self):
+        from architecture_model.core.merger import compact_for_generation
+
+        methods = ["__init__"] + [f"method_{i}" for i in range(15)]
+        comp = Component(
+            id="comp-x", name="x", status=Status.ACTIVE,
+            symbols=[Symbol(name="Foo", kind=SymbolKind.CLASS, members=methods)],
+        )
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="1.2", project="test"),
+            entities=Entities(components=[comp]),
+            relationships=[],
+        )
+        compacted = compact_for_generation(model)
+        sym = compacted.entities.components[0].symbols[0]
+        assert "__init__" in sym.members
+        assert len(sym.members) == 8
+
+    def test_truncates_large_functions_list(self):
+        from architecture_model.core.merger import compact_for_generation
+
+        many_funcs = [f"func_{i}" for i in range(20)]
+        comp = Component(
+            id="comp-utils", name="utils", status=Status.ACTIVE,
+            functions=many_funcs,
+        )
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="1.2", project="test"),
+            entities=Entities(components=[comp]),
+            relationships=[],
+        )
+        compacted = compact_for_generation(model)
+        assert len(compacted.entities.components[0].functions) == 12
+
+    def test_does_not_modify_original(self):
+        from architecture_model.core.merger import compact_for_generation
+
+        methods = [f"m_{i}" for i in range(15)]
+        comp = Component(
+            id="comp-x", name="x", status=Status.ACTIVE,
+            symbols=[Symbol(name="Foo", kind=SymbolKind.CLASS, members=methods)],
+        )
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="1.2", project="test"),
+            entities=Entities(components=[comp]),
+            relationships=[],
+        )
+        compact_for_generation(model)
+        # Original untouched
+        assert len(model.entities.components[0].symbols[0].members) == 15
+
+    def test_small_model_unchanged(self):
+        from architecture_model.core.merger import compact_for_generation
+
+        comp = Component(
+            id="comp-x", name="x", status=Status.ACTIVE,
+            symbols=[Symbol(name="Foo", kind=SymbolKind.CLASS, members=["a", "b"])],
+            functions=["func_a", "func_b"],
+        )
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="1.2", project="test"),
+            entities=Entities(components=[comp]),
+            relationships=[],
+        )
+        compacted = compact_for_generation(model)
+        assert len(compacted.entities.components[0].symbols[0].members) == 2
+        assert len(compacted.entities.components[0].functions) == 2
