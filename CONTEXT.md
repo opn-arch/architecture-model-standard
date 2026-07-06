@@ -173,5 +173,5 @@ relationships:
 | Repo | Path | Purpose | Tests |
 |------|------|---------|-------|
 | architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 271 passed |
-| opencode-arch | `../opencode-arch/` | MCP extension (token broker) | 28 passed |
+| opencode-arch | `../opencode-arch/` | MCP extension (token broker) + CLI | 47 passed |
 | arch-agent | `../arch-agent/` | Training pipeline + surrogate | 574 passed |
