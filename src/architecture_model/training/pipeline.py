@@ -27,6 +27,15 @@ from architecture_model.training.oracle_evolution import PromptEvolver
 from architecture_model.training.coverage_scorer import CoverageScorer
 from architecture_model.training.best_of_n import BestOfNGenerator
 from architecture_model.training.autoencoder import RoundTripEvaluator, RoundTripScore
+from architecture_model.training.decomposed_evaluator import (
+    DecomposedRoundTripEvaluator,
+    DecomposedRoundTripScore,
+)
+from architecture_model.training.test_guided_generator import (
+    TestGuidedResult,
+    GenerationAttempt,
+)
+from architecture_model.core.decomposer import DecompositionResult
 from architecture_model.core.validator import validate_model
 from architecture_model.core.merger import enrich_from_manifest
 
@@ -418,6 +427,55 @@ class TrainingPipeline:
             logger.warning("Naming accuracy computation failed: %s", e)
             return None
 
+    def _compute_decomposed_fidelity(
+        self,
+        decomposition: DecompositionResult,
+        per_system_code: dict[str, str],
+        original_code: str,
+        manifest: dict,
+    ) -> Optional[dict]:
+        """Compute per-system fidelity scores for a decomposed model.
+
+        When hierarchical decomposition is triggered, evaluates each system's
+        generated code independently against the real source for that system.
+        Returns loss_vector additions: system_fidelity and overall_decomposed_score.
+
+        Args:
+            decomposition: The decomposition result with sub-models.
+            per_system_code: Mapping of system_id → generated code for that system.
+            original_code: The full original code context (multi-file format).
+            manifest: Manifest dict with 'modules' list.
+
+        Returns:
+            Dict with 'system_fidelity' and 'overall_decomposed_score', or None on failure.
+        """
+        try:
+            from architecture_model.training.code_structure import parse_multi_file_code
+
+            original_graph = parse_multi_file_code(original_code)
+            evaluator = DecomposedRoundTripEvaluator()
+            score = evaluator.evaluate(
+                decomposition=decomposition,
+                per_system_code=per_system_code,
+                original_graph=original_graph,
+                manifest=manifest,
+            )
+
+            logger.info(
+                "Decomposed fidelity: n_systems=%d overall=%.3f scores=%s",
+                score.n_systems,
+                score.overall,
+                {sid: f"{s:.3f}" for sid, s in score.system_scores.items()},
+            )
+
+            return {
+                "system_fidelity": score.system_scores,
+                "overall_decomposed_score": score.overall,
+            }
+        except Exception as e:
+            logger.warning("Decomposed fidelity computation failed: %s", e)
+            return None
+
     async def enhanced_extract(self, repo_path: Path) -> tuple:
         """Enhanced extraction: context_builder → multi_pass → refiner.
 
@@ -452,3 +510,50 @@ class TrainingPipeline:
 
         confidence = self.surrogate.confidence(model)
         return model, confidence
+
+    def record_test_guided_signal(
+        self,
+        result: TestGuidedResult,
+        model_yaml: str,
+        iteration: int | None = None,
+    ) -> dict:
+        """Record training signal from test-guided generation.
+
+        Integrates test pass rate as a primary training signal and generates
+        DPO preference pairs from improvement iterations.
+
+        1. Add test_pass_rate and test_iterations to loss vector
+        2. Generate DPO preference pairs from improvement iterations
+
+        Args:
+            result: The TestGuidedResult from test-guided generation.
+            model_yaml: The YAML model used as prompt for generation.
+            iteration: Optional iteration number; defaults to controller state.
+
+        Returns:
+            Dict with test_pass_rate, test_iterations, dpo_pairs_generated.
+        """
+        effective_iteration = iteration if iteration is not None else self.controller.state.iteration
+
+        # Build partial loss vector with test signal
+        signal: dict = {
+            "test_pass_rate": result.final_pass_rate,
+            "test_iterations": result.iterations,
+        }
+
+        # Generate DPO preference pairs from improvement iterations
+        dpo_pairs = 0
+        attempts = result.attempts
+        for i in range(1, len(attempts)):
+            if attempts[i].pass_rate > attempts[i - 1].pass_rate:
+                self.store.save_preference(
+                    prompt=model_yaml,
+                    chosen=attempts[i].code,
+                    rejected=attempts[i - 1].code,
+                    margin=attempts[i].pass_rate - attempts[i - 1].pass_rate,
+                    iteration=effective_iteration,
+                )
+                dpo_pairs += 1
+
+        signal["dpo_pairs_generated"] = dpo_pairs
+        return signal
