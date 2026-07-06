@@ -154,9 +154,9 @@ relationships:
 
 ## Status
 
-- Schema version: 1.3
+- Schema version: 1.4 (added Constant, FunctionSignature, TestContract on Component)
 - Package version: 0.3.0
-- Test suite: 271 passed, 106 skipped
+- Test suite: 351 passed, 106 skipped
 - Validation score: 100/100, 0 orphaned entities
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
@@ -175,6 +175,18 @@ relationships:
 
 ### Regeneration (code from architecture model)
 All repos: **0% test pass rate** — abstract architecture models (capabilities, components, relationships) are insufficient for faithful code regeneration. The models describe WHAT the system does structurally, not HOW it implements specific behavior (function signatures, constants, algorithms). This validates the need for enriched models with AST-level detail.
+
+### Regeneration with Test-Oracle Loop (NEW)
+| Repo | Full Suite Pass Rate | Subsystems Converged | Iterations | Time |
+|------|---------------------|---------------------|------------|------|
+| colorama | **100% (31/31)** | 4/5 (1st iteration) | 1 avg | 459s |
+
+**Key breakthrough:** Test-aware decomposed regen loop achieves 100% test pass rate on colorama. The approach:
+1. Decompose by test-file affinity into subsystems
+2. Extract behavioral contracts from test assertions (constants, API surface)
+3. Include contracts in regen prompt (agent knows what tests expect)
+4. Iterate per-subsystem with gap analysis from failures
+5. Compose and run full integration suite
 
 ### Key Findings
 - MCP server works end-to-end with `opencode run` (headless mode)
