@@ -10,6 +10,8 @@ Coordinates the retry loop that produces code passing a project's test suite by:
 
 from __future__ import annotations
 
+import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -62,9 +64,15 @@ class TestGuidedGenerator:
 
     Orchestrates the full test-guided generation pipeline:
     model + manifest → enrich → mine contracts → generate → test → retry loop
+
+    The test_runner dependency is stored for use by Task 6 (per-component
+    regeneration with venv isolation) but this class runs pytest directly
+    via subprocess for the retry loop iterations.
     """
 
     __test__ = False  # Prevent pytest collection
+
+    _MAX_COMPONENTS_PER_RETRY = 3
 
     def __init__(
         self,
@@ -126,6 +134,7 @@ class TestGuidedGenerator:
         # 6. Materialize and test
         tmp_dir = Path(tempfile.mkdtemp(prefix="tgg_"))
         attempts: list[GenerationAttempt] = []
+        package: MaterializedPackage | None = None
 
         try:
             package = self._code_writer.materialize(code, package_name, tmp_dir)
@@ -220,11 +229,13 @@ class TestGuidedGenerator:
             )
 
         finally:
-            # Always cleanup
-            try:
-                self._code_writer.cleanup(package)
-            except Exception:
-                pass
+            # Always cleanup materialized package and temp directory
+            if package is not None:
+                try:
+                    self._code_writer.cleanup(package)
+                except Exception:
+                    pass
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     async def _initial_generation(
         self, model_yaml: str, contracts: TestContracts
@@ -281,7 +292,6 @@ class TestGuidedGenerator:
                     "tests/",
                     "--tb=short",
                     "-v",
-                    "-q",
                     "--timeout=60",
                 ],
                 capture_output=True,
@@ -306,16 +316,14 @@ class TestGuidedGenerator:
             key=lambda x: len(x[1]),
             reverse=True,
         )
-        # Return top 3 worst components
-        return [comp for comp, _ in sorted_components[:3]]
+        # Return top worst components (limited to avoid over-retrying)
+        return [comp for comp, _ in sorted_components[:self._MAX_COMPONENTS_PER_RETRY]]
 
     def _extract_component_code(self, full_code: str, component: str) -> str:
         """Extract code for a specific component from multi-module code.
 
         Looks for '# component.py' headers to find the component's code block.
         """
-        import re
-
         header_pattern = re.compile(
             r"^#\s*([\w._/\-]+\.py)\s*$",
             re.MULTILINE,
@@ -338,8 +346,6 @@ class TestGuidedGenerator:
         self, full_code: str, component: str, new_code: str
     ) -> str:
         """Replace a component's code in the multi-module code string."""
-        import re
-
         header_pattern = re.compile(
             r"^#\s*([\w._/\-]+\.py)\s*$",
             re.MULTILINE,
