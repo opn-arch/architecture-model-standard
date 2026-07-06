@@ -28,6 +28,7 @@ from architecture_model.training.coverage_scorer import CoverageScorer
 from architecture_model.training.best_of_n import BestOfNGenerator
 from architecture_model.training.autoencoder import RoundTripEvaluator, RoundTripScore
 from architecture_model.core.validator import validate_model
+from architecture_model.core.merger import enrich_from_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -264,6 +265,12 @@ class TrainingPipeline:
                     "completeness": loss.completeness,
                     "validator_score": loss.validator_score,
                 }
+
+                # Enrich local model from manifest and compute naming_accuracy
+                naming_accuracy = self._compute_naming_accuracy(local_model, clone_path)
+                if naming_accuracy is not None:
+                    loss_vector["naming_accuracy"] = naming_accuracy
+
                 oracle_output = oracle_model.to_yaml()
 
                 # Record loss for Pareto-based convergence tracking
@@ -370,6 +377,46 @@ class TrainingPipeline:
                     continue
 
         return "\n\n".join(code_parts) if code_parts else ""
+
+    def _compute_naming_accuracy(
+        self, local_model, clone_path: Path
+    ) -> Optional[float]:
+        """Compute naming_accuracy by enriching local model from repo manifest.
+
+        Scans the cloned repo with AST to build a manifest, then calls
+        enrich_from_manifest() which compares the model's predicted symbols
+        against ground-truth class/function names.
+
+        Returns:
+            naming_accuracy float (0.0-1.0), or None if enrichment not possible.
+        """
+        try:
+            from architecture_model.manifest.scanner import _scan_file
+
+            path = Path(clone_path)
+            if not path.is_dir():
+                return None
+
+            # Build lightweight manifest from Python files
+            modules: list[dict] = []
+            py_files = sorted(path.rglob("*.py"))[:100]
+            for f in py_files:
+                try:
+                    meta = _scan_file(path, f)
+                    modules.append(meta)
+                except Exception:
+                    continue
+
+            if not modules:
+                return None
+
+            manifest = {"modules": modules, "interfaces": []}
+            result = enrich_from_manifest(local_model, manifest)
+            return result.naming_accuracy
+
+        except Exception as e:
+            logger.warning("Naming accuracy computation failed: %s", e)
+            return None
 
     async def enhanced_extract(self, repo_path: Path) -> tuple:
         """Enhanced extraction: context_builder → multi_pass → refiner.

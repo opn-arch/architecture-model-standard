@@ -24,6 +24,8 @@ from architecture_model.core.types import (
     RelationType,
     Status,
     Strength,
+    Symbol,
+    SymbolKind,
 )
 from architecture_model.training.best_of_n import BestOfNGenerator, RankedExtraction
 from architecture_model.training.controller import MPCController, MPCState
@@ -356,6 +358,65 @@ class TestPlumbingE2E:
             assert 0.0 <= ex.loss_vector["structural_accuracy"] <= 1.0
             assert 0.0 <= ex.loss_vector["completeness"] <= 1.0
             assert 0.0 <= ex.loss_vector["validator_score"] <= 100.0
+
+    @pytest.mark.asyncio
+    async def test_loss_vector_includes_naming_accuracy(self, pipeline_components):
+        """Loss vector includes naming_accuracy from enrich_from_manifest (v1.2)."""
+        # Create a repo with real Python classes to scan
+        tmp_path = pipeline_components["tmp_path"]
+        repo_dir = tmp_path / "repo"
+        (repo_dir / "auth.py").write_text(
+            "class AuthService:\n    def login(self): pass\n"
+            "class TokenManager:\n    def refresh(self): pass\n"
+        )
+        (repo_dir / "users.py").write_text(
+            "class UserService:\n    def create(self): pass\n"
+        )
+
+        # Make surrogate model with components matching filenames
+        from architecture_model.core.types import Symbol, SymbolKind
+        surrogate_model = ArchitectureModel(
+            meta=ModelMeta(schema_version="1.2", project="test-project"),
+            entities=Entities(
+                layers=[Layer(id="layer-core", name="Core", status=Status.ACTIVE)],
+                components=[
+                    Component(
+                        id="comp-auth", name="auth", status=Status.ACTIVE,
+                        layer="layer-core",
+                        symbols=[
+                            Symbol(name="AuthService", kind=SymbolKind.CLASS, members=["login"]),
+                            Symbol(name="WrongName", kind=SymbolKind.CLASS, members=[]),
+                        ],
+                    ),
+                    Component(
+                        id="comp-users", name="users", status=Status.ACTIVE,
+                        layer="layer-core",
+                        symbols=[Symbol(name="UserService", kind=SymbolKind.CLASS, members=["create"])],
+                    ),
+                ],
+            ),
+            relationships=[
+                Relationship(type=RelationType.DEPENDS_ON, from_id="comp-auth", to_id="comp-users"),
+            ],
+        )
+
+        # Patch enhanced_extract to return model with symbols
+        pipeline = self._build_pipeline(pipeline_components)
+        pipeline.enhanced_extract = AsyncMock(return_value=(surrogate_model, 0.4))
+
+        await self._run_one_repo(pipeline)
+
+        store = pipeline_components["store"]
+        examples = store.query(has_oracle=True)
+        assert len(examples) >= 1
+
+        ex = examples[0]
+        assert ex.loss_vector is not None
+        assert "naming_accuracy" in ex.loss_vector, (
+            "loss_vector should include naming_accuracy from enrichment"
+        )
+        # naming_accuracy should be 0-1 float
+        assert 0.0 <= ex.loss_vector["naming_accuracy"] <= 1.0
 
     @pytest.mark.asyncio
     async def test_to_yaml_produces_parseable_output(self, pipeline_components):
