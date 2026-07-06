@@ -397,22 +397,11 @@ def _enrich_relationship_imports(
     interfaces: list[dict],
     stem_to_module: dict[str, dict],
 ) -> None:
-    """Enrich depends-on relationships with imported symbols from manifest."""
-    # Build file→stem lookup for interface matching
-    file_to_stem: dict[str, str] = {}
-    for mod in modules:
-        path = mod.get("file", "")
-        stem = Path(path).stem
-        file_to_stem[path] = stem
+    """Enrich depends-on relationships with imported symbols from manifest.
 
-    # Build interface lookup: (source_stem, target_stem) → True
-    interface_pairs: set[tuple[str, str]] = set()
-    for iface in interfaces:
-        src_stem = file_to_stem.get(iface.get("source", ""), "")
-        tgt_stem = file_to_stem.get(iface.get("target", ""), "")
-        if src_stem and tgt_stem:
-            interface_pairs.add((src_stem, tgt_stem))
-
+    For each depends-on relationship, finds the source module's imports_detailed
+    that reference the target module, and populates Relationship.imports.
+    """
     for rel in model.relationships:
         if rel.type != RelationType.DEPENDS_ON:
             continue
@@ -422,10 +411,6 @@ def _enrich_relationship_imports(
         to_stem = _component_stem(rel.to_id, model)
 
         if not from_stem or not to_stem:
-            continue
-
-        # Check if interface exists between these
-        if (from_stem, to_stem) not in interface_pairs:
             continue
 
         # Find source module and collect imports targeting to_stem
@@ -441,7 +426,8 @@ def _enrich_relationship_imports(
             if imp_module == to_stem or imp_module.endswith(f".{to_stem}"):
                 imported_symbols.extend(imp.get("symbols", []))
 
-        rel.imports = imported_symbols
+        if imported_symbols:
+            rel.imports = imported_symbols
 
 
 def _component_stem(comp_id: str, model: ArchitectureModel) -> str:
