@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # Dispatch
-    from .train import _cmd_train
+    from .train import _train_stub
     from .generate import _cmd_generate
     handlers = {
         "init": _cmd_init,
@@ -122,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
         "stats": _cmd_stats,
         "impact": _cmd_impact,
         "manifest": _cmd_manifest,
-        "train": _cmd_train,
+        "train": _train_stub,
         "generate": _cmd_generate,
     }
     return handlers[args.command](args)
