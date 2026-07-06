@@ -224,6 +224,33 @@ class DataField:
 
 
 @dataclass
+class Constant:
+    """A named constant value within a component (e.g., BLACK=30)."""
+    name: str
+    value: str
+    context: str = ""
+
+
+@dataclass
+class FunctionSignature:
+    """Full function signature with params, return type, and decorators."""
+    name: str
+    params: list[str] = field(default_factory=list)
+    returns: str = ""
+    decorators: list[str] = field(default_factory=list)
+    body_hint: str = ""
+
+
+@dataclass
+class TestContract:
+    """A behavioral spec derived from test assertions."""
+    test_file: str
+    test_method: str
+    assertion: str
+    contract_type: str = ""
+
+
+@dataclass
 class Component(BaseEntity):
     layer: str = ""
     f_block: str = ""
@@ -236,6 +263,9 @@ class Component(BaseEntity):
     replicas: Optional[int] = None
     symbols: list[Symbol] = field(default_factory=list)
     functions: list[str] = field(default_factory=list)
+    constants: list[Constant] = field(default_factory=list)
+    signatures: list[FunctionSignature] = field(default_factory=list)
+    test_contracts: list[TestContract] = field(default_factory=list)
 
 
 @dataclass
@@ -515,6 +545,36 @@ class ArchitectureModel:
             d["region"] = c.region
         if c.replicas is not None:
             d["replicas"] = c.replicas
+        if c.symbols:
+            d["symbols"] = [
+                {"name": s.name, "kind": s.kind.value}
+                | ({"members": s.members} if s.members else {})
+                | ({"supers": s.supers} if s.supers else {})
+                for s in c.symbols
+            ]
+        if c.functions:
+            d["functions"] = c.functions
+        if c.constants:
+            d["constants"] = [
+                {"name": cn.name, "value": cn.value}
+                | ({"context": cn.context} if cn.context else {})
+                for cn in c.constants
+            ]
+        if c.signatures:
+            d["signatures"] = [
+                {"name": sig.name}
+                | ({"params": sig.params} if sig.params else {})
+                | ({"returns": sig.returns} if sig.returns else {})
+                | ({"decorators": sig.decorators} if sig.decorators else {})
+                | ({"body_hint": sig.body_hint} if sig.body_hint else {})
+                for sig in c.signatures
+            ]
+        if c.test_contracts:
+            d["test_contracts"] = [
+                {"test_file": tc.test_file, "test_method": tc.test_method, "assertion": tc.assertion}
+                | ({"contract_type": tc.contract_type} if tc.contract_type else {})
+                for tc in c.test_contracts
+            ]
         return d
 
     @classmethod

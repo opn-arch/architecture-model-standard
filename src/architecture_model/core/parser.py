@@ -28,10 +28,12 @@ from .types import (
     Compensation,
     Component,
     ComponentKind,
+    Constant,
     Constraint,
     ConstraintType,
     DataField,
     Entities,
+    FunctionSignature,
     Interface,
     InterfaceType,
     Layer,
@@ -45,6 +47,7 @@ from .types import (
     Symbol,
     SymbolKind,
     System,
+    TestContract,
 )
 
 SCHEMA_PATH = Path(__file__).parent.parent / "spec" / "schema.json"
@@ -280,6 +283,36 @@ def _parse_component(d: dict) -> Component:
             supers=s.get("supers", []),
         ))
 
+    constants = [
+        Constant(
+            name=c.get("name", ""),
+            value=c.get("value", ""),
+            context=c.get("context", ""),
+        )
+        for c in d.get("constants", [])
+    ]
+
+    signatures = [
+        FunctionSignature(
+            name=s.get("name", ""),
+            params=s.get("params", []),
+            returns=s.get("returns", ""),
+            decorators=s.get("decorators", []),
+            body_hint=s.get("body_hint", ""),
+        )
+        for s in d.get("signatures", [])
+    ]
+
+    test_contracts = [
+        TestContract(
+            test_file=tc.get("test_file", ""),
+            test_method=tc.get("test_method", ""),
+            assertion=tc.get("assertion", ""),
+            contract_type=tc.get("contract_type", ""),
+        )
+        for tc in d.get("test_contracts", [])
+    ]
+
     return Component(
         **base,
         layer=d.get("layer", ""),
@@ -293,6 +326,9 @@ def _parse_component(d: dict) -> Component:
         replicas=d.get("replicas"),
         symbols=symbols,
         functions=d.get("functions", []),
+        constants=constants,
+        signatures=signatures,
+        test_contracts=test_contracts,
     )
 
 
@@ -505,6 +541,27 @@ def _dump_component(c: Component) -> dict:
         ]
     if c.functions:
         d["functions"] = c.functions
+    if c.constants:
+        d["constants"] = [
+            {"name": cn.name, "value": cn.value}
+            | ({"context": cn.context} if cn.context else {})
+            for cn in c.constants
+        ]
+    if c.signatures:
+        d["signatures"] = [
+            {"name": sig.name}
+            | ({"params": sig.params} if sig.params else {})
+            | ({"returns": sig.returns} if sig.returns else {})
+            | ({"decorators": sig.decorators} if sig.decorators else {})
+            | ({"body_hint": sig.body_hint} if sig.body_hint else {})
+            for sig in c.signatures
+        ]
+    if c.test_contracts:
+        d["test_contracts"] = [
+            {"test_file": tc.test_file, "test_method": tc.test_method, "assertion": tc.assertion}
+            | ({"contract_type": tc.contract_type} if tc.contract_type else {})
+            for tc in c.test_contracts
+        ]
     return d
 
 
