@@ -156,7 +156,7 @@ relationships:
 
 - Schema version: 1.4 (added Constant, FunctionSignature, TestContract on Component)
 - Package version: 0.3.0
-- Test suite: 351 passed, 106 skipped
+- Test suite: 398 passed, 106 skipped
 - Validation score: 100/100, 0 orphaned entities
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
@@ -188,6 +188,22 @@ All repos: **0% test pass rate** — abstract architecture models (capabilities,
 4. Iterate per-subsystem with gap analysis from failures
 5. Compose and run full integration suite
 
+### Blind Regeneration (model-only, no source/test file access)
+| Repo | Subsystem | Pass Rate | Iterations | Time | Constants | Signatures | Contracts |
+|------|-----------|-----------|------------|------|-----------|------------|-----------|
+| colorama | ansi | **100% (37/37)** | 1 | 73s | 45 | 10 | 37 |
+
+**Key breakthrough:** The enriched architecture model ALONE (body_hints + constants + test_contracts) contains enough information to regenerate code that passes all tests — WITHOUT the agent reading any source or test files. The agent works in an empty temp directory with only the model data in its prompt.
+
+**Gap metric:** `blind_score (100%) - tdd_score (100%) = 0%` — zero information loss for the ansi subsystem. The model is a lossless representation of behavior for this module.
+
+**What made it work:**
+1. `body_hint` on trivial functions = exact implementation (`return CSI + str(code) + 'm'`)
+2. Module-level constants extracted (CSI, OSC, BEL)
+3. Class attributes with values (BLACK=30, RED=31, ...)
+4. Module-level instances (Fore=AnsiFore(), Back=AnsiBack(), ...)
+5. Test contracts specifying exact expected outputs
+
 ### Key Findings
 - MCP server works end-to-end with `opencode run` (headless mode)
 - `--dangerously-skip-permissions` required for cross-directory access
@@ -206,6 +222,6 @@ All repos: **0% test pass rate** — abstract architecture models (capabilities,
 
 | Repo | Path | Purpose | Tests |
 |------|------|---------|-------|
-| architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 271 passed |
-| opencode-arch | `../opencode-arch/` | MCP extension (token broker) + CLI + E2E benchmarks | 47 passed |
+| architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 398 passed |
+| opencode-arch | `../opencode-arch/` | MCP extension (token broker) + CLI + E2E benchmarks | 98 passed |
 | arch-agent | `../arch-agent/` | Training pipeline + surrogate | 574 passed |
