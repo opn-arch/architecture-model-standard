@@ -396,7 +396,7 @@ def _is_excluded(path: Path, repo_path: Path) -> bool:
 
 
 def _discover_test_files(repo_path: Path) -> list[Path]:
-    """Find all test files matching test_*.py or *_test.py patterns."""
+    """Find all test files matching test_*.py, *_test.py, or tests_*.py patterns."""
     test_files: list[Path] = []
     for py_file in repo_path.rglob("*.py"):
         if _is_excluded(py_file, repo_path):
@@ -404,7 +404,7 @@ def _discover_test_files(repo_path: Path) -> list[Path]:
         name = py_file.name
         if name == "__init__.py":
             continue
-        if name.startswith("test_") or name.endswith("_test.py"):
+        if name.startswith("test_") or name.endswith("_test.py") or name.startswith("tests_"):
             test_files.append(py_file)
     return test_files
 
@@ -416,7 +416,7 @@ def _discover_source_files(repo_path: Path) -> list[Path]:
         if _is_excluded(py_file, repo_path):
             continue
         name = py_file.name
-        if name.startswith("test_") or name.endswith("_test.py"):
+        if name.startswith("test_") or name.endswith("_test.py") or name.startswith("tests_"):
             continue
         # Skip files inside common test directories that aren't source
         # (but __init__.py inside tests/ is fine to skip)
@@ -468,6 +468,7 @@ def _resolve_import_to_source(
     - Direct package imports: 'colorama.ansi' → colorama/ansi.py
     - Relative imports: '.winterm' → winterm.py (in same package)
     - Simple module names: 'ansi' → ansi.py
+    - Sub-module imports: 'structlog._config' → src/structlog/_config.py
     """
     # Strip leading dots for relative imports
     stripped = import_name.lstrip(".")
@@ -476,13 +477,19 @@ def _resolve_import_to_source(
     for src_file in source_files:
         rel = src_file.relative_to(repo_path)
         # Convert path to dotted module: colorama/ansi.py → colorama.ansi
+        # Also handle src-layout: src/structlog/_config.py → structlog._config
         if rel.name == "__init__.py":
             module_path = ".".join(rel.parent.parts)
         else:
             module_path = ".".join(rel.with_suffix("").parts)
 
+        # Strip 'src.' prefix for src-layout repos
+        module_path_no_src = module_path
+        if module_path.startswith("src."):
+            module_path_no_src = module_path[4:]
+
         # Exact match: 'colorama.ansi' == 'colorama.ansi'
-        if module_path == stripped:
+        if module_path == stripped or module_path_no_src == stripped:
             return src_file
 
         # Suffix match: import 'colorama.ansi' matches module 'ansi'
@@ -495,6 +502,10 @@ def _resolve_import_to_source(
             path_parts = list(rel.parent.parts) if rel.name != "__init__.py" else list(rel.parent.parent.parts)
             # Check if package parts align (at least the last part should match)
             if pkg_parts == list(rel.parent.parts)[:len(pkg_parts)]:
+                return src_file
+            # Also check without 'src' prefix in path
+            path_no_src = [p for p in path_parts if p != "src"]
+            if pkg_parts == path_no_src[:len(pkg_parts)]:
                 return src_file
 
         # Simple name match: 'ansi' → ansi.py
@@ -509,10 +520,13 @@ def _subsystem_name_from_test(test_file: Path) -> str:
 
     test_alpha.py → 'alpha'
     ansi_test.py → 'ansi'
+    tests_alpha.py → 'alpha'
     """
     name = test_file.stem
     if name.startswith("test_"):
         return name[5:]  # strip 'test_'
+    elif name.startswith("tests_"):
+        return name[6:]  # strip 'tests_'
     elif name.endswith("_test"):
         return name[:-5]  # strip '_test'
     return name
