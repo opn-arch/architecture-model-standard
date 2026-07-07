@@ -10,13 +10,28 @@ decisions. It adds source_file/source_line provenance and fills in component fil
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .types import ArchitectureModel, Component, Relationship, RelationType, Status, Symbol, SymbolKind
+from .types import (
+    ArchitectureModel,
+    Component,
+    ComponentKind,
+    Constant,
+    Entities,
+    FunctionSignature,
+    ModelMeta,
+    Relationship,
+    RelationType,
+    Status,
+    Symbol,
+    SymbolKind,
+    TestContract,
+)
 
 
 def merge_manifest(
@@ -524,3 +539,220 @@ def compact_for_generation(model: ArchitectureModel) -> ArchitectureModel:
             comp.functions = sorted(comp.functions)[:max_functions]
 
     return model
+
+
+# ---------------------------------------------------------------------------
+# Compose Enriched Model (from raw source code)
+# ---------------------------------------------------------------------------
+
+# Directories to exclude from source file discovery
+_EXCLUDED_DIRS = frozenset({
+    "tests", "test", "__pycache__", ".git", "venv", ".venv", "node_modules",
+})
+
+# Filenames to exclude
+_EXCLUDED_FILES = frozenset({"setup.py", "conftest.py"})
+
+
+def _is_source_file(path: Path, project_root: Path) -> bool:
+    """Check if a .py file should be treated as a source file (not test/config)."""
+    # Exclude by directory name
+    for part in path.relative_to(project_root).parts:
+        if part in _EXCLUDED_DIRS:
+            return False
+    # Exclude by filename
+    if path.name in _EXCLUDED_FILES:
+        return False
+    # Exclude test files
+    if path.name.startswith("test_") or path.name.endswith("_test.py"):
+        return False
+    return True
+
+
+def _is_test_file(path: Path) -> bool:
+    """Check if a .py file is a test file."""
+    return path.name.startswith("test_") or path.name.endswith("_test.py")
+
+
+def _discover_source_files(project_root: Path) -> list[Path]:
+    """Find all source .py files in the project, excluding tests/config."""
+    results: list[Path] = []
+    for py_file in sorted(project_root.rglob("*.py")):
+        if _is_source_file(py_file, project_root):
+            results.append(py_file)
+    return results
+
+
+def _discover_test_files(project_root: Path) -> list[Path]:
+    """Find all test files (test_*.py or *_test.py) in the project."""
+    results: list[Path] = []
+    for py_file in sorted(project_root.rglob("*.py")):
+        if _is_test_file(py_file):
+            # Must be in a tests/ or test/ dir, or anywhere really
+            results.append(py_file)
+    return results
+
+
+def _map_tests_to_sources(
+    test_files: list[Path],
+    source_stems: set[str],
+    project_root: Path,
+) -> dict[str, list[Path]]:
+    """Map source file stems to the test files that cover them.
+
+    Parses each test file's imports to find which source modules it tests.
+    Returns: {source_stem: [test_file_paths]}
+    """
+    mapping: dict[str, list[Path]] = {}
+
+    for test_file in test_files:
+        try:
+            source = test_file.read_text(encoding="utf-8")
+            tree = ast.parse(source, filename=str(test_file))
+        except (SyntaxError, UnicodeDecodeError, OSError):
+            continue
+
+        # Extract imported module names
+        imported_stems: set[str] = set()
+        for node in ast.iter_child_nodes(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                # e.g., "from colorama.ansi import code_to_chars" → "ansi"
+                parts = node.module.split(".")
+                for part in parts:
+                    if part in source_stems:
+                        imported_stems.add(part)
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    parts = alias.name.split(".")
+                    for part in parts:
+                        if part in source_stems:
+                            imported_stems.add(part)
+
+        for stem in imported_stems:
+            mapping.setdefault(stem, []).append(test_file)
+
+    return mapping
+
+
+def _build_constants_for_file(tree: ast.Module) -> list[Constant]:
+    """Build Constant list from module constants, class attributes, and module assignments."""
+    from architecture_model.manifest.scanner import (
+        _extract_class_attributes,
+        _extract_module_assignments,
+        _extract_module_constants,
+    )
+
+    constants: list[Constant] = []
+
+    # Module-level constants (UPPER_CASE = literal)
+    for name, value in _extract_module_constants(tree).items():
+        constants.append(Constant(name=name, value=value, context="module-level constant"))
+
+    # Class attributes
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.ClassDef):
+            for attr_name, attr_value in _extract_class_attributes(node).items():
+                constants.append(
+                    Constant(
+                        name=attr_name,
+                        value=attr_value,
+                        context=f"class attribute of {node.name}",
+                    )
+                )
+
+    # Module-level assignments (non-constant, non-literal)
+    for name, expr in _extract_module_assignments(tree).items():
+        constants.append(Constant(name=name, value=expr, context="module-level instance"))
+
+    return constants
+
+
+def compose_enriched_model(project_root: Path) -> ArchitectureModel:
+    """Compose a fully-enriched ArchitectureModel from source code.
+
+    Scans all source files in the project, extracting:
+    - Module constants, class attributes, module assignments → Constant objects
+    - Function signatures with body hints → FunctionSignature objects
+    - Test contracts from matching test files → TestContract objects
+
+    Each source module becomes a Component in the resulting model.
+
+    Args:
+        project_root: Root directory of the project to scan.
+
+    Returns:
+        An ArchitectureModel with one Component per source file, enriched
+        with constants, signatures, and test contracts.
+    """
+    from architecture_model.manifest.body_hints import extract_file_hints
+    from architecture_model.manifest.scanner import _parse_file_ast
+    from architecture_model.manifest.test_analyzer import analyze_test_file
+
+    # Discover files
+    source_files = _discover_source_files(project_root)
+    test_files = _discover_test_files(project_root)
+
+    # Build stem set for test mapping
+    source_stems = {f.stem for f in source_files}
+
+    # Map tests to sources
+    test_mapping = _map_tests_to_sources(test_files, source_stems, project_root)
+
+    # Build components
+    components: list[Component] = []
+
+    for src_file in source_files:
+        stem = src_file.stem
+        rel_path = str(src_file.relative_to(project_root))
+
+        # Parse AST
+        tree = _parse_file_ast(src_file)
+        if tree is None:
+            continue
+
+        # Constants
+        constants = _build_constants_for_file(tree)
+
+        # Signatures with body hints
+        try:
+            signatures = extract_file_hints(src_file)
+        except Exception:
+            signatures = []
+
+        # Test contracts from matched test files
+        test_contracts: list[TestContract] = []
+        matched_test_files = test_mapping.get(stem, [])
+        for tf in matched_test_files:
+            try:
+                result = analyze_test_file(tf)
+                test_contracts.extend(result.contracts)
+            except Exception:
+                continue
+
+        comp = Component(
+            id=f"comp-{stem}",
+            name=stem,
+            status=Status.ACTIVE,
+            files=[rel_path],
+            kind=ComponentKind.MODULE,
+            constants=constants,
+            signatures=signatures,
+            test_contracts=test_contracts,
+        )
+        components.append(comp)
+
+    # Determine project name from root dir
+    project_name = project_root.name
+
+    meta = ModelMeta(
+        schema_version="1.4",
+        project=project_name,
+    )
+
+    entities = Entities(components=components)
+
+    return ArchitectureModel(
+        meta=meta,
+        entities=entities,
+        relationships=[],
+    )

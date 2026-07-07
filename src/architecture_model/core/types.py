@@ -78,6 +78,7 @@ class Strength(str, Enum):
 class ComponentKind(str, Enum):
     SERVICE = "service"
     LIBRARY = "library"
+    MODULE = "module"
     DATA_MODEL = "data-model"
     DATA_STORE = "data-store"
     INFRASTRUCTURE = "infrastructure"
