@@ -4,35 +4,29 @@ A universal, machine-readable Architecture-as-Code standard for LLM-driven syste
 
 ## Overview
 
-The Architecture Model Standard defines a YAML schema for capturing software system architecture — entities, relationships, constraints — in a format that is human-editable, git-diffable, and optimized for LLM token budgets. It serves as the architectural spine between raw code analysis and artifact generation: code is scanned into a Reality Manifest, parsed into a structured architecture model, and projected as compact context for LLM-driven document generation.
-
-The package provides a CLI for model management, a validation engine that scores architectural consistency, an LLM integration protocol with six structured verbs, and an MPC training loop that fine-tunes local models toward frontier-model quality using architecture extraction as the training task.
+The Architecture Model Standard defines a YAML schema (v1.4) for capturing software system architecture — entities, relationships, constraints — in a format that is human-editable, git-diffable, and optimized for LLM token budgets. It serves as the architectural spine between raw code analysis and artifact generation: code is scanned into a Reality Manifest, parsed into a structured architecture model, and projected as compact context for LLM-driven code generation.
 
 ```
-Code --> [AST Scan] --> Reality Manifest --> [Architecture Model] --> LLM Context --> Artifact Generation
-                                                    ^
-                                          [MPC Training Loop]
-                                          Surrogate <-> Oracle
-                                           LoRA Fine-tuning
+Code --> [AST Scan] --> Reality Manifest --> [Architecture Model] --> LLM Context --> Code Generation
 ```
 
-## Install
-
-Basic installation:
+## Installation
 
 ```bash
 pip install architecture-model-standard
 ```
 
-With MPC training loop dependencies:
+Python 3.11+ required.
+
+For development:
 
 ```bash
-pip install architecture-model-standard[training]
+pip install -e ".[dev]"
 ```
 
-Python 3.10+ required.
-
 ## Quick Start
+
+### CLI Usage
 
 Initialize a project descriptor by scanning directory structure:
 
@@ -40,21 +34,38 @@ Initialize a project descriptor by scanning directory structure:
 architecture-model init /path/to/project
 ```
 
-This auto-discovers the source root (src-layout, flat-layout, or lib-layout), enumerates subpackages as functional blocks, and writes `.architecture-model.yaml`.
-
-Extract an architecture model from generated artifacts:
-
-```bash
-architecture-model extract /path/to/artifacts
-```
-
 Validate the model and report a consistency score:
 
 ```bash
-architecture-model validate architecture-model.yaml
+architecture-model validate .architecture-model.yaml
 ```
 
-The validator checks invariants (missing fields, dangling references, duplicate IDs, orphaned entities) and produces a score from 0 to 100.
+### Python API
+
+```python
+from architecture_model import (
+    load_model,
+    validate_model,
+    generate_manifest,
+    format_model_context,
+    slice_by_fblock,
+    slice_by_layer,
+)
+
+# Load and validate a model
+model = load_model("path/to/.architecture-model.yaml")
+result = validate_model(model)
+print(f"Score: {result.score}/100, Valid: {result.is_valid}")
+
+# Generate a reality manifest from source code
+manifest = generate_manifest("/path/to/project")
+
+# Format model as compressed LLM context
+context = format_model_context(model, max_tokens=4000, detail_level="standard")
+
+# Slice model by functional block or layer
+sliced = slice_by_fblock(model, fblock_id="F1")
+```
 
 ## Schema Reference
 
@@ -128,54 +139,6 @@ The `architecture-model` CLI provides commands for the full model lifecycle:
 | `impact <model.yaml> CAP-F1` | Trace change impact through relationships |
 | `generate` | Test-guided code generation from architecture models |
 
-## MPC Training Loop
-
-The training module (39 source files, 10,662 lines) implements a Model-Predictive Control loop that fine-tunes a local LLM to perform architecture extraction at frontier-model quality.
-
-**How it works:**
-
-1. A **surrogate model** (local LLM via Ollama) generates architecture extractions from code
-2. An **oracle** (frontier model via litellm) scores each extraction against ground truth
-3. A **multi-objective evaluator** computes loss across dimensions and maintains a Pareto front
-4. **LoRA fine-tuning** adapts the surrogate's weights toward oracle-quality outputs
-5. The loop iterates until the surrogate converges or a budget is exhausted
-
-Key components:
-
-| Module | Role |
-|--------|------|
-| `surrogate.py` | Local LLM client (Ollama integration) |
-| `oracle.py` | Frontier model client (litellm) |
-| `pipeline.py` | Training orchestrator |
-| `evaluator.py` | Multi-objective loss with Pareto front tracking |
-| `lora_finetuner.py` | LoRA adapter training |
-| `dataset.py` | Training data management |
-| `checkpoint.py` | Model checkpoint persistence |
-
-## Test-Guided Code Generation
-
-Added in v0.3.0, the test-guided generation pipeline uses existing test suites as behavioral specifications to drive code generation with iterative refinement.
-
-**Pipeline stages:**
-
-1. **TestContractMiner** extracts behavioral contracts (expected inputs, outputs, exceptions) from test files
-2. **CodeWriter** materializes generated code into testable package structures
-3. **TestGuidedGenerator** runs a generate-test-analyze-retry loop, feeding failure diagnostics back to the model
-4. **FailureParser** provides structured pytest output parsing to identify root causes
-
-The pipeline supports Copilot-relay integration for frontier model code generation alongside local model execution.
-
-**Proof-of-concept results:** 33.3% test pass rate on the python-dotenv package, a 3x improvement over local model baseline.
-
-Key modules:
-
-| Module | Role |
-|--------|------|
-| `test_guided_generator.py` | Generate --> test --> analyze --> retry loop |
-| `test_contract_miner.py` | Behavioral contract extraction from test suites |
-| `failure_parser.py` | Structured pytest output parsing |
-| `code_writer.py` | Package materializer for generated code |
-
 ## Package Structure
 
 ```
@@ -186,17 +149,7 @@ src/architecture_model/
 ├── extract/      — Extract model from generated Tier 1 artifacts
 ├── integrations/ — LLM context formatting, pipeline bridge
 ├── manifest/     — Reality Manifest generator (AST scanning, metrics, blocks, interfaces)
-├── spec/         — JSON Schema for model validation
-└── training/     — MPC training loop (39 modules, 10.6K lines)
-    ├── surrogate.py        — Local LLM client (Ollama)
-    ├── oracle.py           — Frontier model client (litellm)
-    ├── pipeline.py         — Training orchestrator
-    ├── evaluator.py        — Multi-objective loss with Pareto front
-    ├── test_guided_generator.py — Generate --> test --> retry loop
-    ├── test_contract_miner.py   — Behavioral contract extraction
-    ├── failure_parser.py   — Structured pytest output parsing
-    ├── code_writer.py      — Package materializer
-    └── ... (31 more modules)
+└── spec/         — JSON Schema for model validation
 ```
 
 ## Documentation
@@ -214,28 +167,20 @@ Install in editable mode with development dependencies:
 pip install -e ".[dev]"
 ```
 
-Run the full test suite:
+Run the test suite:
 
 ```bash
-pytest
-```
-
-Run only training module tests:
-
-```bash
-pytest tests/training/
+pytest tests/ --ignore=tests/test_config_loader.py
 ```
 
 ## Status
 
 | Item | Value |
 |------|-------|
-| Schema version | 1.3 |
+| Schema version | 1.4 |
 | Package version | 0.3.0 |
-| Python | 3.10+ |
-| Test suite | 904+ tests passing |
-| Training tests | 619 tests (42 files, 12,048 lines) |
-| Training source | 39 files, 10,662 lines |
+| Python | 3.11+ |
+| Test suite | 402 tests passing |
 | Entity types | 7 |
 | Relationship types | 8 |
 | LLM protocol verbs | 6 |

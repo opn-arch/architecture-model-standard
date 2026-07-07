@@ -8,4 +8,24 @@ Entity Types: actors, capabilities, behaviors, interfaces, constraints, layers, 
 Relationship Types: realizes, contains, depends-on, exposes, consumes, traces-to, allocated-to, constrained-by
 """
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"
+
+from architecture_model.core.parser import load_model
+from architecture_model.core.validator import validate_model
+from architecture_model.manifest.generator import generate_manifest
+from architecture_model.integrations.llm_context import format_model_context
+from architecture_model.core.slicer import slice_by_fblock, slice_by_layer
+from architecture_model.core.decomposer import test_affinity_decompose
+from architecture_model.core.merger import compose_enriched_model
+
+__all__ = [
+    "__version__",
+    "load_model",
+    "validate_model",
+    "generate_manifest",
+    "format_model_context",
+    "slice_by_fblock",
+    "slice_by_layer",
+    "test_affinity_decompose",
+    "compose_enriched_model",
+]

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://architecture-model-standard.dev/schema/v1.1.0/model.json",
+  "$id": "https://architecture-model-standard.dev/schema/v1.4.0/model.json",
   "title": "Architecture Model",
   "description": "Universal machine-readable architecture model for LLM-driven system engineering",
   "type": "object",
@@ -229,7 +229,7 @@
         "responsibilities": { "type": "array", "items": { "type": "string" } },
         "kind": {
           "type": "string",
-          "enum": ["service", "library", "data-model", "data-store", "infrastructure", "framework", "ui", "pipeline"]
+          "enum": ["module", "package", "service", "library", "cli", "data-model", "data-store", "infrastructure", "framework", "ui", "pipeline"]
         },
         "fields": {
           "type": "array",
@@ -264,6 +264,49 @@
           }
         },
         "functions": { "type": "array", "items": { "type": "string" } },
+        "constants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "properties": {
+              "name": { "type": "string" },
+              "value": { "type": "string" },
+              "type": { "type": "string" },
+              "context": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "params"],
+            "properties": {
+              "name": { "type": "string" },
+              "params": { "type": "array", "items": { "type": "string" } },
+              "returns": { "type": "string" },
+              "body_hint": { "type": "string" },
+              "complexity": { "type": "string", "enum": ["TRIVIAL", "SHORT", "COMPLEX"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "test_contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["assertion", "contract_type", "test_method"],
+            "properties": {
+              "assertion": { "type": "string" },
+              "contract_type": { "type": "string" },
+              "test_method": { "type": "string" },
+              "required_imports": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          }
+        },
         "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
