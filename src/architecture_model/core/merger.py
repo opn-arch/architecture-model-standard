@@ -564,14 +564,18 @@ def _is_source_file(path: Path, project_root: Path) -> bool:
     if path.name in _EXCLUDED_FILES:
         return False
     # Exclude test files
-    if path.name.startswith("test_") or path.name.endswith("_test.py"):
+    if path.name.startswith("test_") or path.name.startswith("tests_") or path.name.endswith("_test.py"):
         return False
     return True
 
 
 def _is_test_file(path: Path) -> bool:
     """Check if a .py file is a test file."""
-    return path.name.startswith("test_") or path.name.endswith("_test.py")
+    return (
+        path.name.startswith("test_")
+        or path.name.startswith("tests_")
+        or path.name.endswith("_test.py")
+    )
 
 
 def _discover_source_files(project_root: Path) -> list[Path]:
@@ -626,14 +630,14 @@ def _trace_init_reexports(init_path: Path) -> set[str]:
 def _build_package_dirs(project_root: Path) -> dict[str, Path]:
     """Build mapping of package directory names → their __init__.py paths.
 
-    Skips test directories. Handles nested packages.
+    Skips test directories and virtual environments. Handles nested packages.
     """
     package_dirs: dict[str, Path] = {}
     for init_file in sorted(project_root.rglob("__init__.py")):
         pkg_dir = init_file.parent
-        # Skip test directories
+        # Skip excluded directories
         rel_parts = pkg_dir.relative_to(project_root).parts
-        if any(part in ("tests", "test", "__pycache__") for part in rel_parts):
+        if any(part in _EXCLUDED_DIRS for part in rel_parts):
             continue
         package_dirs[pkg_dir.name] = init_file
     return package_dirs
