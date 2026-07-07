@@ -162,6 +162,86 @@ def _extract_exports(tree: ast.Module, filepath: Path) -> list[str]:
     return exports
 
 
+def _extract_class_attributes(cls_node: ast.ClassDef) -> dict[str, str]:
+    """Extract class-level attribute assignments (name = literal_value).
+
+    Returns dict mapping attribute name to repr of its value.
+    Only captures simple assignments to literals (int, str, float, bool, bytes).
+    Skips names starting with underscore.
+    """
+    attrs: dict[str, str] = {}
+    for item in cls_node.body:
+        if not isinstance(item, ast.Assign):
+            continue
+        for target in item.targets:
+            if not isinstance(target, ast.Name):
+                continue
+            if target.id.startswith("_"):
+                continue
+            if isinstance(item.value, ast.Constant) and isinstance(
+                item.value.value, (int, str, float, bool, bytes)
+            ):
+                attrs[target.id] = repr(item.value.value)
+    return attrs
+
+
+def _extract_module_constants(tree: ast.Module) -> dict[str, str]:
+    """Extract module-level constants (UPPER_CASE names assigned to literals).
+
+    A constant is: name is ALL_UPPER_CASE (allowing digits/underscores)
+    and value is a literal (str, int, float, bytes, bool).
+    Returns dict mapping name to repr of value.
+    """
+    consts: dict[str, str] = {}
+    for node in ast.iter_child_nodes(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if not isinstance(target, ast.Name):
+                continue
+            name = target.id
+            if name.startswith("_"):
+                continue
+            if not re.fullmatch(r"[A-Z][A-Z0-9_]*", name):
+                continue
+            if isinstance(node.value, ast.Constant) and isinstance(
+                node.value.value, (int, str, float, bool, bytes)
+            ):
+                consts[name] = repr(node.value.value)
+    return consts
+
+
+def _extract_module_assignments(tree: ast.Module) -> dict[str, str]:
+    """Extract module-level non-constant assignments (instance creation, calls, etc.).
+
+    Captures: name = expr where:
+    - name is NOT all-uppercase (those are constants)
+    - name does NOT start with underscore or dunder
+    - value is NOT a literal (those would be constants if uppercase)
+    - value IS a non-literal expression (Call, Attribute, etc.)
+    Returns dict mapping name to ast.unparse(value).
+    """
+    assigns: dict[str, str] = {}
+    for node in ast.iter_child_nodes(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if not isinstance(target, ast.Name):
+                continue
+            name = target.id
+            if name.startswith("_"):
+                continue
+            if re.fullmatch(r"[A-Z][A-Z0-9_]*", name):
+                continue
+            if isinstance(node.value, ast.Constant):
+                continue
+            try:
+                assigns[name] = ast.unparse(node.value)
+            except Exception:
+                pass
+    return assigns
+
+
 def _extract_classes(tree: ast.Module) -> list[dict[str, Any]]:
     """Extract class definitions with inheritance and method info."""
     classes: list[dict[str, Any]] = []
@@ -227,6 +307,7 @@ def _extract_classes(tree: ast.Module) -> list[dict[str, Any]]:
             "methods": methods,
             "is_abstract": is_abstract,
             "decorators": decorators,
+            "attributes": _extract_class_attributes(node),
         })
     return classes
 
@@ -347,4 +428,6 @@ def _scan_file(root: Path, filepath: Path) -> dict[str, Any]:
         "exports": _extract_exports(tree, filepath) if tree else [],
         "decorated_functions": _extract_decorated_functions_from_tree(tree) if tree else [],
         "imports_detailed": _extract_imports_detailed(tree) if tree else [],
+        "module_constants": _extract_module_constants(tree) if tree else {},
+        "module_assignments": _extract_module_assignments(tree) if tree else {},
     }
