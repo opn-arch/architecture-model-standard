@@ -593,6 +593,52 @@ def _discover_test_files(project_root: Path) -> list[Path]:
     return results
 
 
+def _trace_init_reexports(init_path: Path) -> set[str]:
+    """Parse an __init__.py and return stems of modules it re-exports from.
+
+    Handles:
+      - from .core import MyClass      → {"core"}
+      - from .utils import helper      → {"utils"}
+      - from .sub.impl import thing    → {"impl"}
+      - from . import something        → {"something"}
+    """
+    try:
+        source = init_path.read_text(encoding="utf-8")
+        tree = ast.parse(source, filename=str(init_path))
+    except (SyntaxError, UnicodeDecodeError, OSError):
+        return set()
+
+    stems: set[str] = set()
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.ImportFrom):
+            if node.level > 0 and node.module:
+                # Relative import: from .core import X → "core"
+                # from .sub.impl import X → "impl" (last part)
+                parts = node.module.split(".")
+                stems.add(parts[-1])
+            elif node.level > 0 and not node.module:
+                # from . import something → each alias name is a module
+                for alias in (node.names or []):
+                    stems.add(alias.name)
+    return stems
+
+
+def _build_package_dirs(project_root: Path) -> dict[str, Path]:
+    """Build mapping of package directory names → their __init__.py paths.
+
+    Skips test directories. Handles nested packages.
+    """
+    package_dirs: dict[str, Path] = {}
+    for init_file in sorted(project_root.rglob("__init__.py")):
+        pkg_dir = init_file.parent
+        # Skip test directories
+        rel_parts = pkg_dir.relative_to(project_root).parts
+        if any(part in ("tests", "test", "__pycache__") for part in rel_parts):
+            continue
+        package_dirs[pkg_dir.name] = init_file
+    return package_dirs
+
+
 def _map_tests_to_sources(
     test_files: list[Path],
     source_stems: set[str],
@@ -601,9 +647,15 @@ def _map_tests_to_sources(
     """Map source file stems to the test files that cover them.
 
     Parses each test file's imports to find which source modules it tests.
+    When an import references a package directory (not a source file stem),
+    traces through that package's __init__.py to find re-exported module stems.
+
     Returns: {source_stem: [test_file_paths]}
     """
     mapping: dict[str, list[Path]] = {}
+
+    # Build package directory lookup for __init__.py tracing
+    package_dirs = _build_package_dirs(project_root)
 
     for test_file in test_files:
         try:
@@ -621,6 +673,12 @@ def _map_tests_to_sources(
                 for part in parts:
                     if part in source_stems:
                         imported_stems.add(part)
+                    elif part in package_dirs:
+                        # Part is a package dir — trace __init__.py re-exports
+                        reexported = _trace_init_reexports(package_dirs[part])
+                        for reexport_stem in reexported:
+                            if reexport_stem in source_stems:
+                                imported_stems.add(reexport_stem)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
                     parts = alias.name.split(".")
