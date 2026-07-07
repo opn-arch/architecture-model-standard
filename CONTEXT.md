@@ -156,7 +156,7 @@ relationships:
 
 - Schema version: 1.4 (added Constant, FunctionSignature, TestContract on Component)
 - Package version: 0.3.0
-- Test suite: 398 passed, 106 skipped
+- Test suite: 402 passed, 106 skipped
 - Validation score: 100/100, 0 orphaned entities
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
@@ -209,6 +209,34 @@ All repos: **0% test pass rate** — abstract architecture models (capabilities,
 - `--dangerously-skip-permissions` required for cross-directory access
 - `--dir` should point to `architecture-model-standard` (where MCP tools are configured)
 - Root cause of earlier MCP failure: broken editable install of `python-dotenv` (pointed to deleted temp dir) caused `mcp` package import to fail silently
+
+### Token Economics (Value Proposition)
+
+**Compression ratio improves with repo size/connectivity:**
+
+| Repo | Source (tokens) | Blind Prompt (tokens) | Compression | Fidelity |
+|------|----------------:|---------------------:|:-----------:|:--------:|
+| colorama | 10,012 | ~1,800 | 2.8x | 100% |
+| structlog | 60,174 | ~3,000 | 6.0x | 62%* |
+| tqdm | 46,151 | ~2,800 | 7.9x | 70%* |
+
+*Before dependency context and contract mapping fixes (2026-07-07)
+
+**Per-subsystem analysis (highest wins):**
+- tqdm.contrib: 41,508 vs 819 = **50.7x** compression (100% fidelity)
+- tqdm.concurrent: 33,575 vs 780 = **43.0x** (100% fidelity)
+- structlog.twisted: 19,300 vs 550 = **35.1x** (0%*)
+- structlog.generic: 9,092 vs 444 = **20.5x** (100% fidelity)
+
+The compression benefit is DEPENDENCY-DRIVEN: subsystems with many large upstream dependencies benefit most because the model provides their API surface in ~50 tokens vs reading full source files.
+
+### Learning Curve Tracking
+
+The `learning_curve` table in telemetry tracks improvement over successive repos:
+- `avg_compression_ratio`: 2.8x → 6.0x → 7.9x (UP with repo size)
+- `converged/total`: Should improve as pipeline matures
+- `avg_iterations`: Should stay at 1 (good model = first-attempt success)
+- Fidelity gap (normal - blind): Target <10% across all repos
 
 ## Development Instructions
 
