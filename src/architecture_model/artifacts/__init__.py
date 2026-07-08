@@ -12,6 +12,12 @@ from architecture_model.artifacts.selector import (
 )
 from architecture_model.artifacts.templates import ArtifactTemplate, TemplateSection, TEMPLATES, get_template
 from architecture_model.artifacts.context import assemble_artifact_context
+from architecture_model.artifacts.diagrams import (
+    generate_all_diagrams,
+    generate_component_diagram,
+    generate_dependency_diagram,
+    generate_sequence_diagram,
+)
 
 __all__ = [
     "ArtifactSpec",
@@ -22,6 +28,10 @@ __all__ = [
     "TEMPLATES",
     "TemplateSection",
     "assemble_artifact_context",
+    "generate_all_diagrams",
+    "generate_component_diagram",
+    "generate_dependency_diagram",
+    "generate_sequence_diagram",
     "get_artifact_spec",
     "get_template",
     "select_artifacts",

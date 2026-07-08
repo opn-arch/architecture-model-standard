@@ -9,6 +9,11 @@ formats it concisely for LLM consumption.
 
 from __future__ import annotations
 
+from architecture_model.artifacts.diagrams import (
+    generate_component_diagram,
+    generate_dependency_diagram,
+    generate_sequence_diagram,
+)
 from architecture_model.artifacts.templates import ArtifactTemplate
 from architecture_model.core.types import ArchitectureModel
 
@@ -117,7 +122,7 @@ def _format_meta(model: ArchitectureModel) -> str:
 
 
 def _format_components(model: ArchitectureModel) -> str:
-    """Format components list."""
+    """Format components list with component diagram."""
     components = model.entities.components
     if not components:
         return "No data available for this section."
@@ -130,6 +135,12 @@ def _format_components(model: ArchitectureModel) -> str:
         if c.responsibilities:
             line += f"\n  responsibilities: {', '.join(c.responsibilities)}"
         lines.append(line)
+
+    # Append component diagram if there are enough components
+    if len(components) >= 2:
+        diagram = generate_component_diagram(model)
+        lines.append(f"\nDIAGRAM:\n```plantuml\n{diagram}\n```")
+
     return "\n".join(lines)
 
 
@@ -162,7 +173,7 @@ def _format_capabilities(model: ArchitectureModel) -> str:
 
 
 def _format_behaviors(model: ArchitectureModel) -> str:
-    """Format behaviors list."""
+    """Format behaviors list with sequence diagrams."""
     behaviors = model.entities.behaviors
     if not behaviors:
         return "No data available for this section."
@@ -173,6 +184,16 @@ def _format_behaviors(model: ArchitectureModel) -> str:
         if b.steps:
             line += f"\n  steps: {', '.join(b.steps)}"
         lines.append(line)
+
+    # Append sequence diagrams for behaviors with steps
+    diagrams_added = 0
+    for b in behaviors:
+        if b.steps and diagrams_added < 3:  # cap at 3 to control token usage
+            diagram = generate_sequence_diagram(b, model)
+            if diagram:
+                lines.append(f"\nSEQUENCE ({b.name}):\n```plantuml\n{diagram}\n```")
+                diagrams_added += 1
+
     return "\n".join(lines)
 
 
@@ -204,7 +225,7 @@ def _format_layers(model: ArchitectureModel) -> str:
 
 
 def _format_relationships(model: ArchitectureModel) -> str:
-    """Format relationship list."""
+    """Format relationship list with dependency diagram."""
     relationships = model.relationships
     if not relationships:
         return "No data available for this section."
@@ -213,6 +234,12 @@ def _format_relationships(model: ArchitectureModel) -> str:
     for r in relationships:
         line = f"- {r.from_id} --{r.type.value}--> {r.to_id}"
         lines.append(line)
+
+    # Append dependency diagram if there are relationships
+    diagram = generate_dependency_diagram(model)
+    if "@startuml" in diagram and "rectangle" in diagram:
+        lines.append(f"\nDIAGRAM:\n```plantuml\n{diagram}\n```")
+
     return "\n".join(lines)
 
 
