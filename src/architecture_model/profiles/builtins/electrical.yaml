@@ -1,0 +1,29 @@
+domain: electrical
+extends_schema: "1.4"
+enum_extensions:
+  - enum_name: component_kind
+    values: [pcb, connector, harness, power-supply, ic, resistor, capacitor, inductor, transformer, relay, fuse]
+  - enum_name: interface_type
+    values: [wire, bus, connector-pin, spi, i2c, uart, can, ethernet, usb, power-rail]
+  - enum_name: behavior_pattern
+    values: [power-sequencing, fault-detection, brownout-recovery, hot-swap]
+  - enum_name: constraint_type
+    values: [emc, thermal, power, voltage-rating, current-rating, impedance]
+entity_extensions:
+  - entity_type: component
+    properties:
+      voltage_rating_v:
+        type: number
+      current_rating_a:
+        type: number
+      power_dissipation_w:
+        type: number
+      package_type:
+        type: string
+      pin_count:
+        type: integer
+validation_rules:
+  - entity_type: component
+    when: {kind: pcb}
+    require: [power_dissipation_w]
+    message: "PCBs must declare power_dissipation_w for thermal analysis"

@@ -1,0 +1,34 @@
+domain: mechanical
+extends_schema: "1.4"
+enum_extensions:
+  - enum_name: component_kind
+    values: [part, assembly, subassembly, fastener, fixture, bearing, gear, shaft, housing, frame]
+  - enum_name: interface_type
+    values: [mechanical, bolt-pattern, press-fit, weld, adhesive, threaded, keyed, splined]
+  - enum_name: behavior_pattern
+    values: [motion-profile, kinematic-chain, load-transfer, thermal-cycle, fatigue-cycle]
+  - enum_name: constraint_type
+    values: [material, load, tolerance, thermal, fatigue, weight, clearance]
+  - enum_name: relationship_type
+    values: [mounts-to, attaches-to, encloses, mates-with]
+entity_extensions:
+  - entity_type: component
+    properties:
+      material:
+        type: string
+      mass_kg:
+        type: number
+      dimensions_mm:
+        type: object
+        properties:
+          length: {type: number}
+          width: {type: number}
+          height: {type: number}
+      tolerance_class:
+        type: string
+        enum: [IT6, IT7, IT8, IT9, IT10, IT11, IT12]
+validation_rules:
+  - entity_type: component
+    when: {kind: part}
+    require: [material]
+    message: "Parts must declare material"

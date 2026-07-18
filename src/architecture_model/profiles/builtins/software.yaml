@@ -1,0 +1,5 @@
+domain: software
+extends_schema: "1.4"
+enum_extensions: []
+entity_extensions: []
+validation_rules: []

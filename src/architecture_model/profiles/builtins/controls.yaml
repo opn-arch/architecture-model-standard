@@ -1,0 +1,34 @@
+domain: controls
+extends_schema: "1.4"
+enum_extensions:
+  - enum_name: component_kind
+    values: [sensor, actuator, controller, hmi, plc-program, drive, relay, safety-controller]
+  - enum_name: interface_type
+    values: [fieldbus, signal, analog-io, digital-io, modbus, profinet, ethercat, opc-ua]
+  - enum_name: behavior_pattern
+    values: [feedback-loop, interlock, motion-profile, fault-tolerance, cascade-control]
+  - enum_name: constraint_type
+    values: [safety, timing, control-accuracy, availability]
+entity_extensions:
+  - entity_type: component
+    properties:
+      signal_type:
+        type: string
+        enum: [analog, digital, fieldbus, discrete]
+      sampling_rate_hz:
+        type: number
+      safety_integrity_level:
+        type: integer
+        minimum: 0
+        maximum: 4
+      io_address:
+        type: string
+validation_rules:
+  - entity_type: component
+    when: {kind: sensor}
+    require: [signal_type]
+    message: "Sensors must declare signal_type (analog, digital, fieldbus, discrete)"
+  - entity_type: component
+    when: {kind: actuator}
+    require: [signal_type]
+    message: "Actuators must declare signal_type"
