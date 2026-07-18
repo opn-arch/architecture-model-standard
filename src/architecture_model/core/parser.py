@@ -162,7 +162,7 @@ def _parse_actor(d: dict) -> Actor:
     base = _parse_base(d)
     return Actor(
         **base,
-        type=ActorType(d.get("type", "human")),
+        type=ActorType.parse(d.get("type", "human")),
         goals=d.get("goals", []),
     )
 
@@ -180,10 +180,7 @@ def _parse_capability(d: dict) -> Capability:
 def _parse_behavior(d: dict) -> Behavior:
     base = _parse_base(d)
     pattern_str = d.get("pattern", "sequential")
-    try:
-        pattern = BehaviorPattern(pattern_str)
-    except ValueError:
-        pattern = BehaviorPattern.SEQUENTIAL
+    pattern = BehaviorPattern.parse(pattern_str)
 
     states = [
         StateTransition(
@@ -220,7 +217,7 @@ def _parse_interface(d: dict) -> Interface:
     base = _parse_base(d)
     return Interface(
         **base,
-        type=InterfaceType(d.get("type", "internal")),
+        type=InterfaceType.parse(d.get("type", "internal")),
         protocol=d.get("protocol", ""),
         provider=d.get("provider", ""),
         consumer=d.get("consumer", ""),
@@ -234,7 +231,7 @@ def _parse_constraint(d: dict) -> Constraint:
     base = _parse_base(d)
     return Constraint(
         **base,
-        type=ConstraintType(d.get("type", "technology")),
+        type=ConstraintType.parse(d.get("type", "technology")),
         metric=d.get("metric", ""),
         threshold=d.get("threshold", ""),
         rationale=d.get("rationale", ""),
@@ -254,10 +251,7 @@ def _parse_layer(d: dict) -> Layer:
 def _parse_component(d: dict) -> Component:
     base = _parse_base(d)
     kind_str = d.get("kind", "service")
-    try:
-        kind = ComponentKind(kind_str)
-    except ValueError:
-        kind = ComponentKind.SERVICE
+    kind = ComponentKind.parse(kind_str)
 
     fields = [
         DataField(
@@ -346,7 +340,7 @@ def _parse_system(d: dict) -> System:
 
 def _parse_relationship(d: dict) -> Relationship:
     return Relationship(
-        type=RelationType(d.get("type", "depends-on")),
+        type=RelationType.parse(d.get("type", "depends-on")),
         from_id=d.get("from", ""),
         to_id=d.get("to", ""),
         description=d.get("description", ""),

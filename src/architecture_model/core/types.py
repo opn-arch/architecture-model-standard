@@ -13,6 +13,11 @@ from typing import Any, Optional
 import yaml
 
 
+def _enum_value(v: Any) -> str:
+    """Extract string value from an enum member or return the string as-is."""
+    return v.value if isinstance(v, Enum) else v
+
+
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -35,11 +40,27 @@ class RelationType(str, Enum):
     ALLOCATED_TO = "allocated-to"
     CONSTRAINED_BY = "constrained-by"
 
+    @classmethod
+    def parse(cls, value: str) -> RelationType | str:
+        """Parse a relation type, accepting unknown values as plain strings."""
+        try:
+            return cls(value)
+        except ValueError:
+            return value
+
 
 class ActorType(str, Enum):
     HUMAN = "human"
     SYSTEM = "system"
     EXTERNAL_SERVICE = "external-service"
+
+    @classmethod
+    def parse(cls, value: str) -> ActorType | str:
+        """Parse an actor type, accepting unknown values as plain strings."""
+        try:
+            return cls(value)
+        except ValueError:
+            return value
 
 
 class InterfaceType(str, Enum):
@@ -51,6 +72,14 @@ class InterfaceType(str, Enum):
     INTERNAL = "internal"
     EXTERNAL = "external"
 
+    @classmethod
+    def parse(cls, value: str) -> InterfaceType | str:
+        """Parse an interface type, accepting unknown values as plain strings."""
+        try:
+            return cls(value)
+        except ValueError:
+            return value
+
 
 class ConstraintType(str, Enum):
     PERFORMANCE = "performance"
@@ -60,6 +89,14 @@ class ConstraintType(str, Enum):
     REGULATORY = "regulatory"
     TECHNOLOGY = "technology"
     OPERATIONAL = "operational"
+
+    @classmethod
+    def parse(cls, value: str) -> ConstraintType | str:
+        """Parse a constraint type, accepting unknown values as plain strings."""
+        try:
+            return cls(value)
+        except ValueError:
+            return value
 
 
 class Priority(str, Enum):
@@ -86,6 +123,14 @@ class ComponentKind(str, Enum):
     UI = "ui"
     PIPELINE = "pipeline"
 
+    @classmethod
+    def parse(cls, value: str) -> ComponentKind | str:
+        """Parse a component kind, accepting unknown values as plain strings."""
+        try:
+            return cls(value)
+        except ValueError:
+            return value
+
 
 class BehaviorPattern(str, Enum):
     SEQUENTIAL = "sequential"
@@ -94,6 +139,14 @@ class BehaviorPattern(str, Enum):
     SAGA = "saga"
     PIPELINE = "pipeline"
     PARALLEL = "parallel"
+
+    @classmethod
+    def parse(cls, value: str) -> BehaviorPattern | str:
+        """Parse a behavior pattern, accepting unknown values as plain strings."""
+        try:
+            return cls(value)
+        except ValueError:
+            return value
 
 
 class SymbolKind(str, Enum):
@@ -434,7 +487,7 @@ class ArchitectureModel:
     @classmethod
     def _dump_actor(cls, a: Actor) -> dict[str, Any]:
         d = cls._dump_base(a)
-        d["type"] = a.type.value
+        d["type"] = _enum_value(a.type)
         if a.goals:
             d["goals"] = a.goals
         return d
@@ -468,7 +521,7 @@ class ArchitectureModel:
         if b.priority != Priority.MEDIUM:
             d["priority"] = b.priority.value
         if b.pattern != BehaviorPattern.SEQUENTIAL:
-            d["pattern"] = b.pattern.value
+            d["pattern"] = _enum_value(b.pattern)
         if b.states:
             d["states"] = [
                 {"name": s.name, "transitions": s.transitions}
@@ -484,7 +537,7 @@ class ArchitectureModel:
     @classmethod
     def _dump_interface(cls, i: Interface) -> dict[str, Any]:
         d = cls._dump_base(i)
-        d["type"] = i.type.value
+        d["type"] = _enum_value(i.type)
         if i.protocol:
             d["protocol"] = i.protocol
         if i.provider:
@@ -502,7 +555,7 @@ class ArchitectureModel:
     @classmethod
     def _dump_constraint(cls, c: Constraint) -> dict[str, Any]:
         d = cls._dump_base(c)
-        d["type"] = c.type.value
+        d["type"] = _enum_value(c.type)
         if c.metric:
             d["metric"] = c.metric
         if c.threshold:
@@ -535,7 +588,7 @@ class ArchitectureModel:
         if c.responsibilities:
             d["responsibilities"] = c.responsibilities
         if c.kind != ComponentKind.SERVICE:
-            d["kind"] = c.kind.value
+            d["kind"] = _enum_value(c.kind)
         if c.fields:
             d["fields"] = [
                 {"name": f.name, "type": f.type, "required": f.required}
@@ -596,7 +649,7 @@ class ArchitectureModel:
     @staticmethod
     def _dump_relationship(r: Relationship) -> dict[str, Any]:
         d: dict[str, Any] = {
-            "type": r.type.value,
+            "type": _enum_value(r.type),
             "from": r.from_id,
             "to": r.to_id,
         }
