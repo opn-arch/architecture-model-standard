@@ -73,6 +73,44 @@ def _format_annotation(node: ast.expr | None) -> str:
         return "..."
 
 
+def _extract_function_docstring(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
+    """Extract function docstring if present."""
+    return ast.get_docstring(node)
+
+
+def _extract_function_calls(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
+    """Extract direct function/method calls (depth-1) from function body."""
+    calls: list[str] = []
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            if isinstance(child.func, ast.Name):
+                calls.append(child.func.id)
+            elif isinstance(child.func, ast.Attribute):
+                calls.append(child.func.attr)
+    seen = set()
+    unique = []
+    for c in calls:
+        if c not in seen:
+            seen.add(c)
+            unique.append(c)
+    return unique
+
+
+def _extract_raises(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
+    """Extract exception types raised in function body."""
+    raises: list[str] = []
+    for child in ast.walk(node):
+        if isinstance(child, ast.Raise) and child.exc is not None:
+            if isinstance(child.exc, ast.Call):
+                if isinstance(child.exc.func, ast.Name):
+                    raises.append(child.exc.func.id)
+                elif isinstance(child.exc.func, ast.Attribute):
+                    raises.append(child.exc.func.attr)
+            elif isinstance(child.exc, ast.Name):
+                raises.append(child.exc.id)
+    return list(dict.fromkeys(raises))
+
+
 def _extract_public_functions(tree: ast.Module) -> list[FunctionInfo]:
     """Extract public function/method signatures from module-level definitions."""
     functions: list[FunctionInfo] = []
@@ -81,7 +119,13 @@ def _extract_public_functions(tree: ast.Module) -> list[FunctionInfo]:
             if node.name.startswith("_"):
                 continue
             sig = _build_signature(node)
-            functions.append(FunctionInfo(name=node.name, signature=sig))
+            functions.append(FunctionInfo(
+                name=node.name,
+                signature=sig,
+                calls=_extract_function_calls(node),
+                docstring=_extract_function_docstring(node),
+                raises=_extract_raises(node),
+            ))
     return functions
 
 

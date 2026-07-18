@@ -26,6 +26,9 @@ class FunctionInfo:
     """A public function extracted from AST."""
     name: str
     signature: str
+    calls: list[str] = field(default_factory=list)
+    docstring: str | None = None
+    raises: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -79,7 +82,16 @@ class ModuleInfo:
             "file": self.file,
             "name": self.name,
             "docstring": self.docstring,
-            "functions": [{"name": f.name, "signature": f.signature} for f in self.functions],
+            "functions": [
+                {
+                    "name": f.name,
+                    "signature": f.signature,
+                    **({"calls": f.calls} if f.calls else {}),
+                    **({"docstring": f.docstring} if f.docstring else {}),
+                    **({"raises": f.raises} if f.raises else {}),
+                }
+                for f in self.functions
+            ],
             "imports": self.imports,
             "line_count": self.line_count,
             "status": self.status.value,
