@@ -7,6 +7,7 @@ of functional blocks from directory structure and import analysis.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -18,8 +19,11 @@ from .schema import (
     LayerConfig,
     FunctionalBlockConfig,
     MetricConfig,
+    DiscoveryReport,
 )
+from ..utils.discovery import EXCLUDED_DIRS
 
+logger = logging.getLogger(__name__)
 
 CONFIG_FILENAME = ".architecture-model.yaml"
 
@@ -50,7 +54,7 @@ def load_config(root: Path) -> ProjectConfig:
     return ProjectConfig.from_dict(data, root=root)
 
 
-def discover_config(root: Path) -> ProjectConfig:
+def discover_config(root: Path) -> tuple[ProjectConfig, DiscoveryReport]:
     """Auto-discover project configuration by scanning filesystem.
 
     Inspects the directory structure to infer layers, functional blocks,
@@ -61,25 +65,29 @@ def discover_config(root: Path) -> ProjectConfig:
         root: Project root directory to scan.
 
     Returns:
-        ProjectConfig with auto-discovered values.
+        Tuple of (ProjectConfig with auto-discovered values, DiscoveryReport).
     """
     name = root.name
+    report = DiscoveryReport()
 
     # Discover layers from common directory patterns
-    layers = _discover_layers(root)
+    layers = _discover_layers(root, report)
 
     # Discover metrics from what directories exist
     metrics = _discover_metrics(root)
 
     # Auto-discover functional blocks from source structure
-    functional_blocks = _discover_functional_blocks(root)
+    functional_blocks = _discover_functional_blocks(root, report)
 
     # If no layers found from heuristics but we found F-blocks,
     # derive layers from the F-block directories
     if not layers and functional_blocks:
         layers = _derive_layers_from_blocks(functional_blocks)
 
-    return ProjectConfig(
+    report.layers_discovered = len(layers)
+    report.metrics_discovered = len(metrics)
+
+    config = ProjectConfig(
         name=name,
         system=name,
         output=OutputConfig(),
@@ -88,6 +96,9 @@ def discover_config(root: Path) -> ProjectConfig:
         metrics=metrics,
         root=root,
     )
+
+    logger.info("Discovery complete: %s", report.summary())
+    return config, report
 
 
 def get_config(root: Path) -> ProjectConfig:
@@ -113,7 +124,8 @@ def get_config(root: Path) -> ProjectConfig:
                 if block_path.is_dir():
                     block.sub_blocks = _discover_sub_blocks(block_path, block.id, root)
         return config
-    return discover_config(root)
+    config, _report = discover_config(root)
+    return config
 
 
 def write_config(config: ProjectConfig, root: Path | None = None) -> Path:
@@ -187,7 +199,7 @@ _METRIC_HEURISTICS: list[dict[str, Any]] = [
 ]
 
 
-def _discover_layers(root: Path) -> list[LayerConfig]:
+def _discover_layers(root: Path, report: DiscoveryReport) -> list[LayerConfig]:
     """Discover architecture layers from directory structure."""
     layers: list[LayerConfig] = []
 
@@ -195,6 +207,9 @@ def _discover_layers(root: Path) -> list[LayerConfig]:
         found_dirs = [d for d in candidate_dirs if (root / d).is_dir()]
         if found_dirs:
             layers.append(LayerConfig(id=layer_id, dirs=found_dirs))
+            logger.debug("Layer %s matched dirs: %s", layer_id, found_dirs)
+        else:
+            logger.debug("Layer %s: no matching dirs", layer_id)
 
     return layers
 
@@ -292,6 +307,11 @@ def _discover_sub_blocks(
 
         rel_dir = str(child.relative_to(root))
 
+        # Populate files list with py files found in the subdir (BUG FIX)
+        file_list = sorted(
+            str(f.relative_to(root)) for f in py_files if f.name != "__init__.py"
+        )
+
         # Recurse into sub-directories
         nested = _discover_sub_blocks(child, sub_id, root, depth + 1, max_depth)
 
@@ -300,7 +320,7 @@ def _discover_sub_blocks(
                 id=sub_id,
                 name=name,
                 dirs=[rel_dir],
-                files=[],
+                files=file_list,
                 description="",
                 sub_blocks=nested,
             )
@@ -314,7 +334,9 @@ def _discover_sub_blocks(
 # ---------------------------------------------------------------------------
 
 
-def _discover_functional_blocks(root: Path) -> list[FunctionalBlockConfig]:
+def _discover_functional_blocks(
+    root: Path, report: DiscoveryReport
+) -> list[FunctionalBlockConfig]:
     """Auto-discover functional blocks from source directory structure.
 
     Strategy:
@@ -326,10 +348,13 @@ def _discover_functional_blocks(root: Path) -> list[FunctionalBlockConfig]:
     Falls back to top-level directory analysis if no clear package structure.
     """
     # Step 1: Find the source root (deepest package with subpackages)
-    source_root = _find_source_root(root)
+    source_root = _find_source_root(root, report)
     if source_root is None:
         # No clear package structure — try top-level dirs
-        return _fblocks_from_top_level_dirs(root)
+        report.layout_detected = "fallback"
+        blocks = _fblocks_from_top_level_dirs(root)
+        report.blocks_discovered = len(blocks)
+        return blocks
 
     # Step 2: Enumerate subdirectories that contain Python code
     subdirs = _get_code_subdirectories(source_root)
@@ -358,6 +383,12 @@ def _discover_functional_blocks(root: Path) -> list[FunctionalBlockConfig]:
         # Auto-discover sub-blocks from sub-directories
         sub_blocks = _discover_sub_blocks(subdir, block_id, root)
 
+        report.add_candidate("block", rel_dir, True, f"F-block {block_id}: {dir_name}")
+        logger.debug(
+            "Block %s (%s): %d files, %d sub-blocks",
+            block_id, dir_name, len(py_files), len(sub_blocks),
+        )
+
         blocks.append(
             FunctionalBlockConfig(
                 id=block_id,
@@ -369,10 +400,12 @@ def _discover_functional_blocks(root: Path) -> list[FunctionalBlockConfig]:
             )
         )
 
+    report.blocks_discovered = len(blocks)
+    report.sub_blocks_discovered = sum(len(b.sub_blocks) for b in blocks)
     return blocks
 
 
-def _find_source_root(root: Path) -> Path | None:
+def _find_source_root(root: Path, report: DiscoveryReport) -> Path | None:
     """Find the main source package directory.
 
     Checks common patterns:
@@ -385,53 +418,60 @@ def _find_source_root(root: Path) -> Path | None:
     if src_dir.is_dir():
         for child in src_dir.iterdir():
             if child.is_dir() and (child / "__init__.py").exists():
-                # Check it has subdirectories with code
-                if _get_code_subdirectories(child):
+                has_code = bool(_get_code_subdirectories(child))
+                report.add_candidate(
+                    "source_root", str(child.relative_to(root)),
+                    has_code, "src-layout candidate",
+                )
+                if has_code:
+                    report.layout_detected = "src-layout"
+                    logger.debug("Source root (src-layout): %s", child)
                     return child
 
     # Flat layout: look for a package dir at root level
     # (exclude common non-package dirs)
-    _skip = {
-        "tests",
-        "test",
-        "docs",
-        "doc",
-        "scripts",
-        "bin",
-        "output",
-        "build",
-        "dist",
-        ".git",
-        ".venv",
-        "venv",
-        "node_modules",
-        "__pycache__",
-        ".eggs",
-        ".tox",
-        "htmlcov",
-        ".mypy_cache",
-    }
     for child in sorted(root.iterdir()):
-        if child.is_dir() and child.name not in _skip and not child.name.startswith("."):
-            if (child / "__init__.py").exists() and _get_code_subdirectories(child):
-                return child
+        if child.is_dir() and child.name not in EXCLUDED_DIRS and not child.name.startswith("."):
+            if child.name in {"tests", "test", "docs", "doc", "scripts", "bin", "output"}:
+                continue
+            if (child / "__init__.py").exists():
+                has_code = bool(_get_code_subdirectories(child))
+                report.add_candidate(
+                    "source_root", str(child.relative_to(root)),
+                    has_code, "flat-layout candidate",
+                )
+                if has_code:
+                    report.layout_detected = "flat-layout"
+                    logger.debug("Source root (flat-layout): %s", child)
+                    return child
 
     # lib-layout
     lib_dir = root / "lib"
     if lib_dir.is_dir():
         for child in lib_dir.iterdir():
             if child.is_dir() and (child / "__init__.py").exists():
-                if _get_code_subdirectories(child):
+                has_code = bool(_get_code_subdirectories(child))
+                report.add_candidate(
+                    "source_root", str(child.relative_to(root)),
+                    has_code, "lib-layout candidate",
+                )
+                if has_code:
+                    report.layout_detected = "lib-layout"
+                    logger.debug("Source root (lib-layout): %s", child)
                     return child
 
     return None
 
 
 def _get_code_subdirectories(package_dir: Path) -> list[Path]:
-    """Get immediate subdirectories that contain Python code (are subpackages)."""
+    """Get immediate subdirectories that contain Python code (are subpackages).
+
+    Includes _-prefixed dirs (e.g. _internal, _utils) but excludes
+    __pycache__ and .-prefixed dirs.
+    """
     result = []
     for child in sorted(package_dir.iterdir()):
-        if not child.is_dir() or child.name.startswith("_") or child.name.startswith("."):
+        if not child.is_dir() or child.name.startswith(".") or child.name == "__pycache__":
             continue
         # Must have at least one .py file (directly or nested)
         py_files = list(child.rglob("*.py"))
@@ -466,31 +506,13 @@ def _fblocks_from_top_level_dirs(root: Path) -> list[FunctionalBlockConfig]:
 
     Used when no clear package structure (src/ or flat package) is found.
     """
-    _skip = {
-        "tests",
-        "test",
-        "docs",
-        "doc",
-        "output",
-        "build",
-        "dist",
-        ".git",
-        ".venv",
-        "venv",
-        "node_modules",
-        "__pycache__",
-        ".eggs",
-        ".tox",
-        "htmlcov",
-        ".mypy_cache",
-        "alembic",
-    }
-
     blocks: list[FunctionalBlockConfig] = []
     idx = 1
 
     for child in sorted(root.iterdir()):
-        if not child.is_dir() or child.name in _skip or child.name.startswith("."):
+        if not child.is_dir() or child.name in EXCLUDED_DIRS or child.name.startswith("."):
+            continue
+        if child.name in {"tests", "test", "docs", "doc", "scripts", "bin", "output"}:
             continue
 
         py_files = sorted(

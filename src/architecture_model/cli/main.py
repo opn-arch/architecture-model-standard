@@ -148,7 +148,7 @@ def _cmd_init(args) -> int:
         return 1
 
     print(f"Scanning: {root}")
-    config = discover_config(root)
+    config, _report = discover_config(root)
 
     # Summary
     print(f"\nProject: {config.name}")
