@@ -229,3 +229,28 @@ class Manifest:
             "modules": [m.to_dict() for m in self.modules],
             "interfaces": [i.to_dict() for i in self.interfaces],
         }
+
+
+@dataclass
+class RecursiveManifest:
+    """A manifest scoped to a single F-block / sub-system.
+    
+    Links to its parent model via parent_model path and component_id.
+    Can contain child RecursiveManifests for deeper decomposition.
+    """
+    block_id: str
+    block_name: str
+    parent_model: str
+    component_id: str
+    manifest: Manifest
+    children: dict[str, 'RecursiveManifest'] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "block_id": self.block_id,
+            "block_name": self.block_name,
+            "parent_model": self.parent_model,
+            "component_id": self.component_id,
+            "manifest": self.manifest.to_dict(),
+            "children": {k: v.to_dict() for k, v in self.children.items()},
+        }

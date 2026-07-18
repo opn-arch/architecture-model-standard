@@ -67,6 +67,7 @@ def main(argv: list[str] | None = None) -> int:
     p_manifest = subparsers.add_parser("manifest", help="Generate reality-manifest.json from source code")
     p_manifest.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_manifest.add_argument("-o", "--output", help="Output JSON path")
+    p_manifest.add_argument("--recursive", action="store_true", help="Generate per-F-block recursive manifests")
 
     # --- enrich ---
     p_enrich = subparsers.add_parser("enrich", help="Auto-enrich model with signatures, constants, test contracts")
@@ -331,6 +332,14 @@ def _cmd_manifest(args) -> int:
     if not root.is_dir():
         print(f"ERROR: {root} is not a directory")
         return 1
+
+    if args.recursive:
+        from ..manifest.recursive import generate_recursive_manifests, write_recursive_manifests
+        manifests = generate_recursive_manifests(root)
+        out_dir = Path(args.output) if args.output else root / "output" / "manifests"
+        written = write_recursive_manifests(manifests, out_dir)
+        print(f"Generated {len(written)} recursive manifests in {out_dir}")
+        return 0
 
     print(f"Scanning: {root}")
     manifest = generate_manifest(root)

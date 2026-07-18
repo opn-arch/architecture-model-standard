@@ -96,3 +96,60 @@ def test_to_dict_omits_empty_new_fields():
     assert "calls" not in func_dict
     assert "docstring" not in func_dict
     assert "raises" not in func_dict
+
+
+import yaml as _yaml
+
+from architecture_model.manifest.types import RecursiveManifest, Manifest, MetricsResult, ScanReport
+
+
+def test_recursive_manifest_type():
+    rm = RecursiveManifest(
+        block_id="F1", block_name="Core", parent_model=".architecture-model.yaml",
+        component_id="COMP-CORE",
+        manifest=Manifest(
+            generated_at="2026-01-01", project_root="/tmp",
+            metrics=MetricsResult(), functional_blocks={}, modules=[], interfaces=[],
+        ),
+    )
+    d = rm.to_dict()
+    assert d["block_id"] == "F1"
+    assert d["component_id"] == "COMP-CORE"
+    assert "manifest" in d
+    assert d["children"] == {}
+
+
+def test_recursive_generator(tmp_path):
+    from architecture_model.manifest.recursive import generate_recursive_manifests
+    pkg = tmp_path / "src" / "proj"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text("")
+    (pkg / "core.py").write_text('def hello(): return "hi"\n')
+    (tmp_path / ".architecture-model.yaml").write_text(_yaml.dump({
+        "project": {"name": "test", "system": "test-system"}, "source_root": "src/proj",
+        "functional_blocks": {"F1": {"name": "Core", "dirs": ["src/proj"], "files": [], "description_source": "x"}}
+    }))
+    results = generate_recursive_manifests(tmp_path)
+    assert "F1" in results
+    rm = results["F1"]
+    assert rm.block_name == "Core"
+    assert len(rm.manifest.modules) >= 1
+
+
+def test_write_recursive_manifests(tmp_path):
+    from architecture_model.manifest.recursive import write_recursive_manifests
+    rm = RecursiveManifest(
+        block_id="F1", block_name="Core", parent_model=".architecture-model.yaml",
+        component_id="COMP-CORE",
+        manifest=Manifest(
+            generated_at="2026-01-01", project_root="/tmp",
+            metrics=MetricsResult(), functional_blocks={}, modules=[], interfaces=[],
+        ),
+    )
+    out_dir = tmp_path / "output"
+    written = write_recursive_manifests({"F1": rm}, out_dir)
+    assert len(written) == 1
+    assert (out_dir / "F1" / "manifest.json").exists()
+    import json
+    data = json.loads((out_dir / "F1" / "manifest.json").read_text())
+    assert data["block_id"] == "F1"
