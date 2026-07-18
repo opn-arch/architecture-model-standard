@@ -14,11 +14,14 @@ Validates:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
 from .types import ArchitectureModel, RelationType, Status
+
+logger = logging.getLogger(__name__)
 
 
 class Severity(str, Enum):
@@ -104,6 +107,7 @@ def validate_model(
     _check_meta_completeness(model, result)
     _check_v11_semantics(model, result)
     _check_regen_readiness(model, result)
+    _check_domain_profile(model, result)
 
     if strict:
         # Promote warnings to errors
@@ -451,4 +455,64 @@ def _check_v11_semantics(model: ArchitectureModel, result: ValidationResult) -> 
                         code="STATE_UNREACHABLE",
                         message=f"Orphan state '{state.name}' has no incoming transitions",
                         entity_id=beh.id,
+                    ))
+
+
+def _check_domain_profile(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Check conditional validation rules from the domain profile."""
+    profile_name = model.meta.domain_profile
+    if not profile_name or profile_name == "software":
+        return
+
+    try:
+        from architecture_model.profiles.schema import load_profile
+        profile = load_profile(profile_name)
+    except Exception as exc:
+        logger.warning("Could not load domain profile '%s': %s", profile_name, exc)
+        return
+
+    # Map entity type names to entity lists
+    entity_lists = {
+        "actor": model.entities.actors,
+        "capability": model.entities.capabilities,
+        "behavior": model.entities.behaviors,
+        "interface": model.entities.interfaces,
+        "constraint": model.entities.constraints,
+        "layer": model.entities.layers,
+        "component": model.entities.components,
+    }
+
+    for rule in profile.validation_rules:
+        entities = entity_lists.get(rule.entity_type, [])
+        for entity in entities:
+            # Check if entity matches 'when' conditions
+            matches = True
+            for field_name, expected_value in rule.when.items():
+                actual = getattr(entity, field_name, None)
+                if actual is None and hasattr(entity, "extensions") and entity.extensions:
+                    actual = entity.extensions.get(field_name)
+                if str(actual) != str(expected_value):
+                    matches = False
+                    break
+
+            if not matches:
+                continue
+
+            # Check 'require' fields exist
+            for req_field in rule.require:
+                has_field = False
+                val = getattr(entity, req_field, None)
+                if val is not None and val != "" and val != []:
+                    has_field = True
+                elif hasattr(entity, "extensions") and entity.extensions and req_field in entity.extensions:
+                    has_field = True
+
+                if not has_field:
+                    msg = rule.message or f"Profile '{profile_name}' requires '{req_field}' on {rule.entity_type} with {rule.when}"
+                    result.issues.append(ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="PROFILE_RULE",
+                        message=f"{msg} (missing: {req_field})",
+                        entity_id=entity.id,
+                        context=f"profile:{profile_name}",
                     ))
