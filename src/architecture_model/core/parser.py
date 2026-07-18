@@ -48,6 +48,7 @@ from .types import (
     SymbolKind,
     System,
     TestContract,
+    ObservabilityContract,
 )
 
 SCHEMA_PATH = Path(__file__).parent.parent / "spec" / "schema.json"
@@ -311,6 +312,17 @@ def _parse_component(d: dict) -> Component:
         for tc in d.get("test_contracts", [])
     ]
 
+    observability = [
+        ObservabilityContract(
+            function=o.get("function", ""),
+            log_level=o.get("log_level", "INFO"),
+            emits_metric=o.get("emits_metric"),
+            on_error=o.get("on_error", "ERROR"),
+            on_success=o.get("on_success"),
+        )
+        for o in d.get("observability", [])
+    ]
+
     return Component(
         **base,
         layer=d.get("layer", ""),
@@ -327,6 +339,7 @@ def _parse_component(d: dict) -> Component:
         constants=constants,
         signatures=signatures,
         test_contracts=test_contracts,
+        observability=observability,
     )
 
 
@@ -562,6 +575,14 @@ def _dump_component(c: Component) -> dict:
             | ({"contract_type": tc.contract_type} if tc.contract_type else {})
             | ({"required_imports": tc.required_imports} if tc.required_imports else {})
             for tc in c.test_contracts
+        ]
+    if c.observability:
+        d["observability"] = [
+            {"function": o.function, "log_level": o.log_level}
+            | ({"emits_metric": o.emits_metric} if o.emits_metric else {})
+            | ({"on_error": o.on_error} if o.on_error != "ERROR" else {})
+            | ({"on_success": o.on_success} if o.on_success else {})
+            for o in c.observability
         ]
     return d
 

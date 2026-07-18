@@ -310,6 +310,16 @@ class TestContract:
 
 
 @dataclass
+class ObservabilityContract:
+    """Declares expected logging/metrics behavior for a function."""
+    function: str
+    log_level: str  # DEBUG, INFO, WARNING, ERROR
+    emits_metric: Optional[str] = None
+    on_error: str = "ERROR"
+    on_success: Optional[str] = None
+
+
+@dataclass
 class Component(BaseEntity):
     layer: str = ""
     f_block: str = ""
@@ -325,6 +335,7 @@ class Component(BaseEntity):
     constants: list[Constant] = field(default_factory=list)
     signatures: list[FunctionSignature] = field(default_factory=list)
     test_contracts: list[TestContract] = field(default_factory=list)
+    observability: list[ObservabilityContract] = field(default_factory=list)
 
 
 @dataclass
@@ -636,6 +647,14 @@ class ArchitectureModel:
                 {"test_file": tc.test_file, "test_method": tc.test_method, "assertion": tc.assertion}
                 | ({"contract_type": tc.contract_type} if tc.contract_type else {})
                 for tc in c.test_contracts
+            ]
+        if c.observability:
+            d["observability"] = [
+                {"function": o.function, "log_level": o.log_level}
+                | ({"emits_metric": o.emits_metric} if o.emits_metric else {})
+                | ({"on_error": o.on_error} if o.on_error != "ERROR" else {})
+                | ({"on_success": o.on_success} if o.on_success else {})
+                for o in c.observability
             ]
         return d
 

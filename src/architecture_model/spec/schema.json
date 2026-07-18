@@ -309,6 +309,21 @@
             "additionalProperties": false
           }
         },
+        "observability": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["function", "log_level"],
+            "properties": {
+              "function": { "type": "string" },
+              "log_level": { "type": "string", "enum": ["DEBUG", "INFO", "WARNING", "ERROR"] },
+              "emits_metric": { "type": "string" },
+              "on_error": { "type": "string" },
+              "on_success": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
         "extensions": { "$ref": "#/$defs/extensions" }
       },
       "additionalProperties": false
