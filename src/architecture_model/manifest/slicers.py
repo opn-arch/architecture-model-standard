@@ -6,8 +6,22 @@ documentation artifact's needs.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
+
+from architecture_model.manifest.types import (
+    BlockManifest,
+    InterfaceEdge,
+    Manifest,
+    MetricsResult,
+    ModuleInfo,
+    ModuleStatus,
+    ScanReport,
+    SubFunctionEntry,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def _render_block_tree(sub_blocks: list[dict], indent: int = 1) -> list[str]:
@@ -62,16 +76,140 @@ def _get_layer_prefixes() -> dict[str, str]:
     }
 
 
-def get_manifest_slice(manifest: dict[str, Any], artifact_name: str) -> str:
+def _manifest_from_dict(d: dict[str, Any]) -> Manifest:
+    """Convert a raw manifest dict to a typed Manifest object.
+
+    This provides backward compatibility for callers passing raw dicts.
+    The conversion is best-effort — it wraps dict data into typed objects.
+    """
+    logger.debug("Converting raw dict manifest to typed Manifest")
+
+    # Metrics
+    raw_metrics = d.get("metrics", {})
+    metrics = MetricsResult(values=dict(raw_metrics))
+
+    # Modules — keep as dicts wrapped in a lightweight adapter
+    raw_modules = d.get("modules", [])
+    modules: list[ModuleInfo] = []
+    for m in raw_modules:
+        # Functions may be strings or dicts with 'name' key
+        raw_fns = m.get("functions", [])
+        from architecture_model.manifest.types import FunctionInfo
+        func_list = []
+        for f in raw_fns:
+            if isinstance(f, str):
+                func_list.append(FunctionInfo(name=f, signature=""))
+            elif isinstance(f, dict):
+                func_list.append(FunctionInfo(name=f.get("name", ""), signature=f.get("signature", "")))
+            else:
+                func_list.append(FunctionInfo(name=str(f), signature=""))
+
+        # Classes may be strings or dicts
+        raw_classes = m.get("classes", [])
+        from architecture_model.manifest.types import ClassInfo
+        class_list = []
+        for c in raw_classes:
+            if isinstance(c, str):
+                class_list.append(ClassInfo(name=c))
+            elif isinstance(c, dict):
+                class_list.append(ClassInfo(
+                    name=c.get("name", ""),
+                    bases=c.get("bases", []),
+                    methods=c.get("methods", []),
+                    is_abstract=c.get("is_abstract", False),
+                    decorators=c.get("decorators", []),
+                    attributes=c.get("attributes", {}),
+                ))
+
+        status_raw = m.get("status", "active")
+        try:
+            status = ModuleStatus(status_raw)
+        except ValueError:
+            status = ModuleStatus.ACTIVE
+
+        modules.append(ModuleInfo(
+            file=m.get("file", ""),
+            name=m.get("name", ""),
+            docstring=m.get("docstring"),
+            functions=func_list,
+            imports=m.get("imports", []),
+            line_count=m.get("line_count", 0),
+            status=status,
+            classes=class_list,
+        ))
+
+    # Interfaces
+    raw_interfaces = d.get("interfaces", [])
+    interfaces = [
+        InterfaceEdge(
+            source=i.get("source", ""),
+            target=i.get("target", ""),
+            import_path=i.get("import_path", ""),
+        )
+        for i in raw_interfaces
+    ]
+
+    # Functional blocks
+    raw_blocks = d.get("functional_blocks", {})
+    blocks: dict[str, BlockManifest] = {}
+    for block_id, block_data in raw_blocks.items():
+        raw_sfs = block_data.get("sub_functions", [])
+        sfs = [
+            SubFunctionEntry(
+                id=sf.get("id", ""),
+                name=sf.get("name", ""),
+                file=sf.get("file", ""),
+                functions=sf.get("functions", []),
+                inputs=sf.get("inputs", []),
+                outputs=sf.get("outputs", []),
+                status=sf.get("status", "active"),
+                line_count=sf.get("line_count", 0),
+            )
+            for sf in raw_sfs
+        ]
+        blocks[block_id] = BlockManifest(
+            name=block_data.get("name", ""),
+            status=block_data.get("status", "active"),
+            description_source=block_data.get("description_source", ""),
+            sub_functions=sfs,
+            sub_blocks=block_data.get("sub_blocks", []),
+        )
+
+    return Manifest(
+        generated_at=d.get("generated_at", ""),
+        project_root=d.get("project_root", "."),
+        metrics=metrics,
+        functional_blocks=blocks,
+        modules=modules,
+        interfaces=interfaces,
+        scan_report=ScanReport(),
+    )
+
+
+def _module_function_names(mod: ModuleInfo) -> list[str]:
+    """Extract function names from a ModuleInfo."""
+    return [f.name for f in mod.functions]
+
+
+def _module_class_names(mod: ModuleInfo) -> list[str]:
+    """Extract class names from a ModuleInfo."""
+    return [c.name for c in mod.classes]
+
+
+def get_manifest_slice(manifest: Manifest | dict[str, Any], artifact_name: str) -> str:
     """Return focused markdown slice for artifact context injection.
 
     Args:
-        manifest: The full manifest dictionary.
+        manifest: A typed Manifest or legacy raw dict.
         artifact_name: One of the 10 artifact names.
 
     Returns:
         Formatted markdown string with relevant manifest data.
     """
+    if isinstance(manifest, dict):
+        logger.debug("get_manifest_slice received dict, converting to Manifest")
+        manifest = _manifest_from_dict(manifest)
+
     slicers = {
         "functional-architecture": _slice_functional_architecture,
         "logical-architecture": _slice_logical_architecture,
@@ -92,49 +230,48 @@ def get_manifest_slice(manifest: dict[str, Any], artifact_name: str) -> str:
     return slicer(manifest)
 
 
-def _slice_functional_architecture(manifest: dict) -> str:
+def _slice_functional_architecture(manifest: Manifest) -> str:
     """Functional blocks + metrics."""
     lines = ["# Functional Architecture (from manifest)", ""]
     lines.append("## Metrics")
-    for k, v in manifest.get("metrics", {}).items():
+    for k, v in manifest.metrics.values.items():
         lines.append(f"- {k}: {v}")
     lines.append("")
     lines.append("## Functional Blocks")
-    for block_id, block in manifest.get("functional_blocks", {}).items():
-        lines.append(f"\n### {block_id}: {block['name']} [{block['status']}]")
+    for block_id, block in manifest.functional_blocks.items():
+        lines.append(f"\n### {block_id}: {block.name} [{block.status}]")
 
-        sub_blocks = block.get("sub_blocks", [])
-        if sub_blocks:
+        if block.sub_blocks:
             # Use hierarchical rendering
-            lines.extend(_render_block_tree(sub_blocks))
+            lines.extend(_render_block_tree(block.sub_blocks))
         else:
             # Flat rendering (backward compat)
-            for sf in block.get("sub_functions", []):
-                status_tag = f"[{sf['status'].upper()}]" if sf.get("status") else ""
-                lines.append(f"  - {sf['id']} {sf['name']} {status_tag} ({sf['file']})")
-                if sf.get("functions"):
-                    for fn in sf["functions"][:3]:
+            for sf in block.sub_functions:
+                status_tag = f"[{sf.status.upper()}]" if sf.status else ""
+                lines.append(f"  - {sf.id} {sf.name} {status_tag} ({sf.file})")
+                if sf.functions:
+                    for fn in sf.functions[:3]:
                         lines.append(f"    - {fn}")
     return "\n".join(lines)
 
 
-def _slice_logical_architecture(manifest: dict) -> str:
+def _slice_logical_architecture(manifest: Manifest) -> str:
     """Modules grouped by layer + metrics."""
     lines = ["# Logical Architecture (from manifest)", ""]
     lines.append("## Metrics")
-    for k, v in manifest.get("metrics", {}).items():
+    for k, v in manifest.metrics.values.items():
         lines.append(f"- {k}: {v}")
     lines.append("")
 
     # Group modules by layer
     layer_prefixes = _get_layer_prefixes()
-    layers: dict[str, list[dict]] = {k: [] for k in layer_prefixes}
+    layers: dict[str, list[ModuleInfo]] = {k: [] for k in layer_prefixes}
     layers["other"] = []
 
-    for mod in manifest.get("modules", []):
+    for mod in manifest.modules:
         placed = False
         for layer_name, prefix in layer_prefixes.items():
-            if mod["file"].startswith(prefix):
+            if mod.file.startswith(prefix):
                 layers[layer_name].append(mod)
                 placed = True
                 break
@@ -145,36 +282,37 @@ def _slice_logical_architecture(manifest: dict) -> str:
         if mods:
             lines.append(f"\n## {layer_name.title()} ({len(mods)} files)")
             for mod in mods[:20]:  # Limit output
-                lines.append(f"  - {mod['file']} ({mod['line_count']} lines, {mod['status']})")
+                status_val = mod.status.value if isinstance(mod.status, ModuleStatus) else mod.status
+                lines.append(f"  - {mod.file} ({mod.line_count} lines, {status_val})")
             if len(mods) > 20:
                 lines.append(f"  ... and {len(mods) - 20} more")
 
     return "\n".join(lines)
 
 
-def _slice_data_dictionary(manifest: dict) -> str:
+def _slice_data_dictionary(manifest: Manifest) -> str:
     """Modules from app/models/ + schema reference."""
     lines = ["# Data Dictionary (from manifest)", ""]
-    for mod in manifest.get("modules", []):
-        if mod["file"].startswith("app/models/"):
-            lines.append(f"\n## {mod['file']}")
-            if mod.get("docstring"):
-                lines.append(f"  {mod['docstring'].split(chr(10))[0]}")
-            for fn in mod.get("functions", []):
+    for mod in manifest.modules:
+        if mod.file.startswith("app/models/"):
+            lines.append(f"\n## {mod.file}")
+            if mod.docstring:
+                lines.append(f"  {mod.docstring.split(chr(10))[0]}")
+            for fn in _module_function_names(mod):
                 lines.append(f"  - {fn}")
     return "\n".join(lines)
 
 
-def _slice_icd(manifest: dict) -> str:
+def _slice_icd(manifest: Manifest) -> str:
     """Comprehensive interface data: routers by F-block, external services, model access, pipeline stages."""
     lines = ["# Interface Control Document (from manifest)", ""]
 
     # --- Router endpoints grouped by functional domain ---
     lines.append("## Router Endpoints (F4: Serve API & UI)")
-    routers = [m for m in manifest.get("modules", []) if m["file"].startswith("app/routers/")]
-    for mod in sorted(routers, key=lambda m: m["file"]):
-        lines.append(f"\n### {mod['file']} ({mod.get('line_count', '?')} lines)")
-        for fn in mod.get("functions", []):
+    routers = [m for m in manifest.modules if m.file.startswith("app/routers/")]
+    for mod in sorted(routers, key=lambda m: m.file):
+        lines.append(f"\n### {mod.file} ({mod.line_count} lines)")
+        for fn in _module_function_names(mod):
             lines.append(f"  - {fn}")
 
     # --- External service interfaces (detected from imports + known patterns) ---
@@ -190,17 +328,16 @@ def _slice_icd(manifest: dict) -> str:
 
     # --- Import dependency graph (inter-layer interfaces) ---
     lines.append("\n\n## Inter-layer Import Dependencies")
-    interfaces = manifest.get("interfaces", [])
     # Group by source prefix to show layer boundaries
     layer_deps: dict[str, list[str]] = {}
-    for iface in interfaces:
-        src_prefix = iface["source"].split("/")[0] if "/" in iface["source"] else "root"
-        tgt_prefix = iface["target"].split("/")[0] if "/" in iface["target"] else "root"
+    for iface in manifest.interfaces:
+        src_prefix = iface.source.split("/")[0] if "/" in iface.source else "root"
+        tgt_prefix = iface.target.split("/")[0] if "/" in iface.target else "root"
         if src_prefix != tgt_prefix:  # only cross-layer
             key = f"{src_prefix} -> {tgt_prefix}"
             if key not in layer_deps:
                 layer_deps[key] = []
-            layer_deps[key].append(f"{iface['source']} -> {iface['target']}")
+            layer_deps[key].append(f"{iface.source} -> {iface.target}")
     for layer_boundary, deps in sorted(layer_deps.items()):
         lines.append(f"\n### {layer_boundary} ({len(deps)} dependencies)")
         for dep in deps[:10]:
@@ -211,27 +348,28 @@ def _slice_icd(manifest: dict) -> str:
     # --- Pipeline stage modules (F6 + scripts/) ---
     lines.append("\n\n## Pipeline Stage Modules")
     pipeline_mods = [
-        m for m in manifest.get("modules", []) if m["file"].startswith("scripts/_pipeline_")
+        m for m in manifest.modules if m.file.startswith("scripts/_pipeline_")
     ]
-    for mod in sorted(pipeline_mods, key=lambda m: m["file"]):
+    for mod in sorted(pipeline_mods, key=lambda m: m.file):
+        fn_names = _module_function_names(mod)
         lines.append(
-            f"  - {mod['file']} ({mod.get('line_count', '?')} lines): {', '.join(mod.get('functions', [])[:5])}"
+            f"  - {mod.file} ({mod.line_count} lines): {', '.join(fn_names[:5])}"
         )
 
     # --- Model files (database interface) ---
     lines.append("\n\n## Database Models (app/models/)")
-    models = [m for m in manifest.get("modules", []) if m["file"].startswith("app/models/")]
-    for mod in sorted(models, key=lambda m: m["file"]):
-        classes = mod.get("classes", [])
-        lines.append(f"  - {mod['file']}: {', '.join(classes) if classes else '(no classes)'}")
+    models = [m for m in manifest.modules if m.file.startswith("app/models/")]
+    for mod in sorted(models, key=lambda m: m.file):
+        classes = _module_class_names(mod)
+        lines.append(f"  - {mod.file}: {', '.join(classes) if classes else '(no classes)'}")
 
     return "\n".join(lines)
 
 
-def _slice_readme(manifest: dict) -> str:
+def _slice_readme(manifest: Manifest) -> str:
     """Functional blocks summary + metrics."""
     lines = ["# Project Summary (from manifest)", ""]
-    metrics = manifest.get("metrics", {})
+    metrics = manifest.metrics.values
     lines.append(f"Total Python files: {metrics.get('total_python_files', '?')}")
     lines.append(
         f"Routers: {metrics.get('router_count', '?')}, "
@@ -241,48 +379,47 @@ def _slice_readme(manifest: dict) -> str:
     )
     lines.append("")
     lines.append("## Functional Blocks")
-    for block_id, block in manifest.get("functional_blocks", {}).items():
-        sf_count = len(block.get("sub_functions", []))
-        sub_block_count = len(block.get("sub_blocks", []))
+    for block_id, block in manifest.functional_blocks.items():
+        sf_count = len(block.sub_functions)
+        sub_block_count = len(block.sub_blocks)
         extra = f", {sub_block_count} sub-blocks" if sub_block_count else ""
         lines.append(
-            f"- {block_id}: {block['name']} [{block['status']}] ({sf_count} modules{extra})"
+            f"- {block_id}: {block.name} [{block.status}] ({sf_count} modules{extra})"
         )
     return "\n".join(lines)
 
 
-def _slice_testing(manifest: dict) -> str:
+def _slice_testing(manifest: Manifest) -> str:
     """Test files + coverage reference + sub-block mapping."""
     lines = ["# Testing (from manifest)", ""]
-    test_modules = [m for m in manifest.get("modules", []) if "test" in m["file"].lower()]
+    test_modules = [m for m in manifest.modules if "test" in m.file.lower()]
     if test_modules:
         lines.append(f"## Test Files ({len(test_modules)})")
         for mod in test_modules:
-            lines.append(f"  - {mod['file']} ({mod['line_count']} lines)")
+            lines.append(f"  - {mod.file} ({mod.line_count} lines)")
     else:
         lines.append("No test files found in scanned modules.")
 
     # Sub-block test mapping
     lines.append("\n## Functional Block Test Coverage")
-    for block_id, block in manifest.get("functional_blocks", {}).items():
-        sub_blocks = block.get("sub_blocks", [])
-        if sub_blocks:
-            lines.append(f"\n### {block_id}: {block['name']}")
-            lines.extend(_render_block_tree(sub_blocks))
+    for block_id, block in manifest.functional_blocks.items():
+        if block.sub_blocks:
+            lines.append(f"\n### {block_id}: {block.name}")
+            lines.extend(_render_block_tree(block.sub_blocks))
 
     return "\n".join(lines)
 
 
-def _slice_deployment_guide(manifest: dict) -> str:
+def _slice_deployment_guide(manifest: Manifest) -> str:
     """Deployment-relevant metrics."""
     lines = ["# Deployment Guide (from manifest)", ""]
-    metrics = manifest.get("metrics", {})
+    metrics = manifest.metrics.values
     lines.append(f"- Migrations: {metrics.get('migration_count', '?')}")
     lines.append(f"- Models: {metrics.get('model_count', '?')}")
     lines.append(f"- Total Python files: {metrics.get('total_python_files', '?')}")
     lines.append("")
     lines.append("## Infrastructure Files")
-    root = Path(manifest.get("project_root", "."))
+    root = Path(manifest.project_root)
     infra_files = [
         "Dockerfile",
         "docker-compose.yml",
@@ -301,138 +438,141 @@ def _slice_deployment_guide(manifest: dict) -> str:
     return "\n".join(lines)
 
 
-def _slice_operations_manual(manifest: dict) -> str:
+def _slice_operations_manual(manifest: Manifest) -> str:
     """Scheduler jobs + router endpoints + CLI commands."""
     lines = ["# Operations Manual (from manifest)", ""]
 
     # CLI commands (scripts with main or run_ functions)
     lines.append("## CLI / Pipeline Commands")
-    for mod in manifest.get("modules", []):
-        if mod["file"].startswith("scripts/"):
-            run_fns = [f for f in mod.get("functions", []) if "run_" in f or "cmd_" in f]
+    for mod in manifest.modules:
+        if mod.file.startswith("scripts/"):
+            fn_names = _module_function_names(mod)
+            run_fns = [f for f in fn_names if "run_" in f or "cmd_" in f]
             if run_fns:
-                lines.append(f"\n### {mod['file']}")
+                lines.append(f"\n### {mod.file}")
                 for fn in run_fns:
                     lines.append(f"  - {fn}")
 
     # Router endpoints
     lines.append("\n## API Endpoints")
-    for mod in manifest.get("modules", []):
-        if mod["file"].startswith("app/routers/"):
-            lines.append(f"  - {mod['file']}: {len(mod.get('functions', []))} endpoints")
+    for mod in manifest.modules:
+        if mod.file.startswith("app/routers/"):
+            lines.append(f"  - {mod.file}: {len(mod.functions)} endpoints")
 
     return "\n".join(lines)
 
 
-def _slice_use_cases(manifest: dict) -> str:
+def _slice_use_cases(manifest: Manifest) -> str:
     """Router endpoints + CLI commands + functional blocks summary for UC grounding."""
     lines = ["# Use Case Grounding (from manifest)", ""]
 
     # Functional blocks summary (for F-block traceability)
     lines.append("## Functional Blocks")
-    for block_id, block in manifest.get("functional_blocks", {}).items():
-        sf_count = len(block.get("sub_functions", []))
-        active = sum(1 for sf in block.get("sub_functions", []) if sf["status"] == "active")
-        sub_block_count = len(block.get("sub_blocks", []))
+    for block_id, block in manifest.functional_blocks.items():
+        sf_count = len(block.sub_functions)
+        active = sum(1 for sf in block.sub_functions if sf.status == "active")
+        sub_block_count = len(block.sub_blocks)
         extra = f", {sub_block_count} sub-blocks" if sub_block_count else ""
-        lines.append(f"- {block_id}: {block['name']} ({active}/{sf_count} active{extra})")
+        lines.append(f"- {block_id}: {block.name} ({active}/{sf_count} active{extra})")
     lines.append("")
 
     # Router endpoints (user-facing capabilities)
     lines.append("## API Endpoints (Web UI capabilities)")
-    for mod in manifest.get("modules", []):
-        if mod["file"].startswith("app/routers/"):
-            lines.append(f"\n### {mod['file']}")
-            for fn in mod.get("functions", []):
+    for mod in manifest.modules:
+        if mod.file.startswith("app/routers/"):
+            lines.append(f"\n### {mod.file}")
+            for fn in _module_function_names(mod):
                 lines.append(f"  - {fn}")
     lines.append("")
 
     # CLI commands (pipeline capabilities)
     lines.append("## CLI Commands (Pipeline capabilities)")
-    for mod in manifest.get("modules", []):
-        if mod["file"].startswith("scripts/"):
-            run_fns = [f for f in mod.get("functions", []) if "run_" in f or "cmd_" in f]
+    for mod in manifest.modules:
+        if mod.file.startswith("scripts/"):
+            fn_names = _module_function_names(mod)
+            run_fns = [f for f in fn_names if "run_" in f or "cmd_" in f]
             if run_fns:
-                lines.append(f"  - {mod['file']}:")
+                lines.append(f"  - {mod.file}:")
                 for fn in run_fns:
                     lines.append(f"    - {fn}")
     lines.append("")
 
     # Scheduler jobs
     lines.append("## Scheduled Jobs")
-    for mod in manifest.get("modules", []):
-        if "scheduler" in mod["file"].lower() or "main" in mod["file"].lower():
+    for mod in manifest.modules:
+        if "scheduler" in mod.file.lower() or "main" in mod.file.lower():
+            fn_names = _module_function_names(mod)
             sched_fns = [
                 f
-                for f in mod.get("functions", [])
+                for f in fn_names
                 if "daily" in f or "register" in f or "schedule" in f
             ]
             if sched_fns:
-                lines.append(f"  - {mod['file']}:")
+                lines.append(f"  - {mod.file}:")
                 for fn in sched_fns:
                     lines.append(f"    - {fn}")
 
     return "\n".join(lines)
 
 
-def _slice_requirements_analysis(manifest: dict) -> str:
+def _slice_requirements_analysis(manifest: Manifest) -> str:
     """System metrics, capabilities, and F-block coverage for requirements grounding."""
     lines = ["# Requirements Analysis (from manifest)", ""]
 
     # --- Hard metrics (ground truth for NFRs) ---
-    metrics = manifest.get("metrics", {})
+    metrics = manifest.metrics.values
     lines.append("## System Metrics (verified)")
     lines.append(f"- Total Python files: {metrics.get('total_python_files', '?')}")
     lines.append(f"- Routers: {metrics.get('router_count', '?')}")
     lines.append(f"- Models: {metrics.get('model_count', '?')}")
     lines.append(f"- Migrations: {metrics.get('migration_count', '?')}")
     lines.append(f"- Templates: {metrics.get('template_count', '?')}")
-    lines.append(f"- Interfaces (import deps): {len(manifest.get('interfaces', []))}")
-    lines.append(f"- Modules scanned: {len(manifest.get('modules', []))}")
+    lines.append(f"- Interfaces (import deps): {len(manifest.interfaces)}")
+    lines.append(f"- Modules scanned: {len(manifest.modules)}")
 
     # --- Functional blocks with sub-function counts (ground truth for FRs) ---
     lines.append("\n## Functional Blocks (capability inventory)")
-    for block_id, block in manifest.get("functional_blocks", {}).items():
-        sfs = block.get("sub_functions", [])
-        active = sum(1 for sf in sfs if sf["status"] == "active")
+    for block_id, block in manifest.functional_blocks.items():
+        sfs = block.sub_functions
+        active = sum(1 for sf in sfs if sf.status == "active")
         lines.append(
-            f"\n### {block_id}: {block['name']} [{block['status']}] ({active}/{len(sfs)} active)"
+            f"\n### {block_id}: {block.name} [{block.status}] ({active}/{len(sfs)} active)"
         )
 
-        sub_blocks = block.get("sub_blocks", [])
-        if sub_blocks:
+        if block.sub_blocks:
             # Use hierarchical rendering for requirement traceability
-            lines.extend(_render_block_tree(sub_blocks))
+            lines.extend(_render_block_tree(block.sub_blocks))
         else:
             # Flat rendering (backward compat)
             for sf in sfs:
-                lines.append(f"  - {sf['name']} [{sf['status']}]")
+                lines.append(f"  - {sf.name} [{sf.status}]")
 
     # --- All router capabilities (what the system CAN do via API) ---
     lines.append("\n## API Capabilities (30 routers)")
-    routers = [m for m in manifest.get("modules", []) if m["file"].startswith("app/routers/")]
-    for mod in sorted(routers, key=lambda m: m["file"]):
-        fn_count = len(mod.get("functions", []))
-        lines.append(f"  - {mod['file']}: {fn_count} endpoints")
+    routers = [m for m in manifest.modules if m.file.startswith("app/routers/")]
+    for mod in sorted(routers, key=lambda m: m.file):
+        fn_count = len(mod.functions)
+        lines.append(f"  - {mod.file}: {fn_count} endpoints")
 
     # --- Pipeline capabilities (what the system CAN do via CLI) ---
     lines.append("\n## Pipeline Capabilities")
     pipeline_mods = [
         m
-        for m in manifest.get("modules", [])
-        if m["file"].startswith("scripts/_pipeline_") and not m["file"].endswith("__pycache__")
+        for m in manifest.modules
+        if m.file.startswith("scripts/_pipeline_") and not m.file.endswith("__pycache__")
     ]
-    for mod in sorted(pipeline_mods, key=lambda m: m["file"]):
-        run_fns = [f for f in mod.get("functions", []) if f.startswith("run_")]
+    for mod in sorted(pipeline_mods, key=lambda m: m.file):
+        fn_names = _module_function_names(mod)
+        run_fns = [f for f in fn_names if f.startswith("run_")]
         if run_fns:
-            lines.append(f"  - {mod['file']}: {', '.join(run_fns)}")
+            lines.append(f"  - {mod.file}: {', '.join(run_fns)}")
 
     # --- Test coverage (ground truth for verification) ---
     lines.append("\n## Test Files")
-    test_mods = [m for m in manifest.get("modules", []) if "test" in m["file"].lower()]
+    test_mods = [m for m in manifest.modules if "test" in m.file.lower()]
     lines.append(f"  Total test files: {len(test_mods)}")
     for mod in test_mods[:20]:
-        lines.append(f"  - {mod['file']} ({mod.get('line_count', '?')} lines)")
+        lines.append(f"  - {mod.file} ({mod.line_count} lines)")
     if len(test_mods) > 20:
         lines.append(f"  ... and {len(test_mods) - 20} more")
 
