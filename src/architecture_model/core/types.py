@@ -362,6 +362,7 @@ class ModelMeta:
     source_artifacts: list[str] = field(default_factory=list)
     manifest_hash: str = ""
     source_language: str = ""
+    domain_profile: str = "software"
 
 
 @dataclass
@@ -443,6 +444,8 @@ class ArchitectureModel:
             d["source_artifacts"] = self.meta.source_artifacts
         if self.meta.manifest_hash:
             d["manifest_hash"] = self.meta.manifest_hash
+        if self.meta.domain_profile and self.meta.domain_profile != "software":
+            d["domain_profile"] = self.meta.domain_profile
         return d
 
     def _dump_entities(self) -> dict[str, Any]:

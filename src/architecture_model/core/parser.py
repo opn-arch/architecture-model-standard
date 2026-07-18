@@ -129,6 +129,7 @@ def _parse_meta(d: dict) -> ModelMeta:
         source_artifacts=d.get("source_artifacts", []),
         manifest_hash=d.get("manifest_hash", ""),
         source_language=d.get("source_language", ""),
+        domain_profile=d.get("domain_profile", "software"),
     )
 
 
