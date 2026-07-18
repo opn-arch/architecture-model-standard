@@ -78,6 +78,20 @@ The pipeline requires no manual configuration to analyze a new project:
 4. Writes `.architecture-model.yaml` with layers, F-blocks, and metrics
 5. Subsequent pipeline stages refine this config with LLM-synthesized groupings
 
+### Domain Profiles
+The standard supports cross-domain architecture modeling via domain profiles:
+- **software** (default) — standard software architecture entities
+- **controls** — sensors, actuators, PLCs, fieldbus, SIL levels
+- **mechanical** — parts, assemblies, materials, tolerances
+- **electrical** — PCBs, connectors, power supplies, voltage/current ratings
+
+Profiles extend the base schema with:
+- Additional enum values (ComponentKind, InterfaceType, etc.)
+- Additional entity properties (validated via JSON Schema fragments)
+- Conditional validation rules (e.g., "sensors must declare signal_type")
+
+Usage: Set `domain_profile: controls` in the model meta section.
+
 ## Package Structure
 
 ```
@@ -88,6 +102,7 @@ src/architecture_model/
 ├── extract/      — Extract model from generated Tier 1 artifacts
 ├── integrations/ — LLM context formatting, pipeline bridge
 ├── manifest/     — Reality Manifest generator (AST scanning, metrics, blocks, interfaces)
+├── profiles/     — Domain profile system (software, controls, mechanical, electrical)
 ├── spec/         — JSON Schema for model validation
 └── utils/        — Shared utilities (file discovery, exclusion patterns)
 ```
@@ -158,7 +173,7 @@ relationships:
 
 - Schema version: 1.4 (added Constant, FunctionSignature, TestContract on Component)
 - Package version: 0.3.0
-- Test suite: 509 passed, 106 skipped
+- Test suite: 542 passed, 114 skipped
 - Validation score: 100/100, 0 orphaned entities
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
