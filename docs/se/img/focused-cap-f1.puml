@@ -1,0 +1,36 @@
+@startuml
+title Focus: CAP-F1 (Model Parsing & Validation) - depth 2
+
+usecase "Model Parsing & Validation\nCAP-F1" as CAP_F1 #LightBlue
+component "core\nCOMP-CORE" as COMP_CORE
+() "Validator API\nIF-VALIDATE-API" as IF_VALIDATE_API
+usecase "Model Slicing & Diffing\nCAP-F3" as CAP_F3
+card "Schema Compliance\nCON-SCHEMA" as CON_SCHEMA
+component "config\nCOMP-CONFIG" as COMP_CONFIG
+component "cli\nCOMP-CLI" as COMP_CLI
+component "spec\nCOMP-SPEC" as COMP_SPEC
+() "Parser API\nIF-PARSE-API" as IF_PARSE_API
+package "Application Layer\nL-APP" as L_APP
+rectangle "Model Validation\nBEH-VALIDATE" as BEH_VALIDATE <<behavior>>
+() "Slicer API\nIF-SLICER-API" as IF_SLICER_API
+card "No Orphaned Entities\nCON-NO-ORPHANS" as CON_NO_ORPHANS
+
+L_APP --> COMP_CORE : contains
+L_APP --> COMP_CLI : contains
+L_APP --> COMP_CONFIG : contains
+L_APP --> COMP_SPEC : contains
+COMP_CORE --> CAP_F1 : realizes
+COMP_CORE --> CAP_F3 : realizes
+COMP_CORE ..> IF_PARSE_API : exposes
+COMP_CORE ..> IF_VALIDATE_API : exposes
+COMP_CORE ..> IF_SLICER_API : exposes
+COMP_CORE --> CON_SCHEMA : constrained-by
+COMP_SPEC --> CON_SCHEMA : constrained-by
+COMP_CORE --> CON_NO_ORPHANS : constrained-by
+COMP_CLI --> COMP_CORE : depends-on
+COMP_CLI --> COMP_CONFIG : depends-on
+COMP_CORE --> COMP_CONFIG : depends-on
+COMP_CORE --> COMP_SPEC : depends-on
+COMP_CORE --> BEH_VALIDATE : traces-to
+
+@enduml

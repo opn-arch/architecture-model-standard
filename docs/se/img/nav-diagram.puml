@@ -1,0 +1,71 @@
+@startuml
+title Architecture Navigation - architecture-model-standard
+left to right direction
+
+actor "Developer\nACT-DEV" as ACT_DEV
+actor "LLM Agent\nACT-LLM" as ACT_LLM
+
+package "Functional View" {
+    usecase "Model Parsing & Validation\nCAP-F1" as CAP_F1
+    usecase "Reality Manifest Generation\nCAP-F2" as CAP_F2
+    usecase "Model Slicing & Diffing\nCAP-F3" as CAP_F3
+    usecase "CLI Operations\nCAP-F4" as CAP_F4
+    usecase "Configuration & Schema\nCAP-F5" as CAP_F5
+}
+
+package "Behavioral View" {
+    rectangle "Project Initialization\nBEH-INIT" as BEH_INIT <<behavior>>
+    rectangle "Model Validation\nBEH-VALIDATE" as BEH_VALIDATE <<behavior>>
+    rectangle "Manifest Generation\nBEH-MANIFEST" as BEH_MANIFEST <<behavior>>
+}
+
+package "Application Layer" as L_APP {
+}
+component "core\nCOMP-CORE" as COMP_CORE
+component "manifest\nCOMP-MANIFEST" as COMP_MANIFEST
+component "config\nCOMP-CONFIG" as COMP_CONFIG
+component "spec\nCOMP-SPEC" as COMP_SPEC
+component "cli\nCOMP-CLI" as COMP_CLI
+
+() "CLI Interface\nIF-CLI" as IF_CLI
+() "Parser API\nIF-PARSE-API" as IF_PARSE_API
+() "Validator API\nIF-VALIDATE-API" as IF_VALIDATE_API
+() "Manifest API\nIF-MANIFEST-API" as IF_MANIFEST_API
+() "Slicer API\nIF-SLICER-API" as IF_SLICER_API
+
+card "Schema Compliance\nCON-SCHEMA" as CON_SCHEMA
+card "No Orphaned Entities\nCON-NO-ORPHANS" as CON_NO_ORPHANS
+
+L_APP --> COMP_CORE : contains
+L_APP --> COMP_MANIFEST : contains
+L_APP --> COMP_CLI : contains
+L_APP --> COMP_CONFIG : contains
+L_APP --> COMP_SPEC : contains
+COMP_CORE --> CAP_F1 : realizes
+COMP_CORE --> CAP_F3 : realizes
+COMP_MANIFEST --> CAP_F2 : realizes
+COMP_CLI --> CAP_F4 : realizes
+COMP_CONFIG --> CAP_F5 : realizes
+COMP_SPEC --> CAP_F5 : realizes
+COMP_CLI ..> IF_CLI : exposes
+COMP_CORE ..> IF_PARSE_API : exposes
+COMP_CORE ..> IF_VALIDATE_API : exposes
+COMP_CORE ..> IF_SLICER_API : exposes
+COMP_MANIFEST ..> IF_MANIFEST_API : exposes
+COMP_CORE --> CON_SCHEMA : constrained-by
+COMP_SPEC --> CON_SCHEMA : constrained-by
+COMP_CORE --> CON_NO_ORPHANS : constrained-by
+COMP_CLI --> COMP_CORE : depends-on
+COMP_CLI --> COMP_CONFIG : depends-on
+COMP_CLI --> COMP_MANIFEST : depends-on
+COMP_CORE --> COMP_CONFIG : depends-on
+COMP_CORE --> COMP_SPEC : depends-on
+COMP_MANIFEST --> COMP_CONFIG : depends-on
+COMP_CLI --> BEH_INIT : traces-to
+COMP_CORE --> BEH_VALIDATE : traces-to
+COMP_MANIFEST --> BEH_MANIFEST : traces-to
+ACT_DEV ..> IF_CLI : consumes
+ACT_LLM ..> IF_PARSE_API : consumes
+ACT_LLM ..> IF_SLICER_API : consumes
+
+@enduml
