@@ -39,6 +39,17 @@ class RelationType(str, Enum):
     TRACES_TO = "traces-to"
     ALLOCATED_TO = "allocated-to"
     CONSTRAINED_BY = "constrained-by"
+    # Spatial
+    MOUNTED_ON = "mounted-on"
+    CONNECTED_AT = "connected-at"
+    ROUTED_THROUGH = "routed-through"
+    # Data/Event flow
+    PRODUCES = "produces"
+    SUBSCRIBES_TO = "subscribes-to"
+    TRANSFORMS = "transforms"
+    # Lifecycle
+    SUPERSEDES = "supersedes"
+    MIGRATES_TO = "migrates-to"
 
     @classmethod
     def parse(cls, value: str) -> RelationType | str:
@@ -89,6 +100,7 @@ class ConstraintType(str, Enum):
     REGULATORY = "regulatory"
     TECHNOLOGY = "technology"
     OPERATIONAL = "operational"
+    FAILURE_MODE = "failure-mode"
 
     @classmethod
     def parse(cls, value: str) -> ConstraintType | str:
@@ -162,6 +174,86 @@ class SymbolKind(str, Enum):
     ENUM = "enum"
     TRAIT = "trait"
     TYPE_ALIAS = "type-alias"
+
+
+class EventKind(str, Enum):
+    MESSAGE = "message"
+    SIGNAL = "signal"
+    COMMAND = "command"
+    NOTIFICATION = "notification"
+    ALARM = "alarm"
+
+    @classmethod
+    def parse(cls, value: str) -> EventKind | str:
+        try:
+            return cls(value)
+        except ValueError:
+            return value
+
+
+class ResourceKind(str, Enum):
+    DATABASE = "database"
+    API = "api"
+    HARDWARE = "hardware"
+    STORAGE = "storage"
+    COMPUTE = "compute"
+    SENSOR = "sensor"
+    ACTUATOR = "actuator"
+
+    @classmethod
+    def parse(cls, value: str) -> ResourceKind | str:
+        try:
+            return cls(value)
+        except ValueError:
+            return value
+
+
+class EnvironmentKind(str, Enum):
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+    TEST = "test"
+    FIELD = "field"
+    LABORATORY = "laboratory"
+
+    @classmethod
+    def parse(cls, value: str) -> EnvironmentKind | str:
+        try:
+            return cls(value)
+        except ValueError:
+            return value
+
+
+class DecisionStatus(str, Enum):
+    PROPOSED = "proposed"
+    ACCEPTED = "accepted"
+    DEPRECATED = "deprecated"
+    SUPERSEDED = "superseded"
+
+    @classmethod
+    def parse(cls, value: str) -> DecisionStatus | str:
+        try:
+            return cls(value)
+        except ValueError:
+            return value
+
+
+class LifecyclePhase(str, Enum):
+    CONCEPT = "concept"
+    DESIGN = "design"
+    PROTOTYPE = "prototype"
+    DEVELOPMENT = "development"
+    TESTING = "testing"
+    PRODUCTION = "production"
+    MAINTENANCE = "maintenance"
+    END_OF_LIFE = "end-of-life"
+
+    @classmethod
+    def parse(cls, value: str) -> LifecyclePhase | str:
+        try:
+            return cls(value)
+        except ValueError:
+            return value
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +440,78 @@ class System(BaseEntity):
     component_ids: list[str] = field(default_factory=list)
 
 
+@dataclass
+class Data(BaseEntity):
+    """A data structure, schema, domain object, or BOM."""
+    schema_def: str = ""
+    format: str = ""
+    fields: list[DataField] = field(default_factory=list)
+    owner: str = ""
+    sensitivity: str = ""
+
+
+@dataclass
+class Event(BaseEntity):
+    """A discrete event, signal, or message that flows between components."""
+    kind: EventKind = EventKind.MESSAGE
+    source: str = ""
+    target: str = ""
+    payload: str = ""
+    frequency: str = ""
+    reliability: str = ""
+
+
+@dataclass
+class Resource(BaseEntity):
+    """An external dependency the system uses but doesn't own."""
+    kind: ResourceKind = ResourceKind.DATABASE
+    provider: str = ""
+    location: str = ""
+    sla: str = ""
+
+
+@dataclass
+class Environment(BaseEntity):
+    """A deployment target or physical context where the system runs."""
+    kind: EnvironmentKind = EnvironmentKind.PRODUCTION
+    infrastructure: list[str] = field(default_factory=list)
+    constraints: list[str] = field(default_factory=list)
+    region: str = ""
+
+
+@dataclass
+class QualityAttribute(BaseEntity):
+    """A measured quality property of the system."""
+    metric: str = ""
+    target: str = ""
+    current: str = ""
+    measurement_method: str = ""
+    applies_to: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Decision(BaseEntity):
+    """An Architecture Decision Record (ADR)."""
+    decision_status: DecisionStatus = DecisionStatus.ACCEPTED
+    context: str = ""
+    options: list[str] = field(default_factory=list)
+    rationale: str = ""
+    consequences: list[str] = field(default_factory=list)
+    supersedes: str = ""
+
+
+@dataclass
+class Lifecycle(BaseEntity):
+    """A version, phase, or migration path."""
+    phase: LifecyclePhase = LifecyclePhase.PRODUCTION
+    version: str = ""
+    start_date: str = ""
+    end_date: str = ""
+    migration_from: str = ""
+    migration_to: str = ""
+    milestones: list[str] = field(default_factory=list)
+
+
 # ---------------------------------------------------------------------------
 # Relationships
 # ---------------------------------------------------------------------------
@@ -379,6 +543,8 @@ class ModelMeta:
     manifest_hash: str = ""
     source_language: str = ""
     domain_profile: str = "software"
+    parent_model: str | None = None
+    refines_component: str | None = None
 
 
 @dataclass
@@ -391,6 +557,13 @@ class Entities:
     layers: list[Layer] = field(default_factory=list)
     components: list[Component] = field(default_factory=list)
     systems: list[System] = field(default_factory=list)
+    data: list[Data] = field(default_factory=list)
+    events: list[Event] = field(default_factory=list)
+    resources: list[Resource] = field(default_factory=list)
+    environments: list[Environment] = field(default_factory=list)
+    quality_attributes: list[QualityAttribute] = field(default_factory=list)
+    decisions: list[Decision] = field(default_factory=list)
+    lifecycles: list[Lifecycle] = field(default_factory=list)
 
 
 @dataclass
@@ -419,6 +592,20 @@ class ArchitectureModel:
             ids.add(comp.id)
         for sys in self.entities.systems:
             ids.add(sys.id)
+        for d in self.entities.data:
+            ids.add(d.id)
+        for e in self.entities.events:
+            ids.add(e.id)
+        for r in self.entities.resources:
+            ids.add(r.id)
+        for e in self.entities.environments:
+            ids.add(e.id)
+        for qa in self.entities.quality_attributes:
+            ids.add(qa.id)
+        for d in self.entities.decisions:
+            ids.add(d.id)
+        for lc in self.entities.lifecycles:
+            ids.add(lc.id)
         return ids
 
     @property
@@ -462,6 +649,10 @@ class ArchitectureModel:
             d["manifest_hash"] = self.meta.manifest_hash
         if self.meta.domain_profile and self.meta.domain_profile != "software":
             d["domain_profile"] = self.meta.domain_profile
+        if self.meta.parent_model:
+            d["parent_model"] = self.meta.parent_model
+        if self.meta.refines_component:
+            d["refines_component"] = self.meta.refines_component
         return d
 
     def _dump_entities(self) -> dict[str, Any]:
@@ -482,6 +673,20 @@ class ArchitectureModel:
             d["components"] = [self._dump_component(c) for c in self.entities.components]
         if self.entities.systems:
             d["systems"] = [self._dump_system(s) for s in self.entities.systems]
+        if self.entities.data:
+            d["data"] = [self._dump_data(x) for x in self.entities.data]
+        if self.entities.events:
+            d["events"] = [self._dump_event(x) for x in self.entities.events]
+        if self.entities.resources:
+            d["resources"] = [self._dump_resource(x) for x in self.entities.resources]
+        if self.entities.environments:
+            d["environments"] = [self._dump_environment(x) for x in self.entities.environments]
+        if self.entities.quality_attributes:
+            d["quality_attributes"] = [self._dump_quality_attribute(x) for x in self.entities.quality_attributes]
+        if self.entities.decisions:
+            d["decisions"] = [self._dump_decision(x) for x in self.entities.decisions]
+        if self.entities.lifecycles:
+            d["lifecycles"] = [self._dump_lifecycle(x) for x in self.entities.lifecycles]
         return d
 
     @staticmethod
@@ -671,6 +876,78 @@ class ArchitectureModel:
             d["sub_model_ref"] = s.sub_model_ref
         if s.component_ids:
             d["component_ids"] = s.component_ids
+        return d
+
+    @classmethod
+    def _dump_data(cls, d_ent: "Data") -> dict[str, Any]:
+        d = cls._dump_base(d_ent)
+        if d_ent.schema_def: d["schema_def"] = d_ent.schema_def
+        if d_ent.format: d["format"] = d_ent.format
+        if d_ent.fields: d["fields"] = [{"name":f.name,"type":f.type,"required":f.required}|({"description":f.description} if f.description else {}) for f in d_ent.fields]
+        if d_ent.owner: d["owner"] = d_ent.owner
+        if d_ent.sensitivity: d["sensitivity"] = d_ent.sensitivity
+        return d
+
+    @classmethod
+    def _dump_event(cls, e: "Event") -> dict[str, Any]:
+        d = cls._dump_base(e)
+        d["kind"] = _enum_value(e.kind)
+        if e.source: d["source"] = e.source
+        if e.target: d["target"] = e.target
+        if e.payload: d["payload"] = e.payload
+        if e.frequency: d["frequency"] = e.frequency
+        if e.reliability: d["reliability"] = e.reliability
+        return d
+
+    @classmethod
+    def _dump_resource(cls, res: "Resource") -> dict[str, Any]:
+        d = cls._dump_base(res)
+        d["kind"] = _enum_value(res.kind)
+        if res.provider: d["provider"] = res.provider
+        if res.location: d["location"] = res.location
+        if res.sla: d["sla"] = res.sla
+        return d
+
+    @classmethod
+    def _dump_environment(cls, env: "Environment") -> dict[str, Any]:
+        d = cls._dump_base(env)
+        d["kind"] = _enum_value(env.kind)
+        if env.infrastructure: d["infrastructure"] = env.infrastructure
+        if env.constraints: d["constraints"] = env.constraints
+        if env.region: d["region"] = env.region
+        return d
+
+    @classmethod
+    def _dump_quality_attribute(cls, qa: "QualityAttribute") -> dict[str, Any]:
+        d = cls._dump_base(qa)
+        if qa.metric: d["metric"] = qa.metric
+        if qa.target: d["target"] = qa.target
+        if qa.current: d["current"] = qa.current
+        if qa.measurement_method: d["measurement_method"] = qa.measurement_method
+        if qa.applies_to: d["applies_to"] = qa.applies_to
+        return d
+
+    @classmethod
+    def _dump_decision(cls, dec: "Decision") -> dict[str, Any]:
+        d = cls._dump_base(dec)
+        d["decision_status"] = _enum_value(dec.decision_status)
+        if dec.context: d["context"] = dec.context
+        if dec.options: d["options"] = dec.options
+        if dec.rationale: d["rationale"] = dec.rationale
+        if dec.consequences: d["consequences"] = dec.consequences
+        if dec.supersedes: d["supersedes"] = dec.supersedes
+        return d
+
+    @classmethod
+    def _dump_lifecycle(cls, lc: "Lifecycle") -> dict[str, Any]:
+        d = cls._dump_base(lc)
+        d["phase"] = _enum_value(lc.phase)
+        if lc.version: d["version"] = lc.version
+        if lc.start_date: d["start_date"] = lc.start_date
+        if lc.end_date: d["end_date"] = lc.end_date
+        if lc.migration_from: d["migration_from"] = lc.migration_from
+        if lc.migration_to: d["migration_to"] = lc.migration_to
+        if lc.milestones: d["milestones"] = lc.milestones
         return d
 
     @staticmethod

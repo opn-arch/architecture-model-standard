@@ -136,6 +136,14 @@ def _check_id_uniqueness(model: ArchitectureModel, result: ValidationResult) -> 
         ("constraint", model.entities.constraints),
         ("layer", model.entities.layers),
         ("component", model.entities.components),
+        ("system", model.entities.systems),
+        ("data", model.entities.data),
+        ("event", model.entities.events),
+        ("resource", model.entities.resources),
+        ("environment", model.entities.environments),
+        ("quality_attribute", model.entities.quality_attributes),
+        ("decision", model.entities.decisions),
+        ("lifecycle", model.entities.lifecycles),
     ]
 
     for type_name, entities in type_entities:
@@ -236,6 +244,22 @@ def _check_status_consistency(model: ArchitectureModel, result: ValidationResult
         status_map[layer.id] = layer.status
     for comp in model.entities.components:
         status_map[comp.id] = comp.status
+    for sys in model.entities.systems:
+        status_map[sys.id] = sys.status
+    for d in model.entities.data:
+        status_map[d.id] = d.status
+    for e in model.entities.events:
+        status_map[e.id] = e.status
+    for r in model.entities.resources:
+        status_map[r.id] = r.status
+    for e in model.entities.environments:
+        status_map[e.id] = e.status
+    for qa in model.entities.quality_attributes:
+        status_map[qa.id] = qa.status
+    for dec in model.entities.decisions:
+        status_map[dec.id] = dec.status
+    for lc in model.entities.lifecycles:
+        status_map[lc.id] = lc.status
 
     for rel in model.relationships:
         from_status = status_map.get(rel.from_id)
@@ -481,6 +505,14 @@ def _check_domain_profile(model: ArchitectureModel, result: ValidationResult) ->
         "constraint": model.entities.constraints,
         "layer": model.entities.layers,
         "component": model.entities.components,
+        "system": model.entities.systems,
+        "data": model.entities.data,
+        "event": model.entities.events,
+        "resource": model.entities.resources,
+        "environment": model.entities.environments,
+        "quality_attribute": model.entities.quality_attributes,
+        "decision": model.entities.decisions,
+        "lifecycle": model.entities.lifecycles,
     }
 
     for rule in profile.validation_rules:

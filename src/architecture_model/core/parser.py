@@ -31,16 +31,28 @@ from .types import (
     Constant,
     Constraint,
     ConstraintType,
+    Data,
     DataField,
+    Decision,
+    DecisionStatus,
     Entities,
+    Environment,
+    EnvironmentKind,
+    Event,
+    EventKind,
     FunctionSignature,
     Interface,
     InterfaceType,
     Layer,
+    Lifecycle,
+    LifecyclePhase,
     ModelMeta,
     Priority,
+    QualityAttribute,
     Relationship,
     RelationType,
+    Resource,
+    ResourceKind,
     StateTransition,
     Status,
     Strength,
@@ -49,6 +61,7 @@ from .types import (
     System,
     TestContract,
     ObservabilityContract,
+    _enum_value,
 )
 
 SCHEMA_PATH = Path(__file__).parent.parent / "spec" / "schema.json"
@@ -131,6 +144,8 @@ def _parse_meta(d: dict) -> ModelMeta:
         manifest_hash=d.get("manifest_hash", ""),
         source_language=d.get("source_language", ""),
         domain_profile=d.get("domain_profile", "software"),
+        parent_model=d.get("parent_model"),
+        refines_component=d.get("refines_component"),
     )
 
 
@@ -144,6 +159,13 @@ def _parse_entities(d: dict) -> Entities:
         layers=[_parse_layer(l) for l in d.get("layers", [])],
         components=[_parse_component(c) for c in d.get("components", [])],
         systems=[_parse_system(s) for s in d.get("systems", [])],
+        data=[_parse_data(x) for x in d.get("data", [])],
+        events=[_parse_event(x) for x in d.get("events", [])],
+        resources=[_parse_resource(x) for x in d.get("resources", [])],
+        environments=[_parse_environment(x) for x in d.get("environments", [])],
+        quality_attributes=[_parse_quality_attribute(x) for x in d.get("quality_attributes", [])],
+        decisions=[_parse_decision(x) for x in d.get("decisions", [])],
+        lifecycles=[_parse_lifecycle(x) for x in d.get("lifecycles", [])],
     )
 
 
@@ -355,6 +377,42 @@ def _parse_system(d: dict) -> System:
     )
 
 
+def _parse_data(d: dict) -> Data:
+    base = _parse_base(d)
+    fields = [DataField(name=f.get("name",""), type=f.get("type","string"), required=f.get("required",False), description=f.get("description","")) for f in d.get("fields",[])]
+    return Data(**base, schema_def=d.get("schema_def",""), format=d.get("format",""), fields=fields, owner=d.get("owner",""), sensitivity=d.get("sensitivity",""))
+
+
+def _parse_event(d: dict) -> Event:
+    base = _parse_base(d)
+    return Event(**base, kind=EventKind.parse(d.get("kind","message")), source=d.get("source",""), target=d.get("target",""), payload=d.get("payload",""), frequency=d.get("frequency",""), reliability=d.get("reliability",""))
+
+
+def _parse_resource(d: dict) -> Resource:
+    base = _parse_base(d)
+    return Resource(**base, kind=ResourceKind.parse(d.get("kind","database")), provider=d.get("provider",""), location=d.get("location",""), sla=d.get("sla",""))
+
+
+def _parse_environment(d: dict) -> Environment:
+    base = _parse_base(d)
+    return Environment(**base, kind=EnvironmentKind.parse(d.get("kind","production")), infrastructure=d.get("infrastructure",[]), constraints=d.get("constraints",[]), region=d.get("region",""))
+
+
+def _parse_quality_attribute(d: dict) -> QualityAttribute:
+    base = _parse_base(d)
+    return QualityAttribute(**base, metric=d.get("metric",""), target=d.get("target",""), current=d.get("current",""), measurement_method=d.get("measurement_method",""), applies_to=d.get("applies_to",[]))
+
+
+def _parse_decision(d: dict) -> Decision:
+    base = _parse_base(d)
+    return Decision(**base, decision_status=DecisionStatus.parse(d.get("decision_status","accepted")), context=d.get("context",""), options=d.get("options",[]), rationale=d.get("rationale",""), consequences=d.get("consequences",[]), supersedes=d.get("supersedes",""))
+
+
+def _parse_lifecycle(d: dict) -> Lifecycle:
+    base = _parse_base(d)
+    return Lifecycle(**base, phase=LifecyclePhase.parse(d.get("phase","production")), version=d.get("version",""), start_date=d.get("start_date",""), end_date=d.get("end_date",""), migration_from=d.get("migration_from",""), migration_to=d.get("migration_to",""), milestones=d.get("milestones",[]))
+
+
 def _parse_relationship(d: dict) -> Relationship:
     return Relationship(
         type=RelationType.parse(d.get("type", "depends-on")),
@@ -386,6 +444,10 @@ def _dump_meta(m: ModelMeta) -> dict:
         d["manifest_hash"] = m.manifest_hash
     if m.source_language:
         d["source_language"] = m.source_language
+    if m.parent_model:
+        d["parent_model"] = m.parent_model
+    if m.refines_component:
+        d["refines_component"] = m.refines_component
     return d
 
 
@@ -407,6 +469,20 @@ def _dump_entities(e: Entities) -> dict:
         d["components"] = [_dump_component(c) for c in e.components]
     if e.systems:
         d["systems"] = [_dump_system(s) for s in e.systems]
+    if e.data:
+        d["data"] = [_dump_data(x) for x in e.data]
+    if e.events:
+        d["events"] = [_dump_event(x) for x in e.events]
+    if e.resources:
+        d["resources"] = [_dump_resource(x) for x in e.resources]
+    if e.environments:
+        d["environments"] = [_dump_environment(x) for x in e.environments]
+    if e.quality_attributes:
+        d["quality_attributes"] = [_dump_quality_attribute(x) for x in e.quality_attributes]
+    if e.decisions:
+        d["decisions"] = [_dump_decision(x) for x in e.decisions]
+    if e.lifecycles:
+        d["lifecycles"] = [_dump_lifecycle(x) for x in e.lifecycles]
     return d
 
 
@@ -600,6 +676,78 @@ def _dump_system(s: System) -> dict:
     if s.component_ids:
         d["component_ids"] = s.component_ids
     return d
+
+
+def _dump_data(dat: Data) -> dict:
+    r = _dump_base(dat)
+    if dat.schema_def: r["schema_def"] = dat.schema_def
+    if dat.format: r["format"] = dat.format
+    if dat.fields: r["fields"] = [{"name":f.name,"type":f.type,"required":f.required}|({"description":f.description} if f.description else {}) for f in dat.fields]
+    if dat.owner: r["owner"] = dat.owner
+    if dat.sensitivity: r["sensitivity"] = dat.sensitivity
+    return r
+
+
+def _dump_event(e: Event) -> dict:
+    r = _dump_base(e)
+    r["kind"] = _enum_value(e.kind)
+    if e.source: r["source"] = e.source
+    if e.target: r["target"] = e.target
+    if e.payload: r["payload"] = e.payload
+    if e.frequency: r["frequency"] = e.frequency
+    if e.reliability: r["reliability"] = e.reliability
+    return r
+
+
+def _dump_resource(res: Resource) -> dict:
+    r = _dump_base(res)
+    r["kind"] = _enum_value(res.kind)
+    if res.provider: r["provider"] = res.provider
+    if res.location: r["location"] = res.location
+    if res.sla: r["sla"] = res.sla
+    return r
+
+
+def _dump_environment(env: Environment) -> dict:
+    r = _dump_base(env)
+    r["kind"] = _enum_value(env.kind)
+    if env.infrastructure: r["infrastructure"] = env.infrastructure
+    if env.constraints: r["constraints"] = env.constraints
+    if env.region: r["region"] = env.region
+    return r
+
+
+def _dump_quality_attribute(qa: QualityAttribute) -> dict:
+    r = _dump_base(qa)
+    if qa.metric: r["metric"] = qa.metric
+    if qa.target: r["target"] = qa.target
+    if qa.current: r["current"] = qa.current
+    if qa.measurement_method: r["measurement_method"] = qa.measurement_method
+    if qa.applies_to: r["applies_to"] = qa.applies_to
+    return r
+
+
+def _dump_decision(dec: Decision) -> dict:
+    r = _dump_base(dec)
+    r["decision_status"] = _enum_value(dec.decision_status)
+    if dec.context: r["context"] = dec.context
+    if dec.options: r["options"] = dec.options
+    if dec.rationale: r["rationale"] = dec.rationale
+    if dec.consequences: r["consequences"] = dec.consequences
+    if dec.supersedes: r["supersedes"] = dec.supersedes
+    return r
+
+
+def _dump_lifecycle(lc: Lifecycle) -> dict:
+    r = _dump_base(lc)
+    r["phase"] = _enum_value(lc.phase)
+    if lc.version: r["version"] = lc.version
+    if lc.start_date: r["start_date"] = lc.start_date
+    if lc.end_date: r["end_date"] = lc.end_date
+    if lc.migration_from: r["migration_from"] = lc.migration_from
+    if lc.migration_to: r["migration_to"] = lc.migration_to
+    if lc.milestones: r["milestones"] = lc.milestones
+    return r
 
 
 def _dump_relationship(r: Relationship) -> dict:
