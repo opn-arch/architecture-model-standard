@@ -2,32 +2,40 @@
 
 from __future__ import annotations
 
+import logging
+import warnings
 from pathlib import Path
 from typing import Any
 
+from architecture_model.manifest.types import InterfaceEdge, ModuleInfo, ModuleStatus
 
-def _derive_interfaces(modules: list[dict[str, Any]], root: Path) -> list[dict[str, Any]]:
-    """Derive interfaces from import analysis between scanned modules."""
-    # Build a map of module paths to their file info
-    module_map: dict[str, dict[str, Any]] = {}
-    for mod in modules:
-        module_map[mod["file"]] = mod
+logger = logging.getLogger(__name__)
 
-    # Convert file paths to importable module names
+
+def derive_interfaces(modules: list[ModuleInfo], root: Path) -> list[InterfaceEdge]:
+    """Derive interfaces from import analysis between scanned modules.
+
+    Args:
+        modules: Typed module info objects from AST scanning.
+        root: Project root path.
+
+    Returns:
+        List of InterfaceEdge objects representing inter-module dependencies.
+    """
+    # Build a map of file paths to importable module names
     file_to_module: dict[str, str] = {}
     for mod in modules:
-        # e.g. "app/routers/logs.py" -> "app.routers.logs"
-        mod_name = mod["file"].replace("/", ".").removesuffix(".py")
-        file_to_module[mod["file"]] = mod_name
+        mod_name = mod.file.replace("/", ".").removesuffix(".py")
+        file_to_module[mod.file] = mod_name
 
     module_to_file: dict[str, str] = {v: k for k, v in file_to_module.items()}
 
-    interfaces: list[dict[str, Any]] = []
+    interfaces: list[InterfaceEdge] = []
     seen: set[tuple[str, str]] = set()
 
     for mod in modules:
-        source_file = mod["file"]
-        for imp in mod.get("imports", []):
+        source_file = mod.file
+        for imp in mod.imports:
             # Check if this import refers to another module in our project
             target_file = module_to_file.get(imp)
             if not target_file:
@@ -41,11 +49,41 @@ def _derive_interfaces(modules: list[dict[str, Any]], root: Path) -> list[dict[s
                 if key not in seen:
                     seen.add(key)
                     interfaces.append(
-                        {
-                            "source": source_file,
-                            "target": target_file,
-                            "import_path": imp,
-                        }
+                        InterfaceEdge(
+                            source=source_file,
+                            target=target_file,
+                            import_path=imp,
+                        )
                     )
 
+    logger.debug("Derived %d interface edges from %d modules", len(interfaces), len(modules))
     return interfaces
+
+
+def _derive_interfaces(modules: list[dict[str, Any]], root: Path) -> list[dict[str, Any]]:
+    """Derive interfaces from import analysis between scanned modules.
+
+    .. deprecated::
+        Use :func:`derive_interfaces` which accepts typed objects.
+        This wrapper converts dicts for backward compatibility.
+    """
+    warnings.warn(
+        "_derive_interfaces is deprecated, use derive_interfaces instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    typed_modules = [
+        ModuleInfo(
+            file=m["file"],
+            name=m.get("name", ""),
+            docstring=m.get("docstring"),
+            functions=[],
+            imports=m.get("imports", []),
+            line_count=m.get("line_count", 0),
+            status=ModuleStatus(m.get("status", "active")),
+            classes=[],
+        )
+        for m in modules
+    ]
+    edges = derive_interfaces(typed_modules, root)
+    return [e.to_dict() for e in edges]
