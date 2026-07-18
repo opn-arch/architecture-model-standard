@@ -277,3 +277,49 @@ class ProjectConfig:
                 for m in self.metrics
             ],
         }
+
+
+@dataclass
+class DiscoveryCandidate:
+    """A candidate evaluated during config discovery."""
+
+    category: str
+    path: str
+    accepted: bool
+    reason: str
+
+
+@dataclass
+class DiscoveryReport:
+    """Observability report for config discovery."""
+
+    layout_detected: str = "unknown"
+    blocks_discovered: int = 0
+    layers_discovered: int = 0
+    metrics_discovered: int = 0
+    sub_blocks_discovered: int = 0
+    files_total: int = 0
+    files_claimed: int = 0
+    files_unclaimed: int = 0
+    candidates: list[DiscoveryCandidate] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+    def add_candidate(
+        self, category: str, path: str, accepted: bool, reason: str
+    ) -> None:
+        self.candidates.append(DiscoveryCandidate(category, path, accepted, reason))
+
+    @property
+    def claim_rate(self) -> float:
+        if self.files_total == 0:
+            return 1.0
+        return self.files_claimed / self.files_total
+
+    def summary(self) -> str:
+        return (
+            f"Layout: {self.layout_detected}, "
+            f"{self.blocks_discovered} blocks, {self.layers_discovered} layers, "
+            f"{self.metrics_discovered} metrics, "
+            f"{self.files_claimed}/{self.files_total} files claimed "
+            f"({self.claim_rate:.0%})"
+        )
