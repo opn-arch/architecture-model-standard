@@ -68,6 +68,11 @@ def main(argv: list[str] | None = None) -> int:
     p_manifest.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_manifest.add_argument("-o", "--output", help="Output JSON path")
 
+    # --- enrich ---
+    p_enrich = subparsers.add_parser("enrich", help="Auto-enrich model with signatures, constants, test contracts")
+    p_enrich.add_argument("model", help="Path to architecture-model.yaml")
+    p_enrich.add_argument("--root", default=".", help="Project root directory")
+
     # --- coverage ---
     p_coverage = subparsers.add_parser("coverage", help="Analyze model coverage against code reality")
     p_coverage.add_argument("model", help="Path to .architecture-model.yaml")
@@ -90,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
         "impact": _cmd_impact,
         "manifest": _cmd_manifest,
         "coverage": _cmd_coverage,
+        "enrich": _cmd_enrich,
     }
     return handlers[args.command](args)
 
@@ -352,6 +358,38 @@ def _cmd_manifest(args) -> int:
     print(f"  F-blocks: {len(blocks)}")
     print(f"  Metrics: {metrics}")
     print(f"\nSaved: {out_path}")
+    return 0
+
+
+def _cmd_enrich(args) -> int:
+    """Auto-enrich model with signatures, constants, and test contracts."""
+    from ..core.parser import load_model, save_model
+    from ..enrich import enrich_model
+
+    model_path = Path(args.model)
+    root = Path(args.root).resolve()
+
+    model = load_model(model_path)
+
+    # Count before
+    comps = model.entities.get("components", []) if isinstance(model.entities, dict) else model.entities.components
+    before_sigs = sum(len(c.signatures) for c in comps)
+    before_consts = sum(len(c.constants) for c in comps)
+    before_tests = sum(len(c.test_contracts) for c in comps)
+
+    enriched = enrich_model(model, root)
+    save_model(enriched, model_path)
+
+    # Count after
+    comps_after = enriched.entities.get("components", []) if isinstance(enriched.entities, dict) else enriched.entities.components
+    after_sigs = sum(len(c.signatures) for c in comps_after)
+    after_consts = sum(len(c.constants) for c in comps_after)
+    after_tests = sum(len(c.test_contracts) for c in comps_after)
+
+    print(f"Enriched {model_path}")
+    print(f"  Signatures:     {before_sigs} -> {after_sigs} (+{after_sigs - before_sigs})")
+    print(f"  Constants:      {before_consts} -> {after_consts} (+{after_consts - before_consts})")
+    print(f"  Test contracts: {before_tests} -> {after_tests} (+{after_tests - before_tests})")
     return 0
 
 
