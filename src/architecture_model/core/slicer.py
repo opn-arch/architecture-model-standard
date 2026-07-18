@@ -64,6 +64,20 @@ def slice_by_fblock(
     # Collect all relevant entity IDs
     relevant_ids = cap_ids | behavior_ids | component_ids | interface_ids
 
+    # Find data entities owned by components in this f-block
+    data_entities = [d for d in model.entities.data if d.owner in component_ids]
+    data_ids = {d.id for d in data_entities}
+
+    # Find events sourced from or targeting components in this f-block
+    events = [e for e in model.entities.events if e.source in component_ids or e.target in component_ids]
+    event_ids = {e.id for e in events}
+
+    # Find quality attributes that apply to entities in this f-block
+    quality_attrs = [q for q in model.entities.quality_attributes if any(a in relevant_ids for a in q.applies_to)]
+    qa_ids = {q.id for q in quality_attrs}
+
+    relevant_ids = relevant_ids | data_ids | event_ids | qa_ids
+
     # Find actors referenced by behaviors
     actor_refs = set()
     for beh in behaviors:
@@ -98,6 +112,9 @@ def slice_by_fblock(
             constraints=[],  # Constraints are global
             layers=[],  # Layers are global
             components=components,
+            data=data_entities,
+            events=events,
+            quality_attributes=quality_attrs,
         ),
         relationships=relationships,
     )
@@ -169,20 +186,22 @@ def slice_by_status(
         constraints=[c for c in model.entities.constraints if c.status == status],
         layers=[l for l in model.entities.layers if l.status == status],
         components=[c for c in model.entities.components if c.status == status],
+        systems=[s for s in model.entities.systems if s.status == status],
+        data=[d for d in model.entities.data if d.status == status],
+        events=[e for e in model.entities.events if e.status == status],
+        resources=[r for r in model.entities.resources if r.status == status],
+        environments=[e for e in model.entities.environments if e.status == status],
+        quality_attributes=[q for q in model.entities.quality_attributes if q.status == status],
+        decisions=[d for d in model.entities.decisions if d.status == status],
+        lifecycles=[l for l in model.entities.lifecycles if l.status == status],
     )
 
     # Only include relationships where both endpoints exist in filtered set
     all_ids = set()
-    for lst in [
-        entities.actors,
-        entities.capabilities,
-        entities.behaviors,
-        entities.interfaces,
-        entities.constraints,
-        entities.layers,
-        entities.components,
-    ]:
-        for e in lst:
+    for attr_name in ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints',
+                      'layers', 'components', 'systems', 'data', 'events', 'resources',
+                      'environments', 'quality_attributes', 'decisions', 'lifecycles']:
+        for e in getattr(entities, attr_name, []):
             all_ids.add(e.id)
 
     relationships = [
@@ -349,6 +368,8 @@ def _slice_for_requirements(model: ArchitectureModel) -> ArchitectureModel:
             capabilities=list(model.entities.capabilities),
             behaviors=list(model.entities.behaviors),
             constraints=list(model.entities.constraints),
+            quality_attributes=list(model.entities.quality_attributes),
+            decisions=list(model.entities.decisions),
         ),
         relationships=relationships,
     )
@@ -371,6 +392,8 @@ def _slice_for_operations_manual(model: ArchitectureModel) -> ArchitectureModel:
             behaviors=list(model.entities.behaviors),
             interfaces=list(model.entities.interfaces),
             components=list(model.entities.components),
+            events=list(model.entities.events),
+            resources=list(model.entities.resources),
         ),
         relationships=relationships,
     )
@@ -392,6 +415,8 @@ def _slice_for_conops(model: ArchitectureModel) -> ArchitectureModel:
             capabilities=list(model.entities.capabilities),
             behaviors=list(model.entities.behaviors),
             constraints=list(model.entities.constraints),
+            environments=list(model.entities.environments),
+            lifecycles=list(model.entities.lifecycles),
         ),
         relationships=relationships,
     )
@@ -414,6 +439,7 @@ def _slice_for_testing(model: ArchitectureModel) -> ArchitectureModel:
             behaviors=list(model.entities.behaviors),
             constraints=list(model.entities.constraints),
             components=list(model.entities.components),
+            quality_attributes=list(model.entities.quality_attributes),
         ),
         relationships=relationships,
     )
@@ -437,6 +463,8 @@ def _slice_for_deployment(model: ArchitectureModel) -> ArchitectureModel:
             layers=list(model.entities.layers),
             components=list(model.entities.components),
             actors=[a for a in model.entities.actors if a.type.value == "external_service"],
+            environments=list(model.entities.environments),
+            resources=list(model.entities.resources),
         ),
         relationships=relationships,
     )
@@ -465,6 +493,7 @@ def _slice_for_data_dictionary(model: ArchitectureModel) -> ArchitectureModel:
             interfaces=list(model.entities.interfaces),
             layers=list(model.entities.layers),
             components=data_components,
+            data=list(model.entities.data),
         ),
         relationships=relationships,
     )
@@ -491,6 +520,7 @@ def _slice_for_readme(model: ArchitectureModel) -> ArchitectureModel:
             actors=list(model.entities.actors),
             capabilities=list(model.entities.capabilities),
             layers=list(model.entities.layers),
+            decisions=list(model.entities.decisions),
         ),
         relationships=relationships,
     )

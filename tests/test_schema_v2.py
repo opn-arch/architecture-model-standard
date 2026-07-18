@@ -148,3 +148,24 @@ def test_parent_linkage_round_trip():
     model2 = _parse_raw(raw)
     assert model2.meta.parent_model == "../.architecture-model.yaml"
     assert model2.meta.refines_component == "COMP-CORE"
+
+
+# --- Slicer tests for new entity types ---
+
+from architecture_model.core.slicer import slice_by_status, slice_by_fblock
+
+
+def test_slice_by_status_includes_new_entities():
+    model = ArchitectureModel(
+        meta=_make_meta(),
+        entities=Entities(
+            data=[Data(id="DAT-1", name="X", status=Status.ACTIVE), Data(id="DAT-2", name="Y", status=Status.PLANNED)],
+            events=[Event(id="EVT-1", name="X", status=Status.ACTIVE)],
+            resources=[Resource(id="RES-1", name="X", status=Status.PLANNED)],
+        ),
+    )
+    sliced = slice_by_status(model, Status.ACTIVE)
+    assert len(sliced.entities.data) == 1
+    assert sliced.entities.data[0].id == "DAT-1"
+    assert len(sliced.entities.events) == 1
+    assert len(sliced.entities.resources) == 0
