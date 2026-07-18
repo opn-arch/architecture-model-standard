@@ -88,7 +88,8 @@ src/architecture_model/
 ├── extract/      — Extract model from generated Tier 1 artifacts
 ├── integrations/ — LLM context formatting, pipeline bridge
 ├── manifest/     — Reality Manifest generator (AST scanning, metrics, blocks, interfaces)
-└── spec/         — JSON Schema for model validation
+├── spec/         — JSON Schema for model validation
+└── utils/        — Shared utilities (file discovery, exclusion patterns)
 ```
 
 ## Key APIs (used by opencode-arch)
@@ -96,8 +97,9 @@ src/architecture_model/
 ### Manifest Generation
 ```python
 from architecture_model.manifest.generator import generate_manifest
-manifest = generate_manifest(project_root: Path) -> dict
-# Returns: {project_root, modules, metrics, functional_blocks, ...}
+manifest = generate_manifest(project_root: Path) -> Manifest
+# Returns: Manifest dataclass with typed fields
+# Use manifest.to_dict() for JSON serialization
 ```
 
 ### Model Parsing
@@ -156,7 +158,7 @@ relationships:
 
 - Schema version: 1.4 (added Constant, FunctionSignature, TestContract on Component)
 - Package version: 0.3.0
-- Test suite: 402 passed, 106 skipped
+- Test suite: 509 passed, 106 skipped
 - Validation score: 100/100, 0 orphaned entities
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
@@ -299,6 +301,6 @@ The `learning_curve` table in telemetry tracks improvement over successive repos
 
 | Repo | Path | Purpose | Tests |
 |------|------|---------|-------|
-| architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 402 passed |
+| architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 509 passed |
 | opencode-arch | `../opencode-arch/` | MCP extension (token broker) + CLI + E2E benchmarks | 157 passed |
 | arch-agent | `../arch-agent/` | Training pipeline + surrogate | 574 passed |
