@@ -1,0 +1,197 @@
+{
+  "name": "Manifest",
+  "status": "active",
+  "description_source": "Reality Manifest Generator \u2014 modular package.",
+  "sub_functions": [
+    {
+      "id": "F5.1",
+      "name": "Reality Manifest Generator \u2014 modular package",
+      "file": "src/architecture_model/manifest/__init__.py",
+      "functions": [],
+      "inputs": [],
+      "outputs": [],
+      "status": "active",
+      "line_count": 58
+    },
+    {
+      "id": "F5.2",
+      "name": "Functional block definitions and processing",
+      "file": "src/architecture_model/manifest/blocks.py",
+      "functions": [
+        "process_block(root: Path, block_id: str, block_def: dict, sub_block_configs: list | None) -> BlockManifest"
+      ],
+      "inputs": [
+        "root: Path",
+        "block_id: str",
+        "block_def: dict"
+      ],
+      "outputs": [
+        "BlockManifest"
+      ],
+      "status": "active",
+      "line_count": 215
+    },
+    {
+      "id": "F5.3",
+      "name": "Body Hints",
+      "file": "src/architecture_model/manifest/body_hints.py",
+      "functions": [
+        "classify_function(source: str, func_name: str) -> BodyComplexity",
+        "extract_body_hint(source: str, func_name: str, class_name: str | None) -> str",
+        "extract_file_hints(filepath: Path, include_private: bool) -> list[FunctionSignature]"
+      ],
+      "inputs": [
+        "source: str",
+        "func_name: str",
+        "source: str",
+        "func_name: str",
+        "class_name: str | None",
+        "filepath: Path"
+      ],
+      "outputs": [
+        "list[FunctionSignature]",
+        "str",
+        "BodyComplexity"
+      ],
+      "status": "active",
+      "line_count": 270
+    },
+    {
+      "id": "F5.4",
+      "name": "Terminal summary display for the reality manifest",
+      "file": "src/architecture_model/manifest/display.py",
+      "functions": [
+        "print_summary(manifest: dict[str, Any]) -> None"
+      ],
+      "inputs": [
+        "manifest: dict[str",
+        "Any]"
+      ],
+      "outputs": [
+        "None"
+      ],
+      "status": "active",
+      "line_count": 51
+    },
+    {
+      "id": "F5.5",
+      "name": "Main manifest generation and caching logic",
+      "file": "src/architecture_model/manifest/generator.py",
+      "functions": [
+        "generate_manifest(project_root: Path, config: Optional[Any]) -> Manifest",
+        "load_or_generate_manifest(project_root: Path, output_dir: Path | None) -> dict[str, Any]"
+      ],
+      "inputs": [
+        "project_root: Path",
+        "config: Optional[Any]",
+        "project_root: Path",
+        "output_dir: Path | None"
+      ],
+      "outputs": [
+        "dict[str, Any]",
+        "Manifest"
+      ],
+      "status": "active",
+      "line_count": 168
+    },
+    {
+      "id": "F5.6",
+      "name": "Interface derivation from import analysis between scanned modules",
+      "file": "src/architecture_model/manifest/interfaces.py",
+      "functions": [
+        "derive_interfaces(modules: list[ModuleInfo], root: Path) -> list[InterfaceEdge]"
+      ],
+      "inputs": [
+        "modules: list[ModuleInfo]",
+        "root: Path"
+      ],
+      "outputs": [
+        "list[InterfaceEdge]"
+      ],
+      "status": "active",
+      "line_count": 89
+    },
+    {
+      "id": "F5.7",
+      "name": "Project metrics computation from filesystem scanning",
+      "file": "src/architecture_model/manifest/metrics.py",
+      "functions": [
+        "compute_metrics(root: Path, config: Optional[Any]) -> MetricsResult"
+      ],
+      "inputs": [
+        "root: Path",
+        "config: Optional[Any]"
+      ],
+      "outputs": [
+        "MetricsResult"
+      ],
+      "status": "active",
+      "line_count": 85
+    },
+    {
+      "id": "F5.8",
+      "name": "AST helpers and file scanning for the reality manifest",
+      "file": "src/architecture_model/manifest/scanner.py",
+      "functions": [
+        "scan_file(root: Path, filepath: Path) -> ModuleInfo"
+      ],
+      "inputs": [
+        "root: Path",
+        "filepath: Path"
+      ],
+      "outputs": [
+        "ModuleInfo"
+      ],
+      "status": "active",
+      "line_count": 496
+    },
+    {
+      "id": "F5.9",
+      "name": "Manifest slicing for artifact context injection",
+      "file": "src/architecture_model/manifest/slicers.py",
+      "functions": [
+        "get_manifest_slice(manifest: Manifest | dict[str, Any], artifact_name: str) -> str"
+      ],
+      "inputs": [
+        "manifest: Manifest | dict[str",
+        "Any]",
+        "artifact_name: str"
+      ],
+      "outputs": [
+        "str"
+      ],
+      "status": "active",
+      "line_count": 579
+    },
+    {
+      "id": "F5.10",
+      "name": "Test Contract Analyzer \u2014 extracts behavioral specifications from test files",
+      "file": "src/architecture_model/manifest/test_analyzer.py",
+      "functions": [
+        "analyze_test_file(test_file: Path) -> TestAnalysisResult",
+        "extract_constants_from_contracts(contracts: list[TestContract]) -> list[Constant]"
+      ],
+      "inputs": [
+        "test_file: Path",
+        "contracts: list[TestContract]"
+      ],
+      "outputs": [
+        "list[Constant]",
+        "TestAnalysisResult"
+      ],
+      "status": "active",
+      "line_count": 501
+    },
+    {
+      "id": "F5.11",
+      "name": "Typed dataclasses for manifest generation outputs",
+      "file": "src/architecture_model/manifest/types.py",
+      "functions": [],
+      "inputs": [],
+      "outputs": [],
+      "status": "active",
+      "line_count": 219
+    }
+  ],
+  "sub_blocks": []
+}

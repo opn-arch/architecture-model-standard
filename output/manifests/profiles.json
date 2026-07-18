@@ -1,0 +1,99 @@
+{
+  "name": "Profiles",
+  "status": "active",
+  "description_source": "Domain profiles for cross-domain architecture modeling.",
+  "sub_functions": [
+    {
+      "id": "F6.1",
+      "name": "Domain profiles for cross",
+      "file": "src/architecture_model/profiles/__init__.py",
+      "functions": [],
+      "inputs": [],
+      "outputs": [],
+      "status": "dormant",
+      "line_count": 1
+    },
+    {
+      "id": "F6.2",
+      "name": " Init  ",
+      "file": "src/architecture_model/profiles/builtins/__init__.py",
+      "functions": [],
+      "inputs": [],
+      "outputs": [],
+      "status": "dormant",
+      "line_count": 0
+    },
+    {
+      "id": "F6.3",
+      "name": "Domain profile schema and loading logic",
+      "file": "src/architecture_model/profiles/schema.py",
+      "functions": [
+        "load_profile(name_or_path: str) -> DomainProfile"
+      ],
+      "inputs": [
+        "name_or_path: str"
+      ],
+      "outputs": [
+        "DomainProfile"
+      ],
+      "status": "active",
+      "line_count": 85
+    }
+  ],
+  "sub_blocks": [
+    {
+      "id": "F6.A",
+      "name": "Builtins",
+      "description": "",
+      "status": "dormant",
+      "sub_functions": [
+        {
+          "id": "F6.2",
+          "name": " Init  ",
+          "file": "src/architecture_model/profiles/builtins/__init__.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 0
+        }
+      ],
+      "sub_blocks": []
+    },
+    {
+      "id": "F6.misc",
+      "name": "Ungrouped",
+      "description": "",
+      "status": "active",
+      "sub_functions": [
+        {
+          "id": "F6.1",
+          "name": "Domain profiles for cross",
+          "file": "src/architecture_model/profiles/__init__.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 1
+        },
+        {
+          "id": "F6.3",
+          "name": "Domain profile schema and loading logic",
+          "file": "src/architecture_model/profiles/schema.py",
+          "functions": [
+            "load_profile(name_or_path: str) -> DomainProfile"
+          ],
+          "inputs": [
+            "name_or_path: str"
+          ],
+          "outputs": [
+            "DomainProfile"
+          ],
+          "status": "active",
+          "line_count": 85
+        }
+      ],
+      "sub_blocks": []
+    }
+  ]
+}

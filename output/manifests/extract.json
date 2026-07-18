@@ -1,0 +1,26 @@
+{
+  "name": "Extract",
+  "status": "active",
+  "description_source": "auto-discovered from src/architecture_model/extract/",
+  "sub_functions": [
+    {
+      "id": "F4.1",
+      "name": "Extract an ArchitectureModel directly from source code analysis",
+      "file": "src/architecture_model/extract/from_code.py",
+      "functions": [
+        "extract_from_code(project_root: str | Path, config: ProjectConfig | None, manifest: dict | None) -> ArchitectureModel"
+      ],
+      "inputs": [
+        "project_root: str | Path",
+        "config: ProjectConfig | None",
+        "manifest: dict | None"
+      ],
+      "outputs": [
+        "ArchitectureModel"
+      ],
+      "status": "active",
+      "line_count": 646
+    }
+  ],
+  "sub_blocks": []
+}

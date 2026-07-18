@@ -1,0 +1,34 @@
+{
+  "name": "Cli",
+  "status": "active",
+  "description_source": "auto-discovered from src/architecture_model/cli/",
+  "sub_functions": [
+    {
+      "id": "F1.1",
+      "name": " Init  ",
+      "file": "src/architecture_model/cli/__init__.py",
+      "functions": [],
+      "inputs": [],
+      "outputs": [],
+      "status": "dormant",
+      "line_count": 0
+    },
+    {
+      "id": "F1.2",
+      "name": "CLI for the Architecture Model Standard",
+      "file": "src/architecture_model/cli/main.py",
+      "functions": [
+        "main(argv: list[str] | None) -> int"
+      ],
+      "inputs": [
+        "argv: list[str] | None"
+      ],
+      "outputs": [
+        "int"
+      ],
+      "status": "active",
+      "line_count": 423
+    }
+  ],
+  "sub_blocks": []
+}

@@ -79,7 +79,7 @@ def generate_manifest(project_root: Path, config: Optional[Any] = None) -> Manif
                 extra_dirs.add(d)
 
     for dir_path in sorted(extra_dirs):
-        for filepath in collect_py_files(root, dir_path):
+        for filepath in collect_py_files(root / dir_path):
             rel = str(filepath.relative_to(root))
             if rel not in scanned_files:
                 scanned_files.add(rel)

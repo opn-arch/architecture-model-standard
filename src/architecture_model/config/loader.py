@@ -117,6 +117,11 @@ def get_config(root: Path) -> ProjectConfig:
     config_path = root / CONFIG_FILENAME
     if config_path.exists():
         config = load_config(root)
+        # If the YAML is a model file (entities/relationships) rather than a
+        # project config (functional_blocks), fall back to auto-discovery.
+        if not config.functional_blocks:
+            config, _report = discover_config(root)
+            return config
         # Auto-discover sub_blocks for blocks that don't define them in YAML
         for block in config.functional_blocks:
             if not block.sub_blocks and block.dirs:

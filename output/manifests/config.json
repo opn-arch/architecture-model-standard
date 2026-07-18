@@ -1,0 +1,53 @@
+{
+  "name": "Config",
+  "status": "active",
+  "description_source": "Configuration subpackage for the Architecture Model Standard.",
+  "sub_functions": [
+    {
+      "id": "F2.1",
+      "name": "Configuration subpackage for the Architecture Model Standard",
+      "file": "src/architecture_model/config/__init__.py",
+      "functions": [],
+      "inputs": [],
+      "outputs": [],
+      "status": "dormant",
+      "line_count": 25
+    },
+    {
+      "id": "F2.2",
+      "name": "Configuration loader for the Architecture Model Standard",
+      "file": "src/architecture_model/config/loader.py",
+      "functions": [
+        "load_config(root: Path) -> ProjectConfig",
+        "discover_config(root: Path) -> tuple[ProjectConfig, DiscoveryReport]",
+        "get_config(root: Path) -> ProjectConfig",
+        "write_config(config: ProjectConfig, root: Path | None) -> Path"
+      ],
+      "inputs": [
+        "root: Path",
+        "root: Path",
+        "root: Path",
+        "config: ProjectConfig",
+        "root: Path | None"
+      ],
+      "outputs": [
+        "ProjectConfig",
+        "Path",
+        "tuple[ProjectConfig, DiscoveryReport]"
+      ],
+      "status": "active",
+      "line_count": 563
+    },
+    {
+      "id": "F2.3",
+      "name": "Project configuration schema",
+      "file": "src/architecture_model/config/schema.py",
+      "functions": [],
+      "inputs": [],
+      "outputs": [],
+      "status": "active",
+      "line_count": 325
+    }
+  ],
+  "sub_blocks": []
+}

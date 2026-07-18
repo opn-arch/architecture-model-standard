@@ -1,403 +1,1727 @@
 meta:
-  project: architecture-model-standard
   schema_version: '1.5'
-  domain_profile: software
+  project: architecture-model-standard
+  generated_at: '2026-07-18T19:26:09.372363+00:00'
   source_artifacts:
-    - .architecture-model.yaml
-
+  - .architecture-model.yaml
 entities:
   actors:
-    - id: ACT-DEV
-      name: Developer
-      status: ACTIVE
-      description: Software engineer using CLI to manage architecture models
-    - id: ACT-LLM
-      name: LLM Agent
-      status: ACTIVE
-      description: AI agent consuming architecture models via opencode-arch MCP tools
-
-  layers:
-    - id: L-APP
-      name: Application Layer
-      status: ACTIVE
-
+  - id: ACT-DEV
+    name: Developer
+    status: ACTIVE
+    description: Software engineer using CLI to manage architecture models
+    type: human
+  - id: ACT-LLM
+    name: LLM Agent
+    status: ACTIVE
+    description: AI agent consuming architecture models via opencode-arch MCP tools
+    type: human
   capabilities:
-    - id: CAP-F1
-      name: Model Parsing & Validation
-      status: ACTIVE
-      f_block: F1
-      description: Parse YAML models and validate structural correctness (score 0-100)
-    - id: CAP-F2
-      name: Reality Manifest Generation
-      status: ACTIVE
-      f_block: F2
-      description: AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts
-    - id: CAP-F3
-      name: Model Slicing & Diffing
-      status: ACTIVE
-      f_block: F3
-      description: Subset extraction by F-block/layer, model version comparison, and enriched model composition
-    - id: CAP-F4
-      name: CLI Operations
-      status: ACTIVE
-      f_block: F4
-      description: "Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich"
-    - id: CAP-F5
-      name: Configuration Management
-      status: ACTIVE
-      f_block: F5
-      description: Auto-discovery config loading and project configuration schema
-    - id: CAP-F6
-      name: Schema Specification
-      status: ACTIVE
-      f_block: F6
-      description: JSON Schema definitions for architecture model validation
-    - id: CAP-F7
-      name: Model Extraction
-      status: ACTIVE
-      f_block: F7
-      description: Extract architecture model from source code
-    - id: CAP-F8
-      name: Domain Profiles
-      status: ACTIVE
-      f_block: F8
-      description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
-    - id: CAP-F9
-      name: Shared Utilities
-      status: ACTIVE
-      f_block: F9
-      description: File discovery, exclusion patterns, and shared helper functions
-    - id: CAP-F10
-      name: Auto-Enrichment
-      status: ACTIVE
-      f_block: F10
-      description: Populate signatures, constants, and test_contracts from AST scanning
-
+  - id: CAP-F1
+    name: Model Parsing & Validation
+    status: ACTIVE
+    description: Parse YAML models and validate structural correctness (score 0-100)
+    f_block: F1
+  - id: CAP-F2
+    name: Reality Manifest Generation
+    status: ACTIVE
+    description: AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts
+    f_block: F2
+  - id: CAP-F3
+    name: Model Slicing & Diffing
+    status: ACTIVE
+    description: Subset extraction by F-block/layer, model version comparison, and enriched model composition
+    f_block: F3
+  - id: CAP-F4
+    name: CLI Operations
+    status: ACTIVE
+    description: Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich
+    f_block: F4
+  - id: CAP-F5
+    name: Configuration Management
+    status: ACTIVE
+    description: Auto-discovery config loading and project configuration schema
+    f_block: F5
+  - id: CAP-F6
+    name: Schema Specification
+    status: ACTIVE
+    description: JSON Schema definitions for architecture model validation
+    f_block: F6
+  - id: CAP-F7
+    name: Model Extraction
+    status: ACTIVE
+    description: Extract architecture model from source code
+    f_block: F7
+  - id: CAP-F8
+    name: Domain Profiles
+    status: ACTIVE
+    description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
+    f_block: F8
+  - id: CAP-F9
+    name: Shared Utilities
+    status: ACTIVE
+    description: File discovery, exclusion patterns, and shared helper functions
+    f_block: F9
+  - id: CAP-F10
+    name: Auto-Enrichment
+    status: ACTIVE
+    description: Populate signatures, constants, and test_contracts from AST scanning
+    f_block: F10
   behaviors:
-    - id: BEH-INIT
-      name: Project Initialization
-      status: ACTIVE
-      description: Scan directory structure, discover source root, auto-generate .architecture-model.yaml
-    - id: BEH-VALIDATE
-      name: Model Validation
-      status: ACTIVE
-      description: Check architectural claims against schema and structural invariants, produce score 0-100
-    - id: BEH-MANIFEST
-      name: Manifest Generation
-      status: ACTIVE
-      description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
-    - id: BEH-ENRICH
-      name: Auto-Enrichment
-      status: ACTIVE
-      description: Enrich architecture model with function signatures, constants, and test contracts from AST
-    - id: BEH-EXTRACT
-      name: Model Extraction from Code
-      status: ACTIVE
-      description: Extract architecture model entities and relationships from source code analysis
-
+  - id: BEH-INIT
+    name: Project Initialization
+    status: ACTIVE
+    description: Scan directory structure, discover source root, auto-generate .architecture-model.yaml
+  - id: BEH-VALIDATE
+    name: Model Validation
+    status: ACTIVE
+    description: Check architectural claims against schema and structural invariants, produce score 0-100
+  - id: BEH-MANIFEST
+    name: Manifest Generation
+    status: ACTIVE
+    description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
+  - id: BEH-ENRICH
+    name: Auto-Enrichment
+    status: ACTIVE
+    description: Enrich architecture model with function signatures, constants, and test contracts from AST
+  - id: BEH-EXTRACT
+    name: Model Extraction from Code
+    status: ACTIVE
+    description: Extract architecture model entities and relationships from source code analysis
   interfaces:
-    - id: IF-CLI
-      name: CLI Interface
-      status: ACTIVE
-      description: "Entry point: architecture-model {init,validate,slice,diff,stats,impact,manifest,coverage,enrich}"
-    - id: IF-PARSE-API
-      name: Parser API
-      status: ACTIVE
-      description: "load_model(path) -> ArchitectureModel, save_model(model, path), dump_model(model) -> str"
-    - id: IF-VALIDATE-API
-      name: Validator API
-      status: ACTIVE
-      description: "validate_model(model) -> ValidationResult (score, issues, is_valid)"
-    - id: IF-MANIFEST-API
-      name: Manifest API
-      status: ACTIVE
-      description: "generate_manifest(project_root) -> Manifest"
-    - id: IF-SLICER-API
-      name: Slicer API
-      status: ACTIVE
-      description: "slice_by_fblock(model, id), slice_by_layer(model, id), slice_for_artifact(model, artifact)"
-    - id: IF-PROFILE-API
-      name: Profile API
-      status: ACTIVE
-      description: "load_profile(name) -> DomainProfile"
-    - id: IF-ENRICH-API
-      name: Enrichment API
-      status: ACTIVE
-      description: "enrich_model(model, project_root) -> ArchitectureModel"
-
+  - id: IF-CLI
+    name: CLI Interface
+    status: ACTIVE
+    description: 'Entry point: architecture-model {init,validate,slice,diff,stats,impact,manifest,coverage,enrich}'
+    type: internal
+  - id: IF-PARSE-API
+    name: Parser API
+    status: ACTIVE
+    description: load_model(path) -> ArchitectureModel, save_model(model, path), dump_model(model) -> str
+    type: internal
+  - id: IF-VALIDATE-API
+    name: Validator API
+    status: ACTIVE
+    description: validate_model(model) -> ValidationResult (score, issues, is_valid)
+    type: internal
+  - id: IF-MANIFEST-API
+    name: Manifest API
+    status: ACTIVE
+    description: generate_manifest(project_root) -> Manifest
+    type: internal
+  - id: IF-SLICER-API
+    name: Slicer API
+    status: ACTIVE
+    description: slice_by_fblock(model, id), slice_by_layer(model, id), slice_for_artifact(model, artifact)
+    type: internal
+  - id: IF-PROFILE-API
+    name: Profile API
+    status: ACTIVE
+    description: load_profile(name) -> DomainProfile
+    type: internal
+  - id: IF-ENRICH-API
+    name: Enrichment API
+    status: ACTIVE
+    description: enrich_model(model, project_root) -> ArchitectureModel
+    type: internal
   constraints:
-    - id: CON-SCHEMA
-      name: Schema Compliance
-      status: ACTIVE
-      description: All models must conform to JSON Schema v1.5 with 7 entity types and 8 relationship types
-    - id: CON-NO-ORPHANS
-      name: No Orphaned Entities
-      status: ACTIVE
-      description: Every entity must participate in at least one relationship
-
+  - id: CON-SCHEMA
+    name: Schema Compliance
+    status: ACTIVE
+    description: All models must conform to JSON Schema v1.5 with 7 entity types and 8 relationship types
+    type: technology
+  - id: CON-NO-ORPHANS
+    name: No Orphaned Entities
+    status: ACTIVE
+    description: Every entity must participate in at least one relationship
+    type: technology
+  layers:
+  - id: L-APP
+    name: Application Layer
+    status: ACTIVE
+    order: 0
   components:
-    # Top-level components
-    - id: COMP-CORE
-      name: core
-      status: ACTIVE
-      description: "Parser, validator, slicer, differ, merger, decomposer, type system"
-    - id: COMP-MANIFEST
-      name: manifest
-      status: ACTIVE
-      description: "AST scanner, block discovery, metrics, interface detection, body hints, test analyzer"
-    - id: COMP-CLI
-      name: cli
-      status: ACTIVE
-      description: "CLI entry point and command dispatch (9 commands: init, validate, slice, diff, stats, impact, manifest, coverage, enrich)"
-      files:
-        - src/architecture_model/cli/main.py
-        - src/architecture_model/cli/__init__.py
-    - id: COMP-CONFIG
-      name: config
-      status: ACTIVE
-      description: Configuration loader (auto-discovery) and schema definition
-      files:
-        - src/architecture_model/config/loader.py
-        - src/architecture_model/config/schema.py
-        - src/architecture_model/config/__init__.py
-    - id: COMP-SPEC
-      name: spec
-      status: ACTIVE
-      description: JSON Schema definitions for architecture model validation
-      files:
-        - src/architecture_model/spec/__init__.py
-    - id: COMP-EXTRACT
-      name: extract
-      status: ACTIVE
-      description: Extract architecture model from source code analysis
-      files:
-        - src/architecture_model/extract/from_code.py
-    - id: COMP-PROFILES
-      name: profiles
-      status: ACTIVE
-      description: Domain profile system (software, controls, mechanical, electrical)
-      files:
-        - src/architecture_model/profiles/schema.py
-        - src/architecture_model/profiles/__init__.py
-        - src/architecture_model/profiles/builtins/__init__.py
-    - id: COMP-UTILS
-      name: utils
-      status: ACTIVE
-      description: File discovery, exclusion patterns, and shared helper functions
-      files:
-        - src/architecture_model/utils/discovery.py
-        - src/architecture_model/utils/__init__.py
-    - id: COMP-ENRICH
-      name: enrich
-      status: ACTIVE
-      description: Auto-enrichment of architecture models with AST-derived signatures, constants, and test contracts
-      files:
-        - src/architecture_model/enrich.py
-    # COMP-CORE sub-components
-    - id: COMP-CORE-PARSER
-      name: core.parser
-      status: ACTIVE
-      description: YAML model parser (load_model, save_model, dump_model)
-      files:
-        - src/architecture_model/core/parser.py
-    - id: COMP-CORE-VALIDATOR
-      name: core.validator
-      status: ACTIVE
-      description: Structural validation engine producing score 0-100
-      files:
-        - src/architecture_model/core/validator.py
-    - id: COMP-CORE-SLICER
-      name: core.slicer
-      status: ACTIVE
-      description: Model subsetting by F-block, layer, or artifact
-      files:
-        - src/architecture_model/core/slicer.py
-    - id: COMP-CORE-DIFFER
-      name: core.differ
-      status: ACTIVE
-      description: Model version comparison and diff generation
-      files:
-        - src/architecture_model/core/differ.py
-    - id: COMP-CORE-MERGER
-      name: core.merger
-      status: ACTIVE
-      description: Model merging and composition
-      files:
-        - src/architecture_model/core/merger.py
-    - id: COMP-CORE-DECOMPOSER
-      name: core.decomposer
-      status: ACTIVE
-      description: Model decomposition into subsystems
-      files:
-        - src/architecture_model/core/decomposer.py
-    - id: COMP-CORE-TYPES
-      name: core.types
-      status: ACTIVE
-      description: Type system (ArchitectureModel, Component, Capability, FunctionSignature, TestContract, etc.)
-      files:
-        - src/architecture_model/core/types.py
-    # COMP-MANIFEST sub-components
-    - id: COMP-MANIFEST-SCANNER
-      name: manifest.scanner
-      status: ACTIVE
-      description: AST-based source code scanner
-      files:
-        - src/architecture_model/manifest/scanner.py
-    - id: COMP-MANIFEST-BLOCKS
-      name: manifest.blocks
-      status: ACTIVE
-      description: Functional block discovery from source tree
-      files:
-        - src/architecture_model/manifest/blocks.py
-    - id: COMP-MANIFEST-METRICS
-      name: manifest.metrics
-      status: ACTIVE
-      description: Code metrics computation (LOC, complexity, etc.)
-      files:
-        - src/architecture_model/manifest/metrics.py
-    - id: COMP-MANIFEST-INTERFACES
-      name: manifest.interfaces
-      status: ACTIVE
-      description: Interface detection from public API surface
-      files:
-        - src/architecture_model/manifest/interfaces.py
-    - id: COMP-MANIFEST-BODY-HINTS
-      name: manifest.body_hints
-      status: ACTIVE
-      description: Function body hint extraction for trivial implementations
-      files:
-        - src/architecture_model/manifest/body_hints.py
-    - id: COMP-MANIFEST-TEST-ANALYZER
-      name: manifest.test_analyzer
-      status: ACTIVE
-      description: Test contract extraction from test files
-      files:
-        - src/architecture_model/manifest/test_analyzer.py
-    - id: COMP-MANIFEST-GENERATOR
-      name: manifest.generator
-      status: ACTIVE
-      description: Top-level manifest generation orchestrator
-      files:
-        - src/architecture_model/manifest/generator.py
-        - src/architecture_model/manifest/display.py
-        - src/architecture_model/manifest/slicers.py
-    - id: COMP-MANIFEST-TYPES
-      name: manifest.types
-      status: ACTIVE
-      description: Manifest data types (Manifest, ModuleInfo, FunctionalBlock)
-      files:
-        - src/architecture_model/manifest/types.py
-
+  - id: COMP-CORE
+    name: core
+    status: ACTIVE
+    description: Parser, validator, slicer, differ, merger, decomposer, type system
+  - id: COMP-MANIFEST
+    name: manifest
+    status: ACTIVE
+    description: AST scanner, block discovery, metrics, interface detection, body hints, test analyzer
+  - id: COMP-CLI
+    name: cli
+    status: ACTIVE
+    description: 'CLI entry point and command dispatch (9 commands: init, validate, slice, diff, stats, impact, manifest,
+      coverage, enrich)'
+    files:
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/__init__.py
+    signatures:
+    - name: main
+      params:
+      - 'argv: list[str] | None'
+      returns: int
+      body_hint: 'parser = argparse.ArgumentParser(prog=''architecture-model'', descri...; subparsers = parser.add_subparsers(dest=''command'',
+        help=''Available com...; p_validate = subparsers.add_parser(''validate'', help=''Validate model in...; p_validate.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_validate.add_argument(''--strict'', action=''store_true'', help=''Promote
+        warnings to errors''); p_slice = subparsers.add_parser(''slice'', help=''Extract model subset''); p_slice.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--fblock'', help=''Filter by F-block (e.g., F3)'');
+        p_slice.add_argument(''--layer'', help=''Filter by layer (e.g., web-layer)''); p_slice.add_argument(''--artifact'',
+        help=''Slice for artifact regeneration''); p_slice.add_argument(''--status'', help=''Filter by status (ACTIVE, PLANNED)'');
+        p_slice.add_argument(''-o'', ''--output'', help=''Output YAML path (default: stdout summary)''); p_diff = subparsers.add_parser(''diff'',
+        help=''Compare two model ver...; p_diff.add_argument(''old_model'', help=''Path to old/baseline model''); p_diff.add_argument(''new_model'',
+        help=''Path to new/current model''); p_stats = subparsers.add_parser(''stats'', help=''Show model statistics''); p_stats.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_init = subparsers.add_parser(''init'', help=''Auto-generate .archit...;
+        p_init.add_argument(''path'', nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_init.add_argument(''--force'',
+        action=''store_true'', help=''Overwrite existing config file''); p_impact = subparsers.add_parser(''impact'', help=''Impact
+        analysis for...; p_impact.add_argument(''model'', help=''Path to architecture-model.yaml''); p_impact.add_argument(''entity_id'',
+        help=''Entity ID to analyze''); p_impact.add_argument(''--depth'', type=int, default=2, help=''Traversal depth'');
+        p_manifest = subparsers.add_parser(''manifest'', help=''Generate reality-...; p_manifest.add_argument(''path'', nargs=''?'',
+        default=''.'', help=''Project root directory (default: cwd)''); p_manifest.add_argument(''-o'', ''--output'', help=''Output
+        JSON path''); p_enrich = subparsers.add_parser(''enrich'', help=''Auto-enrich model w...; p_enrich.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_enrich.add_argument(''--root'', default=''.'', help=''Project root directory'');
+        p_coverage = subparsers.add_parser(''coverage'', help=''Analyze model cov...; p_coverage.add_argument(''model'', help=''Path
+        to .architecture-model.yaml''); p_coverage.add_argument(''--project'', ''-p'', help=''Project path for manifest generation
+        (default: model directory)''); p_coverage.add_argument(''--manifest'', help=''Path to pre-generated manifest JSON'');
+        args = parser.parse_args(argv); if not args.command: ...; handlers = {''init'': _cmd_init, ''validate'': _cmd_validate,
+        ''slice'': _...; return handlers[args.command](args)'
+  - id: COMP-CONFIG
+    name: config
+    status: ACTIVE
+    description: Configuration loader (auto-discovery) and schema definition
+    files:
+    - src/architecture_model/config/loader.py
+    - src/architecture_model/config/schema.py
+    - src/architecture_model/config/__init__.py
+    constants:
+    - name: CONFIG_FILENAME
+      value: .architecture-model.yaml
+    signatures:
+    - name: load_config
+      params:
+      - 'root: Path'
+      returns: ProjectConfig
+      body_hint: "config_path = root / CONFIG_FILENAME; if not config_path.exists():\n    raise FileNotFoundError(f'No {CONFIG_FILENAME}\
+        \ found in {root}. Run `architecture-model init` to generate one, or use get_config() for auto-discovery.'); data\
+        \ = yaml.safe_load(config_path.read_text(encoding='utf-8')); if not data:\n    data = {}; return ProjectConfig.from_dict(data,\
+        \ root=root)"
+    - name: discover_config
+      params:
+      - 'root: Path'
+      returns: tuple[ProjectConfig, DiscoveryReport]
+      body_hint: 'name = root.name; report = DiscoveryReport(); layers = _discover_layers(root, report); metrics = _discover_metrics(root);
+        functional_blocks = _discover_functional_blocks(root, report); if not layers and functional_blocks: ...; report.layers_discovered
+        = len(layers); report.metrics_discovered = len(metrics); config = ProjectConfig(name=name, system=name, output=OutputConfig...;
+        logger.info(''Discovery complete: %s'', report.summary()); return (config, report)'
+    - name: get_config
+      params:
+      - 'root: Path'
+      returns: ProjectConfig
+      body_hint: "config_path = root / CONFIG_FILENAME; if config_path.exists():\n    config = load_config(root)\n    for\
+        \ block in config.functional_blocks:\n        if not block.sub_blocks and block.dirs:\n            block_path = root\
+        \ / block.dirs[0]\n            if block_path.is_dir():\n                block.sub_blocks = _discover_sub_blocks(block_path,\
+        \ block.id, root)\n    return config; config, _report = discover_config(root); return config"
+    - name: write_config
+      params:
+      - 'config: ProjectConfig'
+      - 'root: Path | None'
+      returns: Path
+      body_hint: 'if root is None: ...; config_path = root / CONFIG_FILENAME; data = config.to_dict(); header = "# Architecture
+        Model Standard - Project Descriptor\n# Au...; yaml_content = yaml.dump(data, default_flow_style=False, sort_keys=False...;
+        config_path.write_text(header + yaml_content, encoding=''utf-8''); return config_path'
+    - name: resolve
+      params:
+      - 'project_name: str'
+      - 'root: Path'
+      returns: '''ResolvedOutputConfig'''
+      body_hint: return ResolvedOutputConfig(model=root / self.model.format(project=project_name), manifest=root / self.manifest.format(project=project_name),
+        artifacts=root / self.artifacts.format(project=project_name))
+    - name: layer_dir_map
+      returns: dict[str, list[str]]
+      decorators:
+      - property
+      body_hint: 'return {layer.id: layer.dirs for layer in self.layers if layer.dirs}'
+    - name: fblock_dir_map
+      returns: dict[str, str]
+      decorators:
+      - property
+      body_hint: "result: dict[str, str] = {}; for block in self.functional_blocks:\n    for d in block.dirs:\n        result[d]\
+        \ = block.id\n    for f in block.files:\n        prefix = f.rsplit('.py', 1)[0] if f.endswith('.py') else f\n    \
+        \    result[prefix] = block.id; return result"
+    - name: fblock_dict
+      returns: dict[str, dict[str, Any]]
+      decorators:
+      - property
+      body_hint: 'return {block.id: {''name'': block.name, ''dirs'': block.dirs, ''files'': block.files, ''description_source'':
+        block.description_source} for block in self.functional_blocks}'
+    - name: metrics_paths
+      returns: dict[str, Path]
+      decorators:
+      - property
+      body_hint: 'return {m.label: self.root / m.path for m in self.metrics}'
+    - name: resolved_output
+      returns: ResolvedOutputConfig
+      body_hint: return self.output.resolve(self.name, self.root)
+    - name: from_dict
+      params:
+      - 'data: dict[str, Any]'
+      - 'root: Path'
+      returns: '''ProjectConfig'''
+      decorators:
+      - classmethod
+      body_hint: project = data.get('project', {}); output_data = data.get('output', {}); layers_data = data.get('layers',
+        {}); blocks_data = data.get('functional_blocks', {}); metrics_data = data.get('metrics', []); layers = [LayerConfig(id=layer_id,
+        dirs=layer_def.get('dirs', []) ...; blocks = [FunctionalBlockConfig(id=block_id, name=block_def.get('n...; metrics
+        = [MetricConfig(label=m.get('label', ''), path=m.get('path'...; return cls(name=project.get('name', ''), system=project.get('system',
+        ''), output=OutputConfig(model=output_data.get('model', OutputConfig.model), manifest=output_data.get('manifest',
+        OutputConfig.manifest), artifacts=output_data.get('artifacts', OutputConfig.artifacts)), layers=layers, functional_blocks=blocks,
+        metrics=metrics, root=root)
+    - name: to_dict
+      returns: dict[str, Any]
+      body_hint: 'return {''project'': {''name'': self.name, ''system'': self.system}, ''output'': {''model'': self.output.model,
+        ''manifest'': self.output.manifest, ''artifacts'': self.output.artifacts}, ''layers'': {layer.id: {''dirs'': layer.dirs}
+        for layer in self.layers}, ''functional_blocks'': {block.id: {''name'': block.name, ''dirs'': block.dirs, ''files'':
+        block.files, ''description_source'': block.description_source, **({''sub_blocks'': _serialize_sub_blocks(block.sub_blocks)}
+        if block.sub_blocks else {})} for block in self.functional_blocks}, ''metrics'': [{''label'': m.label, ''path'': m.path,
+        ''pattern'': m.pattern, **({''exclude'': m.exclude} if m.exclude else {}), **({''recursive'': True} if m.recursive
+        else {})} for m in self.metrics]}'
+    - name: add_candidate
+      params:
+      - 'category: str'
+      - 'path: str'
+      - 'accepted: bool'
+      - 'reason: str'
+      returns: None
+      body_hint: self.candidates.append(DiscoveryCandidate(category, path, accepted, reason))
+    - name: claim_rate
+      returns: float
+      decorators:
+      - property
+      body_hint: "if self.files_total == 0:\n    return 1.0; return self.files_claimed / self.files_total"
+    - name: summary
+      returns: str
+      body_hint: 'return f''Layout: {self.layout_detected}, {self.blocks_discovered} blocks, {self.layers_discovered} layers,
+        {self.metrics_discovered} metrics, {self.files_claimed}/{self.files_total} files claimed ({self.claim_rate:.0%})'''
+  - id: COMP-SPEC
+    name: spec
+    status: ACTIVE
+    description: JSON Schema definitions for architecture model validation
+    files:
+    - src/architecture_model/spec/__init__.py
+  - id: COMP-EXTRACT
+    name: extract
+    status: ACTIVE
+    description: Extract architecture model from source code analysis
+    files:
+    - src/architecture_model/extract/from_code.py
+    signatures:
+    - name: extract_from_code
+      params:
+      - 'project_root: str | Path'
+      - 'config: ProjectConfig | None'
+      - 'manifest: dict | None'
+      returns: ArchitectureModel
+      body_hint: 'root = Path(project_root).resolve(); if config is None: ...; if manifest is None: ...; capabilities = _derive_capabilities(config);
+        routes = detect_routes(root, _get_web_layer_dirs(config)); actors = _derive_actors(routes, manifest); route_behaviors
+        = _derive_route_behaviors(routes, config); service_behaviors = _detect_service_behaviors(root, config); behaviors
+        = route_behaviors + service_behaviors; components = _derive_components(manifest, config); interfaces = _derive_interfaces(manifest,
+        config); layers = _derive_layers(config); constraints = detect_constraints(root); entities = Entities(actors=actors,
+        capabilities=capabilities, behavi...; relationships = _derive_relationships(capabilities=capabilities, behavior...;
+        meta = ModelMeta(schema_version=''1.0.0'', project=config.name or ...; return ArchitectureModel(meta=meta, entities=entities,
+        relationships=relationships)'
+  - id: COMP-PROFILES
+    name: profiles
+    status: ACTIVE
+    description: Domain profile system (software, controls, mechanical, electrical)
+    files:
+    - src/architecture_model/profiles/schema.py
+    - src/architecture_model/profiles/__init__.py
+    - src/architecture_model/profiles/builtins/__init__.py
+    constants:
+    - name: PROFILES_DIR
+      value: Path(__file__).parent / 'builtins'
+    signatures:
+    - name: from_dict
+      params:
+      - 'data: dict[str, Any]'
+      returns: DomainProfile
+      decorators:
+      - classmethod
+      body_hint: return cls(domain=data['domain'], extends_schema=data.get('extends_schema', '1.4'), enum_extensions=[EnumExtension(**e)
+        for e in data.get('enum_extensions', [])], entity_extensions=[EntityExtension(**e) for e in data.get('entity_extensions',
+        [])], validation_rules=[ConditionalRule(**r) for r in data.get('validation_rules', [])])
+    - name: get_extended_values
+      params:
+      - 'enum_name: str'
+      returns: list[str]
+      body_hint: "for ext in self.enum_extensions:\n    if ext.enum_name == enum_name:\n        return ext.values; return\
+        \ []"
+    - name: load_profile
+      params:
+      - 'name_or_path: str'
+      returns: DomainProfile
+      body_hint: 'if name_or_path in BUILTIN_PROFILES: ...; if not path.exists(): ...; data = yaml.safe_load(path.read_text(encoding=''utf-8''));
+        profile = DomainProfile.from_dict(data); logger.info(''Loaded domain profile: %s'', profile.domain); return profile'
+  - id: COMP-UTILS
+    name: utils
+    status: ACTIVE
+    description: File discovery, exclusion patterns, and shared helper functions
+    files:
+    - src/architecture_model/utils/discovery.py
+    - src/architecture_model/utils/__init__.py
+    signatures:
+    - name: is_excluded_dir
+      params:
+      - 'path: Path'
+      returns: bool
+      body_hint: name = path.name; return name in EXCLUDED_DIRS or name.startswith('.')
+    - name: collect_py_files
+      params:
+      - 'directory: Path'
+      - 'recursive: bool'
+      - 'exclude_init: bool'
+      returns: list[Path]
+      body_hint: "if not directory.is_dir():\n    logger.debug('Directory does not exist: %s', directory)\n    return [];\
+        \ glob_fn = directory.rglob if recursive else directory.glob; files = sorted((p for p in glob_fn('*.py') if not any((part\
+        \ in EXCLUDED_DIRS for part in p.parts)) and (not exclude_init or p.name != '__init__.py'))); logger.debug('Collected\
+        \ %d .py files from %s (recursive=%s)', len(files), directory, recursive); return files"
+    - name: discover_source_files
+      params:
+      - 'project_root: Path'
+      returns: list[Path]
+      body_hint: all_py = collect_py_files(project_root, recursive=True); sources = [f for f in all_py if not _is_test_file(f,
+        project_root)]; logger.info('Discovered %d source files (of %d total .py)', len(sources), len(all_py)); return sources
+    - name: discover_test_files
+      params:
+      - 'project_root: Path'
+      returns: list[Path]
+      body_hint: all_py = collect_py_files(project_root, recursive=True); tests = [f for f in all_py if _is_test_file(f, project_root)];
+        logger.info('Discovered %d test files', len(tests)); return tests
+    test_contracts:
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_excludes_pycache
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_recursive
+      assertion: len(result) == 2
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_non_recursive
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_exclude_init
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_nonexistent_dir
+      assertion: result == []
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_discover_test_files
+      assertion: len(result) == 2
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_discover_test_files_by_name
+      assertion: len(result) == 2
+      contract_type: value_equality
+  - id: COMP-ENRICH
+    name: enrich
+    status: ACTIVE
+    description: Auto-enrichment of architecture models with AST-derived signatures, constants, and test contracts
+    files:
+    - src/architecture_model/enrich.py
+    signatures:
+    - name: enrich_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'project_root: Path'
+      returns: ArchitectureModel
+      body_hint: "components = model.entities.get('components', []) if isinstance(model.entities, dict) else model.entities.components;\
+        \ for comp in components:\n    if _enum_str(comp.status) != 'ACTIVE':\n        continue\n    if not comp.files:\n\
+        \        continue\n    _enrich_signatures(comp, project_root)\n    _enrich_constants(comp, project_root)\n    _enrich_test_contracts(comp,\
+        \ project_root); return model"
+    test_contracts:
+    - test_file: test_enrich.py
+      test_method: test_enrich_skips_planned_components
+      assertion: len(c.signatures) == 0
+      contract_type: value_equality
+    - test_file: test_enrich.py
+      test_method: test_enrich_handles_missing_files
+      assertion: len(c.signatures) == 0
+      contract_type: value_equality
+  - id: COMP-CORE-PARSER
+    name: core.parser
+    status: ACTIVE
+    description: YAML model parser (load_model, save_model, dump_model)
+    files:
+    - src/architecture_model/core/parser.py
+    constants:
+    - name: SCHEMA_PATH
+      value: Path(__file__).parent.parent / 'spec' / 'schema.json'
+    signatures:
+    - name: load_model
+      params:
+      - 'path: str | Path'
+      returns: ArchitectureModel
+      body_hint: "path = Path(path); with open(path, 'r', encoding='utf-8') as f:\n    raw = yaml.safe_load(f); if raw is\
+        \ None:\n    raise ValueError(f'Empty model file: {path}'); return _parse_raw(raw)"
+    - name: validate_model_data
+      params:
+      - 'data: dict[str, Any]'
+      returns: list[str]
+      body_hint: "if not HAS_JSONSCHEMA:\n    return ['jsonschema not installed — skipping schema validation']; schema = json.loads(SCHEMA_PATH.read_text(encoding='utf-8'));\
+        \ validator = jsonschema.Draft202012Validator(schema); return [f'{e.json_path}: {e.message}' for e in validator.iter_errors(data)]"
+    - name: dump_model
+      params:
+      - 'model: ArchitectureModel'
+      returns: dict[str, Any]
+      body_hint: 'return {''meta'': _dump_meta(model.meta), ''entities'': _dump_entities(model.entities), ''relationships'':
+        [_dump_relationship(r) for r in model.relationships]}'
+    - name: save_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'path: str | Path'
+      returns: None
+      body_hint: "path = Path(path); path.parent.mkdir(parents=True, exist_ok=True); data = dump_model(model); with open(path,\
+        \ 'w', encoding='utf-8') as f:\n    yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True,\
+        \ width=120)"
+    test_contracts:
+    - test_file: test_parser.py
+      test_method: test_load_returns_architecture_model
+      assertion: model isinstance ArchitectureModel
+      contract_type: type_check
+    - test_file: test_parser.py
+      test_method: test_meta_has_schema_version
+      assertion: model.meta.schema_version == '0.1.0'
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_empty_file_raises
+      assertion: raises ValueError
+      contract_type: raises
+    - test_file: test_parser.py
+      test_method: test_missing_file_raises
+      assertion: raises FileNotFoundError
+      contract_type: raises
+    - test_file: test_parser.py
+      test_method: test_malformed_yaml_raises
+      assertion: raises Exception
+      contract_type: raises
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_entity_count
+      assertion: reloaded.entity_count == model.entity_count
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_relationship_count
+      assertion: reloaded.relationship_count == model.relationship_count
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_meta
+      assertion: reloaded.meta.project == model.meta.project
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_actor_ids
+      assertion: original_ids == reloaded_ids
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_real_model_passes_schema
+      assertion: len(real_errors) == 0
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_minimal_valid_structure
+      assertion: real_errors isinstance list
+      contract_type: type_check
+  - id: COMP-CORE-VALIDATOR
+    name: core.validator
+    status: ACTIVE
+    description: Structural validation engine producing score 0-100
+    files:
+    - src/architecture_model/core/validator.py
+    signatures:
+    - name: error_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for i in self.issues if i.severity == Severity.ERROR))
+    - name: warning_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for i in self.issues if i.severity == Severity.WARNING))
+    - name: info_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for i in self.issues if i.severity == Severity.INFO))
+    - name: is_valid
+      returns: bool
+      decorators:
+      - property
+      body_hint: return self.error_count == 0
+    - name: score
+      returns: int
+      decorators:
+      - property
+      body_hint: penalty = self.error_count * 10 + self.warning_count * 2; return max(0, 100 - penalty)
+    - name: summary
+      returns: str
+      body_hint: 'return f''Score: {self.score}/100 | Errors: {self.error_count}, Warnings: {self.warning_count}, Info: {self.info_count}'''
+    - name: validate_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'strict: bool'
+      returns: ValidationResult
+      body_hint: 'result = ValidationResult(); _check_id_uniqueness(model, result); _check_referential_integrity(model, result);
+        _check_orphan_entities(model, result); _check_status_consistency(model, result); _check_capability_realization(model,
+        result); _check_meta_completeness(model, result); _check_v11_semantics(model, result); _check_regen_readiness(model,
+        result); _check_domain_profile(model, result); _check_improvement_opportunities(model, result); if strict: ...; return
+        result'
+    test_contracts:
+    - test_file: test_validator.py
+      test_method: test_perfect_model_scores_100
+      assertion: result.score == 100
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_score_deducts_10_per_error
+      assertion: result.score == 90
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_score_deducts_2_per_warning
+      assertion: result.score == 98
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_score_floors_at_zero
+      assertion: result.score == 0
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_info_does_not_affect_score
+      assertion: result.score == 100
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_duplicate_id_across_types_errors
+      assertion: dup_errors[0].severity == Severity.ERROR
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_unique_ids_no_duplicates
+      assertion: len(dup_errors) == 0
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_known_external_not_dangling
+      assertion: len(dangling) == 0
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_orphan_component_produces_info
+      assertion: orphans[0].severity == Severity.INFO
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_orphan_behavior_produces_info
+      assertion: orphans[0].severity == Severity.INFO
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_dormant_component_not_orphan
+      assertion: len(orphans) == 0
+      contract_type: value_equality
+  - id: COMP-CORE-SLICER
+    name: core.slicer
+    status: ACTIVE
+    description: Model subsetting by F-block, layer, or artifact
+    files:
+    - src/architecture_model/core/slicer.py
+    signatures:
+    - name: slice_by_fblock
+      params:
+      - 'model: ArchitectureModel'
+      - 'f_block: str'
+      - 'include_relationships: bool'
+      returns: ArchitectureModel
+      body_hint: 'cap_ids = {c.id for c in model.entities.capabilities if c.f_block =...; behaviors = [b for b in model.entities.behaviors
+        if f_block in b.tags]; behavior_ids = {b.id for b in behaviors}; components = [c for c in model.entities.components
+        if c.f_block == f_b...; component_ids = {c.id for c in components}; interfaces = [i for i in model.entities.interfaces
+        if f_block in i.pro...; interface_ids = {i.id for i in interfaces}; relevant_ids = cap_ids | behavior_ids | component_ids
+        | interface_ids; actor_refs = set(); for beh in behaviors: ...; actors = [a for a in model.entities.actors if a.id
+        in actor_refs]; relationships = []; if include_relationships: ...; capabilities = [c for c in model.entities.capabilities
+        if c.f_block == f...; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version, project=model.meta.project,
+        system=model.meta.system, generated_at=model.meta.generated_at, source_artifacts=model.meta.source_artifacts), entities=Entities(actors=actors,
+        capabilities=capabilities, behaviors=behaviors, interfaces=interfaces, constraints=[], layers=[], components=components),
+        relationships=relationships)'
+    - name: slice_by_layer
+      params:
+      - 'model: ArchitectureModel'
+      - 'layer_id: str'
+      returns: ArchitectureModel
+      body_hint: layers = [l for l in model.entities.layers if l.id == layer_id]; components = [c for c in model.entities.components
+        if c.layer == layer_id]; component_ids = {c.id for c in components}; relationships = [deepcopy(r) for r in model.relationships
+        if r.from_id in component_ids or r.to_id in component_ids]; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version,
+        project=model.meta.project, system=model.meta.system, generated_at=model.meta.generated_at, source_artifacts=model.meta.source_artifacts),
+        entities=Entities(layers=layers, components=components), relationships=relationships)
+    - name: slice_by_status
+      params:
+      - 'model: ArchitectureModel'
+      - 'status: Status'
+      returns: ArchitectureModel
+      body_hint: "entities = Entities(actors=[a for a in model.entities.actors if a.status == status], capabilities=[c for\
+        \ c in model.entities.capabilities if c.status == status], behaviors=[b for b in model.entities.behaviors if b.status\
+        \ == status], interfaces=[i for i in model.entities.interfaces if i.status == status], constraints=[c for c in model.entities.constraints\
+        \ if c.status == status], layers=[l for l in model.entities.layers if l.status == status], components=[c for c in\
+        \ model.entities.components if c.status == status]); all_ids = set(); for lst in [entities.actors, entities.capabilities,\
+        \ entities.behaviors, entities.interfaces, entities.constraints, entities.layers, entities.components]:\n    for e\
+        \ in lst:\n        all_ids.add(e.id); relationships = [deepcopy(r) for r in model.relationships if r.from_id in all_ids\
+        \ and r.to_id in all_ids]; return ArchitectureModel(meta=deepcopy(model.meta), entities=entities, relationships=relationships)"
+    - name: slice_for_artifact
+      params:
+      - 'model: ArchitectureModel'
+      - 'artifact_name: str'
+      returns: ArchitectureModel
+      body_hint: "slicers = {'functional-architecture': _slice_for_functional, 'logical-architecture': _slice_for_logical,\
+        \ 'use-cases': _slice_for_use_cases, 'icd': _slice_for_icd, 'requirements-analysis': _slice_for_requirements, 'operations-manual':\
+        \ _slice_for_operations_manual, 'conops': _slice_for_conops, 'testing': _slice_for_testing, 'deployment-guide': _slice_for_deployment,\
+        \ 'data-dictionary': _slice_for_data_dictionary, 'readme': _slice_for_readme}; slicer_fn = slicers.get(artifact_name);\
+        \ if slicer_fn:\n    return slicer_fn(model); return deepcopy(model)"
+    test_contracts:
+    - test_file: test_slicer.py
+      test_method: test_returns_only_fblock_capabilities
+      assertion: cap.f_block == 'F1'
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_returns_only_fblock_components
+      assertion: comp.f_block == 'F2'
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_nonexistent_fblock_returns_empty
+      assertion: len(sliced.entities.capabilities) == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_no_relationship_mode
+      assertion: sliced.relationship_count == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_registered_artifact_returns_subset
+      assertion: sliced isinstance ArchitectureModel
+      contract_type: type_check
+    - test_file: test_slicer.py
+      test_method: test_registered_artifact_preserves_meta
+      assertion: sliced.meta.project == model.meta.project
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_functional_has_no_components
+      assertion: len(sliced.entities.components) == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_unregistered_artifact_returns_full_copy
+      assertion: sliced.entity_count == model.entity_count
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_sliced_model_no_extra_entities_leaked
+      assertion: len(leaked) == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_active_filter
+      assertion: cap.status == Status.ACTIVE
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_slice_by_existing_layer
+      assertion: sliced isinstance ArchitectureModel
+      contract_type: type_check
+    - test_file: test_slicer.py
+      test_method: test_slice_by_nonexistent_layer
+      assertion: len(sliced.entities.components) == 0
+      contract_type: value_equality
+  - id: COMP-CORE-DIFFER
+    name: core.differ
+    status: ACTIVE
+    description: Model version comparison and diff generation
+    files:
+    - src/architecture_model/core/differ.py
+    signatures:
+    - name: has_changes
+      returns: bool
+      decorators:
+      - property
+      body_hint: return bool(self.entity_changes or self.relationship_changes)
+    - name: added_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for c in self.entity_changes if c.change_type == ChangeType.ADDED))
+    - name: removed_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for c in self.entity_changes if c.change_type == ChangeType.REMOVED))
+    - name: modified_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for c in self.entity_changes if c.change_type == ChangeType.MODIFIED))
+    - name: summary
+      returns: str
+      body_hint: "if not self.has_changes:\n    return 'No changes detected.'; return f'Changes: +{self.added_count} -{self.removed_count}\
+        \ ~{self.modified_count} entities, {len(self.relationship_changes)} relationship changes'"
+    - name: format_report
+      returns: str
+      body_hint: "if not self.has_changes:\n    return 'No changes detected between model versions.'; lines: list[str] = ['#\
+        \ Architecture Model Diff', '', self.summary(), '']; if self.entity_changes:\n    lines.append('## Entity Changes')\n\
+        \    lines.append('')\n    by_type: dict[str, list[EntityChange]] = {}\n    for change in self.entity_changes:\n \
+        \       by_type.setdefault(change.entity_type, []).append(change)\n    for etype, changes in sorted(by_type.items()):\n\
+        \        lines.append(f'### {etype.title()}s')\n        for c in changes:\n            prefix = {'added': '+', 'removed':\
+        \ '-', 'modified': '~'}[c.change_type.value]\n            detail = f' ({c.details})' if c.details else ''\n      \
+        \      lines.append(f'  {prefix} {c.entity_id}: {c.entity_name}{detail}')\n        lines.append(''); if self.relationship_changes:\n\
+        \    lines.append('## Relationship Changes')\n    lines.append('')\n    for rc in self.relationship_changes:\n   \
+        \     prefix = {'added': '+', 'removed': '-', 'modified': '~'}[rc.change_type.value]\n        lines.append(f'  {prefix}\
+        \ {rc.from_id} --{rc.rel_type}--> {rc.to_id}'); return '\\n'.join(lines)"
+    - name: affected_artifacts
+      returns: set[str]
+      body_hint: "affected: set[str] = set(); for change in self.entity_changes:\n    etype = change.entity_type\n    if etype\
+        \ in ('actor', 'behavior'):\n        affected.add('use-cases')\n    if etype == 'capability':\n        affected.add('functional-architecture')\n\
+        \        affected.add('use-cases')\n    if etype in ('layer', 'component'):\n        affected.add('logical-architecture')\n\
+        \    if etype == 'interface':\n        affected.add('icd')\n    if etype == 'constraint':\n        affected.add('requirements-analysis')\n\
+        \    affected.add('readme'); return affected"
+    - name: diff_models
+      params:
+      - 'old_model: ArchitectureModel'
+      - 'new_model: ArchitectureModel'
+      returns: ModelDiff
+      body_hint: result = ModelDiff(); _diff_entity_list(old_model.entities.actors, new_model.entities.actors, 'actor', result);
+        _diff_entity_list(old_model.entities.capabilities, new_model.entities.capabilities, 'capability', result); _diff_entity_list(old_model.entities.behaviors,
+        new_model.entities.behaviors, 'behavior', result); _diff_entity_list(old_model.entities.interfaces, new_model.entities.interfaces,
+        'interface', result); _diff_entity_list(old_model.entities.constraints, new_model.entities.constraints, 'constraint',
+        result); _diff_entity_list(old_model.entities.layers, new_model.entities.layers, 'layer', result); _diff_entity_list(old_model.entities.components,
+        new_model.entities.components, 'component', result); _diff_relationships(old_model.relationships, new_model.relationships,
+        result); return result
+  - id: COMP-CORE-MERGER
+    name: core.merger
+    status: ACTIVE
+    description: Model merging and composition
+    files:
+    - src/architecture_model/core/merger.py
+    constants:
+    - name: _MAX_MEMBERS_PER_SYMBOL
+      value: '8'
+    - name: _MAX_FUNCTIONS_PER_COMPONENT
+      value: '12'
+    - name: _MAX_SYMBOLS_PER_COMPONENT
+      value: '6'
+    - name: _YAML_CHAR_BUDGET
+      value: '12000'
+    - name: _EXCLUDED_FILES
+      value: frozenset({'setup.py', 'conftest.py'})
+    signatures:
+    - name: merge_manifest
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest_path: str | Path'
+      - 'project_root: str | Path | None'
+      returns: ArchitectureModel
+      body_hint: 'manifest_path = Path(manifest_path); if not manifest_path.exists(): ...; if project_root is None: ...; manifest
+        = json.loads(manifest_path.read_text(encoding=''utf-8'')); import hashlib; content = manifest_path.read_bytes(); model.meta.manifest_hash
+        = hashlib.sha256(content).hexdigest()[:16]; _merge_layer_directories(model, manifest, project_root); _merge_component_files(model,
+        manifest); _add_missing_components(model, manifest, project_root); return model'
+    - name: model
+      returns: ArchitectureModel
+      decorators:
+      - property
+      body_hint: return self._model
+    - name: entities
+      decorators:
+      - property
+      body_hint: return self._model.entities
+    - name: relationships
+      decorators:
+      - property
+      body_hint: return self._model.relationships
+    - name: meta
+      decorators:
+      - property
+      body_hint: return self._model.meta
+    - name: enrich_from_manifest
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      returns: EnrichmentResult
+      body_hint: 'modules = manifest.get(''modules'', []); interfaces = manifest.get(''interfaces'', []); stem_to_module:
+        dict[str, dict] = {}; for mod in modules: ...; total_predicted = 0; total_matched = 0; for comp in model.entities.components:
+        ...; _enrich_relationship_imports(model, modules, interfaces, stem_to_module); if total_predicted == 0: ...; return
+        EnrichmentResult(_model=model, naming_accuracy=naming_accuracy)'
+    - name: compact_for_generation
+      params:
+      - 'model: ArchitectureModel'
+      returns: ArchitectureModel
+      body_hint: 'import copy; import yaml; model = copy.deepcopy(model); n_components = len(model.entities.components); if
+        n_components > 15: ...; for comp in model.entities.components: ...; return model'
+    - name: compose_enriched_model
+      params:
+      - 'project_root: Path'
+      returns: ArchitectureModel
+      body_hint: 'from architecture_model.manifest.body_hints import extrac...; from architecture_model.manifest.scanner import
+        _parse_fi...; from architecture_model.manifest.test_analyzer import ana...; source_files = discover_source_files(project_root);
+        test_files = discover_test_files(project_root); source_stems = {f.stem for f in source_files}; test_mapping = _map_tests_to_sources(test_files,
+        source_stems, project_r...; components: list[Component] = []; for src_file in source_files: ...; project_name = project_root.name;
+        meta = ModelMeta(schema_version=''1.4'', project=project_name); entities = Entities(components=components); return
+        ArchitectureModel(meta=meta, entities=entities, relationships=[])'
+    test_contracts:
+    - test_file: test_merger.py
+      test_method: test_manifest_hash_updated
+      assertion: len(model_copy.meta.manifest_hash) == 16
+      contract_type: value_equality
+    - test_file: test_merger.py
+      test_method: test_missing_manifest_returns_unchanged
+      assertion: model_copy.meta.manifest_hash == original_hash
+      contract_type: value_equality
+  - id: COMP-CORE-DECOMPOSER
+    name: core.decomposer
+    status: ACTIVE
+    description: Model decomposition into subsystems
+    files:
+    - src/architecture_model/core/decomposer.py
+    constants:
+    - name: SYSTEM_THRESHOLD
+      value: '10.0'
+    signatures:
+    - name: compute_complexity
+      params:
+      - 'comp: Component'
+      - 'model: ArchitectureModel'
+      returns: float
+      body_hint: symbol_weight = len(comp.symbols) * 2.0; member_weight = sum((len(s.members) for s in comp.symbols)) * 0.3;
+        function_weight = len(comp.functions) * 0.5; deps = sum((1 for r in model.relationships if r.type == Relation...;
+        dep_weight = deps * 1.5; return symbol_weight + member_weight + function_weight + dep_weight
+    - name: identify_systems
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      returns: list[SystemCandidate]
+      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; fblocks_meta
+        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (fblock_id, components) in
+        groups.items(): ...; return candidates'
+    - name: auto_assign_f_blocks
+      params:
+      - 'model: ArchitectureModel'
+      - 'max_cluster_size: int'
+      returns: ArchitectureModel
+      body_hint: 'has_fblocks = any((c.f_block for c in model.entities.components)); if has_fblocks: ...; comps = model.entities.components;
+        if len(comps) <= 1: ...; adj: dict[str, set[str]] = defaultdict(set); comp_ids = {c.id for c in comps}; for rel in
+        model.relationships: ...; sorted_comps = sorted(comps, key=lambda c: len(adj.get(c.id, set())), re...; assigned: dict[str,
+        str] = {}; cluster_id = 0; for comp in sorted_comps: ...; for comp in comps: ...; from copy import deepcopy; new_comps
+        = []; for comp in comps: ...; new_entities = Entities(actors=model.entities.actors, capabilities=model...; return
+        ArchitectureModel(meta=model.meta, entities=new_entities, relationships=model.relationships)'
+    - name: decompose_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      - 'output_dir: str'
+      returns: DecompositionResult
+      body_hint: 'candidates = identify_systems(model, manifest); if not candidates: ...; comp_to_system: dict[str, str] =
+        {}; system_ids: dict[str, SystemCandidate] = {}; for candidate in candidates: ...; promoted_comp_ids = set(comp_to_system.keys());
+        top_level_components = [c for c in model.entities.components if c.id not in prom...; sub_models: dict[str, ArchitectureModel]
+        = {}; systems: list[System] = []; for (sys_id, candidate) in system_ids.items(): ...; top_level_rels: list[Relationship]
+        = []; promoted_rel_keys: set[tuple[RelationType, str, str]] = s...; for rel in model.relationships: ...; top_level_entities
+        = Entities(actors=model.entities.actors, capabilities=model...; top_level_model = ArchitectureModel(meta=model.meta,
+        entities=top_level_ent...; return DecompositionResult(top_level=top_level_model, sub_models=sub_models)'
+    - name: test_affinity_decompose
+      params:
+      - 'repo_path: Path'
+      returns: list[Subsystem]
+      body_hint: 'test_files = _discover_test_files(repo_path); source_files = _discover_source_files(repo_path); if not source_files:
+        ...; test_to_sources: dict[str, set[Path]] = {}; test_name_to_file: dict[str, Path] = {}; for test_file in test_files:
+        ...; source_claimants: dict[Path, list[str]] = defaultdict(list); for (sub_name, sources) in test_to_sources.items():
+        ...; source_assignment: dict[Path, str] = {}; for (src_file, claimants) in source_claimants.items(): ...; subsystem_sources:
+        dict[str, set[Path]] = defaultdict(set); subsystem_tests: dict[str, set[Path]] = defaultdict(set); for (src_file,
+        sub_name) in source_assignment.items(): ...; for (sub_name, test_file) in test_name_to_file.items(): ...; for test_file
+        in test_files: ...; for src_file in source_files: ...; if ''root'' not in subsystem_sources: ...; source_to_subsystem:
+        dict[Path, str] = {}; for (sub_name, sources) in subsystem_sources.items(): ...; subsystem_deps: dict[str, set[str]]
+        = defaultdict(set); for (sub_name, sources) in subsystem_sources.items(): ...; all_names = set(subsystem_sources.keys());
+        if not subsystem_sources.get(''root''): ...; in_degree: dict[str, int] = {}; for name in all_names: ...; queue = sorted([n
+        for n in all_names if in_degree[n] == 0]); sorted_names: list[str] = []; while queue: ...; remaining = sorted(all_names
+        - set(sorted_names)); sorted_names.extend(remaining); result: list[Subsystem] = []; for sub_name in sorted_names:
+        ...; return result'
+    test_contracts:
+    - test_file: test_decomposer.py
+      test_method: test_empty_component_is_zero
+      assertion: compute_complexity(comp, model) == 0.0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_symbols_contribute
+      assertion: score == pytest.approx(4.9)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_functions_contribute
+      assertion: score == pytest.approx(2.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_deps_contribute
+      assertion: score == pytest.approx(3.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_complex_component_above_threshold
+      assertion: score == pytest.approx(36.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_non_depends_on_rels_ignored
+      assertion: score == 0.0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_identifies_complex_fblock_group
+      assertion: len(systems) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_simple_model_no_systems
+      assertion: len(systems) == 0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_components_without_fblock_not_grouped
+      assertion: len(systems) == 0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_multiple_systems_identified
+      assertion: len(systems) == 2
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_uses_fblock_id_as_name_when_not_in_manifest
+      assertion: len(systems) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_decompose_creates_system
+      assertion: result isinstance DecompositionResult
+      contract_type: type_check
+    - test_file: test_decomposer.py
+      test_method: test_inter_system_rels_deduplicated
+      assertion: len(deps_to_simple) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_sub_model_meta_has_system_name
+      assertion: sub.meta.system == 'Core Engine'
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_no_systems_returns_unchanged
+      assertion: len(result.top_level.entities.systems) == 0
+      contract_type: value_equality
+  - id: COMP-CORE-TYPES
+    name: core.types
+    status: ACTIVE
+    description: Type system (ArchitectureModel, Component, Capability, FunctionSignature, TestContract, etc.)
+    files:
+    - src/architecture_model/core/types.py
+    signatures:
+    - name: parse
+      params:
+      - 'value: str'
+      returns: RelationType | str
+      decorators:
+      - classmethod
+      body_hint: "try:\n    return cls(value)\nexcept ValueError:\n    return value"
+    - name: all_entity_ids
+      returns: set[str]
+      decorators:
+      - property
+      body_hint: 'ids: set[str] = set(); for actor in self.entities.actors: ...; for cap in self.entities.capabilities: ...;
+        for beh in self.entities.behaviors: ...; for iface in self.entities.interfaces: ...; for con in self.entities.constraints:
+        ...; for layer in self.entities.layers: ...; for comp in self.entities.components: ...; for sys in self.entities.systems:
+        ...; return ids'
+    - name: entity_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return len(self.all_entity_ids)
+    - name: relationship_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return len(self.relationships)
+    - name: to_dict
+      returns: dict[str, Any]
+      body_hint: 'return {''meta'': self._dump_meta(), ''entities'': self._dump_entities(), ''relationships'': [self._dump_relationship(r)
+        for r in self.relationships]}'
+    - name: to_yaml
+      returns: str
+      body_hint: return yaml.dump(self.to_dict(), default_flow_style=False, sort_keys=False)
+    test_contracts:
+    - test_file: test_types.py
+      test_method: test_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_types.py
+      test_method: test_meta_fields
+      assertion: meta['schema_version'] == '1.0'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_status_is_string
+      assertion: actor['status'] == 'ACTIVE'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_actor_type_is_string
+      assertion: actor['type'] == 'human'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_interface_type_is_string
+      assertion: iface['type'] == 'REST'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_constraint_type_is_string
+      assertion: con['type'] == 'performance'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_priority_is_string
+      assertion: cap['priority'] == 'high'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_relationship_type_is_string
+      assertion: rel['type'] == 'realizes'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_strength_is_string
+      assertion: rel['strength'] == 'strong'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_from_to_values_correct
+      assertion: rel['from'] == 'comp-1'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_actor_fields
+      assertion: actor['id'] == 'actor-1'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_capability_fields
+      assertion: cap['f_block'] == 'FB-CodeGen'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_behavior_fields
+      assertion: beh['trigger'] == 'New project scan'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_interface_fields
+      assertion: iface['type'] == 'REST'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_constraint_fields
+      assertion: con['type'] == 'performance'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_layer_fields
+      assertion: layer['order'] == 2
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_component_fields
+      assertion: comp['layer'] == 'layer-1'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_returns_string
+      assertion: result isinstance str
+      contract_type: type_check
+    - test_file: test_types.py
+      test_method: test_valid_yaml
+      assertion: parsed isinstance dict
+      contract_type: type_check
+    - test_file: test_types.py
+      test_method: test_yaml_matches_to_dict
+      assertion: parsed == model.to_dict()
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_entity_ids
+      assertion: original.all_entity_ids == rebuilt.all_entity_ids
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_entity_count
+      assertion: original.entity_count == rebuilt.entity_count
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_relationship_count
+      assertion: original.relationship_count == rebuilt.relationship_count
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_meta
+      assertion: rebuilt.meta.schema_version == original.meta.schema_version
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_actor_details
+      assertion: new_actor.id == orig_actor.id
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_relationship_details
+      assertion: new_rel.type == orig_rel.type
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_behavior_details
+      assertion: new.trigger == orig.trigger
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_component_details
+      assertion: new.layer == orig.layer
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_minimal_model
+      assertion: rebuilt.entity_count == original.entity_count
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_yaml_round_trip
+      assertion: original.all_entity_ids == rebuilt.all_entity_ids
+      contract_type: value_equality
+  - id: COMP-MANIFEST-SCANNER
+    name: manifest.scanner
+    status: ACTIVE
+    description: AST-based source code scanner
+    files:
+    - src/architecture_model/manifest/scanner.py
+    signatures:
+    - name: scan_file
+      params:
+      - 'root: Path'
+      - 'filepath: Path'
+      returns: ModuleInfo
+      body_hint: 'rel_path = str(filepath.relative_to(root)); line_count = _file_line_count(filepath); status = _determine_status(filepath,
+        line_count); tree = _parse_file_ast(filepath); docstring = None; functions: list[FunctionInfo] = []; imports: list[str]
+        = []; if tree is not None: ...; name = _derive_name_from_docstring(docstring, filepath); logger.debug(''Scanned %s:
+        %d funcs, %d classes, %d constants'', rel_path, len(functions), len(classes), len(constants)); return ModuleInfo(file=rel_path,
+        name=name, docstring=docstring, functions=functions, imports=imports, line_count=line_count, status=status, classes=classes,
+        exports=exports, decorated_functions=decorated, imports_detailed=imports_detailed, module_constants=constants, module_assignments=assignments)'
+  - id: COMP-MANIFEST-BLOCKS
+    name: manifest.blocks
+    status: ACTIVE
+    description: Functional block discovery from source tree
+    files:
+    - src/architecture_model/manifest/blocks.py
+    signatures:
+    - name: process_block
+      params:
+      - 'root: Path'
+      - 'block_id: str'
+      - 'block_def: dict'
+      - 'sub_block_configs: list | None'
+      returns: BlockManifest
+      body_hint: 'sub_functions: list[SubFunctionEntry] = []; all_files: list[Path] = []; for dir_path in block_def[''dirs'']:
+        ...; for file_path in block_def[''files'']: ...; logger.debug(''Block %s: %d files from %d dirs'', block_id, len(all_files),
+        len(block_def[''dirs''])); for (idx, filepath) in enumerate(all_files, 1): ...; block_status = ''active'' if any((sf.status
+        == ''active'' for sf in sub_func...; sub_blocks_manifest: list[dict[str, Any]] = []; if sub_block_configs: ...; logger.debug(''Block
+        %s: %d sub_functions, %d sub_blocks'', block_id, len(sub_functions), len(sub_blocks_manifest)); return BlockManifest(name=block_def[''name''],
+        status=block_status, description_source=block_def[''description_source''], sub_functions=sub_functions, sub_blocks=sub_blocks_manifest)'
+  - id: COMP-MANIFEST-METRICS
+    name: manifest.metrics
+    status: ACTIVE
+    description: Code metrics computation (LOC, complexity, etc.)
+    files:
+    - src/architecture_model/manifest/metrics.py
+    signatures:
+    - name: compute_metrics
+      params:
+      - 'root: Path'
+      - 'config: Optional[Any]'
+      returns: MetricsResult
+      body_hint: 'if config is None: ...; result: dict[str, int] = {}; for metric in config.metrics: ...; total_python = len([p
+        for p in root.rglob(''*.py'') if not any((part in EX...; result[''total_python_files''] = total_python; logger.debug(''Computed
+        %d metrics for %s: %s'', len(result), root, result); return MetricsResult(values=result)'
+  - id: COMP-MANIFEST-INTERFACES
+    name: manifest.interfaces
+    status: ACTIVE
+    description: Interface detection from public API surface
+    files:
+    - src/architecture_model/manifest/interfaces.py
+    signatures:
+    - name: derive_interfaces
+      params:
+      - 'modules: list[ModuleInfo]'
+      - 'root: Path'
+      returns: list[InterfaceEdge]
+      body_hint: 'file_to_module: dict[str, str] = {}; for mod in modules: ...; module_to_file: dict[str, str] = {v: k for
+        k, v in file_t...; interfaces: list[InterfaceEdge] = []; seen: set[tuple[str, str]] = set(); for mod in modules: ...;
+        logger.debug(''Derived %d interface edges from %d modules'', len(interfaces), len(modules)); return interfaces'
+  - id: COMP-MANIFEST-BODY-HINTS
+    name: manifest.body_hints
+    status: ACTIVE
+    description: Function body hint extraction for trivial implementations
+    files:
+    - src/architecture_model/manifest/body_hints.py
+    signatures:
+    - name: classify_function
+      params:
+      - 'source: str'
+      - 'func_name: str'
+      returns: BodyComplexity
+      body_hint: "tree = ast.parse(source); node = _find_function(tree, func_name); body = _strip_docstring(node.body); count\
+        \ = len(body); if count <= 1:\n    return BodyComplexity.TRIVIAL\nelif count <= 5:\n    return BodyComplexity.SHORT\n\
+        else:\n    return BodyComplexity.COMPLEX"
+    - name: extract_body_hint
+      params:
+      - 'source: str'
+      - 'func_name: str'
+      - 'class_name: str | None'
+      returns: str
+      body_hint: "tree = ast.parse(source); node = _find_function(tree, func_name, class_name); body = _strip_docstring(node.body);\
+        \ count = len(body); if count <= 1:\n    return ast.unparse(body[0]) if body else ''\nelif count <= 5:\n    return\
+        \ '; '.join((ast.unparse(s) for s in body))\nelse:\n    return _summarize_complex_body(body)"
+    - name: extract_file_hints
+      params:
+      - 'filepath: Path'
+      - 'include_private: bool'
+      returns: list[FunctionSignature]
+      body_hint: "source = filepath.read_text(encoding='utf-8'); tree = ast.parse(source, filename=str(filepath)); results:\
+        \ list[FunctionSignature] = []; def _should_include(name: str) -> bool:\n    if include_pr...; for node in ast.iter_child_nodes(tree):\
+        \ ...; return results"
+    test_contracts:
+    - test_file: test_body_hints.py
+      test_method: test_trivial_single_statement
+      assertion: classify_function(source, 'greet') == BodyComplexity.TRIVIAL
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_trivial_with_docstring
+      assertion: classify_function(source, 'greet') == BodyComplexity.TRIVIAL
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_short_two_statements
+      assertion: classify_function(source, 'add') == BodyComplexity.SHORT
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_short_five_statements
+      assertion: classify_function(source, 'process') == BodyComplexity.SHORT
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_complex_six_statements
+      assertion: classify_function(source, 'complex_func') == BodyComplexity.COMPLEX
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_complex_with_docstring_not_counted
+      assertion: classify_function(source, 'big_func') == BodyComplexity.COMPLEX
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_function_not_found_raises
+      assertion: raises ValueError
+      contract_type: raises
+    - test_file: test_body_hints.py
+      test_method: test_trivial_returns_exact_body
+      assertion: hint == 'return 42'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_class_method_extraction
+      assertion: hint == 'return a + b'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_body_hint_populated
+      assertion: sig.body_hint == 'return 42'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_params_populated
+      assertion: sig.returns == 'float'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_returns_populated
+      assertion: sig.returns == 'str'
+      contract_type: value_equality
+  - id: COMP-MANIFEST-TEST-ANALYZER
+    name: manifest.test_analyzer
+    status: ACTIVE
+    description: Test contract extraction from test files
+    files:
+    - src/architecture_model/manifest/test_analyzer.py
+    constants:
+    - name: _EXCLUDED_MODULES
+      value: frozenset({'unittest', 'pytest', 'sys', 'os', 'io', 're', 'math', 'collections', 'itertools', 'functools', 'pathlib',
+        'typing', 'tempfile', 'shutil', 'json', 'copy', 'contextlib', 'textwrap', 'unittest.mock', 'mock'})
+    - name: _ESCAPE_CODE_RE
+      value: re.compile('\\\\(?:033|x1b)\\[(\\d+)m')
+    signatures:
+    - name: analyze_test_file
+      params:
+      - 'test_file: Path'
+      returns: TestAnalysisResult
+      body_hint: 'source = test_file.read_text(encoding=''utf-8''); tree = ast.parse(source, filename=str(test_file)); filename
+        = test_file.name; result = TestAnalysisResult(test_file=filename); result.required_imports = _extract_imports(tree);
+        test_methods = _find_test_methods(tree); result.test_count = len(test_methods); for (method_name, node) in test_methods:
+        ...; result.constants = extract_constants_from_contracts(result.contracts); return result'
+    - name: extract_constants_from_contracts
+      params:
+      - 'contracts: list[TestContract]'
+      returns: list[Constant]
+      body_hint: "constants: list[Constant] = []; seen: set[tuple[str, str]] = set(); for contract in contracts:\n    if contract.contract_type\
+        \ != 'value_equality':\n        continue\n    parsed = _parse_escape_code_assertion(contract.assertion)\n    if parsed\
+        \ is None:\n        continue\n    parent, name, code, full_escape = parsed\n    key = (parent, name)\n    if key in\
+        \ seen:\n        continue\n    seen.add(key)\n    constants.append(Constant(name=name, value=code, context=f'attribute\
+        \ of {parent}, produces escape code {full_escape}')); return constants"
+    test_contracts:
+    - test_file: test_test_analyzer.py
+      test_method: test_result_has_expected_fields
+      assertion: result isinstance TestAnalysisResult
+      contract_type: type_check
+    - test_file: test_test_analyzer.py
+      test_method: test_assertEqual_produces_test_contract
+      assertion: c isinstance TestContract
+      contract_type: type_check
+    - test_file: test_test_analyzer.py
+      test_method: test_test_count
+      assertion: result.test_count == 4
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_constant_values_are_numeric_codes
+      assertion: black.value == '30'
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_extract_constants_from_contracts_standalone
+      assertion: len(constants) == 2
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_fore_black_value
+      assertion: black.value == '30'
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_fore_reset_value
+      assertion: resets[0].value == '39'
+      contract_type: value_equality
+  - id: COMP-MANIFEST-GENERATOR
+    name: manifest.generator
+    status: ACTIVE
+    description: Top-level manifest generation orchestrator
+    files:
+    - src/architecture_model/manifest/generator.py
+    - src/architecture_model/manifest/display.py
+    - src/architecture_model/manifest/slicers.py
+    signatures:
+    - name: generate_manifest
+      params:
+      - 'project_root: Path'
+      - 'config: Optional[Any]'
+      returns: Manifest
+      body_hint: 'root = project_root.resolve(); report = ScanReport(); if config is None: ...; logger.info(''Computing project
+        metrics for %s'', root); metrics_result = compute_metrics(root, config); logger.info(''Metrics computed: %s'', metrics_result.values);
+        blocks_dict = config.fblock_dict; logger.info(''Processing %d functional blocks'', len(blocks_dict)); from architecture_model.manifest.types
+        import BlockManifest; functional_blocks: dict[str, BlockManifest] = {}; scanned_files: set[str] = set(); for (block_id,
+        block_def) in blocks_dict.items(): ...; logger.info(''Processed %d blocks, found %d files'', report.blocks_processed,
+        len(scanned_files)); extra_dirs: set[str] = set(); for layer in config.layers: ...; for dir_path in sorted(extra_dirs):
+        ...; logger.info(''Scanning %d files for module metadata'', len(scanned_files)); from architecture_model.manifest.types
+        import ModuleInfo; all_modules: list[ModuleInfo] = []; for rel_path in sorted(scanned_files): ...; logger.info(''Deriving
+        interfaces from %d modules'', len(all_modules)); interfaces = derive_interfaces(all_modules, root); report.interfaces_derived
+        = len(interfaces); report.log_summary(); return Manifest(generated_at=datetime.now(timezone.utc).strftime(''%Y-%m-%dT%H:%M:%S''),
+        project_root=str(root), metrics=metrics_result, functional_blocks=functional_blocks, modules=all_modules, interfaces=interfaces,
+        scan_report=report)'
+    - name: load_or_generate_manifest
+      params:
+      - 'project_root: Path'
+      - 'output_dir: Path | None'
+      returns: dict[str, Any]
+      body_hint: 'from architecture_model.config.loader import get_config; config = get_config(project_root); if output_dir
+        is None: ...; if manifest_path.exists(): ...; manifest = generate_manifest(project_root, config); manifest_dict =
+        manifest.to_dict(); manifest_path.parent.mkdir(parents=True, exist_ok=True); manifest_path.write_text(json.dumps(manifest_dict,
+        indent=2, ensure_ascii=False), encoding=''utf-8''); return manifest_dict'
+    - name: print_summary
+      params:
+      - 'manifest: dict[str, Any]'
+      returns: None
+      body_hint: 'metrics = manifest[''metrics'']; blocks = manifest[''functional_blocks'']; print(f"\n{''='' * 60}"); print(''REALITY
+        MANIFEST SUMMARY''); print(f"{''='' * 60}"); print(f"  Generated: {manifest[''generated_at'']}"); print(f"  Root:      {manifest[''project_root'']}");
+        print(); print(''  METRICS:''); known_labels = [''router'', ''model'', ''migration'', ''template'']; shown = False;
+        for label in known_labels: ...; for (key, val) in metrics.items(): ...; if not shown: ...; print(f"    Python files:
+        {metrics.get(''total_python_files'', ''N/A'')}"); print(); print(''  FUNCTIONAL BLOCKS:''); for (block_id, block)
+        in blocks.items(): ...; print(); print(f"  INTERFACES: {len(manifest.get(''interfaces'', []))} dependencies detected");
+        print(f"  MODULES:    {len(manifest.get(''modules'', []))} files scanned"); print(f"{''='' * 60}")'
+    - name: get_manifest_slice
+      params:
+      - 'manifest: Manifest | dict[str, Any]'
+      - 'artifact_name: str'
+      returns: str
+      body_hint: "if isinstance(manifest, dict):\n    logger.debug('get_manifest_slice received dict, converting to Manifest')\n\
+        \    manifest = _manifest_from_dict(manifest); slicers = {'functional-architecture': _slice_functional_architecture,\
+        \ 'logical-architecture': _slice_logical_architecture, 'data-dictionary': _slice_data_dictionary, 'icd': _slice_icd,\
+        \ 'readme': _slice_readme, 'testing': _slice_testing, 'deployment-guide': _slice_deployment_guide, 'operations-manual':\
+        \ _slice_operations_manual, 'use-cases': _slice_use_cases, 'requirements-analysis': _slice_requirements_analysis};\
+        \ slicer = slicers.get(artifact_name); if slicer is None:\n    return f'[unknown artifact: {artifact_name}]'; return\
+        \ slicer(manifest)"
+  - id: COMP-MANIFEST-TYPES
+    name: manifest.types
+    status: ACTIVE
+    description: Manifest data types (Manifest, ModuleInfo, FunctionalBlock)
+    files:
+    - src/architecture_model/manifest/types.py
+    signatures:
+    - name: to_dict
+      returns: dict[str, Any]
+      body_hint: 'return {''file'': self.file, ''name'': self.name, ''docstring'': self.docstring, ''functions'': [{''name'':
+        f.name, ''signature'': f.signature} for f in self.functions], ''imports'': self.imports, ''line_count'': self.line_count,
+        ''status'': self.status.value, ''classes'': [{''name'': c.name, ''bases'': c.bases, ''methods'': c.methods, ''is_abstract'':
+        c.is_abstract, ''decorators'': c.decorators, ''attributes'': c.attributes} for c in self.classes], ''exports'': self.exports,
+        ''decorated_functions'': [{''name'': d.name, ''decorators'': d.decorators, ''is_method'': d.is_method, ''class_name'':
+        d.class_name} for d in self.decorated_functions], ''imports_detailed'': [{''module'': i.module, ''symbols'': i.symbols,
+        ''is_relative'': i.is_relative} for i in self.imports_detailed], ''module_constants'': self.module_constants, ''module_assignments'':
+        self.module_assignments}'
+    - name: success_rate
+      returns: float
+      decorators:
+      - property
+      body_hint: "if self.files_attempted == 0:\n    return 1.0; return self.files_succeeded / self.files_attempted"
+    - name: log_summary
+      returns: None
+      body_hint: 'logger.info(''Scan complete: %d/%d files (%.1f%%), %d funcs, %d classes, %d constants, %d interfaces, %d
+        blocks, %d unclaimed, %d errors'', self.files_succeeded, self.files_attempted, self.success_rate * 100, self.functions_extracted,
+        self.classes_extracted, self.constants_extracted, self.interfaces_derived, self.blocks_processed, self.unclaimed_files,
+        len(self.parse_errors))'
 relationships:
-  # Layer containment (top-level)
-  - { from: L-APP, to: COMP-CORE, type: contains }
-  - { from: L-APP, to: COMP-MANIFEST, type: contains }
-  - { from: L-APP, to: COMP-CLI, type: contains }
-  - { from: L-APP, to: COMP-CONFIG, type: contains }
-  - { from: L-APP, to: COMP-SPEC, type: contains }
-  - { from: L-APP, to: COMP-EXTRACT, type: contains }
-  - { from: L-APP, to: COMP-PROFILES, type: contains }
-  - { from: L-APP, to: COMP-UTILS, type: contains }
-  - { from: L-APP, to: COMP-ENRICH, type: contains }
-
-  # Parent contains sub-components (CORE)
-  - { from: COMP-CORE, to: COMP-CORE-PARSER, type: contains }
-  - { from: COMP-CORE, to: COMP-CORE-VALIDATOR, type: contains }
-  - { from: COMP-CORE, to: COMP-CORE-SLICER, type: contains }
-  - { from: COMP-CORE, to: COMP-CORE-DIFFER, type: contains }
-  - { from: COMP-CORE, to: COMP-CORE-MERGER, type: contains }
-  - { from: COMP-CORE, to: COMP-CORE-DECOMPOSER, type: contains }
-  - { from: COMP-CORE, to: COMP-CORE-TYPES, type: contains }
-
-  # Parent contains sub-components (MANIFEST)
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-SCANNER, type: contains }
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-BLOCKS, type: contains }
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-METRICS, type: contains }
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-INTERFACES, type: contains }
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-BODY-HINTS, type: contains }
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-TEST-ANALYZER, type: contains }
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-GENERATOR, type: contains }
-  - { from: COMP-MANIFEST, to: COMP-MANIFEST-TYPES, type: contains }
-
-  # Capability realization
-  - { from: COMP-CORE, to: CAP-F1, type: realizes }
-  - { from: COMP-CORE, to: CAP-F3, type: realizes }
-  - { from: COMP-MANIFEST, to: CAP-F2, type: realizes }
-  - { from: COMP-CLI, to: CAP-F4, type: realizes }
-  - { from: COMP-CONFIG, to: CAP-F5, type: realizes }
-  - { from: COMP-SPEC, to: CAP-F6, type: realizes }
-  - { from: COMP-EXTRACT, to: CAP-F7, type: realizes }
-  - { from: COMP-PROFILES, to: CAP-F8, type: realizes }
-  - { from: COMP-UTILS, to: CAP-F9, type: realizes }
-  - { from: COMP-ENRICH, to: CAP-F10, type: realizes }
-
-  # Interface exposure
-  - { from: COMP-CLI, to: IF-CLI, type: exposes }
-  - { from: COMP-CORE-PARSER, to: IF-PARSE-API, type: exposes }
-  - { from: COMP-CORE-VALIDATOR, to: IF-VALIDATE-API, type: exposes }
-  - { from: COMP-CORE-SLICER, to: IF-SLICER-API, type: exposes }
-  - { from: COMP-MANIFEST-GENERATOR, to: IF-MANIFEST-API, type: exposes }
-  - { from: COMP-PROFILES, to: IF-PROFILE-API, type: exposes }
-  - { from: COMP-ENRICH, to: IF-ENRICH-API, type: exposes }
-
-  # Constraint application
-  - { from: COMP-CORE, to: CON-SCHEMA, type: constrained-by }
-  - { from: COMP-SPEC, to: CON-SCHEMA, type: constrained-by }
-  - { from: COMP-CORE, to: CON-NO-ORPHANS, type: constrained-by }
-
-  # Top-level dependencies
-  - { from: COMP-CLI, to: COMP-CORE, type: depends-on }
-  - { from: COMP-CLI, to: COMP-CONFIG, type: depends-on }
-  - { from: COMP-CLI, to: COMP-MANIFEST, type: depends-on }
-  - { from: COMP-CLI, to: COMP-ENRICH, type: depends-on }
-  - { from: COMP-CORE, to: COMP-CONFIG, type: depends-on }
-  - { from: COMP-CORE, to: COMP-SPEC, type: depends-on }
-  - { from: COMP-CORE, to: COMP-PROFILES, type: depends-on }
-  - { from: COMP-MANIFEST, to: COMP-CONFIG, type: depends-on }
-  - { from: COMP-MANIFEST, to: COMP-UTILS, type: depends-on }
-  - { from: COMP-EXTRACT, to: COMP-CORE, type: depends-on }
-  - { from: COMP-ENRICH, to: COMP-CORE, type: depends-on }
-  - { from: COMP-ENRICH, to: COMP-MANIFEST, type: depends-on }
-
-  # CORE internal dependencies
-  - { from: COMP-CORE-PARSER, to: COMP-CORE-TYPES, type: depends-on }
-  - { from: COMP-CORE-VALIDATOR, to: COMP-CORE-TYPES, type: depends-on }
-  - { from: COMP-CORE-VALIDATOR, to: COMP-PROFILES, type: depends-on }
-  - { from: COMP-CORE-SLICER, to: COMP-CORE-TYPES, type: depends-on }
-  - { from: COMP-CORE-DIFFER, to: COMP-CORE-TYPES, type: depends-on }
-  - { from: COMP-CORE-MERGER, to: COMP-CORE-TYPES, type: depends-on }
-  - { from: COMP-CORE-MERGER, to: COMP-UTILS, type: depends-on }
-  - { from: COMP-CORE-DECOMPOSER, to: COMP-CORE-TYPES, type: depends-on }
-  - { from: COMP-CORE-DECOMPOSER, to: COMP-UTILS, type: depends-on }
-
-  # MANIFEST internal dependencies
-  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-SCANNER, type: depends-on }
-  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-BLOCKS, type: depends-on }
-  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-METRICS, type: depends-on }
-  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-INTERFACES, type: depends-on }
-  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-TYPES, type: depends-on }
-  - { from: COMP-MANIFEST-BLOCKS, to: COMP-MANIFEST-SCANNER, type: depends-on }
-  - { from: COMP-MANIFEST-BLOCKS, to: COMP-MANIFEST-TYPES, type: depends-on }
-  - { from: COMP-MANIFEST-BLOCKS, to: COMP-UTILS, type: depends-on }
-  - { from: COMP-MANIFEST-SCANNER, to: COMP-MANIFEST-TYPES, type: depends-on }
-  - { from: COMP-MANIFEST-METRICS, to: COMP-MANIFEST-TYPES, type: depends-on }
-  - { from: COMP-MANIFEST-INTERFACES, to: COMP-MANIFEST-TYPES, type: depends-on }
-  - { from: COMP-MANIFEST-BODY-HINTS, to: COMP-CORE-TYPES, type: depends-on }
-  - { from: COMP-MANIFEST-TEST-ANALYZER, to: COMP-CORE-TYPES, type: depends-on }
-
-  # Behavior traces
-  - { from: COMP-CLI, to: BEH-INIT, type: traces-to }
-  - { from: COMP-CLI, to: BEH-VALIDATE, type: traces-to }
-  - { from: COMP-CLI, to: BEH-MANIFEST, type: traces-to }
-  - { from: COMP-CLI, to: BEH-ENRICH, type: traces-to }
-  - { from: COMP-CORE-PARSER, to: BEH-VALIDATE, type: traces-to }
-  - { from: COMP-CORE-VALIDATOR, to: BEH-VALIDATE, type: traces-to }
-  - { from: COMP-MANIFEST-GENERATOR, to: BEH-MANIFEST, type: traces-to }
-  - { from: COMP-ENRICH, to: BEH-ENRICH, type: traces-to }
-  - { from: COMP-EXTRACT, to: BEH-EXTRACT, type: traces-to }
-
-  # Actor interactions
-  - { from: ACT-DEV, to: IF-CLI, type: consumes }
-  - { from: ACT-LLM, to: IF-PARSE-API, type: consumes }
-  - { from: ACT-LLM, to: IF-SLICER-API, type: consumes }
-  - { from: ACT-LLM, to: IF-MANIFEST-API, type: consumes }
+- type: contains
+  from: L-APP
+  to: COMP-CORE
+- type: contains
+  from: L-APP
+  to: COMP-MANIFEST
+- type: contains
+  from: L-APP
+  to: COMP-CLI
+- type: contains
+  from: L-APP
+  to: COMP-CONFIG
+- type: contains
+  from: L-APP
+  to: COMP-SPEC
+- type: contains
+  from: L-APP
+  to: COMP-EXTRACT
+- type: contains
+  from: L-APP
+  to: COMP-PROFILES
+- type: contains
+  from: L-APP
+  to: COMP-UTILS
+- type: contains
+  from: L-APP
+  to: COMP-ENRICH
+- type: contains
+  from: COMP-CORE
+  to: COMP-CORE-PARSER
+- type: contains
+  from: COMP-CORE
+  to: COMP-CORE-VALIDATOR
+- type: contains
+  from: COMP-CORE
+  to: COMP-CORE-SLICER
+- type: contains
+  from: COMP-CORE
+  to: COMP-CORE-DIFFER
+- type: contains
+  from: COMP-CORE
+  to: COMP-CORE-MERGER
+- type: contains
+  from: COMP-CORE
+  to: COMP-CORE-DECOMPOSER
+- type: contains
+  from: COMP-CORE
+  to: COMP-CORE-TYPES
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-SCANNER
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-BLOCKS
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-METRICS
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-INTERFACES
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-BODY-HINTS
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-TEST-ANALYZER
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-GENERATOR
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-TYPES
+- type: realizes
+  from: COMP-CORE
+  to: CAP-F1
+- type: realizes
+  from: COMP-CORE
+  to: CAP-F3
+- type: realizes
+  from: COMP-MANIFEST
+  to: CAP-F2
+- type: realizes
+  from: COMP-CLI
+  to: CAP-F4
+- type: realizes
+  from: COMP-CONFIG
+  to: CAP-F5
+- type: realizes
+  from: COMP-SPEC
+  to: CAP-F6
+- type: realizes
+  from: COMP-EXTRACT
+  to: CAP-F7
+- type: realizes
+  from: COMP-PROFILES
+  to: CAP-F8
+- type: realizes
+  from: COMP-UTILS
+  to: CAP-F9
+- type: realizes
+  from: COMP-ENRICH
+  to: CAP-F10
+- type: exposes
+  from: COMP-CLI
+  to: IF-CLI
+- type: exposes
+  from: COMP-CORE-PARSER
+  to: IF-PARSE-API
+- type: exposes
+  from: COMP-CORE-VALIDATOR
+  to: IF-VALIDATE-API
+- type: exposes
+  from: COMP-CORE-SLICER
+  to: IF-SLICER-API
+- type: exposes
+  from: COMP-MANIFEST-GENERATOR
+  to: IF-MANIFEST-API
+- type: exposes
+  from: COMP-PROFILES
+  to: IF-PROFILE-API
+- type: exposes
+  from: COMP-ENRICH
+  to: IF-ENRICH-API
+- type: constrained-by
+  from: COMP-CORE
+  to: CON-SCHEMA
+- type: constrained-by
+  from: COMP-SPEC
+  to: CON-SCHEMA
+- type: constrained-by
+  from: COMP-CORE
+  to: CON-NO-ORPHANS
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-MANIFEST
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-ENRICH
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-SPEC
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-PROFILES
+- type: depends-on
+  from: COMP-MANIFEST
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-MANIFEST
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-EXTRACT
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-ENRICH
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-ENRICH
+  to: COMP-MANIFEST
+- type: depends-on
+  from: COMP-CORE-PARSER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-VALIDATOR
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-VALIDATOR
+  to: COMP-PROFILES
+- type: depends-on
+  from: COMP-CORE-SLICER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-DIFFER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-MERGER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-MERGER
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-CORE-DECOMPOSER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-DECOMPOSER
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-SCANNER
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-BLOCKS
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-METRICS
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-INTERFACES
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-MANIFEST-SCANNER
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-MANIFEST-SCANNER
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-METRICS
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-INTERFACES
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-BODY-HINTS
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-TEST-ANALYZER
+  to: COMP-CORE-TYPES
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-INIT
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-VALIDATE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-MANIFEST
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-ENRICH
+- type: traces-to
+  from: COMP-CORE-PARSER
+  to: BEH-VALIDATE
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST
+- type: traces-to
+  from: COMP-ENRICH
+  to: BEH-ENRICH
+- type: traces-to
+  from: COMP-EXTRACT
+  to: BEH-EXTRACT
+- type: consumes
+  from: ACT-DEV
+  to: IF-CLI
+- type: consumes
+  from: ACT-LLM
+  to: IF-PARSE-API
+- type: consumes
+  from: ACT-LLM
+  to: IF-SLICER-API
+- type: consumes
+  from: ACT-LLM
+  to: IF-MANIFEST-API
