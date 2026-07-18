@@ -7,9 +7,23 @@ function signatures, imports), and assembling per-file scan results.
 from __future__ import annotations
 
 import ast
+import logging
 import re
+import warnings
 from pathlib import Path
 from typing import Any
+
+from architecture_model.manifest.types import (
+    ClassInfo,
+    DecoratedFunction,
+    FunctionInfo,
+    ImportDetail,
+    ModuleInfo,
+    ModuleStatus,
+)
+from architecture_model.utils.discovery import collect_py_files as _discovery_collect
+
+logger = logging.getLogger(__name__)
 
 
 def _count_files(root: Path, directory: str, pattern: str) -> int:
@@ -21,13 +35,17 @@ def _count_files(root: Path, directory: str, pattern: str) -> int:
 
 
 def _collect_py_files(root: Path, directory: str) -> list[Path]:
-    """Collect all .py files in a directory (recursive), excluding __pycache__."""
-    target = root / directory
-    if not target.is_dir():
-        return []
-    return sorted(
-        p for p in target.rglob("*.py") if "__pycache__" not in str(p)
+    """Collect all .py files in a directory (recursive), excluding __pycache__.
+
+    .. deprecated::
+        Use :func:`architecture_model.utils.discovery.collect_py_files` instead.
+    """
+    warnings.warn(
+        "_collect_py_files is deprecated, use utils.discovery.collect_py_files",
+        DeprecationWarning,
+        stacklevel=2,
     )
+    return _discovery_collect(root / directory)
 
 
 def _parse_file_ast(filepath: Path) -> ast.Module | None:
@@ -35,7 +53,8 @@ def _parse_file_ast(filepath: Path) -> ast.Module | None:
     try:
         source = filepath.read_text(encoding="utf-8")
         return ast.parse(source, filename=str(filepath))
-    except (SyntaxError, UnicodeDecodeError, OSError):
+    except (SyntaxError, UnicodeDecodeError, OSError) as exc:
+        logger.warning("Parse error in %s: %s", filepath, exc)
         return None
 
 
@@ -54,15 +73,15 @@ def _format_annotation(node: ast.expr | None) -> str:
         return "..."
 
 
-def _extract_public_functions(tree: ast.Module) -> list[dict[str, str]]:
+def _extract_public_functions(tree: ast.Module) -> list[FunctionInfo]:
     """Extract public function/method signatures from module-level definitions."""
-    functions: list[dict[str, str]] = []
+    functions: list[FunctionInfo] = []
     for node in ast.iter_child_nodes(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             if node.name.startswith("_"):
                 continue
             sig = _build_signature(node)
-            functions.append({"name": node.name, "signature": sig})
+            functions.append(FunctionInfo(name=node.name, signature=sig))
     return functions
 
 
@@ -242,9 +261,9 @@ def _extract_module_assignments(tree: ast.Module) -> dict[str, str]:
     return assigns
 
 
-def _extract_classes(tree: ast.Module) -> list[dict[str, Any]]:
+def _extract_classes(tree: ast.Module) -> list[ClassInfo]:
     """Extract class definitions with inheritance and method info."""
-    classes: list[dict[str, Any]] = []
+    classes: list[ClassInfo] = []
     for node in ast.iter_child_nodes(tree):
         if not isinstance(node, ast.ClassDef):
             continue
@@ -301,14 +320,14 @@ def _extract_classes(tree: ast.Module) -> list[dict[str, Any]]:
                 elif isinstance(dec.func, ast.Attribute):
                     decorators.append(dec.func.attr)
 
-        classes.append({
-            "name": node.name,
-            "bases": bases,
-            "methods": methods,
-            "is_abstract": is_abstract,
-            "decorators": decorators,
-            "attributes": _extract_class_attributes(node),
-        })
+        classes.append(ClassInfo(
+            name=node.name,
+            bases=bases,
+            methods=methods,
+            is_abstract=is_abstract,
+            decorators=decorators,
+            attributes=_extract_class_attributes(node),
+        ))
     return classes
 
 
@@ -330,53 +349,53 @@ def _get_decorator_names(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[s
     return [n for n in names if n not in trivial]
 
 
-def _extract_decorated_functions_from_tree(tree: ast.Module) -> list[dict[str, Any]]:
+def _extract_decorated_functions_from_tree(tree: ast.Module) -> list[DecoratedFunction]:
     """Extract decorated functions (module-level and class methods)."""
-    results: list[dict[str, Any]] = []
+    results: list[DecoratedFunction] = []
 
     for node in ast.iter_child_nodes(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             decs = _get_decorator_names(node)
             if decs:
-                results.append({
-                    "name": node.name,
-                    "decorators": decs,
-                    "is_method": False,
-                    "class_name": None,
-                })
+                results.append(DecoratedFunction(
+                    name=node.name,
+                    decorators=decs,
+                    is_method=False,
+                    class_name=None,
+                ))
         elif isinstance(node, ast.ClassDef):
             for item in node.body:
                 if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     decs = _get_decorator_names(item)
                     if decs and item.name != "__init__":
-                        results.append({
-                            "name": item.name,
-                            "decorators": decs,
-                            "is_method": True,
-                            "class_name": node.name,
-                        })
+                        results.append(DecoratedFunction(
+                            name=item.name,
+                            decorators=decs,
+                            is_method=True,
+                            class_name=node.name,
+                        ))
     return results
 
 
-def _extract_imports_detailed(tree: ast.Module) -> list[dict[str, Any]]:
+def _extract_imports_detailed(tree: ast.Module) -> list[ImportDetail]:
     """Extract imports with symbol-level detail."""
-    imports: list[dict[str, Any]] = []
+    imports: list[ImportDetail] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                imports.append({
-                    "module": alias.name,
-                    "symbols": [],
-                    "is_relative": False,
-                })
+                imports.append(ImportDetail(
+                    module=alias.name,
+                    symbols=[],
+                    is_relative=False,
+                ))
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
             symbols = [alias.name for alias in node.names] if node.names else []
-            imports.append({
-                "module": module,
-                "symbols": symbols,
-                "is_relative": node.level > 0,
-            })
+            imports.append(ImportDetail(
+                module=module,
+                symbols=symbols,
+                is_relative=node.level > 0,
+            ))
     return imports
 
 
@@ -388,46 +407,90 @@ def _file_line_count(filepath: Path) -> int:
         return 0
 
 
-def _determine_status(filepath: Path, line_count: int) -> str:
+def _determine_status(filepath: Path, line_count: int) -> ModuleStatus:
     """Determine if a file is active or dormant."""
     if not filepath.exists():
-        return "missing"
+        return ModuleStatus.MISSING
     if line_count > 50:
-        return "active"
-    return "dormant"
+        return ModuleStatus.ACTIVE
+    return ModuleStatus.DORMANT
 
 
-def _scan_file(root: Path, filepath: Path) -> dict[str, Any]:
-    """Scan a single Python file and return its metadata."""
+def scan_file(root: Path, filepath: Path) -> ModuleInfo:
+    """Scan a single Python file and return typed metadata.
+
+    Args:
+        root: Project root directory.
+        filepath: Absolute path to the Python file.
+
+    Returns:
+        ModuleInfo with all extracted metadata.
+    """
     rel_path = str(filepath.relative_to(root))
     line_count = _file_line_count(filepath)
     status = _determine_status(filepath, line_count)
 
     tree = _parse_file_ast(filepath)
     docstring = None
-    functions: list[dict[str, str]] = []
+    functions: list[FunctionInfo] = []
     imports: list[str] = []
 
     if tree is not None:
         docstring = _get_module_docstring(tree)
         functions = _extract_public_functions(tree)
         imports = _extract_imports(tree)
+        classes = _extract_classes(tree)
+        exports = _extract_exports(tree, filepath)
+        decorated = _extract_decorated_functions_from_tree(tree)
+        imports_detailed = _extract_imports_detailed(tree)
+        constants = _extract_module_constants(tree)
+        assignments = _extract_module_assignments(tree)
+    else:
+        classes = []
+        exports = []
+        decorated = []
+        imports_detailed = []
+        constants = {}
+        assignments = {}
+        status = ModuleStatus.MISSING
 
     name = _derive_name_from_docstring(docstring, filepath)
 
-    return {
-        "file": rel_path,
-        "name": name,
-        "docstring": docstring,
-        "functions": [f["signature"] for f in functions],
-        "imports": imports,
-        "line_count": line_count,
-        "status": status,
-        # NEW fields
-        "classes": _extract_classes(tree) if tree else [],
-        "exports": _extract_exports(tree, filepath) if tree else [],
-        "decorated_functions": _extract_decorated_functions_from_tree(tree) if tree else [],
-        "imports_detailed": _extract_imports_detailed(tree) if tree else [],
-        "module_constants": _extract_module_constants(tree) if tree else {},
-        "module_assignments": _extract_module_assignments(tree) if tree else {},
-    }
+    logger.debug(
+        "Scanned %s: %d funcs, %d classes, %d constants",
+        rel_path, len(functions), len(classes), len(constants),
+    )
+
+    return ModuleInfo(
+        file=rel_path,
+        name=name,
+        docstring=docstring,
+        functions=functions,
+        imports=imports,
+        line_count=line_count,
+        status=status,
+        classes=classes,
+        exports=exports,
+        decorated_functions=decorated,
+        imports_detailed=imports_detailed,
+        module_constants=constants,
+        module_assignments=assignments,
+    )
+
+
+def _scan_file(root: Path, filepath: Path) -> dict[str, Any]:
+    """Scan a single Python file and return its metadata as a dict.
+
+    .. deprecated::
+        Use :func:`scan_file` instead, which returns a :class:`ModuleInfo`.
+    """
+    warnings.warn(
+        "_scan_file is deprecated, use scan_file() which returns ModuleInfo",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    result = scan_file(root, filepath)
+    d = result.to_dict()
+    # Legacy format: functions is list of signature strings, not list of dicts
+    d["functions"] = [f.signature for f in result.functions]
+    return d
