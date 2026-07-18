@@ -2,14 +2,13 @@
 CLI for the Architecture Model Standard.
 
 Usage:
-    python -m architecture_model extract <artifact_dir> [-o output.yaml]
-    python -m architecture_model validate <model.yaml> [--strict]
-    python -m architecture_model slice <model.yaml> --fblock F3
-    python -m architecture_model slice <model.yaml> --artifact use-cases
-    python -m architecture_model diff <old.yaml> <new.yaml>
-    python -m architecture_model query <model.yaml> "what realizes F3?"
-    python -m architecture_model context <model.yaml> [--artifact icd] [--tokens 3000]
-    python -m architecture_model stats <model.yaml>
+    architecture-model validate <model.yaml> [--strict]
+    architecture-model slice <model.yaml> --fblock F3
+    architecture-model slice <model.yaml> --artifact use-cases
+    architecture-model diff <old.yaml> <new.yaml>
+    architecture-model stats <model.yaml>
+    architecture-model init <path>
+    architecture-model manifest <path>
 """
 
 from __future__ import annotations
@@ -25,18 +24,6 @@ def main(argv: list[str] | None = None) -> int:
         description="Architecture Model Standard — CLI tools",
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
-
-    # --- extract ---
-    p_extract = subparsers.add_parser("extract", help="Extract model from Tier 1 artifacts")
-    p_extract.add_argument("artifact_dir", nargs="?", help="Path to stage2 artifact directory")
-    p_extract.add_argument(
-        "--from-code", metavar="PATH",
-        help="Extract model directly from source code (bypasses stage2 artifacts)",
-    )
-    p_extract.add_argument("-o", "--output", help="Output YAML path")
-    p_extract.add_argument("--project", default="", help="Project name override")
-    p_extract.add_argument("--system", default="", help="System identifier override")
-    p_extract.add_argument("--manifest", help="Path to reality-manifest.json for merger")
 
     # --- validate ---
     p_validate = subparsers.add_parser("validate", help="Validate model invariants")
@@ -56,19 +43,6 @@ def main(argv: list[str] | None = None) -> int:
     p_diff = subparsers.add_parser("diff", help="Compare two model versions")
     p_diff.add_argument("old_model", help="Path to old/baseline model")
     p_diff.add_argument("new_model", help="Path to new/current model")
-
-    # --- query ---
-    p_query = subparsers.add_parser("query", help="Query model structure")
-    p_query.add_argument("model", help="Path to architecture-model.yaml")
-    p_query.add_argument("question", help="Structural question")
-
-    # --- context ---
-    p_context = subparsers.add_parser("context", help="Generate LLM context from model")
-    p_context.add_argument("model", help="Path to architecture-model.yaml")
-    p_context.add_argument("--artifact", help="Generate artifact-specific context")
-    p_context.add_argument("--fblock", help="Generate F-block-specific context")
-    p_context.add_argument("--tokens", type=int, default=3000, help="Token budget")
-    p_context.add_argument("--detail", choices=["minimal", "standard", "full"], default="standard")
 
     # --- stats ---
     p_stats = subparsers.add_parser("stats", help="Show model statistics")
@@ -94,13 +68,11 @@ def main(argv: list[str] | None = None) -> int:
     p_manifest.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_manifest.add_argument("-o", "--output", help="Output JSON path")
 
-    # --- train (subcommand group) ---
-    from .train import register_train_commands
-    register_train_commands(subparsers)
-
-    # --- generate ---
-    from .generate import register_generate_command
-    register_generate_command(subparsers)
+    # --- coverage ---
+    p_coverage = subparsers.add_parser("coverage", help="Analyze model coverage against code reality")
+    p_coverage.add_argument("model", help="Path to .architecture-model.yaml")
+    p_coverage.add_argument("--project", "-p", help="Project path for manifest generation (default: model directory)")
+    p_coverage.add_argument("--manifest", help="Path to pre-generated manifest JSON")
 
     args = parser.parse_args(argv)
 
@@ -109,21 +81,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # Dispatch
-    from .train import _train_stub
-    from .generate import _cmd_generate
     handlers = {
         "init": _cmd_init,
-        "extract": _cmd_extract,
         "validate": _cmd_validate,
         "slice": _cmd_slice,
         "diff": _cmd_diff,
-        "query": _cmd_query,
-        "context": _cmd_context,
         "stats": _cmd_stats,
         "impact": _cmd_impact,
         "manifest": _cmd_manifest,
-        "train": _train_stub,
-        "generate": _cmd_generate,
+        "coverage": _cmd_coverage,
     }
     return handlers[args.command](args)
 
@@ -168,47 +134,6 @@ def _cmd_init(args) -> int:
     # Write
     out_path = write_config(config, root)
     print(f"\nWritten: {out_path}")
-    return 0
-
-
-def _cmd_extract(args) -> int:
-    from ..extract.from_artifacts import extract_from_artifacts
-    from ..extract.from_code import extract_from_code
-    from ..core.parser import save_model
-    from ..core.merger import merge_manifest
-
-    if args.from_code:
-        code_path = Path(args.from_code)
-        output = Path(args.output) if args.output else code_path / "architecture-model.yaml"
-        print(f"Extracting architecture model from code: {code_path}")
-        model = extract_from_code(code_path)
-    elif args.artifact_dir:
-        artifact_dir = Path(args.artifact_dir)
-        output = Path(args.output) if args.output else artifact_dir.parent / "architecture-model.yaml"
-        print(f"Extracting architecture model from: {artifact_dir}")
-        model = extract_from_artifacts(artifact_dir, project=args.project, system=args.system)
-    else:
-        print("ERROR: Provide either <artifact_dir> or --from-code PATH")
-        return 1
-
-    if args.manifest:
-        manifest_path = Path(args.manifest)
-        if manifest_path.exists():
-            merge_manifest(model, manifest_path)
-            print(f"  Merged manifest: {manifest_path}")
-
-    print(f"  Entities: {model.entity_count}")
-    print(f"    Actors: {len(model.entities.actors)}")
-    print(f"    Capabilities: {len(model.entities.capabilities)}")
-    print(f"    Behaviors: {len(model.entities.behaviors)}")
-    print(f"    Interfaces: {len(model.entities.interfaces)}")
-    print(f"    Constraints: {len(model.entities.constraints)}")
-    print(f"    Layers: {len(model.entities.layers)}")
-    print(f"    Components: {len(model.entities.components)}")
-    print(f"  Relationships: {model.relationship_count}")
-
-    save_model(model, output)
-    print(f"\nSaved: {output}")
     return 0
 
 
@@ -278,37 +203,6 @@ def _cmd_diff(args) -> int:
     return 0
 
 
-def _cmd_query(args) -> int:
-    from ..core.parser import load_model
-    from ..integrations.llm_context import query_model
-
-    model = load_model(args.model)
-    print(query_model(model, args.question))
-    return 0
-
-
-def _cmd_context(args) -> int:
-    from ..core.parser import load_model
-    from ..integrations.llm_context import (
-        format_model_context,
-        format_fblock_context,
-        format_artifact_context,
-    )
-
-    model = load_model(args.model)
-
-    if args.artifact:
-        ctx = format_artifact_context(model, args.artifact, max_tokens=args.tokens)
-    elif args.fblock:
-        ctx = format_fblock_context(model, args.fblock, max_tokens=args.tokens)
-    else:
-        ctx = format_model_context(model, max_tokens=args.tokens, detail_level=args.detail)
-
-    print(ctx)
-    print(f"\n---\n[{len(ctx)} chars, ~{len(ctx) // 4} tokens]")
-    return 0
-
-
 def _cmd_stats(args) -> int:
     from ..core.parser import load_model
     from ..core.validator import validate_model
@@ -369,11 +263,56 @@ def _cmd_stats(args) -> int:
 
 
 def _cmd_impact(args) -> int:
+    """Impact analysis using BFS through relationships."""
     from ..core.parser import load_model
-    from ..integrations.llm_context import impact_analysis
 
     model = load_model(args.model)
-    print(impact_analysis(model, args.entity_id, depth=args.depth))
+
+    # Simple BFS impact analysis (moved from integrations)
+    entity_id = args.entity_id
+    depth = args.depth
+
+    # Verify entity exists
+    all_ids = set()
+    for lst in [
+        model.entities.actors, model.entities.capabilities,
+        model.entities.behaviors, model.entities.interfaces,
+        model.entities.constraints, model.entities.layers,
+        model.entities.components,
+    ]:
+        for e in lst:
+            all_ids.add(e.id)
+
+    if entity_id not in all_ids:
+        print(f"ERROR: Entity '{entity_id}' not found in model")
+        return 1
+
+    # BFS
+    adjacency: dict[str, set[str]] = {eid: set() for eid in all_ids}
+    for rel in model.relationships:
+        if rel.from_id in adjacency:
+            adjacency[rel.from_id].add(rel.to_id)
+        if rel.to_id in adjacency:
+            adjacency[rel.to_id].add(rel.from_id)
+
+    visited: dict[str, int] = {entity_id: 0}
+    queue = [(entity_id, 0)]
+    while queue:
+        current, d = queue.pop(0)
+        if d >= depth:
+            continue
+        for neighbor in adjacency.get(current, set()):
+            if neighbor not in visited:
+                visited[neighbor] = d + 1
+                queue.append((neighbor, d + 1))
+
+    print(f"Impact analysis: {entity_id} (depth={depth})")
+    print(f"Affected entities: {len(visited) - 1}")
+    for eid, d in sorted(visited.items(), key=lambda x: (x[1], x[0])):
+        if eid == entity_id:
+            continue
+        print(f"  [depth {d}] {eid}")
+
     return 0
 
 
@@ -414,6 +353,32 @@ def _cmd_manifest(args) -> int:
     print(f"  Metrics: {metrics}")
     print(f"\nSaved: {out_path}")
     return 0
+
+
+def _cmd_coverage(args) -> int:
+    """Run coverage analysis: model vs manifest."""
+    import json as json_mod
+
+    from ..core.coverage import coverage_report
+    from ..core.parser import load_model
+
+    model = load_model(args.model)
+    model_dir = Path(args.model).parent.resolve()
+
+    if args.manifest:
+        with open(args.manifest) as f:
+            manifest = json_mod.load(f)
+    else:
+        project = Path(args.project) if args.project else model_dir
+        from ..config.loader import discover_config
+        from ..manifest.generator import generate_manifest
+
+        config = discover_config(project)
+        manifest = generate_manifest(project, config=config)
+
+    result = coverage_report(model, manifest)
+    print(result.summary())
+    return 0 if result.overall_score >= 80 else 1
 
 
 if __name__ == "__main__":

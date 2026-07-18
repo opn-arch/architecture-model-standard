@@ -113,7 +113,7 @@ def process_block(
 
     # Collect files from dirs
     for dir_path in block_def["dirs"]:
-        all_files.extend(collect_py_files(root, dir_path))
+        all_files.extend(collect_py_files(root / dir_path))
 
     # Collect explicit files
     for file_path in block_def["files"]:
