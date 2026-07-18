@@ -108,6 +108,7 @@ def validate_model(
     _check_v11_semantics(model, result)
     _check_regen_readiness(model, result)
     _check_domain_profile(model, result)
+    _check_improvement_opportunities(model, result)
 
     if strict:
         # Promote warnings to errors
@@ -516,3 +517,36 @@ def _check_domain_profile(model: ArchitectureModel, result: ValidationResult) ->
                         entity_id=entity.id,
                         context=f"profile:{profile_name}",
                     ))
+
+
+def _check_improvement_opportunities(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Flag ACTIVE components lacking function-level detail (INFO only)."""
+    for comp in model.entities.components:
+        if comp.status != Status.ACTIVE:
+            continue
+
+        if not comp.signatures:
+            result.issues.append(ValidationIssue(
+                severity=Severity.INFO,
+                code="IMPROVEMENT_NO_SIGNATURES",
+                message=f"Component '{comp.name}' has no function signatures",
+                entity_id=comp.id,
+            ))
+            continue
+
+        if not comp.test_contracts:
+            result.issues.append(ValidationIssue(
+                severity=Severity.INFO,
+                code="IMPROVEMENT_NO_TEST_CONTRACTS",
+                message=f"Component '{comp.name}' has signatures but no test contracts",
+                entity_id=comp.id,
+            ))
+            continue
+
+        if not comp.observability:
+            result.issues.append(ValidationIssue(
+                severity=Severity.INFO,
+                code="IMPROVEMENT_NO_OBSERVABILITY",
+                message=f"Component '{comp.name}' has signatures and test contracts but no observability contracts",
+                entity_id=comp.id,
+            ))
