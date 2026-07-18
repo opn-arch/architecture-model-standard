@@ -1,99 +1,265 @@
 meta:
   project: architecture-model-standard
-  schema_version: '1.3'
-
+  schema_version: '1.4'
+  source_artifacts:
+    - .architecture-model.yaml
 entities:
-  layers:
-    - id: L-APP
-      name: Application Layer
+  actors:
+    - id: ACT-1
+      name: LLM Agent
       status: ACTIVE
-
+      type: system
+    - id: ACT-2
+      name: Developer
+      status: ACTIVE
+      type: human
   capabilities:
     - id: CAP-F1
-      name: Model Parsing & Validation
+      name: Model Validation
       status: ACTIVE
-      description: Parse YAML models and validate structural correctness
+      f_block: F1
+      priority: high
     - id: CAP-F2
-      name: Reality Manifest Generation
+      name: Manifest Generation
       status: ACTIVE
-      description: AST scanning to produce ground-truth code inventories
+      f_block: F2
+      priority: high
     - id: CAP-F3
-      name: LLM Context Integration
+      name: Model Parsing
       status: ACTIVE
-      description: Token-compressed context formatting for LLM consumption
+      f_block: F3
+      priority: high
     - id: CAP-F4
-      name: CLI Operations
+      name: Context Formatting
       status: ACTIVE
-      description: Command-line interface for init, validate, slice, extract
+      f_block: F4
+      priority: medium
     - id: CAP-F5
-      name: Configuration & Schema
+      name: Config Discovery
       status: ACTIVE
-      description: Auto-discovery config loading and JSON Schema definitions
+      f_block: F5
+      priority: high
     - id: CAP-F6
-      name: Model Extraction
+      name: CLI Interface
       status: ACTIVE
-      description: Extract architecture model from generated artifacts
-
+      f_block: F6
+      priority: medium
+  layers:
+    - id: cli-layer
+      name: CLI Layer
+      status: ACTIVE
+      order: 1
+    - id: core-layer
+      name: Core Layer
+      status: ACTIVE
+      order: 2
+    - id: manifest-layer
+      name: Manifest Layer
+      status: ACTIVE
+      order: 3
+    - id: config-layer
+      name: Config Layer
+      status: ACTIVE
+      order: 4
   components:
-    - id: COMP-CORE
-      name: core
-      status: ACTIVE
-      description: Parser, validator, slicer, differ, merger, decomposer, types
-    - id: COMP-MANIFEST
-      name: manifest
-      status: ACTIVE
-      description: AST scanner, block discovery, metrics, interface detection
-    - id: COMP-INTEG
-      name: integrations
-      status: ACTIVE
-      description: LLM context formatter and pipeline bridge
     - id: COMP-CLI
-      name: cli
+      name: CLI Commands
       status: ACTIVE
-      description: CLI entry point and command dispatch
+      kind: service
+      layer: cli-layer
+      f_block: F6
+    - id: COMP-PARSER
+      name: Model Parser
+      status: ACTIVE
+      kind: library
+      layer: core-layer
+      f_block: F3
+    - id: COMP-VALIDATOR
+      name: Model Validator
+      status: ACTIVE
+      kind: library
+      layer: core-layer
+      f_block: F1
+    - id: COMP-SLICER
+      name: Model Slicer
+      status: ACTIVE
+      kind: library
+      layer: core-layer
+      f_block: F4
+    - id: COMP-SCANNER
+      name: AST Scanner
+      status: ACTIVE
+      kind: library
+      layer: manifest-layer
+      f_block: F2
+    - id: COMP-GENERATOR
+      name: Manifest Generator
+      status: ACTIVE
+      kind: service
+      layer: manifest-layer
+      f_block: F2
+    - id: COMP-BLOCKS
+      name: Block Processor
+      status: ACTIVE
+      kind: library
+      layer: manifest-layer
+      f_block: F2
     - id: COMP-CONFIG
-      name: config
+      name: Config Loader
       status: ACTIVE
-      description: Configuration loader and schema definition
-    - id: COMP-EXTRACT
-      name: extract
+      kind: library
+      layer: config-layer
+      f_block: F5
+    - id: COMP-UTILS
+      name: Shared Utilities
       status: ACTIVE
-      description: Model extraction from Tier-1 artifacts
-
+      kind: library
+      layer: core-layer
+      f_block: F3
+  interfaces:
+    - id: IF-CLI
+      name: CLI Entry Point
+      status: ACTIVE
+      type: external
+    - id: IF-MCP
+      name: MCP Server Integration
+      status: ACTIVE
+      type: external
+    - id: IF-MANIFEST
+      name: Manifest JSON Output
+      status: ACTIVE
+      type: internal
+  constraints:
+    - id: CON-1
+      name: Python-Only AST
+      status: ACTIVE
+      type: technology
+      description: AST scanning limited to Python source files
+    - id: CON-2
+      name: Backward Compatibility
+      status: ACTIVE
+      type: operational
+      description: All typed returns must have to_dict() for legacy callers
+  behaviors:
+    - id: BEH-INIT
+      name: Bootstrap Project
+      status: ACTIVE
+      pattern: pipeline
+    - id: BEH-SCAN
+      name: AST Scan Pipeline
+      status: ACTIVE
+      pattern: pipeline
+    - id: BEH-VALIDATE
+      name: Model Validation
+      status: ACTIVE
+      pattern: sequential
+    - id: BEH-SLICE
+      name: Context Slicing
+      status: ACTIVE
+      pattern: sequential
 relationships:
-  - from: L-APP
-    to: COMP-CORE
-    type: contains
-  - from: L-APP
-    to: COMP-MANIFEST
-    type: contains
-  - from: L-APP
-    to: COMP-INTEG
-    type: contains
-  - from: COMP-CORE
+  - type: realizes
+    from: COMP-VALIDATOR
     to: CAP-F1
-    type: realizes
-  - from: COMP-MANIFEST
+  - type: realizes
+    from: COMP-SCANNER
     to: CAP-F2
-    type: realizes
-  - from: COMP-INTEG
+  - type: realizes
+    from: COMP-GENERATOR
+    to: CAP-F2
+  - type: realizes
+    from: COMP-BLOCKS
+    to: CAP-F2
+  - type: realizes
+    from: COMP-PARSER
     to: CAP-F3
-    type: realizes
-  - from: COMP-CLI
+  - type: realizes
+    from: COMP-SLICER
     to: CAP-F4
-    type: realizes
-  - from: COMP-CONFIG
+  - type: realizes
+    from: COMP-CONFIG
     to: CAP-F5
-    type: realizes
-  - from: COMP-EXTRACT
+  - type: realizes
+    from: COMP-CLI
     to: CAP-F6
-    type: realizes
-  - from: COMP-INTEG
-    to: COMP-CORE
-    type: depends-on
-  - from: COMP-CLI
-    to: COMP-CORE
-    type: depends-on
-  - from: COMP-EXTRACT
-    to: COMP-CORE
-    type: depends-on
+  - type: depends-on
+    from: COMP-GENERATOR
+    to: COMP-SCANNER
+  - type: depends-on
+    from: COMP-GENERATOR
+    to: COMP-BLOCKS
+  - type: depends-on
+    from: COMP-GENERATOR
+    to: COMP-CONFIG
+  - type: depends-on
+    from: COMP-CLI
+    to: COMP-PARSER
+  - type: depends-on
+    from: COMP-CLI
+    to: COMP-VALIDATOR
+  - type: depends-on
+    from: COMP-CLI
+    to: COMP-GENERATOR
+  - type: depends-on
+    from: COMP-SCANNER
+    to: COMP-UTILS
+  - type: exposes
+    from: COMP-CLI
+    to: IF-CLI
+  - type: exposes
+    from: COMP-GENERATOR
+    to: IF-MANIFEST
+  - type: consumes
+    from: ACT-1
+    to: IF-MCP
+  - type: consumes
+    from: ACT-2
+    to: IF-CLI
+  - type: traces-to
+    from: COMP-CONFIG
+    to: BEH-INIT
+  - type: traces-to
+    from: COMP-SCANNER
+    to: BEH-SCAN
+  - type: traces-to
+    from: COMP-VALIDATOR
+    to: BEH-VALIDATE
+  - type: traces-to
+    from: COMP-SLICER
+    to: BEH-SLICE
+  - type: constrained-by
+    from: COMP-SCANNER
+    to: CON-1
+  - type: constrained-by
+    from: COMP-SCANNER
+    to: CON-2
+  - type: constrained-by
+    from: COMP-GENERATOR
+    to: CON-2
+  - type: contains
+    from: cli-layer
+    to: COMP-CLI
+  - type: contains
+    from: core-layer
+    to: COMP-PARSER
+  - type: contains
+    from: core-layer
+    to: COMP-VALIDATOR
+  - type: contains
+    from: core-layer
+    to: COMP-SLICER
+  - type: contains
+    from: core-layer
+    to: COMP-UTILS
+  - type: contains
+    from: manifest-layer
+    to: COMP-SCANNER
+  - type: contains
+    from: manifest-layer
+    to: COMP-GENERATOR
+  - type: contains
+    from: manifest-layer
+    to: COMP-BLOCKS
+  - type: contains
+    from: config-layer
+    to: COMP-CONFIG
