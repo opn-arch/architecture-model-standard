@@ -17,6 +17,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from architecture_model.utils.discovery import (
+    EXCLUDED_DIRS,
+    discover_source_files,
+    discover_test_files,
+)
+
 from .types import (
     ArchitectureModel,
     Component,
@@ -545,56 +551,8 @@ def compact_for_generation(model: ArchitectureModel) -> ArchitectureModel:
 # Compose Enriched Model (from raw source code)
 # ---------------------------------------------------------------------------
 
-# Directories to exclude from source file discovery
-_EXCLUDED_DIRS = frozenset({
-    "tests", "test", "__pycache__", ".git", "venv", ".venv", "node_modules",
-})
-
 # Filenames to exclude
 _EXCLUDED_FILES = frozenset({"setup.py", "conftest.py"})
-
-
-def _is_source_file(path: Path, project_root: Path) -> bool:
-    """Check if a .py file should be treated as a source file (not test/config)."""
-    # Exclude by directory name
-    for part in path.relative_to(project_root).parts:
-        if part in _EXCLUDED_DIRS:
-            return False
-    # Exclude by filename
-    if path.name in _EXCLUDED_FILES:
-        return False
-    # Exclude test files
-    if path.name.startswith("test_") or path.name.startswith("tests_") or path.name.endswith("_test.py"):
-        return False
-    return True
-
-
-def _is_test_file(path: Path) -> bool:
-    """Check if a .py file is a test file."""
-    return (
-        path.name.startswith("test_")
-        or path.name.startswith("tests_")
-        or path.name.endswith("_test.py")
-    )
-
-
-def _discover_source_files(project_root: Path) -> list[Path]:
-    """Find all source .py files in the project, excluding tests/config."""
-    results: list[Path] = []
-    for py_file in sorted(project_root.rglob("*.py")):
-        if _is_source_file(py_file, project_root):
-            results.append(py_file)
-    return results
-
-
-def _discover_test_files(project_root: Path) -> list[Path]:
-    """Find all test files (test_*.py or *_test.py) in the project."""
-    results: list[Path] = []
-    for py_file in sorted(project_root.rglob("*.py")):
-        if _is_test_file(py_file):
-            # Must be in a tests/ or test/ dir, or anywhere really
-            results.append(py_file)
-    return results
 
 
 def _trace_init_reexports(init_path: Path) -> set[str]:
@@ -637,7 +595,7 @@ def _build_package_dirs(project_root: Path) -> dict[str, Path]:
         pkg_dir = init_file.parent
         # Skip excluded directories
         rel_parts = pkg_dir.relative_to(project_root).parts
-        if any(part in _EXCLUDED_DIRS for part in rel_parts):
+        if any(part in EXCLUDED_DIRS for part in rel_parts):
             continue
         package_dirs[pkg_dir.name] = init_file
     return package_dirs
@@ -751,8 +709,8 @@ def compose_enriched_model(project_root: Path) -> ArchitectureModel:
     from architecture_model.manifest.test_analyzer import analyze_test_file
 
     # Discover files
-    source_files = _discover_source_files(project_root)
-    test_files = _discover_test_files(project_root)
+    source_files = discover_source_files(project_root)
+    test_files = discover_test_files(project_root)
 
     # Build stem set for test mapping
     source_stems = {f.stem for f in source_files}

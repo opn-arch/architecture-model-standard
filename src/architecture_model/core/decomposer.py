@@ -21,6 +21,12 @@ from architecture_model.core.types import (
     Status,
     System,
 )
+from architecture_model.utils.discovery import (
+    EXCLUDED_DIRS,
+    discover_source_files as _discover_source_files,
+    discover_test_files as _discover_test_files,
+    is_excluded_dir,
+)
 
 # Aggregate complexity score above which an F-block group becomes a System
 SYSTEM_THRESHOLD = 10.0
@@ -375,56 +381,13 @@ def decompose_model(
 # Test-affinity decomposition strategy
 # ---------------------------------------------------------------------------
 
-# Directories to skip when scanning for source/test files
-_EXCLUDED_DIRS = frozenset({
-    ".venv", "venv", ".env", "env",
-    "node_modules", ".git", ".hg", ".svn",
-    "site-packages", "dist-packages",
-    "__pycache__", ".tox", ".nox",
-    "build", "dist", ".eggs", "*.egg-info",
-    "output", "demos",
-})
-
-
 def _is_excluded(path: Path, repo_path: Path) -> bool:
     """Check if a path should be excluded from scanning."""
     parts = path.relative_to(repo_path).parts
     for part in parts:
-        if part in _EXCLUDED_DIRS or part.endswith(".egg-info"):
+        if part in EXCLUDED_DIRS or part.endswith(".egg-info"):
             return True
     return False
-
-
-def _discover_test_files(repo_path: Path) -> list[Path]:
-    """Find all test files matching test_*.py, *_test.py, or tests_*.py patterns."""
-    test_files: list[Path] = []
-    for py_file in repo_path.rglob("*.py"):
-        if _is_excluded(py_file, repo_path):
-            continue
-        name = py_file.name
-        if name == "__init__.py":
-            continue
-        if name.startswith("test_") or name.endswith("_test.py") or name.startswith("tests_"):
-            test_files.append(py_file)
-    return test_files
-
-
-def _discover_source_files(repo_path: Path) -> list[Path]:
-    """Find all non-test Python source files."""
-    source_files: list[Path] = []
-    for py_file in repo_path.rglob("*.py"):
-        if _is_excluded(py_file, repo_path):
-            continue
-        name = py_file.name
-        if name.startswith("test_") or name.endswith("_test.py") or name.startswith("tests_"):
-            continue
-        # Skip files inside common test directories that aren't source
-        # (but __init__.py inside tests/ is fine to skip)
-        parts = py_file.relative_to(repo_path).parts
-        if "tests" in parts and name == "__init__.py":
-            continue
-        source_files.append(py_file)
-    return source_files
 
 
 def _extract_imports(file_path: Path) -> list[str]:
