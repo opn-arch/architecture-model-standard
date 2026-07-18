@@ -1,6 +1,7 @@
 meta:
   project: architecture-model-standard
-  schema_version: '1.4'
+  schema_version: '1.5'
+  domain_profile: software
   source_artifacts:
     - .architecture-model.yaml
 
@@ -24,12 +25,12 @@ entities:
     - id: CAP-F1
       name: Model Parsing & Validation
       status: ACTIVE
-      f_block: F3
+      f_block: F1
       description: Parse YAML models and validate structural correctness (score 0-100)
     - id: CAP-F2
       name: Reality Manifest Generation
       status: ACTIVE
-      f_block: F4
+      f_block: F2
       description: AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts
     - id: CAP-F3
       name: Model Slicing & Diffing
@@ -39,18 +40,38 @@ entities:
     - id: CAP-F4
       name: CLI Operations
       status: ACTIVE
-      f_block: F1
-      description: "Command-line interface for init, validate, slice, diff, stats, impact, manifest"
+      f_block: F4
+      description: "Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich"
     - id: CAP-F5
       name: Configuration Management
       status: ACTIVE
-      f_block: F2
+      f_block: F5
       description: Auto-discovery config loading and project configuration schema
     - id: CAP-F6
       name: Schema Specification
       status: ACTIVE
-      f_block: F5
+      f_block: F6
       description: JSON Schema definitions for architecture model validation
+    - id: CAP-F7
+      name: Model Extraction
+      status: ACTIVE
+      f_block: F7
+      description: Extract architecture model from source code
+    - id: CAP-F8
+      name: Domain Profiles
+      status: ACTIVE
+      f_block: F8
+      description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
+    - id: CAP-F9
+      name: Shared Utilities
+      status: ACTIVE
+      f_block: F9
+      description: File discovery, exclusion patterns, and shared helper functions
+    - id: CAP-F10
+      name: Auto-Enrichment
+      status: ACTIVE
+      f_block: F10
+      description: Populate signatures, constants, and test_contracts from AST scanning
 
   behaviors:
     - id: BEH-INIT
@@ -65,12 +86,20 @@ entities:
       name: Manifest Generation
       status: ACTIVE
       description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
+    - id: BEH-ENRICH
+      name: Auto-Enrichment
+      status: ACTIVE
+      description: Enrich architecture model with function signatures, constants, and test contracts from AST
+    - id: BEH-EXTRACT
+      name: Model Extraction from Code
+      status: ACTIVE
+      description: Extract architecture model entities and relationships from source code analysis
 
   interfaces:
     - id: IF-CLI
       name: CLI Interface
       status: ACTIVE
-      description: "Entry point: architecture-model {init,validate,slice,diff,stats,impact,manifest}"
+      description: "Entry point: architecture-model {init,validate,slice,diff,stats,impact,manifest,coverage,enrich}"
     - id: IF-PARSE-API
       name: Parser API
       status: ACTIVE
@@ -82,142 +111,293 @@ entities:
     - id: IF-MANIFEST-API
       name: Manifest API
       status: ACTIVE
-      description: "generate_manifest(project_root) -> dict with modules, metrics, functional_blocks, interfaces"
+      description: "generate_manifest(project_root) -> Manifest"
     - id: IF-SLICER-API
       name: Slicer API
       status: ACTIVE
       description: "slice_by_fblock(model, id), slice_by_layer(model, id), slice_for_artifact(model, artifact)"
+    - id: IF-PROFILE-API
+      name: Profile API
+      status: ACTIVE
+      description: "load_profile(name) -> DomainProfile"
+    - id: IF-ENRICH-API
+      name: Enrichment API
+      status: ACTIVE
+      description: "enrich_model(model, project_root) -> ArchitectureModel"
 
   constraints:
     - id: CON-SCHEMA
       name: Schema Compliance
       status: ACTIVE
-      description: All models must conform to JSON Schema v1.4 with 7 entity types and 8 relationship types
+      description: All models must conform to JSON Schema v1.5 with 7 entity types and 8 relationship types
     - id: CON-NO-ORPHANS
       name: No Orphaned Entities
       status: ACTIVE
       description: Every entity must participate in at least one relationship
 
   components:
+    # Top-level components
     - id: COMP-CORE
       name: core
       status: ACTIVE
-      description: "Parser, validator, slicer, differ, merger, decomposer, type system (ArchitectureModel, Component, Capability, etc.)"
+      description: "Parser, validator, slicer, differ, merger, decomposer, type system"
     - id: COMP-MANIFEST
       name: manifest
       status: ACTIVE
-      description: "AST scanner, block discovery, metrics, interface detection, body hints, test analyzer, display, slicers"
+      description: "AST scanner, block discovery, metrics, interface detection, body hints, test analyzer"
+    - id: COMP-CLI
+      name: cli
+      status: ACTIVE
+      description: "CLI entry point and command dispatch (9 commands: init, validate, slice, diff, stats, impact, manifest, coverage, enrich)"
+      files:
+        - src/architecture_model/cli/main.py
+        - src/architecture_model/cli/__init__.py
     - id: COMP-CONFIG
       name: config
       status: ACTIVE
       description: Configuration loader (auto-discovery) and schema definition
+      files:
+        - src/architecture_model/config/loader.py
+        - src/architecture_model/config/schema.py
+        - src/architecture_model/config/__init__.py
     - id: COMP-SPEC
       name: spec
       status: ACTIVE
       description: JSON Schema definitions for architecture model validation
-    - id: COMP-CLI
-      name: cli
+      files:
+        - src/architecture_model/spec/__init__.py
+    - id: COMP-EXTRACT
+      name: extract
       status: ACTIVE
-      description: "CLI entry point and command dispatch (7 commands: init, validate, slice, diff, stats, impact, manifest)"
+      description: Extract architecture model from source code analysis
+      files:
+        - src/architecture_model/extract/from_code.py
+    - id: COMP-PROFILES
+      name: profiles
+      status: ACTIVE
+      description: Domain profile system (software, controls, mechanical, electrical)
+      files:
+        - src/architecture_model/profiles/schema.py
+        - src/architecture_model/profiles/__init__.py
+        - src/architecture_model/profiles/builtins/__init__.py
+    - id: COMP-UTILS
+      name: utils
+      status: ACTIVE
+      description: File discovery, exclusion patterns, and shared helper functions
+      files:
+        - src/architecture_model/utils/discovery.py
+        - src/architecture_model/utils/__init__.py
+    - id: COMP-ENRICH
+      name: enrich
+      status: ACTIVE
+      description: Auto-enrichment of architecture models with AST-derived signatures, constants, and test contracts
+      files:
+        - src/architecture_model/enrich.py
+    # COMP-CORE sub-components
+    - id: COMP-CORE-PARSER
+      name: core.parser
+      status: ACTIVE
+      description: YAML model parser (load_model, save_model, dump_model)
+      files:
+        - src/architecture_model/core/parser.py
+    - id: COMP-CORE-VALIDATOR
+      name: core.validator
+      status: ACTIVE
+      description: Structural validation engine producing score 0-100
+      files:
+        - src/architecture_model/core/validator.py
+    - id: COMP-CORE-SLICER
+      name: core.slicer
+      status: ACTIVE
+      description: Model subsetting by F-block, layer, or artifact
+      files:
+        - src/architecture_model/core/slicer.py
+    - id: COMP-CORE-DIFFER
+      name: core.differ
+      status: ACTIVE
+      description: Model version comparison and diff generation
+      files:
+        - src/architecture_model/core/differ.py
+    - id: COMP-CORE-MERGER
+      name: core.merger
+      status: ACTIVE
+      description: Model merging and composition
+      files:
+        - src/architecture_model/core/merger.py
+    - id: COMP-CORE-DECOMPOSER
+      name: core.decomposer
+      status: ACTIVE
+      description: Model decomposition into subsystems
+      files:
+        - src/architecture_model/core/decomposer.py
+    - id: COMP-CORE-TYPES
+      name: core.types
+      status: ACTIVE
+      description: Type system (ArchitectureModel, Component, Capability, FunctionSignature, TestContract, etc.)
+      files:
+        - src/architecture_model/core/types.py
+    # COMP-MANIFEST sub-components
+    - id: COMP-MANIFEST-SCANNER
+      name: manifest.scanner
+      status: ACTIVE
+      description: AST-based source code scanner
+      files:
+        - src/architecture_model/manifest/scanner.py
+    - id: COMP-MANIFEST-BLOCKS
+      name: manifest.blocks
+      status: ACTIVE
+      description: Functional block discovery from source tree
+      files:
+        - src/architecture_model/manifest/blocks.py
+    - id: COMP-MANIFEST-METRICS
+      name: manifest.metrics
+      status: ACTIVE
+      description: Code metrics computation (LOC, complexity, etc.)
+      files:
+        - src/architecture_model/manifest/metrics.py
+    - id: COMP-MANIFEST-INTERFACES
+      name: manifest.interfaces
+      status: ACTIVE
+      description: Interface detection from public API surface
+      files:
+        - src/architecture_model/manifest/interfaces.py
+    - id: COMP-MANIFEST-BODY-HINTS
+      name: manifest.body_hints
+      status: ACTIVE
+      description: Function body hint extraction for trivial implementations
+      files:
+        - src/architecture_model/manifest/body_hints.py
+    - id: COMP-MANIFEST-TEST-ANALYZER
+      name: manifest.test_analyzer
+      status: ACTIVE
+      description: Test contract extraction from test files
+      files:
+        - src/architecture_model/manifest/test_analyzer.py
+    - id: COMP-MANIFEST-GENERATOR
+      name: manifest.generator
+      status: ACTIVE
+      description: Top-level manifest generation orchestrator
+      files:
+        - src/architecture_model/manifest/generator.py
+        - src/architecture_model/manifest/display.py
+        - src/architecture_model/manifest/slicers.py
+    - id: COMP-MANIFEST-TYPES
+      name: manifest.types
+      status: ACTIVE
+      description: Manifest data types (Manifest, ModuleInfo, FunctionalBlock)
+      files:
+        - src/architecture_model/manifest/types.py
 
 relationships:
-  # Layer containment
-  - from: L-APP
-    to: COMP-CORE
-    type: contains
-  - from: L-APP
-    to: COMP-MANIFEST
-    type: contains
-  - from: L-APP
-    to: COMP-CLI
-    type: contains
-  - from: L-APP
-    to: COMP-CONFIG
-    type: contains
-  - from: L-APP
-    to: COMP-SPEC
-    type: contains
+  # Layer containment (top-level)
+  - { from: L-APP, to: COMP-CORE, type: contains }
+  - { from: L-APP, to: COMP-MANIFEST, type: contains }
+  - { from: L-APP, to: COMP-CLI, type: contains }
+  - { from: L-APP, to: COMP-CONFIG, type: contains }
+  - { from: L-APP, to: COMP-SPEC, type: contains }
+  - { from: L-APP, to: COMP-EXTRACT, type: contains }
+  - { from: L-APP, to: COMP-PROFILES, type: contains }
+  - { from: L-APP, to: COMP-UTILS, type: contains }
+  - { from: L-APP, to: COMP-ENRICH, type: contains }
+
+  # Parent contains sub-components (CORE)
+  - { from: COMP-CORE, to: COMP-CORE-PARSER, type: contains }
+  - { from: COMP-CORE, to: COMP-CORE-VALIDATOR, type: contains }
+  - { from: COMP-CORE, to: COMP-CORE-SLICER, type: contains }
+  - { from: COMP-CORE, to: COMP-CORE-DIFFER, type: contains }
+  - { from: COMP-CORE, to: COMP-CORE-MERGER, type: contains }
+  - { from: COMP-CORE, to: COMP-CORE-DECOMPOSER, type: contains }
+  - { from: COMP-CORE, to: COMP-CORE-TYPES, type: contains }
+
+  # Parent contains sub-components (MANIFEST)
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-SCANNER, type: contains }
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-BLOCKS, type: contains }
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-METRICS, type: contains }
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-INTERFACES, type: contains }
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-BODY-HINTS, type: contains }
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-TEST-ANALYZER, type: contains }
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-GENERATOR, type: contains }
+  - { from: COMP-MANIFEST, to: COMP-MANIFEST-TYPES, type: contains }
+
   # Capability realization
-  - from: COMP-CORE
-    to: CAP-F1
-    type: realizes
-  - from: COMP-CORE
-    to: CAP-F3
-    type: realizes
-  - from: COMP-MANIFEST
-    to: CAP-F2
-    type: realizes
-  - from: COMP-CLI
-    to: CAP-F4
-    type: realizes
-  - from: COMP-CONFIG
-    to: CAP-F5
-    type: realizes
-  - from: COMP-SPEC
-    to: CAP-F6
-    type: realizes
+  - { from: COMP-CORE, to: CAP-F1, type: realizes }
+  - { from: COMP-CORE, to: CAP-F3, type: realizes }
+  - { from: COMP-MANIFEST, to: CAP-F2, type: realizes }
+  - { from: COMP-CLI, to: CAP-F4, type: realizes }
+  - { from: COMP-CONFIG, to: CAP-F5, type: realizes }
+  - { from: COMP-SPEC, to: CAP-F6, type: realizes }
+  - { from: COMP-EXTRACT, to: CAP-F7, type: realizes }
+  - { from: COMP-PROFILES, to: CAP-F8, type: realizes }
+  - { from: COMP-UTILS, to: CAP-F9, type: realizes }
+  - { from: COMP-ENRICH, to: CAP-F10, type: realizes }
+
   # Interface exposure
-  - from: COMP-CLI
-    to: IF-CLI
-    type: exposes
-  - from: COMP-CORE
-    to: IF-PARSE-API
-    type: exposes
-  - from: COMP-CORE
-    to: IF-VALIDATE-API
-    type: exposes
-  - from: COMP-CORE
-    to: IF-SLICER-API
-    type: exposes
-  - from: COMP-MANIFEST
-    to: IF-MANIFEST-API
-    type: exposes
+  - { from: COMP-CLI, to: IF-CLI, type: exposes }
+  - { from: COMP-CORE-PARSER, to: IF-PARSE-API, type: exposes }
+  - { from: COMP-CORE-VALIDATOR, to: IF-VALIDATE-API, type: exposes }
+  - { from: COMP-CORE-SLICER, to: IF-SLICER-API, type: exposes }
+  - { from: COMP-MANIFEST-GENERATOR, to: IF-MANIFEST-API, type: exposes }
+  - { from: COMP-PROFILES, to: IF-PROFILE-API, type: exposes }
+  - { from: COMP-ENRICH, to: IF-ENRICH-API, type: exposes }
+
   # Constraint application
-  - from: COMP-CORE
-    to: CON-SCHEMA
-    type: constrained-by
-  - from: COMP-SPEC
-    to: CON-SCHEMA
-    type: constrained-by
-  - from: COMP-CORE
-    to: CON-NO-ORPHANS
-    type: constrained-by
-  # Dependencies
-  - from: COMP-CLI
-    to: COMP-CORE
-    type: depends-on
-  - from: COMP-CLI
-    to: COMP-CONFIG
-    type: depends-on
-  - from: COMP-CLI
-    to: COMP-MANIFEST
-    type: depends-on
-  - from: COMP-CORE
-    to: COMP-CONFIG
-    type: depends-on
-  - from: COMP-CORE
-    to: COMP-SPEC
-    type: depends-on
-  - from: COMP-MANIFEST
-    to: COMP-CONFIG
-    type: depends-on
-  # Behavior implementation
-  - from: COMP-CLI
-    to: BEH-INIT
-    type: traces-to
-  - from: COMP-CORE
-    to: BEH-VALIDATE
-    type: traces-to
-  - from: COMP-MANIFEST
-    to: BEH-MANIFEST
-    type: traces-to
+  - { from: COMP-CORE, to: CON-SCHEMA, type: constrained-by }
+  - { from: COMP-SPEC, to: CON-SCHEMA, type: constrained-by }
+  - { from: COMP-CORE, to: CON-NO-ORPHANS, type: constrained-by }
+
+  # Top-level dependencies
+  - { from: COMP-CLI, to: COMP-CORE, type: depends-on }
+  - { from: COMP-CLI, to: COMP-CONFIG, type: depends-on }
+  - { from: COMP-CLI, to: COMP-MANIFEST, type: depends-on }
+  - { from: COMP-CLI, to: COMP-ENRICH, type: depends-on }
+  - { from: COMP-CORE, to: COMP-CONFIG, type: depends-on }
+  - { from: COMP-CORE, to: COMP-SPEC, type: depends-on }
+  - { from: COMP-CORE, to: COMP-PROFILES, type: depends-on }
+  - { from: COMP-MANIFEST, to: COMP-CONFIG, type: depends-on }
+  - { from: COMP-MANIFEST, to: COMP-UTILS, type: depends-on }
+  - { from: COMP-EXTRACT, to: COMP-CORE, type: depends-on }
+  - { from: COMP-ENRICH, to: COMP-CORE, type: depends-on }
+  - { from: COMP-ENRICH, to: COMP-MANIFEST, type: depends-on }
+
+  # CORE internal dependencies
+  - { from: COMP-CORE-PARSER, to: COMP-CORE-TYPES, type: depends-on }
+  - { from: COMP-CORE-VALIDATOR, to: COMP-CORE-TYPES, type: depends-on }
+  - { from: COMP-CORE-VALIDATOR, to: COMP-PROFILES, type: depends-on }
+  - { from: COMP-CORE-SLICER, to: COMP-CORE-TYPES, type: depends-on }
+  - { from: COMP-CORE-DIFFER, to: COMP-CORE-TYPES, type: depends-on }
+  - { from: COMP-CORE-MERGER, to: COMP-CORE-TYPES, type: depends-on }
+  - { from: COMP-CORE-MERGER, to: COMP-UTILS, type: depends-on }
+  - { from: COMP-CORE-DECOMPOSER, to: COMP-CORE-TYPES, type: depends-on }
+  - { from: COMP-CORE-DECOMPOSER, to: COMP-UTILS, type: depends-on }
+
+  # MANIFEST internal dependencies
+  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-SCANNER, type: depends-on }
+  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-BLOCKS, type: depends-on }
+  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-METRICS, type: depends-on }
+  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-INTERFACES, type: depends-on }
+  - { from: COMP-MANIFEST-GENERATOR, to: COMP-MANIFEST-TYPES, type: depends-on }
+  - { from: COMP-MANIFEST-BLOCKS, to: COMP-MANIFEST-SCANNER, type: depends-on }
+  - { from: COMP-MANIFEST-BLOCKS, to: COMP-MANIFEST-TYPES, type: depends-on }
+  - { from: COMP-MANIFEST-BLOCKS, to: COMP-UTILS, type: depends-on }
+  - { from: COMP-MANIFEST-SCANNER, to: COMP-MANIFEST-TYPES, type: depends-on }
+  - { from: COMP-MANIFEST-METRICS, to: COMP-MANIFEST-TYPES, type: depends-on }
+  - { from: COMP-MANIFEST-INTERFACES, to: COMP-MANIFEST-TYPES, type: depends-on }
+  - { from: COMP-MANIFEST-BODY-HINTS, to: COMP-CORE-TYPES, type: depends-on }
+  - { from: COMP-MANIFEST-TEST-ANALYZER, to: COMP-CORE-TYPES, type: depends-on }
+
+  # Behavior traces
+  - { from: COMP-CLI, to: BEH-INIT, type: traces-to }
+  - { from: COMP-CLI, to: BEH-VALIDATE, type: traces-to }
+  - { from: COMP-CLI, to: BEH-MANIFEST, type: traces-to }
+  - { from: COMP-CLI, to: BEH-ENRICH, type: traces-to }
+  - { from: COMP-CORE-PARSER, to: BEH-VALIDATE, type: traces-to }
+  - { from: COMP-CORE-VALIDATOR, to: BEH-VALIDATE, type: traces-to }
+  - { from: COMP-MANIFEST-GENERATOR, to: BEH-MANIFEST, type: traces-to }
+  - { from: COMP-ENRICH, to: BEH-ENRICH, type: traces-to }
+  - { from: COMP-EXTRACT, to: BEH-EXTRACT, type: traces-to }
+
   # Actor interactions
-  - from: ACT-DEV
-    to: IF-CLI
-    type: consumes
-  - from: ACT-LLM
-    to: IF-PARSE-API
-    type: consumes
-  - from: ACT-LLM
-    to: IF-SLICER-API
-    type: consumes
+  - { from: ACT-DEV, to: IF-CLI, type: consumes }
+  - { from: ACT-LLM, to: IF-PARSE-API, type: consumes }
+  - { from: ACT-LLM, to: IF-SLICER-API, type: consumes }
+  - { from: ACT-LLM, to: IF-MANIFEST-API, type: consumes }
