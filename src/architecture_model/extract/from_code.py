@@ -72,7 +72,7 @@ def extract_from_code(
     if manifest is None:
         from ..manifest import generate_manifest
 
-        manifest = generate_manifest(root, config)
+        manifest = generate_manifest(root, config).to_dict()
 
     # Derive all entities
     capabilities = _derive_capabilities(config)

@@ -389,6 +389,7 @@ def _cmd_manifest(args) -> int:
 
     print(f"Scanning: {root}")
     manifest = generate_manifest(root)
+    manifest_dict = manifest.to_dict()
 
     # Determine output path
     if args.output:
@@ -399,13 +400,13 @@ def _cmd_manifest(args) -> int:
         out_path = resolved.manifest
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
+    out_path.write_text(json.dumps(manifest_dict, indent=2, default=str), encoding="utf-8")
 
     # Print summary
-    modules = manifest.get("modules", [])
-    interfaces = manifest.get("interfaces", [])
-    blocks = manifest.get("functional_blocks", {})
-    metrics = manifest.get("metrics", {})
+    modules = manifest_dict.get("modules", [])
+    interfaces = manifest_dict.get("interfaces", [])
+    blocks = manifest_dict.get("functional_blocks", {})
+    metrics = manifest_dict.get("metrics", {})
 
     print(f"\n  Modules: {len(modules)}")
     print(f"  Interfaces: {len(interfaces)}")

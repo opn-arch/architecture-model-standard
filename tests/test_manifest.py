@@ -73,7 +73,7 @@ class TestGenerateManifest:
     @pytest.fixture(scope="class")
     def generated(self) -> dict:
         """Generate manifest from test fixture root."""
-        return generate_manifest(TEST_CONFIG_PATH.parent)
+        return generate_manifest(TEST_CONFIG_PATH.parent).to_dict()
 
     def test_has_generated_at(self, generated: dict):
         """Manifest has 'generated_at' timestamp."""
