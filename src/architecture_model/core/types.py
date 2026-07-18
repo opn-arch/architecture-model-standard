@@ -122,6 +122,8 @@ class ComponentKind(str, Enum):
     FRAMEWORK = "framework"
     UI = "ui"
     PIPELINE = "pipeline"
+    PACKAGE = "package"
+    CLI_TOOL = "cli"
 
     @classmethod
     def parse(cls, value: str) -> ComponentKind | str:
@@ -283,6 +285,7 @@ class Constant:
     name: str
     value: str
     context: str = ""
+    type: Optional[str] = None
 
 
 @dataclass
@@ -293,6 +296,7 @@ class FunctionSignature:
     returns: str = ""
     decorators: list[str] = field(default_factory=list)
     body_hint: str = ""
+    complexity: Optional[str] = None  # TRIVIAL, SHORT, COMPLEX
 
 
 @dataclass
@@ -302,6 +306,7 @@ class TestContract:
     test_method: str
     assertion: str
     contract_type: str = ""
+    required_imports: list[str] = field(default_factory=list)
 
 
 @dataclass

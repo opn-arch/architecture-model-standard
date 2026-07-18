@@ -283,6 +283,7 @@ def _parse_component(d: dict) -> Component:
             name=c.get("name", ""),
             value=c.get("value", ""),
             context=c.get("context", ""),
+            type=c.get("type"),
         )
         for c in d.get("constants", [])
     ]
@@ -294,6 +295,7 @@ def _parse_component(d: dict) -> Component:
             returns=s.get("returns", ""),
             decorators=s.get("decorators", []),
             body_hint=s.get("body_hint", ""),
+            complexity=s.get("complexity"),
         )
         for s in d.get("signatures", [])
     ]
@@ -304,6 +306,7 @@ def _parse_component(d: dict) -> Component:
             test_method=tc.get("test_method", ""),
             assertion=tc.get("assertion", ""),
             contract_type=tc.get("contract_type", ""),
+            required_imports=tc.get("required_imports", []),
         )
         for tc in d.get("test_contracts", [])
     ]
@@ -540,6 +543,7 @@ def _dump_component(c: Component) -> dict:
         d["constants"] = [
             {"name": cn.name, "value": cn.value}
             | ({"context": cn.context} if cn.context else {})
+            | ({"type": cn.type} if cn.type else {})
             for cn in c.constants
         ]
     if c.signatures:
@@ -549,12 +553,14 @@ def _dump_component(c: Component) -> dict:
             | ({"returns": sig.returns} if sig.returns else {})
             | ({"decorators": sig.decorators} if sig.decorators else {})
             | ({"body_hint": sig.body_hint} if sig.body_hint else {})
+            | ({"complexity": sig.complexity} if sig.complexity else {})
             for sig in c.signatures
         ]
     if c.test_contracts:
         d["test_contracts"] = [
             {"test_file": tc.test_file, "test_method": tc.test_method, "assertion": tc.assertion}
             | ({"contract_type": tc.contract_type} if tc.contract_type else {})
+            | ({"required_imports": tc.required_imports} if tc.required_imports else {})
             for tc in c.test_contracts
         ]
     return d

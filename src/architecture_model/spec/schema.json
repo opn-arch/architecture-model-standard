@@ -288,7 +288,8 @@
               "params": { "type": "array", "items": { "type": "string" } },
               "returns": { "type": "string" },
               "body_hint": { "type": "string" },
-              "complexity": { "type": "string", "enum": ["TRIVIAL", "SHORT", "COMPLEX"] }
+              "complexity": { "type": "string", "enum": ["TRIVIAL", "SHORT", "COMPLEX"] },
+              "decorators": { "type": "array", "items": { "type": "string" } }
             },
             "additionalProperties": false
           }
@@ -302,7 +303,8 @@
               "assertion": { "type": "string" },
               "contract_type": { "type": "string" },
               "test_method": { "type": "string" },
-              "required_imports": { "type": "array", "items": { "type": "string" } }
+              "required_imports": { "type": "array", "items": { "type": "string" } },
+              "test_file": { "type": "string" }
             },
             "additionalProperties": false
           }
