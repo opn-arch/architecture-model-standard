@@ -21,12 +21,12 @@ entities:
     name: Model Parsing & Validation
     status: ACTIVE
     description: Parse YAML models and validate structural correctness (score 0-100)
-    f_block: F1
+    f_block: F3
   - id: CAP-F2
     name: Reality Manifest Generation
     status: ACTIVE
     description: AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts
-    f_block: F2
+    f_block: F5
   - id: CAP-F3
     name: Model Slicing & Diffing
     status: ACTIVE
@@ -36,37 +36,37 @@ entities:
     name: CLI Operations
     status: ACTIVE
     description: Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich
-    f_block: F4
+    f_block: F1
   - id: CAP-F5
     name: Configuration Management
     status: ACTIVE
     description: Auto-discovery config loading and project configuration schema
-    f_block: F5
+    f_block: F2
   - id: CAP-F6
     name: Schema Specification
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
-    f_block: F6
+    f_block: F7
   - id: CAP-F7
     name: Model Extraction
     status: ACTIVE
     description: Extract architecture model from source code
-    f_block: F7
+    f_block: F4
   - id: CAP-F8
     name: Domain Profiles
     status: ACTIVE
     description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
-    f_block: F8
+    f_block: F6
   - id: CAP-F9
     name: Shared Utilities
     status: ACTIVE
     description: File discovery, exclusion patterns, and shared helper functions
-    f_block: F9
+    f_block: F8
   - id: CAP-F10
     name: Auto-Enrichment
     status: ACTIVE
     description: Populate signatures, constants, and test_contracts from AST scanning
-    f_block: F10
+    f_block: F9
   behaviors:
   - id: BEH-INIT
     name: Project Initialization
@@ -145,10 +145,12 @@ entities:
     name: core
     status: ACTIVE
     description: Parser, validator, slicer, differ, merger, decomposer, type system
+    f_block: F3
   - id: COMP-MANIFEST
     name: manifest
     status: ACTIVE
     description: AST scanner, block discovery, metrics, interface detection, body hints, test analyzer
+    f_block: F5
   - id: COMP-CLI
     name: cli
     status: ACTIVE
@@ -186,6 +188,7 @@ entities:
         (default: model directory)''); p_coverage.add_argument(''--manifest'', help=''Path to pre-generated manifest JSON'');
         args = parser.parse_args(argv); if not args.command: ...; handlers = {''init'': _cmd_init, ''validate'': _cmd_validate,
         ''slice'': _...; return handlers[args.command](args)'
+    f_block: F1
   - id: COMP-CONFIG
     name: config
     status: ACTIVE
@@ -303,12 +306,14 @@ entities:
       returns: str
       body_hint: 'return f''Layout: {self.layout_detected}, {self.blocks_discovered} blocks, {self.layers_discovered} layers,
         {self.metrics_discovered} metrics, {self.files_claimed}/{self.files_total} files claimed ({self.claim_rate:.0%})'''
+    f_block: F2
   - id: COMP-SPEC
     name: spec
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
     files:
     - src/architecture_model/spec/__init__.py
+    f_block: F7
   - id: COMP-EXTRACT
     name: extract
     status: ACTIVE
@@ -330,6 +335,7 @@ entities:
         capabilities=capabilities, behavi...; relationships = _derive_relationships(capabilities=capabilities, behavior...;
         meta = ModelMeta(schema_version=''1.0.0'', project=config.name or ...; return ArchitectureModel(meta=meta, entities=entities,
         relationships=relationships)'
+    f_block: F4
   - id: COMP-PROFILES
     name: profiles
     status: ACTIVE
@@ -363,6 +369,7 @@ entities:
       returns: DomainProfile
       body_hint: 'if name_or_path in BUILTIN_PROFILES: ...; if not path.exists(): ...; data = yaml.safe_load(path.read_text(encoding=''utf-8''));
         profile = DomainProfile.from_dict(data); logger.info(''Loaded domain profile: %s'', profile.domain); return profile'
+    f_block: F6
   - id: COMP-UTILS
     name: utils
     status: ACTIVE
@@ -427,6 +434,7 @@ entities:
       test_method: test_discover_test_files_by_name
       assertion: len(result) == 2
       contract_type: value_equality
+    f_block: F8
   - id: COMP-ENRICH
     name: enrich
     status: ACTIVE
@@ -452,6 +460,7 @@ entities:
       test_method: test_enrich_handles_missing_files
       assertion: len(c.signatures) == 0
       contract_type: value_equality
+    f_block: F9
   - id: COMP-CORE-PARSER
     name: core.parser
     status: ACTIVE
@@ -533,6 +542,7 @@ entities:
       test_method: test_minimal_valid_structure
       assertion: real_errors isinstance list
       contract_type: type_check
+    f_block: F3
   - id: COMP-CORE-VALIDATOR
     name: core.validator
     status: ACTIVE
@@ -623,6 +633,7 @@ entities:
       test_method: test_dormant_component_not_orphan
       assertion: len(orphans) == 0
       contract_type: value_equality
+    f_block: F3
   - id: COMP-CORE-SLICER
     name: core.slicer
     status: ACTIVE
@@ -728,6 +739,7 @@ entities:
       test_method: test_slice_by_nonexistent_layer
       assertion: len(sliced.entities.components) == 0
       contract_type: value_equality
+    f_block: F3
   - id: COMP-CORE-DIFFER
     name: core.differ
     status: ACTIVE
@@ -790,6 +802,7 @@ entities:
         result); _diff_entity_list(old_model.entities.layers, new_model.entities.layers, 'layer', result); _diff_entity_list(old_model.entities.components,
         new_model.entities.components, 'component', result); _diff_relationships(old_model.relationships, new_model.relationships,
         result); return result
+    f_block: F3
   - id: COMP-CORE-MERGER
     name: core.merger
     status: ACTIVE
@@ -869,6 +882,7 @@ entities:
       test_method: test_missing_manifest_returns_unchanged
       assertion: model_copy.meta.manifest_hash == original_hash
       contract_type: value_equality
+    f_block: F3
   - id: COMP-CORE-DECOMPOSER
     name: core.decomposer
     status: ACTIVE
@@ -997,6 +1011,7 @@ entities:
       test_method: test_no_systems_returns_unchanged
       assertion: len(result.top_level.entities.systems) == 0
       contract_type: value_equality
+    f_block: F3
   - id: COMP-CORE-TYPES
     name: core.types
     status: ACTIVE
@@ -1157,6 +1172,7 @@ entities:
       test_method: test_yaml_round_trip
       assertion: original.all_entity_ids == rebuilt.all_entity_ids
       contract_type: value_equality
+    f_block: F3
   - id: COMP-MANIFEST-SCANNER
     name: manifest.scanner
     status: ACTIVE
@@ -1175,6 +1191,7 @@ entities:
         %d funcs, %d classes, %d constants'', rel_path, len(functions), len(classes), len(constants)); return ModuleInfo(file=rel_path,
         name=name, docstring=docstring, functions=functions, imports=imports, line_count=line_count, status=status, classes=classes,
         exports=exports, decorated_functions=decorated, imports_detailed=imports_detailed, module_constants=constants, module_assignments=assignments)'
+    f_block: F5
   - id: COMP-MANIFEST-BLOCKS
     name: manifest.blocks
     status: ACTIVE
@@ -1195,6 +1212,7 @@ entities:
         == ''active'' for sf in sub_func...; sub_blocks_manifest: list[dict[str, Any]] = []; if sub_block_configs: ...; logger.debug(''Block
         %s: %d sub_functions, %d sub_blocks'', block_id, len(sub_functions), len(sub_blocks_manifest)); return BlockManifest(name=block_def[''name''],
         status=block_status, description_source=block_def[''description_source''], sub_functions=sub_functions, sub_blocks=sub_blocks_manifest)'
+    f_block: F5
   - id: COMP-MANIFEST-METRICS
     name: manifest.metrics
     status: ACTIVE
@@ -1210,6 +1228,7 @@ entities:
       body_hint: 'if config is None: ...; result: dict[str, int] = {}; for metric in config.metrics: ...; total_python = len([p
         for p in root.rglob(''*.py'') if not any((part in EX...; result[''total_python_files''] = total_python; logger.debug(''Computed
         %d metrics for %s: %s'', len(result), root, result); return MetricsResult(values=result)'
+    f_block: F5
   - id: COMP-MANIFEST-INTERFACES
     name: manifest.interfaces
     status: ACTIVE
@@ -1225,6 +1244,7 @@ entities:
       body_hint: 'file_to_module: dict[str, str] = {}; for mod in modules: ...; module_to_file: dict[str, str] = {v: k for
         k, v in file_t...; interfaces: list[InterfaceEdge] = []; seen: set[tuple[str, str]] = set(); for mod in modules: ...;
         logger.debug(''Derived %d interface edges from %d modules'', len(interfaces), len(modules)); return interfaces'
+    f_block: F5
   - id: COMP-MANIFEST-BODY-HINTS
     name: manifest.body_hints
     status: ACTIVE
@@ -1306,6 +1326,7 @@ entities:
       test_method: test_returns_populated
       assertion: sig.returns == 'str'
       contract_type: value_equality
+    f_block: F5
   - id: COMP-MANIFEST-TEST-ANALYZER
     name: manifest.test_analyzer
     status: ACTIVE
@@ -1365,6 +1386,7 @@ entities:
       test_method: test_fore_reset_value
       assertion: resets[0].value == '39'
       contract_type: value_equality
+    f_block: F5
   - id: COMP-MANIFEST-GENERATOR
     name: manifest.generator
     status: ACTIVE
@@ -1423,6 +1445,7 @@ entities:
         \ _slice_operations_manual, 'use-cases': _slice_use_cases, 'requirements-analysis': _slice_requirements_analysis};\
         \ slicer = slicers.get(artifact_name); if slicer is None:\n    return f'[unknown artifact: {artifact_name}]'; return\
         \ slicer(manifest)"
+    f_block: F5
   - id: COMP-MANIFEST-TYPES
     name: manifest.types
     status: ACTIVE
@@ -1451,6 +1474,15 @@ entities:
         blocks, %d unclaimed, %d errors'', self.files_succeeded, self.files_attempted, self.success_rate * 100, self.functions_extracted,
         self.classes_extracted, self.constants_extracted, self.interfaces_derived, self.blocks_processed, self.unclaimed_files,
         len(self.parse_errors))'
+    f_block: F5
+  - id: COMP-DECOMPOSE
+    name: decompose
+    status: ACTIVE
+    kind: module
+    f_block: F9
+    files:
+    - src/architecture_model/decompose.py
+    description: Model decomposition into per-F-block sub-models
 relationships:
 - type: contains
   from: L-APP
@@ -1725,3 +1757,9 @@ relationships:
 - type: consumes
   from: ACT-LLM
   to: IF-MANIFEST-API
+- type: depends-on
+  from: COMP-DECOMPOSE
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-DECOMPOSE
+  to: COMP-CONFIG
