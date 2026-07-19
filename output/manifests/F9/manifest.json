@@ -4,7 +4,7 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-UTILS",
   "manifest": {
-    "generated_at": "2026-07-19T02:53:01.920241+00:00",
+    "generated_at": "2026-07-19T03:11:31.207423+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 2,

@@ -46,7 +46,7 @@ entities:
     name: Schema Specification
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
-    f_block: F7
+    f_block: F8
   - id: CAP-F7
     name: Model Extraction
     status: ACTIVE
@@ -56,17 +56,17 @@ entities:
     name: Domain Profiles
     status: ACTIVE
     description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
-    f_block: F6
+    f_block: F7
   - id: CAP-F9
     name: Shared Utilities
     status: ACTIVE
     description: File discovery, exclusion patterns, and shared helper functions
-    f_block: F8
+    f_block: F9
   - id: CAP-F10
     name: Auto-Enrichment
     status: ACTIVE
     description: Populate signatures, constants, and test_contracts from AST scanning
-    f_block: F9
+    f_block: F6
   behaviors:
   - id: BEH-INIT
     name: Project Initialization
@@ -156,6 +156,7 @@ entities:
     status: ACTIVE
     description: 'CLI entry point and command dispatch (9 commands: init, validate, slice, diff, stats, impact, manifest,
       coverage, enrich)'
+    f_block: F1
     files:
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/__init__.py
@@ -188,11 +189,11 @@ entities:
         (default: model directory)''); p_coverage.add_argument(''--manifest'', help=''Path to pre-generated manifest JSON'');
         args = parser.parse_args(argv); if not args.command: ...; handlers = {''init'': _cmd_init, ''validate'': _cmd_validate,
         ''slice'': _...; return handlers[args.command](args)'
-    f_block: F1
   - id: COMP-CONFIG
     name: config
     status: ACTIVE
     description: Configuration loader (auto-discovery) and schema definition
+    f_block: F2
     files:
     - src/architecture_model/config/loader.py
     - src/architecture_model/config/schema.py
@@ -306,18 +307,23 @@ entities:
       returns: str
       body_hint: 'return f''Layout: {self.layout_detected}, {self.blocks_discovered} blocks, {self.layers_discovered} layers,
         {self.metrics_discovered} metrics, {self.files_claimed}/{self.files_total} files claimed ({self.claim_rate:.0%})'''
-    f_block: F2
+    test_contracts:
+    - test_file: test_config_discovery_typed.py
+      test_method: test_discover_config_returns_report
+      assertion: config.name == tmp_path.name
+      contract_type: value_equality
   - id: COMP-SPEC
     name: spec
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
+    f_block: F8
     files:
     - src/architecture_model/spec/__init__.py
-    f_block: F7
   - id: COMP-EXTRACT
     name: extract
     status: ACTIVE
     description: Extract architecture model from source code analysis
+    f_block: F4
     files:
     - src/architecture_model/extract/from_code.py
     signatures:
@@ -335,11 +341,11 @@ entities:
         capabilities=capabilities, behavi...; relationships = _derive_relationships(capabilities=capabilities, behavior...;
         meta = ModelMeta(schema_version=''1.0.0'', project=config.name or ...; return ArchitectureModel(meta=meta, entities=entities,
         relationships=relationships)'
-    f_block: F4
   - id: COMP-PROFILES
     name: profiles
     status: ACTIVE
     description: Domain profile system (software, controls, mechanical, electrical)
+    f_block: F7
     files:
     - src/architecture_model/profiles/schema.py
     - src/architecture_model/profiles/__init__.py
@@ -369,11 +375,11 @@ entities:
       returns: DomainProfile
       body_hint: 'if name_or_path in BUILTIN_PROFILES: ...; if not path.exists(): ...; data = yaml.safe_load(path.read_text(encoding=''utf-8''));
         profile = DomainProfile.from_dict(data); logger.info(''Loaded domain profile: %s'', profile.domain); return profile'
-    f_block: F6
   - id: COMP-UTILS
     name: utils
     status: ACTIVE
     description: File discovery, exclusion patterns, and shared helper functions
+    f_block: F9
     files:
     - src/architecture_model/utils/discovery.py
     - src/architecture_model/utils/__init__.py
@@ -434,11 +440,11 @@ entities:
       test_method: test_discover_test_files_by_name
       assertion: len(result) == 2
       contract_type: value_equality
-    f_block: F8
   - id: COMP-ENRICH
     name: enrich
     status: ACTIVE
     description: Auto-enrichment of architecture models with AST-derived signatures, constants, and test contracts
+    f_block: F6
     files:
     - src/architecture_model/orchestration/enrich.py
     signatures:
@@ -460,11 +466,11 @@ entities:
       test_method: test_enrich_handles_missing_files
       assertion: len(c.signatures) == 0
       contract_type: value_equality
-    f_block: F9
   - id: COMP-CORE-PARSER
     name: core.parser
     status: ACTIVE
     description: YAML model parser (load_model, save_model, dump_model)
+    f_block: F3
     files:
     - src/architecture_model/core/parser.py
     constants:
@@ -542,13 +548,20 @@ entities:
       test_method: test_minimal_valid_structure
       assertion: real_errors isinstance list
       contract_type: type_check
-    f_block: F3
   - id: COMP-CORE-VALIDATOR
     name: core.validator
     status: ACTIVE
     description: Structural validation engine producing score 0-100
+    f_block: F3
     files:
     - src/architecture_model/core/validator.py
+    constants:
+    - name: ERROR
+      value: ERROR
+      context: Severity enum member
+    - name: INFO
+      value: INFO
+      context: Severity enum member
     signatures:
     - name: error_count
       returns: int
@@ -633,13 +646,17 @@ entities:
       test_method: test_dormant_component_not_orphan
       assertion: len(orphans) == 0
       contract_type: value_equality
-    f_block: F3
   - id: COMP-CORE-SLICER
     name: core.slicer
     status: ACTIVE
     description: Model subsetting by F-block, layer, or artifact
+    f_block: F3
     files:
     - src/architecture_model/core/slicer.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status enum member
     signatures:
     - name: slice_by_fblock
       params:
@@ -739,11 +756,11 @@ entities:
       test_method: test_slice_by_nonexistent_layer
       assertion: len(sliced.entities.components) == 0
       contract_type: value_equality
-    f_block: F3
   - id: COMP-CORE-DIFFER
     name: core.differ
     status: ACTIVE
     description: Model version comparison and diff generation
+    f_block: F3
     files:
     - src/architecture_model/core/differ.py
     signatures:
@@ -802,11 +819,11 @@ entities:
         result); _diff_entity_list(old_model.entities.layers, new_model.entities.layers, 'layer', result); _diff_entity_list(old_model.entities.components,
         new_model.entities.components, 'component', result); _diff_relationships(old_model.relationships, new_model.relationships,
         result); return result
-    f_block: F3
   - id: COMP-CORE-MERGER
     name: core.merger
     status: ACTIVE
     description: Model merging and composition
+    f_block: F3
     files:
     - src/architecture_model/core/merger.py
     constants:
@@ -882,11 +899,11 @@ entities:
       test_method: test_missing_manifest_returns_unchanged
       assertion: model_copy.meta.manifest_hash == original_hash
       contract_type: value_equality
-    f_block: F3
   - id: COMP-CORE-DECOMPOSER
     name: core.decomposer
     status: ACTIVE
     description: Model decomposition into subsystems
+    f_block: F3
     files:
     - src/architecture_model/core/decomposer.py
     constants:
@@ -1011,11 +1028,11 @@ entities:
       test_method: test_no_systems_returns_unchanged
       assertion: len(result.top_level.entities.systems) == 0
       contract_type: value_equality
-    f_block: F3
   - id: COMP-CORE-TYPES
     name: core.types
     status: ACTIVE
     description: Type system (ArchitectureModel, Component, Capability, FunctionSignature, TestContract, etc.)
+    f_block: F3
     files:
     - src/architecture_model/core/types.py
     signatures:
@@ -1172,13 +1189,20 @@ entities:
       test_method: test_yaml_round_trip
       assertion: original.all_entity_ids == rebuilt.all_entity_ids
       contract_type: value_equality
-    f_block: F3
   - id: COMP-MANIFEST-SCANNER
     name: manifest.scanner
     status: ACTIVE
     description: AST-based source code scanner
+    f_block: F5
     files:
     - src/architecture_model/manifest/scanner.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
+    - name: MISSING
+      value: missing
+      context: FileStatus enum member
     signatures:
     - name: scan_file
       params:
@@ -1191,13 +1215,102 @@ entities:
         %d funcs, %d classes, %d constants'', rel_path, len(functions), len(classes), len(constants)); return ModuleInfo(file=rel_path,
         name=name, docstring=docstring, functions=functions, imports=imports, line_count=line_count, status=status, classes=classes,
         exports=exports, decorated_functions=decorated, imports_detailed=imports_detailed, module_constants=constants, module_assignments=assignments)'
-    f_block: F5
+    test_contracts:
+    - test_file: test_scanner_typed.py
+      test_method: test_scan_file_returns_module_info
+      assertion: result isinstance ModuleInfo
+      contract_type: type_check
+    - test_file: test_scanner_typed.py
+      test_method: test_scan_file_parse_error
+      assertion: result.status == ModuleStatus.MISSING
+      contract_type: value_equality
+    - test_file: test_scanner_typed.py
+      test_method: test_deprecated_scan_file_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_scanner_typed.py
+      test_method: test_deprecated_collect_py_files
+      assertion: len(files) == 2
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-MANIFEST-BLOCKS
     name: manifest.blocks
     status: ACTIVE
     description: Functional block discovery from source tree
+    f_block: F5
     files:
     - src/architecture_model/manifest/blocks.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
     signatures:
     - name: process_block
       params:
@@ -1212,13 +1325,102 @@ entities:
         == ''active'' for sf in sub_func...; sub_blocks_manifest: list[dict[str, Any]] = []; if sub_block_configs: ...; logger.debug(''Block
         %s: %d sub_functions, %d sub_blocks'', block_id, len(sub_functions), len(sub_blocks_manifest)); return BlockManifest(name=block_def[''name''],
         status=block_status, description_source=block_def[''description_source''], sub_functions=sub_functions, sub_blocks=sub_blocks_manifest)'
-    f_block: F5
+    test_contracts:
+    - test_file: test_blocks_typed.py
+      test_method: test_process_block_returns_block_manifest
+      assertion: result isinstance BlockManifest
+      contract_type: type_check
+    - test_file: test_blocks_typed.py
+      test_method: test_process_block_backward_compat
+      assertion: d['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_blocks_typed.py
+      test_method: test_deprecated_process_block_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_blocks_typed.py
+      test_method: test_sub_function_entry_has_signature_strings
+      assertion: f isinstance str
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-MANIFEST-METRICS
     name: manifest.metrics
     status: ACTIVE
     description: Code metrics computation (LOC, complexity, etc.)
+    f_block: F5
     files:
     - src/architecture_model/manifest/metrics.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
     signatures:
     - name: compute_metrics
       params:
@@ -1228,13 +1430,94 @@ entities:
       body_hint: 'if config is None: ...; result: dict[str, int] = {}; for metric in config.metrics: ...; total_python = len([p
         for p in root.rglob(''*.py'') if not any((part in EX...; result[''total_python_files''] = total_python; logger.debug(''Computed
         %d metrics for %s: %s'', len(result), root, result); return MetricsResult(values=result)'
-    f_block: F5
+    test_contracts:
+    - test_file: test_metrics_typed.py
+      test_method: test_compute_metrics_returns_metrics_result
+      assertion: result isinstance MetricsResult
+      contract_type: type_check
+    - test_file: test_metrics_typed.py
+      test_method: test_compute_metrics_backward_compat
+      assertion: d isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-MANIFEST-INTERFACES
     name: manifest.interfaces
     status: ACTIVE
     description: Interface detection from public API surface
+    f_block: F5
     files:
     - src/architecture_model/manifest/interfaces.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
     signatures:
     - name: derive_interfaces
       params:
@@ -1244,13 +1527,107 @@ entities:
       body_hint: 'file_to_module: dict[str, str] = {}; for mod in modules: ...; module_to_file: dict[str, str] = {v: k for
         k, v in file_t...; interfaces: list[InterfaceEdge] = []; seen: set[tuple[str, str]] = set(); for mod in modules: ...;
         logger.debug(''Derived %d interface edges from %d modules'', len(interfaces), len(modules)); return interfaces'
-    f_block: F5
+    test_contracts:
+    - test_file: test_interfaces_typed.py
+      test_method: test_derive_interfaces_returns_typed
+      assertion: result[0].source == 'pkg/a.py'
+      contract_type: value_equality
+    - test_file: test_interfaces_typed.py
+      test_method: test_derive_interfaces_no_self_reference
+      assertion: len(result) == 0
+      contract_type: value_equality
+    - test_file: test_interfaces_typed.py
+      test_method: test_derive_interfaces_deduplicates
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-MANIFEST-BODY-HINTS
     name: manifest.body_hints
     status: ACTIVE
     description: Function body hint extraction for trivial implementations
+    f_block: F5
     files:
     - src/architecture_model/manifest/body_hints.py
+    constants:
+    - name: TRIVIAL
+      value: trivial
+      context: BodyComplexity enum member
+    - name: SHORT
+      value: short
+      context: BodyComplexity enum member
+    - name: COMPLEX
+      value: complex
+      context: BodyComplexity enum member
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
     signatures:
     - name: classify_function
       params:
@@ -1326,11 +1703,79 @@ entities:
       test_method: test_returns_populated
       assertion: sig.returns == 'str'
       contract_type: value_equality
-    f_block: F5
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-MANIFEST-TEST-ANALYZER
     name: manifest.test_analyzer
     status: ACTIVE
     description: Test contract extraction from test files
+    f_block: F5
     files:
     - src/architecture_model/manifest/test_analyzer.py
     constants:
@@ -1339,6 +1784,9 @@ entities:
         'typing', 'tempfile', 'shutil', 'json', 'copy', 'contextlib', 'textwrap', 'unittest.mock', 'mock'})
     - name: _ESCAPE_CODE_RE
       value: re.compile('\\\\(?:033|x1b)\\[(\\d+)m')
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
     signatures:
     - name: analyze_test_file
       params:
@@ -1386,15 +1834,87 @@ entities:
       test_method: test_fore_reset_value
       assertion: resets[0].value == '39'
       contract_type: value_equality
-    f_block: F5
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-MANIFEST-GENERATOR
     name: manifest.generator
     status: ACTIVE
     description: Top-level manifest generation orchestrator
+    f_block: F5
     files:
     - src/architecture_model/manifest/generator.py
     - src/architecture_model/manifest/display.py
     - src/architecture_model/manifest/slicers.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
     signatures:
     - name: generate_manifest
       params:
@@ -1445,13 +1965,102 @@ entities:
         \ _slice_operations_manual, 'use-cases': _slice_use_cases, 'requirements-analysis': _slice_requirements_analysis};\
         \ slicer = slicers.get(artifact_name); if slicer is None:\n    return f'[unknown artifact: {artifact_name}]'; return\
         \ slicer(manifest)"
-    f_block: F5
+    test_contracts:
+    - test_file: test_generator_typed.py
+      test_method: test_generate_manifest_returns_manifest
+      assertion: result isinstance Manifest
+      contract_type: type_check
+    - test_file: test_generator_typed.py
+      test_method: test_generate_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_generator_typed.py
+      test_method: test_scan_report_tracks_counts
+      assertion: report.files_succeeded == report.files_attempted
+      contract_type: value_equality
+    - test_file: test_generator_typed.py
+      test_method: test_load_or_generate_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-MANIFEST-TYPES
     name: manifest.types
     status: ACTIVE
     description: Manifest data types (Manifest, ModuleInfo, FunctionalBlock)
+    f_block: F5
     files:
     - src/architecture_model/manifest/types.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status/FileStatus enum member
     signatures:
     - name: to_dict
       returns: dict[str, Any]
@@ -1474,15 +2083,124 @@ entities:
         blocks, %d unclaimed, %d errors'', self.files_succeeded, self.files_attempted, self.success_rate * 100, self.functions_extracted,
         self.classes_extracted, self.constants_extracted, self.interfaces_derived, self.blocks_processed, self.unclaimed_files,
         len(self.parse_errors))'
-    f_block: F5
+    test_contracts:
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
   - id: COMP-DECOMPOSE
     name: decompose
     status: ACTIVE
-    kind: module
-    f_block: F9
+    description: Model decomposition into per-F-block sub-models
+    f_block: F6
     files:
     - src/architecture_model/orchestration/decompose.py
-    description: Model decomposition into per-F-block sub-models
+    kind: module
+    signatures:
+    - name: decompose_model
+      params:
+      - project_root
+      body_hint: "model = load_model(project_root / '.architecture-model.yaml'); config = get_config(project_root); results\
+        \ = {}; for block_id, block_def in config.fblock_dict.items():\n    block_name = block_def.get('name', block_id)\n\
+        \    block_dirs = block_def.get('dirs', [])\n    block_files = block_def.get('files', [])\n    logger.info('Decomposing\
+        \ %s: %s', block_id, block_name)\n    components = _find_block_components(model, block_dirs, block_files)\n    if\
+        \ not components:\n        logger.warning('No components found for %s (dirs: %s)', block_id, block_dirs)\n       \
+        \ continue\n    parent_comp_id, parent_comp = _find_parent_component(model, components)\n    comp_ids = {c.id for\
+        \ c in components}\n    if parent_comp and parent_comp.id not in comp_ids:\n        components = [parent_comp] + components\n\
+        \        comp_ids.add(parent_comp.id)\n    block_comp_ids = comp_ids.copy()\n    capabilities, interfaces, behaviors,\
+        \ constraints = _trace_entities(model, block_comp_ids)\n    all_entity_ids = block_comp_ids.copy()\n    all_entity_ids.update((c.id\
+        \ for c in capabilities))\n    all_entity_ids.update((i.id for i in interfaces))\n    all_entity_ids.update((b.id\
+        \ for b in behaviors))\n    all_entity_ids.update((c.id for c in constraints))\n    relationships = _collect_relationships(model,\
+        \ all_entity_ids, block_comp_ids)\n    sub_model = ArchitectureModel(meta=ModelMeta(schema_version='2.0', project=f'{model.meta.project}/{block_name}',\
+        \ system=block_name, generated_at=model.meta.generated_at, parent_model='../../.architecture-model.yaml', refines_component=parent_comp_id\
+        \ or ''), entities=Entities(components=components, capabilities=capabilities, interfaces=interfaces, behaviors=behaviors,\
+        \ constraints=constraints), relationships=relationships)\n    results[block_id] = sub_model\n    logger.info('  %s:\
+        \ %d comps, %d caps, %d ifaces, %d behaviors, %d constraints, %d rels', block_id, len(components), len(capabilities),\
+        \ len(interfaces), len(behaviors), len(constraints), len(relationships)); return results"
+    - name: write_sub_models
+      params:
+      - sub_models
+      - output_dir
+      body_hint: "written = []; for block_id, model in sub_models.items():\n    block_dir = output_dir / block_id\n    block_dir.mkdir(parents=True,\
+        \ exist_ok=True)\n    out_path = block_dir / '.architecture-model.yaml'\n    save_model(model, out_path)\n    written.append(out_path)\n\
+        \    logger.info('Wrote sub-model: %s', out_path); return written"
+    test_contracts:
+    - test_file: test_decompose.py
+      test_method: test_decompose_meta_links_to_parent
+      assertion: sub.meta.parent_model == '../../.architecture-model.yaml'
+      contract_type: value_equality
+    - test_file: test_decompose.py
+      test_method: test_write_sub_models
+      assertion: data['meta']['parent_model'] == '../../.architecture-model.yaml'
+      contract_type: value_equality
+    - test_file: test_decompose.py
+      test_method: test_decompose_cli
+      assertion: ret == 0
+      contract_type: value_equality
 relationships:
 - type: contains
   from: L-APP

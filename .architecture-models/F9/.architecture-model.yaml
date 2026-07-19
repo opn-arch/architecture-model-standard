@@ -11,13 +11,13 @@ entities:
     name: Shared Utilities
     status: ACTIVE
     description: File discovery, exclusion patterns, and shared helper functions
-    f_block: F8
+    f_block: F9
   components:
   - id: COMP-UTILS
     name: utils
     status: ACTIVE
     description: File discovery, exclusion patterns, and shared helper functions
-    f_block: F8
+    f_block: F9
     files:
     - src/architecture_model/utils/discovery.py
     - src/architecture_model/utils/__init__.py

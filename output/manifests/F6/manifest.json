@@ -4,11 +4,11 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-ORCHESTRATION",
   "manifest": {
-    "generated_at": "2026-07-19T02:53:01.915211+00:00",
+    "generated_at": "2026-07-19T03:11:31.202878+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 3,
-      "total_lines": 385,
+      "total_lines": 405,
       "functions": 3,
       "classes": 0,
       "constants": 0
@@ -188,7 +188,7 @@
           "architecture_model.manifest.body_hints",
           "architecture_model.manifest.test_analyzer"
         ],
-        "line_count": 136,
+        "line_count": 156,
         "status": "active",
         "classes": [],
         "exports": [],

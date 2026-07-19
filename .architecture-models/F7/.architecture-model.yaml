@@ -11,7 +11,7 @@ entities:
     name: Domain Profiles
     status: ACTIVE
     description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
-    f_block: F6
+    f_block: F7
   interfaces:
   - id: IF-PROFILE-API
     name: Profile API
@@ -23,7 +23,7 @@ entities:
     name: profiles
     status: ACTIVE
     description: Domain profile system (software, controls, mechanical, electrical)
-    f_block: F6
+    f_block: F7
     files:
     - src/architecture_model/profiles/schema.py
     - src/architecture_model/profiles/__init__.py

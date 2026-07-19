@@ -144,6 +144,13 @@ entities:
     f_block: F3
     files:
     - src/architecture_model/core/validator.py
+    constants:
+    - name: ERROR
+      value: ERROR
+      context: Severity enum member
+    - name: INFO
+      value: INFO
+      context: Severity enum member
     signatures:
     - name: error_count
       returns: int
@@ -235,6 +242,10 @@ entities:
     f_block: F3
     files:
     - src/architecture_model/core/slicer.py
+    constants:
+    - name: ACTIVE
+      value: ACTIVE
+      context: Status enum member
     signatures:
     - name: slice_by_fblock
       params:

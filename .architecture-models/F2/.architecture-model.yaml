@@ -131,6 +131,11 @@ entities:
       returns: str
       body_hint: 'return f''Layout: {self.layout_detected}, {self.blocks_discovered} blocks, {self.layers_discovered} layers,
         {self.metrics_discovered} metrics, {self.files_claimed}/{self.files_total} files claimed ({self.claim_rate:.0%})'''
+    test_contracts:
+    - test_file: test_config_discovery_typed.py
+      test_method: test_discover_config_returns_report
+      assertion: config.name == tmp_path.name
+      contract_type: value_equality
 relationships:
 - type: realizes
   from: COMP-CONFIG

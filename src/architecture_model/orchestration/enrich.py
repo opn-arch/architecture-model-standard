@@ -133,4 +133,24 @@ def _discover_test_files(comp: Component, root: Path) -> list[Path]:
         if candidate3.exists() and candidate3 not in test_files:
             test_files.append(candidate3)
 
+        # Convention 4: tests/test_{module}_typed.py
+        candidate4 = tests_dir / f"test_{module_name}_typed.py"
+        if candidate4.exists() and candidate4 not in test_files:
+            test_files.append(candidate4)
+
+        # Convention 5: tests/test_{package}_types.py (for types.py modules)
+        candidate5 = tests_dir / f"test_{package_name}_types.py"
+        if candidate5.exists() and candidate5 not in test_files:
+            test_files.append(candidate5)
+
+        # Convention 6: tests/test_{package}.py (package-level test file)
+        candidate6 = tests_dir / f"test_{package_name}.py"
+        if candidate6.exists() and candidate6 not in test_files:
+            test_files.append(candidate6)
+
+        # Convention 7: tests/test_{package}_*_typed.py (glob for typed variants)
+        for typed_file in sorted(tests_dir.glob(f"test_{package_name}_*_typed.py")):
+            if typed_file not in test_files:
+                test_files.append(typed_file)
+
     return test_files

@@ -11,7 +11,7 @@ entities:
     name: Schema Specification
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
-    f_block: F7
+    f_block: F8
   constraints:
   - id: CON-SCHEMA
     name: Schema Compliance
@@ -23,7 +23,7 @@ entities:
     name: spec
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
-    f_block: F7
+    f_block: F8
     files:
     - src/architecture_model/spec/__init__.py
 relationships:

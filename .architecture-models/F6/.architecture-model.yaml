@@ -10,7 +10,7 @@ entities:
     name: Auto-Enrichment
     status: ACTIVE
     description: Populate signatures, constants, and test_contracts from AST scanning
-    f_block: F9
+    f_block: F6
   behaviors:
   - id: BEH-ENRICH
     name: Auto-Enrichment
@@ -27,7 +27,7 @@ entities:
     name: enrich
     status: ACTIVE
     description: Auto-enrichment of architecture models with AST-derived signatures, constants, and test contracts
-    f_block: F9
+    f_block: F6
     files:
     - src/architecture_model/orchestration/enrich.py
     signatures:
@@ -53,10 +53,51 @@ entities:
     name: decompose
     status: ACTIVE
     description: Model decomposition into per-F-block sub-models
-    f_block: F9
+    f_block: F6
     files:
     - src/architecture_model/orchestration/decompose.py
     kind: module
+    signatures:
+    - name: decompose_model
+      params:
+      - project_root
+      body_hint: "model = load_model(project_root / '.architecture-model.yaml'); config = get_config(project_root); results\
+        \ = {}; for block_id, block_def in config.fblock_dict.items():\n    block_name = block_def.get('name', block_id)\n\
+        \    block_dirs = block_def.get('dirs', [])\n    block_files = block_def.get('files', [])\n    logger.info('Decomposing\
+        \ %s: %s', block_id, block_name)\n    components = _find_block_components(model, block_dirs, block_files)\n    if\
+        \ not components:\n        logger.warning('No components found for %s (dirs: %s)', block_id, block_dirs)\n       \
+        \ continue\n    parent_comp_id, parent_comp = _find_parent_component(model, components)\n    comp_ids = {c.id for\
+        \ c in components}\n    if parent_comp and parent_comp.id not in comp_ids:\n        components = [parent_comp] + components\n\
+        \        comp_ids.add(parent_comp.id)\n    block_comp_ids = comp_ids.copy()\n    capabilities, interfaces, behaviors,\
+        \ constraints = _trace_entities(model, block_comp_ids)\n    all_entity_ids = block_comp_ids.copy()\n    all_entity_ids.update((c.id\
+        \ for c in capabilities))\n    all_entity_ids.update((i.id for i in interfaces))\n    all_entity_ids.update((b.id\
+        \ for b in behaviors))\n    all_entity_ids.update((c.id for c in constraints))\n    relationships = _collect_relationships(model,\
+        \ all_entity_ids, block_comp_ids)\n    sub_model = ArchitectureModel(meta=ModelMeta(schema_version='2.0', project=f'{model.meta.project}/{block_name}',\
+        \ system=block_name, generated_at=model.meta.generated_at, parent_model='../../.architecture-model.yaml', refines_component=parent_comp_id\
+        \ or ''), entities=Entities(components=components, capabilities=capabilities, interfaces=interfaces, behaviors=behaviors,\
+        \ constraints=constraints), relationships=relationships)\n    results[block_id] = sub_model\n    logger.info('  %s:\
+        \ %d comps, %d caps, %d ifaces, %d behaviors, %d constraints, %d rels', block_id, len(components), len(capabilities),\
+        \ len(interfaces), len(behaviors), len(constraints), len(relationships)); return results"
+    - name: write_sub_models
+      params:
+      - sub_models
+      - output_dir
+      body_hint: "written = []; for block_id, model in sub_models.items():\n    block_dir = output_dir / block_id\n    block_dir.mkdir(parents=True,\
+        \ exist_ok=True)\n    out_path = block_dir / '.architecture-model.yaml'\n    save_model(model, out_path)\n    written.append(out_path)\n\
+        \    logger.info('Wrote sub-model: %s', out_path); return written"
+    test_contracts:
+    - test_file: test_decompose.py
+      test_method: test_decompose_meta_links_to_parent
+      assertion: sub.meta.parent_model == '../../.architecture-model.yaml'
+      contract_type: value_equality
+    - test_file: test_decompose.py
+      test_method: test_write_sub_models
+      assertion: data['meta']['parent_model'] == '../../.architecture-model.yaml'
+      contract_type: value_equality
+    - test_file: test_decompose.py
+      test_method: test_decompose_cli
+      assertion: ret == 0
+      contract_type: value_equality
 relationships:
 - type: realizes
   from: COMP-ENRICH
