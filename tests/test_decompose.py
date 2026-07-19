@@ -262,3 +262,62 @@ def test_derive_interfaces_uses_imports_detailed(tmp_path):
     sources_targets = {(e.source, Path(e.target).stem) for e in edges}
     assert ("src/pkg/core/parser.py", "types") in sources_targets, f"Missing relative import edge: {sources_targets}"
     assert ("src/pkg/core/parser.py", "helpers") in sources_targets, f"Missing absolute import edge: {sources_targets}"
+
+
+def test_capabilities_filter_private_and_exports():
+    """Capabilities skip _private functions and respect __init__.py exports."""
+    from architecture_model.decompose import _derive_capabilities
+
+    manifest_data = {
+        "manifest": {
+            "modules": [
+                {
+                    "file": "src/pkg/core/__init__.py",
+                    "exports": ["parse", "validate"],  # only these exported
+                    "functions": [],
+                },
+                {
+                    "file": "src/pkg/core/parser.py",
+                    "functions": [
+                        {"name": "parse", "docstring": "Parse data"},
+                        {"name": "validate", "docstring": "Validate data"},
+                        {"name": "_internal_helper", "docstring": ""},
+                        {"name": "utility_not_exported", "docstring": ""},
+                    ],
+                },
+            ],
+        },
+    }
+    caps = _derive_capabilities(manifest_data, "F1")
+    names = [c.name for c in caps]
+    assert "parse" in names
+    assert "validate" in names
+    assert "_internal_helper" not in names, "Private functions should be filtered"
+    assert "utility_not_exported" not in names, "Non-exported functions should be filtered"
+    assert len(caps) == 2
+
+
+def test_capabilities_fallback_no_exports():
+    """Without __init__.py exports, include all non-underscore functions."""
+    from architecture_model.decompose import _derive_capabilities
+
+    manifest_data = {
+        "manifest": {
+            "modules": [
+                {
+                    "file": "src/pkg/core/parser.py",
+                    "functions": [
+                        {"name": "parse", "docstring": "Parse"},
+                        {"name": "_helper", "docstring": ""},
+                        {"name": "do_stuff", "docstring": ""},
+                    ],
+                },
+            ],
+        },
+    }
+    caps = _derive_capabilities(manifest_data, "F1")
+    names = [c.name for c in caps]
+    assert "parse" in names
+    assert "do_stuff" in names
+    assert "_helper" not in names
+    assert len(caps) == 2

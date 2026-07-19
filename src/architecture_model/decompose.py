@@ -86,15 +86,33 @@ def _derive_capabilities(
     manifest_data: dict,
     block_id: str,
 ) -> list[Capability]:
-    """Derive capabilities from public functions in manifest modules."""
-    caps = []
+    """Derive capabilities from public functions in manifest modules.
+
+    Filtering:
+    - Skip functions starting with '_' (private/internal helpers)
+    - If __init__.py exports exist for the block, only promote functions
+      whose names appear in the exports list
+    - Fall back to all non-underscore functions if no exports found
+    """
     modules = manifest_data.get("manifest", {}).get("modules", [])
+
+    # Collect __init__.py exports for this block
+    init_exports: set[str] = set()
+    for mod in modules:
+        if mod.get("file", "").endswith("__init__.py"):
+            exports = mod.get("exports", [])
+            init_exports.update(exports)
+
+    caps = []
     cap_idx = 1
     for mod in modules:
         for func in mod.get("functions", []):
             name = func.get("name", "")
             docstring = func.get("docstring", "")
-            if not name:
+            if not name or name.startswith("_"):
+                continue
+            # If exports are known, only promote exported functions
+            if init_exports and name not in init_exports:
                 continue
             caps.append(Capability(
                 id=f"CAP-{block_id}-{cap_idx}",
