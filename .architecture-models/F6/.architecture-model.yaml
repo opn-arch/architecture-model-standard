@@ -1,49 +1,84 @@
 meta:
   schema_version: '2.0'
-  project: architecture-model-standard/Profiles
-  system: Profiles
+  project: architecture-model-standard/Orchestration
+  system: Orchestration
   generated_at: '2026-07-18T19:26:09.372363+00:00'
   parent_model: ../../.architecture-model.yaml
-  refines_component: COMP-PROFILES
 entities:
   capabilities:
-  - id: CAP-F6-1
-    name: load_profile
+  - id: CAP-F10
+    name: Auto-Enrichment
     status: ACTIVE
-    description: Function load_profile
-    f_block: F6
+    description: Populate signatures, constants, and test_contracts from AST scanning
+    f_block: F9
+  behaviors:
+  - id: BEH-ENRICH
+    name: Auto-Enrichment
+    status: ACTIVE
+    description: Enrich architecture model with function signatures, constants, and test contracts from AST
+  interfaces:
+  - id: IF-ENRICH-API
+    name: Enrichment API
+    status: ACTIVE
+    description: enrich_model(model, project_root) -> ArchitectureModel
+    type: internal
   components:
-  - id: COMP-PROFILES
-    name: profiles
+  - id: COMP-ENRICH
+    name: enrich
     status: ACTIVE
-    description: Domain profile system (software, controls, mechanical, electrical)
+    description: Auto-enrichment of architecture models with AST-derived signatures, constants, and test contracts
+    f_block: F9
     files:
-    - src/architecture_model/profiles/schema.py
-    - src/architecture_model/profiles/__init__.py
-    - src/architecture_model/profiles/builtins/__init__.py
-    constants:
-    - name: PROFILES_DIR
-      value: Path(__file__).parent / 'builtins'
+    - src/architecture_model/orchestration/enrich.py
     signatures:
-    - name: from_dict
+    - name: enrich_model
       params:
-      - 'data: dict[str, Any]'
-      returns: DomainProfile
-      decorators:
-      - classmethod
-      body_hint: return cls(domain=data['domain'], extends_schema=data.get('extends_schema', '1.4'), enum_extensions=[EnumExtension(**e)
-        for e in data.get('enum_extensions', [])], entity_extensions=[EntityExtension(**e) for e in data.get('entity_extensions',
-        [])], validation_rules=[ConditionalRule(**r) for r in data.get('validation_rules', [])])
-    - name: get_extended_values
-      params:
-      - 'enum_name: str'
-      returns: list[str]
-      body_hint: "for ext in self.enum_extensions:\n    if ext.enum_name == enum_name:\n        return ext.values; return\
-        \ []"
-    - name: load_profile
-      params:
-      - 'name_or_path: str'
-      returns: DomainProfile
-      body_hint: 'if name_or_path in BUILTIN_PROFILES: ...; if not path.exists(): ...; data = yaml.safe_load(path.read_text(encoding=''utf-8''));
-        profile = DomainProfile.from_dict(data); logger.info(''Loaded domain profile: %s'', profile.domain); return profile'
-relationships: []
+      - 'model: ArchitectureModel'
+      - 'project_root: Path'
+      returns: ArchitectureModel
+      body_hint: "components = model.entities.get('components', []) if isinstance(model.entities, dict) else model.entities.components;\
+        \ for comp in components:\n    if _enum_str(comp.status) != 'ACTIVE':\n        continue\n    if not comp.files:\n\
+        \        continue\n    _enrich_signatures(comp, project_root)\n    _enrich_constants(comp, project_root)\n    _enrich_test_contracts(comp,\
+        \ project_root); return model"
+    test_contracts:
+    - test_file: test_enrich.py
+      test_method: test_enrich_skips_planned_components
+      assertion: len(c.signatures) == 0
+      contract_type: value_equality
+    - test_file: test_enrich.py
+      test_method: test_enrich_handles_missing_files
+      assertion: len(c.signatures) == 0
+      contract_type: value_equality
+  - id: COMP-DECOMPOSE
+    name: decompose
+    status: ACTIVE
+    description: Model decomposition into per-F-block sub-models
+    f_block: F9
+    files:
+    - src/architecture_model/orchestration/decompose.py
+    kind: module
+relationships:
+- type: realizes
+  from: COMP-ENRICH
+  to: CAP-F10
+- type: exposes
+  from: COMP-ENRICH
+  to: IF-ENRICH-API
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-ENRICH
+- type: depends-on
+  from: COMP-ENRICH
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-ENRICH
+  to: COMP-MANIFEST
+- type: traces-to
+  from: COMP-ENRICH
+  to: BEH-ENRICH
+- type: depends-on
+  from: COMP-DECOMPOSE
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-DECOMPOSE
+  to: COMP-CONFIG

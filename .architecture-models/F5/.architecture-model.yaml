@@ -7,221 +7,33 @@ meta:
   refines_component: COMP-MANIFEST
 entities:
   capabilities:
-  - id: CAP-F5-1
-    name: process_block
+  - id: CAP-F2
+    name: Reality Manifest Generation
     status: ACTIVE
-    description: 'Process a single functional block, scanning all its files.
-
-
-      Returns a typed :class:`BlockManifest` with :class:`SubFunctionEntry` objects.'
+    description: AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts
     f_block: F5
-  - id: CAP-F5-2
-    name: print_summary
+  behaviors:
+  - id: BEH-MANIFEST
+    name: Manifest Generation
     status: ACTIVE
-    description: Print a terminal summary of the manifest.
-    f_block: F5
-  - id: CAP-F5-3
-    name: generate_manifest
-    status: ACTIVE
-    description: "Generate a full reality manifest via AST scan of the project.\n\nArgs:\n    project_root: Absolute path\
-      \ to the project root directory.\n    config: Optional ProjectConfig. If None, loaded from .architecture-model.yaml.\n\
-      \nReturns:\n    Typed Manifest dataclass. Call .to_dict() for JSON-compatible dict."
-    f_block: F5
-  - id: CAP-F5-4
-    name: load_or_generate_manifest
-    status: ACTIVE
-    description: "Load cached manifest if fresh (< 1 hour old), otherwise regenerate.\n\nArgs:\n    project_root: Path to\
-      \ the project root.\n    output_dir: Optional output directory. If None, uses config output paths.\n\nReturns:\n   \
-      \ The manifest dictionary (for backward compatibility with CLI/callers)."
-    f_block: F5
-  - id: CAP-F5-5
-    name: derive_interfaces
-    status: ACTIVE
-    description: "Derive interfaces from import analysis between scanned modules.\n\nUses both simple imports and imports_detailed\
-      \ (with relative import\nresolution) to find inter-module dependencies within the project.\n\nArgs:\n    modules: Typed\
-      \ module info objects from AST scanning.\n    root: Project root path.\n\nReturns:\n    List of InterfaceEdge objects\
-      \ representing inter-module dependencies."
-    f_block: F5
-  - id: CAP-F5-6
-    name: compute_metrics
-    status: ACTIVE
-    description: "Compute verified project metrics from filesystem.\n\nArgs:\n    root: Project root directory.\n    config:\
-      \ Optional ProjectConfig. If None, loaded from .architecture-model.yaml.\n\nReturns:\n    MetricsResult with metric\
-      \ values."
-    f_block: F5
-  - id: CAP-F5-7
-    name: scan_file
-    status: ACTIVE
-    description: "Scan a single Python file and return typed metadata.\n\nArgs:\n    root: Project root directory.\n    filepath:\
-      \ Absolute path to the Python file.\n\nReturns:\n    ModuleInfo with all extracted metadata."
-    f_block: F5
-  - id: CAP-F5-8
-    name: get_manifest_slice
-    status: ACTIVE
-    description: "Return focused markdown slice for artifact context injection.\n\nArgs:\n    manifest: A typed Manifest or\
-      \ legacy raw dict.\n    artifact_name: One of the 10 artifact names.\n\nReturns:\n    Formatted markdown string with\
-      \ relevant manifest data."
-    f_block: F5
+    description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
   interfaces:
-  - id: IF-F5-1
-    name: __init__ -> blocks
+  - id: IF-MANIFEST-API
+    name: Manifest API
     status: ACTIVE
-    description: 'Import: architecture_model.manifest.blocks'
+    description: generate_manifest(project_root) -> Manifest
     type: internal
-    provider: src/architecture_model/manifest/blocks.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-2
-    name: __init__ -> display
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.display'
-    type: internal
-    provider: src/architecture_model/manifest/display.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-3
-    name: __init__ -> generator
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.generator'
-    type: internal
-    provider: src/architecture_model/manifest/generator.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-4
-    name: __init__ -> interfaces
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.interfaces'
-    type: internal
-    provider: src/architecture_model/manifest/interfaces.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-5
-    name: __init__ -> metrics
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.metrics'
-    type: internal
-    provider: src/architecture_model/manifest/metrics.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-6
-    name: __init__ -> scanner
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.scanner'
-    type: internal
-    provider: src/architecture_model/manifest/scanner.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-7
-    name: __init__ -> slicers
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.slicers'
-    type: internal
-    provider: src/architecture_model/manifest/slicers.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-8
-    name: __init__ -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/__init__.py
-  - id: IF-F5-9
-    name: blocks -> scanner
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.scanner'
-    type: internal
-    provider: src/architecture_model/manifest/scanner.py
-    consumer: src/architecture_model/manifest/blocks.py
-  - id: IF-F5-10
-    name: blocks -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/blocks.py
-  - id: IF-F5-11
-    name: generator -> blocks
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.blocks'
-    type: internal
-    provider: src/architecture_model/manifest/blocks.py
-    consumer: src/architecture_model/manifest/generator.py
-  - id: IF-F5-12
-    name: generator -> interfaces
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.interfaces'
-    type: internal
-    provider: src/architecture_model/manifest/interfaces.py
-    consumer: src/architecture_model/manifest/generator.py
-  - id: IF-F5-13
-    name: generator -> metrics
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.metrics'
-    type: internal
-    provider: src/architecture_model/manifest/metrics.py
-    consumer: src/architecture_model/manifest/generator.py
-  - id: IF-F5-14
-    name: generator -> scanner
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.scanner'
-    type: internal
-    provider: src/architecture_model/manifest/scanner.py
-    consumer: src/architecture_model/manifest/generator.py
-  - id: IF-F5-15
-    name: generator -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/generator.py
-  - id: IF-F5-16
-    name: interfaces -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/interfaces.py
-  - id: IF-F5-17
-    name: metrics -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/metrics.py
-  - id: IF-F5-18
-    name: recursive -> interfaces
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.interfaces'
-    type: internal
-    provider: src/architecture_model/manifest/interfaces.py
-    consumer: src/architecture_model/manifest/recursive.py
-  - id: IF-F5-19
-    name: recursive -> scanner
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.scanner'
-    type: internal
-    provider: src/architecture_model/manifest/scanner.py
-    consumer: src/architecture_model/manifest/recursive.py
-  - id: IF-F5-20
-    name: recursive -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/recursive.py
-  - id: IF-F5-21
-    name: scanner -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/scanner.py
-  - id: IF-F5-22
-    name: slicers -> types
-    status: ACTIVE
-    description: 'Import: architecture_model.manifest.types'
-    type: internal
-    provider: src/architecture_model/manifest/types.py
-    consumer: src/architecture_model/manifest/slicers.py
   components:
+  - id: COMP-MANIFEST
+    name: manifest
+    status: ACTIVE
+    description: AST scanner, block discovery, metrics, interface detection, body hints, test analyzer
+    f_block: F5
   - id: COMP-MANIFEST-SCANNER
     name: manifest.scanner
     status: ACTIVE
     description: AST-based source code scanner
+    f_block: F5
     files:
     - src/architecture_model/manifest/scanner.py
     signatures:
@@ -240,6 +52,7 @@ entities:
     name: manifest.blocks
     status: ACTIVE
     description: Functional block discovery from source tree
+    f_block: F5
     files:
     - src/architecture_model/manifest/blocks.py
     signatures:
@@ -260,6 +73,7 @@ entities:
     name: manifest.metrics
     status: ACTIVE
     description: Code metrics computation (LOC, complexity, etc.)
+    f_block: F5
     files:
     - src/architecture_model/manifest/metrics.py
     signatures:
@@ -275,6 +89,7 @@ entities:
     name: manifest.interfaces
     status: ACTIVE
     description: Interface detection from public API surface
+    f_block: F5
     files:
     - src/architecture_model/manifest/interfaces.py
     signatures:
@@ -290,6 +105,7 @@ entities:
     name: manifest.body_hints
     status: ACTIVE
     description: Function body hint extraction for trivial implementations
+    f_block: F5
     files:
     - src/architecture_model/manifest/body_hints.py
     signatures:
@@ -371,6 +187,7 @@ entities:
     name: manifest.test_analyzer
     status: ACTIVE
     description: Test contract extraction from test files
+    f_block: F5
     files:
     - src/architecture_model/manifest/test_analyzer.py
     constants:
@@ -430,6 +247,7 @@ entities:
     name: manifest.generator
     status: ACTIVE
     description: Top-level manifest generation orchestrator
+    f_block: F5
     files:
     - src/architecture_model/manifest/generator.py
     - src/architecture_model/manifest/display.py
@@ -488,6 +306,7 @@ entities:
     name: manifest.types
     status: ACTIVE
     description: Manifest data types (Manifest, ModuleInfo, FunctionalBlock)
+    f_block: F5
     files:
     - src/architecture_model/manifest/types.py
     signatures:
@@ -513,36 +332,6 @@ entities:
         self.classes_extracted, self.constants_extracted, self.interfaces_derived, self.blocks_processed, self.unclaimed_files,
         len(self.parse_errors))'
 relationships:
-- type: depends-on
-  from: COMP-MANIFEST-GENERATOR
-  to: COMP-MANIFEST-SCANNER
-- type: depends-on
-  from: COMP-MANIFEST-GENERATOR
-  to: COMP-MANIFEST-BLOCKS
-- type: depends-on
-  from: COMP-MANIFEST-GENERATOR
-  to: COMP-MANIFEST-METRICS
-- type: depends-on
-  from: COMP-MANIFEST-GENERATOR
-  to: COMP-MANIFEST-INTERFACES
-- type: depends-on
-  from: COMP-MANIFEST-GENERATOR
-  to: COMP-MANIFEST-TYPES
-- type: depends-on
-  from: COMP-MANIFEST-BLOCKS
-  to: COMP-MANIFEST-SCANNER
-- type: depends-on
-  from: COMP-MANIFEST-BLOCKS
-  to: COMP-MANIFEST-TYPES
-- type: depends-on
-  from: COMP-MANIFEST-SCANNER
-  to: COMP-MANIFEST-TYPES
-- type: depends-on
-  from: COMP-MANIFEST-METRICS
-  to: COMP-MANIFEST-TYPES
-- type: depends-on
-  from: COMP-MANIFEST-INTERFACES
-  to: COMP-MANIFEST-TYPES
 - type: contains
   from: COMP-MANIFEST
   to: COMP-MANIFEST-SCANNER
@@ -567,3 +356,63 @@ relationships:
 - type: contains
   from: COMP-MANIFEST
   to: COMP-MANIFEST-TYPES
+- type: realizes
+  from: COMP-MANIFEST
+  to: CAP-F2
+- type: exposes
+  from: COMP-MANIFEST-GENERATOR
+  to: IF-MANIFEST-API
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-MANIFEST
+- type: depends-on
+  from: COMP-MANIFEST
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-MANIFEST
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-ENRICH
+  to: COMP-MANIFEST
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-SCANNER
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-BLOCKS
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-METRICS
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-INTERFACES
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-MANIFEST-SCANNER
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-MANIFEST-SCANNER
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-METRICS
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-INTERFACES
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-BODY-HINTS
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-TEST-ANALYZER
+  to: COMP-CORE-TYPES
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST

@@ -4,7 +4,7 @@ from pathlib import Path
 from architecture_model.core.types import (
     ArchitectureModel, Component, ModelMeta, FunctionSignature, Constant, TestContract
 )
-from architecture_model.enrich import enrich_model
+from architecture_model.orchestration.enrich import enrich_model
 
 
 def _make_model(*comps):

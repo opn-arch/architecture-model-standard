@@ -7,20 +7,22 @@ meta:
   refines_component: COMP-EXTRACT
 entities:
   capabilities:
-  - id: CAP-F4-1
-    name: extract_from_code
+  - id: CAP-F7
+    name: Model Extraction
     status: ACTIVE
-    description: "Extract an architecture model directly from source code analysis.\n\nThis bypasses the stage2 markdown artifact\
-      \ requirement by deriving\nentities and relationships from AST analysis, import graphs, and\nproject configuration files.\n\
-      \nArgs:\n    project_root: Root directory of the project to analyze.\n    config: Optional pre-loaded ProjectConfig.\
-      \ If None, auto-discovered.\n    manifest: Optional pre-generated manifest dict. If None, generated fresh.\n\nReturns:\n\
-      \    Complete ArchitectureModel derived from code analysis."
+    description: Extract architecture model from source code
     f_block: F4
+  behaviors:
+  - id: BEH-EXTRACT
+    name: Model Extraction from Code
+    status: ACTIVE
+    description: Extract architecture model entities and relationships from source code analysis
   components:
   - id: COMP-EXTRACT
     name: extract
     status: ACTIVE
     description: Extract architecture model from source code analysis
+    f_block: F4
     files:
     - src/architecture_model/extract/from_code.py
     signatures:
@@ -38,4 +40,13 @@ entities:
         capabilities=capabilities, behavi...; relationships = _derive_relationships(capabilities=capabilities, behavior...;
         meta = ModelMeta(schema_version=''1.0.0'', project=config.name or ...; return ArchitectureModel(meta=meta, entities=entities,
         relationships=relationships)'
-relationships: []
+relationships:
+- type: realizes
+  from: COMP-EXTRACT
+  to: CAP-F7
+- type: depends-on
+  from: COMP-EXTRACT
+  to: COMP-CORE
+- type: traces-to
+  from: COMP-EXTRACT
+  to: BEH-EXTRACT

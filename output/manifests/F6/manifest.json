@@ -1,127 +1,111 @@
 {
   "block_id": "F6",
-  "block_name": "Profiles",
+  "block_name": "Orchestration",
   "parent_model": ".architecture-model.yaml",
-  "component_id": "COMP-PROFILES",
+  "component_id": "COMP-ORCHESTRATION",
   "manifest": {
-    "generated_at": "2026-07-19T02:13:53.646843+00:00",
+    "generated_at": "2026-07-19T02:53:01.915211+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 3,
-      "total_lines": 86,
-      "functions": 1,
-      "classes": 4,
+      "total_lines": 385,
+      "functions": 3,
+      "classes": 0,
       "constants": 0
     },
     "functional_blocks": {},
     "modules": [
       {
-        "file": "src/architecture_model/profiles/__init__.py",
-        "name": "Domain profiles for cross",
-        "docstring": "Domain profiles for cross-domain architecture modeling.",
+        "file": "src/architecture_model/orchestration/__init__.py",
+        "name": "Orchestration \u2014 enrich and decompose workflows for architecture models",
+        "docstring": "Orchestration \u2014 enrich and decompose workflows for architecture models.",
         "functions": [],
-        "imports": [],
-        "line_count": 1,
+        "imports": [
+          "architecture_model.orchestration.enrich",
+          "architecture_model.orchestration.decompose"
+        ],
+        "line_count": 6,
         "status": "dormant",
         "classes": [],
-        "exports": [],
+        "exports": [
+          "enrich_model",
+          "decompose_model",
+          "write_sub_models"
+        ],
         "decorated_functions": [],
-        "imports_detailed": [],
+        "imports_detailed": [
+          {
+            "module": "architecture_model.orchestration.enrich",
+            "symbols": [
+              "enrich_model"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.orchestration.decompose",
+            "symbols": [
+              "decompose_model",
+              "write_sub_models"
+            ],
+            "is_relative": false
+          }
+        ],
         "module_constants": {},
         "module_assignments": {}
       },
       {
-        "file": "src/architecture_model/profiles/builtins/__init__.py",
-        "name": " Init  ",
-        "docstring": null,
-        "functions": [],
-        "imports": [],
-        "line_count": 0,
-        "status": "dormant",
-        "classes": [],
-        "exports": [],
-        "decorated_functions": [],
-        "imports_detailed": [],
-        "module_constants": {},
-        "module_assignments": {}
-      },
-      {
-        "file": "src/architecture_model/profiles/schema.py",
-        "name": "Domain profile schema and loading logic",
-        "docstring": "Domain profile schema and loading logic.",
+        "file": "src/architecture_model/orchestration/decompose.py",
+        "name": "Generate recursive sub",
+        "docstring": "Generate recursive sub-models from parent model via relationship tracing.\n\nFor each F-block, produces an ArchitectureModel by tracing relationships\noutward from the block's components:\n- realizes --> Capability\n- exposes --> Interface\n- traces-to --> Behavior\n- constrained-by --> Constraint\n- depends-on --> boundary relationships to external components\n\nThis produces sub-models that are faithful slices of the parent model,\nnot invented entities.",
         "functions": [
           {
-            "name": "load_profile",
-            "signature": "load_profile(name_or_path: str) -> DomainProfile",
+            "name": "decompose_model",
+            "signature": "decompose_model(project_root)",
             "calls": [
-              "safe_load",
-              "from_dict",
+              "load_model",
+              "get_config",
+              "items",
+              "get",
               "info",
-              "Path",
-              "exists",
-              "FileNotFoundError",
-              "read_text"
+              "_find_block_components",
+              "_find_parent_component",
+              "copy",
+              "_trace_entities",
+              "update",
+              "_collect_relationships",
+              "ArchitectureModel",
+              "warning",
+              "add",
+              "len",
+              "ModelMeta",
+              "Entities"
             ],
-            "raises": [
-              "FileNotFoundError"
-            ]
+            "docstring": "Generate sub-models for each F-block by tracing parent model relationships.\n\nFor each F-block:\n1. Find components by file path matching\n2. Trace realizes/exposes/traces-to/constrained-by to find connected entities\n3. Collect internal + boundary relationships\n4. Build sub-model with parent's actual entities (not invented ones)\n\nArgs:\n    project_root: Root directory with .architecture-model.yaml\n\nReturns:\n    Dict mapping block_id -> ArchitectureModel (sub-model)"
+          },
+          {
+            "name": "write_sub_models",
+            "signature": "write_sub_models(sub_models, output_dir)",
+            "calls": [
+              "items",
+              "mkdir",
+              "save_model",
+              "append",
+              "info"
+            ],
+            "docstring": "Write sub-models to YAML files.\n\nOutput structure:\n    output_dir/<block_id>/.architecture-model.yaml"
           }
         ],
         "imports": [
           "__future__",
           "logging",
-          "dataclasses",
           "pathlib",
-          "typing",
-          "yaml"
+          "architecture_model.config.loader",
+          "architecture_model.core.parser",
+          "architecture_model.core.types"
         ],
-        "line_count": 85,
+        "line_count": 243,
         "status": "active",
-        "classes": [
-          {
-            "name": "EnumExtension",
-            "bases": [],
-            "methods": [],
-            "is_abstract": false,
-            "decorators": [
-              "dataclass"
-            ],
-            "attributes": {}
-          },
-          {
-            "name": "EntityExtension",
-            "bases": [],
-            "methods": [],
-            "is_abstract": false,
-            "decorators": [
-              "dataclass"
-            ],
-            "attributes": {}
-          },
-          {
-            "name": "ConditionalRule",
-            "bases": [],
-            "methods": [],
-            "is_abstract": false,
-            "decorators": [
-              "dataclass"
-            ],
-            "attributes": {}
-          },
-          {
-            "name": "DomainProfile",
-            "bases": [],
-            "methods": [
-              "from_dict",
-              "get_extended_values"
-            ],
-            "is_abstract": false,
-            "decorators": [
-              "dataclass"
-            ],
-            "attributes": {}
-          }
-        ],
+        "classes": [],
         "exports": [],
         "decorated_functions": [],
         "imports_detailed": [
@@ -138,11 +122,93 @@
             "is_relative": false
           },
           {
-            "module": "dataclasses",
+            "module": "pathlib",
             "symbols": [
-              "dataclass",
-              "field"
+              "Path"
             ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.config.loader",
+            "symbols": [
+              "get_config"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.parser",
+            "symbols": [
+              "load_model",
+              "save_model"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel",
+              "Entities",
+              "ModelMeta",
+              "Relationship",
+              "RelationType"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {
+          "logger": "logging.getLogger(__name__)"
+        }
+      },
+      {
+        "file": "src/architecture_model/orchestration/enrich.py",
+        "name": "Auto",
+        "docstring": "Auto-enrichment of architecture models from AST data.\n\nPopulates FunctionSignature, Constant, and TestContract on components\nby scanning their source files and discovering matching test files.",
+        "functions": [
+          {
+            "name": "enrich_model",
+            "signature": "enrich_model(model: ArchitectureModel, project_root: Path) -> ArchitectureModel",
+            "calls": [
+              "isinstance",
+              "get",
+              "_enrich_signatures",
+              "_enrich_constants",
+              "_enrich_test_contracts",
+              "_enum_str"
+            ],
+            "docstring": "Auto-populate signatures, constants, test_contracts on components."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "ast",
+          "logging",
+          "pathlib",
+          "architecture_model.core.types",
+          "architecture_model.manifest.body_hints",
+          "architecture_model.manifest.test_analyzer"
+        ],
+        "line_count": 136,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "ast",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "logging",
+            "symbols": [],
             "is_relative": false
           },
           {
@@ -153,15 +219,28 @@
             "is_relative": false
           },
           {
-            "module": "typing",
+            "module": "architecture_model.core.types",
             "symbols": [
-              "Any"
+              "ArchitectureModel",
+              "Component",
+              "Constant",
+              "FunctionSignature",
+              "TestContract"
             ],
             "is_relative": false
           },
           {
-            "module": "yaml",
-            "symbols": [],
+            "module": "architecture_model.manifest.body_hints",
+            "symbols": [
+              "extract_file_hints"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.test_analyzer",
+            "symbols": [
+              "analyze_test_file"
+            ],
             "is_relative": false
           }
         ],
@@ -171,8 +250,23 @@
         }
       }
     ],
-    "interfaces": []
+    "interfaces": [
+      {
+        "source": "src/architecture_model/orchestration/__init__.py",
+        "target": "src/architecture_model/orchestration/enrich.py",
+        "import_path": "architecture_model.orchestration.enrich"
+      },
+      {
+        "source": "src/architecture_model/orchestration/__init__.py",
+        "target": "src/architecture_model/orchestration/decompose.py",
+        "import_path": "architecture_model.orchestration.decompose"
+      }
+    ]
   },
   "children": {},
-  "block_dependencies": []
+  "block_dependencies": [
+    "F2",
+    "F3",
+    "F5"
+  ]
 }

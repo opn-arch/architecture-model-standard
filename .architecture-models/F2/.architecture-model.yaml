@@ -7,55 +7,17 @@ meta:
   refines_component: COMP-CONFIG
 entities:
   capabilities:
-  - id: CAP-F2-1
-    name: load_config
+  - id: CAP-F5
+    name: Configuration Management
     status: ACTIVE
-    description: "Load project configuration from .architecture-model.yaml.\n\nArgs:\n    root: Project root directory containing\
-      \ the config file.\n\nReturns:\n    ProjectConfig loaded from file.\n\nRaises:\n    FileNotFoundError: If config file\
-      \ doesn't exist."
+    description: Auto-discovery config loading and project configuration schema
     f_block: F2
-  - id: CAP-F2-2
-    name: discover_config
-    status: ACTIVE
-    description: "Auto-discover project configuration by scanning filesystem.\n\nInspects the directory structure to infer\
-      \ layers, functional blocks,\nand metrics without requiring a config file. Produces a complete,\nusable configuration\
-      \ including auto-generated F-blocks.\n\nArgs:\n    root: Project root directory to scan.\n\nReturns:\n    Tuple of (ProjectConfig\
-      \ with auto-discovered values, DiscoveryReport)."
-    f_block: F2
-  - id: CAP-F2-3
-    name: get_config
-    status: ACTIVE
-    description: "Load config from file if it exists, otherwise auto-discover.\n\nThis is the recommended entry point — it\
-      \ always returns a valid config.\nWhen loading from YAML, auto-discovers sub_blocks for any block that\ndoesn't already\
-      \ define them.\n\nArgs:\n    root: Project root directory.\n\nReturns:\n    ProjectConfig (from file or auto-discovered)."
-    f_block: F2
-  interfaces:
-  - id: IF-F2-1
-    name: __init__ -> schema
-    status: ACTIVE
-    description: 'Import: schema'
-    type: internal
-    provider: src/architecture_model/config/schema.py
-    consumer: src/architecture_model/config/__init__.py
-  - id: IF-F2-2
-    name: __init__ -> loader
-    status: ACTIVE
-    description: 'Import: loader'
-    type: internal
-    provider: src/architecture_model/config/loader.py
-    consumer: src/architecture_model/config/__init__.py
-  - id: IF-F2-3
-    name: loader -> schema
-    status: ACTIVE
-    description: 'Import: schema'
-    type: internal
-    provider: src/architecture_model/config/schema.py
-    consumer: src/architecture_model/config/loader.py
   components:
   - id: COMP-CONFIG
     name: config
     status: ACTIVE
     description: Configuration loader (auto-discovery) and schema definition
+    f_block: F2
     files:
     - src/architecture_model/config/loader.py
     - src/architecture_model/config/schema.py
@@ -169,4 +131,19 @@ entities:
       returns: str
       body_hint: 'return f''Layout: {self.layout_detected}, {self.blocks_discovered} blocks, {self.layers_discovered} layers,
         {self.metrics_discovered} metrics, {self.files_claimed}/{self.files_total} files claimed ({self.claim_rate:.0%})'''
-relationships: []
+relationships:
+- type: realizes
+  from: COMP-CONFIG
+  to: CAP-F5
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-MANIFEST
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-DECOMPOSE
+  to: COMP-CONFIG

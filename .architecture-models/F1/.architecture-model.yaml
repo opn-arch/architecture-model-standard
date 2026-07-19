@@ -7,17 +7,41 @@ meta:
   refines_component: COMP-CLI
 entities:
   capabilities:
-  - id: CAP-F1-1
-    name: main
+  - id: CAP-F4
+    name: CLI Operations
     status: ACTIVE
-    description: Function main
+    description: Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich
     f_block: F1
+  behaviors:
+  - id: BEH-INIT
+    name: Project Initialization
+    status: ACTIVE
+    description: Scan directory structure, discover source root, auto-generate .architecture-model.yaml
+  - id: BEH-VALIDATE
+    name: Model Validation
+    status: ACTIVE
+    description: Check architectural claims against schema and structural invariants, produce score 0-100
+  - id: BEH-MANIFEST
+    name: Manifest Generation
+    status: ACTIVE
+    description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
+  - id: BEH-ENRICH
+    name: Auto-Enrichment
+    status: ACTIVE
+    description: Enrich architecture model with function signatures, constants, and test contracts from AST
+  interfaces:
+  - id: IF-CLI
+    name: CLI Interface
+    status: ACTIVE
+    description: 'Entry point: architecture-model {init,validate,slice,diff,stats,impact,manifest,coverage,enrich}'
+    type: internal
   components:
   - id: COMP-CLI
     name: cli
     status: ACTIVE
     description: 'CLI entry point and command dispatch (9 commands: init, validate, slice, diff, stats, impact, manifest,
       coverage, enrich)'
+    f_block: F1
     files:
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/__init__.py
@@ -50,4 +74,34 @@ entities:
         (default: model directory)''); p_coverage.add_argument(''--manifest'', help=''Path to pre-generated manifest JSON'');
         args = parser.parse_args(argv); if not args.command: ...; handlers = {''init'': _cmd_init, ''validate'': _cmd_validate,
         ''slice'': _...; return handlers[args.command](args)'
-relationships: []
+relationships:
+- type: realizes
+  from: COMP-CLI
+  to: CAP-F4
+- type: exposes
+  from: COMP-CLI
+  to: IF-CLI
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-MANIFEST
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-ENRICH
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-INIT
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-VALIDATE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-MANIFEST
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-ENRICH

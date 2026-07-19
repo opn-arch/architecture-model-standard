@@ -379,7 +379,7 @@ def _cmd_manifest(args) -> int:
 def _cmd_enrich(args) -> int:
     """Auto-enrich model with signatures, constants, and test contracts."""
     from ..core.parser import load_model, save_model
-    from ..enrich import enrich_model
+    from ..orchestration.enrich import enrich_model
 
     model_path = Path(args.model)
     root = Path(args.root).resolve()
@@ -410,7 +410,7 @@ def _cmd_enrich(args) -> int:
 
 def _cmd_decompose(args) -> int:
     """Generate per-F-block sub-models from parent model + recursive manifests."""
-    from ..decompose import decompose_model, write_sub_models
+    from ..orchestration.decompose import decompose_model, write_sub_models
 
     root = Path(args.path).resolve()
     if not root.is_dir():

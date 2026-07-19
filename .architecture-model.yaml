@@ -440,7 +440,7 @@ entities:
     status: ACTIVE
     description: Auto-enrichment of architecture models with AST-derived signatures, constants, and test contracts
     files:
-    - src/architecture_model/enrich.py
+    - src/architecture_model/orchestration/enrich.py
     signatures:
     - name: enrich_model
       params:
@@ -1481,7 +1481,7 @@ entities:
     kind: module
     f_block: F9
     files:
-    - src/architecture_model/decompose.py
+    - src/architecture_model/orchestration/decompose.py
     description: Model decomposition into per-F-block sub-models
 relationships:
 - type: contains

@@ -7,259 +7,59 @@ meta:
   refines_component: COMP-CORE
 entities:
   capabilities:
-  - id: CAP-F3-1
-    name: coverage_report
+  - id: CAP-F1
+    name: Model Parsing & Validation
     status: ACTIVE
-    description: Run all coverage checks and return aggregate result.
+    description: Parse YAML models and validate structural correctness (score 0-100)
     f_block: F3
-  - id: CAP-F3-2
-    name: compute_complexity
+  - id: CAP-F3
+    name: Model Slicing & Diffing
     status: ACTIVE
-    description: "Weighted complexity score for determining if a component should be in a System.\n\nFactors:\n    - Number\
-      \ of symbols x 2.0\n    - Total members (sum of all symbol members) x 0.3\n    - Number of functions x 0.5\n    - Number\
-      \ of depends-on relationships (inbound + outbound) x 1.5"
+    description: Subset extraction by F-block/layer, model version comparison, and enriched model composition
     f_block: F3
-  - id: CAP-F3-3
-    name: identify_systems
+  behaviors:
+  - id: BEH-VALIDATE
+    name: Model Validation
     status: ACTIVE
-    description: "Identify F-block groups that should become Systems.\n\nGroups components by f_block, computes aggregate\
-      \ complexity per group,\nand returns SystemCandidates for groups exceeding SYSTEM_THRESHOLD.\n\nFor components without\
-      \ an f_block field, they are skipped (remain as\ntop-level components).\n\nArgs:\n    model: The architecture model\
-      \ with enriched components.\n    manifest: Manifest dict containing functional_blocks metadata.\n\nReturns:\n    List\
-      \ of SystemCandidate for groups exceeding threshold."
-    f_block: F3
-  - id: CAP-F3-4
-    name: auto_assign_f_blocks
-    status: ACTIVE
-    description: 'Assign f_block values to components via dependency-graph clustering.
-
-
-      Used when the model has no f_block annotations (e.g., oracle-extracted models).
-
-      Groups components by import/dependency density using greedy modularity:
-
-      1. Build undirected adjacency from depends_on relationships
-
-      2. Seed clusters from highest-degree nodes
-
-      3. Grow each cluster by adding adjacent unassigned nodes (max size limit)
-
-      4. Singletons keep their own f_block (decomposer threshold handles them)
-
-
-      Mutates nothing — returns a new model with f_block assigned on components.'
-    f_block: F3
-  - id: CAP-F3-5
-    name: decompose_model
-    status: ACTIVE
-    description: "Decompose a flat model into top-level + system sub-models.\n\n1. Identifies system candidates via F-block\
-      \ complexity\n2. For each system:\n   - Creates System entity with sub_model_ref\n   - Extracts system's components\
-      \ into a sub-model\n   - Partitions relationships: intra-system stay in sub-model,\n     inter-system get promoted to\
-      \ top-level (from/to rewritten to system ID)\n3. Remaining components stay in top-level\n\nArgs:\n    model: Flat architecture\
-      \ model (v1.2+ with enriched components).\n    manifest: Manifest dict with functional_blocks metadata.\n    output_dir:\
-      \ Directory name for sub-model refs (default \"systems\").\n\nReturns:\n    DecompositionResult with top-level model\
-      \ and sub-models dict."
-    f_block: F3
-  - id: CAP-F3-6
-    name: test_affinity_decompose
-    status: ACTIVE
-    description: 'Decompose a repository into subsystems based on test file affinity.
-
-
-      Algorithm:
-
-      1. Discover all test files (*_test.py, test_*.py)
-
-      2. Discover all source files (non-test .py files)
-
-      3. For each test file, AST-parse its imports to identify which source modules it tests
-
-      4. Group source modules by their primary test file (each source → exactly one subsystem)
-
-      5. Determine dependencies between subsystems via import analysis
-
-      6. Return subsystems sorted topologically (leaves first)
-
-
-      Source modules with no test → assigned to ''root'' subsystem'
-    f_block: F3
-  - id: CAP-F3-7
-    name: diff_models
-    status: ACTIVE
-    description: "Compare two model versions and produce a structured diff.\n\nArgs:\n    old_model: The previous/baseline\
-      \ model.\n    new_model: The current/updated model.\n\nReturns:\n    ModelDiff with all detected changes."
-    f_block: F3
-  - id: CAP-F3-8
-    name: merge_manifest
-    status: ACTIVE
-    description: "Merge manifest data into the architecture model (in-place mutation).\n\nWhat gets merged:\n- Component file\
-      \ lists get enriched with manifest-discovered files.\n- Layers get directory lists from manifest module scan.\n- Meta\
-      \ gets manifest_hash updated.\n\nWhat does NOT get overwritten:\n- Entity names, descriptions, status markers.\n- Relationships\
-      \ (these are architectural decisions).\n- Capabilities, behaviors, constraints (model-level truth).\n\nArgs:\n    model:\
-      \ The architecture model to enrich.\n    manifest_path: Path to the reality-manifest.json file.\n    project_root: Root\
-      \ of the consumer project (for config lookup).\n                  Defaults to manifest_path's grandparent (output/{project}/manifest\
-      \ → root).\n\nReturns the same model instance (mutated)."
-    f_block: F3
-  - id: CAP-F3-9
-    name: enrich_from_manifest
-    status: ACTIVE
-    description: "Enrich an ArchitectureModel with ground-truth symbols and functions from an AST manifest.\n\nReplaces component\
-      \ symbols/functions with manifest-derived data, enriches\nrelationship imports, and computes naming accuracy vs prior\
-      \ predictions.\n\nArgs:\n    model: The architecture model to enrich (mutated in-place).\n    manifest: Manifest dict\
-      \ as produced by the manifest generator.\n\nReturns:\n    EnrichmentResult with the enriched model and naming_accuracy\
-      \ score."
-    f_block: F3
-  - id: CAP-F3-10
-    name: compact_for_generation
-    status: ACTIVE
-    description: 'Compact an enriched model for LLM code generation.
-
-
-      Truncates symbol members and component functions when the model is too
-
-      large for a 7B model''s effective context. Preserves structure (all
-
-      components, all symbol names by kind) but limits detail per entity.
-
-
-      The model is mutated in-place and returned.
-
-
-      Strategy:
-
-      - Cap symbols per component to _MAX_SYMBOLS_PER_COMPONENT (keep by importance)
-
-      - Cap members per symbol to _MAX_MEMBERS_PER_SYMBOL (keep __init__ + public)
-
-      - Cap functions per component to _MAX_FUNCTIONS_PER_COMPONENT
-
-      - Prioritize: __init__ first, then alphabetical for determinism
-
-      - Excess symbols are listed as names-only in a comment field
-
-      - For very large models (>16 components), apply stricter per-component limits'
-    f_block: F3
-  - id: CAP-F3-11
-    name: compose_enriched_model
-    status: ACTIVE
-    description: "Compose a fully-enriched ArchitectureModel from source code.\n\nScans all source files in the project, extracting:\n\
-      - Module constants, class attributes, module assignments → Constant objects\n- Function signatures with body hints →\
-      \ FunctionSignature objects\n- Test contracts from matching test files → TestContract objects\n\nEach source module\
-      \ becomes a Component in the resulting model.\n\nArgs:\n    project_root: Root directory of the project to scan.\n\n\
-      Returns:\n    An ArchitectureModel with one Component per source file, enriched\n    with constants, signatures, and\
-      \ test contracts."
-    f_block: F3
-  - id: CAP-F3-12
-    name: load_model
-    status: ACTIVE
-    description: Load and parse an architecture model YAML file.
-    f_block: F3
-  - id: CAP-F3-13
-    name: validate_model_data
-    status: ACTIVE
-    description: Validate raw dict against JSON Schema. Returns list of error messages.
-    f_block: F3
-  - id: CAP-F3-14
-    name: dump_model
-    status: ACTIVE
-    description: Serialize ArchitectureModel back to a plain dict suitable for YAML output.
-    f_block: F3
-  - id: CAP-F3-15
-    name: save_model
-    status: ACTIVE
-    description: Serialize and write model to YAML file.
-    f_block: F3
-  - id: CAP-F3-16
-    name: slice_by_fblock
-    status: ACTIVE
-    description: "Extract all entities and relationships related to a specific F-block.\n\nArgs:\n    model: Full architecture\
-      \ model.\n    f_block: F-block identifier (e.g., \"F1\", \"F2\").\n    include_relationships: Whether to include relationships\
-      \ between sliced entities.\n\nReturns:\n    New ArchitectureModel containing only the F-block's entities."
-    f_block: F3
-  - id: CAP-F3-17
-    name: slice_by_layer
-    status: ACTIVE
-    description: "Extract all entities allocated to a specific layer.\n\nArgs:\n    model: Full architecture model.\n    layer_id:\
-      \ Layer identifier (e.g., \"web-layer\", \"pipeline-layer\").\n\nReturns:\n    New ArchitectureModel with layer-specific\
-      \ entities."
-    f_block: F3
-  - id: CAP-F3-18
-    name: slice_by_status
-    status: ACTIVE
-    description: "Filter model to only include entities with a specific status.\n\nArgs:\n    model: Full architecture model.\n\
-      \    status: Status to filter by.\n\nReturns:\n    New ArchitectureModel with only matching entities."
-    f_block: F3
-  - id: CAP-F3-19
-    name: slice_for_artifact
-    status: ACTIVE
-    description: "Extract the model subset relevant to a specific artifact's regeneration.\n\nArtifact-specific slicing rules:\n\
-      - functional-architecture: capabilities, behaviors (summary), relationships\n- logical-architecture: layers, components,\
-      \ inter-layer relationships\n- use-cases: actors, behaviors (full), capabilities (summary)\n- icd: interfaces, components\
-      \ (providers/consumers)\n- requirements-analysis: constraints, capabilities, behaviors (summary)\n- readme: everything\
-      \ (summary level)\n\nArgs:\n    model: Full architecture model.\n    artifact_name: Name of the artifact to slice for.\n\
-      \nReturns:\n    Model subset appropriate for the artifact."
-    f_block: F3
-  - id: CAP-F3-20
-    name: validate_model
-    status: ACTIVE
-    description: "Run all validation checks on the architecture model.\n\nArgs:\n    model: The model to validate.\n    strict:\
-      \ If True, promote warnings to errors.\n\nReturns:\n    ValidationResult with all issues found."
-    f_block: F3
+    description: Check architectural claims against schema and structural invariants, produce score 0-100
   interfaces:
-  - id: IF-F3-1
-    name: coverage -> types
+  - id: IF-PARSE-API
+    name: Parser API
     status: ACTIVE
-    description: 'Import: types'
+    description: load_model(path) -> ArchitectureModel, save_model(model, path), dump_model(model) -> str
     type: internal
-    provider: src/architecture_model/core/types.py
-    consumer: src/architecture_model/core/coverage.py
-  - id: IF-F3-2
-    name: decomposer -> types
+  - id: IF-VALIDATE-API
+    name: Validator API
     status: ACTIVE
-    description: 'Import: architecture_model.core.types'
+    description: validate_model(model) -> ValidationResult (score, issues, is_valid)
     type: internal
-    provider: src/architecture_model/core/types.py
-    consumer: src/architecture_model/core/decomposer.py
-  - id: IF-F3-3
-    name: differ -> types
+  - id: IF-SLICER-API
+    name: Slicer API
     status: ACTIVE
-    description: 'Import: types'
+    description: slice_by_fblock(model, id), slice_by_layer(model, id), slice_for_artifact(model, artifact)
     type: internal
-    provider: src/architecture_model/core/types.py
-    consumer: src/architecture_model/core/differ.py
-  - id: IF-F3-4
-    name: merger -> types
+  constraints:
+  - id: CON-SCHEMA
+    name: Schema Compliance
     status: ACTIVE
-    description: 'Import: types'
-    type: internal
-    provider: src/architecture_model/core/types.py
-    consumer: src/architecture_model/core/merger.py
-  - id: IF-F3-5
-    name: parser -> types
+    description: All models must conform to JSON Schema v1.5 with 7 entity types and 8 relationship types
+    type: technology
+  - id: CON-NO-ORPHANS
+    name: No Orphaned Entities
     status: ACTIVE
-    description: 'Import: types'
-    type: internal
-    provider: src/architecture_model/core/types.py
-    consumer: src/architecture_model/core/parser.py
-  - id: IF-F3-6
-    name: slicer -> types
-    status: ACTIVE
-    description: 'Import: types'
-    type: internal
-    provider: src/architecture_model/core/types.py
-    consumer: src/architecture_model/core/slicer.py
-  - id: IF-F3-7
-    name: validator -> types
-    status: ACTIVE
-    description: 'Import: types'
-    type: internal
-    provider: src/architecture_model/core/types.py
-    consumer: src/architecture_model/core/validator.py
+    description: Every entity must participate in at least one relationship
+    type: technology
   components:
+  - id: COMP-CORE
+    name: core
+    status: ACTIVE
+    description: Parser, validator, slicer, differ, merger, decomposer, type system
+    f_block: F3
   - id: COMP-CORE-PARSER
     name: core.parser
     status: ACTIVE
     description: YAML model parser (load_model, save_model, dump_model)
+    f_block: F3
     files:
     - src/architecture_model/core/parser.py
     constants:
@@ -341,6 +141,7 @@ entities:
     name: core.validator
     status: ACTIVE
     description: Structural validation engine producing score 0-100
+    f_block: F3
     files:
     - src/architecture_model/core/validator.py
     signatures:
@@ -431,6 +232,7 @@ entities:
     name: core.slicer
     status: ACTIVE
     description: Model subsetting by F-block, layer, or artifact
+    f_block: F3
     files:
     - src/architecture_model/core/slicer.py
     signatures:
@@ -536,6 +338,7 @@ entities:
     name: core.differ
     status: ACTIVE
     description: Model version comparison and diff generation
+    f_block: F3
     files:
     - src/architecture_model/core/differ.py
     signatures:
@@ -598,6 +401,7 @@ entities:
     name: core.merger
     status: ACTIVE
     description: Model merging and composition
+    f_block: F3
     files:
     - src/architecture_model/core/merger.py
     constants:
@@ -677,6 +481,7 @@ entities:
     name: core.decomposer
     status: ACTIVE
     description: Model decomposition into subsystems
+    f_block: F3
     files:
     - src/architecture_model/core/decomposer.py
     constants:
@@ -805,6 +610,7 @@ entities:
     name: core.types
     status: ACTIVE
     description: Type system (ArchitectureModel, Component, Capability, FunctionSignature, TestContract, etc.)
+    f_block: F3
     files:
     - src/architecture_model/core/types.py
     signatures:
@@ -962,24 +768,6 @@ entities:
       assertion: original.all_entity_ids == rebuilt.all_entity_ids
       contract_type: value_equality
 relationships:
-- type: depends-on
-  from: COMP-CORE-PARSER
-  to: COMP-CORE-TYPES
-- type: depends-on
-  from: COMP-CORE-VALIDATOR
-  to: COMP-CORE-TYPES
-- type: depends-on
-  from: COMP-CORE-SLICER
-  to: COMP-CORE-TYPES
-- type: depends-on
-  from: COMP-CORE-DIFFER
-  to: COMP-CORE-TYPES
-- type: depends-on
-  from: COMP-CORE-MERGER
-  to: COMP-CORE-TYPES
-- type: depends-on
-  from: COMP-CORE-DECOMPOSER
-  to: COMP-CORE-TYPES
 - type: contains
   from: COMP-CORE
   to: COMP-CORE-PARSER
@@ -1001,3 +789,84 @@ relationships:
 - type: contains
   from: COMP-CORE
   to: COMP-CORE-TYPES
+- type: realizes
+  from: COMP-CORE
+  to: CAP-F1
+- type: realizes
+  from: COMP-CORE
+  to: CAP-F3
+- type: exposes
+  from: COMP-CORE-PARSER
+  to: IF-PARSE-API
+- type: exposes
+  from: COMP-CORE-VALIDATOR
+  to: IF-VALIDATE-API
+- type: exposes
+  from: COMP-CORE-SLICER
+  to: IF-SLICER-API
+- type: constrained-by
+  from: COMP-CORE
+  to: CON-SCHEMA
+- type: constrained-by
+  from: COMP-CORE
+  to: CON-NO-ORPHANS
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-CONFIG
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-SPEC
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-PROFILES
+- type: depends-on
+  from: COMP-EXTRACT
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-ENRICH
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-CORE-PARSER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-VALIDATOR
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-VALIDATOR
+  to: COMP-PROFILES
+- type: depends-on
+  from: COMP-CORE-SLICER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-DIFFER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-MERGER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-MERGER
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-CORE-DECOMPOSER
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-CORE-DECOMPOSER
+  to: COMP-UTILS
+- type: depends-on
+  from: COMP-MANIFEST-BODY-HINTS
+  to: COMP-CORE-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-TEST-ANALYZER
+  to: COMP-CORE-TYPES
+- type: traces-to
+  from: COMP-CORE-PARSER
+  to: BEH-VALIDATE
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE
+- type: depends-on
+  from: COMP-DECOMPOSE
+  to: COMP-CORE

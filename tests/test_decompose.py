@@ -11,7 +11,7 @@ from architecture_model.core.types import (
     ModelMeta, Relationship, RelationType, Status,
 )
 from architecture_model.core.parser import save_model
-from architecture_model.decompose import decompose_model, write_sub_models
+from architecture_model.orchestration.decompose import decompose_model, write_sub_models
 
 
 def _setup_project(tmp_path):

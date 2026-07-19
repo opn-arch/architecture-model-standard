@@ -4,7 +4,7 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-CONFIG",
   "manifest": {
-    "generated_at": "2026-07-19T02:13:53.548396+00:00",
+    "generated_at": "2026-07-19T02:53:01.811767+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 3,
@@ -386,6 +386,6 @@
   },
   "children": {},
   "block_dependencies": [
-    "F8"
+    "F9"
   ]
 }

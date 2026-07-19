@@ -4,7 +4,7 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-CLI",
   "manifest": {
-    "generated_at": "2026-07-19T02:13:53.540399+00:00",
+    "generated_at": "2026-07-19T02:53:01.803080+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 2,
@@ -71,8 +71,8 @@
           "config.loader",
           "json",
           "core.parser",
-          "enrich",
-          "decompose",
+          "orchestration.enrich",
+          "orchestration.decompose",
           "json",
           "core.coverage",
           "core.parser",
@@ -242,14 +242,14 @@
             "is_relative": true
           },
           {
-            "module": "enrich",
+            "module": "orchestration.enrich",
             "symbols": [
               "enrich_model"
             ],
             "is_relative": true
           },
           {
-            "module": "decompose",
+            "module": "orchestration.decompose",
             "symbols": [
               "decompose_model",
               "write_sub_models"
@@ -308,6 +308,7 @@
   "block_dependencies": [
     "F2",
     "F3",
-    "F5"
+    "F5",
+    "F6"
   ]
 }
