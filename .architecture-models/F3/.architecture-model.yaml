@@ -22,6 +22,449 @@ entities:
     name: Model Validation
     status: ACTIVE
     description: Check architectural claims against schema and structural invariants, produce score 0-100
+  - id: BEH-MERGE
+    name: Model Merging
+    status: ACTIVE
+    description: Merge and compose architecture models
+  - id: BEH-VALIDATE-IDS
+    name: ID Uniqueness Check
+    status: ACTIVE
+    description: Check all entity IDs are unique across entity types
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Compute type_entities
+    - Iterate over type_entities
+  - id: BEH-VALIDATE-REFS
+    name: Referential Integrity Check
+    status: ACTIVE
+    description: Verify all relationship endpoints reference existing entities
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Compute all_ids
+    - Compute layer_ids
+    - Iterate over model.relationships
+  - id: BEH-VALIDATE-ORPHANS
+    name: Orphan Entity Detection
+    status: ACTIVE
+    description: Find entities with no relationships
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Iterate over model.relationships
+    - Iterate over model.entities.behaviors
+    - Iterate over model.entities.components
+  - id: BEH-VALIDATE-STATUS
+    name: Status Consistency Check
+    status: ACTIVE
+    description: Verify status field values are valid
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Iterate over model.entities.actors
+    - Iterate over model.entities.capabilities
+    - Iterate over model.entities.behaviors
+    - Iterate over model.entities.interfaces
+    - Iterate over model.entities.constraints
+    - Iterate over model.entities.layers
+    - Iterate over model.entities.components
+    - Iterate over model.entities.systems
+    - Iterate over model.entities.data
+    - Iterate over model.entities.events
+  - id: BEH-VALIDATE-CAPS
+    name: Capability Realization Check
+    status: ACTIVE
+    description: Ensure every capability is realized by at least one component
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Iterate over model.relationships
+    - Iterate over model.entities.capabilities
+  - id: BEH-VALIDATE-META
+    name: Meta Completeness Check
+    status: ACTIVE
+    description: Validate model meta section has required fields
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Check not model.meta.project
+    - Check not model.meta.schema_version
+    - Check not model.meta.source_artifacts
+  - id: BEH-VALIDATE-V11
+    name: V1.1 Semantics Check
+    status: ACTIVE
+    description: Validate schema v1.1+ semantic rules
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Iterate over model.entities.components
+    - Iterate over model.entities.behaviors
+  - id: BEH-VALIDATE-REGEN
+    name: Regen Readiness Check
+    status: ACTIVE
+    description: Score components for code regeneration readiness
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Iterate over model.entities.components
+  - id: BEH-VALIDATE-PROFILE
+    name: Domain Profile Validation
+    status: ACTIVE
+    description: Validate domain-profile-specific rules
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    - 'Guard: not profile_name or profile_name == ''software'''
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Compute profile_name
+    - Check not profile_name or profile_name == 'software'
+    - Compute entity_lists
+    - Iterate over profile.validation_rules
+  - id: BEH-VALIDATE-IMPROVE
+    name: Improvement Opportunities
+    status: ACTIVE
+    description: Detect non-critical improvements
+    trigger: validate_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'result: ValidationResult'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Iterate over model.entities.components
+  - id: BEH-PARSE-LOAD
+    name: Model Loading
+    status: ACTIVE
+    description: Load YAML file, parse into ArchitectureModel dataclass
+    preconditions:
+    - 'path: str | Path'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    - return _parse_raw(raw)
+    steps:
+    - path = Path()
+    - With open(path, 'r', encoding='utf-8')
+    - Check raw is None
+    - Return _parse_raw(raw)
+  - id: BEH-PARSE-SAVE
+    name: Model Saving
+    status: ACTIVE
+    description: Serialize ArchitectureModel to YAML via to_dict()
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'path: str | Path'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - path = Path()
+    - Call path.parent.mkdir()
+    - data = dump_model()
+    - With open(path, 'w', encoding='utf-8')
+  - id: BEH-PARSE-DUMP
+    name: Model Dumping
+    status: ACTIVE
+    description: Dump model to string format for display
+    trigger: save_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    postconditions:
+    - 'Returns: dict[str, Any]'
+    steps:
+    - 'Return {''meta'': _dump_meta(model.meta), ''entities'': _dump_entities('
+  - id: BEH-SLICE-FBLOCK
+    name: Slice by F-Block
+    status: ACTIVE
+    description: Extract sub-model for a functional block by tracing relationships
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'f_block: str'
+    - 'include_relationships: bool'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    steps:
+    - Compute cap_ids
+    - Compute behaviors
+    - Compute behavior_ids
+    - Compute components
+    - Compute component_ids
+    - Compute interfaces
+    - Compute interface_ids
+    - Compute relevant_ids
+    - Compute data_entities
+    - Compute data_ids
+  - id: BEH-SLICE-LAYER
+    name: Slice by Layer
+    status: ACTIVE
+    description: Extract sub-model for an architectural layer
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'layer_id: str'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    steps:
+    - Compute layers
+    - Compute components
+    - Compute component_ids
+    - Compute relationships
+    - Return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.s
+  - id: BEH-SLICE-STATUS
+    name: Slice by Status
+    status: ACTIVE
+    description: Filter model entities by status value
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'status: Status'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    steps:
+    - entities = Entities()
+    - all_ids = set()
+    - Iterate over ['actors', 'capabilities', 'behaviors', 'interfaces', 'constraints', 'layers', 'components', 'systems',
+      'data', 'events', 'resources', 'environments', 'quality_attributes', 'decisions', 'lifecycles']
+    - Compute relationships
+    - Return ArchitectureModel(meta=deepcopy(model.meta), entities=entiti
+  - id: BEH-SLICE-ARTIFACT
+    name: Slice by Artifact
+    status: ACTIVE
+    description: Extract sub-model relevant to a specific artifact type
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'artifact_name: str'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    - return deepcopy(model)
+    - return slicer_fn(model)
+    steps:
+    - Compute slicers
+    - slicer_fn = slicers.get()
+    - Check slicer_fn
+    - Return deepcopy(model)
+  - id: BEH-SLICE-COMPONENT
+    name: Slice by Component
+    status: ACTIVE
+    description: Extract sub-model for a single component with dependencies
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'f_block: str'
+    - 'include_relationships: bool'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    steps:
+    - Compute cap_ids
+    - Compute behaviors
+    - Compute behavior_ids
+    - Compute components
+    - Compute component_ids
+    - Compute interfaces
+    - Compute interface_ids
+    - Compute relevant_ids
+    - Compute data_entities
+    - Compute data_ids
+  - id: BEH-DIFF-ENTITIES
+    name: Entity Diff
+    status: ACTIVE
+    description: Compare entities between two models, detect added/removed/modified
+    trigger: diff_models
+    preconditions:
+    - 'old_entities: list'
+    - 'new_entities: list'
+    - 'entity_type: str'
+    - 'result: ModelDiff'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Compute old_map
+    - Compute new_map
+    - old_ids = set()
+    - new_ids = set()
+    - Iterate over new_ids - old_ids
+    - Iterate over old_ids - new_ids
+    - Iterate over old_ids & new_ids
+  - id: BEH-DIFF-RELS
+    name: Relationship Diff
+    status: ACTIVE
+    description: Compare relationships between two models
+    trigger: diff_models
+    preconditions:
+    - 'old_rels: list[Relationship]'
+    - 'new_rels: list[Relationship]'
+    - 'result: ModelDiff'
+    postconditions:
+    - 'Returns: None'
+    - return (r.type.value, r.from_id, r.to_id)
+    steps:
+    - Compute old_set
+    - Compute new_set
+    - Iterate over new_set - old_set
+    - Iterate over old_set - new_set
+  - id: BEH-MERGE-MANIFEST
+    name: Merge Manifest
+    status: ACTIVE
+    description: Merge reality manifest data into architecture model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'manifest_path: str | Path'
+    - 'project_root: str | Path | None'
+    - 'Guard: not manifest_path.exists()'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    - return model
+    steps:
+    - manifest_path = Path()
+    - Check not manifest_path.exists()
+    - Check project_root is None
+    - manifest = json.loads()
+    - content = manifest_path.read_bytes()
+    - Compute model.meta.manifest_hash
+    - Call _merge_layer_directories()
+    - Call _merge_component_files()
+    - Call _add_missing_components()
+    - Return model
+  - id: BEH-MERGE-ENRICH
+    name: Enrich from Manifest
+    status: ACTIVE
+    description: Enrich model components with manifest-derived data
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'manifest: dict'
+    postconditions:
+    - 'Returns: EnrichmentResult'
+    - return EnrichmentResult(_model=model, naming_accuracy=naming_accuracy)
+    steps:
+    - modules = manifest.get()
+    - interfaces = manifest.get()
+    - Iterate over modules
+    - Compute total_predicted
+    - Compute total_matched
+    - Iterate over model.entities.components
+    - Call _enrich_relationship_imports()
+    - Check total_predicted == 0
+    - Return EnrichmentResult(_model=model, naming_accuracy=naming_accura
+  - id: BEH-MERGE-COMPACT
+    name: Compact for Generation
+    status: ACTIVE
+    description: Compact model for code generation context
+    preconditions:
+    - 'model: ArchitectureModel'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    - return model
+    steps:
+    - model = copy.deepcopy()
+    - n_components = len()
+    - Check n_components > 15
+    - Iterate over model.entities.components
+    - Return model
+  - id: BEH-MERGE-COMPOSE
+    name: Compose Enriched Model
+    status: ACTIVE
+    description: Compose a fully enriched model from multiple sources
+    preconditions:
+    - 'project_root: Path'
+    postconditions:
+    - 'Returns: ArchitectureModel'
+    - return ArchitectureModel(meta=meta, entities=entities, relationships=[])
+    steps:
+    - source_files = discover_source_files()
+    - test_files = discover_test_files()
+    - Compute source_stems
+    - test_mapping = _map_tests_to_sources()
+    - Iterate over source_files
+    - Compute project_name
+    - meta = ModelMeta()
+    - entities = Entities()
+    - Return ArchitectureModel(meta=meta, entities=entities, relationship
+  - id: BEH-DECOMPOSE-IDENTIFY
+    name: Identify Systems
+    status: ACTIVE
+    description: Discover functional subsystems from component graph
+    trigger: decompose_model
+    preconditions:
+    - 'model: ArchitectureModel'
+    - 'manifest: dict'
+    postconditions:
+    - 'Returns: list[SystemCandidate]'
+    - return candidates
+    steps:
+    - Iterate over model.entities.components
+    - fblocks_meta = manifest.get()
+    - Iterate over groups.items()
+    - Return candidates
+  - id: BEH-DECOMPOSE-COMPLEXITY
+    name: Compute Complexity
+    status: ACTIVE
+    description: Calculate complexity metrics for subsystem partitioning
+    trigger: identify_systems
+    preconditions:
+    - 'comp: Component'
+    - 'model: ArchitectureModel'
+    postconditions:
+    - 'Returns: float'
+    - return symbol_weight + member_weight + function_weight + dep_weight
+    steps:
+    - Compute symbol_weight
+    - Compute member_weight
+    - Compute function_weight
+    - deps = sum()
+    - Compute dep_weight
+    - Return symbol_weight + member_weight + function_weight + dep_weight
+  - id: BEH-DECOMPOSE-PARTITION
+    name: Partition Subsystems
+    status: ACTIVE
+    description: Partition components into subsystems by affinity
+    preconditions:
+    - 'repo_path: Path'
+    postconditions:
+    - 'Returns: list[Subsystem]'
+    - return result
+    - return []
+    steps:
+    - test_files = _discover_test_files()
+    - source_files = _discover_source_files()
+    - Check not source_files
+    - Iterate over test_files
+    - Iterate over test_to_sources.items()
+    - Iterate over source_claimants.items()
+    - Iterate over source_assignment.items()
+    - Iterate over test_name_to_file.items()
+    - Iterate over test_files
+    - Iterate over source_files
   interfaces:
   - id: IF-PARSE-API
     name: Parser API
@@ -881,3 +1324,168 @@ relationships:
 - type: depends-on
   from: COMP-DECOMPOSE
   to: COMP-CORE
+- type: traces-to
+  from: COMP-CORE-MERGER
+  to: BEH-MERGE
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-IDS
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-IDS
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-REFS
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-REFS
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-ORPHANS
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-ORPHANS
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-STATUS
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-STATUS
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-CAPS
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-CAPS
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-META
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-META
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-V11
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-V11
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-REGEN
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-REGEN
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-PROFILE
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-PROFILE
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-VALIDATE-IMPROVE
+- type: traces-to
+  from: COMP-CORE-VALIDATOR
+  to: BEH-VALIDATE-IMPROVE
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-PARSE-LOAD
+- type: traces-to
+  from: COMP-CORE-PARSER
+  to: BEH-PARSE-LOAD
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-PARSE-SAVE
+- type: traces-to
+  from: COMP-CORE-PARSER
+  to: BEH-PARSE-SAVE
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-PARSE-DUMP
+- type: traces-to
+  from: COMP-CORE-PARSER
+  to: BEH-PARSE-DUMP
+- type: contains
+  from: BEH-SLICE
+  to: BEH-SLICE-FBLOCK
+- type: traces-to
+  from: COMP-CORE-SLICER
+  to: BEH-SLICE-FBLOCK
+- type: contains
+  from: BEH-SLICE
+  to: BEH-SLICE-LAYER
+- type: traces-to
+  from: COMP-CORE-SLICER
+  to: BEH-SLICE-LAYER
+- type: contains
+  from: BEH-SLICE
+  to: BEH-SLICE-STATUS
+- type: traces-to
+  from: COMP-CORE-SLICER
+  to: BEH-SLICE-STATUS
+- type: contains
+  from: BEH-SLICE
+  to: BEH-SLICE-ARTIFACT
+- type: traces-to
+  from: COMP-CORE-SLICER
+  to: BEH-SLICE-ARTIFACT
+- type: contains
+  from: BEH-SLICE
+  to: BEH-SLICE-COMPONENT
+- type: traces-to
+  from: COMP-CORE-SLICER
+  to: BEH-SLICE-COMPONENT
+- type: contains
+  from: BEH-DIFF
+  to: BEH-DIFF-ENTITIES
+- type: traces-to
+  from: COMP-CORE-DIFFER
+  to: BEH-DIFF-ENTITIES
+- type: contains
+  from: BEH-DIFF
+  to: BEH-DIFF-RELS
+- type: traces-to
+  from: COMP-CORE-DIFFER
+  to: BEH-DIFF-RELS
+- type: contains
+  from: BEH-MERGE
+  to: BEH-MERGE-MANIFEST
+- type: traces-to
+  from: COMP-CORE-MERGER
+  to: BEH-MERGE-MANIFEST
+- type: contains
+  from: BEH-MERGE
+  to: BEH-MERGE-ENRICH
+- type: traces-to
+  from: COMP-CORE-MERGER
+  to: BEH-MERGE-ENRICH
+- type: contains
+  from: BEH-MERGE
+  to: BEH-MERGE-COMPACT
+- type: traces-to
+  from: COMP-CORE-MERGER
+  to: BEH-MERGE-COMPACT
+- type: contains
+  from: BEH-MERGE
+  to: BEH-MERGE-COMPOSE
+- type: traces-to
+  from: COMP-CORE-MERGER
+  to: BEH-MERGE-COMPOSE
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-DECOMPOSE-IDENTIFY
+- type: traces-to
+  from: COMP-CORE-DECOMPOSER
+  to: BEH-DECOMPOSE-IDENTIFY
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-DECOMPOSE-COMPLEXITY
+- type: traces-to
+  from: COMP-CORE-DECOMPOSER
+  to: BEH-DECOMPOSE-COMPLEXITY
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-DECOMPOSE-PARTITION
+- type: traces-to
+  from: COMP-CORE-DECOMPOSER
+  to: BEH-DECOMPOSE-PARTITION

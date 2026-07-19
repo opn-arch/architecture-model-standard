@@ -173,8 +173,9 @@ relationships:
 
 - Schema version: 1.4 (added Constant, FunctionSignature, TestContract on Component)
 - Package version: 0.3.0
-- Test suite: 542 passed, 114 skipped
+- Test suite: 453 passed, 97 skipped
 - Validation score: 100/100, 0 orphaned entities
+- Model entities: 79 behaviors (9 parent + 70 sub), 25 components, 237 relationships
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
 

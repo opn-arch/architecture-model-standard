@@ -85,6 +85,11 @@ def main(argv: list[str] | None = None) -> int:
     p_coverage.add_argument("--project", "-p", help="Project path for manifest generation (default: model directory)")
     p_coverage.add_argument("--manifest", help="Path to pre-generated manifest JSON")
 
+    # --- visualize ---
+    p_visualize = subparsers.add_parser("visualize", help="Generate Mermaid diagrams from architecture model")
+    p_visualize.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
+    p_visualize.add_argument("-o", "--output", default="output/diagrams", help="Output directory (default: output/diagrams)")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -103,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
         "coverage": _cmd_coverage,
         "enrich": _cmd_enrich,
         "decompose": _cmd_decompose,
+        "visualize": _cmd_visualize,
     }
     return handlers[args.command](args)
 
@@ -465,6 +471,98 @@ def _cmd_coverage(args) -> int:
     result = coverage_report(model, manifest)
     print(result.summary())
     return 0 if result.overall_score >= 80 else 1
+
+
+def _cmd_visualize(args) -> int:
+    """Generate Mermaid diagrams from architecture model."""
+    import yaml as yaml_mod
+    from ..core.parser import load_model
+    from .visualize import generate_overview_diagram, generate_block_diagram, generate_dependency_diagram
+
+    root = Path(args.path).resolve()
+    model_path = root / ".architecture-model.yaml"
+    if not model_path.exists():
+        print(f"ERROR: No .architecture-model.yaml in {root}")
+        return 1
+
+    model = load_model(model_path)
+    out_dir = Path(args.output)
+    if not out_dir.is_absolute():
+        out_dir = root / out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    generated = []
+
+    # Overview diagram
+    overview = generate_overview_diagram(model)
+    p = out_dir / "overview.md"
+    p.write_text(f"# Architecture Overview\n\n```mermaid\n{overview}\n```\n", encoding="utf-8")
+    generated.append("overview.md")
+
+    # Dependency diagram
+    deps = generate_dependency_diagram(model)
+    p = out_dir / "dependencies.md"
+    p.write_text(f"# Component Dependencies\n\n```mermaid\n{deps}\n```\n", encoding="utf-8")
+    generated.append("dependencies.md")
+
+    # Block detail diagrams — load sub-behaviors
+    sub_behaviors_path = root / ".architecture-models" / "sub-behaviors.yaml"
+    if sub_behaviors_path.exists():
+        with open(sub_behaviors_path, encoding="utf-8") as f:
+            sb_data = yaml_mod.safe_load(f)
+        sub_behaviors = sb_data.get("behaviors", [])
+
+        # Group sub-behaviors by parent_behavior
+        from collections import defaultdict
+        parent_groups: dict[str, list] = defaultdict(list)
+        for sb in sub_behaviors:
+            pb = sb.get("parent_behavior", "")
+            if pb:
+                parent_groups[pb].append(sb)
+
+        # Map behavior -> f_block via traces-to relationships
+        beh_to_fblock: dict[str, str] = {}
+        for rel in model.relationships:
+            if rel.type.value == "traces-to":
+                # Find component's f_block
+                for comp in model.entities.components:
+                    if comp.id == rel.from_id and comp.f_block:
+                        beh_to_fblock[rel.to_id] = comp.f_block
+                        break
+
+        # Get f_block names from capabilities
+        fblock_names: dict[str, str] = {}
+        for cap in model.entities.capabilities:
+            if cap.f_block:
+                fblock_names[cap.f_block] = cap.name
+
+        # Group parent behaviors by f_block
+        fblock_behs: dict[str, list[str]] = defaultdict(list)
+        for parent_beh_id in parent_groups:
+            fb = beh_to_fblock.get(parent_beh_id, "")
+            if fb:
+                fblock_behs[fb].append(parent_beh_id)
+
+        for fb in sorted(fblock_behs):
+            block_name = fblock_names.get(fb, fb)
+            diagrams = []
+            for parent_beh_id in sorted(fblock_behs[fb]):
+                d = generate_block_diagram(model, sub_behaviors, block_name, parent_beh_id)
+                if d:
+                    diagrams.append(d)
+            if not diagrams:
+                continue
+            combined = "\n\n".join(f"```mermaid\n{d}\n```" for d in diagrams)
+            filename = f"{fb}-detail.md"
+            p = out_dir / filename
+            p.write_text(f"# {fb}: {block_name}\n\n{combined}\n", encoding="utf-8")
+            generated.append(filename)
+
+    print(f"Generated diagrams in {out_dir}/")
+    for g in sorted(generated):
+        print(f"  {g}")
+
+    return 0
 
 
 if __name__ == "__main__":

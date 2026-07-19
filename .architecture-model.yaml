@@ -88,6 +88,22 @@ entities:
     name: Model Extraction from Code
     status: ACTIVE
     description: Extract architecture model entities and relationships from source code analysis
+  - id: BEH-SLICE
+    name: Model Slicing
+    status: ACTIVE
+    description: Extract sub-models by various criteria
+  - id: BEH-DIFF
+    name: Model Diffing
+    status: ACTIVE
+    description: Compare two architecture models
+  - id: BEH-MERGE
+    name: Model Merging
+    status: ACTIVE
+    description: Merge and compose architecture models
+  - id: BEH-DECOMPOSE
+    name: Model Decomposition
+    status: ACTIVE
+    description: Decompose model into subsystems
   interfaces:
   - id: IF-CLI
     name: CLI Interface
@@ -2481,3 +2497,15 @@ relationships:
 - type: depends-on
   from: COMP-DECOMPOSE
   to: COMP-CONFIG
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-SLICE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-DIFF
+- type: traces-to
+  from: COMP-CORE-MERGER
+  to: BEH-MERGE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-DECOMPOSE

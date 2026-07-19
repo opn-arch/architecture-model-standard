@@ -12,6 +12,41 @@ entities:
     status: ACTIVE
     description: File discovery, exclusion patterns, and shared helper functions
     f_block: F9
+  behaviors:
+  - id: BEH-UTILS-DISCOVER
+    name: File Discovery
+    status: ACTIVE
+    description: Discover Python source files with exclusion patterns
+    trigger: discover_source_files
+    preconditions:
+    - 'directory: Path'
+    - 'recursive: bool'
+    - 'exclude_init: bool'
+    - 'Guard: not directory.is_dir()'
+    postconditions:
+    - 'Returns: list[Path]'
+    - return files
+    - return []
+    steps:
+    - Check not directory.is_dir()
+    - Compute glob_fn
+    - files = sorted()
+    - Call logger.debug()
+    - Return files
+  - id: BEH-UTILS-TESTS
+    name: Test File Discovery
+    status: ACTIVE
+    description: Discover test files matching source modules
+    preconditions:
+    - 'project_root: Path'
+    postconditions:
+    - 'Returns: list[Path]'
+    - return tests
+    steps:
+    - all_py = collect_py_files()
+    - Compute tests
+    - Call logger.info()
+    - Return tests
   components:
   - id: COMP-UTILS
     name: utils
@@ -94,3 +129,15 @@ relationships:
 - type: depends-on
   from: COMP-MANIFEST-BLOCKS
   to: COMP-UTILS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-UTILS-DISCOVER
+- type: traces-to
+  from: COMP-UTILS
+  to: BEH-UTILS-DISCOVER
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-UTILS-TESTS
+- type: traces-to
+  from: COMP-UTILS
+  to: BEH-UTILS-TESTS

@@ -17,6 +17,277 @@ entities:
     name: Manifest Generation
     status: ACTIVE
     description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
+  - id: BEH-SCAN-PARSE
+    name: AST Parsing
+    status: ACTIVE
+    description: Parse Python source file into AST
+    trigger: _scan_file
+    preconditions:
+    - 'root: Path'
+    - 'filepath: Path'
+    postconditions:
+    - 'Returns: ModuleInfo'
+    steps:
+    - rel_path = str()
+    - line_count = _file_line_count()
+    - status = _determine_status()
+    - tree = _parse_file_ast()
+    - Compute docstring
+    - Check tree is not None
+    - name = _derive_name_from_docstring()
+    - Call logger.debug()
+    - Return ModuleInfo(file=rel_path, name=name, docstring=docstring, fu
+  - id: BEH-SCAN-FUNCTIONS
+    name: Function Extraction
+    status: ACTIVE
+    description: Extract function definitions with signatures, decorators, docstrings
+    trigger: scan_file
+    preconditions:
+    - 'tree: ast.Module'
+    postconditions:
+    - 'Returns: list[FunctionInfo]'
+    - return functions
+    steps:
+    - Iterate over ast.iter_child_nodes(tree)
+    - Return functions
+  - id: BEH-SCAN-CLASSES
+    name: Class Extraction
+    status: ACTIVE
+    description: Extract class definitions with methods and attributes
+    trigger: scan_file
+    preconditions:
+    - 'tree: ast.Module'
+    postconditions:
+    - 'Returns: list[ClassInfo]'
+    - return classes
+    steps:
+    - Iterate over ast.iter_child_nodes(tree)
+    - Return classes
+  - id: BEH-SCAN-IMPORTS
+    name: Import Extraction
+    status: ACTIVE
+    description: Extract import statements with aliases and relative resolution
+    trigger: scan_file
+    preconditions:
+    - 'tree: ast.Module'
+    postconditions:
+    - 'Returns: list[str]'
+    - return imports
+    steps:
+    - Iterate over ast.walk(tree)
+    - Return imports
+  - id: BEH-SCAN-CONSTANTS
+    name: Constant Extraction
+    status: ACTIVE
+    description: Extract module-level constants and assignments
+    trigger: scan_file
+    preconditions:
+    - 'tree: ast.Module'
+    postconditions:
+    - 'Returns: dict[str, str]'
+    - return consts
+    steps:
+    - Iterate over ast.iter_child_nodes(tree)
+    - Return consts
+  - id: BEH-SCAN-METRICS
+    name: Metrics Computation
+    status: ACTIVE
+    description: Compute line count, status, exports for scanned file
+    trigger: scan_file
+    preconditions:
+    - 'filepath: Path'
+    postconditions:
+    - 'Returns: int'
+    - return len(filepath.read_text(encoding='utf-8').splitlines())
+    - return 0
+  - id: BEH-MANIFEST-CONFIG
+    name: Config Loading
+    status: ACTIVE
+    description: Load or discover project configuration for manifest generation
+    preconditions:
+    - 'project_root: Path'
+    - 'output_dir: Path | None'
+    postconditions:
+    - 'Returns: dict[str, Any]'
+    - return manifest_dict
+    - return data
+    steps:
+    - config = get_config()
+    - Check output_dir is None
+    - Check manifest_path.exists()
+    - manifest = generate_manifest()
+    - manifest_dict = manifest.to_dict()
+    - Call manifest_path.parent.mkdir()
+    - Call manifest_path.write_text()
+    - Return manifest_dict
+  - id: BEH-MANIFEST-METRICS
+    name: Project Metrics
+    status: ACTIVE
+    description: Compute project-wide metrics (total lines, file counts)
+  - id: BEH-MANIFEST-BLOCKS
+    name: Block Assembly
+    status: ACTIVE
+    description: Assemble functional blocks from config with file enumeration
+  - id: BEH-MANIFEST-SCAN
+    name: Block Scanning
+    status: ACTIVE
+    description: Scan all files within each block for AST data
+  - id: BEH-MANIFEST-IFACE
+    name: Interface Discovery
+    status: ACTIVE
+    description: Discover inter-block interfaces from import analysis
+  - id: BEH-MANIFEST-ASSEMBLE
+    name: Manifest Assembly
+    status: ACTIVE
+    description: Assemble final manifest from blocks, interfaces, metrics
+    trigger: load_or_generate_manifest
+    preconditions:
+    - 'project_root: Path'
+    - 'config: Optional[Any]'
+    postconditions:
+    - 'Returns: Manifest'
+    steps:
+    - root = project_root.resolve()
+    - report = ScanReport()
+    - Check config is None
+    - Call logger.info()
+    - metrics_result = compute_metrics()
+    - Call logger.info()
+    - Compute blocks_dict
+    - Call logger.info()
+    - Iterate over blocks_dict.items()
+    - Call logger.info()
+  - id: BEH-BODYHINT-CLASSIFY
+    name: Complexity Classification
+    status: ACTIVE
+    description: Classify function complexity as TRIVIAL/SHORT/COMPLEX
+    preconditions:
+    - 'source: str'
+    - 'func_name: str'
+    postconditions:
+    - 'Returns: BodyComplexity'
+    - return BodyComplexity.TRIVIAL
+    - return BodyComplexity.SHORT
+    - return BodyComplexity.COMPLEX
+    steps:
+    - tree = ast.parse()
+    - node = _find_function()
+    - body = _strip_docstring()
+    - count = len()
+    - Check count <= 1
+  - id: BEH-BODYHINT-SUMMARIZE
+    name: Body Summarization
+    status: ACTIVE
+    description: Generate body_hint text summarizing function implementation
+    preconditions:
+    - 'source: str'
+    - 'func_name: str'
+    - 'class_name: str | None'
+    postconditions:
+    - 'Returns: str'
+    - return ast.unparse(body[0]) if body else ''
+    - return '; '.join((ast.unparse(s) for s in body))
+    - return _summarize_complex_body(body)
+    steps:
+    - tree = ast.parse()
+    - node = _find_function()
+    - body = _strip_docstring()
+    - count = len()
+    - Check count <= 1
+  - id: BEH-TEST-DISCOVER
+    name: Test Method Discovery
+    status: ACTIVE
+    description: Find test methods/functions in test files
+    trigger: analyze_test_file
+    preconditions:
+    - 'tree: ast.Module'
+    postconditions:
+    - 'Returns: list[tuple[str, ast.AST]]'
+    - return methods
+    steps:
+    - Iterate over ast.walk(tree)
+    - Return methods
+  - id: BEH-TEST-ASSERTIONS
+    name: Assertion Pattern Matching
+    status: ACTIVE
+    description: Extract assertion patterns from test methods (unittest + pytest)
+    trigger: analyze_test_file
+    preconditions:
+    - 'node: ast.AST'
+    - 'test_file: str'
+    - 'method_name: str'
+    postconditions:
+    - 'Returns: list[TestContract]'
+    - return contracts
+    steps:
+    - Iterate over ast.walk(node)
+    - Return contracts
+  - id: BEH-IFACE-RESOLVE
+    name: Import Resolution
+    status: ACTIVE
+    description: Resolve relative and absolute imports to interface edges
+    trigger: _derive_interfaces
+    preconditions:
+    - 'modules: list[ModuleInfo]'
+    - 'root: Path'
+    postconditions:
+    - 'Returns: list[InterfaceEdge]'
+    - return interfaces
+    - return None
+    - return slash + '.py'
+    - return init + '.py'
+    steps:
+    - Iterate over modules
+    - Iterate over modules
+    - Call logger.debug()
+    - Return interfaces
+  - id: BEH-IFACE-DEDUP
+    name: Interface Deduplication
+    status: ACTIVE
+    description: Deduplicate interface edges from multiple import sources
+    preconditions:
+    - 'modules: list[dict[str, Any]]'
+    - 'root: Path'
+    postconditions:
+    - 'Returns: list[dict[str, Any]]'
+    - return [e.to_dict() for e in edges]
+    steps:
+    - Call warnings.warn()
+    - Compute typed_modules
+    - edges = derive_interfaces()
+    - Return [e.to_dict() for e in edges]
+  - id: BEH-RECURSIVE-SCAN
+    name: Per-Block Deep Scan
+    status: ACTIVE
+    description: Perform deep AST scan within a single F-block
+    preconditions:
+    - 'project_root: Path'
+    - 'parent_model: str'
+    postconditions:
+    - 'Returns: dict[str, RecursiveManifest]'
+    - return results
+    steps:
+    - config = get_config()
+    - Iterate over config.fblock_dict.items()
+    - block_deps = compute_block_dependencies()
+    - Iterate over block_deps.items()
+    - Return results
+  - id: BEH-RECURSIVE-DEPS
+    name: Cross-Block Dependencies
+    status: ACTIVE
+    description: Compute dependency graph between F-blocks
+    trigger: generate_recursive_manifests
+    preconditions:
+    - 'manifests: dict[str, RecursiveManifest]'
+    postconditions:
+    - 'Returns: dict[str, list[str]]'
+    - return dependencies
+    - return None
+    - return bid
+    steps:
+    - Iterate over config.fblock_dict.items()
+    - Iterate over manifests.items()
+    - Return dependencies
   interfaces:
   - id: IF-MANIFEST-API
     name: Manifest API
@@ -1077,3 +1348,123 @@ relationships:
 - type: traces-to
   from: COMP-MANIFEST-GENERATOR
   to: BEH-MANIFEST
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-SCAN-PARSE
+- type: traces-to
+  from: COMP-MANIFEST-SCANNER
+  to: BEH-SCAN-PARSE
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-SCAN-FUNCTIONS
+- type: traces-to
+  from: COMP-MANIFEST-SCANNER
+  to: BEH-SCAN-FUNCTIONS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-SCAN-CLASSES
+- type: traces-to
+  from: COMP-MANIFEST-SCANNER
+  to: BEH-SCAN-CLASSES
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-SCAN-IMPORTS
+- type: traces-to
+  from: COMP-MANIFEST-SCANNER
+  to: BEH-SCAN-IMPORTS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-SCAN-CONSTANTS
+- type: traces-to
+  from: COMP-MANIFEST-SCANNER
+  to: BEH-SCAN-CONSTANTS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-SCAN-METRICS
+- type: traces-to
+  from: COMP-MANIFEST-SCANNER
+  to: BEH-SCAN-METRICS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-MANIFEST-CONFIG
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST-CONFIG
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-MANIFEST-METRICS
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST-METRICS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-MANIFEST-BLOCKS
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST-BLOCKS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-MANIFEST-SCAN
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST-SCAN
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-MANIFEST-IFACE
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST-IFACE
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-MANIFEST-ASSEMBLE
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-MANIFEST-ASSEMBLE
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-BODYHINT-CLASSIFY
+- type: traces-to
+  from: COMP-MANIFEST-BODY-HINTS
+  to: BEH-BODYHINT-CLASSIFY
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-BODYHINT-SUMMARIZE
+- type: traces-to
+  from: COMP-MANIFEST-BODY-HINTS
+  to: BEH-BODYHINT-SUMMARIZE
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-TEST-DISCOVER
+- type: traces-to
+  from: COMP-MANIFEST-TEST-ANALYZER
+  to: BEH-TEST-DISCOVER
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-TEST-ASSERTIONS
+- type: traces-to
+  from: COMP-MANIFEST-TEST-ANALYZER
+  to: BEH-TEST-ASSERTIONS
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-IFACE-RESOLVE
+- type: traces-to
+  from: COMP-MANIFEST-INTERFACES
+  to: BEH-IFACE-RESOLVE
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-IFACE-DEDUP
+- type: traces-to
+  from: COMP-MANIFEST-INTERFACES
+  to: BEH-IFACE-DEDUP
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-RECURSIVE-SCAN
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-RECURSIVE-SCAN
+- type: contains
+  from: BEH-MANIFEST
+  to: BEH-RECURSIVE-DEPS
+- type: traces-to
+  from: COMP-MANIFEST-GENERATOR
+  to: BEH-RECURSIVE-DEPS

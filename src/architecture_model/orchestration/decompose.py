@@ -16,8 +16,10 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import yaml
+
 from architecture_model.config.loader import get_config
-from architecture_model.core.parser import load_model, save_model
+from architecture_model.core.parser import load_model, save_model, _parse_behavior
 from architecture_model.core.types import (
     ArchitectureModel,
     Entities,
@@ -139,6 +141,65 @@ def _collect_relationships(model, entity_ids, block_comp_ids):
     return rels
 
 
+def _inject_sub_behaviors(sub_model, sub_behaviors_path):
+    """Inject sub-behaviors from sub-behaviors.yaml into a sub-model.
+
+    For each sub-behavior whose component is in the sub-model's component list,
+    adds the behavior and creates contains + traces-to relationships.
+    """
+    if not sub_behaviors_path.exists():
+        logger.warning("No sub-behaviors file at %s", sub_behaviors_path)
+        return
+
+    with open(sub_behaviors_path) as f:
+        data = yaml.safe_load(f)
+
+    if not data or "behaviors" not in data:
+        return
+
+    comp_ids = {c.id for c in sub_model.entities.components}
+    existing_beh_ids = {b.id for b in sub_model.entities.behaviors}
+
+    for entry in data["behaviors"]:
+        comp_id = entry.pop("component", "")
+        parent_beh = entry.pop("parent_behavior", "")
+
+        if comp_id not in comp_ids:
+            # Put them back for next call
+            entry["component"] = comp_id
+            entry["parent_behavior"] = parent_beh
+            continue
+
+        beh_id = entry.get("id", "")
+        if beh_id in existing_beh_ids:
+            entry["component"] = comp_id
+            entry["parent_behavior"] = parent_beh
+            continue
+
+        behavior = _parse_behavior(entry)
+        sub_model.entities.behaviors.append(behavior)
+        existing_beh_ids.add(beh_id)
+
+        # Add contains relationship from parent behavior
+        if parent_beh:
+            sub_model.relationships.append(Relationship(
+                from_id=parent_beh,
+                to_id=beh_id,
+                type=RelationType.CONTAINS,
+            ))
+
+        # Add traces-to relationship from component
+        sub_model.relationships.append(Relationship(
+            from_id=comp_id,
+            to_id=beh_id,
+            type=RelationType.TRACES_TO,
+        ))
+
+        # Restore for next sub-model
+        entry["component"] = comp_id
+        entry["parent_behavior"] = parent_beh
+
+
 def decompose_model(project_root):
     """Generate sub-models for each F-block by tracing parent model relationships.
 
@@ -214,6 +275,10 @@ def decompose_model(project_root):
             ),
             relationships=relationships,
         )
+
+        # Inject sub-behaviors from stripped parent
+        sub_behaviors_path = project_root / ".architecture-models" / "sub-behaviors.yaml"
+        _inject_sub_behaviors(sub_model, sub_behaviors_path)
 
         results[block_id] = sub_model
         logger.info(

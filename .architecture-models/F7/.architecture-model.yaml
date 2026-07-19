@@ -12,6 +12,28 @@ entities:
     status: ACTIVE
     description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
     f_block: F7
+  behaviors:
+  - id: BEH-PROFILE-LOAD
+    name: Load Profile
+    status: ACTIVE
+    description: Resolve profile path, load YAML, parse into dataclass
+    preconditions:
+    - 'name_or_path: str'
+    - 'Guard: not path.exists()'
+    postconditions:
+    - 'Returns: DomainProfile'
+    - return profile
+    steps:
+    - Check name_or_path in BUILTIN_PROFILES
+    - Check not path.exists()
+    - data = yaml.safe_load()
+    - profile = DomainProfile.from_dict()
+    - Call logger.info()
+    - Return profile
+  - id: BEH-PROFILE-APPLY
+    name: Apply Profile Rules
+    status: ACTIVE
+    description: Apply domain-specific validation rules from profile
   interfaces:
   - id: IF-PROFILE-API
     name: Profile API
@@ -66,3 +88,15 @@ relationships:
 - type: depends-on
   from: COMP-CORE-VALIDATOR
   to: COMP-PROFILES
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-PROFILE-LOAD
+- type: traces-to
+  from: COMP-PROFILES
+  to: BEH-PROFILE-LOAD
+- type: contains
+  from: BEH-VALIDATE
+  to: BEH-PROFILE-APPLY
+- type: traces-to
+  from: COMP-PROFILES
+  to: BEH-PROFILE-APPLY

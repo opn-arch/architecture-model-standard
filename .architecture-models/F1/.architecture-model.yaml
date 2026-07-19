@@ -29,6 +29,117 @@ entities:
     name: Auto-Enrichment
     status: ACTIVE
     description: Enrich architecture model with function signatures, constants, and test contracts from AST
+  - id: BEH-SLICE
+    name: Model Slicing
+    status: ACTIVE
+    description: Extract sub-models by various criteria
+  - id: BEH-DIFF
+    name: Model Diffing
+    status: ACTIVE
+    description: Compare two architecture models
+  - id: BEH-DECOMPOSE
+    name: Model Decomposition
+    status: ACTIVE
+    description: Decompose model into subsystems
+  - id: BEH-CLI-SLICE
+    name: CLI Slice Command
+    status: ACTIVE
+    description: Execute model slicing from command line
+    postconditions:
+    - 'Returns: int'
+    - return 0
+    - return 1
+    steps:
+    - model = load_model()
+    - Check args.fblock
+    - Call print()
+    - Check args.output
+    - Return 0
+  - id: BEH-CLI-DIFF
+    name: CLI Diff Command
+    status: ACTIVE
+    description: Execute model diff from command line
+    postconditions:
+    - 'Returns: int'
+    - return 0
+    steps:
+    - old_model = load_model()
+    - new_model = load_model()
+    - diff = diff_models()
+    - Call print()
+    - Check diff.has_changes
+    - Return 0
+  - id: BEH-CLI-STATS
+    name: CLI Stats Command
+    status: ACTIVE
+    description: Display model statistics from command line
+    postconditions:
+    - 'Returns: int'
+    - return 0
+    steps:
+    - model = load_model()
+    - Call print()
+    - Call print()
+    - Call print()
+    - Call print()
+    - Call print()
+    - Check model.meta.manifest_hash
+    - Call print()
+    - Call print()
+    - Call print()
+  - id: BEH-CLI-IMPACT
+    name: CLI Impact Command
+    status: ACTIVE
+    description: Trace change impact from command line
+    postconditions:
+    - 'Returns: int'
+    - return 0
+    - return 1
+    steps:
+    - model = load_model()
+    - Compute entity_id
+    - Compute depth
+    - all_ids = set()
+    - Iterate over [model.entities.actors, model.entities.capabilities, model.entities.behaviors, model.entities.interfaces,
+      model.entities.constraints, model.entities.layers, model.entities.components]
+    - Check entity_id not in all_ids
+    - Iterate over model.relationships
+    - Compute queue
+    - Call print()
+    - Call print()
+  - id: BEH-CLI-DECOMPOSE
+    name: CLI Decompose Command
+    status: ACTIVE
+    description: Generate per-F-block sub-models from command line
+    postconditions:
+    - 'Returns: int'
+    - return 0
+    - return 1
+    steps:
+    - root = Path(args.path).resolve()
+    - Check not root.is_dir()
+    - Compute model_path
+    - Check not model_path.exists()
+    - Call print()
+    - sub_models = decompose_model()
+    - Check not sub_models
+    - Compute out_dir
+    - written = write_sub_models()
+    - Call print()
+  - id: BEH-CLI-COVERAGE
+    name: CLI Coverage Command
+    status: ACTIVE
+    description: Display regen coverage metrics from command line
+    postconditions:
+    - 'Returns: int'
+    - return 0 if result.overall_score >= 80 else 1
+    steps:
+    - model = load_model()
+    - model_dir = Path(args.model).parent.resolve()
+    - Check args.manifest
+    - result = coverage_report()
+    - Call print()
+    - Return 0 if result.overall_score >= 80 else 1
   interfaces:
   - id: IF-CLI
     name: CLI Interface
@@ -105,3 +216,48 @@ relationships:
 - type: traces-to
   from: COMP-CLI
   to: BEH-ENRICH
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-SLICE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-DIFF
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-DECOMPOSE
+- type: contains
+  from: BEH-INIT
+  to: BEH-CLI-SLICE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-CLI-SLICE
+- type: contains
+  from: BEH-INIT
+  to: BEH-CLI-DIFF
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-CLI-DIFF
+- type: contains
+  from: BEH-INIT
+  to: BEH-CLI-STATS
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-CLI-STATS
+- type: contains
+  from: BEH-INIT
+  to: BEH-CLI-IMPACT
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-CLI-IMPACT
+- type: contains
+  from: BEH-INIT
+  to: BEH-CLI-DECOMPOSE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-CLI-DECOMPOSE
+- type: contains
+  from: BEH-INIT
+  to: BEH-CLI-COVERAGE
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-CLI-COVERAGE

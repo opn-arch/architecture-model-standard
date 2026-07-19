@@ -16,6 +16,114 @@ entities:
     name: Auto-Enrichment
     status: ACTIVE
     description: Enrich architecture model with function signatures, constants, and test contracts from AST
+  - id: BEH-ENRICH-SIGS
+    name: Signature Enrichment
+    status: ACTIVE
+    description: Extract function signatures from AST and add to components
+    trigger: enrich_model
+    preconditions:
+    - 'comp: Component'
+    - 'root: Path'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Compute existing_names
+    - Iterate over comp.files
+  - id: BEH-ENRICH-CONSTS
+    name: Constant Enrichment
+    status: ACTIVE
+    description: Extract module-level constants and add to components
+    trigger: enrich_model
+    preconditions:
+    - 'comp: Component'
+    - 'root: Path'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Compute existing_names
+    - Iterate over comp.files
+  - id: BEH-ENRICH-TESTS
+    name: Test Contract Enrichment
+    status: ACTIVE
+    description: Discover test files via 7 naming conventions and extract contracts
+    trigger: enrich_model
+    preconditions:
+    - 'comp: Component'
+    - 'root: Path'
+    postconditions:
+    - 'Returns: None'
+    steps:
+    - Compute existing_methods
+    - test_files = _discover_test_files()
+    - Iterate over test_files
+  - id: BEH-ORCH-FIND-COMPS
+    name: Find Block Components
+    status: ACTIVE
+    description: Find all components belonging to an F-block
+    trigger: decompose_model
+    postconditions:
+    - return result
+    steps:
+    - Compute result
+    - block_files_set = set()
+    - Iterate over model.entities.components
+    - Return result
+  - id: BEH-ORCH-FIND-PARENT
+    name: Find Parent Component
+    status: ACTIVE
+    description: Locate parent component for a block's component hierarchy
+    trigger: decompose_model
+    postconditions:
+    - return (None, None)
+    - return (block_components[0].id, block_components[0])
+    - return (parent_id, parent_comp)
+    steps:
+    - Compute block_ids
+    - Iterate over model.relationships
+    - Check len(block_components) == 1
+    - Return (None, None)
+  - id: BEH-ORCH-TRACE
+    name: Trace Entities
+    status: ACTIVE
+    description: Trace relationships to find connected capabilities, interfaces, behaviors, constraints
+    trigger: decompose_model
+    postconditions:
+    - return (caps, ifaces, behaviors, constraints)
+    steps:
+    - cap_ids = set()
+    - iface_ids = set()
+    - behavior_ids = set()
+    - constraint_ids = set()
+    - Iterate over model.relationships
+    - Compute caps
+    - Compute ifaces
+    - Compute behaviors
+    - Compute constraints
+    - Return (caps, ifaces, behaviors, constraints)
+  - id: BEH-ORCH-COLLECT-RELS
+    name: Collect Relationships
+    status: ACTIVE
+    description: Collect internal and boundary relationships for sub-model
+    trigger: decompose_model
+    postconditions:
+    - return rels
+    steps:
+    - Compute rels
+    - seen = set()
+    - Iterate over model.relationships
+    - Return rels
+  - id: BEH-ORCH-BUILD
+    name: Build Sub-Model
+    status: ACTIVE
+    description: Assemble final sub-model YAML from traced entities
+    postconditions:
+    - return results
+    steps:
+    - model = load_model()
+    - config = get_config()
+    - Compute results
+    - Iterate over config.fblock_dict.items()
+    - Return results
   interfaces:
   - id: IF-ENRICH-API
     name: Enrichment API
@@ -123,3 +231,51 @@ relationships:
 - type: depends-on
   from: COMP-DECOMPOSE
   to: COMP-CONFIG
+- type: contains
+  from: BEH-ENRICH
+  to: BEH-ENRICH-SIGS
+- type: traces-to
+  from: COMP-ENRICH
+  to: BEH-ENRICH-SIGS
+- type: contains
+  from: BEH-ENRICH
+  to: BEH-ENRICH-CONSTS
+- type: traces-to
+  from: COMP-ENRICH
+  to: BEH-ENRICH-CONSTS
+- type: contains
+  from: BEH-ENRICH
+  to: BEH-ENRICH-TESTS
+- type: traces-to
+  from: COMP-ENRICH
+  to: BEH-ENRICH-TESTS
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-ORCH-FIND-COMPS
+- type: traces-to
+  from: COMP-DECOMPOSE
+  to: BEH-ORCH-FIND-COMPS
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-ORCH-FIND-PARENT
+- type: traces-to
+  from: COMP-DECOMPOSE
+  to: BEH-ORCH-FIND-PARENT
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-ORCH-TRACE
+- type: traces-to
+  from: COMP-DECOMPOSE
+  to: BEH-ORCH-TRACE
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-ORCH-COLLECT-RELS
+- type: traces-to
+  from: COMP-DECOMPOSE
+  to: BEH-ORCH-COLLECT-RELS
+- type: contains
+  from: BEH-DECOMPOSE
+  to: BEH-ORCH-BUILD
+- type: traces-to
+  from: COMP-DECOMPOSE
+  to: BEH-ORCH-BUILD
