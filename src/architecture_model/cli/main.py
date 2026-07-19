@@ -74,6 +74,11 @@ def main(argv: list[str] | None = None) -> int:
     p_enrich.add_argument("model", help="Path to architecture-model.yaml")
     p_enrich.add_argument("--root", default=".", help="Project root directory")
 
+    # --- decompose ---
+    p_decompose = subparsers.add_parser("decompose", help="Generate per-F-block sub-models from parent model")
+    p_decompose.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
+    p_decompose.add_argument("-o", "--output", help="Output directory (default: .architecture-models/)")
+
     # --- coverage ---
     p_coverage = subparsers.add_parser("coverage", help="Analyze model coverage against code reality")
     p_coverage.add_argument("model", help="Path to .architecture-model.yaml")
@@ -97,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
         "manifest": _cmd_manifest,
         "coverage": _cmd_coverage,
         "enrich": _cmd_enrich,
+        "decompose": _cmd_decompose,
     }
     return handlers[args.command](args)
 
@@ -399,6 +405,39 @@ def _cmd_enrich(args) -> int:
     print(f"  Signatures:     {before_sigs} -> {after_sigs} (+{after_sigs - before_sigs})")
     print(f"  Constants:      {before_consts} -> {after_consts} (+{after_consts - before_consts})")
     print(f"  Test contracts: {before_tests} -> {after_tests} (+{after_tests - before_tests})")
+    return 0
+
+
+def _cmd_decompose(args) -> int:
+    """Generate per-F-block sub-models from parent model + recursive manifests."""
+    from ..decompose import decompose_model, write_sub_models
+
+    root = Path(args.path).resolve()
+    if not root.is_dir():
+        print(f"ERROR: {root} is not a directory")
+        return 1
+
+    model_path = root / ".architecture-model.yaml"
+    if not model_path.exists():
+        print(f"ERROR: No .architecture-model.yaml in {root}")
+        return 1
+
+    print(f"Decomposing: {root}")
+    sub_models = decompose_model(root)
+
+    if not sub_models:
+        print("No sub-models generated (no F-blocks with matching components)")
+        return 1
+
+    out_dir = Path(args.output) if args.output else root / ".architecture-models"
+    written = write_sub_models(sub_models, out_dir)
+
+    print(f"\nGenerated {len(written)} sub-models in {out_dir}")
+    for p in written:
+        block_id = p.parent.name
+        m = sub_models[block_id]
+        print(f"  {block_id}: {m.entity_count} entities, {m.relationship_count} relationships")
+
     return 0
 
 

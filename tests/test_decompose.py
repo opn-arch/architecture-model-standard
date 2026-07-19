@@ -166,3 +166,14 @@ def test_write_sub_models(tmp_path):
     data = yaml.safe_load((out_dir / block_id / ".architecture-model.yaml").read_text())
     assert data["meta"]["parent_model"] == "../../.architecture-model.yaml"
     assert "entities" in data
+
+
+def test_decompose_cli(tmp_path):
+    """Test the CLI decompose command end-to-end."""
+    from architecture_model.cli.main import main
+
+    root, block_id = _setup_project(tmp_path)
+    out_dir = tmp_path / ".architecture-models"
+    ret = main(["decompose", str(root), "-o", str(out_dir)])
+    assert ret == 0
+    assert (out_dir / block_id / ".architecture-model.yaml").exists()
