@@ -7,7 +7,7 @@ meta:
   refines_component: COMP-PROFILES
 entities:
   capabilities:
-  - id: CAP-F8
+  - id: CAP-PROFILES
     name: Domain Profiles
     status: ACTIVE
     description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
@@ -78,7 +78,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-PROFILES
-  to: CAP-F8
+  to: CAP-PROFILES
 - type: exposes
   from: COMP-PROFILES
   to: IF-PROFILE-API
@@ -100,3 +100,6 @@ relationships:
 - type: traces-to
   from: COMP-PROFILES
   to: BEH-PROFILE-APPLY
+- type: triggers
+  from: BEH-VALIDATE-PROFILE
+  to: BEH-PROFILE-LOAD

@@ -7,25 +7,96 @@ meta:
   refines_component: COMP-CORE
 entities:
   capabilities:
-  - id: CAP-F1
+  - id: CAP-PARSE-VALIDATE
     name: Model Parsing & Validation
     status: ACTIVE
     description: Parse YAML models and validate structural correctness (score 0-100)
     f_block: F3
-  - id: CAP-F3
+  - id: CAP-SLICE-DIFF
     name: Model Slicing & Diffing
     status: ACTIVE
     description: Subset extraction by F-block/layer, model version comparison, and enriched model composition
     f_block: F3
+  - id: CAP-VALIDATE-STRUCTURAL
+    name: Structural Validation
+    status: ACTIVE
+    description: ID uniqueness, referential integrity, orphan detection
+    f_block: F3
+    priority: high
+  - id: CAP-VALIDATE-SEMANTIC
+    name: Semantic Validation
+    status: ACTIVE
+    description: Status consistency, v1.1 rules, capability realization
+    f_block: F3
+    priority: high
+  - id: CAP-VALIDATE-QUALITY
+    name: Quality Assessment
+    status: ACTIVE
+    description: Regen readiness scoring, improvement suggestions
+    f_block: F3
+    priority: high
+  - id: CAP-SLICE
+    name: Model Slicing
+    status: ACTIVE
+    description: Extract sub-models by f-block, layer, status, artifact
+    f_block: F3
+    priority: high
+  - id: CAP-DIFF
+    name: Model Diffing
+    status: ACTIVE
+    description: Compare models, detect entity/relationship changes
+    f_block: F3
+    priority: high
+  - id: CAP-MERGE
+    name: Model Merging
+    status: ACTIVE
+    description: Compose enriched models, compact for generation
+    f_block: F3
+    priority: high
   behaviors:
   - id: BEH-VALIDATE
     name: Model Validation
     status: ACTIVE
     description: Check architectural claims against schema and structural invariants, produce score 0-100
+    trigger: 'CLI: architecture-model validate <path>'
+    actor: ACT-DEV
+    preconditions:
+    - .architecture-model.yaml exists
+    - File is valid YAML
+    postconditions:
+    - Validation score 0-100 reported
+    - Issues listed by severity (ERROR, WARNING, INFO)
+    steps:
+    - 'Parse YAML into ArchitectureModel (F3: parser)'
+    - Check ID uniqueness across all entity types
+    - Verify referential integrity of all relationship endpoints
+    - Detect orphaned entities with no relationships
+    - Check status consistency on all entities
+    - Verify all capabilities are realized by components
+    - Validate meta section completeness
+    - Apply v1.1 semantic rules
+    - Score regen readiness per component
+    - 'Apply domain profile rules if set (F7: profiles)'
+    - Aggregate issues by severity, compute score 0-100
+    - 'Display results to developer (F1: CLI)'
   - id: BEH-MERGE
     name: Model Merging
     status: ACTIVE
     description: Merge and compose architecture models
+    trigger: Programmatic API call
+    actor: ACT-LLM
+    preconditions:
+    - Base model and manifest both available
+    postconditions:
+    - Enriched model with manifest data merged
+    - Component file lists updated from manifest
+    steps:
+    - Load base architecture model
+    - Load reality manifest with AST data
+    - Merge manifest modules into component file lists
+    - Enrich components with manifest-derived signatures and metrics
+    - Resolve conflicts (model takes precedence over manifest)
+    - Compact model for generation context if needed
   - id: BEH-VALIDATE-IDS
     name: ID Uniqueness Check
     status: ACTIVE
@@ -1245,10 +1316,10 @@ relationships:
   to: COMP-CORE-TYPES
 - type: realizes
   from: COMP-CORE
-  to: CAP-F1
+  to: CAP-PARSE-VALIDATE
 - type: realizes
   from: COMP-CORE
-  to: CAP-F3
+  to: CAP-SLICE-DIFF
 - type: exposes
   from: COMP-CORE-PARSER
   to: IF-PARSE-API
@@ -1327,6 +1398,42 @@ relationships:
 - type: traces-to
   from: COMP-CORE-MERGER
   to: BEH-MERGE
+- type: contains
+  from: CAP-PARSE-VALIDATE
+  to: CAP-VALIDATE-STRUCTURAL
+- type: contains
+  from: CAP-PARSE-VALIDATE
+  to: CAP-VALIDATE-SEMANTIC
+- type: contains
+  from: CAP-PARSE-VALIDATE
+  to: CAP-VALIDATE-QUALITY
+- type: contains
+  from: CAP-SLICE-DIFF
+  to: CAP-SLICE
+- type: contains
+  from: CAP-SLICE-DIFF
+  to: CAP-DIFF
+- type: contains
+  from: CAP-SLICE-DIFF
+  to: CAP-MERGE
+- type: realizes
+  from: COMP-CORE-VALIDATOR
+  to: CAP-VALIDATE-STRUCTURAL
+- type: realizes
+  from: COMP-CORE-VALIDATOR
+  to: CAP-VALIDATE-SEMANTIC
+- type: realizes
+  from: COMP-CORE-VALIDATOR
+  to: CAP-VALIDATE-QUALITY
+- type: realizes
+  from: COMP-CORE-SLICER
+  to: CAP-SLICE
+- type: realizes
+  from: COMP-CORE-DIFFER
+  to: CAP-DIFF
+- type: realizes
+  from: COMP-CORE-MERGER
+  to: CAP-MERGE
 - type: contains
   from: BEH-VALIDATE
   to: BEH-VALIDATE-IDS
@@ -1488,4 +1595,58 @@ relationships:
   to: BEH-DECOMPOSE-PARTITION
 - type: traces-to
   from: COMP-CORE-DECOMPOSER
+  to: BEH-DECOMPOSE-PARTITION
+- type: triggers
+  from: BEH-PARSE-LOAD
+  to: BEH-VALIDATE-IDS
+- type: triggers
+  from: BEH-VALIDATE-IDS
+  to: BEH-VALIDATE-REFS
+- type: triggers
+  from: BEH-VALIDATE-REFS
+  to: BEH-VALIDATE-ORPHANS
+- type: triggers
+  from: BEH-VALIDATE-ORPHANS
+  to: BEH-VALIDATE-STATUS
+- type: triggers
+  from: BEH-VALIDATE-STATUS
+  to: BEH-VALIDATE-CAPS
+- type: triggers
+  from: BEH-VALIDATE-CAPS
+  to: BEH-VALIDATE-META
+- type: triggers
+  from: BEH-VALIDATE-META
+  to: BEH-VALIDATE-V11
+- type: triggers
+  from: BEH-VALIDATE-V11
+  to: BEH-VALIDATE-REGEN
+- type: triggers
+  from: BEH-VALIDATE-REGEN
+  to: BEH-VALIDATE-PROFILE
+- type: triggers
+  from: BEH-VALIDATE-PROFILE
+  to: BEH-PROFILE-LOAD
+- type: triggers
+  from: BEH-VALIDATE-PROFILE
+  to: BEH-VALIDATE-IMPROVE
+- type: triggers
+  from: BEH-DIFF-ENTITIES
+  to: BEH-DIFF-RELS
+- type: triggers
+  from: BEH-MERGE-MANIFEST
+  to: BEH-MERGE-ENRICH
+- type: triggers
+  from: BEH-MERGE-ENRICH
+  to: BEH-MERGE-COMPOSE
+- type: triggers
+  from: BEH-MERGE-COMPOSE
+  to: BEH-MERGE-COMPACT
+- type: triggers
+  from: BEH-SLICE-FBLOCK
+  to: BEH-SLICE-COMPONENT
+- type: triggers
+  from: BEH-DECOMPOSE-IDENTIFY
+  to: BEH-DECOMPOSE-COMPLEXITY
+- type: triggers
+  from: BEH-DECOMPOSE-COMPLEXITY
   to: BEH-DECOMPOSE-PARTITION

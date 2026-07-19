@@ -7,40 +7,164 @@ meta:
   refines_component: COMP-CLI
 entities:
   capabilities:
-  - id: CAP-F4
+  - id: CAP-CLI
     name: CLI Operations
     status: ACTIVE
     description: Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich
     f_block: F1
+  - id: CAP-CLI-CORE
+    name: Core CLI Commands
+    status: ACTIVE
+    description: init, validate, manifest
+    f_block: F1
+    priority: high
+  - id: CAP-CLI-ANALYSIS
+    name: Analysis CLI Commands
+    status: ACTIVE
+    description: slice, diff, stats, impact, coverage
+    f_block: F1
+    priority: high
+  - id: CAP-CLI-GENERATION
+    name: Generation CLI Commands
+    status: ACTIVE
+    description: decompose, visualize, enrich
+    f_block: F1
+    priority: high
   behaviors:
   - id: BEH-INIT
     name: Project Initialization
     status: ACTIVE
     description: Scan directory structure, discover source root, auto-generate .architecture-model.yaml
+    trigger: 'CLI: architecture-model init <path>'
+    actor: ACT-DEV
+    preconditions:
+    - Project directory exists
+    - Directory contains Python source files
+    postconditions:
+    - .architecture-model.yaml created
+    - Each subpackage mapped to an F-block
+    steps:
+    - Scan directory structure for source root (src-layout, flat-layout, lib-layout)
+    - Discover subpackages as functional blocks
+    - Enumerate files per block
+    - Write .architecture-model.yaml with layers, F-blocks, and metrics
   - id: BEH-VALIDATE
     name: Model Validation
     status: ACTIVE
     description: Check architectural claims against schema and structural invariants, produce score 0-100
+    trigger: 'CLI: architecture-model validate <path>'
+    actor: ACT-DEV
+    preconditions:
+    - .architecture-model.yaml exists
+    - File is valid YAML
+    postconditions:
+    - Validation score 0-100 reported
+    - Issues listed by severity (ERROR, WARNING, INFO)
+    steps:
+    - 'Parse YAML into ArchitectureModel (F3: parser)'
+    - Check ID uniqueness across all entity types
+    - Verify referential integrity of all relationship endpoints
+    - Detect orphaned entities with no relationships
+    - Check status consistency on all entities
+    - Verify all capabilities are realized by components
+    - Validate meta section completeness
+    - Apply v1.1 semantic rules
+    - Score regen readiness per component
+    - 'Apply domain profile rules if set (F7: profiles)'
+    - Aggregate issues by severity, compute score 0-100
+    - 'Display results to developer (F1: CLI)'
   - id: BEH-MANIFEST
     name: Manifest Generation
     status: ACTIVE
     description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
+    trigger: 'CLI: architecture-model manifest <path>'
+    actor: ACT-DEV
+    preconditions:
+    - Project directory exists
+    - Configuration available (auto-discovered or .architecture-model.yaml)
+    postconditions:
+    - Manifest JSON written with all blocks and metrics
+    - Each file scanned with function signatures and body hints
+    steps:
+    - 'Load or discover project configuration (F2: config)'
+    - Compute project-wide metrics (total lines, file counts)
+    - Assemble functional blocks from config
+    - 'Scan all source files via AST (F5: scanner)'
+    - Extract functions, classes, imports, constants per file
+    - 'Classify function complexity and generate body hints (F5: body_hints)'
+    - 'Discover inter-block interfaces from import analysis (F5: interfaces)'
+    - Assemble final manifest with blocks, interfaces, metrics
   - id: BEH-ENRICH
     name: Auto-Enrichment
     status: ACTIVE
     description: Enrich architecture model with function signatures, constants, and test contracts from AST
+    trigger: 'CLI: architecture-model enrich <path>'
+    actor: ACT-DEV
+    preconditions:
+    - .architecture-model.yaml exists
+    - Source files accessible
+    postconditions:
+    - Components enriched with signatures, constants, test_contracts
+    - Model regen-readiness score improved
+    steps:
+    - Load architecture model
+    - For each component with source files, extract function signatures from AST
+    - Extract module-level constants and enum members
+    - Discover test files via 7 naming conventions
+    - Extract test contracts (assertions, expected values) from test AST
+    - Update component signatures, constants, and test_contracts fields
+    - Save enriched model
   - id: BEH-SLICE
     name: Model Slicing
     status: ACTIVE
     description: Extract sub-models by various criteria
+    trigger: 'MCP tool: architect_slice / CLI: architecture-model slice'
+    actor: ACT-LLM
+    preconditions:
+    - Architecture model loaded
+    postconditions:
+    - Sub-model returned with only relevant entities
+    - All internal relationships preserved
+    steps:
+    - Select slicing strategy (f-block, layer, status, artifact, component)
+    - Trace relationships from seed entities to find connected entities
+    - Build filtered model with selected entities and relevant relationships
+    - Preserve cross-boundary dependency edges
   - id: BEH-DIFF
     name: Model Diffing
     status: ACTIVE
     description: Compare two architecture models
+    trigger: 'CLI: architecture-model diff <model1> <model2>'
+    actor: ACT-DEV
+    preconditions:
+    - Two valid architecture models provided
+    postconditions:
+    - Diff report showing all changes between models
+    steps:
+    - Load both models
+    - 'Compare entities: detect added, removed, modified per entity type'
+    - 'Compare relationships: detect added, removed'
+    - Format diff report
   - id: BEH-DECOMPOSE
     name: Model Decomposition
     status: ACTIVE
     description: Decompose model into subsystems
+    trigger: 'CLI: architecture-model decompose <path>'
+    actor: ACT-DEV
+    preconditions:
+    - .architecture-model.yaml exists
+    - Components have f_block assignments
+    postconditions:
+    - One sub-model per F-block in .architecture-models/
+    - Sub-models contain unique sub-behaviors not in parent
+    steps:
+    - Load parent architecture model
+    - For each F-block, find all components with matching f_block
+    - Find parent component for each block's component hierarchy
+    - Trace relationships to find connected capabilities, interfaces, behaviors, constraints
+    - Collect internal and boundary relationships
+    - Inject sub-behaviors from sub-behaviors.yaml for matched components
+    - Build and save sub-model YAML per F-block
   - id: BEH-CLI-SLICE
     name: CLI Slice Command
     status: ACTIVE
@@ -188,7 +312,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-CLI
-  to: CAP-F4
+  to: CAP-CLI
 - type: exposes
   from: COMP-CLI
   to: IF-CLI
@@ -225,6 +349,24 @@ relationships:
 - type: traces-to
   from: COMP-CLI
   to: BEH-DECOMPOSE
+- type: contains
+  from: CAP-CLI
+  to: CAP-CLI-CORE
+- type: contains
+  from: CAP-CLI
+  to: CAP-CLI-ANALYSIS
+- type: contains
+  from: CAP-CLI
+  to: CAP-CLI-GENERATION
+- type: realizes
+  from: COMP-CLI
+  to: CAP-CLI-CORE
+- type: realizes
+  from: COMP-CLI
+  to: CAP-CLI-ANALYSIS
+- type: realizes
+  from: COMP-CLI
+  to: CAP-CLI-GENERATION
 - type: contains
   from: BEH-INIT
   to: BEH-CLI-SLICE

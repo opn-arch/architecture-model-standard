@@ -7,7 +7,7 @@ meta:
   refines_component: COMP-SPEC
 entities:
   capabilities:
-  - id: CAP-F6
+  - id: CAP-SCHEMA
     name: Schema Specification
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
@@ -29,7 +29,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-SPEC
-  to: CAP-F6
+  to: CAP-SCHEMA
 - type: constrained-by
   from: COMP-SPEC
   to: CON-SCHEMA

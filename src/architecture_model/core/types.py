@@ -50,6 +50,8 @@ class RelationType(str, Enum):
     # Lifecycle
     SUPERSEDES = "supersedes"
     MIGRATES_TO = "migrates-to"
+    # Behavioral flow
+    TRIGGERS = "triggers"
 
     @classmethod
     def parse(cls, value: str) -> RelationType | str:

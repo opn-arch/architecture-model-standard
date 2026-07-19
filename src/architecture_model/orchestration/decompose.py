@@ -199,6 +199,20 @@ def _inject_sub_behaviors(sub_model, sub_behaviors_path):
         entry["component"] = comp_id
         entry["parent_behavior"] = parent_beh
 
+    # Inject triggers relationships
+    triggers_list = data.get("triggers", [])
+    existing_beh_ids_final = {b.id for b in sub_model.entities.behaviors}
+    for trig in triggers_list:
+        from_id = trig.get("from", "")
+        to_id = trig.get("to", "")
+        # Include if either endpoint is a behavior in this sub-model
+        if from_id in existing_beh_ids_final or to_id in existing_beh_ids_final:
+            sub_model.relationships.append(Relationship(
+                from_id=from_id,
+                to_id=to_id,
+                type=RelationType.TRIGGERS,
+            ))
+
 
 def decompose_model(project_root):
     """Generate sub-models for each F-block by tracing parent model relationships.

@@ -1202,3 +1202,121 @@ behaviors:
   - Return tests
   parent_behavior: BEH-MANIFEST
   component: COMP-UTILS
+
+# Cross-block behavioral flow chains
+triggers:
+  # Validate flow (F3 internal + cross to F7)
+  - from: BEH-PARSE-LOAD
+    to: BEH-VALIDATE-IDS
+  - from: BEH-VALIDATE-IDS
+    to: BEH-VALIDATE-REFS
+  - from: BEH-VALIDATE-REFS
+    to: BEH-VALIDATE-ORPHANS
+  - from: BEH-VALIDATE-ORPHANS
+    to: BEH-VALIDATE-STATUS
+  - from: BEH-VALIDATE-STATUS
+    to: BEH-VALIDATE-CAPS
+  - from: BEH-VALIDATE-CAPS
+    to: BEH-VALIDATE-META
+  - from: BEH-VALIDATE-META
+    to: BEH-VALIDATE-V11
+  - from: BEH-VALIDATE-V11
+    to: BEH-VALIDATE-REGEN
+  - from: BEH-VALIDATE-REGEN
+    to: BEH-VALIDATE-PROFILE
+  - from: BEH-VALIDATE-PROFILE
+    to: BEH-PROFILE-LOAD     # CROSS-BLOCK: F3 --> F7
+  - from: BEH-VALIDATE-PROFILE
+    to: BEH-VALIDATE-IMPROVE
+
+  # Manifest flow (F5 internal)
+  - from: BEH-MANIFEST-CONFIG
+    to: BEH-MANIFEST-METRICS
+  - from: BEH-MANIFEST-METRICS
+    to: BEH-MANIFEST-BLOCKS
+  - from: BEH-MANIFEST-BLOCKS
+    to: BEH-MANIFEST-SCAN
+  - from: BEH-MANIFEST-SCAN
+    to: BEH-SCAN-PARSE
+  - from: BEH-SCAN-PARSE
+    to: BEH-SCAN-FUNCTIONS
+  - from: BEH-SCAN-FUNCTIONS
+    to: BEH-SCAN-CLASSES
+  - from: BEH-SCAN-CLASSES
+    to: BEH-SCAN-IMPORTS
+  - from: BEH-SCAN-IMPORTS
+    to: BEH-SCAN-CONSTANTS
+  - from: BEH-SCAN-CONSTANTS
+    to: BEH-SCAN-METRICS
+  - from: BEH-MANIFEST-SCAN
+    to: BEH-MANIFEST-IFACE
+  - from: BEH-MANIFEST-IFACE
+    to: BEH-IFACE-RESOLVE
+  - from: BEH-IFACE-RESOLVE
+    to: BEH-IFACE-DEDUP
+  - from: BEH-MANIFEST-IFACE
+    to: BEH-MANIFEST-ASSEMBLE
+
+  # Enrich flow (F6 internal + cross to F5)
+  - from: BEH-ENRICH-SIGS
+    to: BEH-ENRICH-CONSTS
+  - from: BEH-ENRICH-CONSTS
+    to: BEH-ENRICH-TESTS
+  - from: BEH-ENRICH-TESTS
+    to: BEH-TEST-DISCOVER      # CROSS-BLOCK: F6 --> F5
+  - from: BEH-TEST-DISCOVER
+    to: BEH-TEST-ASSERTIONS
+
+  # Decompose flow (F6 internal)
+  - from: BEH-ORCH-FIND-COMPS
+    to: BEH-ORCH-FIND-PARENT
+  - from: BEH-ORCH-FIND-PARENT
+    to: BEH-ORCH-TRACE
+  - from: BEH-ORCH-TRACE
+    to: BEH-ORCH-COLLECT-RELS
+  - from: BEH-ORCH-COLLECT-RELS
+    to: BEH-ORCH-BUILD
+
+  # Extract flow (F4 internal)
+  - from: BEH-EXTRACT-CAPS
+    to: BEH-EXTRACT-ACTORS
+  - from: BEH-EXTRACT-ACTORS
+    to: BEH-EXTRACT-COMPS
+  - from: BEH-EXTRACT-COMPS
+    to: BEH-EXTRACT-IFACES
+  - from: BEH-EXTRACT-IFACES
+    to: BEH-EXTRACT-RELS
+
+  # Body hints flow (F5 internal)
+  - from: BEH-BODYHINT-CLASSIFY
+    to: BEH-BODYHINT-SUMMARIZE
+
+  # Recursive manifest flow (F5 internal)
+  - from: BEH-RECURSIVE-SCAN
+    to: BEH-RECURSIVE-DEPS
+
+  # Diff flow (F3 internal)
+  - from: BEH-DIFF-ENTITIES
+    to: BEH-DIFF-RELS
+
+  # Merge flow (F3 internal)
+  - from: BEH-MERGE-MANIFEST
+    to: BEH-MERGE-ENRICH
+  - from: BEH-MERGE-ENRICH
+    to: BEH-MERGE-COMPOSE
+  - from: BEH-MERGE-COMPOSE
+    to: BEH-MERGE-COMPACT
+
+  # Slice flow (F3 internal)
+  - from: BEH-SLICE-FBLOCK
+    to: BEH-SLICE-COMPONENT
+
+  # Decomposer flow (F3 internal)
+  - from: BEH-DECOMPOSE-IDENTIFY
+    to: BEH-DECOMPOSE-COMPLEXITY
+  - from: BEH-DECOMPOSE-COMPLEXITY
+    to: BEH-DECOMPOSE-PARTITION
+
+  # Utils flow (F9)
+  - from: BEH-UTILS-DISCOVER
+    to: BEH-UTILS-TESTS

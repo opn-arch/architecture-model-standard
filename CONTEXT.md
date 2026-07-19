@@ -52,15 +52,19 @@ The `opencode-arch` MCP server wraps this package's APIs:
 - **Layers** — architectural tiers (web, services, data, pipeline)
 - **Components** — deployable units, modules, packages
 
-### Relationships (8 Types)
+### Relationships (17 Types)
 - `realizes` — component realizes a capability
-- `uses` — component uses an interface
-- `constrains` — constraint applies to an entity
-- `contains` — layer contains components
-- `triggers` — behavior triggers another behavior
-- `depends_on` — component depends on another
-- `implements` — component implements a behavior
+- `contains` — layer/component/capability/behavior contains sub-entity
+- `depends-on` — component depends on another
 - `exposes` — component exposes an interface
+- `consumes` — actor consumes an interface
+- `traces-to` — component traces to a behavior
+- `allocated-to` — entity allocated to a target
+- `constrained-by` — entity constrained by a constraint
+- `triggers` — behavior triggers another behavior (cross-block flow)
+- `mounted-on` / `connected-at` / `routed-through` — spatial
+- `produces` / `subscribes-to` / `transforms` — data/event flow
+- `supersedes` / `migrates-to` — lifecycle
 
 ### LLM Protocol (6 Verbs)
 - **LOAD** — parse and internalize the architecture model
@@ -175,7 +179,9 @@ relationships:
 - Package version: 0.3.0
 - Test suite: 453 passed, 97 skipped
 - Validation score: 100/100, 0 orphaned entities
-- Model entities: 79 behaviors (9 parent + 70 sub), 25 components, 237 relationships
+- Model entities: 79 behaviors (9 parent + 70 sub), 25 components, 25 capabilities (10 parent + 15 sub), 237 relationships
+- Model architecture: Recursive sub-models — parent has use cases + logical architecture, sub-models have functional decomposition with AST-derived behavioral detail
+- CLI commands: init, validate, slice, diff, stats, impact, manifest, coverage, enrich, decompose, visualize
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
 

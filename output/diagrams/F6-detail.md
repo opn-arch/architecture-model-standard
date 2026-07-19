@@ -1,4 +1,4 @@
-# F6: Auto-Enrichment
+# F6: Test Contract Enrichment
 
 ```mermaid
 flowchart TB

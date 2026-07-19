@@ -5,13 +5,13 @@
 - **Schema Version:** 2.0
 - **Validation Score:** 100/100
 - **Components:** 25
-- **Capabilities:** 10
+- **Capabilities:** 25
 - **Interfaces:** 7
-- **Behaviors:** 79
+- **Behaviors:** 9
 - **Constraints:** 2
 - **Layers:** 1
 - **Actors:** 2
-- **Relationships:** 237
+- **Relationships:** 131
 - **Signatures:** 85
 - **Constants:** 26
 - **Test Contracts:** 266
@@ -25,16 +25,31 @@
 
 | ID | Name | F-Block | Description |
 |----|------|---------|-------------|
-| CAP-F1 | Model Parsing & Validation | F3 | Parse YAML models and validate structural correctness (score 0-100) |
-| CAP-F2 | Reality Manifest Generation | F5 | AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts |
-| CAP-F3 | Model Slicing & Diffing | F3 | Subset extraction by F-block/layer, model version comparison, and enriched model composition |
-| CAP-F4 | CLI Operations | F1 | Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich |
-| CAP-F5 | Configuration Management | F2 | Auto-discovery config loading and project configuration schema |
-| CAP-F6 | Schema Specification | F8 | JSON Schema definitions for architecture model validation |
-| CAP-F7 | Model Extraction | F4 | Extract architecture model from source code |
-| CAP-F8 | Domain Profiles | F7 | Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical) |
-| CAP-F9 | Shared Utilities | F9 | File discovery, exclusion patterns, and shared helper functions |
-| CAP-F10 | Auto-Enrichment | F6 | Populate signatures, constants, and test_contracts from AST scanning |
+| CAP-PARSE-VALIDATE | Model Parsing & Validation | F3 | Parse YAML models and validate structural correctness (score 0-100) |
+| CAP-MANIFEST | Reality Manifest Generation | F5 | AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts |
+| CAP-SLICE-DIFF | Model Slicing & Diffing | F3 | Subset extraction by F-block/layer, model version comparison, and enriched model composition |
+| CAP-CLI | CLI Operations | F1 | Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich |
+| CAP-CONFIG | Configuration Management | F2 | Auto-discovery config loading and project configuration schema |
+| CAP-SCHEMA | Schema Specification | F8 | JSON Schema definitions for architecture model validation |
+| CAP-EXTRACT | Model Extraction | F4 | Extract architecture model from source code |
+| CAP-PROFILES | Domain Profiles | F7 | Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical) |
+| CAP-UTILS | Shared Utilities | F9 | File discovery, exclusion patterns, and shared helper functions |
+| CAP-ENRICH | Auto-Enrichment | F6 | Populate signatures, constants, and test_contracts from AST scanning |
+| CAP-VALIDATE-STRUCTURAL | Structural Validation | F3 | ID uniqueness, referential integrity, orphan detection |
+| CAP-VALIDATE-SEMANTIC | Semantic Validation | F3 | Status consistency, v1.1 rules, capability realization |
+| CAP-VALIDATE-QUALITY | Quality Assessment | F3 | Regen readiness scoring, improvement suggestions |
+| CAP-MANIFEST-SCAN | Source Scanning | F5 | AST parsing, function/class/import extraction |
+| CAP-MANIFEST-METRICS | Metrics Computation | F5 | Line counts, complexity, body hints |
+| CAP-MANIFEST-TESTS | Test Analysis | F5 | Test contract discovery and assertion extraction |
+| CAP-SLICE | Model Slicing | F3 | Extract sub-models by f-block, layer, status, artifact |
+| CAP-DIFF | Model Diffing | F3 | Compare models, detect entity/relationship changes |
+| CAP-MERGE | Model Merging | F3 | Compose enriched models, compact for generation |
+| CAP-CLI-CORE | Core CLI Commands | F1 | init, validate, manifest |
+| CAP-CLI-ANALYSIS | Analysis CLI Commands | F1 | slice, diff, stats, impact, coverage |
+| CAP-CLI-GENERATION | Generation CLI Commands | F1 | decompose, visualize, enrich |
+| CAP-ENRICH-SIGS | Signature Enrichment | F6 | Extract function signatures from AST |
+| CAP-ENRICH-CONSTS | Constant Enrichment | F6 | Extract module-level constants |
+| CAP-ENRICH-TESTS | Test Contract Enrichment | F6 | Discover and extract test contracts |
 
 ### Interfaces
 
@@ -59,76 +74,6 @@
 - **BEH-DIFF** -- Model Diffing: Compare two architecture models
 - **BEH-MERGE** -- Model Merging: Merge and compose architecture models
 - **BEH-DECOMPOSE** -- Model Decomposition: Decompose model into subsystems
-- **BEH-VALIDATE-IDS** -- ID Uniqueness Check: Check all entity IDs are unique across entity types
-- **BEH-VALIDATE-REFS** -- Referential Integrity Check: Verify all relationship endpoints reference existing entities
-- **BEH-VALIDATE-ORPHANS** -- Orphan Entity Detection: Find entities with no relationships
-- **BEH-VALIDATE-STATUS** -- Status Consistency Check: Verify status field values are valid
-- **BEH-VALIDATE-CAPS** -- Capability Realization Check: Ensure every capability is realized by at least one component
-- **BEH-VALIDATE-META** -- Meta Completeness Check: Validate model meta section has required fields
-- **BEH-VALIDATE-V11** -- V1.1 Semantics Check: Validate schema v1.1+ semantic rules
-- **BEH-VALIDATE-REGEN** -- Regen Readiness Check: Score components for code regeneration readiness
-- **BEH-VALIDATE-PROFILE** -- Domain Profile Validation: Validate domain-profile-specific rules
-- **BEH-VALIDATE-IMPROVE** -- Improvement Opportunities: Detect non-critical improvements
-- **BEH-PARSE-LOAD** -- Model Loading: Load YAML file, parse into ArchitectureModel dataclass
-- **BEH-PARSE-SAVE** -- Model Saving: Serialize ArchitectureModel to YAML via to_dict()
-- **BEH-PARSE-DUMP** -- Model Dumping: Dump model to string format for display
-- **BEH-SLICE-FBLOCK** -- Slice by F-Block: Extract sub-model for a functional block by tracing relationships
-- **BEH-SLICE-LAYER** -- Slice by Layer: Extract sub-model for an architectural layer
-- **BEH-SLICE-STATUS** -- Slice by Status: Filter model entities by status value
-- **BEH-SLICE-ARTIFACT** -- Slice by Artifact: Extract sub-model relevant to a specific artifact type
-- **BEH-SLICE-COMPONENT** -- Slice by Component: Extract sub-model for a single component with dependencies
-- **BEH-DIFF-ENTITIES** -- Entity Diff: Compare entities between two models, detect added/removed/modified
-- **BEH-DIFF-RELS** -- Relationship Diff: Compare relationships between two models
-- **BEH-MERGE-MANIFEST** -- Merge Manifest: Merge reality manifest data into architecture model
-- **BEH-MERGE-ENRICH** -- Enrich from Manifest: Enrich model components with manifest-derived data
-- **BEH-MERGE-COMPACT** -- Compact for Generation: Compact model for code generation context
-- **BEH-MERGE-COMPOSE** -- Compose Enriched Model: Compose a fully enriched model from multiple sources
-- **BEH-DECOMPOSE-IDENTIFY** -- Identify Systems: Discover functional subsystems from component graph
-- **BEH-DECOMPOSE-COMPLEXITY** -- Compute Complexity: Calculate complexity metrics for subsystem partitioning
-- **BEH-DECOMPOSE-PARTITION** -- Partition Subsystems: Partition components into subsystems by affinity
-- **BEH-SCAN-PARSE** -- AST Parsing: Parse Python source file into AST
-- **BEH-SCAN-FUNCTIONS** -- Function Extraction: Extract function definitions with signatures, decorators, docstrings
-- **BEH-SCAN-CLASSES** -- Class Extraction: Extract class definitions with methods and attributes
-- **BEH-SCAN-IMPORTS** -- Import Extraction: Extract import statements with aliases and relative resolution
-- **BEH-SCAN-CONSTANTS** -- Constant Extraction: Extract module-level constants and assignments
-- **BEH-SCAN-METRICS** -- Metrics Computation: Compute line count, status, exports for scanned file
-- **BEH-MANIFEST-CONFIG** -- Config Loading: Load or discover project configuration for manifest generation
-- **BEH-MANIFEST-METRICS** -- Project Metrics: Compute project-wide metrics (total lines, file counts)
-- **BEH-MANIFEST-BLOCKS** -- Block Assembly: Assemble functional blocks from config with file enumeration
-- **BEH-MANIFEST-SCAN** -- Block Scanning: Scan all files within each block for AST data
-- **BEH-MANIFEST-IFACE** -- Interface Discovery: Discover inter-block interfaces from import analysis
-- **BEH-MANIFEST-ASSEMBLE** -- Manifest Assembly: Assemble final manifest from blocks, interfaces, metrics
-- **BEH-BODYHINT-CLASSIFY** -- Complexity Classification: Classify function complexity as TRIVIAL/SHORT/COMPLEX
-- **BEH-BODYHINT-SUMMARIZE** -- Body Summarization: Generate body_hint text summarizing function implementation
-- **BEH-TEST-DISCOVER** -- Test Method Discovery: Find test methods/functions in test files
-- **BEH-TEST-ASSERTIONS** -- Assertion Pattern Matching: Extract assertion patterns from test methods (unittest + pytest)
-- **BEH-IFACE-RESOLVE** -- Import Resolution: Resolve relative and absolute imports to interface edges
-- **BEH-IFACE-DEDUP** -- Interface Deduplication: Deduplicate interface edges from multiple import sources
-- **BEH-RECURSIVE-SCAN** -- Per-Block Deep Scan: Perform deep AST scan within a single F-block
-- **BEH-RECURSIVE-DEPS** -- Cross-Block Dependencies: Compute dependency graph between F-blocks
-- **BEH-ENRICH-SIGS** -- Signature Enrichment: Extract function signatures from AST and add to components
-- **BEH-ENRICH-CONSTS** -- Constant Enrichment: Extract module-level constants and add to components
-- **BEH-ENRICH-TESTS** -- Test Contract Enrichment: Discover test files via 7 naming conventions and extract contracts
-- **BEH-ORCH-FIND-COMPS** -- Find Block Components: Find all components belonging to an F-block
-- **BEH-ORCH-FIND-PARENT** -- Find Parent Component: Locate parent component for a block's component hierarchy
-- **BEH-ORCH-TRACE** -- Trace Entities: Trace relationships to find connected capabilities, interfaces, behaviors, constraints
-- **BEH-ORCH-COLLECT-RELS** -- Collect Relationships: Collect internal and boundary relationships for sub-model
-- **BEH-ORCH-BUILD** -- Build Sub-Model: Assemble final sub-model YAML from traced entities
-- **BEH-EXTRACT-CAPS** -- Extract Capabilities: Derive capabilities from source code analysis
-- **BEH-EXTRACT-ACTORS** -- Extract Actors: Identify external actors from code patterns
-- **BEH-EXTRACT-COMPS** -- Extract Components: Map source modules to architecture components
-- **BEH-EXTRACT-IFACES** -- Extract Interfaces: Derive interfaces from import/export analysis
-- **BEH-EXTRACT-RELS** -- Extract Relationships: Infer relationships between extracted entities
-- **BEH-CLI-SLICE** -- CLI Slice Command: Execute model slicing from command line
-- **BEH-CLI-DIFF** -- CLI Diff Command: Execute model diff from command line
-- **BEH-CLI-STATS** -- CLI Stats Command: Display model statistics from command line
-- **BEH-CLI-IMPACT** -- CLI Impact Command: Trace change impact from command line
-- **BEH-CLI-DECOMPOSE** -- CLI Decompose Command: Generate per-F-block sub-models from command line
-- **BEH-CLI-COVERAGE** -- CLI Coverage Command: Display regen coverage metrics from command line
-- **BEH-PROFILE-LOAD** -- Load Profile: Resolve profile path, load YAML, parse into dataclass
-- **BEH-PROFILE-APPLY** -- Apply Profile Rules: Apply domain-specific validation rules from profile
-- **BEH-UTILS-DISCOVER** -- File Discovery: Discover Python source files with exclusion patterns
-- **BEH-UTILS-TESTS** -- Test File Discovery: Discover test files matching source modules
 
 ### Constraints
 
@@ -921,16 +866,16 @@
 | contains | COMP-MANIFEST | COMP-MANIFEST-TEST-ANALYZER |
 | contains | COMP-MANIFEST | COMP-MANIFEST-GENERATOR |
 | contains | COMP-MANIFEST | COMP-MANIFEST-TYPES |
-| realizes | COMP-CORE | CAP-F1 |
-| realizes | COMP-CORE | CAP-F3 |
-| realizes | COMP-MANIFEST | CAP-F2 |
-| realizes | COMP-CLI | CAP-F4 |
-| realizes | COMP-CONFIG | CAP-F5 |
-| realizes | COMP-SPEC | CAP-F6 |
-| realizes | COMP-EXTRACT | CAP-F7 |
-| realizes | COMP-PROFILES | CAP-F8 |
-| realizes | COMP-UTILS | CAP-F9 |
-| realizes | COMP-ENRICH | CAP-F10 |
+| realizes | COMP-CORE | CAP-PARSE-VALIDATE |
+| realizes | COMP-CORE | CAP-SLICE-DIFF |
+| realizes | COMP-MANIFEST | CAP-MANIFEST |
+| realizes | COMP-CLI | CAP-CLI |
+| realizes | COMP-CONFIG | CAP-CONFIG |
+| realizes | COMP-SPEC | CAP-SCHEMA |
+| realizes | COMP-EXTRACT | CAP-EXTRACT |
+| realizes | COMP-PROFILES | CAP-PROFILES |
+| realizes | COMP-UTILS | CAP-UTILS |
+| realizes | COMP-ENRICH | CAP-ENRICH |
 | exposes | COMP-CLI | IF-CLI |
 | exposes | COMP-CORE-PARSER | IF-PARSE-API |
 | exposes | COMP-CORE-VALIDATOR | IF-VALIDATE-API |
@@ -994,146 +939,40 @@
 | traces-to | COMP-CLI | BEH-DIFF |
 | traces-to | COMP-CORE-MERGER | BEH-MERGE |
 | traces-to | COMP-CLI | BEH-DECOMPOSE |
-| contains | BEH-VALIDATE | BEH-VALIDATE-IDS |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-IDS |
-| contains | BEH-VALIDATE | BEH-VALIDATE-REFS |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-REFS |
-| contains | BEH-VALIDATE | BEH-VALIDATE-ORPHANS |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-ORPHANS |
-| contains | BEH-VALIDATE | BEH-VALIDATE-STATUS |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-STATUS |
-| contains | BEH-VALIDATE | BEH-VALIDATE-CAPS |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-CAPS |
-| contains | BEH-VALIDATE | BEH-VALIDATE-META |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-META |
-| contains | BEH-VALIDATE | BEH-VALIDATE-V11 |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-V11 |
-| contains | BEH-VALIDATE | BEH-VALIDATE-REGEN |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-REGEN |
-| contains | BEH-VALIDATE | BEH-VALIDATE-PROFILE |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-PROFILE |
-| contains | BEH-VALIDATE | BEH-VALIDATE-IMPROVE |
-| traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-IMPROVE |
-| contains | BEH-VALIDATE | BEH-PARSE-LOAD |
-| traces-to | COMP-CORE-PARSER | BEH-PARSE-LOAD |
-| contains | BEH-VALIDATE | BEH-PARSE-SAVE |
-| traces-to | COMP-CORE-PARSER | BEH-PARSE-SAVE |
-| contains | BEH-VALIDATE | BEH-PARSE-DUMP |
-| traces-to | COMP-CORE-PARSER | BEH-PARSE-DUMP |
-| contains | BEH-SLICE | BEH-SLICE-FBLOCK |
-| traces-to | COMP-CORE-SLICER | BEH-SLICE-FBLOCK |
-| contains | BEH-SLICE | BEH-SLICE-LAYER |
-| traces-to | COMP-CORE-SLICER | BEH-SLICE-LAYER |
-| contains | BEH-SLICE | BEH-SLICE-STATUS |
-| traces-to | COMP-CORE-SLICER | BEH-SLICE-STATUS |
-| contains | BEH-SLICE | BEH-SLICE-ARTIFACT |
-| traces-to | COMP-CORE-SLICER | BEH-SLICE-ARTIFACT |
-| contains | BEH-SLICE | BEH-SLICE-COMPONENT |
-| traces-to | COMP-CORE-SLICER | BEH-SLICE-COMPONENT |
-| contains | BEH-DIFF | BEH-DIFF-ENTITIES |
-| traces-to | COMP-CORE-DIFFER | BEH-DIFF-ENTITIES |
-| contains | BEH-DIFF | BEH-DIFF-RELS |
-| traces-to | COMP-CORE-DIFFER | BEH-DIFF-RELS |
-| contains | BEH-MERGE | BEH-MERGE-MANIFEST |
-| traces-to | COMP-CORE-MERGER | BEH-MERGE-MANIFEST |
-| contains | BEH-MERGE | BEH-MERGE-ENRICH |
-| traces-to | COMP-CORE-MERGER | BEH-MERGE-ENRICH |
-| contains | BEH-MERGE | BEH-MERGE-COMPACT |
-| traces-to | COMP-CORE-MERGER | BEH-MERGE-COMPACT |
-| contains | BEH-MERGE | BEH-MERGE-COMPOSE |
-| traces-to | COMP-CORE-MERGER | BEH-MERGE-COMPOSE |
-| contains | BEH-DECOMPOSE | BEH-DECOMPOSE-IDENTIFY |
-| traces-to | COMP-CORE-DECOMPOSER | BEH-DECOMPOSE-IDENTIFY |
-| contains | BEH-DECOMPOSE | BEH-DECOMPOSE-COMPLEXITY |
-| traces-to | COMP-CORE-DECOMPOSER | BEH-DECOMPOSE-COMPLEXITY |
-| contains | BEH-DECOMPOSE | BEH-DECOMPOSE-PARTITION |
-| traces-to | COMP-CORE-DECOMPOSER | BEH-DECOMPOSE-PARTITION |
-| contains | BEH-MANIFEST | BEH-SCAN-PARSE |
-| traces-to | COMP-MANIFEST-SCANNER | BEH-SCAN-PARSE |
-| contains | BEH-MANIFEST | BEH-SCAN-FUNCTIONS |
-| traces-to | COMP-MANIFEST-SCANNER | BEH-SCAN-FUNCTIONS |
-| contains | BEH-MANIFEST | BEH-SCAN-CLASSES |
-| traces-to | COMP-MANIFEST-SCANNER | BEH-SCAN-CLASSES |
-| contains | BEH-MANIFEST | BEH-SCAN-IMPORTS |
-| traces-to | COMP-MANIFEST-SCANNER | BEH-SCAN-IMPORTS |
-| contains | BEH-MANIFEST | BEH-SCAN-CONSTANTS |
-| traces-to | COMP-MANIFEST-SCANNER | BEH-SCAN-CONSTANTS |
-| contains | BEH-MANIFEST | BEH-SCAN-METRICS |
-| traces-to | COMP-MANIFEST-SCANNER | BEH-SCAN-METRICS |
-| contains | BEH-MANIFEST | BEH-MANIFEST-CONFIG |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-MANIFEST-CONFIG |
-| contains | BEH-MANIFEST | BEH-MANIFEST-METRICS |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-MANIFEST-METRICS |
-| contains | BEH-MANIFEST | BEH-MANIFEST-BLOCKS |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-MANIFEST-BLOCKS |
-| contains | BEH-MANIFEST | BEH-MANIFEST-SCAN |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-MANIFEST-SCAN |
-| contains | BEH-MANIFEST | BEH-MANIFEST-IFACE |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-MANIFEST-IFACE |
-| contains | BEH-MANIFEST | BEH-MANIFEST-ASSEMBLE |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-MANIFEST-ASSEMBLE |
-| contains | BEH-MANIFEST | BEH-BODYHINT-CLASSIFY |
-| traces-to | COMP-MANIFEST-BODY-HINTS | BEH-BODYHINT-CLASSIFY |
-| contains | BEH-MANIFEST | BEH-BODYHINT-SUMMARIZE |
-| traces-to | COMP-MANIFEST-BODY-HINTS | BEH-BODYHINT-SUMMARIZE |
-| contains | BEH-MANIFEST | BEH-TEST-DISCOVER |
-| traces-to | COMP-MANIFEST-TEST-ANALYZER | BEH-TEST-DISCOVER |
-| contains | BEH-MANIFEST | BEH-TEST-ASSERTIONS |
-| traces-to | COMP-MANIFEST-TEST-ANALYZER | BEH-TEST-ASSERTIONS |
-| contains | BEH-MANIFEST | BEH-IFACE-RESOLVE |
-| traces-to | COMP-MANIFEST-INTERFACES | BEH-IFACE-RESOLVE |
-| contains | BEH-MANIFEST | BEH-IFACE-DEDUP |
-| traces-to | COMP-MANIFEST-INTERFACES | BEH-IFACE-DEDUP |
-| contains | BEH-MANIFEST | BEH-RECURSIVE-SCAN |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-RECURSIVE-SCAN |
-| contains | BEH-MANIFEST | BEH-RECURSIVE-DEPS |
-| traces-to | COMP-MANIFEST-GENERATOR | BEH-RECURSIVE-DEPS |
-| contains | BEH-ENRICH | BEH-ENRICH-SIGS |
-| traces-to | COMP-ENRICH | BEH-ENRICH-SIGS |
-| contains | BEH-ENRICH | BEH-ENRICH-CONSTS |
-| traces-to | COMP-ENRICH | BEH-ENRICH-CONSTS |
-| contains | BEH-ENRICH | BEH-ENRICH-TESTS |
-| traces-to | COMP-ENRICH | BEH-ENRICH-TESTS |
-| contains | BEH-DECOMPOSE | BEH-ORCH-FIND-COMPS |
-| traces-to | COMP-DECOMPOSE | BEH-ORCH-FIND-COMPS |
-| contains | BEH-DECOMPOSE | BEH-ORCH-FIND-PARENT |
-| traces-to | COMP-DECOMPOSE | BEH-ORCH-FIND-PARENT |
-| contains | BEH-DECOMPOSE | BEH-ORCH-TRACE |
-| traces-to | COMP-DECOMPOSE | BEH-ORCH-TRACE |
-| contains | BEH-DECOMPOSE | BEH-ORCH-COLLECT-RELS |
-| traces-to | COMP-DECOMPOSE | BEH-ORCH-COLLECT-RELS |
-| contains | BEH-DECOMPOSE | BEH-ORCH-BUILD |
-| traces-to | COMP-DECOMPOSE | BEH-ORCH-BUILD |
-| contains | BEH-EXTRACT | BEH-EXTRACT-CAPS |
-| traces-to | COMP-EXTRACT | BEH-EXTRACT-CAPS |
-| contains | BEH-EXTRACT | BEH-EXTRACT-ACTORS |
-| traces-to | COMP-EXTRACT | BEH-EXTRACT-ACTORS |
-| contains | BEH-EXTRACT | BEH-EXTRACT-COMPS |
-| traces-to | COMP-EXTRACT | BEH-EXTRACT-COMPS |
-| contains | BEH-EXTRACT | BEH-EXTRACT-IFACES |
-| traces-to | COMP-EXTRACT | BEH-EXTRACT-IFACES |
-| contains | BEH-EXTRACT | BEH-EXTRACT-RELS |
-| traces-to | COMP-EXTRACT | BEH-EXTRACT-RELS |
-| contains | BEH-INIT | BEH-CLI-SLICE |
-| traces-to | COMP-CLI | BEH-CLI-SLICE |
-| contains | BEH-INIT | BEH-CLI-DIFF |
-| traces-to | COMP-CLI | BEH-CLI-DIFF |
-| contains | BEH-INIT | BEH-CLI-STATS |
-| traces-to | COMP-CLI | BEH-CLI-STATS |
-| contains | BEH-INIT | BEH-CLI-IMPACT |
-| traces-to | COMP-CLI | BEH-CLI-IMPACT |
-| contains | BEH-INIT | BEH-CLI-DECOMPOSE |
-| traces-to | COMP-CLI | BEH-CLI-DECOMPOSE |
-| contains | BEH-INIT | BEH-CLI-COVERAGE |
-| traces-to | COMP-CLI | BEH-CLI-COVERAGE |
-| contains | BEH-VALIDATE | BEH-PROFILE-LOAD |
-| traces-to | COMP-PROFILES | BEH-PROFILE-LOAD |
-| contains | BEH-VALIDATE | BEH-PROFILE-APPLY |
-| traces-to | COMP-PROFILES | BEH-PROFILE-APPLY |
-| contains | BEH-MANIFEST | BEH-UTILS-DISCOVER |
-| traces-to | COMP-UTILS | BEH-UTILS-DISCOVER |
-| contains | BEH-MANIFEST | BEH-UTILS-TESTS |
-| traces-to | COMP-UTILS | BEH-UTILS-TESTS |
+| contains | CAP-PARSE-VALIDATE | CAP-VALIDATE-STRUCTURAL |
+| contains | CAP-PARSE-VALIDATE | CAP-VALIDATE-SEMANTIC |
+| contains | CAP-PARSE-VALIDATE | CAP-VALIDATE-QUALITY |
+| contains | CAP-MANIFEST | CAP-MANIFEST-SCAN |
+| contains | CAP-MANIFEST | CAP-MANIFEST-METRICS |
+| contains | CAP-MANIFEST | CAP-MANIFEST-TESTS |
+| contains | CAP-SLICE-DIFF | CAP-SLICE |
+| contains | CAP-SLICE-DIFF | CAP-DIFF |
+| contains | CAP-SLICE-DIFF | CAP-MERGE |
+| contains | CAP-CLI | CAP-CLI-CORE |
+| contains | CAP-CLI | CAP-CLI-ANALYSIS |
+| contains | CAP-CLI | CAP-CLI-GENERATION |
+| contains | CAP-ENRICH | CAP-ENRICH-SIGS |
+| contains | CAP-ENRICH | CAP-ENRICH-CONSTS |
+| contains | CAP-ENRICH | CAP-ENRICH-TESTS |
+| consumes | ACT-DEV | IF-VALIDATE-API |
+| consumes | ACT-DEV | IF-ENRICH-API |
+| consumes | ACT-DEV | IF-PROFILE-API |
+| consumes | ACT-LLM | IF-VALIDATE-API |
+| realizes | COMP-CORE-VALIDATOR | CAP-VALIDATE-STRUCTURAL |
+| realizes | COMP-CORE-VALIDATOR | CAP-VALIDATE-SEMANTIC |
+| realizes | COMP-CORE-VALIDATOR | CAP-VALIDATE-QUALITY |
+| realizes | COMP-MANIFEST-SCANNER | CAP-MANIFEST-SCAN |
+| realizes | COMP-MANIFEST-METRICS | CAP-MANIFEST-METRICS |
+| realizes | COMP-MANIFEST-TEST-ANALYZER | CAP-MANIFEST-TESTS |
+| realizes | COMP-CORE-SLICER | CAP-SLICE |
+| realizes | COMP-CORE-DIFFER | CAP-DIFF |
+| realizes | COMP-CORE-MERGER | CAP-MERGE |
+| realizes | COMP-CLI | CAP-CLI-CORE |
+| realizes | COMP-CLI | CAP-CLI-ANALYSIS |
+| realizes | COMP-CLI | CAP-CLI-GENERATION |
+| realizes | COMP-ENRICH | CAP-ENRICH-SIGS |
+| realizes | COMP-ENRICH | CAP-ENRICH-CONSTS |
+| realizes | COMP-ENRICH | CAP-ENRICH-TESTS |
 
 \newpage
 
@@ -1142,15 +981,18 @@
 - **Validation Score:** 90/100
 - **Refines:** COMP-CLI
 - **Components:** 1
-- **Capabilities:** 1
+- **Capabilities:** 4
 - **Interfaces:** 1
 - **Behaviors:** 13
 - **Constraints:** 0
-- **Relationships:** 25
+- **Relationships:** 31
 
 **Capabilities:**
 
-- CAP-F4: CLI Operations (F-Block F1)
+- CAP-CLI: CLI Operations (F-Block F1)
+- CAP-CLI-CORE: Core CLI Commands (F-Block F1)
+- CAP-CLI-ANALYSIS: Analysis CLI Commands (F-Block F1)
+- CAP-CLI-GENERATION: Generation CLI Commands (F-Block F1)
 
 **Interfaces:**
 
@@ -1182,7 +1024,7 @@
 
 | Type | From | To |
 |------|------|-----|
-| realizes | COMP-CLI | CAP-F4 |
+| realizes | COMP-CLI | CAP-CLI |
 | exposes | COMP-CLI | IF-CLI |
 | depends-on | COMP-CLI | COMP-CORE |
 | depends-on | COMP-CLI | COMP-CONFIG |
@@ -1195,6 +1037,12 @@
 | traces-to | COMP-CLI | BEH-SLICE |
 | traces-to | COMP-CLI | BEH-DIFF |
 | traces-to | COMP-CLI | BEH-DECOMPOSE |
+| contains | CAP-CLI | CAP-CLI-CORE |
+| contains | CAP-CLI | CAP-CLI-ANALYSIS |
+| contains | CAP-CLI | CAP-CLI-GENERATION |
+| realizes | COMP-CLI | CAP-CLI-CORE |
+| realizes | COMP-CLI | CAP-CLI-ANALYSIS |
+| realizes | COMP-CLI | CAP-CLI-GENERATION |
 | contains | BEH-INIT | BEH-CLI-SLICE |
 | traces-to | COMP-CLI | BEH-CLI-SLICE |
 | contains | BEH-INIT | BEH-CLI-DIFF |
@@ -1223,7 +1071,7 @@
 
 **Capabilities:**
 
-- CAP-F5: Configuration Management (F-Block F2)
+- CAP-CONFIG: Configuration Management (F-Block F2)
 
 **Components:**
 
@@ -1235,7 +1083,7 @@
 
 | Type | From | To |
 |------|------|-----|
-| realizes | COMP-CONFIG | CAP-F5 |
+| realizes | COMP-CONFIG | CAP-CONFIG |
 | depends-on | COMP-CLI | COMP-CONFIG |
 | depends-on | COMP-CORE | COMP-CONFIG |
 | depends-on | COMP-MANIFEST | COMP-CONFIG |
@@ -1245,19 +1093,25 @@
 
 ## Sub-Model F3: Core
 
-- **Validation Score:** 74/100
+- **Validation Score:** 52/100
 - **Refines:** COMP-CORE
 - **Components:** 8
-- **Capabilities:** 2
+- **Capabilities:** 8
 - **Interfaces:** 3
 - **Behaviors:** 29
 - **Constraints:** 2
-- **Relationships:** 79
+- **Relationships:** 119
 
 **Capabilities:**
 
-- CAP-F1: Model Parsing & Validation (F-Block F3)
-- CAP-F3: Model Slicing & Diffing (F-Block F3)
+- CAP-PARSE-VALIDATE: Model Parsing & Validation (F-Block F3)
+- CAP-SLICE-DIFF: Model Slicing & Diffing (F-Block F3)
+- CAP-VALIDATE-STRUCTURAL: Structural Validation (F-Block F3)
+- CAP-VALIDATE-SEMANTIC: Semantic Validation (F-Block F3)
+- CAP-VALIDATE-QUALITY: Quality Assessment (F-Block F3)
+- CAP-SLICE: Model Slicing (F-Block F3)
+- CAP-DIFF: Model Diffing (F-Block F3)
+- CAP-MERGE: Model Merging (F-Block F3)
 
 **Interfaces:**
 
@@ -1326,8 +1180,8 @@
 | contains | COMP-CORE | COMP-CORE-MERGER |
 | contains | COMP-CORE | COMP-CORE-DECOMPOSER |
 | contains | COMP-CORE | COMP-CORE-TYPES |
-| realizes | COMP-CORE | CAP-F1 |
-| realizes | COMP-CORE | CAP-F3 |
+| realizes | COMP-CORE | CAP-PARSE-VALIDATE |
+| realizes | COMP-CORE | CAP-SLICE-DIFF |
 | exposes | COMP-CORE-PARSER | IF-PARSE-API |
 | exposes | COMP-CORE-VALIDATOR | IF-VALIDATE-API |
 | exposes | COMP-CORE-SLICER | IF-SLICER-API |
@@ -1354,6 +1208,18 @@
 | traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE |
 | depends-on | COMP-DECOMPOSE | COMP-CORE |
 | traces-to | COMP-CORE-MERGER | BEH-MERGE |
+| contains | CAP-PARSE-VALIDATE | CAP-VALIDATE-STRUCTURAL |
+| contains | CAP-PARSE-VALIDATE | CAP-VALIDATE-SEMANTIC |
+| contains | CAP-PARSE-VALIDATE | CAP-VALIDATE-QUALITY |
+| contains | CAP-SLICE-DIFF | CAP-SLICE |
+| contains | CAP-SLICE-DIFF | CAP-DIFF |
+| contains | CAP-SLICE-DIFF | CAP-MERGE |
+| realizes | COMP-CORE-VALIDATOR | CAP-VALIDATE-STRUCTURAL |
+| realizes | COMP-CORE-VALIDATOR | CAP-VALIDATE-SEMANTIC |
+| realizes | COMP-CORE-VALIDATOR | CAP-VALIDATE-QUALITY |
+| realizes | COMP-CORE-SLICER | CAP-SLICE |
+| realizes | COMP-CORE-DIFFER | CAP-DIFF |
+| realizes | COMP-CORE-MERGER | CAP-MERGE |
 | contains | BEH-VALIDATE | BEH-VALIDATE-IDS |
 | traces-to | COMP-CORE-VALIDATOR | BEH-VALIDATE-IDS |
 | contains | BEH-VALIDATE | BEH-VALIDATE-REFS |
@@ -1380,12 +1246,19 @@
 | traces-to | COMP-CORE-PARSER | BEH-PARSE-SAVE |
 | contains | BEH-VALIDATE | BEH-PARSE-DUMP |
 | traces-to | COMP-CORE-PARSER | BEH-PARSE-DUMP |
+| contains | BEH-SLICE | BEH-SLICE-FBLOCK |
 | traces-to | COMP-CORE-SLICER | BEH-SLICE-FBLOCK |
+| contains | BEH-SLICE | BEH-SLICE-LAYER |
 | traces-to | COMP-CORE-SLICER | BEH-SLICE-LAYER |
+| contains | BEH-SLICE | BEH-SLICE-STATUS |
 | traces-to | COMP-CORE-SLICER | BEH-SLICE-STATUS |
+| contains | BEH-SLICE | BEH-SLICE-ARTIFACT |
 | traces-to | COMP-CORE-SLICER | BEH-SLICE-ARTIFACT |
+| contains | BEH-SLICE | BEH-SLICE-COMPONENT |
 | traces-to | COMP-CORE-SLICER | BEH-SLICE-COMPONENT |
+| contains | BEH-DIFF | BEH-DIFF-ENTITIES |
 | traces-to | COMP-CORE-DIFFER | BEH-DIFF-ENTITIES |
+| contains | BEH-DIFF | BEH-DIFF-RELS |
 | traces-to | COMP-CORE-DIFFER | BEH-DIFF-RELS |
 | contains | BEH-MERGE | BEH-MERGE-MANIFEST |
 | traces-to | COMP-CORE-MERGER | BEH-MERGE-MANIFEST |
@@ -1395,9 +1268,30 @@
 | traces-to | COMP-CORE-MERGER | BEH-MERGE-COMPACT |
 | contains | BEH-MERGE | BEH-MERGE-COMPOSE |
 | traces-to | COMP-CORE-MERGER | BEH-MERGE-COMPOSE |
+| contains | BEH-DECOMPOSE | BEH-DECOMPOSE-IDENTIFY |
 | traces-to | COMP-CORE-DECOMPOSER | BEH-DECOMPOSE-IDENTIFY |
+| contains | BEH-DECOMPOSE | BEH-DECOMPOSE-COMPLEXITY |
 | traces-to | COMP-CORE-DECOMPOSER | BEH-DECOMPOSE-COMPLEXITY |
+| contains | BEH-DECOMPOSE | BEH-DECOMPOSE-PARTITION |
 | traces-to | COMP-CORE-DECOMPOSER | BEH-DECOMPOSE-PARTITION |
+| triggers | BEH-PARSE-LOAD | BEH-VALIDATE-IDS |
+| triggers | BEH-VALIDATE-IDS | BEH-VALIDATE-REFS |
+| triggers | BEH-VALIDATE-REFS | BEH-VALIDATE-ORPHANS |
+| triggers | BEH-VALIDATE-ORPHANS | BEH-VALIDATE-STATUS |
+| triggers | BEH-VALIDATE-STATUS | BEH-VALIDATE-CAPS |
+| triggers | BEH-VALIDATE-CAPS | BEH-VALIDATE-META |
+| triggers | BEH-VALIDATE-META | BEH-VALIDATE-V11 |
+| triggers | BEH-VALIDATE-V11 | BEH-VALIDATE-REGEN |
+| triggers | BEH-VALIDATE-REGEN | BEH-VALIDATE-PROFILE |
+| triggers | BEH-VALIDATE-PROFILE | BEH-PROFILE-LOAD |
+| triggers | BEH-VALIDATE-PROFILE | BEH-VALIDATE-IMPROVE |
+| triggers | BEH-DIFF-ENTITIES | BEH-DIFF-RELS |
+| triggers | BEH-MERGE-MANIFEST | BEH-MERGE-ENRICH |
+| triggers | BEH-MERGE-ENRICH | BEH-MERGE-COMPOSE |
+| triggers | BEH-MERGE-COMPOSE | BEH-MERGE-COMPACT |
+| triggers | BEH-SLICE-FBLOCK | BEH-SLICE-COMPONENT |
+| triggers | BEH-DECOMPOSE-IDENTIFY | BEH-DECOMPOSE-COMPLEXITY |
+| triggers | BEH-DECOMPOSE-COMPLEXITY | BEH-DECOMPOSE-PARTITION |
 
 \newpage
 
@@ -1410,11 +1304,11 @@
 - **Interfaces:** 0
 - **Behaviors:** 6
 - **Constraints:** 0
-- **Relationships:** 13
+- **Relationships:** 17
 
 **Capabilities:**
 
-- CAP-F7: Model Extraction (F-Block F4)
+- CAP-EXTRACT: Model Extraction (F-Block F4)
 
 **Behaviors:**
 
@@ -1435,7 +1329,7 @@
 
 | Type | From | To |
 |------|------|-----|
-| realizes | COMP-EXTRACT | CAP-F7 |
+| realizes | COMP-EXTRACT | CAP-EXTRACT |
 | depends-on | COMP-EXTRACT | COMP-CORE |
 | traces-to | COMP-EXTRACT | BEH-EXTRACT |
 | contains | BEH-EXTRACT | BEH-EXTRACT-CAPS |
@@ -1448,23 +1342,30 @@
 | traces-to | COMP-EXTRACT | BEH-EXTRACT-IFACES |
 | contains | BEH-EXTRACT | BEH-EXTRACT-RELS |
 | traces-to | COMP-EXTRACT | BEH-EXTRACT-RELS |
+| triggers | BEH-EXTRACT-CAPS | BEH-EXTRACT-ACTORS |
+| triggers | BEH-EXTRACT-ACTORS | BEH-EXTRACT-COMPS |
+| triggers | BEH-EXTRACT-COMPS | BEH-EXTRACT-IFACES |
+| triggers | BEH-EXTRACT-IFACES | BEH-EXTRACT-RELS |
 
 \newpage
 
 ## Sub-Model F5: Manifest
 
-- **Validation Score:** 84/100
+- **Validation Score:** 82/100
 - **Refines:** COMP-MANIFEST
 - **Components:** 9
-- **Capabilities:** 1
+- **Capabilities:** 4
 - **Interfaces:** 1
 - **Behaviors:** 21
 - **Constraints:** 0
-- **Relationships:** 68
+- **Relationships:** 91
 
 **Capabilities:**
 
-- CAP-F2: Reality Manifest Generation (F-Block F5)
+- CAP-MANIFEST: Reality Manifest Generation (F-Block F5)
+- CAP-MANIFEST-SCAN: Source Scanning (F-Block F5)
+- CAP-MANIFEST-METRICS: Metrics Computation (F-Block F5)
+- CAP-MANIFEST-TESTS: Test Analysis (F-Block F5)
 
 **Interfaces:**
 
@@ -1520,7 +1421,7 @@
 | contains | COMP-MANIFEST | COMP-MANIFEST-TEST-ANALYZER |
 | contains | COMP-MANIFEST | COMP-MANIFEST-GENERATOR |
 | contains | COMP-MANIFEST | COMP-MANIFEST-TYPES |
-| realizes | COMP-MANIFEST | CAP-F2 |
+| realizes | COMP-MANIFEST | CAP-MANIFEST |
 | exposes | COMP-MANIFEST-GENERATOR | IF-MANIFEST-API |
 | depends-on | COMP-CLI | COMP-MANIFEST |
 | depends-on | COMP-MANIFEST | COMP-CONFIG |
@@ -1540,6 +1441,12 @@
 | depends-on | COMP-MANIFEST-BODY-HINTS | COMP-CORE-TYPES |
 | depends-on | COMP-MANIFEST-TEST-ANALYZER | COMP-CORE-TYPES |
 | traces-to | COMP-MANIFEST-GENERATOR | BEH-MANIFEST |
+| contains | CAP-MANIFEST | CAP-MANIFEST-SCAN |
+| contains | CAP-MANIFEST | CAP-MANIFEST-METRICS |
+| contains | CAP-MANIFEST | CAP-MANIFEST-TESTS |
+| realizes | COMP-MANIFEST-SCANNER | CAP-MANIFEST-SCAN |
+| realizes | COMP-MANIFEST-METRICS | CAP-MANIFEST-METRICS |
+| realizes | COMP-MANIFEST-TEST-ANALYZER | CAP-MANIFEST-TESTS |
 | contains | BEH-MANIFEST | BEH-SCAN-PARSE |
 | traces-to | COMP-MANIFEST-SCANNER | BEH-SCAN-PARSE |
 | contains | BEH-MANIFEST | BEH-SCAN-FUNCTIONS |
@@ -1580,22 +1487,42 @@
 | traces-to | COMP-MANIFEST-GENERATOR | BEH-RECURSIVE-SCAN |
 | contains | BEH-MANIFEST | BEH-RECURSIVE-DEPS |
 | traces-to | COMP-MANIFEST-GENERATOR | BEH-RECURSIVE-DEPS |
+| triggers | BEH-MANIFEST-CONFIG | BEH-MANIFEST-METRICS |
+| triggers | BEH-MANIFEST-METRICS | BEH-MANIFEST-BLOCKS |
+| triggers | BEH-MANIFEST-BLOCKS | BEH-MANIFEST-SCAN |
+| triggers | BEH-MANIFEST-SCAN | BEH-SCAN-PARSE |
+| triggers | BEH-SCAN-PARSE | BEH-SCAN-FUNCTIONS |
+| triggers | BEH-SCAN-FUNCTIONS | BEH-SCAN-CLASSES |
+| triggers | BEH-SCAN-CLASSES | BEH-SCAN-IMPORTS |
+| triggers | BEH-SCAN-IMPORTS | BEH-SCAN-CONSTANTS |
+| triggers | BEH-SCAN-CONSTANTS | BEH-SCAN-METRICS |
+| triggers | BEH-MANIFEST-SCAN | BEH-MANIFEST-IFACE |
+| triggers | BEH-MANIFEST-IFACE | BEH-IFACE-RESOLVE |
+| triggers | BEH-IFACE-RESOLVE | BEH-IFACE-DEDUP |
+| triggers | BEH-MANIFEST-IFACE | BEH-MANIFEST-ASSEMBLE |
+| triggers | BEH-ENRICH-TESTS | BEH-TEST-DISCOVER |
+| triggers | BEH-TEST-DISCOVER | BEH-TEST-ASSERTIONS |
+| triggers | BEH-BODYHINT-CLASSIFY | BEH-BODYHINT-SUMMARIZE |
+| triggers | BEH-RECURSIVE-SCAN | BEH-RECURSIVE-DEPS |
 
 \newpage
 
 ## Sub-Model F6: Orchestration
 
-- **Validation Score:** 88/100
+- **Validation Score:** 76/100
 - **Components:** 2
-- **Capabilities:** 1
+- **Capabilities:** 4
 - **Interfaces:** 1
 - **Behaviors:** 9
 - **Constraints:** 0
-- **Relationships:** 19
+- **Relationships:** 37
 
 **Capabilities:**
 
-- CAP-F10: Auto-Enrichment (F-Block F6)
+- CAP-ENRICH: Auto-Enrichment (F-Block F6)
+- CAP-ENRICH-SIGS: Signature Enrichment (F-Block F6)
+- CAP-ENRICH-CONSTS: Constant Enrichment (F-Block F6)
+- CAP-ENRICH-TESTS: Test Contract Enrichment (F-Block F6)
 
 **Interfaces:**
 
@@ -1624,7 +1551,7 @@
 
 | Type | From | To |
 |------|------|-----|
-| realizes | COMP-ENRICH | CAP-F10 |
+| realizes | COMP-ENRICH | CAP-ENRICH |
 | exposes | COMP-ENRICH | IF-ENRICH-API |
 | depends-on | COMP-CLI | COMP-ENRICH |
 | depends-on | COMP-ENRICH | COMP-CORE |
@@ -1632,34 +1559,52 @@
 | traces-to | COMP-ENRICH | BEH-ENRICH |
 | depends-on | COMP-DECOMPOSE | COMP-CORE |
 | depends-on | COMP-DECOMPOSE | COMP-CONFIG |
+| contains | CAP-ENRICH | CAP-ENRICH-SIGS |
+| contains | CAP-ENRICH | CAP-ENRICH-CONSTS |
+| contains | CAP-ENRICH | CAP-ENRICH-TESTS |
+| realizes | COMP-ENRICH | CAP-ENRICH-SIGS |
+| realizes | COMP-ENRICH | CAP-ENRICH-CONSTS |
+| realizes | COMP-ENRICH | CAP-ENRICH-TESTS |
 | contains | BEH-ENRICH | BEH-ENRICH-SIGS |
 | traces-to | COMP-ENRICH | BEH-ENRICH-SIGS |
 | contains | BEH-ENRICH | BEH-ENRICH-CONSTS |
 | traces-to | COMP-ENRICH | BEH-ENRICH-CONSTS |
 | contains | BEH-ENRICH | BEH-ENRICH-TESTS |
 | traces-to | COMP-ENRICH | BEH-ENRICH-TESTS |
+| contains | BEH-DECOMPOSE | BEH-ORCH-FIND-COMPS |
 | traces-to | COMP-DECOMPOSE | BEH-ORCH-FIND-COMPS |
+| contains | BEH-DECOMPOSE | BEH-ORCH-FIND-PARENT |
 | traces-to | COMP-DECOMPOSE | BEH-ORCH-FIND-PARENT |
+| contains | BEH-DECOMPOSE | BEH-ORCH-TRACE |
 | traces-to | COMP-DECOMPOSE | BEH-ORCH-TRACE |
+| contains | BEH-DECOMPOSE | BEH-ORCH-COLLECT-RELS |
 | traces-to | COMP-DECOMPOSE | BEH-ORCH-COLLECT-RELS |
+| contains | BEH-DECOMPOSE | BEH-ORCH-BUILD |
 | traces-to | COMP-DECOMPOSE | BEH-ORCH-BUILD |
+| triggers | BEH-ENRICH-SIGS | BEH-ENRICH-CONSTS |
+| triggers | BEH-ENRICH-CONSTS | BEH-ENRICH-TESTS |
+| triggers | BEH-ENRICH-TESTS | BEH-TEST-DISCOVER |
+| triggers | BEH-ORCH-FIND-COMPS | BEH-ORCH-FIND-PARENT |
+| triggers | BEH-ORCH-FIND-PARENT | BEH-ORCH-TRACE |
+| triggers | BEH-ORCH-TRACE | BEH-ORCH-COLLECT-RELS |
+| triggers | BEH-ORCH-COLLECT-RELS | BEH-ORCH-BUILD |
 
 \newpage
 
 ## Sub-Model F7: Profiles
 
-- **Validation Score:** 94/100
+- **Validation Score:** 88/100
 - **Refines:** COMP-PROFILES
 - **Components:** 1
 - **Capabilities:** 1
 - **Interfaces:** 1
 - **Behaviors:** 2
 - **Constraints:** 0
-- **Relationships:** 6
+- **Relationships:** 9
 
 **Capabilities:**
 
-- CAP-F8: Domain Profiles (F-Block F7)
+- CAP-PROFILES: Domain Profiles (F-Block F7)
 
 **Interfaces:**
 
@@ -1680,12 +1625,15 @@
 
 | Type | From | To |
 |------|------|-----|
-| realizes | COMP-PROFILES | CAP-F8 |
+| realizes | COMP-PROFILES | CAP-PROFILES |
 | exposes | COMP-PROFILES | IF-PROFILE-API |
 | depends-on | COMP-CORE | COMP-PROFILES |
 | depends-on | COMP-CORE-VALIDATOR | COMP-PROFILES |
+| contains | BEH-VALIDATE | BEH-PROFILE-LOAD |
 | traces-to | COMP-PROFILES | BEH-PROFILE-LOAD |
+| contains | BEH-VALIDATE | BEH-PROFILE-APPLY |
 | traces-to | COMP-PROFILES | BEH-PROFILE-APPLY |
+| triggers | BEH-VALIDATE-PROFILE | BEH-PROFILE-LOAD |
 
 \newpage
 
@@ -1702,7 +1650,7 @@
 
 **Capabilities:**
 
-- CAP-F6: Schema Specification (F-Block F8)
+- CAP-SCHEMA: Schema Specification (F-Block F8)
 
 **Constraints:**
 
@@ -1718,7 +1666,7 @@
 
 | Type | From | To |
 |------|------|-----|
-| realizes | COMP-SPEC | CAP-F6 |
+| realizes | COMP-SPEC | CAP-SCHEMA |
 | constrained-by | COMP-SPEC | CON-SCHEMA |
 | depends-on | COMP-CORE | COMP-SPEC |
 
@@ -1726,18 +1674,18 @@
 
 ## Sub-Model F9: Utils
 
-- **Validation Score:** 90/100
+- **Validation Score:** 86/100
 - **Refines:** COMP-UTILS
 - **Components:** 1
 - **Capabilities:** 1
 - **Interfaces:** 0
 - **Behaviors:** 2
 - **Constraints:** 0
-- **Relationships:** 7
+- **Relationships:** 10
 
 **Capabilities:**
 
-- CAP-F9: Shared Utilities (F-Block F9)
+- CAP-UTILS: Shared Utilities (F-Block F9)
 
 **Behaviors:**
 
@@ -1754,12 +1702,15 @@
 
 | Type | From | To |
 |------|------|-----|
-| realizes | COMP-UTILS | CAP-F9 |
+| realizes | COMP-UTILS | CAP-UTILS |
 | depends-on | COMP-MANIFEST | COMP-UTILS |
 | depends-on | COMP-CORE-MERGER | COMP-UTILS |
 | depends-on | COMP-CORE-DECOMPOSER | COMP-UTILS |
 | depends-on | COMP-MANIFEST-BLOCKS | COMP-UTILS |
+| contains | BEH-MANIFEST | BEH-UTILS-DISCOVER |
 | traces-to | COMP-UTILS | BEH-UTILS-DISCOVER |
+| contains | BEH-MANIFEST | BEH-UTILS-TESTS |
 | traces-to | COMP-UTILS | BEH-UTILS-TESTS |
+| triggers | BEH-UTILS-DISCOVER | BEH-UTILS-TESTS |
 
 \newpage

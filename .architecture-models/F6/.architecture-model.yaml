@@ -6,16 +6,50 @@ meta:
   parent_model: ../../.architecture-model.yaml
 entities:
   capabilities:
-  - id: CAP-F10
+  - id: CAP-ENRICH
     name: Auto-Enrichment
     status: ACTIVE
     description: Populate signatures, constants, and test_contracts from AST scanning
     f_block: F6
+  - id: CAP-ENRICH-SIGS
+    name: Signature Enrichment
+    status: ACTIVE
+    description: Extract function signatures from AST
+    f_block: F6
+    priority: high
+  - id: CAP-ENRICH-CONSTS
+    name: Constant Enrichment
+    status: ACTIVE
+    description: Extract module-level constants
+    f_block: F6
+    priority: high
+  - id: CAP-ENRICH-TESTS
+    name: Test Contract Enrichment
+    status: ACTIVE
+    description: Discover and extract test contracts
+    f_block: F6
+    priority: high
   behaviors:
   - id: BEH-ENRICH
     name: Auto-Enrichment
     status: ACTIVE
     description: Enrich architecture model with function signatures, constants, and test contracts from AST
+    trigger: 'CLI: architecture-model enrich <path>'
+    actor: ACT-DEV
+    preconditions:
+    - .architecture-model.yaml exists
+    - Source files accessible
+    postconditions:
+    - Components enriched with signatures, constants, test_contracts
+    - Model regen-readiness score improved
+    steps:
+    - Load architecture model
+    - For each component with source files, extract function signatures from AST
+    - Extract module-level constants and enum members
+    - Discover test files via 7 naming conventions
+    - Extract test contracts (assertions, expected values) from test AST
+    - Update component signatures, constants, and test_contracts fields
+    - Save enriched model
   - id: BEH-ENRICH-SIGS
     name: Signature Enrichment
     status: ACTIVE
@@ -209,7 +243,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-ENRICH
-  to: CAP-F10
+  to: CAP-ENRICH
 - type: exposes
   from: COMP-ENRICH
   to: IF-ENRICH-API
@@ -231,6 +265,24 @@ relationships:
 - type: depends-on
   from: COMP-DECOMPOSE
   to: COMP-CONFIG
+- type: contains
+  from: CAP-ENRICH
+  to: CAP-ENRICH-SIGS
+- type: contains
+  from: CAP-ENRICH
+  to: CAP-ENRICH-CONSTS
+- type: contains
+  from: CAP-ENRICH
+  to: CAP-ENRICH-TESTS
+- type: realizes
+  from: COMP-ENRICH
+  to: CAP-ENRICH-SIGS
+- type: realizes
+  from: COMP-ENRICH
+  to: CAP-ENRICH-CONSTS
+- type: realizes
+  from: COMP-ENRICH
+  to: CAP-ENRICH-TESTS
 - type: contains
   from: BEH-ENRICH
   to: BEH-ENRICH-SIGS
@@ -278,4 +330,25 @@ relationships:
   to: BEH-ORCH-BUILD
 - type: traces-to
   from: COMP-DECOMPOSE
+  to: BEH-ORCH-BUILD
+- type: triggers
+  from: BEH-ENRICH-SIGS
+  to: BEH-ENRICH-CONSTS
+- type: triggers
+  from: BEH-ENRICH-CONSTS
+  to: BEH-ENRICH-TESTS
+- type: triggers
+  from: BEH-ENRICH-TESTS
+  to: BEH-TEST-DISCOVER
+- type: triggers
+  from: BEH-ORCH-FIND-COMPS
+  to: BEH-ORCH-FIND-PARENT
+- type: triggers
+  from: BEH-ORCH-FIND-PARENT
+  to: BEH-ORCH-TRACE
+- type: triggers
+  from: BEH-ORCH-TRACE
+  to: BEH-ORCH-COLLECT-RELS
+- type: triggers
+  from: BEH-ORCH-COLLECT-RELS
   to: BEH-ORCH-BUILD

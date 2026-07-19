@@ -7,16 +7,51 @@ meta:
   refines_component: COMP-MANIFEST
 entities:
   capabilities:
-  - id: CAP-F2
+  - id: CAP-MANIFEST
     name: Reality Manifest Generation
     status: ACTIVE
     description: AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts
     f_block: F5
+  - id: CAP-MANIFEST-SCAN
+    name: Source Scanning
+    status: ACTIVE
+    description: AST parsing, function/class/import extraction
+    f_block: F5
+    priority: high
+  - id: CAP-MANIFEST-METRICS
+    name: Metrics Computation
+    status: ACTIVE
+    description: Line counts, complexity, body hints
+    f_block: F5
+    priority: high
+  - id: CAP-MANIFEST-TESTS
+    name: Test Analysis
+    status: ACTIVE
+    description: Test contract discovery and assertion extraction
+    f_block: F5
+    priority: high
   behaviors:
   - id: BEH-MANIFEST
     name: Manifest Generation
     status: ACTIVE
     description: Walk source tree, parse ASTs, extract functions/classes/imports, compute metrics, discover blocks
+    trigger: 'CLI: architecture-model manifest <path>'
+    actor: ACT-DEV
+    preconditions:
+    - Project directory exists
+    - Configuration available (auto-discovered or .architecture-model.yaml)
+    postconditions:
+    - Manifest JSON written with all blocks and metrics
+    - Each file scanned with function signatures and body hints
+    steps:
+    - 'Load or discover project configuration (F2: config)'
+    - Compute project-wide metrics (total lines, file counts)
+    - Assemble functional blocks from config
+    - 'Scan all source files via AST (F5: scanner)'
+    - Extract functions, classes, imports, constants per file
+    - 'Classify function complexity and generate body hints (F5: body_hints)'
+    - 'Discover inter-block interfaces from import analysis (F5: interfaces)'
+    - Assemble final manifest with blocks, interfaces, metrics
   - id: BEH-SCAN-PARSE
     name: AST Parsing
     status: ACTIVE
@@ -1290,7 +1325,7 @@ relationships:
   to: COMP-MANIFEST-TYPES
 - type: realizes
   from: COMP-MANIFEST
-  to: CAP-F2
+  to: CAP-MANIFEST
 - type: exposes
   from: COMP-MANIFEST-GENERATOR
   to: IF-MANIFEST-API
@@ -1348,6 +1383,24 @@ relationships:
 - type: traces-to
   from: COMP-MANIFEST-GENERATOR
   to: BEH-MANIFEST
+- type: contains
+  from: CAP-MANIFEST
+  to: CAP-MANIFEST-SCAN
+- type: contains
+  from: CAP-MANIFEST
+  to: CAP-MANIFEST-METRICS
+- type: contains
+  from: CAP-MANIFEST
+  to: CAP-MANIFEST-TESTS
+- type: realizes
+  from: COMP-MANIFEST-SCANNER
+  to: CAP-MANIFEST-SCAN
+- type: realizes
+  from: COMP-MANIFEST-METRICS
+  to: CAP-MANIFEST-METRICS
+- type: realizes
+  from: COMP-MANIFEST-TEST-ANALYZER
+  to: CAP-MANIFEST-TESTS
 - type: contains
   from: BEH-MANIFEST
   to: BEH-SCAN-PARSE
@@ -1467,4 +1520,55 @@ relationships:
   to: BEH-RECURSIVE-DEPS
 - type: traces-to
   from: COMP-MANIFEST-GENERATOR
+  to: BEH-RECURSIVE-DEPS
+- type: triggers
+  from: BEH-MANIFEST-CONFIG
+  to: BEH-MANIFEST-METRICS
+- type: triggers
+  from: BEH-MANIFEST-METRICS
+  to: BEH-MANIFEST-BLOCKS
+- type: triggers
+  from: BEH-MANIFEST-BLOCKS
+  to: BEH-MANIFEST-SCAN
+- type: triggers
+  from: BEH-MANIFEST-SCAN
+  to: BEH-SCAN-PARSE
+- type: triggers
+  from: BEH-SCAN-PARSE
+  to: BEH-SCAN-FUNCTIONS
+- type: triggers
+  from: BEH-SCAN-FUNCTIONS
+  to: BEH-SCAN-CLASSES
+- type: triggers
+  from: BEH-SCAN-CLASSES
+  to: BEH-SCAN-IMPORTS
+- type: triggers
+  from: BEH-SCAN-IMPORTS
+  to: BEH-SCAN-CONSTANTS
+- type: triggers
+  from: BEH-SCAN-CONSTANTS
+  to: BEH-SCAN-METRICS
+- type: triggers
+  from: BEH-MANIFEST-SCAN
+  to: BEH-MANIFEST-IFACE
+- type: triggers
+  from: BEH-MANIFEST-IFACE
+  to: BEH-IFACE-RESOLVE
+- type: triggers
+  from: BEH-IFACE-RESOLVE
+  to: BEH-IFACE-DEDUP
+- type: triggers
+  from: BEH-MANIFEST-IFACE
+  to: BEH-MANIFEST-ASSEMBLE
+- type: triggers
+  from: BEH-ENRICH-TESTS
+  to: BEH-TEST-DISCOVER
+- type: triggers
+  from: BEH-TEST-DISCOVER
+  to: BEH-TEST-ASSERTIONS
+- type: triggers
+  from: BEH-BODYHINT-CLASSIFY
+  to: BEH-BODYHINT-SUMMARIZE
+- type: triggers
+  from: BEH-RECURSIVE-SCAN
   to: BEH-RECURSIVE-DEPS

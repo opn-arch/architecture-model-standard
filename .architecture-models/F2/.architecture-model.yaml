@@ -7,7 +7,7 @@ meta:
   refines_component: COMP-CONFIG
 entities:
   capabilities:
-  - id: CAP-F5
+  - id: CAP-CONFIG
     name: Configuration Management
     status: ACTIVE
     description: Auto-discovery config loading and project configuration schema
@@ -139,7 +139,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-CONFIG
-  to: CAP-F5
+  to: CAP-CONFIG
 - type: depends-on
   from: COMP-CLI
   to: COMP-CONFIG

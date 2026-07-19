@@ -2,13 +2,13 @@
 
 ```mermaid
 flowchart LR
-    subgraph F1[CLI Operations]
+    subgraph F1[Generation CLI Commands]
         COMP_CLI[cli]
     end
     subgraph F2[Configuration Management]
         COMP_CONFIG[config]
     end
-    subgraph F3[Model Slicing & Diffing]
+    subgraph F3[Model Merging]
         COMP_CORE[core]
         COMP_CORE_PARSER[core.parser]
         COMP_CORE_VALIDATOR[core.validator]
@@ -21,7 +21,7 @@ flowchart LR
     subgraph F4[Model Extraction]
         COMP_EXTRACT[extract]
     end
-    subgraph F5[Reality Manifest Generation]
+    subgraph F5[Test Analysis]
         COMP_MANIFEST[manifest]
         COMP_MANIFEST_SCANNER[manifest.scanner]
         COMP_MANIFEST_BLOCKS[manifest.blocks]
@@ -32,7 +32,7 @@ flowchart LR
         COMP_MANIFEST_GENERATOR[manifest.generator]
         COMP_MANIFEST_TYPES[manifest.types]
     end
-    subgraph F6[Auto-Enrichment]
+    subgraph F6[Test Contract Enrichment]
         COMP_ENRICH[enrich]
         COMP_DECOMPOSE[decompose]
     end

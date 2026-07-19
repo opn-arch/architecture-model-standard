@@ -7,7 +7,7 @@ meta:
   refines_component: COMP-EXTRACT
 entities:
   capabilities:
-  - id: CAP-F7
+  - id: CAP-EXTRACT
     name: Model Extraction
     status: ACTIVE
     description: Extract architecture model from source code
@@ -17,6 +17,21 @@ entities:
     name: Model Extraction from Code
     status: ACTIVE
     description: Extract architecture model entities and relationships from source code analysis
+    trigger: 'MCP tool: architect_extract'
+    actor: ACT-LLM
+    preconditions:
+    - Source code accessible
+    - Manifest generated
+    postconditions:
+    - Architecture model extracted from code
+    - Model validates at score >= 90
+    steps:
+    - Analyze source structure to derive capabilities
+    - Identify external actors from usage patterns
+    - Map source modules to architecture components
+    - Derive interfaces from import/export analysis
+    - Infer relationships between entities
+    - Assemble and validate architecture model
   - id: BEH-EXTRACT-CAPS
     name: Extract Capabilities
     status: ACTIVE
@@ -133,7 +148,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-EXTRACT
-  to: CAP-F7
+  to: CAP-EXTRACT
 - type: depends-on
   from: COMP-EXTRACT
   to: COMP-CORE
@@ -169,4 +184,16 @@ relationships:
   to: BEH-EXTRACT-RELS
 - type: traces-to
   from: COMP-EXTRACT
+  to: BEH-EXTRACT-RELS
+- type: triggers
+  from: BEH-EXTRACT-CAPS
+  to: BEH-EXTRACT-ACTORS
+- type: triggers
+  from: BEH-EXTRACT-ACTORS
+  to: BEH-EXTRACT-COMPS
+- type: triggers
+  from: BEH-EXTRACT-COMPS
+  to: BEH-EXTRACT-IFACES
+- type: triggers
+  from: BEH-EXTRACT-IFACES
   to: BEH-EXTRACT-RELS

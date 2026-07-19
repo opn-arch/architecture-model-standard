@@ -1,4 +1,4 @@
-# F3: Model Slicing & Diffing
+# F3: Model Merging
 
 ```mermaid
 flowchart TB

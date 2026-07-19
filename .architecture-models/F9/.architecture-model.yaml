@@ -7,7 +7,7 @@ meta:
   refines_component: COMP-UTILS
 entities:
   capabilities:
-  - id: CAP-F9
+  - id: CAP-UTILS
     name: Shared Utilities
     status: ACTIVE
     description: File discovery, exclusion patterns, and shared helper functions
@@ -116,7 +116,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-UTILS
-  to: CAP-F9
+  to: CAP-UTILS
 - type: depends-on
   from: COMP-MANIFEST
   to: COMP-UTILS
@@ -140,4 +140,7 @@ relationships:
   to: BEH-UTILS-TESTS
 - type: traces-to
   from: COMP-UTILS
+  to: BEH-UTILS-TESTS
+- type: triggers
+  from: BEH-UTILS-DISCOVER
   to: BEH-UTILS-TESTS

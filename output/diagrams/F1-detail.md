@@ -1,4 +1,4 @@
-# F1: CLI Operations
+# F1: Generation CLI Commands
 
 ```mermaid
 flowchart TB
