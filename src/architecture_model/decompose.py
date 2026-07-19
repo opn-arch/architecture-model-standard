@@ -1,46 +1,38 @@
-"""Generate recursive sub-models from parent model + recursive manifests.
+"""Generate recursive sub-models from parent model via relationship tracing.
 
-For each F-block, produces an ArchitectureModel where:
-- Meta links to parent via parent_model/refines_component
-- Components from parent model (matched by file paths)
-- Capabilities derived from public functions in manifest
-- Interfaces derived from cross-module imports within the block
-- Relationships: contains, exposes, depends-on
+For each F-block, produces an ArchitectureModel by tracing relationships
+outward from the block's components:
+- realizes --> Capability
+- exposes --> Interface
+- traces-to --> Behavior
+- constrained-by --> Constraint
+- depends-on --> boundary relationships to external components
+
+This produces sub-models that are faithful slices of the parent model,
+not invented entities.
 """
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
-from typing import Any
 
 from architecture_model.config.loader import get_config
 from architecture_model.core.parser import load_model, save_model
 from architecture_model.core.types import (
     ArchitectureModel,
-    Capability,
-    Component,
-    ComponentKind,
     Entities,
-    Interface,
-    InterfaceType,
     ModelMeta,
-    Priority,
     Relationship,
     RelationType,
-    Status,
-    Strength,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def _find_block_components(
-    model: ArchitectureModel,
-    block_dirs: list[str],
-) -> list[Component]:
+def _find_block_components(model, block_dirs, block_files=None):
     """Find components whose files are under the given block directories."""
     result = []
+    block_files_set = set(block_files or [])
     for comp in model.entities.components:
         if not comp.files:
             continue
@@ -50,187 +42,160 @@ def _find_block_components(
                     result.append(comp)
                     break
             else:
+                if f in block_files_set:
+                    result.append(comp)
+                    break
                 continue
             break
     return result
 
 
-def _find_parent_component(
-    model: ArchitectureModel,
-    block_components: list[Component],
-) -> str | None:
+def _find_parent_component(model, block_components):
     """Find the top-level parent component that contains block sub-components.
 
-    Looks for a component that has 'contains' relationships to the block components.
+    Returns (parent_id, parent_component) tuple.
     """
     block_ids = {c.id for c in block_components}
     for rel in model.relationships:
         if rel.type == RelationType.CONTAINS and rel.to_id in block_ids:
-            if rel.from_id.startswith("COMP-"):
-                return rel.from_id
+            parent_id = rel.from_id
+            if parent_id.startswith("COMP-"):
+                parent_comp = next(
+                    (c for c in model.entities.components if c.id == parent_id),
+                    None,
+                )
+                return parent_id, parent_comp
     if len(block_components) == 1:
-        return block_components[0].id
-    return None
+        return block_components[0].id, block_components[0]
+    return None, None
 
 
-def _load_block_manifest(project_root: Path, block_id: str) -> dict | None:
-    """Load a recursive manifest for a block."""
-    manifest_path = project_root / "output" / "manifests" / block_id / "manifest.json"
-    if not manifest_path.exists():
-        logger.warning("No recursive manifest for %s at %s", block_id, manifest_path)
-        return None
-    return json.loads(manifest_path.read_text(encoding="utf-8"))
+def _trace_entities(model, block_comp_ids):
+    """Trace relationships from block components to find connected entities.
 
-
-def _derive_capabilities(
-    manifest_data: dict,
-    block_id: str,
-) -> list[Capability]:
-    """Derive capabilities from public functions in manifest modules.
-
-    Filtering:
-    - Skip functions starting with '_' (private/internal helpers)
-    - If __init__.py exports exist for the block, only promote functions
-      whose names appear in the exports list
-    - Fall back to all non-underscore functions if no exports found
+    Follows:
+    - realizes --> Capability
+    - exposes --> Interface
+    - traces-to --> Behavior
+    - constrained-by --> Constraint
     """
-    modules = manifest_data.get("manifest", {}).get("modules", [])
+    cap_ids = set()
+    iface_ids = set()
+    behavior_ids = set()
+    constraint_ids = set()
 
-    # Collect __init__.py exports for this block
-    init_exports: set[str] = set()
-    for mod in modules:
-        if mod.get("file", "").endswith("__init__.py"):
-            exports = mod.get("exports", [])
-            init_exports.update(exports)
+    for rel in model.relationships:
+        if rel.from_id in block_comp_ids:
+            if rel.type == RelationType.REALIZES:
+                cap_ids.add(rel.to_id)
+            elif rel.type == RelationType.EXPOSES:
+                iface_ids.add(rel.to_id)
+            elif rel.type == RelationType.TRACES_TO:
+                behavior_ids.add(rel.to_id)
+            elif rel.type == RelationType.CONSTRAINED_BY:
+                constraint_ids.add(rel.to_id)
+        # Also check reverse: something traces-to a block component
+        if rel.to_id in block_comp_ids:
+            if rel.type == RelationType.TRACES_TO:
+                behavior_ids.add(rel.from_id)
 
-    caps = []
-    cap_idx = 1
-    for mod in modules:
-        for func in mod.get("functions", []):
-            name = func.get("name", "")
-            docstring = func.get("docstring", "")
-            if not name or name.startswith("_"):
-                continue
-            # If exports are known, only promote exported functions
-            if init_exports and name not in init_exports:
-                continue
-            caps.append(Capability(
-                id=f"CAP-{block_id}-{cap_idx}",
-                name=name,
-                status=Status.ACTIVE,
-                description=docstring or f"Function {name}",
-                f_block=block_id,
-            ))
-            cap_idx += 1
-    return caps
+    caps = [c for c in model.entities.capabilities if c.id in cap_ids]
+    ifaces = [i for i in model.entities.interfaces if i.id in iface_ids]
+    behaviors = [b for b in model.entities.behaviors if b.id in behavior_ids]
+    constraints = [c for c in model.entities.constraints if c.id in constraint_ids]
+
+    return caps, ifaces, behaviors, constraints
 
 
-def _derive_interfaces(
-    manifest_data: dict,
-    block_id: str,
-    block_dirs: list[str],
-) -> list[Interface]:
-    """Derive interfaces from cross-module imports within the block."""
-    interfaces = []
-    manifest_interfaces = manifest_data.get("manifest", {}).get("interfaces", [])
-    iface_idx = 1
-    seen: set[tuple[str, str]] = set()
-    for iface in manifest_interfaces:
-        source = iface.get("source", "")
-        target = iface.get("target", "")
-        import_path = iface.get("import_path", "")
-        key = (source, target)
+def _collect_relationships(model, entity_ids, block_comp_ids):
+    """Collect relationships relevant to the sub-model.
+
+    - Internal: both endpoints in entity_ids
+    - Boundary: depends-on crossing block boundary
+    """
+    rels = []
+    seen = set()
+
+    for rel in model.relationships:
+        key = (rel.from_id, rel.to_id, rel.type.value)
         if key in seen:
             continue
-        seen.add(key)
-        interfaces.append(Interface(
-            id=f"IF-{block_id}-{iface_idx}",
-            name=f"{Path(source).stem} -> {Path(target).stem}",
-            status=Status.ACTIVE,
-            type=InterfaceType.INTERNAL,
-            provider=target,
-            consumer=source,
-            description=f"Import: {import_path}",
-        ))
-        iface_idx += 1
-    return interfaces
 
-
-def _derive_relationships(
-    components: list[Component],
-    capabilities: list[Capability],
-    interfaces: list[Interface],
-    parent_component_id: str | None,
-    parent_model: ArchitectureModel,
-) -> list[Relationship]:
-    """Build relationships for the sub-model."""
-    rels = []
-    comp_ids = {c.id for c in components}
-
-    # Copy relevant relationships from parent
-    for rel in parent_model.relationships:
-        if rel.from_id in comp_ids and rel.to_id in comp_ids:
+        # Internal: both endpoints in our entity set
+        if rel.from_id in entity_ids and rel.to_id in entity_ids:
+            seen.add(key)
             rels.append(rel)
+            continue
 
-    # Add contains: parent -> each component (if parent exists and is not in block)
-    if parent_component_id and parent_component_id not in comp_ids:
-        for comp in components:
-            rels.append(Relationship(
-                type=RelationType.CONTAINS,
-                from_id=parent_component_id,
-                to_id=comp.id,
-            ))
+        # Boundary: depends-on crossing block boundary
+        if rel.type == RelationType.DEPENDS_ON:
+            if rel.from_id in block_comp_ids and rel.to_id not in block_comp_ids:
+                seen.add(key)
+                rels.append(rel)
+            elif rel.to_id in block_comp_ids and rel.from_id not in block_comp_ids:
+                seen.add(key)
+                rels.append(rel)
 
     return rels
 
 
-def decompose_model(
-    project_root: Path,
-) -> dict[str, ArchitectureModel]:
-    """Generate sub-models for each F-block.
+def decompose_model(project_root):
+    """Generate sub-models for each F-block by tracing parent model relationships.
+
+    For each F-block:
+    1. Find components by file path matching
+    2. Trace realizes/exposes/traces-to/constrained-by to find connected entities
+    3. Collect internal + boundary relationships
+    4. Build sub-model with parent's actual entities (not invented ones)
 
     Args:
-        project_root: Root directory with .architecture-model.yaml and output/manifests/
+        project_root: Root directory with .architecture-model.yaml
 
     Returns:
         Dict mapping block_id -> ArchitectureModel (sub-model)
     """
     model = load_model(project_root / ".architecture-model.yaml")
     config = get_config(project_root)
-    results: dict[str, ArchitectureModel] = {}
+    results = {}
 
     for block_id, block_def in config.fblock_dict.items():
         block_name = block_def.get("name", block_id)
         block_dirs = block_def.get("dirs", [])
+        block_files = block_def.get("files", [])
 
         logger.info("Decomposing %s: %s", block_id, block_name)
 
-        # Find components from parent model
-        components = _find_block_components(model, block_dirs)
+        # 1. Find components from parent model
+        components = _find_block_components(model, block_dirs, block_files)
         if not components:
             logger.warning("No components found for %s (dirs: %s)", block_id, block_dirs)
             continue
 
-        # Find parent component
-        parent_comp_id = _find_parent_component(model, components)
+        # Include parent component if it exists
+        parent_comp_id, parent_comp = _find_parent_component(model, components)
+        comp_ids = {c.id for c in components}
+        if parent_comp and parent_comp.id not in comp_ids:
+            components = [parent_comp] + components
+            comp_ids.add(parent_comp.id)
 
-        # Load recursive manifest
-        manifest_data = _load_block_manifest(project_root, block_id)
+        block_comp_ids = comp_ids.copy()
 
-        # Derive capabilities from manifest
-        capabilities: list[Capability] = []
-        interfaces: list[Interface] = []
-        if manifest_data:
-            capabilities = _derive_capabilities(manifest_data, block_id)
-            interfaces = _derive_interfaces(manifest_data, block_id, block_dirs)
-
-        # Build relationships
-        relationships = _derive_relationships(
-            components, capabilities, interfaces,
-            parent_comp_id, model,
+        # 2. Trace relationships to find connected entities
+        capabilities, interfaces, behaviors, constraints = _trace_entities(
+            model, block_comp_ids,
         )
 
-        # Build sub-model
+        # 3. Build full entity ID set for relationship collection
+        all_entity_ids = block_comp_ids.copy()
+        all_entity_ids.update(c.id for c in capabilities)
+        all_entity_ids.update(i.id for i in interfaces)
+        all_entity_ids.update(b.id for b in behaviors)
+        all_entity_ids.update(c.id for c in constraints)
+
+        # 4. Collect relationships
+        relationships = _collect_relationships(model, all_entity_ids, block_comp_ids)
+
+        # 5. Build sub-model
         sub_model = ArchitectureModel(
             meta=ModelMeta(
                 schema_version="2.0",
@@ -244,23 +209,24 @@ def decompose_model(
                 components=components,
                 capabilities=capabilities,
                 interfaces=interfaces,
+                behaviors=behaviors,
+                constraints=constraints,
             ),
             relationships=relationships,
         )
 
         results[block_id] = sub_model
         logger.info(
-            "  %s: %d components, %d capabilities, %d interfaces, %d relationships",
-            block_id, len(components), len(capabilities), len(interfaces), len(relationships),
+            "  %s: %d comps, %d caps, %d ifaces, %d behaviors, %d constraints, %d rels",
+            block_id,
+            len(components), len(capabilities), len(interfaces),
+            len(behaviors), len(constraints), len(relationships),
         )
 
     return results
 
 
-def write_sub_models(
-    sub_models: dict[str, ArchitectureModel],
-    output_dir: Path,
-) -> list[Path]:
+def write_sub_models(sub_models, output_dir):
     """Write sub-models to YAML files.
 
     Output structure:
