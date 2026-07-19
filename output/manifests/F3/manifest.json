@@ -4,7 +4,7 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-CORE",
   "manifest": {
-    "generated_at": "2026-07-19T01:43:39.930388+00:00",
+    "generated_at": "2026-07-19T02:13:53.606200+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 9,
@@ -1868,7 +1868,43 @@
         }
       }
     ],
-    "interfaces": []
+    "interfaces": [
+      {
+        "source": "src/architecture_model/core/coverage.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/decomposer.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "architecture_model.core.types"
+      },
+      {
+        "source": "src/architecture_model/core/differ.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/merger.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/parser.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/slicer.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/validator.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      }
+    ]
   },
   "children": {},
   "block_dependencies": [

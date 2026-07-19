@@ -4,11 +4,11 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-MANIFEST",
   "manifest": {
-    "generated_at": "2026-07-19T01:43:39.967242+00:00",
+    "generated_at": "2026-07-19T02:13:53.644319+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 12,
-      "total_lines": 3037,
+      "total_lines": 3108,
       "functions": 17,
       "classes": 15,
       "constants": 0
@@ -639,16 +639,20 @@
               "set",
               "debug",
               "removesuffix",
+              "replace",
               "len",
               "items",
               "get",
-              "replace",
               "add",
               "append",
+              "_add_edge",
+              "str",
+              "_resolve_dotted",
+              "InterfaceEdge",
               "startswith",
-              "InterfaceEdge"
+              "Path"
             ],
-            "docstring": "Derive interfaces from import analysis between scanned modules.\n\nArgs:\n    modules: Typed module info objects from AST scanning.\n    root: Project root path.\n\nReturns:\n    List of InterfaceEdge objects representing inter-module dependencies."
+            "docstring": "Derive interfaces from import analysis between scanned modules.\n\nUses both simple imports and imports_detailed (with relative import\nresolution) to find inter-module dependencies within the project.\n\nArgs:\n    modules: Typed module info objects from AST scanning.\n    root: Project root path.\n\nReturns:\n    List of InterfaceEdge objects representing inter-module dependencies."
           }
         ],
         "imports": [
@@ -659,7 +663,7 @@
           "typing",
           "architecture_model.manifest.types"
         ],
-        "line_count": 89,
+        "line_count": 160,
         "status": "active",
         "classes": [],
         "exports": [],
@@ -1531,7 +1535,118 @@
         }
       }
     ],
-    "interfaces": []
+    "interfaces": [
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/blocks.py",
+        "import_path": "architecture_model.manifest.blocks"
+      },
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/display.py",
+        "import_path": "architecture_model.manifest.display"
+      },
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/generator.py",
+        "import_path": "architecture_model.manifest.generator"
+      },
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/interfaces.py",
+        "import_path": "architecture_model.manifest.interfaces"
+      },
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/metrics.py",
+        "import_path": "architecture_model.manifest.metrics"
+      },
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/scanner.py",
+        "import_path": "architecture_model.manifest.scanner"
+      },
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/slicers.py",
+        "import_path": "architecture_model.manifest.slicers"
+      },
+      {
+        "source": "src/architecture_model/manifest/__init__.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      },
+      {
+        "source": "src/architecture_model/manifest/blocks.py",
+        "target": "src/architecture_model/manifest/scanner.py",
+        "import_path": "architecture_model.manifest.scanner"
+      },
+      {
+        "source": "src/architecture_model/manifest/blocks.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      },
+      {
+        "source": "src/architecture_model/manifest/generator.py",
+        "target": "src/architecture_model/manifest/blocks.py",
+        "import_path": "architecture_model.manifest.blocks"
+      },
+      {
+        "source": "src/architecture_model/manifest/generator.py",
+        "target": "src/architecture_model/manifest/interfaces.py",
+        "import_path": "architecture_model.manifest.interfaces"
+      },
+      {
+        "source": "src/architecture_model/manifest/generator.py",
+        "target": "src/architecture_model/manifest/metrics.py",
+        "import_path": "architecture_model.manifest.metrics"
+      },
+      {
+        "source": "src/architecture_model/manifest/generator.py",
+        "target": "src/architecture_model/manifest/scanner.py",
+        "import_path": "architecture_model.manifest.scanner"
+      },
+      {
+        "source": "src/architecture_model/manifest/generator.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      },
+      {
+        "source": "src/architecture_model/manifest/interfaces.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      },
+      {
+        "source": "src/architecture_model/manifest/metrics.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      },
+      {
+        "source": "src/architecture_model/manifest/recursive.py",
+        "target": "src/architecture_model/manifest/interfaces.py",
+        "import_path": "architecture_model.manifest.interfaces"
+      },
+      {
+        "source": "src/architecture_model/manifest/recursive.py",
+        "target": "src/architecture_model/manifest/scanner.py",
+        "import_path": "architecture_model.manifest.scanner"
+      },
+      {
+        "source": "src/architecture_model/manifest/recursive.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      },
+      {
+        "source": "src/architecture_model/manifest/scanner.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      },
+      {
+        "source": "src/architecture_model/manifest/slicers.py",
+        "target": "src/architecture_model/manifest/types.py",
+        "import_path": "architecture_model.manifest.types"
+      }
+    ]
   },
   "children": {},
   "block_dependencies": [

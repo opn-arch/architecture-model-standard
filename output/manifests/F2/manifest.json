@@ -4,7 +4,7 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-CONFIG",
   "manifest": {
-    "generated_at": "2026-07-19T01:43:39.882210+00:00",
+    "generated_at": "2026-07-19T02:13:53.548396+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 3,
@@ -366,7 +366,23 @@
         "module_assignments": {}
       }
     ],
-    "interfaces": []
+    "interfaces": [
+      {
+        "source": "src/architecture_model/config/__init__.py",
+        "target": "src/architecture_model/config/schema.py",
+        "import_path": "schema"
+      },
+      {
+        "source": "src/architecture_model/config/__init__.py",
+        "target": "src/architecture_model/config/loader.py",
+        "import_path": "loader"
+      },
+      {
+        "source": "src/architecture_model/config/loader.py",
+        "target": "src/architecture_model/config/schema.py",
+        "import_path": "schema"
+      }
+    ]
   },
   "children": {},
   "block_dependencies": [

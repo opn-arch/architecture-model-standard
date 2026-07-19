@@ -29,12 +29,28 @@ entities:
       \ always returns a valid config.\nWhen loading from YAML, auto-discovers sub_blocks for any block that\ndoesn't already\
       \ define them.\n\nArgs:\n    root: Project root directory.\n\nReturns:\n    ProjectConfig (from file or auto-discovered)."
     f_block: F2
-  - id: CAP-F2-4
-    name: write_config
+  interfaces:
+  - id: IF-F2-1
+    name: __init__ -> schema
     status: ACTIVE
-    description: "Write a ProjectConfig to .architecture-model.yaml.\n\nArgs:\n    config: The configuration to write.\n \
-      \   root: Directory to write to. Defaults to config.root.\n\nReturns:\n    Path to the written config file."
-    f_block: F2
+    description: 'Import: schema'
+    type: internal
+    provider: src/architecture_model/config/schema.py
+    consumer: src/architecture_model/config/__init__.py
+  - id: IF-F2-2
+    name: __init__ -> loader
+    status: ACTIVE
+    description: 'Import: loader'
+    type: internal
+    provider: src/architecture_model/config/loader.py
+    consumer: src/architecture_model/config/__init__.py
+  - id: IF-F2-3
+    name: loader -> schema
+    status: ACTIVE
+    description: 'Import: schema'
+    type: internal
+    provider: src/architecture_model/config/schema.py
+    consumer: src/architecture_model/config/loader.py
   components:
   - id: COMP-CONFIG
     name: config

@@ -205,6 +205,56 @@ entities:
     description: "Run all validation checks on the architecture model.\n\nArgs:\n    model: The model to validate.\n    strict:\
       \ If True, promote warnings to errors.\n\nReturns:\n    ValidationResult with all issues found."
     f_block: F3
+  interfaces:
+  - id: IF-F3-1
+    name: coverage -> types
+    status: ACTIVE
+    description: 'Import: types'
+    type: internal
+    provider: src/architecture_model/core/types.py
+    consumer: src/architecture_model/core/coverage.py
+  - id: IF-F3-2
+    name: decomposer -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.core.types'
+    type: internal
+    provider: src/architecture_model/core/types.py
+    consumer: src/architecture_model/core/decomposer.py
+  - id: IF-F3-3
+    name: differ -> types
+    status: ACTIVE
+    description: 'Import: types'
+    type: internal
+    provider: src/architecture_model/core/types.py
+    consumer: src/architecture_model/core/differ.py
+  - id: IF-F3-4
+    name: merger -> types
+    status: ACTIVE
+    description: 'Import: types'
+    type: internal
+    provider: src/architecture_model/core/types.py
+    consumer: src/architecture_model/core/merger.py
+  - id: IF-F3-5
+    name: parser -> types
+    status: ACTIVE
+    description: 'Import: types'
+    type: internal
+    provider: src/architecture_model/core/types.py
+    consumer: src/architecture_model/core/parser.py
+  - id: IF-F3-6
+    name: slicer -> types
+    status: ACTIVE
+    description: 'Import: types'
+    type: internal
+    provider: src/architecture_model/core/types.py
+    consumer: src/architecture_model/core/slicer.py
+  - id: IF-F3-7
+    name: validator -> types
+    status: ACTIVE
+    description: 'Import: types'
+    type: internal
+    provider: src/architecture_model/core/types.py
+    consumer: src/architecture_model/core/validator.py
   components:
   - id: COMP-CORE-PARSER
     name: core.parser

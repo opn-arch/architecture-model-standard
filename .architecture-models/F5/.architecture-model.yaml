@@ -16,118 +16,207 @@ entities:
       Returns a typed :class:`BlockManifest` with :class:`SubFunctionEntry` objects.'
     f_block: F5
   - id: CAP-F5-2
-    name: classify_function
-    status: ACTIVE
-    description: 'Classify a function''s body complexity.
-
-
-      Parses source, finds function by name, counts body statements
-
-      (excluding leading docstring). 1=TRIVIAL, 2-5=SHORT, 6+=COMPLEX.'
-    f_block: F5
-  - id: CAP-F5-3
-    name: extract_body_hint
-    status: ACTIVE
-    description: 'Produce a tiered body hint for a function.
-
-
-      - Trivial: exact single statement text
-
-      - Short: semicolon-joined statements
-
-      - Complex: structural summary'
-    f_block: F5
-  - id: CAP-F5-4
-    name: extract_file_hints
-    status: ACTIVE
-    description: 'Scan an entire file and produce FunctionSignature objects with body hints.
-
-
-      Excludes private functions (starting with ''_'') EXCEPT ''__init__''.
-
-      Includes class methods. When include_private=True, includes all functions.'
-    f_block: F5
-  - id: CAP-F5-5
     name: print_summary
     status: ACTIVE
     description: Print a terminal summary of the manifest.
     f_block: F5
-  - id: CAP-F5-6
+  - id: CAP-F5-3
     name: generate_manifest
     status: ACTIVE
     description: "Generate a full reality manifest via AST scan of the project.\n\nArgs:\n    project_root: Absolute path\
       \ to the project root directory.\n    config: Optional ProjectConfig. If None, loaded from .architecture-model.yaml.\n\
       \nReturns:\n    Typed Manifest dataclass. Call .to_dict() for JSON-compatible dict."
     f_block: F5
-  - id: CAP-F5-7
+  - id: CAP-F5-4
     name: load_or_generate_manifest
     status: ACTIVE
     description: "Load cached manifest if fresh (< 1 hour old), otherwise regenerate.\n\nArgs:\n    project_root: Path to\
       \ the project root.\n    output_dir: Optional output directory. If None, uses config output paths.\n\nReturns:\n   \
       \ The manifest dictionary (for backward compatibility with CLI/callers)."
     f_block: F5
-  - id: CAP-F5-8
+  - id: CAP-F5-5
     name: derive_interfaces
     status: ACTIVE
-    description: "Derive interfaces from import analysis between scanned modules.\n\nArgs:\n    modules: Typed module info\
-      \ objects from AST scanning.\n    root: Project root path.\n\nReturns:\n    List of InterfaceEdge objects representing\
-      \ inter-module dependencies."
+    description: "Derive interfaces from import analysis between scanned modules.\n\nUses both simple imports and imports_detailed\
+      \ (with relative import\nresolution) to find inter-module dependencies within the project.\n\nArgs:\n    modules: Typed\
+      \ module info objects from AST scanning.\n    root: Project root path.\n\nReturns:\n    List of InterfaceEdge objects\
+      \ representing inter-module dependencies."
     f_block: F5
-  - id: CAP-F5-9
+  - id: CAP-F5-6
     name: compute_metrics
     status: ACTIVE
     description: "Compute verified project metrics from filesystem.\n\nArgs:\n    root: Project root directory.\n    config:\
       \ Optional ProjectConfig. If None, loaded from .architecture-model.yaml.\n\nReturns:\n    MetricsResult with metric\
       \ values."
     f_block: F5
-  - id: CAP-F5-10
-    name: generate_block_manifest
-    status: ACTIVE
-    description: Generate a full Manifest scoped to a single F-block's files.
-    f_block: F5
-  - id: CAP-F5-11
-    name: generate_recursive_manifests
-    status: ACTIVE
-    description: Generate a RecursiveManifest for each F-block in the project config.
-    f_block: F5
-  - id: CAP-F5-12
-    name: write_recursive_manifests
-    status: ACTIVE
-    description: Write each RecursiveManifest to its own JSON file.
-    f_block: F5
-  - id: CAP-F5-13
+  - id: CAP-F5-7
     name: scan_file
     status: ACTIVE
     description: "Scan a single Python file and return typed metadata.\n\nArgs:\n    root: Project root directory.\n    filepath:\
       \ Absolute path to the Python file.\n\nReturns:\n    ModuleInfo with all extracted metadata."
     f_block: F5
-  - id: CAP-F5-14
+  - id: CAP-F5-8
     name: get_manifest_slice
     status: ACTIVE
     description: "Return focused markdown slice for artifact context injection.\n\nArgs:\n    manifest: A typed Manifest or\
       \ legacy raw dict.\n    artifact_name: One of the 10 artifact names.\n\nReturns:\n    Formatted markdown string with\
       \ relevant manifest data."
     f_block: F5
-  - id: CAP-F5-15
-    name: analyze_test_file
+  interfaces:
+  - id: IF-F5-1
+    name: __init__ -> blocks
     status: ACTIVE
-    description: 'Parse a test file and extract behavioral contracts.
-
-
-      Handles both unittest (assertEqual, assertTrue, assertRaises)
-
-      and pytest (assert ==, assert isinstance, pytest.raises) patterns.'
-    f_block: F5
-  - id: CAP-F5-16
-    name: extract_constants_from_contracts
+    description: 'Import: architecture_model.manifest.blocks'
+    type: internal
+    provider: src/architecture_model/manifest/blocks.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-2
+    name: __init__ -> display
     status: ACTIVE
-    description: 'Derive constants from value_equality contracts.
-
-
-      e.g., assertion "Fore.BLACK == ''\033[30m''" →
-
-      Constant(name="BLACK", value="30", context="attribute of Fore, produces escape code \033[30m")'
-    f_block: F5
+    description: 'Import: architecture_model.manifest.display'
+    type: internal
+    provider: src/architecture_model/manifest/display.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-3
+    name: __init__ -> generator
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.generator'
+    type: internal
+    provider: src/architecture_model/manifest/generator.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-4
+    name: __init__ -> interfaces
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.interfaces'
+    type: internal
+    provider: src/architecture_model/manifest/interfaces.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-5
+    name: __init__ -> metrics
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.metrics'
+    type: internal
+    provider: src/architecture_model/manifest/metrics.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-6
+    name: __init__ -> scanner
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.scanner'
+    type: internal
+    provider: src/architecture_model/manifest/scanner.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-7
+    name: __init__ -> slicers
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.slicers'
+    type: internal
+    provider: src/architecture_model/manifest/slicers.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-8
+    name: __init__ -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/__init__.py
+  - id: IF-F5-9
+    name: blocks -> scanner
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.scanner'
+    type: internal
+    provider: src/architecture_model/manifest/scanner.py
+    consumer: src/architecture_model/manifest/blocks.py
+  - id: IF-F5-10
+    name: blocks -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/blocks.py
+  - id: IF-F5-11
+    name: generator -> blocks
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.blocks'
+    type: internal
+    provider: src/architecture_model/manifest/blocks.py
+    consumer: src/architecture_model/manifest/generator.py
+  - id: IF-F5-12
+    name: generator -> interfaces
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.interfaces'
+    type: internal
+    provider: src/architecture_model/manifest/interfaces.py
+    consumer: src/architecture_model/manifest/generator.py
+  - id: IF-F5-13
+    name: generator -> metrics
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.metrics'
+    type: internal
+    provider: src/architecture_model/manifest/metrics.py
+    consumer: src/architecture_model/manifest/generator.py
+  - id: IF-F5-14
+    name: generator -> scanner
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.scanner'
+    type: internal
+    provider: src/architecture_model/manifest/scanner.py
+    consumer: src/architecture_model/manifest/generator.py
+  - id: IF-F5-15
+    name: generator -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/generator.py
+  - id: IF-F5-16
+    name: interfaces -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/interfaces.py
+  - id: IF-F5-17
+    name: metrics -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/metrics.py
+  - id: IF-F5-18
+    name: recursive -> interfaces
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.interfaces'
+    type: internal
+    provider: src/architecture_model/manifest/interfaces.py
+    consumer: src/architecture_model/manifest/recursive.py
+  - id: IF-F5-19
+    name: recursive -> scanner
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.scanner'
+    type: internal
+    provider: src/architecture_model/manifest/scanner.py
+    consumer: src/architecture_model/manifest/recursive.py
+  - id: IF-F5-20
+    name: recursive -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/recursive.py
+  - id: IF-F5-21
+    name: scanner -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/scanner.py
+  - id: IF-F5-22
+    name: slicers -> types
+    status: ACTIVE
+    description: 'Import: architecture_model.manifest.types'
+    type: internal
+    provider: src/architecture_model/manifest/types.py
+    consumer: src/architecture_model/manifest/slicers.py
   components:
   - id: COMP-MANIFEST-SCANNER
     name: manifest.scanner
