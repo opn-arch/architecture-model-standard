@@ -115,7 +115,63 @@ def generate_recursive_manifests(
             manifest=manifest,
         )
     
+    # Compute cross-block dependencies
+    block_deps = compute_block_dependencies(results, config)
+    for block_id, deps in block_deps.items():
+        if block_id in results:
+            results[block_id].block_dependencies = deps
+    
     return results
+
+
+def compute_block_dependencies(
+    manifests: dict[str, RecursiveManifest],
+    config,
+) -> dict[str, list[str]]:
+    """Compute cross-block dependency graph from import analysis.
+
+    For each block, examines all imports in its modules. If an import resolves
+    to a file belonging to a different block, that's a cross-block dependency.
+
+    Returns:
+        Dict mapping block_id -> list of block_ids it depends on.
+    """
+    # Build file -> block_id mapping from config
+    file_to_block: dict[str, str] = {}
+    for block_id, block_def in config.fblock_dict.items():
+        for d in block_def.get("dirs", []):
+            # Normalize: store dir prefix for matching
+            file_to_block[d.rstrip("/")] = block_id
+
+    def _resolve_import_to_block(import_path: str) -> str | None:
+        """Map a dotted import path to a block_id via directory prefix matching."""
+        # Convert dotted import to file-like path segments
+        parts = import_path.replace(".", "/")
+        for dir_prefix, bid in file_to_block.items():
+            if parts.startswith(dir_prefix.replace(".", "/")):
+                return bid
+        return None
+
+    dependencies: dict[str, list[str]] = {}
+    for block_id, rm in manifests.items():
+        deps: set[str] = set()
+        for mod in rm.manifest.modules:
+            # Check detailed imports if available
+            for imp in mod.imports_detailed:
+                target_module = imp.get("module", "") or imp.get("import_path", "")
+                if not target_module:
+                    continue
+                target_block = _resolve_import_to_block(target_module)
+                if target_block and target_block != block_id:
+                    deps.add(target_block)
+            # Also check simple imports list
+            for imp_str in mod.imports:
+                if isinstance(imp_str, str):
+                    target_block = _resolve_import_to_block(imp_str)
+                    if target_block and target_block != block_id:
+                        deps.add(target_block)
+        dependencies[block_id] = sorted(deps)
+    return dependencies
 
 
 def write_recursive_manifests(

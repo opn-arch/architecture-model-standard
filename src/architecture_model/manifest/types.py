@@ -244,6 +244,7 @@ class RecursiveManifest:
     component_id: str
     manifest: Manifest
     children: dict[str, 'RecursiveManifest'] = field(default_factory=dict)
+    block_dependencies: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -253,4 +254,5 @@ class RecursiveManifest:
             "component_id": self.component_id,
             "manifest": self.manifest.to_dict(),
             "children": {k: v.to_dict() for k, v in self.children.items()},
+            "block_dependencies": self.block_dependencies,
         }

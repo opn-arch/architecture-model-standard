@@ -177,3 +177,59 @@ def test_decompose_cli(tmp_path):
     ret = main(["decompose", str(root), "-o", str(out_dir)])
     assert ret == 0
     assert (out_dir / block_id / ".architecture-model.yaml").exists()
+
+
+def test_cross_block_dependencies(tmp_path):
+    """Test cross-block dependency computation from import analysis."""
+    from architecture_model.manifest.recursive import compute_block_dependencies
+    from architecture_model.manifest.types import Manifest, MetricsResult, ModuleInfo, RecursiveManifest, ScanReport
+
+    # Simulate two blocks: F1 (core) imports from F2 (utils)
+    mod_core = ModuleInfo(
+        file="src/pkg/core/parser.py",
+        name="parser",
+        docstring="",
+        functions=[],
+        line_count=10,
+        status="active",
+        classes=[],
+        imports=["src.pkg.utils.helpers"],
+        imports_detailed=[{"module": "src/pkg/utils/helpers"}],
+    )
+    mod_utils = ModuleInfo(
+        file="src/pkg/utils/helpers.py",
+        name="helpers",
+        docstring="",
+        functions=[],
+        line_count=10,
+        status="active",
+        classes=[],
+        imports=[],
+        imports_detailed=[],
+    )
+    manifest_core = Manifest(
+        generated_at="2026-01-01", project_root=str(tmp_path),
+        metrics=MetricsResult(values={}), functional_blocks={},
+        modules=[mod_core], interfaces=[], scan_report=ScanReport(),
+    )
+    manifest_utils = Manifest(
+        generated_at="2026-01-01", project_root=str(tmp_path),
+        metrics=MetricsResult(values={}), functional_blocks={},
+        modules=[mod_utils], interfaces=[], scan_report=ScanReport(),
+    )
+    manifests = {
+        "F1": RecursiveManifest(block_id="F1", block_name="Core", parent_model="m.yaml",
+                                component_id="COMP-CORE", manifest=manifest_core),
+        "F2": RecursiveManifest(block_id="F2", block_name="Utils", parent_model="m.yaml",
+                                component_id="COMP-UTILS", manifest=manifest_utils),
+    }
+
+    class FakeConfig:
+        fblock_dict = {
+            "F1": {"name": "Core", "dirs": ["src/pkg/core"]},
+            "F2": {"name": "Utils", "dirs": ["src/pkg/utils"]},
+        }
+
+    deps = compute_block_dependencies(manifests, FakeConfig())
+    assert "F2" in deps["F1"], f"F1 should depend on F2, got {deps}"
+    assert deps["F2"] == [], f"F2 should have no deps, got {deps['F2']}"
