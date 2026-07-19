@@ -233,3 +233,32 @@ def test_cross_block_dependencies(tmp_path):
     deps = compute_block_dependencies(manifests, FakeConfig())
     assert "F2" in deps["F1"], f"F1 should depend on F2, got {deps}"
     assert deps["F2"] == [], f"F2 should have no deps, got {deps['F2']}"
+
+
+def test_derive_interfaces_uses_imports_detailed(tmp_path):
+    """derive_interfaces resolves imports_detailed (relative + absolute) to edges."""
+    from architecture_model.manifest.interfaces import derive_interfaces
+    from architecture_model.manifest.types import ImportDetail, ModuleInfo, ScanReport
+
+    mod_a = ModuleInfo(
+        file="src/pkg/core/parser.py", name="parser", docstring="",
+        functions=[], line_count=10, status="active", classes=[],
+        imports=[], imports_detailed=[
+            ImportDetail(module="types", is_relative=True),  # from .types
+            ImportDetail(module="pkg.utils.helpers", is_relative=False),  # absolute
+        ],
+    )
+    mod_b = ModuleInfo(
+        file="src/pkg/core/types.py", name="types", docstring="",
+        functions=[], line_count=5, status="active", classes=[],
+        imports=[], imports_detailed=[],
+    )
+    mod_c = ModuleInfo(
+        file="src/pkg/utils/helpers.py", name="helpers", docstring="",
+        functions=[], line_count=5, status="active", classes=[],
+        imports=[], imports_detailed=[],
+    )
+    edges = derive_interfaces([mod_a, mod_b, mod_c], tmp_path)
+    sources_targets = {(e.source, Path(e.target).stem) for e in edges}
+    assert ("src/pkg/core/parser.py", "types") in sources_targets, f"Missing relative import edge: {sources_targets}"
+    assert ("src/pkg/core/parser.py", "helpers") in sources_targets, f"Missing absolute import edge: {sources_targets}"
