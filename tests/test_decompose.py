@@ -1,0 +1,168 @@
+"""Tests for model decomposition into recursive sub-models."""
+import json
+import textwrap
+from pathlib import Path
+
+import yaml
+
+from architecture_model.core.types import (
+    ArchitectureModel, Component, ComponentKind, Entities, ModelMeta,
+    Relationship, RelationType, Status, Strength,
+)
+from architecture_model.core.parser import save_model
+from architecture_model.decompose import decompose_model, write_sub_models
+
+
+def _setup_project(tmp_path):
+    """Create a minimal project with parent model, config, and recursive manifest.
+
+    Uses src-layout so discover_config() finds source_root=src/myproject
+    and creates F1 for the 'core' subpackage.
+    """
+    # Source files (need __init__.py at package root for src-layout detection)
+    pkg_root = tmp_path / "src" / "myproject"
+    pkg_root.mkdir(parents=True)
+    (pkg_root / "__init__.py").write_text("")
+
+    pkg = pkg_root / "core"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text("")
+    (pkg / "parser.py").write_text(textwrap.dedent('''
+        """Parser module."""
+        def parse(data: str) -> dict:
+            """Parse input data into structured format."""
+            return {"raw": data}
+
+        def validate(data: str) -> bool:
+            """Check if data is valid."""
+            return bool(data)
+    '''))
+    (pkg / "validator.py").write_text(textwrap.dedent('''
+        """Validator module."""
+        def check(model: dict) -> list:
+            """Run validation checks."""
+            return []
+    '''))
+
+    # Parent model
+    model = ArchitectureModel(
+        meta=ModelMeta(schema_version="2.0", project="test", generated_at="2026-01-01"),
+        entities=Entities(
+            components=[
+                Component(id="COMP-CORE", name="Core", status=Status.ACTIVE, kind=ComponentKind.PACKAGE),
+                Component(id="COMP-CORE-PARSER", name="Parser", status=Status.ACTIVE,
+                         files=["src/myproject/core/parser.py"], kind=ComponentKind.MODULE),
+                Component(id="COMP-CORE-VALIDATOR", name="Validator", status=Status.ACTIVE,
+                         files=["src/myproject/core/validator.py"], kind=ComponentKind.MODULE),
+            ],
+        ),
+        relationships=[
+            Relationship(type=RelationType.CONTAINS, from_id="COMP-CORE", to_id="COMP-CORE-PARSER"),
+            Relationship(type=RelationType.CONTAINS, from_id="COMP-CORE", to_id="COMP-CORE-VALIDATOR"),
+            Relationship(type=RelationType.DEPENDS_ON, from_id="COMP-CORE-VALIDATOR", to_id="COMP-CORE-PARSER"),
+        ],
+    )
+    save_model(model, tmp_path / ".architecture-model.yaml")
+
+    # Discover the block ID that will be assigned by discover_config
+    # (sorted subdirs of src/myproject → core → F1)
+    block_id = "F1"
+
+    # Recursive manifest
+    manifest_dir = tmp_path / "output" / "manifests" / block_id
+    manifest_dir.mkdir(parents=True)
+    manifest = {
+        "block_id": block_id,
+        "block_name": "Core",
+        "parent_model": ".architecture-model.yaml",
+        "component_id": "COMP-CORE",
+        "manifest": {
+            "generated_at": "2026-01-01",
+            "project_root": str(tmp_path),
+            "metrics": {"py_files": 3, "functions": 3},
+            "functional_blocks": {},
+            "modules": [
+                {
+                    "file": "src/myproject/core/parser.py",
+                    "name": "Parser module",
+                    "docstring": "Parser module.",
+                    "functions": [
+                        {"name": "parse", "signature": "parse(data: str) -> dict",
+                         "calls": [], "docstring": "Parse input data into structured format.", "raises": []},
+                        {"name": "validate", "signature": "validate(data: str) -> bool",
+                         "calls": ["bool"], "docstring": "Check if data is valid.", "raises": []},
+                    ],
+                    "imports": [], "line_count": 10, "status": "active", "classes": [],
+                    "exports": [], "decorated_functions": [], "imports_detailed": [],
+                    "module_constants": {}, "module_assignments": {},
+                },
+                {
+                    "file": "src/myproject/core/validator.py",
+                    "name": "Validator module",
+                    "docstring": "Validator module.",
+                    "functions": [
+                        {"name": "check", "signature": "check(model: dict) -> list",
+                         "calls": [], "docstring": "Run validation checks.", "raises": []},
+                    ],
+                    "imports": [], "line_count": 5, "status": "active", "classes": [],
+                    "exports": [], "decorated_functions": [], "imports_detailed": [],
+                    "module_constants": {}, "module_assignments": {},
+                },
+            ],
+            "interfaces": [
+                {"source": "src/myproject/core/validator.py",
+                 "target": "src/myproject/core/parser.py",
+                 "import_path": "myproject.core.parser"},
+            ],
+        },
+        "children": {},
+    }
+    (manifest_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+
+    return tmp_path, block_id
+
+
+def test_decompose_produces_sub_model(tmp_path):
+    root, block_id = _setup_project(tmp_path)
+    results = decompose_model(root)
+    assert block_id in results, f"Expected {block_id} in {list(results.keys())}"
+    sub = results[block_id]
+    assert sub.meta.parent_model == "../../.architecture-model.yaml"
+    assert sub.meta.refines_component == "COMP-CORE"
+    # Should include parser + validator (not the parent COMP-CORE which has no files)
+    assert len(sub.entities.components) == 2
+
+
+def test_decompose_derives_capabilities(tmp_path):
+    root, block_id = _setup_project(tmp_path)
+    results = decompose_model(root)
+    sub = results[block_id]
+    # parse, validate, check = 3 capabilities
+    assert len(sub.entities.capabilities) >= 3
+
+
+def test_decompose_derives_interfaces(tmp_path):
+    root, block_id = _setup_project(tmp_path)
+    results = decompose_model(root)
+    sub = results[block_id]
+    assert len(sub.entities.interfaces) >= 1  # validator -> parser
+
+
+def test_decompose_preserves_parent_relationships(tmp_path):
+    root, block_id = _setup_project(tmp_path)
+    results = decompose_model(root)
+    sub = results[block_id]
+    dep_rels = [r for r in sub.relationships if r.type == RelationType.DEPENDS_ON]
+    assert len(dep_rels) >= 1
+
+
+def test_write_sub_models(tmp_path):
+    root, block_id = _setup_project(tmp_path)
+    results = decompose_model(root)
+    out_dir = tmp_path / ".architecture-models"
+    written = write_sub_models(results, out_dir)
+    assert len(written) >= 1
+    assert (out_dir / block_id / ".architecture-model.yaml").exists()
+    data = yaml.safe_load((out_dir / block_id / ".architecture-model.yaml").read_text())
+    assert data["meta"]["parent_model"] == "../../.architecture-model.yaml"
+    assert "entities" in data
