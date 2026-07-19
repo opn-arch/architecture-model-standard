@@ -1,0 +1,480 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Manifest
+  system: Manifest
+  generated_at: '2026-07-18T19:26:09.372363+00:00'
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-MANIFEST
+entities:
+  capabilities:
+  - id: CAP-F5-1
+    name: process_block
+    status: ACTIVE
+    description: 'Process a single functional block, scanning all its files.
+
+
+      Returns a typed :class:`BlockManifest` with :class:`SubFunctionEntry` objects.'
+    f_block: F5
+  - id: CAP-F5-2
+    name: classify_function
+    status: ACTIVE
+    description: 'Classify a function''s body complexity.
+
+
+      Parses source, finds function by name, counts body statements
+
+      (excluding leading docstring). 1=TRIVIAL, 2-5=SHORT, 6+=COMPLEX.'
+    f_block: F5
+  - id: CAP-F5-3
+    name: extract_body_hint
+    status: ACTIVE
+    description: 'Produce a tiered body hint for a function.
+
+
+      - Trivial: exact single statement text
+
+      - Short: semicolon-joined statements
+
+      - Complex: structural summary'
+    f_block: F5
+  - id: CAP-F5-4
+    name: extract_file_hints
+    status: ACTIVE
+    description: 'Scan an entire file and produce FunctionSignature objects with body hints.
+
+
+      Excludes private functions (starting with ''_'') EXCEPT ''__init__''.
+
+      Includes class methods. When include_private=True, includes all functions.'
+    f_block: F5
+  - id: CAP-F5-5
+    name: print_summary
+    status: ACTIVE
+    description: Print a terminal summary of the manifest.
+    f_block: F5
+  - id: CAP-F5-6
+    name: generate_manifest
+    status: ACTIVE
+    description: "Generate a full reality manifest via AST scan of the project.\n\nArgs:\n    project_root: Absolute path\
+      \ to the project root directory.\n    config: Optional ProjectConfig. If None, loaded from .architecture-model.yaml.\n\
+      \nReturns:\n    Typed Manifest dataclass. Call .to_dict() for JSON-compatible dict."
+    f_block: F5
+  - id: CAP-F5-7
+    name: load_or_generate_manifest
+    status: ACTIVE
+    description: "Load cached manifest if fresh (< 1 hour old), otherwise regenerate.\n\nArgs:\n    project_root: Path to\
+      \ the project root.\n    output_dir: Optional output directory. If None, uses config output paths.\n\nReturns:\n   \
+      \ The manifest dictionary (for backward compatibility with CLI/callers)."
+    f_block: F5
+  - id: CAP-F5-8
+    name: derive_interfaces
+    status: ACTIVE
+    description: "Derive interfaces from import analysis between scanned modules.\n\nArgs:\n    modules: Typed module info\
+      \ objects from AST scanning.\n    root: Project root path.\n\nReturns:\n    List of InterfaceEdge objects representing\
+      \ inter-module dependencies."
+    f_block: F5
+  - id: CAP-F5-9
+    name: compute_metrics
+    status: ACTIVE
+    description: "Compute verified project metrics from filesystem.\n\nArgs:\n    root: Project root directory.\n    config:\
+      \ Optional ProjectConfig. If None, loaded from .architecture-model.yaml.\n\nReturns:\n    MetricsResult with metric\
+      \ values."
+    f_block: F5
+  - id: CAP-F5-10
+    name: generate_block_manifest
+    status: ACTIVE
+    description: Generate a full Manifest scoped to a single F-block's files.
+    f_block: F5
+  - id: CAP-F5-11
+    name: generate_recursive_manifests
+    status: ACTIVE
+    description: Generate a RecursiveManifest for each F-block in the project config.
+    f_block: F5
+  - id: CAP-F5-12
+    name: write_recursive_manifests
+    status: ACTIVE
+    description: Write each RecursiveManifest to its own JSON file.
+    f_block: F5
+  - id: CAP-F5-13
+    name: scan_file
+    status: ACTIVE
+    description: "Scan a single Python file and return typed metadata.\n\nArgs:\n    root: Project root directory.\n    filepath:\
+      \ Absolute path to the Python file.\n\nReturns:\n    ModuleInfo with all extracted metadata."
+    f_block: F5
+  - id: CAP-F5-14
+    name: get_manifest_slice
+    status: ACTIVE
+    description: "Return focused markdown slice for artifact context injection.\n\nArgs:\n    manifest: A typed Manifest or\
+      \ legacy raw dict.\n    artifact_name: One of the 10 artifact names.\n\nReturns:\n    Formatted markdown string with\
+      \ relevant manifest data."
+    f_block: F5
+  - id: CAP-F5-15
+    name: analyze_test_file
+    status: ACTIVE
+    description: 'Parse a test file and extract behavioral contracts.
+
+
+      Handles both unittest (assertEqual, assertTrue, assertRaises)
+
+      and pytest (assert ==, assert isinstance, pytest.raises) patterns.'
+    f_block: F5
+  - id: CAP-F5-16
+    name: extract_constants_from_contracts
+    status: ACTIVE
+    description: 'Derive constants from value_equality contracts.
+
+
+      e.g., assertion "Fore.BLACK == ''\033[30m''" →
+
+      Constant(name="BLACK", value="30", context="attribute of Fore, produces escape code \033[30m")'
+    f_block: F5
+  components:
+  - id: COMP-MANIFEST-SCANNER
+    name: manifest.scanner
+    status: ACTIVE
+    description: AST-based source code scanner
+    files:
+    - src/architecture_model/manifest/scanner.py
+    signatures:
+    - name: scan_file
+      params:
+      - 'root: Path'
+      - 'filepath: Path'
+      returns: ModuleInfo
+      body_hint: 'rel_path = str(filepath.relative_to(root)); line_count = _file_line_count(filepath); status = _determine_status(filepath,
+        line_count); tree = _parse_file_ast(filepath); docstring = None; functions: list[FunctionInfo] = []; imports: list[str]
+        = []; if tree is not None: ...; name = _derive_name_from_docstring(docstring, filepath); logger.debug(''Scanned %s:
+        %d funcs, %d classes, %d constants'', rel_path, len(functions), len(classes), len(constants)); return ModuleInfo(file=rel_path,
+        name=name, docstring=docstring, functions=functions, imports=imports, line_count=line_count, status=status, classes=classes,
+        exports=exports, decorated_functions=decorated, imports_detailed=imports_detailed, module_constants=constants, module_assignments=assignments)'
+  - id: COMP-MANIFEST-BLOCKS
+    name: manifest.blocks
+    status: ACTIVE
+    description: Functional block discovery from source tree
+    files:
+    - src/architecture_model/manifest/blocks.py
+    signatures:
+    - name: process_block
+      params:
+      - 'root: Path'
+      - 'block_id: str'
+      - 'block_def: dict'
+      - 'sub_block_configs: list | None'
+      returns: BlockManifest
+      body_hint: 'sub_functions: list[SubFunctionEntry] = []; all_files: list[Path] = []; for dir_path in block_def[''dirs'']:
+        ...; for file_path in block_def[''files'']: ...; logger.debug(''Block %s: %d files from %d dirs'', block_id, len(all_files),
+        len(block_def[''dirs''])); for (idx, filepath) in enumerate(all_files, 1): ...; block_status = ''active'' if any((sf.status
+        == ''active'' for sf in sub_func...; sub_blocks_manifest: list[dict[str, Any]] = []; if sub_block_configs: ...; logger.debug(''Block
+        %s: %d sub_functions, %d sub_blocks'', block_id, len(sub_functions), len(sub_blocks_manifest)); return BlockManifest(name=block_def[''name''],
+        status=block_status, description_source=block_def[''description_source''], sub_functions=sub_functions, sub_blocks=sub_blocks_manifest)'
+  - id: COMP-MANIFEST-METRICS
+    name: manifest.metrics
+    status: ACTIVE
+    description: Code metrics computation (LOC, complexity, etc.)
+    files:
+    - src/architecture_model/manifest/metrics.py
+    signatures:
+    - name: compute_metrics
+      params:
+      - 'root: Path'
+      - 'config: Optional[Any]'
+      returns: MetricsResult
+      body_hint: 'if config is None: ...; result: dict[str, int] = {}; for metric in config.metrics: ...; total_python = len([p
+        for p in root.rglob(''*.py'') if not any((part in EX...; result[''total_python_files''] = total_python; logger.debug(''Computed
+        %d metrics for %s: %s'', len(result), root, result); return MetricsResult(values=result)'
+  - id: COMP-MANIFEST-INTERFACES
+    name: manifest.interfaces
+    status: ACTIVE
+    description: Interface detection from public API surface
+    files:
+    - src/architecture_model/manifest/interfaces.py
+    signatures:
+    - name: derive_interfaces
+      params:
+      - 'modules: list[ModuleInfo]'
+      - 'root: Path'
+      returns: list[InterfaceEdge]
+      body_hint: 'file_to_module: dict[str, str] = {}; for mod in modules: ...; module_to_file: dict[str, str] = {v: k for
+        k, v in file_t...; interfaces: list[InterfaceEdge] = []; seen: set[tuple[str, str]] = set(); for mod in modules: ...;
+        logger.debug(''Derived %d interface edges from %d modules'', len(interfaces), len(modules)); return interfaces'
+  - id: COMP-MANIFEST-BODY-HINTS
+    name: manifest.body_hints
+    status: ACTIVE
+    description: Function body hint extraction for trivial implementations
+    files:
+    - src/architecture_model/manifest/body_hints.py
+    signatures:
+    - name: classify_function
+      params:
+      - 'source: str'
+      - 'func_name: str'
+      returns: BodyComplexity
+      body_hint: "tree = ast.parse(source); node = _find_function(tree, func_name); body = _strip_docstring(node.body); count\
+        \ = len(body); if count <= 1:\n    return BodyComplexity.TRIVIAL\nelif count <= 5:\n    return BodyComplexity.SHORT\n\
+        else:\n    return BodyComplexity.COMPLEX"
+    - name: extract_body_hint
+      params:
+      - 'source: str'
+      - 'func_name: str'
+      - 'class_name: str | None'
+      returns: str
+      body_hint: "tree = ast.parse(source); node = _find_function(tree, func_name, class_name); body = _strip_docstring(node.body);\
+        \ count = len(body); if count <= 1:\n    return ast.unparse(body[0]) if body else ''\nelif count <= 5:\n    return\
+        \ '; '.join((ast.unparse(s) for s in body))\nelse:\n    return _summarize_complex_body(body)"
+    - name: extract_file_hints
+      params:
+      - 'filepath: Path'
+      - 'include_private: bool'
+      returns: list[FunctionSignature]
+      body_hint: "source = filepath.read_text(encoding='utf-8'); tree = ast.parse(source, filename=str(filepath)); results:\
+        \ list[FunctionSignature] = []; def _should_include(name: str) -> bool:\n    if include_pr...; for node in ast.iter_child_nodes(tree):\
+        \ ...; return results"
+    test_contracts:
+    - test_file: test_body_hints.py
+      test_method: test_trivial_single_statement
+      assertion: classify_function(source, 'greet') == BodyComplexity.TRIVIAL
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_trivial_with_docstring
+      assertion: classify_function(source, 'greet') == BodyComplexity.TRIVIAL
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_short_two_statements
+      assertion: classify_function(source, 'add') == BodyComplexity.SHORT
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_short_five_statements
+      assertion: classify_function(source, 'process') == BodyComplexity.SHORT
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_complex_six_statements
+      assertion: classify_function(source, 'complex_func') == BodyComplexity.COMPLEX
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_complex_with_docstring_not_counted
+      assertion: classify_function(source, 'big_func') == BodyComplexity.COMPLEX
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_function_not_found_raises
+      assertion: raises ValueError
+      contract_type: raises
+    - test_file: test_body_hints.py
+      test_method: test_trivial_returns_exact_body
+      assertion: hint == 'return 42'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_class_method_extraction
+      assertion: hint == 'return a + b'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_body_hint_populated
+      assertion: sig.body_hint == 'return 42'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_params_populated
+      assertion: sig.returns == 'float'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_returns_populated
+      assertion: sig.returns == 'str'
+      contract_type: value_equality
+  - id: COMP-MANIFEST-TEST-ANALYZER
+    name: manifest.test_analyzer
+    status: ACTIVE
+    description: Test contract extraction from test files
+    files:
+    - src/architecture_model/manifest/test_analyzer.py
+    constants:
+    - name: _EXCLUDED_MODULES
+      value: frozenset({'unittest', 'pytest', 'sys', 'os', 'io', 're', 'math', 'collections', 'itertools', 'functools', 'pathlib',
+        'typing', 'tempfile', 'shutil', 'json', 'copy', 'contextlib', 'textwrap', 'unittest.mock', 'mock'})
+    - name: _ESCAPE_CODE_RE
+      value: re.compile('\\\\(?:033|x1b)\\[(\\d+)m')
+    signatures:
+    - name: analyze_test_file
+      params:
+      - 'test_file: Path'
+      returns: TestAnalysisResult
+      body_hint: 'source = test_file.read_text(encoding=''utf-8''); tree = ast.parse(source, filename=str(test_file)); filename
+        = test_file.name; result = TestAnalysisResult(test_file=filename); result.required_imports = _extract_imports(tree);
+        test_methods = _find_test_methods(tree); result.test_count = len(test_methods); for (method_name, node) in test_methods:
+        ...; result.constants = extract_constants_from_contracts(result.contracts); return result'
+    - name: extract_constants_from_contracts
+      params:
+      - 'contracts: list[TestContract]'
+      returns: list[Constant]
+      body_hint: "constants: list[Constant] = []; seen: set[tuple[str, str]] = set(); for contract in contracts:\n    if contract.contract_type\
+        \ != 'value_equality':\n        continue\n    parsed = _parse_escape_code_assertion(contract.assertion)\n    if parsed\
+        \ is None:\n        continue\n    parent, name, code, full_escape = parsed\n    key = (parent, name)\n    if key in\
+        \ seen:\n        continue\n    seen.add(key)\n    constants.append(Constant(name=name, value=code, context=f'attribute\
+        \ of {parent}, produces escape code {full_escape}')); return constants"
+    test_contracts:
+    - test_file: test_test_analyzer.py
+      test_method: test_result_has_expected_fields
+      assertion: result isinstance TestAnalysisResult
+      contract_type: type_check
+    - test_file: test_test_analyzer.py
+      test_method: test_assertEqual_produces_test_contract
+      assertion: c isinstance TestContract
+      contract_type: type_check
+    - test_file: test_test_analyzer.py
+      test_method: test_test_count
+      assertion: result.test_count == 4
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_constant_values_are_numeric_codes
+      assertion: black.value == '30'
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_extract_constants_from_contracts_standalone
+      assertion: len(constants) == 2
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_fore_black_value
+      assertion: black.value == '30'
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_fore_reset_value
+      assertion: resets[0].value == '39'
+      contract_type: value_equality
+  - id: COMP-MANIFEST-GENERATOR
+    name: manifest.generator
+    status: ACTIVE
+    description: Top-level manifest generation orchestrator
+    files:
+    - src/architecture_model/manifest/generator.py
+    - src/architecture_model/manifest/display.py
+    - src/architecture_model/manifest/slicers.py
+    signatures:
+    - name: generate_manifest
+      params:
+      - 'project_root: Path'
+      - 'config: Optional[Any]'
+      returns: Manifest
+      body_hint: 'root = project_root.resolve(); report = ScanReport(); if config is None: ...; logger.info(''Computing project
+        metrics for %s'', root); metrics_result = compute_metrics(root, config); logger.info(''Metrics computed: %s'', metrics_result.values);
+        blocks_dict = config.fblock_dict; logger.info(''Processing %d functional blocks'', len(blocks_dict)); from architecture_model.manifest.types
+        import BlockManifest; functional_blocks: dict[str, BlockManifest] = {}; scanned_files: set[str] = set(); for (block_id,
+        block_def) in blocks_dict.items(): ...; logger.info(''Processed %d blocks, found %d files'', report.blocks_processed,
+        len(scanned_files)); extra_dirs: set[str] = set(); for layer in config.layers: ...; for dir_path in sorted(extra_dirs):
+        ...; logger.info(''Scanning %d files for module metadata'', len(scanned_files)); from architecture_model.manifest.types
+        import ModuleInfo; all_modules: list[ModuleInfo] = []; for rel_path in sorted(scanned_files): ...; logger.info(''Deriving
+        interfaces from %d modules'', len(all_modules)); interfaces = derive_interfaces(all_modules, root); report.interfaces_derived
+        = len(interfaces); report.log_summary(); return Manifest(generated_at=datetime.now(timezone.utc).strftime(''%Y-%m-%dT%H:%M:%S''),
+        project_root=str(root), metrics=metrics_result, functional_blocks=functional_blocks, modules=all_modules, interfaces=interfaces,
+        scan_report=report)'
+    - name: load_or_generate_manifest
+      params:
+      - 'project_root: Path'
+      - 'output_dir: Path | None'
+      returns: dict[str, Any]
+      body_hint: 'from architecture_model.config.loader import get_config; config = get_config(project_root); if output_dir
+        is None: ...; if manifest_path.exists(): ...; manifest = generate_manifest(project_root, config); manifest_dict =
+        manifest.to_dict(); manifest_path.parent.mkdir(parents=True, exist_ok=True); manifest_path.write_text(json.dumps(manifest_dict,
+        indent=2, ensure_ascii=False), encoding=''utf-8''); return manifest_dict'
+    - name: print_summary
+      params:
+      - 'manifest: dict[str, Any]'
+      returns: None
+      body_hint: 'metrics = manifest[''metrics'']; blocks = manifest[''functional_blocks'']; print(f"\n{''='' * 60}"); print(''REALITY
+        MANIFEST SUMMARY''); print(f"{''='' * 60}"); print(f"  Generated: {manifest[''generated_at'']}"); print(f"  Root:      {manifest[''project_root'']}");
+        print(); print(''  METRICS:''); known_labels = [''router'', ''model'', ''migration'', ''template'']; shown = False;
+        for label in known_labels: ...; for (key, val) in metrics.items(): ...; if not shown: ...; print(f"    Python files:
+        {metrics.get(''total_python_files'', ''N/A'')}"); print(); print(''  FUNCTIONAL BLOCKS:''); for (block_id, block)
+        in blocks.items(): ...; print(); print(f"  INTERFACES: {len(manifest.get(''interfaces'', []))} dependencies detected");
+        print(f"  MODULES:    {len(manifest.get(''modules'', []))} files scanned"); print(f"{''='' * 60}")'
+    - name: get_manifest_slice
+      params:
+      - 'manifest: Manifest | dict[str, Any]'
+      - 'artifact_name: str'
+      returns: str
+      body_hint: "if isinstance(manifest, dict):\n    logger.debug('get_manifest_slice received dict, converting to Manifest')\n\
+        \    manifest = _manifest_from_dict(manifest); slicers = {'functional-architecture': _slice_functional_architecture,\
+        \ 'logical-architecture': _slice_logical_architecture, 'data-dictionary': _slice_data_dictionary, 'icd': _slice_icd,\
+        \ 'readme': _slice_readme, 'testing': _slice_testing, 'deployment-guide': _slice_deployment_guide, 'operations-manual':\
+        \ _slice_operations_manual, 'use-cases': _slice_use_cases, 'requirements-analysis': _slice_requirements_analysis};\
+        \ slicer = slicers.get(artifact_name); if slicer is None:\n    return f'[unknown artifact: {artifact_name}]'; return\
+        \ slicer(manifest)"
+  - id: COMP-MANIFEST-TYPES
+    name: manifest.types
+    status: ACTIVE
+    description: Manifest data types (Manifest, ModuleInfo, FunctionalBlock)
+    files:
+    - src/architecture_model/manifest/types.py
+    signatures:
+    - name: to_dict
+      returns: dict[str, Any]
+      body_hint: 'return {''file'': self.file, ''name'': self.name, ''docstring'': self.docstring, ''functions'': [{''name'':
+        f.name, ''signature'': f.signature} for f in self.functions], ''imports'': self.imports, ''line_count'': self.line_count,
+        ''status'': self.status.value, ''classes'': [{''name'': c.name, ''bases'': c.bases, ''methods'': c.methods, ''is_abstract'':
+        c.is_abstract, ''decorators'': c.decorators, ''attributes'': c.attributes} for c in self.classes], ''exports'': self.exports,
+        ''decorated_functions'': [{''name'': d.name, ''decorators'': d.decorators, ''is_method'': d.is_method, ''class_name'':
+        d.class_name} for d in self.decorated_functions], ''imports_detailed'': [{''module'': i.module, ''symbols'': i.symbols,
+        ''is_relative'': i.is_relative} for i in self.imports_detailed], ''module_constants'': self.module_constants, ''module_assignments'':
+        self.module_assignments}'
+    - name: success_rate
+      returns: float
+      decorators:
+      - property
+      body_hint: "if self.files_attempted == 0:\n    return 1.0; return self.files_succeeded / self.files_attempted"
+    - name: log_summary
+      returns: None
+      body_hint: 'logger.info(''Scan complete: %d/%d files (%.1f%%), %d funcs, %d classes, %d constants, %d interfaces, %d
+        blocks, %d unclaimed, %d errors'', self.files_succeeded, self.files_attempted, self.success_rate * 100, self.functions_extracted,
+        self.classes_extracted, self.constants_extracted, self.interfaces_derived, self.blocks_processed, self.unclaimed_files,
+        len(self.parse_errors))'
+relationships:
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-SCANNER
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-BLOCKS
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-METRICS
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-INTERFACES
+- type: depends-on
+  from: COMP-MANIFEST-GENERATOR
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-MANIFEST-SCANNER
+- type: depends-on
+  from: COMP-MANIFEST-BLOCKS
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-SCANNER
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-METRICS
+  to: COMP-MANIFEST-TYPES
+- type: depends-on
+  from: COMP-MANIFEST-INTERFACES
+  to: COMP-MANIFEST-TYPES
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-SCANNER
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-BLOCKS
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-METRICS
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-INTERFACES
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-BODY-HINTS
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-TEST-ANALYZER
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-GENERATOR
+- type: contains
+  from: COMP-MANIFEST
+  to: COMP-MANIFEST-TYPES

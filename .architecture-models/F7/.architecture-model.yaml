@@ -1,0 +1,16 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Spec
+  system: Spec
+  generated_at: '2026-07-18T19:26:09.372363+00:00'
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-SPEC
+entities:
+  components:
+  - id: COMP-SPEC
+    name: spec
+    status: ACTIVE
+    description: JSON Schema definitions for architecture model validation
+    files:
+    - src/architecture_model/spec/__init__.py
+relationships: []

@@ -4,12 +4,12 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-MANIFEST",
   "manifest": {
-    "generated_at": "2026-07-18T23:30:13.058049+00:00",
+    "generated_at": "2026-07-19T01:43:39.967242+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 12,
-      "total_lines": 2949,
-      "functions": 16,
+      "total_lines": 3037,
+      "functions": 17,
       "classes": 15,
       "constants": 0
     },
@@ -846,6 +846,7 @@
             "calls": [
               "get_config",
               "items",
+              "compute_block_dependencies",
               "info",
               "generate_block_manifest",
               "_block_id_to_component_id",
@@ -853,6 +854,26 @@
               "get"
             ],
             "docstring": "Generate a RecursiveManifest for each F-block in the project config."
+          },
+          {
+            "name": "compute_block_dependencies",
+            "signature": "compute_block_dependencies(manifests: dict[str, RecursiveManifest], config) -> dict[str, list[str]]",
+            "calls": [
+              "items",
+              "get",
+              "set",
+              "sorted",
+              "rstrip",
+              "startswith",
+              "str",
+              "isinstance",
+              "_resolve_import_to_block",
+              "replace",
+              "Path",
+              "getattr",
+              "add"
+            ],
+            "docstring": "Compute cross-block dependency graph from import analysis.\n\nFor each block, examines all imports in its modules. If an import resolves\nto a file belonging to a different block, that's a cross-block dependency.\n\nReturns:\n    Dict mapping block_id -> list of block_ids it depends on."
           },
           {
             "name": "write_recursive_manifests",
@@ -882,7 +903,7 @@
           "architecture_model.manifest.types",
           "architecture_model.utils.discovery"
         ],
-        "line_count": 137,
+        "line_count": 223,
         "status": "active",
         "classes": [],
         "exports": [],
@@ -1310,7 +1331,7 @@
           "enum",
           "typing"
         ],
-        "line_count": 256,
+        "line_count": 258,
         "status": "active",
         "classes": [
           {
@@ -1512,5 +1533,10 @@
     ],
     "interfaces": []
   },
-  "children": {}
+  "children": {},
+  "block_dependencies": [
+    "F2",
+    "F3",
+    "F8"
+  ]
 }

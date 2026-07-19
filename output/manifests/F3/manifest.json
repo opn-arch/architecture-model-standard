@@ -4,13 +4,13 @@
   "parent_model": ".architecture-model.yaml",
   "component_id": "COMP-CORE",
   "manifest": {
-    "generated_at": "2026-07-18T23:30:13.020462+00:00",
+    "generated_at": "2026-07-19T01:43:39.930388+00:00",
     "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
     "metrics": {
       "py_files": 9,
-      "total_lines": 4355,
+      "total_lines": 4842,
       "functions": 20,
-      "classes": 45,
+      "classes": 57,
       "constants": 1
     },
     "functional_blocks": {},
@@ -800,7 +800,7 @@
           "types",
           "jsonschema"
         ],
-        "line_count": 619,
+        "line_count": 767,
         "status": "active",
         "classes": [],
         "exports": [],
@@ -860,16 +860,28 @@
               "Constant",
               "Constraint",
               "ConstraintType",
+              "Data",
               "DataField",
+              "Decision",
+              "DecisionStatus",
               "Entities",
+              "Environment",
+              "EnvironmentKind",
+              "Event",
+              "EventKind",
               "FunctionSignature",
               "Interface",
               "InterfaceType",
               "Layer",
+              "Lifecycle",
+              "LifecyclePhase",
               "ModelMeta",
               "Priority",
+              "QualityAttribute",
               "Relationship",
               "RelationType",
+              "Resource",
+              "ResourceKind",
               "StateTransition",
               "Status",
               "Strength",
@@ -877,7 +889,8 @@
               "SymbolKind",
               "System",
               "TestContract",
-              "ObservabilityContract"
+              "ObservabilityContract",
+              "_enum_value"
             ],
             "is_relative": true
           },
@@ -901,6 +914,7 @@
             "calls": [
               "set",
               "ArchitectureModel",
+              "any",
               "split",
               "ModelMeta",
               "Entities",
@@ -929,6 +943,7 @@
               "Entities",
               "set",
               "ArchitectureModel",
+              "getattr",
               "deepcopy",
               "add"
             ],
@@ -951,7 +966,7 @@
           "typing",
           "types"
         ],
-        "line_count": 496,
+        "line_count": 526,
         "status": "active",
         "classes": [],
         "exports": [],
@@ -1006,7 +1021,7 @@
           "typing",
           "yaml"
         ],
-        "line_count": 689,
+        "line_count": 966,
         "status": "active",
         "classes": [
           {
@@ -1044,7 +1059,15 @@
               "CONSUMES": "'consumes'",
               "TRACES_TO": "'traces-to'",
               "ALLOCATED_TO": "'allocated-to'",
-              "CONSTRAINED_BY": "'constrained-by'"
+              "CONSTRAINED_BY": "'constrained-by'",
+              "MOUNTED_ON": "'mounted-on'",
+              "CONNECTED_AT": "'connected-at'",
+              "ROUTED_THROUGH": "'routed-through'",
+              "PRODUCES": "'produces'",
+              "SUBSCRIBES_TO": "'subscribes-to'",
+              "TRANSFORMS": "'transforms'",
+              "SUPERSEDES": "'supersedes'",
+              "MIGRATES_TO": "'migrates-to'"
             }
           },
           {
@@ -1103,7 +1126,8 @@
               "SCALABILITY": "'scalability'",
               "REGULATORY": "'regulatory'",
               "TECHNOLOGY": "'technology'",
-              "OPERATIONAL": "'operational'"
+              "OPERATIONAL": "'operational'",
+              "FAILURE_MODE": "'failure-mode'"
             }
           },
           {
@@ -1201,6 +1225,106 @@
               "ENUM": "'enum'",
               "TRAIT": "'trait'",
               "TYPE_ALIAS": "'type-alias'"
+            }
+          },
+          {
+            "name": "EventKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "MESSAGE": "'message'",
+              "SIGNAL": "'signal'",
+              "COMMAND": "'command'",
+              "NOTIFICATION": "'notification'",
+              "ALARM": "'alarm'"
+            }
+          },
+          {
+            "name": "ResourceKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "DATABASE": "'database'",
+              "API": "'api'",
+              "HARDWARE": "'hardware'",
+              "STORAGE": "'storage'",
+              "COMPUTE": "'compute'",
+              "SENSOR": "'sensor'",
+              "ACTUATOR": "'actuator'"
+            }
+          },
+          {
+            "name": "EnvironmentKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "DEVELOPMENT": "'development'",
+              "STAGING": "'staging'",
+              "PRODUCTION": "'production'",
+              "TEST": "'test'",
+              "FIELD": "'field'",
+              "LABORATORY": "'laboratory'"
+            }
+          },
+          {
+            "name": "DecisionStatus",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "PROPOSED": "'proposed'",
+              "ACCEPTED": "'accepted'",
+              "DEPRECATED": "'deprecated'",
+              "SUPERSEDED": "'superseded'"
+            }
+          },
+          {
+            "name": "LifecyclePhase",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "CONCEPT": "'concept'",
+              "DESIGN": "'design'",
+              "PROTOTYPE": "'prototype'",
+              "DEVELOPMENT": "'development'",
+              "TESTING": "'testing'",
+              "PRODUCTION": "'production'",
+              "MAINTENANCE": "'maintenance'",
+              "END_OF_LIFE": "'end-of-life'"
             }
           },
           {
@@ -1402,6 +1526,90 @@
             "attributes": {}
           },
           {
+            "name": "Data",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Event",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Resource",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Environment",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "QualityAttribute",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Decision",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Lifecycle",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
             "name": "Relationship",
             "bases": [],
             "methods": [],
@@ -1527,7 +1735,7 @@
           "pathlib",
           "architecture_model.profiles.schema"
         ],
-        "line_count": 552,
+        "line_count": 584,
         "status": "active",
         "classes": [
           {
@@ -1662,5 +1870,11 @@
     ],
     "interfaces": []
   },
-  "children": {}
+  "children": {},
+  "block_dependencies": [
+    "F2",
+    "F5",
+    "F6",
+    "F8"
+  ]
 }

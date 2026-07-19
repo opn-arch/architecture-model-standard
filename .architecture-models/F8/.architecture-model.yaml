@@ -1,0 +1,95 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Utils
+  system: Utils
+  generated_at: '2026-07-18T19:26:09.372363+00:00'
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-UTILS
+entities:
+  capabilities:
+  - id: CAP-F8-1
+    name: is_excluded_dir
+    status: ACTIVE
+    description: Check if a directory path should be excluded from scanning.
+    f_block: F8
+  - id: CAP-F8-2
+    name: collect_py_files
+    status: ACTIVE
+    description: Collect Python files from a directory.
+    f_block: F8
+  - id: CAP-F8-3
+    name: discover_source_files
+    status: ACTIVE
+    description: Discover all source (non-test) Python files in a project.
+    f_block: F8
+  - id: CAP-F8-4
+    name: discover_test_files
+    status: ACTIVE
+    description: Discover all test Python files in a project.
+    f_block: F8
+  components:
+  - id: COMP-UTILS
+    name: utils
+    status: ACTIVE
+    description: File discovery, exclusion patterns, and shared helper functions
+    files:
+    - src/architecture_model/utils/discovery.py
+    - src/architecture_model/utils/__init__.py
+    signatures:
+    - name: is_excluded_dir
+      params:
+      - 'path: Path'
+      returns: bool
+      body_hint: name = path.name; return name in EXCLUDED_DIRS or name.startswith('.')
+    - name: collect_py_files
+      params:
+      - 'directory: Path'
+      - 'recursive: bool'
+      - 'exclude_init: bool'
+      returns: list[Path]
+      body_hint: "if not directory.is_dir():\n    logger.debug('Directory does not exist: %s', directory)\n    return [];\
+        \ glob_fn = directory.rglob if recursive else directory.glob; files = sorted((p for p in glob_fn('*.py') if not any((part\
+        \ in EXCLUDED_DIRS for part in p.parts)) and (not exclude_init or p.name != '__init__.py'))); logger.debug('Collected\
+        \ %d .py files from %s (recursive=%s)', len(files), directory, recursive); return files"
+    - name: discover_source_files
+      params:
+      - 'project_root: Path'
+      returns: list[Path]
+      body_hint: all_py = collect_py_files(project_root, recursive=True); sources = [f for f in all_py if not _is_test_file(f,
+        project_root)]; logger.info('Discovered %d source files (of %d total .py)', len(sources), len(all_py)); return sources
+    - name: discover_test_files
+      params:
+      - 'project_root: Path'
+      returns: list[Path]
+      body_hint: all_py = collect_py_files(project_root, recursive=True); tests = [f for f in all_py if _is_test_file(f, project_root)];
+        logger.info('Discovered %d test files', len(tests)); return tests
+    test_contracts:
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_excludes_pycache
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_recursive
+      assertion: len(result) == 2
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_non_recursive
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_exclude_init
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_collect_py_files_nonexistent_dir
+      assertion: result == []
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_discover_test_files
+      assertion: len(result) == 2
+      contract_type: value_equality
+    - test_file: test_discovery.py
+      test_method: test_discover_test_files_by_name
+      assertion: len(result) == 2
+      contract_type: value_equality
+relationships: []

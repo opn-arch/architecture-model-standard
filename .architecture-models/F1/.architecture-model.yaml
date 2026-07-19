@@ -1,0 +1,53 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Cli
+  system: Cli
+  generated_at: '2026-07-18T19:26:09.372363+00:00'
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-CLI
+entities:
+  capabilities:
+  - id: CAP-F1-1
+    name: main
+    status: ACTIVE
+    description: Function main
+    f_block: F1
+  components:
+  - id: COMP-CLI
+    name: cli
+    status: ACTIVE
+    description: 'CLI entry point and command dispatch (9 commands: init, validate, slice, diff, stats, impact, manifest,
+      coverage, enrich)'
+    files:
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/__init__.py
+    signatures:
+    - name: main
+      params:
+      - 'argv: list[str] | None'
+      returns: int
+      body_hint: 'parser = argparse.ArgumentParser(prog=''architecture-model'', descri...; subparsers = parser.add_subparsers(dest=''command'',
+        help=''Available com...; p_validate = subparsers.add_parser(''validate'', help=''Validate model in...; p_validate.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_validate.add_argument(''--strict'', action=''store_true'', help=''Promote
+        warnings to errors''); p_slice = subparsers.add_parser(''slice'', help=''Extract model subset''); p_slice.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--fblock'', help=''Filter by F-block (e.g., F3)'');
+        p_slice.add_argument(''--layer'', help=''Filter by layer (e.g., web-layer)''); p_slice.add_argument(''--artifact'',
+        help=''Slice for artifact regeneration''); p_slice.add_argument(''--status'', help=''Filter by status (ACTIVE, PLANNED)'');
+        p_slice.add_argument(''-o'', ''--output'', help=''Output YAML path (default: stdout summary)''); p_diff = subparsers.add_parser(''diff'',
+        help=''Compare two model ver...; p_diff.add_argument(''old_model'', help=''Path to old/baseline model''); p_diff.add_argument(''new_model'',
+        help=''Path to new/current model''); p_stats = subparsers.add_parser(''stats'', help=''Show model statistics''); p_stats.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_init = subparsers.add_parser(''init'', help=''Auto-generate .archit...;
+        p_init.add_argument(''path'', nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_init.add_argument(''--force'',
+        action=''store_true'', help=''Overwrite existing config file''); p_impact = subparsers.add_parser(''impact'', help=''Impact
+        analysis for...; p_impact.add_argument(''model'', help=''Path to architecture-model.yaml''); p_impact.add_argument(''entity_id'',
+        help=''Entity ID to analyze''); p_impact.add_argument(''--depth'', type=int, default=2, help=''Traversal depth'');
+        p_manifest = subparsers.add_parser(''manifest'', help=''Generate reality-...; p_manifest.add_argument(''path'', nargs=''?'',
+        default=''.'', help=''Project root directory (default: cwd)''); p_manifest.add_argument(''-o'', ''--output'', help=''Output
+        JSON path''); p_enrich = subparsers.add_parser(''enrich'', help=''Auto-enrich model w...; p_enrich.add_argument(''model'',
+        help=''Path to architecture-model.yaml''); p_enrich.add_argument(''--root'', default=''.'', help=''Project root directory'');
+        p_coverage = subparsers.add_parser(''coverage'', help=''Analyze model cov...; p_coverage.add_argument(''model'', help=''Path
+        to .architecture-model.yaml''); p_coverage.add_argument(''--project'', ''-p'', help=''Project path for manifest generation
+        (default: model directory)''); p_coverage.add_argument(''--manifest'', help=''Path to pre-generated manifest JSON'');
+        args = parser.parse_args(argv); if not args.command: ...; handlers = {''init'': _cmd_init, ''validate'': _cmd_validate,
+        ''slice'': _...; return handlers[args.command](args)'
+relationships: []

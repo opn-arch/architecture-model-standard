@@ -143,31 +143,61 @@ def compute_block_dependencies(
             # Normalize: store dir prefix for matching
             file_to_block[d.rstrip("/")] = block_id
 
-    def _resolve_import_to_block(import_path: str) -> str | None:
-        """Map a dotted import path to a block_id via directory prefix matching."""
-        # Convert dotted import to file-like path segments
-        parts = import_path.replace(".", "/")
+    def _resolve_import_to_block(slash_path: str) -> str | None:
+        """Map a slash-separated path to a block_id via directory prefix matching."""
         for dir_prefix, bid in file_to_block.items():
-            if parts.startswith(dir_prefix.replace(".", "/")):
+            norm_prefix = dir_prefix.replace(".", "/").rstrip("/")
+            # Direct match
+            if slash_path.startswith(norm_prefix + "/") or slash_path == norm_prefix:
                 return bid
+            # Strip common src/ prefix from dir_prefix
+            if norm_prefix.startswith("src/"):
+                stripped = norm_prefix[4:]  # remove "src/"
+                if slash_path.startswith(stripped + "/") or slash_path == stripped:
+                    return bid
         return None
 
     dependencies: dict[str, list[str]] = {}
     for block_id, rm in manifests.items():
         deps: set[str] = set()
         for mod in rm.manifest.modules:
+            mod_dir = str(Path(mod.file).parent)
             # Check detailed imports if available
             for imp in mod.imports_detailed:
-                target_module = imp.get("module", "") or imp.get("import_path", "")
-                if not target_module:
+                if isinstance(imp, dict):
+                    module_name = imp.get("module", "")
+                    is_relative = imp.get("is_relative", False)
+                else:
+                    module_name = getattr(imp, "module", "")
+                    is_relative = getattr(imp, "is_relative", False)
+                if not module_name:
                     continue
-                target_block = _resolve_import_to_block(target_module)
+                # Resolve relative imports to absolute path
+                if is_relative:
+                    # Relative imports go up from the module's package
+                    # e.g., from ..core.parser in cli/main.py -> architecture_model/core/parser
+                    # Try both: same-level and parent-level resolution
+                    parts = module_name.replace(".", "/")
+                    # Same level: mod_dir/parts
+                    resolved = mod_dir + "/" + parts
+                    target_block = _resolve_import_to_block(resolved)
+                    if not target_block or target_block == block_id:
+                        # Parent level: go up one from mod_dir
+                        parent_dir = str(Path(mod_dir).parent)
+                        resolved = parent_dir + "/" + parts
+                        target_block = _resolve_import_to_block(resolved)
+                    if target_block and target_block != block_id:
+                        deps.add(target_block)
+                    continue
+                else:
+                    resolved = module_name.replace(".", "/")
+                target_block = _resolve_import_to_block(resolved)
                 if target_block and target_block != block_id:
                     deps.add(target_block)
             # Also check simple imports list
             for imp_str in mod.imports:
                 if isinstance(imp_str, str):
-                    target_block = _resolve_import_to_block(imp_str)
+                    target_block = _resolve_import_to_block(imp_str.replace(".", "/"))
                     if target_block and target_block != block_id:
                         deps.add(target_block)
         dependencies[block_id] = sorted(deps)
