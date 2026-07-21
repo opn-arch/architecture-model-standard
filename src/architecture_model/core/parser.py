@@ -486,11 +486,16 @@ def _dump_entities(e: Entities) -> dict:
     return d
 
 
+def _enum_val(v: Any) -> str:
+    """Extract string value from enum or return as-is."""
+    return v.value if hasattr(v, 'value') else str(v)
+
+
 def _dump_base(entity: Any) -> dict:
     d: dict[str, Any] = {
         "id": entity.id,
         "name": entity.name,
-        "status": entity.status.value,
+        "status": _enum_val(entity.status),
     }
     if entity.description:
         d["description"] = entity.description
@@ -507,7 +512,7 @@ def _dump_base(entity: Any) -> dict:
 
 def _dump_actor(a: Actor) -> dict:
     d = _dump_base(a)
-    d["type"] = a.type.value
+    d["type"] = _enum_val(a.type)
     if a.goals:
         d["goals"] = a.goals
     return d
@@ -518,7 +523,7 @@ def _dump_capability(c: Capability) -> dict:
     if c.f_block:
         d["f_block"] = c.f_block
     if c.priority != Priority.MEDIUM:
-        d["priority"] = c.priority.value
+        d["priority"] = _enum_val(c.priority)
     if c.requirements:
         d["requirements"] = c.requirements
     return d
@@ -539,9 +544,9 @@ def _dump_behavior(b: Behavior) -> dict:
     if b.frequency:
         d["frequency"] = b.frequency
     if b.priority != Priority.MEDIUM:
-        d["priority"] = b.priority.value
+        d["priority"] = _enum_val(b.priority)
     if b.pattern != BehaviorPattern.SEQUENTIAL:
-        d["pattern"] = b.pattern.value
+        d["pattern"] = _enum_val(b.pattern)
     if b.states:
         d["states"] = [
             {"name": s.name, "transitions": s.transitions}
@@ -557,7 +562,7 @@ def _dump_behavior(b: Behavior) -> dict:
 
 def _dump_interface(i: Interface) -> dict:
     d = _dump_base(i)
-    d["type"] = i.type.value
+    d["type"] = i.type.value if hasattr(i.type, 'value') else str(i.type)
     if i.protocol:
         d["protocol"] = i.protocol
     if i.provider:
@@ -575,7 +580,7 @@ def _dump_interface(i: Interface) -> dict:
 
 def _dump_constraint(c: Constraint) -> dict:
     d = _dump_base(c)
-    d["type"] = c.type.value
+    d["type"] = _enum_val(c.type)
     if c.metric:
         d["metric"] = c.metric
     if c.threshold:
@@ -608,7 +613,7 @@ def _dump_component(c: Component) -> dict:
     if c.responsibilities:
         d["responsibilities"] = c.responsibilities
     if c.kind != ComponentKind.SERVICE:
-        d["kind"] = c.kind.value
+        d["kind"] = _enum_val(c.kind)
     if c.fields:
         d["fields"] = [
             {"name": f.name, "type": f.type, "required": f.required}
@@ -759,7 +764,7 @@ def _dump_relationship(r: Relationship) -> dict:
     if r.description:
         d["description"] = r.description
     if r.strength != Strength.MODERATE:
-        d["strength"] = r.strength.value
+        d["strength"] = _enum_val(r.strength)
     if r.extensions:
         d["extensions"] = r.extensions
     if r.imports:

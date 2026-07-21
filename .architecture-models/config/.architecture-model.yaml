@@ -1,0 +1,397 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/config
+  system: Config
+  generated_at: '2026-07-21T23:13:19.313637+00:00'
+entities:
+  actors:
+  - id: ACT-1
+    name: CLI User
+    status: ACTIVE
+    description: Developer or CI pipeline invoking `architecture-model init` or other CLI commands that trigger config loading
+    type: human
+  - id: ACT-2
+    name: Pipeline Consumer
+    status: ACTIVE
+    description: Downstream modules (manifest generator, validator, slicer) that call get_config() to obtain a ProjectConfig
+    type: human
+  capabilities:
+  - id: CAP-1
+    name: Configuration Schema
+    status: ACTIVE
+    description: 'Dataclass tree defining the complete project descriptor structure: ProjectConfig, OutputConfig, LayerConfig,
+      FunctionalBlockConfig, SubBlockConfig, MetricConfig, with serialization (to_dict/from_dict)'
+  - id: CAP-2
+    name: Config File Loading
+    status: ACTIVE
+    description: Load a ProjectConfig from an existing .architecture-model.yaml file, parsing YAML into the dataclass tree
+      via ProjectConfig.from_dict()
+  - id: CAP-3
+    name: Filesystem Auto-Discovery
+    status: ACTIVE
+    description: When no config file exists, scan project directory structure to infer source root layout (src-layout, flat-layout,
+      lib-layout), functional blocks from subpackages, layers from directory patterns, and metrics
+  - id: CAP-4
+    name: Config Writing
+    status: ACTIVE
+    description: Serialize a ProjectConfig to YAML and write it to .architecture-model.yaml with an auto-generation header
+  - id: CAP-5
+    name: Discovery Observability
+    status: ACTIVE
+    description: DiscoveryReport and DiscoveryCandidate dataclasses tracking what the auto-discovery evaluated, accepted/rejected,
+      and summary statistics (layout, blocks, layers, metrics, file claim rate)
+  - id: CAP-6
+    name: Unified Config Access
+    status: ACTIVE
+    description: get_config() entry point that transparently loads from file if present (with sub-block enrichment) or falls
+      back to auto-discovery, always returning a valid ProjectConfig
+  behaviors:
+  - id: BHV-1
+    name: Load Config from File
+    status: ACTIVE
+    description: load_config(root) reads .architecture-model.yaml, parses with yaml.safe_load, delegates to ProjectConfig.from_dict().
+      Raises FileNotFoundError if file missing.
+  - id: BHV-2
+    name: Auto-Discover Project Structure
+    status: ACTIVE
+    description: 'discover_config(root) orchestrates: _find_source_root() detects layout (src/flat/lib), _discover_functional_blocks()
+      creates F-blocks from subpackages with sub-block recursion, _discover_layers() matches directory patterns against heuristics,
+      _discover_metrics() checks for common metric directories. Falls back to _derive_layers_from_blocks() if no heuristic
+      layers match.'
+  - id: BHV-3
+    name: Write Config to Disk
+    status: ACTIVE
+    description: write_config(config, root) serializes via config.to_dict(), dumps YAML, prepends auto-generation header,
+      writes to .architecture-model.yaml
+  - id: BHV-4
+    name: Unified Load-or-Discover
+    status: ACTIVE
+    description: get_config(root) checks for config file existence. If present, loads it and enriches blocks lacking sub_blocks
+      via _discover_sub_blocks(). If the loaded file is a model file (no functional_blocks), falls back to full discovery.
+      If no file exists, runs full discovery.
+  - id: BHV-5
+    name: Find Source Root
+    status: ACTIVE
+    description: _find_source_root(root, report) probes src/<pkg>/, flat-layout root packages, and lib/<pkg>/ in order, returning
+      the first directory that is a Python package with code subdirectories
+  - id: BHV-6
+    name: Discover Sub-Blocks Recursively
+    status: ACTIVE
+    description: _discover_sub_blocks(block_dir, block_id, root, depth, max_depth=3) recurses into subdirectories containing
+      .py files, generating SubBlockConfig with letter IDs (F1.A, F1.B) at depth 0 and numeric IDs at deeper levels. Extracts
+      names from __init__.py docstrings.
+  - id: BHV-7
+    name: Serialize and Deserialize Config
+    status: ACTIVE
+    description: ProjectConfig.from_dict() parses project/output/layers/functional_blocks/ metrics sections from YAML dict.
+      to_dict() reverses the process. Sub-blocks use recursive _parse_sub_blocks()/_serialize_sub_blocks().
+  interfaces:
+  - id: IF-1
+    name: load_config(root) -> ProjectConfig
+    status: ACTIVE
+    description: Load config from .architecture-model.yaml at root. Raises FileNotFoundError if absent.
+    type: internal
+  - id: IF-2
+    name: discover_config(root) -> (ProjectConfig, DiscoveryReport)
+    status: ACTIVE
+    description: Auto-discover project structure by scanning filesystem. Returns config and observability report.
+    type: internal
+  - id: IF-3
+    name: get_config(root) -> ProjectConfig
+    status: ACTIVE
+    description: Recommended entry point — loads from file if exists (with sub-block enrichment), otherwise auto-discovers.
+      Always returns valid config.
+    type: internal
+  - id: IF-4
+    name: write_config(config, root) -> Path
+    status: ACTIVE
+    description: Write ProjectConfig to .architecture-model.yaml. Returns path to written file.
+    type: internal
+  - id: IF-5
+    name: ProjectConfig.from_dict(data, root) -> ProjectConfig
+    status: ACTIVE
+    description: Construct ProjectConfig from parsed YAML dictionary with root path.
+    type: internal
+  - id: IF-6
+    name: ProjectConfig.to_dict() -> dict
+    status: ACTIVE
+    description: Serialize ProjectConfig to YAML-compatible dictionary.
+    type: internal
+  constraints:
+  - id: CON-1
+    name: YAML-only Config Format
+    status: ACTIVE
+    description: Configuration is stored exclusively as YAML (.architecture-model.yaml). No JSON, TOML, or other formats supported.
+    type: technology
+  - id: CON-2
+    name: Zero-Config Bootstrap
+    status: ACTIVE
+    description: The system must produce a valid ProjectConfig for ANY Python project directory without requiring a pre-existing
+      config file.
+    type: technology
+  - id: CON-3
+    name: Sub-Block Recursion Depth Limit
+    status: ACTIVE
+    description: Sub-block discovery recurses at most 3 levels deep (max_depth=3) to prevent runaway scanning in deeply nested
+      projects.
+    type: technology
+  - id: CON-4
+    name: Excluded Directory Patterns
+    status: ACTIVE
+    description: Discovery skips __pycache__, dot-prefixed dirs, and directories in EXCLUDED_DIRS (from utils.discovery).
+      Also skips tests, docs, scripts, bin, output at the top level.
+    type: technology
+  components:
+  - id: COMP-1
+    name: schema.py
+    status: ACTIVE
+    description: 'Dataclass definitions: ProjectConfig, OutputConfig, ResolvedOutputConfig, LayerConfig, FunctionalBlockConfig,
+      SubBlockConfig, MetricConfig, DiscoveryReport, DiscoveryCandidate. Includes from_dict/to_dict serialization and derived
+      property accessors (layer_dir_map, fblock_dir_map, fblock_dict, metrics_paths).'
+    files:
+    - src/architecture_model/config/schema.py
+    signatures:
+    - name: resolve
+      params:
+      - 'project_name: str'
+      - 'root: Path'
+      returns: '''ResolvedOutputConfig'''
+      body_hint: return ResolvedOutputConfig(model=root / self.model.format(project=project_name), manifest=root / self.manifest.format(project=project_name),
+        artifacts=root / self.artifacts.format(project=project_name))
+    - name: layer_dir_map
+      returns: dict[str, list[str]]
+      decorators:
+      - property
+      body_hint: 'return {layer.id: layer.dirs for layer in self.layers if layer.dirs}'
+    - name: fblock_dir_map
+      returns: dict[str, str]
+      decorators:
+      - property
+      body_hint: "result: dict[str, str] = {}; for block in self.functional_blocks:\n    for d in block.dirs:\n        result[d]\
+        \ = block.id\n    for f in block.files:\n        prefix = f.rsplit('.py', 1)[0] if f.endswith('.py') else f\n    \
+        \    result[prefix] = block.id; return result"
+    - name: fblock_dict
+      returns: dict[str, dict[str, Any]]
+      decorators:
+      - property
+      body_hint: 'return {block.id: {''name'': block.name, ''dirs'': block.dirs, ''files'': block.files, ''description_source'':
+        block.description_source} for block in self.functional_blocks}'
+    - name: metrics_paths
+      returns: dict[str, Path]
+      decorators:
+      - property
+      body_hint: 'return {m.label: self.root / m.path for m in self.metrics}'
+    - name: resolved_output
+      returns: ResolvedOutputConfig
+      body_hint: return self.output.resolve(self.name, self.root)
+    - name: from_dict
+      params:
+      - 'data: dict[str, Any]'
+      - 'root: Path'
+      returns: '''ProjectConfig'''
+      decorators:
+      - classmethod
+      body_hint: project = data.get('project', {}); output_data = data.get('output', {}); layers_data = data.get('layers',
+        {}); blocks_data = data.get('functional_blocks', {}); metrics_data = data.get('metrics', []); layers = [LayerConfig(id=layer_id,
+        dirs=layer_def.get('dirs', []) ...; blocks = [FunctionalBlockConfig(id=block_id, name=block_def.get('n...; metrics
+        = [MetricConfig(label=m.get('label', ''), path=m.get('path'...; return cls(name=project.get('name', ''), system=project.get('system',
+        ''), output=OutputConfig(model=output_data.get('model', OutputConfig.model), manifest=output_data.get('manifest',
+        OutputConfig.manifest), artifacts=output_data.get('artifacts', OutputConfig.artifacts)), layers=layers, functional_blocks=blocks,
+        metrics=metrics, root=root)
+    - name: to_dict
+      returns: dict[str, Any]
+      body_hint: 'return {''project'': {''name'': self.name, ''system'': self.system}, ''output'': {''model'': self.output.model,
+        ''manifest'': self.output.manifest, ''artifacts'': self.output.artifacts}, ''layers'': {layer.id: {''dirs'': layer.dirs}
+        for layer in self.layers}, ''functional_blocks'': {block.id: {''name'': block.name, ''dirs'': block.dirs, ''files'':
+        block.files, ''description_source'': block.description_source, **({''sub_blocks'': _serialize_sub_blocks(block.sub_blocks)}
+        if block.sub_blocks else {})} for block in self.functional_blocks}, ''metrics'': [{''label'': m.label, ''path'': m.path,
+        ''pattern'': m.pattern, **({''exclude'': m.exclude} if m.exclude else {}), **({''recursive'': True} if m.recursive
+        else {})} for m in self.metrics]}'
+    - name: add_candidate
+      params:
+      - 'category: str'
+      - 'path: str'
+      - 'accepted: bool'
+      - 'reason: str'
+      returns: None
+      body_hint: self.candidates.append(DiscoveryCandidate(category, path, accepted, reason))
+    - name: claim_rate
+      returns: float
+      decorators:
+      - property
+      body_hint: "if self.files_total == 0:\n    return 1.0; return self.files_claimed / self.files_total"
+    - name: summary
+      returns: str
+      body_hint: 'return f''Layout: {self.layout_detected}, {self.blocks_discovered} blocks, {self.layers_discovered} layers,
+        {self.metrics_discovered} metrics, {self.files_claimed}/{self.files_total} files claimed ({self.claim_rate:.0%})'''
+    test_contracts:
+    - test_file: test_config_discovery_typed.py
+      test_method: test_discover_config_returns_report
+      assertion: config.name == tmp_path.name
+      contract_type: value_equality
+  - id: COMP-2
+    name: loader.py
+    status: ACTIVE
+    description: 'Config loading and auto-discovery engine: load_config(), discover_config(), get_config(), write_config().
+      Private heuristics: _LAYER_HEURISTICS, _METRIC_HEURISTICS, _find_source_root(), _get_code_subdirectories(), _discover_functional_blocks(),
+      _discover_sub_blocks(), _discover_layers(), _discover_metrics(), _derive_layers_from_blocks(), _fblocks_from_top_level_dirs(),
+      _get_package_description().'
+    files:
+    - src/architecture_model/config/loader.py
+    constants:
+    - name: CONFIG_FILENAME
+      value: .architecture-model.yaml
+    signatures:
+    - name: load_config
+      params:
+      - 'root: Path'
+      returns: ProjectConfig
+      body_hint: "config_path = root / CONFIG_FILENAME; if not config_path.exists():\n    raise FileNotFoundError(f'No {CONFIG_FILENAME}\
+        \ found in {root}. Run `architecture-model init` to generate one, or use get_config() for auto-discovery.'); data\
+        \ = yaml.safe_load(config_path.read_text(encoding='utf-8')); if not data:\n    data = {}; return ProjectConfig.from_dict(data,\
+        \ root=root)"
+    - name: discover_config
+      params:
+      - 'root: Path'
+      returns: tuple[ProjectConfig, DiscoveryReport]
+      body_hint: 'name = root.name; report = DiscoveryReport(); layers = _discover_layers(root, report); metrics = _discover_metrics(root);
+        functional_blocks = _discover_functional_blocks(root, report); if not layers and functional_blocks: ...; report.layers_discovered
+        = len(layers); report.metrics_discovered = len(metrics); config = ProjectConfig(name=name, system=name, output=OutputConfig...;
+        logger.info(''Discovery complete: %s'', report.summary()); return (config, report)'
+    - name: get_config
+      params:
+      - 'root: Path'
+      returns: ProjectConfig
+      body_hint: "config_path = root / CONFIG_FILENAME; if config_path.exists():\n    config = load_config(root)\n    if not\
+        \ config.functional_blocks:\n        config, _report = discover_config(root)\n        return config\n    for block\
+        \ in config.functional_blocks:\n        if not block.sub_blocks and block.dirs:\n            block_path = root / block.dirs[0]\n\
+        \            if block_path.is_dir():\n                block.sub_blocks = _discover_sub_blocks(block_path, block.id,\
+        \ root)\n    return config; config, _report = discover_config(root); return config"
+    - name: write_config
+      params:
+      - 'config: ProjectConfig'
+      - 'root: Path | None'
+      returns: Path
+      body_hint: 'if root is None: ...; config_path = root / CONFIG_FILENAME; data = config.to_dict(); header = "# Architecture
+        Model Standard - Project Descriptor\n# Au...; yaml_content = yaml.dump(data, default_flow_style=False, sort_keys=False...;
+        config_path.write_text(header + yaml_content, encoding=''utf-8''); return config_path'
+    test_contracts:
+    - test_file: test_config_discovery_typed.py
+      test_method: test_discover_config_returns_report
+      assertion: config.name == tmp_path.name
+      contract_type: value_equality
+  - id: COMP-3
+    name: __init__.py
+    status: ACTIVE
+    description: 'Package re-exports: ProjectConfig, OutputConfig, LayerConfig, FunctionalBlockConfig, MetricConfig, load_config,
+      discover_config, get_config'
+    files:
+    - src/architecture_model/config/__init__.py
+    test_contracts:
+    - test_file: test_config_discovery_typed.py
+      test_method: test_discover_config_returns_report
+      assertion: config.name == tmp_path.name
+      contract_type: value_equality
+relationships:
+- type: realizes
+  from: COMP-1
+  to: CAP-1
+- type: realizes
+  from: COMP-1
+  to: CAP-5
+- type: realizes
+  from: COMP-2
+  to: CAP-2
+- type: realizes
+  from: COMP-2
+  to: CAP-3
+- type: realizes
+  from: COMP-2
+  to: CAP-4
+- type: realizes
+  from: COMP-2
+  to: CAP-6
+- type: realizes
+  from: COMP-3
+  to: CAP-1
+- type: exposes
+  from: COMP-2
+  to: IF-1
+- type: exposes
+  from: COMP-2
+  to: IF-2
+- type: exposes
+  from: COMP-2
+  to: IF-3
+- type: exposes
+  from: COMP-2
+  to: IF-4
+- type: exposes
+  from: COMP-1
+  to: IF-5
+- type: exposes
+  from: COMP-1
+  to: IF-6
+- type: depends-on
+  from: COMP-2
+  to: COMP-1
+- type: depends-on
+  from: COMP-3
+  to: COMP-1
+- type: depends-on
+  from: COMP-3
+  to: COMP-2
+- type: consumes
+  from: ACT-1
+  to: IF-3
+- type: consumes
+  from: ACT-1
+  to: IF-4
+- type: consumes
+  from: ACT-2
+  to: IF-3
+- type: traces-to
+  from: BHV-1
+  to: CAP-2
+- type: traces-to
+  from: BHV-2
+  to: CAP-3
+- type: traces-to
+  from: BHV-3
+  to: CAP-4
+- type: traces-to
+  from: BHV-4
+  to: CAP-6
+- type: traces-to
+  from: BHV-5
+  to: CAP-3
+- type: traces-to
+  from: BHV-6
+  to: CAP-3
+- type: traces-to
+  from: BHV-7
+  to: CAP-1
+- type: triggers
+  from: BHV-4
+  to: BHV-1
+- type: triggers
+  from: BHV-4
+  to: BHV-2
+- type: triggers
+  from: BHV-2
+  to: BHV-5
+- type: triggers
+  from: BHV-2
+  to: BHV-6
+- type: constrained-by
+  from: COMP-2
+  to: CON-1
+- type: constrained-by
+  from: COMP-2
+  to: CON-2
+- type: constrained-by
+  from: COMP-2
+  to: CON-3
+- type: constrained-by
+  from: COMP-2
+  to: CON-4

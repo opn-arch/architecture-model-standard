@@ -1,0 +1,1568 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/core
+  system: Core
+  generated_at: '2026-07-21T23:13:10.289541+00:00'
+entities:
+  actors:
+  - id: ACT-cli
+    name: CLI Commands
+    status: ACTIVE
+    description: CLI entry points (init, validate, slice, diff, stats, impact, etc.) that invoke core APIs
+    type: system
+    goals:
+    - Parse and validate architecture models from YAML files
+    - Slice models for focused context
+    - Diff model versions to detect drift
+    - Decompose models into system hierarchies
+    - Run coverage checks against manifest
+  - id: ACT-mcp
+    name: MCP Server (opencode-arch)
+    status: ACTIVE
+    description: MCP extension that wraps core APIs as tool endpoints (architect_scan, architect_slice, architect_validate,
+      architect_extract)
+    type: system
+    goals:
+    - Provide LLM agents with architecture model operations
+    - Compress model context for token-efficient agent consumption
+  - id: ACT-llm-context
+    name: LLM Context Formatter
+    status: ACTIVE
+    description: The integrations.llm_context module that consumes core types and slicer for context formatting
+    type: system
+    goals:
+    - Format model data into token-compressed context strings
+  - id: ACT-manifest
+    name: Manifest Generator
+    status: ACTIVE
+    description: The manifest package that produces reality manifests consumed by merger and coverage
+    type: system
+    goals:
+    - Provide ground-truth AST data for model enrichment and coverage checking
+  capabilities:
+  - id: CAP-type-system
+    name: Type System
+    status: ACTIVE
+    description: Complete typed dataclass hierarchy for all 15 entity types, 17 relationship types, and the top-level ArchitectureModel
+      container with serialization support.
+    f_block: F1
+    priority: critical
+    requirements:
+    - All entity types map 1:1 with JSON Schema in spec/schema.json
+    - Round-trip fidelity between parse and serialize
+    - Enum values parse leniently (accept unknown values as plain strings)
+  - id: CAP-parsing
+    name: Model Parsing & Serialization
+    status: ACTIVE
+    description: Load YAML files into typed ArchitectureModel, validate against JSON Schema, serialize back to YAML/dict with
+      round-trip fidelity.
+    f_block: F2
+    priority: critical
+    requirements:
+    - Parse all 15 entity types from raw dicts
+    - Validate against JSON Schema when jsonschema is installed
+    - Save models with deterministic YAML output
+  - id: CAP-validation
+    name: Structural Validation
+    status: ACTIVE
+    description: 10 validation checks producing a score 0-100 with categorized issues (ERROR/WARNING/INFO). Checks ID uniqueness,
+      referential integrity, orphan detection, status consistency, capability realization, meta completeness, v1.1 semantics,
+      regen readiness, domain profiles, and improvement opportunities.
+    f_block: F3
+    priority: critical
+    requirements:
+    - Score deduction: 10 per error, 2 per warning
+    - Strict mode promotes warnings to errors
+    - Domain profile validation loads external profile rules
+  - id: CAP-slicing
+    name: Model Slicing
+    status: ACTIVE
+    description: Extract model subsets by F-block, layer, status, or artifact type. 11 artifact-specific slicers (functional-architecture,
+      logical-architecture, use-cases, icd, requirements-analysis, operations-manual, conops, testing, deployment-guide, data-dictionary,
+      readme).
+    f_block: F4
+    priority: high
+    requirements:
+    - Sliced models are independent ArchitectureModel instances
+    - Relationships filtered to relevant entity subset
+    - Deep-copied to prevent mutation of source model
+  - id: CAP-diffing
+    name: Model Diffing
+    status: ACTIVE
+    description: Compare two model versions producing structured diffs with entity changes (added/removed/modified) and relationship
+      changes. Includes affected-artifact detection for staleness analysis.
+    f_block: F5
+    priority: high
+    requirements:
+    - Field-level change detection (name, status, description, f_block, layer, priority)
+    - Relationship comparison by (type, from, to) key
+    - Human-readable diff report formatting
+  - id: CAP-merging
+    name: Manifest Merging & Enrichment
+    status: ACTIVE
+    description: Merge manifest data into models (file provenance, layer directories, missing components), enrich with AST
+      ground-truth (symbols, functions, imports), compact for LLM context, and compose fully-enriched models from source code.
+    f_block: F6
+    priority: high
+    requirements:
+    - Never overwrite architectural decisions (names, descriptions, relationships)
+    - Auto-discover high-LOC modules not yet in model
+    - Wire realizes relationships for newly added components
+    - Compact models for 7B model context limits
+  - id: CAP-decomposition
+    name: Model Decomposition
+    status: ACTIVE
+    description: Identify complex F-block groups as System entities via weighted complexity scoring, auto-assign F-blocks
+      via dependency-graph clustering, decompose flat models into top-level + sub-model hierarchies, and perform test-affinity
+      decomposition for subsystem identification.
+    f_block: F7
+    priority: high
+    requirements:
+    - System threshold is configurable (default 10.0)
+    - Auto-assign uses greedy modularity clustering
+    - Topological sort for subsystem ordering (leaves first)
+    - Test-affinity traces imports through __init__.py re-exports
+  - id: CAP-coverage
+    name: Coverage Analysis
+    status: ACTIVE
+    description: 'Compare model against manifest reality across 5 dimensions: component coverage, relationship accuracy, capability
+      coverage, interface coverage, and staleness. Produces aggregate score with detailed per-check reports.'
+    f_block: F8
+    requirements:
+    - Score 0-100 per check, overall is average
+    - Reports missing and extra entities
+    - Staleness uses SHA-256 hash comparison
+  behaviors:
+  - id: BEH-load-validate
+    name: Load and Validate Model
+    status: ACTIVE
+    trigger: CLI or MCP invokes load_model() then validate_model()
+    actor: ACT-cli
+    preconditions:
+    - YAML file exists at given path
+    postconditions:
+    - ArchitectureModel instance with typed entities
+    - ValidationResult with score 0-100
+    steps:
+    - load_model() reads YAML, calls _parse_raw()
+    - _parse_raw() delegates to _parse_meta(), _parse_entities(), _parse_relationship()
+    - Each entity type has dedicated parser (e.g., _parse_component with Symbol/Constant/Signature support)
+    - validate_model() runs 10 checks sequentially
+    - Returns ValidationResult with issues list and computed score
+  - id: BEH-slice-model
+    name: Slice Model for Context
+    status: ACTIVE
+    trigger: MCP or CLI requests focused model subset
+    actor: ACT-mcp
+    preconditions:
+    - ArchitectureModel is loaded
+    - Slice criteria specified (f_block, layer, status, or artifact name)
+    postconditions:
+    - New ArchitectureModel containing only relevant entities and relationships
+    steps:
+    - Identify relevant entities by criteria (f_block match, layer match, status filter, or artifact slicer)
+    - Collect transitive references (actors from behaviors, data from components, etc.)
+    - Filter relationships to those connecting relevant entities
+    - Deep-copy to prevent source mutation
+    - Return new ArchitectureModel with filtered meta
+  - id: BEH-diff-versions
+    name: Diff Model Versions
+    status: ACTIVE
+    trigger: CLI diff command or pipeline comparison
+    actor: ACT-cli
+    preconditions:
+    - Two ArchitectureModel instances (old and new)
+    postconditions:
+    - ModelDiff with entity changes and relationship changes
+    - Set of affected artifact names
+    steps:
+    - Compare each entity type list by ID (added/removed/modified)
+    - Detect field-level changes for modified entities
+    - Compare relationships by (type, from, to) key
+    - Compute affected_artifacts from change types
+  - id: BEH-merge-enrich
+    name: Merge Manifest and Enrich Model
+    status: ACTIVE
+    trigger: Pipeline enrichment stage
+    actor: ACT-manifest
+    preconditions:
+    - ArchitectureModel exists
+    - Manifest JSON file or dict available
+    postconditions:
+    - Model enriched with file provenance, symbols, functions, imports
+    - Missing components auto-added with realizes relationships
+    steps:
+    - merge_manifest() updates manifest_hash, layer directories, component files
+    - _add_missing_components() adds high-LOC modules (>400 LOC threshold)
+    - enrich_from_manifest() replaces symbols/functions with AST ground-truth
+    - _enrich_relationship_imports() populates Relationship.imports from import graph
+    - compact_for_generation() truncates for LLM context limits
+  - id: BEH-decompose
+    name: Decompose Model into Systems
+    status: ACTIVE
+    trigger: CLI decompose command or pipeline
+    actor: ACT-cli
+    preconditions:
+    - Flat model with enriched components
+    - Manifest with functional_blocks metadata
+    postconditions:
+    - DecompositionResult with top-level model and sub-models
+    - System entities created with sub_model_ref paths
+    steps:
+    - identify_systems() groups by f_block, computes aggregate complexity
+    - Groups above SYSTEM_THRESHOLD become SystemCandidates
+    - decompose_model() partitions components and relationships
+    - Inter-system relationships promoted to top-level with endpoint rewriting
+    - Sub-models contain only intra-system components and relationships
+  - id: BEH-coverage-check
+    name: Run Coverage Analysis
+    status: ACTIVE
+    trigger: CLI coverage command
+    actor: ACT-cli
+    preconditions:
+    - ArchitectureModel loaded
+    - Manifest dict available
+    postconditions:
+    - CoverageResult with 5 checks and overall score
+    steps:
+    - _check_component_coverage() matches model components to manifest modules
+    - _check_relationship_accuracy() compares depends-on edges to import graph
+    - _check_capability_coverage() matches f_blocks between model and manifest
+    - _check_interface_coverage() checks EXPOSES relationships against module exports
+    - _check_staleness() compares manifest hashes
+  - id: BEH-compose-enriched
+    name: Compose Enriched Model from Source
+    status: ACTIVE
+    trigger: compose_enriched_model() called with project root
+    actor: ACT-cli
+    preconditions:
+    - Project root directory with Python source files
+    postconditions:
+    - ArchitectureModel with one Component per source file
+    - Each component has constants, signatures, and test_contracts
+    steps:
+    - discover_source_files() and discover_test_files()
+    - _map_tests_to_sources() using AST import analysis
+    - For each source file, parse AST for constants, signatures, body hints
+    - Match test files and extract test contracts
+    - Build Component per source file with all enrichment data
+  - id: BEH-test-affinity-decompose
+    name: Test-Affinity Decomposition
+    status: ACTIVE
+    trigger: test_affinity_decompose() called with repo path
+    actor: ACT-cli
+    preconditions:
+    - Repository with test files following test_*.py or *_test.py convention
+    postconditions:
+    - List of Subsystem objects sorted topologically
+    steps:
+    - Discover test and source files
+    - Parse test file imports to identify tested source modules
+    - Assign each source to exactly one subsystem by best name match
+    - Detect inter-subsystem dependencies via import analysis
+    - Topological sort with Kahn's algorithm (leaves first)
+    - Unclaimed source files assigned to 'root' subsystem
+  interfaces:
+  - id: IF-load-model
+    name: load_model
+    status: ACTIVE
+    description: 'load_model(path: str | Path) -> ArchitectureModel — Load and parse YAML file'
+    type: internal
+    provider: COMP-parser
+  - id: IF-parse-raw
+    name: _parse_raw
+    status: ACTIVE
+    description: '_parse_raw(raw: dict) -> ArchitectureModel — Parse raw dict into typed model'
+    type: internal
+    provider: COMP-parser
+  - id: IF-validate-model-data
+    name: validate_model_data
+    status: ACTIVE
+    description: 'validate_model_data(data: dict) -> list[str] — Validate against JSON Schema'
+    type: internal
+    provider: COMP-parser
+  - id: IF-dump-model
+    name: dump_model
+    status: ACTIVE
+    description: 'dump_model(model: ArchitectureModel) -> dict — Serialize model to dict'
+    type: internal
+    provider: COMP-parser
+  - id: IF-save-model
+    name: save_model
+    status: ACTIVE
+    description: 'save_model(model: ArchitectureModel, path: str | Path) -> None — Write model to YAML'
+    type: internal
+    provider: COMP-parser
+  - id: IF-validate-model
+    name: validate_model
+    status: ACTIVE
+    description: 'validate_model(model: ArchitectureModel, strict: bool = False) -> ValidationResult'
+    type: internal
+    provider: COMP-validator
+  - id: IF-slice-fblock
+    name: slice_by_fblock
+    status: ACTIVE
+    description: 'slice_by_fblock(model, f_block: str, include_relationships: bool = True) -> ArchitectureModel'
+    type: internal
+    provider: COMP-slicer
+  - id: IF-slice-layer
+    name: slice_by_layer
+    status: ACTIVE
+    description: 'slice_by_layer(model, layer_id: str) -> ArchitectureModel'
+    type: internal
+    provider: COMP-slicer
+  - id: IF-slice-status
+    name: slice_by_status
+    status: ACTIVE
+    description: 'slice_by_status(model, status: Status) -> ArchitectureModel'
+    type: internal
+    provider: COMP-slicer
+  - id: IF-slice-artifact
+    name: slice_for_artifact
+    status: ACTIVE
+    description: 'slice_for_artifact(model, artifact_name: str) -> ArchitectureModel — 11 artifact-specific slicers'
+    type: internal
+    provider: COMP-slicer
+  - id: IF-diff-models
+    name: diff_models
+    status: ACTIVE
+    description: diff_models(old_model, new_model) -> ModelDiff
+    type: internal
+    provider: COMP-differ
+  - id: IF-merge-manifest
+    name: merge_manifest
+    status: ACTIVE
+    description: merge_manifest(model, manifest_path, project_root=None) -> ArchitectureModel — In-place enrichment
+    type: internal
+    provider: COMP-merger
+  - id: IF-enrich-from-manifest
+    name: enrich_from_manifest
+    status: ACTIVE
+    description: 'enrich_from_manifest(model, manifest: dict) -> EnrichmentResult — AST ground-truth correction'
+    type: internal
+    provider: COMP-merger
+  - id: IF-compose-enriched
+    name: compose_enriched_model
+    status: ACTIVE
+    description: 'compose_enriched_model(project_root: Path) -> ArchitectureModel — Build enriched model from source'
+    type: internal
+    provider: COMP-merger
+  - id: IF-compact
+    name: compact_for_generation
+    status: ACTIVE
+    description: compact_for_generation(model) -> ArchitectureModel — Truncate for LLM context
+    type: internal
+    provider: COMP-merger
+  - id: IF-compute-complexity
+    name: compute_complexity
+    status: ACTIVE
+    description: 'compute_complexity(comp: Component, model) -> float — Weighted complexity score'
+    type: internal
+    provider: COMP-decomposer
+  - id: IF-identify-systems
+    name: identify_systems
+    status: ACTIVE
+    description: 'identify_systems(model, manifest: dict) -> list[SystemCandidate]'
+    type: internal
+    provider: COMP-decomposer
+  - id: IF-auto-assign-fblocks
+    name: auto_assign_f_blocks
+    status: ACTIVE
+    description: 'auto_assign_f_blocks(model, max_cluster_size: int = 5) -> ArchitectureModel'
+    type: internal
+    provider: COMP-decomposer
+  - id: IF-decompose-model
+    name: decompose_model
+    status: ACTIVE
+    description: 'decompose_model(model, manifest: dict, output_dir: str = ''systems'') -> DecompositionResult'
+    type: internal
+    provider: COMP-decomposer
+  - id: IF-test-affinity
+    name: test_affinity_decompose
+    status: ACTIVE
+    description: 'test_affinity_decompose(repo_path: Path) -> list[Subsystem]'
+    type: internal
+    provider: COMP-decomposer
+  - id: IF-coverage-report
+    name: coverage_report
+    status: ACTIVE
+    description: 'coverage_report(model, manifest: dict) -> CoverageResult — 5 coverage checks'
+    type: internal
+    provider: COMP-coverage
+  constraints:
+  - id: CON-round-trip
+    name: Round-trip Fidelity
+    status: ACTIVE
+    description: Parsing then serializing a model must produce output compatible with re-parsing (_parse_raw round-trip)
+    type: technology
+    rationale: Ensures no data loss across save/load cycles
+  - id: CON-no-overwrite
+    name: Merge Never Overwrites Decisions
+    status: ACTIVE
+    description: merge_manifest() and enrich_from_manifest() supplement but never overwrite entity names, descriptions, status,
+      or relationships
+    type: technology
+    rationale: Architectural decisions are human-authored truth; manifest provides code-grounded facts only
+  - id: CON-deep-copy-slices
+    name: Slices are Independent
+    status: ACTIVE
+    description: All slicer functions return deep-copied models to prevent mutation of the source
+    type: technology
+    rationale: Callers must be able to modify sliced models without side effects
+  - id: CON-lenient-enums
+    name: Lenient Enum Parsing
+    status: ACTIVE
+    description: All enum parse() methods accept unknown values as plain strings rather than raising errors
+    type: technology
+    rationale: Forward compatibility — new enum values in newer schema versions should not break older parsers
+  - id: CON-score-formula
+    name: Validation Score Formula
+    status: ACTIVE
+    description: Score = max(0, 100 - (errors * 10) - (warnings * 2)). INFO issues do not affect score.
+    type: technology
+    metric: score
+    threshold: 0-100
+    rationale: Provides a single numeric quality indicator for models
+  layers:
+  - id: core-layer
+    name: Core Library Layer
+    status: ACTIVE
+    description: Single layer containing all core modules — this package is a cohesive library
+    order: 1
+    technology:
+    - Python
+    - dataclasses
+    - PyYAML
+    - jsonschema (optional)
+    directories:
+    - src/architecture_model/core/
+  components:
+  - id: COMP-types
+    name: types
+    status: ACTIVE
+    description: 968-line module defining all typed dataclasses for the architecture model. Contains 15 entity types (Actor,
+      Capability, Behavior, Interface, Constraint, Layer, Component, System, Data, Event, Resource, Environment, QualityAttribute,
+      Decision, Lifecycle), 13 enums (Status, RelationType, ActorType, InterfaceType, ConstraintType, Priority, Strength,
+      ComponentKind, BehaviorPattern, SymbolKind, EventKind, ResourceKind, EnvironmentKind, DecisionStatus, LifecyclePhase),
+      supporting dataclasses (Symbol, DataField, Constant, FunctionSignature, TestContract, ObservabilityContract, StateTransition,
+      Compensation, Endpoint), Relationship, ModelMeta, Entities container, and the top-level ArchitectureModel with to_dict()/to_yaml()
+      serialization.
+    f_block: F1
+    technology: Python
+    files:
+    - src/architecture_model/core/types.py
+    responsibilities:
+    - Define all entity dataclasses with typed fields
+    - Define all enum types with lenient parse() methods
+    - Provide ArchitectureModel.to_dict() and to_yaml() serialization
+    - Compute all_entity_ids, entity_count, relationship_count properties
+    kind: module
+    signatures:
+    - name: parse
+      params:
+      - 'value: str'
+      returns: RelationType | str
+      decorators:
+      - classmethod
+      body_hint: "try:\n    return cls(value)\nexcept ValueError:\n    return value"
+    - name: all_entity_ids
+      returns: set[str]
+      decorators:
+      - property
+      body_hint: 'ids: set[str] = set(); for actor in self.entities.actors: ...; for cap in self.entities.capabilities: ...;
+        for beh in self.entities.behaviors: ...; for iface in self.entities.interfaces: ...; for con in self.entities.constraints:
+        ...; for layer in self.entities.layers: ...; for comp in self.entities.components: ...; for sys in self.entities.systems:
+        ...; for d in self.entities.data: ...; for e in self.entities.events: ...; for r in self.entities.resources: ...;
+        for e in self.entities.environments: ...; for qa in self.entities.quality_attributes: ...; for d in self.entities.decisions:
+        ...; for lc in self.entities.lifecycles: ...; return ids'
+    - name: entity_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return len(self.all_entity_ids)
+    - name: relationship_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return len(self.relationships)
+    - name: to_dict
+      returns: dict[str, Any]
+      body_hint: 'return {''meta'': self._dump_meta(), ''entities'': self._dump_entities(), ''relationships'': [self._dump_relationship(r)
+        for r in self.relationships]}'
+    - name: to_yaml
+      returns: str
+      body_hint: return yaml.dump(self.to_dict(), default_flow_style=False, sort_keys=False)
+    test_contracts:
+    - test_file: test_types.py
+      test_method: test_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_types.py
+      test_method: test_meta_fields
+      assertion: meta['schema_version'] == '1.0'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_status_is_string
+      assertion: actor['status'] == 'ACTIVE'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_actor_type_is_string
+      assertion: actor['type'] == 'human'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_interface_type_is_string
+      assertion: iface['type'] == 'REST'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_constraint_type_is_string
+      assertion: con['type'] == 'performance'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_priority_is_string
+      assertion: cap['priority'] == 'high'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_relationship_type_is_string
+      assertion: rel['type'] == 'realizes'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_strength_is_string
+      assertion: rel['strength'] == 'strong'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_from_to_values_correct
+      assertion: rel['from'] == 'comp-1'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_actor_fields
+      assertion: actor['id'] == 'actor-1'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_capability_fields
+      assertion: cap['f_block'] == 'FB-CodeGen'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_behavior_fields
+      assertion: beh['trigger'] == 'New project scan'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_interface_fields
+      assertion: iface['type'] == 'REST'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_constraint_fields
+      assertion: con['type'] == 'performance'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_layer_fields
+      assertion: layer['order'] == 2
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_component_fields
+      assertion: comp['layer'] == 'layer-1'
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_returns_string
+      assertion: result isinstance str
+      contract_type: type_check
+    - test_file: test_types.py
+      test_method: test_valid_yaml
+      assertion: parsed isinstance dict
+      contract_type: type_check
+    - test_file: test_types.py
+      test_method: test_yaml_matches_to_dict
+      assertion: parsed == model.to_dict()
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_entity_ids
+      assertion: original.all_entity_ids == rebuilt.all_entity_ids
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_entity_count
+      assertion: original.entity_count == rebuilt.entity_count
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_relationship_count
+      assertion: original.relationship_count == rebuilt.relationship_count
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_meta
+      assertion: rebuilt.meta.schema_version == original.meta.schema_version
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_actor_details
+      assertion: new_actor.id == orig_actor.id
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_relationship_details
+      assertion: new_rel.type == orig_rel.type
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_behavior_details
+      assertion: new.trigger == orig.trigger
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_preserves_component_details
+      assertion: new.layer == orig.layer
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_round_trip_minimal_model
+      assertion: rebuilt.entity_count == original.entity_count
+      contract_type: value_equality
+    - test_file: test_types.py
+      test_method: test_yaml_round_trip
+      assertion: original.all_entity_ids == rebuilt.all_entity_ids
+      contract_type: value_equality
+  - id: COMP-parser
+    name: parser
+    status: ACTIVE
+    description: '767-line module for YAML model I/O. Public API: load_model(), validate_model_data(), dump_model(), save_model().
+      Internal parsing functions for each entity type and serialization functions mirroring the type system''s structure.'
+    f_block: F2
+    technology: Python
+    files:
+    - src/architecture_model/core/parser.py
+    responsibilities:
+    - Load YAML files into ArchitectureModel via _parse_raw()
+    - Validate raw dicts against JSON Schema (optional jsonschema dependency)
+    - Serialize ArchitectureModel back to dict/YAML
+    - Parse all 15 entity types with graceful enum handling
+    kind: module
+    constants:
+    - name: SCHEMA_PATH
+      value: Path(__file__).parent.parent / 'spec' / 'schema.json'
+    signatures:
+    - name: load_model
+      params:
+      - 'path: str | Path'
+      returns: ArchitectureModel
+      body_hint: "path = Path(path); with open(path, 'r', encoding='utf-8') as f:\n    raw = yaml.safe_load(f); if raw is\
+        \ None:\n    raise ValueError(f'Empty model file: {path}'); return _parse_raw(raw)"
+    - name: validate_model_data
+      params:
+      - 'data: dict[str, Any]'
+      returns: list[str]
+      body_hint: "if not HAS_JSONSCHEMA:\n    return ['jsonschema not installed — skipping schema validation']; schema = json.loads(SCHEMA_PATH.read_text(encoding='utf-8'));\
+        \ validator = jsonschema.Draft202012Validator(schema); return [f'{e.json_path}: {e.message}' for e in validator.iter_errors(data)]"
+    - name: dump_model
+      params:
+      - 'model: ArchitectureModel'
+      returns: dict[str, Any]
+      body_hint: 'return {''meta'': _dump_meta(model.meta), ''entities'': _dump_entities(model.entities), ''relationships'':
+        [_dump_relationship(r) for r in model.relationships]}'
+    - name: save_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'path: str | Path'
+      returns: None
+      body_hint: "path = Path(path); path.parent.mkdir(parents=True, exist_ok=True); data = dump_model(model); with open(path,\
+        \ 'w', encoding='utf-8') as f:\n    yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True,\
+        \ width=120)"
+    test_contracts:
+    - test_file: test_parser.py
+      test_method: test_load_returns_architecture_model
+      assertion: model isinstance ArchitectureModel
+      contract_type: type_check
+    - test_file: test_parser.py
+      test_method: test_meta_has_schema_version
+      assertion: model.meta.schema_version == '0.1.0'
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_empty_file_raises
+      assertion: raises ValueError
+      contract_type: raises
+    - test_file: test_parser.py
+      test_method: test_missing_file_raises
+      assertion: raises FileNotFoundError
+      contract_type: raises
+    - test_file: test_parser.py
+      test_method: test_malformed_yaml_raises
+      assertion: raises Exception
+      contract_type: raises
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_entity_count
+      assertion: reloaded.entity_count == model.entity_count
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_relationship_count
+      assertion: reloaded.relationship_count == model.relationship_count
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_meta
+      assertion: reloaded.meta.project == model.meta.project
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_round_trip_preserves_actor_ids
+      assertion: original_ids == reloaded_ids
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_real_model_passes_schema
+      assertion: len(real_errors) == 0
+      contract_type: value_equality
+    - test_file: test_parser.py
+      test_method: test_minimal_valid_structure
+      assertion: real_errors isinstance list
+      contract_type: type_check
+  - id: COMP-validator
+    name: validator
+    status: ACTIVE
+    description: 584-line module implementing 10 validation checks. Produces ValidationResult with score 0-100, categorized
+      issues (ERROR/WARNING/INFO). Supports strict mode and domain profile validation.
+    f_block: F3
+    technology: Python
+    files:
+    - src/architecture_model/core/validator.py
+    responsibilities:
+    - Check ID uniqueness across all entity types
+    - Check referential integrity of relationship endpoints
+    - Detect orphan behaviors and components
+    - Check status consistency (ACTIVE depending on PLANNED)
+    - Verify capability realization coverage
+    - Check meta completeness (project, schema_version)
+    - Validate v1.1 semantics (data-model fields, state-machine reachability)
+    - Assess regen readiness (constant/signature coverage)
+    - Validate domain profile rules
+    - Flag improvement opportunities (missing signatures, test contracts, observability)
+    kind: module
+    signatures:
+    - name: error_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for i in self.issues if i.severity == Severity.ERROR))
+    - name: warning_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for i in self.issues if i.severity == Severity.WARNING))
+    - name: info_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for i in self.issues if i.severity == Severity.INFO))
+    - name: is_valid
+      returns: bool
+      decorators:
+      - property
+      body_hint: return self.error_count == 0
+    - name: score
+      returns: int
+      decorators:
+      - property
+      body_hint: penalty = self.error_count * 10 + self.warning_count * 2; return max(0, 100 - penalty)
+    - name: summary
+      returns: str
+      body_hint: 'return f''Score: {self.score}/100 | Errors: {self.error_count}, Warnings: {self.warning_count}, Info: {self.info_count}'''
+    - name: validate_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'strict: bool'
+      returns: ValidationResult
+      body_hint: 'result = ValidationResult(); _check_id_uniqueness(model, result); _check_referential_integrity(model, result);
+        _check_orphan_entities(model, result); _check_status_consistency(model, result); _check_capability_realization(model,
+        result); _check_meta_completeness(model, result); _check_v11_semantics(model, result); _check_regen_readiness(model,
+        result); _check_domain_profile(model, result); _check_improvement_opportunities(model, result); if strict: ...; return
+        result'
+    test_contracts:
+    - test_file: test_validator.py
+      test_method: test_perfect_model_scores_100
+      assertion: result.score == 100
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_score_deducts_10_per_error
+      assertion: result.score == 90
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_score_deducts_2_per_warning
+      assertion: result.score == 98
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_score_floors_at_zero
+      assertion: result.score == 0
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_info_does_not_affect_score
+      assertion: result.score == 100
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_duplicate_id_across_types_errors
+      assertion: dup_errors[0].severity == Severity.ERROR
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_unique_ids_no_duplicates
+      assertion: len(dup_errors) == 0
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_known_external_not_dangling
+      assertion: len(dangling) == 0
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_orphan_component_produces_info
+      assertion: orphans[0].severity == Severity.INFO
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_orphan_behavior_produces_info
+      assertion: orphans[0].severity == Severity.INFO
+      contract_type: value_equality
+    - test_file: test_validator.py
+      test_method: test_dormant_component_not_orphan
+      assertion: len(orphans) == 0
+      contract_type: value_equality
+  - id: COMP-slicer
+    name: slicer
+    status: ACTIVE
+    description: 526-line module with 4 public slicing functions and 11 artifact-specific internal slicers. Each produces
+      a new ArchitectureModel with only relevant entities.
+    f_block: F4
+    technology: Python
+    files:
+    - src/architecture_model/core/slicer.py
+    responsibilities:
+    - Slice by F-block (capabilities, behaviors, components, interfaces, data, events, quality attributes)
+    - Slice by layer (layer + components + relationships)
+    - Slice by status (filter all entities to single status)
+    - Slice for artifact (11 artifact-specific subsets with relationship type filtering)
+    kind: module
+    signatures:
+    - name: slice_by_fblock
+      params:
+      - 'model: ArchitectureModel'
+      - 'f_block: str'
+      - 'include_relationships: bool'
+      returns: ArchitectureModel
+      body_hint: 'cap_ids = {c.id for c in model.entities.capabilities if c.f_block =...; behaviors = [b for b in model.entities.behaviors
+        if f_block in b.tags]; behavior_ids = {b.id for b in behaviors}; components = [c for c in model.entities.components
+        if c.f_block == f_b...; component_ids = {c.id for c in components}; interfaces = [i for i in model.entities.interfaces
+        if f_block in i.pro...; interface_ids = {i.id for i in interfaces}; relevant_ids = cap_ids | behavior_ids | component_ids
+        | interface_ids; data_entities = [d for d in model.entities.data if d.owner in component_ids]; data_ids = {d.id for
+        d in data_entities}; events = [e for e in model.entities.events if e.source in componen...; event_ids = {e.id for
+        e in events}; quality_attrs = [q for q in model.entities.quality_attributes if any((a i...; qa_ids = {q.id for q in
+        quality_attrs}; relevant_ids = relevant_ids | data_ids | event_ids | qa_ids; actor_refs = set(); for beh in behaviors:
+        ...; actors = [a for a in model.entities.actors if a.id in actor_refs]; relationships = []; if include_relationships:
+        ...; capabilities = [c for c in model.entities.capabilities if c.f_block == f...; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version,
+        project=model.meta.project, system=model.meta.system, generated_at=model.meta.generated_at, source_artifacts=model.meta.source_artifacts),
+        entities=Entities(actors=actors, capabilities=capabilities, behaviors=behaviors, interfaces=interfaces, constraints=[],
+        layers=[], components=components, data=data_entities, events=events, quality_attributes=quality_attrs), relationships=relationships)'
+    - name: slice_by_layer
+      params:
+      - 'model: ArchitectureModel'
+      - 'layer_id: str'
+      returns: ArchitectureModel
+      body_hint: layers = [l for l in model.entities.layers if l.id == layer_id]; components = [c for c in model.entities.components
+        if c.layer == layer_id]; component_ids = {c.id for c in components}; relationships = [deepcopy(r) for r in model.relationships
+        if r.from_id in component_ids or r.to_id in component_ids]; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version,
+        project=model.meta.project, system=model.meta.system, generated_at=model.meta.generated_at, source_artifacts=model.meta.source_artifacts),
+        entities=Entities(layers=layers, components=components), relationships=relationships)
+    - name: slice_by_status
+      params:
+      - 'model: ArchitectureModel'
+      - 'status: Status'
+      returns: ArchitectureModel
+      body_hint: "entities = Entities(actors=[a for a in model.entities.actors if a.status == status], capabilities=[c for\
+        \ c in model.entities.capabilities if c.status == status], behaviors=[b for b in model.entities.behaviors if b.status\
+        \ == status], interfaces=[i for i in model.entities.interfaces if i.status == status], constraints=[c for c in model.entities.constraints\
+        \ if c.status == status], layers=[l for l in model.entities.layers if l.status == status], components=[c for c in\
+        \ model.entities.components if c.status == status], systems=[s for s in model.entities.systems if s.status == status],\
+        \ data=[d for d in model.entities.data if d.status == status], events=[e for e in model.entities.events if e.status\
+        \ == status], resources=[r for r in model.entities.resources if r.status == status], environments=[e for e in model.entities.environments\
+        \ if e.status == status], quality_attributes=[q for q in model.entities.quality_attributes if q.status == status],\
+        \ decisions=[d for d in model.entities.decisions if d.status == status], lifecycles=[l for l in model.entities.lifecycles\
+        \ if l.status == status]); all_ids = set(); for attr_name in ['actors', 'capabilities', 'behaviors', 'interfaces',\
+        \ 'constraints', 'layers', 'components', 'systems', 'data', 'events', 'resources', 'environments', 'quality_attributes',\
+        \ 'decisions', 'lifecycles']:\n    for e in getattr(entities, attr_name, []):\n        all_ids.add(e.id); relationships\
+        \ = [deepcopy(r) for r in model.relationships if r.from_id in all_ids and r.to_id in all_ids]; return ArchitectureModel(meta=deepcopy(model.meta),\
+        \ entities=entities, relationships=relationships)"
+    - name: slice_for_artifact
+      params:
+      - 'model: ArchitectureModel'
+      - 'artifact_name: str'
+      returns: ArchitectureModel
+      body_hint: "slicers = {'functional-architecture': _slice_for_functional, 'logical-architecture': _slice_for_logical,\
+        \ 'use-cases': _slice_for_use_cases, 'icd': _slice_for_icd, 'requirements-analysis': _slice_for_requirements, 'operations-manual':\
+        \ _slice_for_operations_manual, 'conops': _slice_for_conops, 'testing': _slice_for_testing, 'deployment-guide': _slice_for_deployment,\
+        \ 'data-dictionary': _slice_for_data_dictionary, 'readme': _slice_for_readme}; slicer_fn = slicers.get(artifact_name);\
+        \ if slicer_fn:\n    return slicer_fn(model); return deepcopy(model)"
+    test_contracts:
+    - test_file: test_slicer.py
+      test_method: test_returns_only_fblock_capabilities
+      assertion: cap.f_block == 'F1'
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_returns_only_fblock_components
+      assertion: comp.f_block == 'F2'
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_nonexistent_fblock_returns_empty
+      assertion: len(sliced.entities.capabilities) == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_no_relationship_mode
+      assertion: sliced.relationship_count == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_registered_artifact_returns_subset
+      assertion: sliced isinstance ArchitectureModel
+      contract_type: type_check
+    - test_file: test_slicer.py
+      test_method: test_registered_artifact_preserves_meta
+      assertion: sliced.meta.project == model.meta.project
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_functional_has_no_components
+      assertion: len(sliced.entities.components) == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_unregistered_artifact_returns_full_copy
+      assertion: sliced.entity_count == model.entity_count
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_sliced_model_no_extra_entities_leaked
+      assertion: len(leaked) == 0
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_active_filter
+      assertion: cap.status == Status.ACTIVE
+      contract_type: value_equality
+    - test_file: test_slicer.py
+      test_method: test_slice_by_existing_layer
+      assertion: sliced isinstance ArchitectureModel
+      contract_type: type_check
+    - test_file: test_slicer.py
+      test_method: test_slice_by_nonexistent_layer
+      assertion: len(sliced.entities.components) == 0
+      contract_type: value_equality
+  - id: COMP-differ
+    name: differ
+    status: ACTIVE
+    description: 294-line module for structured model comparison. Produces ModelDiff with entity-level and relationship-level
+      changes. Includes format_report() for human-readable output and affected_artifacts() for staleness detection.
+    f_block: F5
+    technology: Python
+    files:
+    - src/architecture_model/core/differ.py
+    responsibilities:
+    - Compare entity lists by ID (added, removed, modified)
+    - Detect field-level changes (name, status, description, f_block, layer, priority)
+    - Compare relationship sets by (type, from, to) key
+    - Format human-readable diff reports
+    - Determine which artifacts are affected by changes
+    kind: module
+    signatures:
+    - name: has_changes
+      returns: bool
+      decorators:
+      - property
+      body_hint: return bool(self.entity_changes or self.relationship_changes)
+    - name: added_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for c in self.entity_changes if c.change_type == ChangeType.ADDED))
+    - name: removed_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for c in self.entity_changes if c.change_type == ChangeType.REMOVED))
+    - name: modified_count
+      returns: int
+      decorators:
+      - property
+      body_hint: return sum((1 for c in self.entity_changes if c.change_type == ChangeType.MODIFIED))
+    - name: summary
+      returns: str
+      body_hint: "if not self.has_changes:\n    return 'No changes detected.'; return f'Changes: +{self.added_count} -{self.removed_count}\
+        \ ~{self.modified_count} entities, {len(self.relationship_changes)} relationship changes'"
+    - name: format_report
+      returns: str
+      body_hint: "if not self.has_changes:\n    return 'No changes detected between model versions.'; lines: list[str] = ['#\
+        \ Architecture Model Diff', '', self.summary(), '']; if self.entity_changes:\n    lines.append('## Entity Changes')\n\
+        \    lines.append('')\n    by_type: dict[str, list[EntityChange]] = {}\n    for change in self.entity_changes:\n \
+        \       by_type.setdefault(change.entity_type, []).append(change)\n    for etype, changes in sorted(by_type.items()):\n\
+        \        lines.append(f'### {etype.title()}s')\n        for c in changes:\n            prefix = {'added': '+', 'removed':\
+        \ '-', 'modified': '~'}[c.change_type.value]\n            detail = f' ({c.details})' if c.details else ''\n      \
+        \      lines.append(f'  {prefix} {c.entity_id}: {c.entity_name}{detail}')\n        lines.append(''); if self.relationship_changes:\n\
+        \    lines.append('## Relationship Changes')\n    lines.append('')\n    for rc in self.relationship_changes:\n   \
+        \     prefix = {'added': '+', 'removed': '-', 'modified': '~'}[rc.change_type.value]\n        lines.append(f'  {prefix}\
+        \ {rc.from_id} --{rc.rel_type}--> {rc.to_id}'); return '\\n'.join(lines)"
+    - name: affected_artifacts
+      returns: set[str]
+      body_hint: "affected: set[str] = set(); for change in self.entity_changes:\n    etype = change.entity_type\n    if etype\
+        \ in ('actor', 'behavior'):\n        affected.add('use-cases')\n    if etype == 'capability':\n        affected.add('functional-architecture')\n\
+        \        affected.add('use-cases')\n    if etype in ('layer', 'component'):\n        affected.add('logical-architecture')\n\
+        \    if etype == 'interface':\n        affected.add('icd')\n    if etype == 'constraint':\n        affected.add('requirements-analysis')\n\
+        \    affected.add('readme'); return affected"
+    - name: diff_models
+      params:
+      - 'old_model: ArchitectureModel'
+      - 'new_model: ArchitectureModel'
+      returns: ModelDiff
+      body_hint: result = ModelDiff(); _diff_entity_list(old_model.entities.actors, new_model.entities.actors, 'actor', result);
+        _diff_entity_list(old_model.entities.capabilities, new_model.entities.capabilities, 'capability', result); _diff_entity_list(old_model.entities.behaviors,
+        new_model.entities.behaviors, 'behavior', result); _diff_entity_list(old_model.entities.interfaces, new_model.entities.interfaces,
+        'interface', result); _diff_entity_list(old_model.entities.constraints, new_model.entities.constraints, 'constraint',
+        result); _diff_entity_list(old_model.entities.layers, new_model.entities.layers, 'layer', result); _diff_entity_list(old_model.entities.components,
+        new_model.entities.components, 'component', result); _diff_relationships(old_model.relationships, new_model.relationships,
+        result); return result
+  - id: COMP-merger
+    name: merger
+    status: ACTIVE
+    description: '778-line module with 3 major capabilities: manifest merging (merge_manifest), AST enrichment (enrich_from_manifest),
+      and source-code composition (compose_enriched_model). Also includes compact_for_generation() for LLM context size reduction.'
+    f_block: F6
+    technology: Python
+    files:
+    - src/architecture_model/core/merger.py
+    responsibilities:
+    - Merge manifest data into model (files, layers, missing components)
+    - Enrich with AST ground-truth symbols, functions, and imports
+    - Compose fully-enriched model from raw source code
+    - Compact enriched models for LLM generation context limits
+    - Map tests to sources via AST import tracing
+    kind: module
+    constants:
+    - name: _MAX_MEMBERS_PER_SYMBOL
+      value: '8'
+    - name: _MAX_FUNCTIONS_PER_COMPONENT
+      value: '12'
+    - name: _MAX_SYMBOLS_PER_COMPONENT
+      value: '6'
+    - name: _YAML_CHAR_BUDGET
+      value: '12000'
+    - name: _EXCLUDED_FILES
+      value: frozenset({'setup.py', 'conftest.py'})
+    signatures:
+    - name: merge_manifest
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest_path: str | Path'
+      - 'project_root: str | Path | None'
+      returns: ArchitectureModel
+      body_hint: 'manifest_path = Path(manifest_path); if not manifest_path.exists(): ...; if project_root is None: ...; manifest
+        = json.loads(manifest_path.read_text(encoding=''utf-8'')); import hashlib; content = manifest_path.read_bytes(); model.meta.manifest_hash
+        = hashlib.sha256(content).hexdigest()[:16]; _merge_layer_directories(model, manifest, project_root); _merge_component_files(model,
+        manifest); _add_missing_components(model, manifest, project_root); return model'
+    - name: model
+      returns: ArchitectureModel
+      decorators:
+      - property
+      body_hint: return self._model
+    - name: entities
+      decorators:
+      - property
+      body_hint: return self._model.entities
+    - name: relationships
+      decorators:
+      - property
+      body_hint: return self._model.relationships
+    - name: meta
+      decorators:
+      - property
+      body_hint: return self._model.meta
+    - name: enrich_from_manifest
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      returns: EnrichmentResult
+      body_hint: 'modules = manifest.get(''modules'', []); interfaces = manifest.get(''interfaces'', []); stem_to_module:
+        dict[str, dict] = {}; for mod in modules: ...; total_predicted = 0; total_matched = 0; for comp in model.entities.components:
+        ...; _enrich_relationship_imports(model, modules, interfaces, stem_to_module); if total_predicted == 0: ...; return
+        EnrichmentResult(_model=model, naming_accuracy=naming_accuracy)'
+    - name: compact_for_generation
+      params:
+      - 'model: ArchitectureModel'
+      returns: ArchitectureModel
+      body_hint: 'import copy; import yaml; model = copy.deepcopy(model); n_components = len(model.entities.components); if
+        n_components > 15: ...; for comp in model.entities.components: ...; return model'
+    - name: compose_enriched_model
+      params:
+      - 'project_root: Path'
+      returns: ArchitectureModel
+      body_hint: 'from architecture_model.manifest.body_hints import extrac...; from architecture_model.manifest.scanner import
+        _parse_fi...; from architecture_model.manifest.test_analyzer import ana...; source_files = discover_source_files(project_root);
+        test_files = discover_test_files(project_root); source_stems = {f.stem for f in source_files}; test_mapping = _map_tests_to_sources(test_files,
+        source_stems, project_r...; components: list[Component] = []; for src_file in source_files: ...; project_name = project_root.name;
+        meta = ModelMeta(schema_version=''1.4'', project=project_name); entities = Entities(components=components); return
+        ArchitectureModel(meta=meta, entities=entities, relationships=[])'
+    test_contracts:
+    - test_file: test_merger.py
+      test_method: test_manifest_hash_updated
+      assertion: len(model_copy.meta.manifest_hash) == 16
+      contract_type: value_equality
+    - test_file: test_merger.py
+      test_method: test_missing_manifest_returns_unchanged
+      assertion: model_copy.meta.manifest_hash == original_hash
+      contract_type: value_equality
+  - id: COMP-decomposer
+    name: decomposer
+    status: ACTIVE
+    description: 659-line module for complexity scoring, system identification, F-block auto-assignment, model decomposition,
+      and test-affinity decomposition.
+    f_block: F7
+    technology: Python
+    files:
+    - src/architecture_model/core/decomposer.py
+    responsibilities:
+    - Compute weighted complexity scores for components
+    - Identify F-block groups exceeding system threshold
+    - Auto-assign f_blocks via dependency-graph clustering
+    - Decompose flat models into top-level + sub-model hierarchies
+    - Perform test-affinity decomposition based on test file imports
+    - Topological sorting of subsystems
+    kind: module
+    constants:
+    - name: SYSTEM_THRESHOLD
+      value: '10.0'
+    signatures:
+    - name: compute_complexity
+      params:
+      - 'comp: Component'
+      - 'model: ArchitectureModel'
+      returns: float
+      body_hint: symbol_weight = len(comp.symbols) * 2.0; member_weight = sum((len(s.members) for s in comp.symbols)) * 0.3;
+        function_weight = len(comp.functions) * 0.5; deps = sum((1 for r in model.relationships if r.type == Relation...;
+        dep_weight = deps * 1.5; return symbol_weight + member_weight + function_weight + dep_weight
+    - name: identify_systems
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      returns: list[SystemCandidate]
+      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; fblocks_meta
+        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (fblock_id, components) in
+        groups.items(): ...; return candidates'
+    - name: auto_assign_f_blocks
+      params:
+      - 'model: ArchitectureModel'
+      - 'max_cluster_size: int'
+      returns: ArchitectureModel
+      body_hint: 'has_fblocks = any((c.f_block for c in model.entities.components)); if has_fblocks: ...; comps = model.entities.components;
+        if len(comps) <= 1: ...; adj: dict[str, set[str]] = defaultdict(set); comp_ids = {c.id for c in comps}; for rel in
+        model.relationships: ...; sorted_comps = sorted(comps, key=lambda c: len(adj.get(c.id, set())), re...; assigned: dict[str,
+        str] = {}; cluster_id = 0; for comp in sorted_comps: ...; for comp in comps: ...; from copy import deepcopy; new_comps
+        = []; for comp in comps: ...; new_entities = Entities(actors=model.entities.actors, capabilities=model...; return
+        ArchitectureModel(meta=model.meta, entities=new_entities, relationships=model.relationships)'
+    - name: decompose_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      - 'output_dir: str'
+      returns: DecompositionResult
+      body_hint: 'candidates = identify_systems(model, manifest); if not candidates: ...; comp_to_system: dict[str, str] =
+        {}; system_ids: dict[str, SystemCandidate] = {}; for candidate in candidates: ...; promoted_comp_ids = set(comp_to_system.keys());
+        top_level_components = [c for c in model.entities.components if c.id not in prom...; sub_models: dict[str, ArchitectureModel]
+        = {}; systems: list[System] = []; for (sys_id, candidate) in system_ids.items(): ...; top_level_rels: list[Relationship]
+        = []; promoted_rel_keys: set[tuple[RelationType, str, str]] = s...; for rel in model.relationships: ...; top_level_entities
+        = Entities(actors=model.entities.actors, capabilities=model...; top_level_model = ArchitectureModel(meta=model.meta,
+        entities=top_level_ent...; return DecompositionResult(top_level=top_level_model, sub_models=sub_models)'
+    - name: test_affinity_decompose
+      params:
+      - 'repo_path: Path'
+      returns: list[Subsystem]
+      body_hint: 'test_files = _discover_test_files(repo_path); source_files = _discover_source_files(repo_path); if not source_files:
+        ...; test_to_sources: dict[str, set[Path]] = {}; test_name_to_file: dict[str, Path] = {}; for test_file in test_files:
+        ...; source_claimants: dict[Path, list[str]] = defaultdict(list); for (sub_name, sources) in test_to_sources.items():
+        ...; source_assignment: dict[Path, str] = {}; for (src_file, claimants) in source_claimants.items(): ...; subsystem_sources:
+        dict[str, set[Path]] = defaultdict(set); subsystem_tests: dict[str, set[Path]] = defaultdict(set); for (src_file,
+        sub_name) in source_assignment.items(): ...; for (sub_name, test_file) in test_name_to_file.items(): ...; for test_file
+        in test_files: ...; for src_file in source_files: ...; if ''root'' not in subsystem_sources: ...; source_to_subsystem:
+        dict[Path, str] = {}; for (sub_name, sources) in subsystem_sources.items(): ...; subsystem_deps: dict[str, set[str]]
+        = defaultdict(set); for (sub_name, sources) in subsystem_sources.items(): ...; all_names = set(subsystem_sources.keys());
+        if not subsystem_sources.get(''root''): ...; in_degree: dict[str, int] = {}; for name in all_names: ...; queue = sorted([n
+        for n in all_names if in_degree[n] == 0]); sorted_names: list[str] = []; while queue: ...; remaining = sorted(all_names
+        - set(sorted_names)); sorted_names.extend(remaining); result: list[Subsystem] = []; for sub_name in sorted_names:
+        ...; return result'
+    test_contracts:
+    - test_file: test_decomposer.py
+      test_method: test_empty_component_is_zero
+      assertion: compute_complexity(comp, model) == 0.0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_symbols_contribute
+      assertion: score == pytest.approx(4.9)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_functions_contribute
+      assertion: score == pytest.approx(2.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_deps_contribute
+      assertion: score == pytest.approx(3.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_complex_component_above_threshold
+      assertion: score == pytest.approx(36.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_non_depends_on_rels_ignored
+      assertion: score == 0.0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_identifies_complex_fblock_group
+      assertion: len(systems) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_simple_model_no_systems
+      assertion: len(systems) == 0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_components_without_fblock_not_grouped
+      assertion: len(systems) == 0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_multiple_systems_identified
+      assertion: len(systems) == 2
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_uses_fblock_id_as_name_when_not_in_manifest
+      assertion: len(systems) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_decompose_creates_system
+      assertion: result isinstance DecompositionResult
+      contract_type: type_check
+    - test_file: test_decomposer.py
+      test_method: test_inter_system_rels_deduplicated
+      assertion: len(deps_to_simple) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_sub_model_meta_has_system_name
+      assertion: sub.meta.system == 'Core Engine'
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_no_systems_returns_unchanged
+      assertion: len(result.top_level.entities.systems) == 0
+      contract_type: value_equality
+  - id: COMP-coverage
+    name: coverage
+    status: ACTIVE
+    description: 268-line module comparing model against manifest across 5 dimensions. Produces CoverageResult with per-check
+      scores and overall aggregate.
+    f_block: F8
+    technology: Python
+    files:
+    - src/architecture_model/core/coverage.py
+    responsibilities:
+    - Check component coverage against manifest modules
+    - Check relationship accuracy against import graph
+    - Check capability coverage against functional blocks
+    - Check interface coverage against module exports
+    - Check staleness via manifest hash comparison
+    kind: module
+    signatures:
+    - name: summary
+      returns: str
+      body_hint: "lines = ['Model Coverage Report', '=' * 40]; for c in self.checks:\n    status = '✓' if c.score == 100 else\
+        \ '△' if c.score >= 80 else '✗'\n    lines.append(f'  {status} {c.name}: {c.matched}/{c.total} ({c.score:.0f}%)')\n\
+        \    for m in c.missing:\n        lines.append(f'      ⚠ Missing: {m}')\n    for e in c.extra:\n        lines.append(f'\
+        \      ⊕ Extra (not in code): {e}'); lines.append(f'\\nOverall accuracy: {self.overall_score:.0f}%'); return '\\n'.join(lines)"
+    - name: coverage_report
+      params:
+      - 'model: ''ArchitectureModel'''
+      - 'manifest: dict'
+      returns: CoverageResult
+      body_hint: checks = [_check_component_coverage(model, manifest), _check_relationship_accuracy(model, manifest), _check_capability_coverage(model,
+        manifest), _check_interface_coverage(model, manifest), _check_staleness(model, manifest)]; overall = sum((c.score
+        for c in checks)) / len(checks) if checks else 0.0; return CoverageResult(checks=checks, overall_score=overall)
+    test_contracts:
+    - test_file: test_coverage.py
+      test_method: test_coverage_check_defaults
+      assertion: c.missing == []
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_coverage_result_defaults
+      assertion: r.checks == []
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_full_coverage
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_missing_component
+      assertion: result.score == 50.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_extra_component
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_skips_init
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_dict_modules
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_matching
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_missing_dependency
+      assertion: result.score == 0.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_extra_relationship
+      assertion: result.score == 0.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_all_covered
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_missing_fblock
+      assertion: result.score == 50.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_extra_fblock
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_with_exposes
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_without_exposes
+      assertion: result.score == 0.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_no_exports
+      assertion: result.score == 0.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_current_hash
+      assertion: result.score == 100.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_stale_hash
+      assertion: result.score == 0.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_no_hash
+      assertion: result.score == 0.0
+      contract_type: value_equality
+    - test_file: test_coverage.py
+      test_method: test_full_report
+      assertion: len(result.checks) == 5
+      contract_type: value_equality
+relationships:
+- type: realizes
+  from: COMP-types
+  to: CAP-type-system
+- type: realizes
+  from: COMP-parser
+  to: CAP-parsing
+- type: realizes
+  from: COMP-validator
+  to: CAP-validation
+- type: realizes
+  from: COMP-slicer
+  to: CAP-slicing
+- type: realizes
+  from: COMP-differ
+  to: CAP-diffing
+- type: realizes
+  from: COMP-merger
+  to: CAP-merging
+- type: realizes
+  from: COMP-decomposer
+  to: CAP-decomposition
+- type: realizes
+  from: COMP-coverage
+  to: CAP-coverage
+- type: exposes
+  from: COMP-parser
+  to: IF-load-model
+- type: exposes
+  from: COMP-parser
+  to: IF-parse-raw
+- type: exposes
+  from: COMP-parser
+  to: IF-validate-model-data
+- type: exposes
+  from: COMP-parser
+  to: IF-dump-model
+- type: exposes
+  from: COMP-parser
+  to: IF-save-model
+- type: exposes
+  from: COMP-validator
+  to: IF-validate-model
+- type: exposes
+  from: COMP-slicer
+  to: IF-slice-fblock
+- type: exposes
+  from: COMP-slicer
+  to: IF-slice-layer
+- type: exposes
+  from: COMP-slicer
+  to: IF-slice-status
+- type: exposes
+  from: COMP-slicer
+  to: IF-slice-artifact
+- type: exposes
+  from: COMP-differ
+  to: IF-diff-models
+- type: exposes
+  from: COMP-merger
+  to: IF-merge-manifest
+- type: exposes
+  from: COMP-merger
+  to: IF-enrich-from-manifest
+- type: exposes
+  from: COMP-merger
+  to: IF-compose-enriched
+- type: exposes
+  from: COMP-merger
+  to: IF-compact
+- type: exposes
+  from: COMP-decomposer
+  to: IF-compute-complexity
+- type: exposes
+  from: COMP-decomposer
+  to: IF-identify-systems
+- type: exposes
+  from: COMP-decomposer
+  to: IF-auto-assign-fblocks
+- type: exposes
+  from: COMP-decomposer
+  to: IF-decompose-model
+- type: exposes
+  from: COMP-decomposer
+  to: IF-test-affinity
+- type: exposes
+  from: COMP-coverage
+  to: IF-coverage-report
+- type: depends-on
+  from: COMP-parser
+  to: COMP-types
+  description: Imports all entity types, enums, and dataclasses for parsing/serialization
+  strength: strong
+- type: depends-on
+  from: COMP-validator
+  to: COMP-types
+  description: Imports ArchitectureModel, RelationType, Status for validation checks
+  strength: strong
+- type: depends-on
+  from: COMP-slicer
+  to: COMP-types
+  description: Imports ArchitectureModel, Entities, ModelMeta, Relationship, Status, RelationType
+  strength: strong
+- type: depends-on
+  from: COMP-differ
+  to: COMP-types
+  description: Imports ArchitectureModel, Relationship, Status
+- type: depends-on
+  from: COMP-merger
+  to: COMP-types
+  description: Imports Component, Constant, FunctionSignature, Symbol, TestContract, and many others
+  strength: strong
+- type: depends-on
+  from: COMP-decomposer
+  to: COMP-types
+  description: Imports ArchitectureModel, Component, System, Entities, ModelMeta, Relationship, RelationType, Status
+  strength: strong
+- type: depends-on
+  from: COMP-coverage
+  to: COMP-types
+  description: Imports ArchitectureModel (TYPE_CHECKING) and RelationType
+- type: consumes
+  from: ACT-cli
+  to: IF-load-model
+- type: consumes
+  from: ACT-cli
+  to: IF-validate-model
+- type: consumes
+  from: ACT-cli
+  to: IF-diff-models
+- type: consumes
+  from: ACT-cli
+  to: IF-decompose-model
+- type: consumes
+  from: ACT-cli
+  to: IF-coverage-report
+- type: consumes
+  from: ACT-mcp
+  to: IF-parse-raw
+- type: consumes
+  from: ACT-mcp
+  to: IF-validate-model
+- type: consumes
+  from: ACT-mcp
+  to: IF-slice-fblock
+- type: consumes
+  from: ACT-llm-context
+  to: IF-slice-fblock
+- type: consumes
+  from: ACT-llm-context
+  to: IF-slice-layer
+- type: traces-to
+  from: BEH-load-validate
+  to: CAP-parsing
+- type: traces-to
+  from: BEH-load-validate
+  to: CAP-validation
+- type: traces-to
+  from: BEH-slice-model
+  to: CAP-slicing
+- type: traces-to
+  from: BEH-diff-versions
+  to: CAP-diffing
+- type: traces-to
+  from: BEH-merge-enrich
+  to: CAP-merging
+- type: traces-to
+  from: BEH-decompose
+  to: CAP-decomposition
+- type: traces-to
+  from: BEH-coverage-check
+  to: CAP-coverage
+- type: traces-to
+  from: BEH-compose-enriched
+  to: CAP-merging
+- type: traces-to
+  from: BEH-test-affinity-decompose
+  to: CAP-decomposition
+- type: allocated-to
+  from: COMP-types
+  to: core-layer
+- type: allocated-to
+  from: COMP-parser
+  to: core-layer
+- type: allocated-to
+  from: COMP-validator
+  to: core-layer
+- type: allocated-to
+  from: COMP-slicer
+  to: core-layer
+- type: allocated-to
+  from: COMP-differ
+  to: core-layer
+- type: allocated-to
+  from: COMP-merger
+  to: core-layer
+- type: allocated-to
+  from: COMP-decomposer
+  to: core-layer
+- type: allocated-to
+  from: COMP-coverage
+  to: core-layer
+- type: constrained-by
+  from: COMP-parser
+  to: CON-round-trip
+- type: constrained-by
+  from: COMP-types
+  to: CON-round-trip
+- type: constrained-by
+  from: COMP-merger
+  to: CON-no-overwrite
+- type: constrained-by
+  from: COMP-slicer
+  to: CON-deep-copy-slices
+- type: constrained-by
+  from: COMP-types
+  to: CON-lenient-enums
+- type: constrained-by
+  from: COMP-parser
+  to: CON-lenient-enums
+- type: constrained-by
+  from: COMP-validator
+  to: CON-score-formula

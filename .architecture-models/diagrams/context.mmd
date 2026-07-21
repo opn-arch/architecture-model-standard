@@ -1,0 +1,31 @@
+flowchart TB
+    subgraph system[architecture-model-standard]
+        IF_GENERATE_MANIFEST{{generate_manifest}}
+        IF_LOAD_MODEL{{load_model}}
+        IF_VALIDATE_MODEL{{validate_model}}
+        IF_SLICE_FBLOCK{{slice_by_fblock}}
+        IF_FORMAT_CONTEXT{{format_model_context}}
+        IF_EXTRACT_FROM_CODE{{extract_from_code}}
+        IF_LOAD_PROFILE{{load_profile}}
+        IF_DISCOVER_FILES{{discover_source_files}}
+        IF_CLI_MAIN{{CLI Entry Point}}
+    end
+    ACT_DEV[/Developer\]
+    ACT_LLM[LLM Agent]
+    ACT_MCP[opencode-arch MCP Server]
+    ACT_DEV -->|consumes| IF_CLI_MAIN
+    ACT_MCP -->|consumes| IF_GENERATE_MANIFEST
+    ACT_MCP -->|consumes| IF_LOAD_MODEL
+    ACT_MCP -->|consumes| IF_VALIDATE_MODEL
+    ACT_MCP -->|consumes| IF_SLICE_FBLOCK
+    ACT_MCP -->|consumes| IF_FORMAT_CONTEXT
+    ACT_MCP -->|consumes| IF_EXTRACT_FROM_CODE
+    COMP_CORE -.->|exposes| IF_LOAD_MODEL
+    COMP_CORE -.->|exposes| IF_VALIDATE_MODEL
+    COMP_CORE -.->|exposes| IF_SLICE_FBLOCK
+    COMP_CORE -.->|exposes| IF_FORMAT_CONTEXT
+    COMP_MANIFEST -.->|exposes| IF_GENERATE_MANIFEST
+    COMP_EXTRACT -.->|exposes| IF_EXTRACT_FROM_CODE
+    COMP_PROFILES -.->|exposes| IF_LOAD_PROFILE
+    COMP_UTILS -.->|exposes| IF_DISCOVER_FILES
+    COMP_CLI -.->|exposes| IF_CLI_MAIN

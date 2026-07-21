@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph F1[Type System]
+        COMP_types[types]
+    end
+    subgraph F2[Model Parsing & Serialization]
+        COMP_parser[parser]
+    end
+    subgraph F3[Structural Validation]
+        COMP_validator[validator]
+    end
+    subgraph F4[Model Slicing]
+        COMP_slicer[slicer]
+    end
+    subgraph F5[Model Diffing]
+        COMP_differ[differ]
+    end
+    subgraph F6[Manifest Merging & Enrichment]
+        COMP_merger[merger]
+    end
+    subgraph F7[Model Decomposition]
+        COMP_decomposer[decomposer]
+    end
+    subgraph F8[Coverage Analysis]
+        COMP_coverage[coverage]
+    end
+    COMP_parser -->|depends-on| COMP_types
+    COMP_validator -->|depends-on| COMP_types
+    COMP_slicer -->|depends-on| COMP_types
+    COMP_differ -->|depends-on| COMP_types
+    COMP_merger -->|depends-on| COMP_types
+    COMP_decomposer -->|depends-on| COMP_types
+    COMP_coverage -->|depends-on| COMP_types

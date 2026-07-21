@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph ungrouped[ungrouped]
+        COMP_CORE[Core]
+        COMP_MANIFEST[Manifest]
+        COMP_CONFIG[Config]
+        COMP_CLI[CLI]
+        COMP_ORCHESTRATION[Orchestration]
+        COMP_EXTRACT[Extract]
+        COMP_UTILS[Utils]
+        COMP_PROFILES[Profiles]
+        COMP_SPEC[Spec]
+    end
+    COMP_CLI -->|depends-on| COMP_CORE
+    COMP_CLI -->|depends-on| COMP_CONFIG
+    COMP_CLI -->|depends-on| COMP_MANIFEST
+    COMP_CLI -->|depends-on| COMP_ORCHESTRATION
+    COMP_ORCHESTRATION -->|depends-on| COMP_CORE
+    COMP_ORCHESTRATION -->|depends-on| COMP_MANIFEST
+    COMP_ORCHESTRATION -->|depends-on| COMP_CONFIG
+    COMP_EXTRACT -->|depends-on| COMP_CORE
+    COMP_EXTRACT -->|depends-on| COMP_CONFIG
+    COMP_EXTRACT -->|depends-on| COMP_MANIFEST
+    COMP_CORE -->|depends-on| COMP_UTILS
+    COMP_MANIFEST -->|depends-on| COMP_UTILS
+    COMP_CONFIG -->|depends-on| COMP_UTILS
+    COMP_CORE -->|depends-on| COMP_PROFILES
+    COMP_CORE -->|depends-on| COMP_SPEC

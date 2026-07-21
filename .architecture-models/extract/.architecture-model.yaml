@@ -1,0 +1,314 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/extract
+  system: Extract
+  generated_at: '2026-07-21T23:15:37.977163+00:00'
+entities:
+  actors:
+  - id: ACT-CALLER
+    name: Pipeline Caller
+    status: ACTIVE
+    description: External caller invoking extract_from_code() — typically the CLI, MCP server, or opencode-arch pipeline
+    type: SYSTEM
+  - id: ACT-CORE
+    name: Core Type System
+    status: ACTIVE
+    description: The architecture_model.core package providing ArchitectureModel, Entities, Relationship, and all entity dataclasses
+    type: EXTERNAL_SERVICE
+  - id: ACT-CONFIG
+    name: Config Subsystem
+    status: ACTIVE
+    description: The architecture_model.config package providing ProjectConfig via get_config() auto-discovery
+    type: EXTERNAL_SERVICE
+  - id: ACT-MANIFEST
+    name: Manifest Generator
+    status: ACTIVE
+    description: The architecture_model.manifest package providing generate_manifest() for AST-scanned module/import inventories
+    type: EXTERNAL_SERVICE
+  capabilities:
+  - id: CAP-EXTRACT
+    name: Code-to-Model Extraction
+    status: ACTIVE
+    description: 'Top-level capability: analyze source code and produce a complete ArchitectureModel with entities and relationships'
+  - id: CAP-ENTITY-DERIVATION
+    name: Entity Derivation
+    status: ACTIVE
+    description: Derive all entity types (actors, capabilities, behaviors, components, interfaces, layers, constraints) from
+      config, manifest, and AST data
+  - id: CAP-RELATIONSHIP-DERIVATION
+    name: Relationship Derivation
+    status: ACTIVE
+    description: Derive typed relationships (realizes, depends-on, exposes, consumes, allocated-to, constrained-by) from entity
+      cross-references
+  - id: CAP-ROUTE-DETECTION
+    name: Route Detection
+    status: PLANNED
+    description: Detect HTTP route handlers (Flask, FastAPI, Django) from web-layer source files via AST scanning
+  - id: CAP-CONSTRAINT-DETECTION
+    name: Constraint Detection
+    status: PLANNED
+    description: Detect non-functional constraints (technology choices, versions) from project configuration files
+  behaviors:
+  - id: BEH-EXTRACT
+    name: Extract Model from Code
+    status: ACTIVE
+    description: 'Main entry point: loads config, generates manifest, derives all entities and relationships, assembles ArchitectureModel
+      with meta'
+    trigger: Call to extract_from_code(project_root)
+    actor: ACT-CALLER
+    priority: high
+  - id: BEH-DERIVE-CAPS
+    name: Derive Capabilities from F-Blocks
+    status: ACTIVE
+    description: Creates one Capability per functional block in ProjectConfig, using block name, description, and ID
+    trigger: Internal call from extract_from_code
+  - id: BEH-DERIVE-ACTORS
+    name: Derive Actors from Routes and Imports
+    status: ACTIVE
+    description: 'Infers actors: ACT-USER if authenticated routes exist, ACT-ANON if anonymous routes exist, ACT-DB if database
+      imports detected'
+    trigger: Internal call from extract_from_code
+  - id: BEH-DERIVE-ROUTE-BEHAVIORS
+    name: Derive Behaviors from Route Handlers
+    status: ACTIVE
+    description: Converts each RouteInfo into a Behavior entity with HTTP trigger, priority by method, actor assignment, and
+      F-block tagging
+    trigger: Internal call from extract_from_code
+  - id: BEH-DETECT-SERVICE-BEHAVIORS
+    name: Detect Service-Layer Behaviors via AST
+    status: ACTIVE
+    description: Scans service-layer directories for public functions using ast.parse, creates Behavior entities from non-underscore-prefixed
+      functions
+    trigger: Internal call from extract_from_code
+  - id: BEH-DERIVE-COMPONENTS
+    name: Derive Components from Manifest Modules
+    status: ACTIVE
+    description: Creates one Component per manifest module that belongs to an F-block, with slugified IDs, layer assignment,
+      and docstring descriptions
+    trigger: Internal call from extract_from_code
+  - id: BEH-DERIVE-INTERFACES
+    name: Derive Interfaces from Cross-Block Imports
+    status: ACTIVE
+    description: Creates internal interfaces for cross-F-block import pairs and external interfaces for imports outside known
+      F-blocks
+    trigger: Internal call from extract_from_code
+  - id: BEH-DERIVE-LAYERS
+    name: Derive Layers from Config
+    status: ACTIVE
+    description: Converts config layer definitions to Layer entities with order index and directory lists
+    trigger: Internal call from extract_from_code
+    priority: low
+  - id: BEH-DERIVE-RELATIONSHIPS
+    name: Derive All Relationships
+    status: ACTIVE
+    description: Produces realizes (behavior→cap, component→cap), depends-on (cross-block, cross-layer), exposes/consumes
+      (cap→interface), allocated-to (component→layer), constrained-by (cap→constraint)
+    trigger: Internal call from extract_from_code
+    priority: high
+  interfaces:
+  - id: IFC-PUBLIC-API
+    name: extract_from_code API
+    status: ACTIVE
+    description: 'Public function interface: extract_from_code(project_root, config?, manifest?) → ArchitectureModel. Single
+      entry point for the entire extraction pipeline.'
+    type: FUNCTION_CALL
+    provider: COMP-FROM-CODE
+    consumer: ACT-CALLER
+  - id: IFC-CONFIG
+    name: Config Dependency
+    status: ACTIVE
+    description: Imports get_config() and ProjectConfig from architecture_model.config
+    type: IMPORT
+    provider: ACT-CONFIG
+    consumer: COMP-FROM-CODE
+  - id: IFC-CORE-TYPES
+    name: Core Types Dependency
+    status: ACTIVE
+    description: Imports 18 type classes from architecture_model.core.types including ArchitectureModel, all entity types,
+      enums, and Relationship
+    type: IMPORT
+    provider: ACT-CORE
+    consumer: COMP-FROM-CODE
+  - id: IFC-MANIFEST
+    name: Manifest Dependency
+    status: ACTIVE
+    description: Lazy-imports generate_manifest() from architecture_model.manifest when no pre-built manifest is provided
+    type: IMPORT
+    provider: ACT-MANIFEST
+    consumer: COMP-FROM-CODE
+  - id: IFC-ROUTE-DETECTOR
+    name: Route Detector Interface
+    status: PLANNED
+    description: Imports RouteInfo and detect_routes from constraint_detector sibling module
+    type: IMPORT
+    provider: COMP-ROUTE-DETECTOR
+    consumer: COMP-FROM-CODE
+  - id: IFC-CONSTRAINT-DETECTOR
+    name: Constraint Detector Interface
+    status: PLANNED
+    description: Imports detect_constraints from constraint_detector sibling module
+    type: IMPORT
+    provider: COMP-CONSTRAINT-DETECTOR
+    consumer: COMP-FROM-CODE
+  constraints:
+  - id: CON-SINGLE-PASS
+    name: Single-Pass Extraction
+    status: ACTIVE
+    description: Extraction runs in a single pass — no iterative refinement. Config → manifest → entities → relationships
+      → model.
+    type: DESIGN
+  - id: CON-NO-STAGE2
+    name: Bypasses Stage2 Artifacts
+    status: ACTIVE
+    description: This is the "backward pass" that bypasses stage2 markdown artifact requirements, going directly from code
+      to model.
+    type: DESIGN
+  - id: CON-STDLIB-ONLY
+    name: Standard Library AST Only
+    status: ACTIVE
+    description: Service behavior detection uses only Python stdlib ast module — no third-party AST libraries required.
+    type: TECHNOLOGY
+  components:
+  - id: COMP-FROM-CODE
+    name: from_code
+    status: ACTIVE
+    description: Main extraction module (~646 lines). Contains extract_from_code() public API and all _derive_* / _detect_*
+      helper functions. Orchestrates config loading, manifest generation, entity derivation, relationship derivation, and
+      model assembly.
+    files:
+    - src/architecture_model/extract/from_code.py
+    signatures:
+    - name: extract_from_code
+      params:
+      - 'project_root: str | Path'
+      - 'config: ProjectConfig | None'
+      - 'manifest: dict | None'
+      returns: ArchitectureModel
+      body_hint: 'root = Path(project_root).resolve(); if config is None: ...; if manifest is None: ...; capabilities = _derive_capabilities(config);
+        routes = detect_routes(root, _get_web_layer_dirs(config)); actors = _derive_actors(routes, manifest); route_behaviors
+        = _derive_route_behaviors(routes, config); service_behaviors = _detect_service_behaviors(root, config); behaviors
+        = route_behaviors + service_behaviors; components = _derive_components(manifest, config); interfaces = _derive_interfaces(manifest,
+        config); layers = _derive_layers(config); constraints = detect_constraints(root); entities = Entities(actors=actors,
+        capabilities=capabilities, behavi...; relationships = _derive_relationships(capabilities=capabilities, behavior...;
+        meta = ModelMeta(schema_version=''1.0.0'', project=config.name or ...; return ArchitectureModel(meta=meta, entities=entities,
+        relationships=relationships)'
+  - id: COMP-CONSTRAINT-DETECTOR
+    name: constraint_detector
+    status: PLANNED
+    description: Planned module for detecting non-functional constraints from project files. Exports detect_constraints(root)
+      → list[Constraint].
+    files:
+    - src/architecture_model/extract/constraint_detector.py
+  - id: COMP-ROUTE-DETECTOR
+    name: route_detector
+    status: PLANNED
+    description: Planned module for detecting HTTP route handlers via AST scanning. Exports RouteInfo dataclass and detect_routes(root,
+      web_dirs) → list[RouteInfo].
+    files:
+    - src/architecture_model/extract/route_detector.py
+relationships:
+- type: contains
+  from: CAP-ENTITY-DERIVATION
+  to: CAP-EXTRACT
+- type: contains
+  from: CAP-RELATIONSHIP-DERIVATION
+  to: CAP-EXTRACT
+- type: contains
+  from: CAP-ROUTE-DETECTION
+  to: CAP-ENTITY-DERIVATION
+- type: contains
+  from: CAP-CONSTRAINT-DETECTION
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-EXTRACT
+  to: CAP-EXTRACT
+- type: realizes
+  from: BEH-DERIVE-CAPS
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-DERIVE-ACTORS
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-DERIVE-ROUTE-BEHAVIORS
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-DETECT-SERVICE-BEHAVIORS
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-DERIVE-COMPONENTS
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-DERIVE-INTERFACES
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-DERIVE-LAYERS
+  to: CAP-ENTITY-DERIVATION
+- type: realizes
+  from: BEH-DERIVE-RELATIONSHIPS
+  to: CAP-RELATIONSHIP-DERIVATION
+- type: realizes
+  from: COMP-FROM-CODE
+  to: CAP-EXTRACT
+- type: realizes
+  from: COMP-ROUTE-DETECTOR
+  to: CAP-ROUTE-DETECTION
+- type: realizes
+  from: COMP-CONSTRAINT-DETECTOR
+  to: CAP-CONSTRAINT-DETECTION
+- type: depends-on
+  from: COMP-FROM-CODE
+  to: COMP-ROUTE-DETECTOR
+- type: depends-on
+  from: COMP-FROM-CODE
+  to: COMP-CONSTRAINT-DETECTOR
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DERIVE-CAPS
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DERIVE-ACTORS
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DERIVE-ROUTE-BEHAVIORS
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DETECT-SERVICE-BEHAVIORS
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DERIVE-COMPONENTS
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DERIVE-INTERFACES
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DERIVE-LAYERS
+- type: triggers
+  from: BEH-EXTRACT
+  to: BEH-DERIVE-RELATIONSHIPS
+- type: depends-on
+  from: COMP-FROM-CODE
+  to: ACT-CORE
+  description: 18 type imports
+- type: depends-on
+  from: COMP-FROM-CODE
+  to: ACT-CONFIG
+  description: get_config + ProjectConfig
+- type: depends-on
+  from: COMP-FROM-CODE
+  to: ACT-MANIFEST
+  description: Lazy import of generate_manifest
+- type: exposes
+  from: COMP-FROM-CODE
+  to: IFC-PUBLIC-API
+- type: consumes
+  from: ACT-CALLER
+  to: IFC-PUBLIC-API
+- type: constrained-by
+  from: CAP-EXTRACT
+  to: CON-SINGLE-PASS
+- type: constrained-by
+  from: CAP-EXTRACT
+  to: CON-NO-STAGE2
+- type: constrained-by
+  from: BEH-DETECT-SERVICE-BEHAVIORS
+  to: CON-STDLIB-ONLY

@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph system[architecture-model-standard/cli]
+        IF_CLI_ENTRY{{CLI Entry Point}}
+        IF_ARGPARSE{{Argument Parser}}
+        IF_STDOUT{{Standard Output}}
+        IF_CORE_API{{Core Module API}}
+        IF_CONFIG_API{{Config Module API}}
+        IF_MANIFEST_API{{Manifest Module API}}
+        IF_ORCHESTRATION_API{{Orchestration Module API}}
+        IF_VISUALIZE_API{{Visualize API}}
+    end
+    ACT_USER[/CLI User\]
+    ACT_CORE[/Core Module\]
+    ACT_CONFIG[/Config Module\]
+    ACT_MANIFEST[/Manifest Module\]
+    ACT_ORCHESTRATION[/Orchestration Module\]
+    ACT_FILESYSTEM[/Filesystem\]
+    ACT_USER -->|consumes| IF_CLI_ENTRY
+    ACT_USER -->|consumes| IF_ARGPARSE
+    COMP_MAIN -.->|exposes| IF_CLI_ENTRY
+    COMP_MAIN -.->|exposes| IF_ARGPARSE
+    COMP_MAIN -.->|exposes| IF_STDOUT
+    COMP_VISUALIZE -.->|exposes| IF_VISUALIZE_API
+    ACT_CORE -.->|exposes| IF_CORE_API
+    ACT_CONFIG -.->|exposes| IF_CONFIG_API
+    ACT_MANIFEST -.->|exposes| IF_MANIFEST_API
+    ACT_ORCHESTRATION -.->|exposes| IF_ORCHESTRATION_API

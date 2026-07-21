@@ -1,0 +1,12 @@
+flowchart LR
+    subgraph ungrouped[ungrouped]
+        COMP_MAIN[main]
+        COMP_VISUALIZE[visualize]
+    end
+    COMP_MAIN -->|depends-on| IF_CORE_API
+    COMP_MAIN -->|depends-on| IF_CONFIG_API
+    COMP_MAIN -->|depends-on| IF_MANIFEST_API
+    COMP_MAIN -->|depends-on| IF_ORCHESTRATION_API
+    COMP_MAIN -->|depends-on| COMP_VISUALIZE
+    COMP_MAIN -->|depends-on| ACT_FILESYSTEM
+    COMP_VISUALIZE -->|depends-on| ACT_FILESYSTEM

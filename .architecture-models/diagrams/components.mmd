@@ -1,0 +1,30 @@
+flowchart TB
+    subgraph ungrouped[Components]
+        COMP_CORE[Core]
+        COMP_MANIFEST[Manifest]
+        COMP_CONFIG[Config]
+        COMP_CLI[CLI]
+        COMP_ORCHESTRATION[Orchestration]
+        COMP_EXTRACT[Extract]
+        COMP_UTILS[Utils]
+        COMP_PROFILES[Profiles]
+        COMP_SPEC[Spec]
+    end
+    CAP_PARSE_VALIDATE(Model Parsing & Validation)
+    CAP_MANIFEST(Reality Manifest Generation)
+    CAP_SLICE_DIFF(Model Slicing & Diffing)
+    CAP_CLI(CLI Operations)
+    CAP_CONFIG(Configuration Management)
+    CAP_EXTRACT(Model Extraction)
+    CAP_ENRICH(Auto-Enrichment & Decomposition)
+    CAP_PROFILES(Domain Profiles)
+    CAP_SCHEMA(Schema Specification)
+    COMP_CORE ==>|realizes| CAP_PARSE_VALIDATE
+    COMP_CORE ==>|realizes| CAP_SLICE_DIFF
+    COMP_MANIFEST ==>|realizes| CAP_MANIFEST
+    COMP_CONFIG ==>|realizes| CAP_CONFIG
+    COMP_CLI ==>|realizes| CAP_CLI
+    COMP_EXTRACT ==>|realizes| CAP_EXTRACT
+    COMP_ORCHESTRATION ==>|realizes| CAP_ENRICH
+    COMP_PROFILES ==>|realizes| CAP_PROFILES
+    COMP_SPEC ==>|realizes| CAP_SCHEMA

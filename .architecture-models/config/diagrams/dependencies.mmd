@@ -1,0 +1,9 @@
+flowchart LR
+    subgraph ungrouped[ungrouped]
+        COMP_1[schema.py]
+        COMP_2[loader.py]
+        COMP_3[__init__.py]
+    end
+    COMP_2 -->|depends-on| COMP_1
+    COMP_3 -->|depends-on| COMP_1
+    COMP_3 -->|depends-on| COMP_2

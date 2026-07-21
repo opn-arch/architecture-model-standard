@@ -1,0 +1,1694 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/manifest
+  system: Manifest
+  generated_at: '2026-07-21T23:13:46.109347+00:00'
+entities:
+  actors:
+  - id: ACT-1
+    name: LLM Agent
+    status: ACTIVE
+    description: AI agent (via MCP server or CLI) that consumes manifests for architectural understanding, code regeneration,
+      and context injection.
+    type: human
+  - id: ACT-2
+    name: CLI User
+    status: ACTIVE
+    description: Developer or CI pipeline invoking manifest generation, slicing, or display via the architecture-model CLI.
+    type: human
+  - id: ACT-3
+    name: Pipeline Orchestrator
+    status: ACTIVE
+    description: Automated pipeline (opencode-arch, arch-agent) that calls generate_manifest and get_manifest_slice programmatically.
+    type: human
+  capabilities:
+  - id: CAP-1
+    name: AST Scanning
+    status: ACTIVE
+    description: Parse Python source files via AST to extract public functions (with signatures, calls, docstrings, raises),
+      classes (with bases, methods, decorators, attributes), imports (simple and detailed with relative resolution), module
+      constants (UPPER_CASE literals), module assignments (non-constant expressions), exports (__all__ or relative imports),
+      and decorated functions.
+  - id: CAP-2
+    name: Body Hint Extraction
+    status: ACTIVE
+    description: 'Classify function complexity (TRIVIAL/SHORT/COMPLEX) by statement count and produce tiered implementation
+      hints: exact body for trivial (<=1 stmt), semicolon-joined for short (2-5), structural summary for complex (6+). Generates
+      FunctionSignature objects with body_hint field.'
+  - id: CAP-3
+    name: Test Contract Analysis
+    status: ACTIVE
+    description: Parse test files to extract behavioral specifications as TestContract objects. Supports unittest (assertEqual,
+      assertTrue, assertRaises, assertIsInstance) and pytest (assert ==, assert isinstance, pytest.raises) patterns. Derives
+      constants from value_equality assertions (e.g., ANSI escape codes).
+  - id: CAP-4
+    name: Manifest Generation
+    status: ACTIVE
+    description: 'Orchestrate full project scanning: compute metrics, process functional blocks, scan all files, derive interfaces,
+      and assemble a typed Manifest dataclass. Supports caching with 1-hour TTL via load_or_generate_manifest.'
+  - id: CAP-5
+    name: Functional Block Processing
+    status: ACTIVE
+    description: Process config-driven functional blocks by collecting files from directories, scanning each file, deriving
+      inputs/outputs from signatures, and building hierarchical sub-block manifests with status propagation.
+  - id: CAP-6
+    name: Interface Derivation
+    status: ACTIVE
+    description: Derive inter-module dependency edges from import analysis. Resolves both absolute and relative imports (same-level,
+      parent-level, grandparent-level) to produce InterfaceEdge objects.
+  - id: CAP-7
+    name: Metric Computation
+    status: ACTIVE
+    description: Compute project-level metrics from filesystem using config-driven definitions (path, pattern, recursive flag,
+      exclusions). Always includes total_python_files as a universal metric.
+  - id: CAP-8
+    name: Recursive Manifest Generation
+    status: ACTIVE
+    description: Generate per-F-block deep manifests (RecursiveManifest) with full module detail, cross-block dependency computation
+      via import analysis, and JSON serialization to per-block output files.
+  - id: CAP-9
+    name: Manifest Slicing
+    status: ACTIVE
+    description: 'Produce focused markdown extracts from manifests for 10 artifact types: functional-architecture, logical-architecture,
+      data-dictionary, icd, readme, testing, deployment-guide, operations-manual, use-cases, requirements-analysis. Supports
+      both typed Manifest and legacy dict input.'
+  - id: CAP-10
+    name: Display
+    status: ACTIVE
+    description: Print terminal summary of manifest showing metrics, functional blocks with active/total counts, interface
+      count, and module count.
+  behaviors:
+  - id: BEH-1
+    name: Generate Full Project Manifest
+    status: ACTIVE
+    description: End-to-end manifest generation for a project.
+    trigger: Call to generate_manifest(project_root, config)
+    preconditions:
+    - Project root directory exists
+    - Optional ProjectConfig; auto-loaded from .architecture-model.yaml if absent
+    postconditions:
+    - Typed Manifest object with metrics, blocks, modules, interfaces, scan_report
+    steps:
+    - Load or auto-discover project config
+    - Compute filesystem metrics via compute_metrics
+    - Process each functional block via process_block (collect files, scan, derive I/O)
+    - Scan additional files from config layer directories
+    - Build module list by scanning all collected files via scan_file
+    - Derive inter-module interfaces via derive_interfaces
+    - Assemble and return Manifest dataclass
+  - id: BEH-2
+    name: Scan Single Python File
+    status: ACTIVE
+    description: Parse one Python file and extract all metadata.
+    trigger: Call to scan_file(root, filepath)
+    preconditions:
+    - File exists and is valid Python (or graceful degradation on parse error)
+    postconditions:
+    - ModuleInfo with functions, classes, imports, constants, assignments, exports, decorated_functions
+    steps:
+    - Count lines, determine status (ACTIVE >50 lines, DORMANT <=50, MISSING if not found)
+    - Parse AST via _parse_file_ast
+    - Extract module docstring, public functions, imports, classes, exports
+    - Extract decorated functions, detailed imports, constants, assignments
+    - Derive human-readable name from docstring or filename
+  - id: BEH-3
+    name: Extract Body Hints for File
+    status: ACTIVE
+    description: Scan an entire file producing FunctionSignature objects with body hints.
+    trigger: Call to extract_file_hints(filepath, include_private)
+    preconditions:
+    - File is readable Python source
+    postconditions:
+    - List of FunctionSignature objects with params, returns, decorators, body_hint
+    steps:
+    - Parse source file AST
+    - For each top-level function and class method (excluding private unless include_private)
+    - Strip docstring from body, count statements
+    - Classify as TRIVIAL/SHORT/COMPLEX and produce appropriate hint
+    - Build FunctionSignature with all metadata
+  - id: BEH-4
+    name: Analyze Test File
+    status: ACTIVE
+    description: Extract behavioral contracts from a test file.
+    trigger: Call to analyze_test_file(test_file)
+    preconditions:
+    - Test file is valid Python with test functions/methods
+    postconditions:
+    - TestAnalysisResult with contracts, constants, required_imports, test_count
+    steps:
+    - Parse AST and extract non-framework imports
+    - Find all test methods (unittest TestCase methods + pytest top-level functions)
+    - For each test method, extract contracts from assertions
+    - Handle unittest (self.assertEqual, assertTrue, assertRaises, assertIsInstance)
+    - Handle pytest (assert ==, assert isinstance, pytest.raises context manager)
+    - Derive constants from value_equality contracts (e.g., ANSI escape codes)
+  - id: BEH-5
+    name: Load or Generate Cached Manifest
+    status: ACTIVE
+    description: Return cached manifest if fresh (<1 hour), otherwise regenerate.
+    trigger: Call to load_or_generate_manifest(project_root, output_dir)
+    preconditions:
+    - Project root exists
+    postconditions:
+    - Manifest dict (JSON-compatible) written to disk and returned
+    steps:
+    - Resolve output path from config or output_dir parameter
+    - Check if cached manifest exists and is <1 hour old
+    - If fresh cache exists, load and return JSON
+    - Otherwise generate fresh via generate_manifest, serialize, write to disk
+  - id: BEH-6
+    name: Generate Recursive Block Manifests
+    status: ACTIVE
+    description: Produce per-F-block deep manifests with cross-block dependencies.
+    trigger: Call to generate_recursive_manifests(project_root, parent_model)
+    preconditions:
+    - Project config with functional blocks defined
+    postconditions:
+    - Dict of RecursiveManifest objects with block_dependencies populated
+    steps:
+    - Load config and iterate functional blocks
+    - For each block, generate scoped Manifest via generate_block_manifest
+    - Map block_id to component_id by convention
+    - Compute cross-block dependencies from import analysis
+    - Attach dependencies to each RecursiveManifest
+  - id: BEH-7
+    name: Slice Manifest for Artifact
+    status: ACTIVE
+    description: Produce focused markdown for a specific documentation artifact.
+    trigger: Call to get_manifest_slice(manifest, artifact_name)
+    preconditions:
+    - Valid manifest (typed or dict) and recognized artifact_name
+    postconditions:
+    - Markdown string with artifact-relevant data from manifest
+    steps:
+    - Convert dict to typed Manifest if needed via _manifest_from_dict
+    - Dispatch to artifact-specific slicer function
+    - Each slicer extracts and formats relevant subset (blocks, modules, metrics, interfaces)
+  interfaces:
+  - id: IF-1
+    name: generate_manifest
+    status: ACTIVE
+    description: Generate a full reality manifest via AST scan of the project.
+    type: function
+  - id: IF-2
+    name: load_or_generate_manifest
+    status: ACTIVE
+    description: Load cached manifest if fresh (<1h), otherwise regenerate.
+    type: function
+  - id: IF-3
+    name: scan_file
+    status: ACTIVE
+    description: Scan a single Python file and return typed metadata.
+    type: function
+  - id: IF-4
+    name: derive_interfaces
+    status: ACTIVE
+    description: Derive inter-module dependency edges from import analysis.
+    type: function
+  - id: IF-5
+    name: compute_metrics
+    status: ACTIVE
+    description: Compute project-level metrics from filesystem scanning.
+    type: function
+  - id: IF-6
+    name: process_block
+    status: ACTIVE
+    description: Process a functional block, scanning all its constituent files.
+    type: function
+  - id: IF-7
+    name: get_manifest_slice
+    status: ACTIVE
+    description: Return focused markdown slice for a specific artifact type.
+    type: function
+  - id: IF-8
+    name: print_summary
+    status: ACTIVE
+    description: Print terminal summary of the manifest.
+    type: function
+  - id: IF-9
+    name: classify_function
+    status: ACTIVE
+    description: Classify a function's body complexity as TRIVIAL/SHORT/COMPLEX.
+    type: function
+  - id: IF-10
+    name: extract_body_hint
+    status: ACTIVE
+    description: Produce a tiered body hint for a function.
+    type: function
+  - id: IF-11
+    name: extract_file_hints
+    status: ACTIVE
+    description: Scan entire file producing FunctionSignature objects with body hints.
+    type: function
+  - id: IF-12
+    name: analyze_test_file
+    status: ACTIVE
+    description: Parse a test file and extract behavioral contracts.
+    type: function
+  - id: IF-13
+    name: extract_constants_from_contracts
+    status: ACTIVE
+    description: Derive Constant objects from value_equality test contracts.
+    type: function
+  - id: IF-14
+    name: generate_recursive_manifests
+    status: ACTIVE
+    description: Generate RecursiveManifest for each F-block in project config.
+    type: function
+  - id: IF-15
+    name: write_recursive_manifests
+    status: ACTIVE
+    description: Write each RecursiveManifest to its own JSON file.
+    type: function
+  - id: IF-16
+    name: generate_block_manifest
+    status: ACTIVE
+    description: Generate a full Manifest scoped to a single F-block's files.
+    type: function
+  constraints:
+  - id: CON-1
+    name: Typed Dataclass Output
+    status: ACTIVE
+    description: All pipeline functions return typed dataclasses (not raw dicts). Legacy dict-based functions are deprecated
+      with warnings. Every dataclass provides to_dict() for JSON serialization.
+    type: technology
+  - id: CON-2
+    name: Graceful Parse Failure
+    status: ACTIVE
+    description: AST parse failures are logged and tracked in ScanReport but do not halt manifest generation. Files that fail
+      parsing get ModuleStatus.MISSING.
+    type: technology
+  - id: CON-3
+    name: Cache TTL
+    status: ACTIVE
+    description: Cached manifests are valid for 1 hour (3600 seconds). Stale or corrupt caches trigger regeneration.
+    type: technology
+  - id: CON-4
+    name: Public API Filter
+    status: ACTIVE
+    description: Scanner extracts only public functions (no leading underscore) by default. __init__ methods are included
+      for classes. Body hints support include_private flag override.
+    type: technology
+  - id: CON-5
+    name: Config-Driven Blocks
+    status: ACTIVE
+    description: Functional blocks are loaded from .architecture-model.yaml config. The legacy FUNCTIONAL_BLOCKS module constant
+      is deprecated.
+    type: technology
+  - id: CON-6
+    name: Body Hint Tiering
+    status: ACTIVE
+    description: 'Body hints follow strict tiering: 0-1 statements = TRIVIAL (exact text), 2-5 = SHORT (semicolon-joined),
+      6+ = COMPLEX (structural summary with control flow patterns).'
+    type: technology
+  components:
+  - id: COMP-1
+    name: Scanner
+    status: ACTIVE
+    description: 'AST parsing engine (scanner.py, 540 lines). Parses Python files and extracts functions, classes, imports,
+      constants, assignments, exports, and decorated functions. Core function: scan_file(root, filepath) -> ModuleInfo.'
+    files:
+    - src/architecture_model/manifest/scanner.py
+    kind: module
+    signatures:
+    - name: scan_file
+      params:
+      - 'root: Path'
+      - 'filepath: Path'
+      returns: ModuleInfo
+      body_hint: 'rel_path = str(filepath.relative_to(root)); line_count = _file_line_count(filepath); status = _determine_status(filepath,
+        line_count); tree = _parse_file_ast(filepath); docstring = None; functions: list[FunctionInfo] = []; imports: list[str]
+        = []; if tree is not None: ...; name = _derive_name_from_docstring(docstring, filepath); logger.debug(''Scanned %s:
+        %d funcs, %d classes, %d constants'', rel_path, len(functions), len(classes), len(constants)); return ModuleInfo(file=rel_path,
+        name=name, docstring=docstring, functions=functions, imports=imports, line_count=line_count, status=status, classes=classes,
+        exports=exports, decorated_functions=decorated, imports_detailed=imports_detailed, module_constants=constants, module_assignments=assignments)'
+    test_contracts:
+    - test_file: test_scanner_typed.py
+      test_method: test_scan_file_returns_module_info
+      assertion: result isinstance ModuleInfo
+      contract_type: type_check
+    - test_file: test_scanner_typed.py
+      test_method: test_scan_file_parse_error
+      assertion: result.status == ModuleStatus.MISSING
+      contract_type: value_equality
+    - test_file: test_scanner_typed.py
+      test_method: test_deprecated_scan_file_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_scanner_typed.py
+      test_method: test_deprecated_collect_py_files
+      assertion: len(files) == 2
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-2
+    name: Body Hints
+    status: ACTIVE
+    description: Function complexity classifier and body hint extractor (body_hints.py, 270 lines). Classifies functions as
+      TRIVIAL/SHORT/COMPLEX and produces tiered implementation hints for code regeneration.
+    files:
+    - src/architecture_model/manifest/body_hints.py
+    kind: module
+    signatures:
+    - name: classify_function
+      params:
+      - 'source: str'
+      - 'func_name: str'
+      returns: BodyComplexity
+      body_hint: "tree = ast.parse(source); node = _find_function(tree, func_name); body = _strip_docstring(node.body); count\
+        \ = len(body); if count <= 1:\n    return BodyComplexity.TRIVIAL\nelif count <= 5:\n    return BodyComplexity.SHORT\n\
+        else:\n    return BodyComplexity.COMPLEX"
+    - name: extract_body_hint
+      params:
+      - 'source: str'
+      - 'func_name: str'
+      - 'class_name: str | None'
+      returns: str
+      body_hint: "tree = ast.parse(source); node = _find_function(tree, func_name, class_name); body = _strip_docstring(node.body);\
+        \ count = len(body); if count <= 1:\n    return ast.unparse(body[0]) if body else ''\nelif count <= 5:\n    return\
+        \ '; '.join((ast.unparse(s) for s in body))\nelse:\n    return _summarize_complex_body(body)"
+    - name: extract_file_hints
+      params:
+      - 'filepath: Path'
+      - 'include_private: bool'
+      returns: list[FunctionSignature]
+      body_hint: "source = filepath.read_text(encoding='utf-8'); tree = ast.parse(source, filename=str(filepath)); results:\
+        \ list[FunctionSignature] = []; def _should_include(name: str) -> bool:\n    if include_pr...; for node in ast.iter_child_nodes(tree):\
+        \ ...; return results"
+    test_contracts:
+    - test_file: test_body_hints.py
+      test_method: test_trivial_single_statement
+      assertion: classify_function(source, 'greet') == BodyComplexity.TRIVIAL
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_trivial_with_docstring
+      assertion: classify_function(source, 'greet') == BodyComplexity.TRIVIAL
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_short_two_statements
+      assertion: classify_function(source, 'add') == BodyComplexity.SHORT
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_short_five_statements
+      assertion: classify_function(source, 'process') == BodyComplexity.SHORT
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_complex_six_statements
+      assertion: classify_function(source, 'complex_func') == BodyComplexity.COMPLEX
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_complex_with_docstring_not_counted
+      assertion: classify_function(source, 'big_func') == BodyComplexity.COMPLEX
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_function_not_found_raises
+      assertion: raises ValueError
+      contract_type: raises
+    - test_file: test_body_hints.py
+      test_method: test_trivial_returns_exact_body
+      assertion: hint == 'return 42'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_class_method_extraction
+      assertion: hint == 'return a + b'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_body_hint_populated
+      assertion: sig.body_hint == 'return 42'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_params_populated
+      assertion: sig.returns == 'float'
+      contract_type: value_equality
+    - test_file: test_body_hints.py
+      test_method: test_returns_populated
+      assertion: sig.returns == 'str'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-3
+    name: Test Analyzer
+    status: ACTIVE
+    description: Test contract extractor (test_analyzer.py, 501 lines). Parses unittest and pytest patterns to produce TestContract
+      and Constant objects for behavioral specification.
+    files:
+    - src/architecture_model/manifest/test_analyzer.py
+    kind: module
+    constants:
+    - name: _EXCLUDED_MODULES
+      value: frozenset({'unittest', 'pytest', 'sys', 'os', 'io', 're', 'math', 'collections', 'itertools', 'functools', 'pathlib',
+        'typing', 'tempfile', 'shutil', 'json', 'copy', 'contextlib', 'textwrap', 'unittest.mock', 'mock'})
+    - name: _ESCAPE_CODE_RE
+      value: re.compile('\\\\(?:033|x1b)\\[(\\d+)m')
+    signatures:
+    - name: analyze_test_file
+      params:
+      - 'test_file: Path'
+      returns: TestAnalysisResult
+      body_hint: 'source = test_file.read_text(encoding=''utf-8''); tree = ast.parse(source, filename=str(test_file)); filename
+        = test_file.name; result = TestAnalysisResult(test_file=filename); result.required_imports = _extract_imports(tree);
+        test_methods = _find_test_methods(tree); result.test_count = len(test_methods); for (method_name, node) in test_methods:
+        ...; result.constants = extract_constants_from_contracts(result.contracts); return result'
+    - name: extract_constants_from_contracts
+      params:
+      - 'contracts: list[TestContract]'
+      returns: list[Constant]
+      body_hint: "constants: list[Constant] = []; seen: set[tuple[str, str]] = set(); for contract in contracts:\n    if contract.contract_type\
+        \ != 'value_equality':\n        continue\n    parsed = _parse_escape_code_assertion(contract.assertion)\n    if parsed\
+        \ is None:\n        continue\n    parent, name, code, full_escape = parsed\n    key = (parent, name)\n    if key in\
+        \ seen:\n        continue\n    seen.add(key)\n    constants.append(Constant(name=name, value=code, context=f'attribute\
+        \ of {parent}, produces escape code {full_escape}')); return constants"
+    test_contracts:
+    - test_file: test_test_analyzer.py
+      test_method: test_result_has_expected_fields
+      assertion: result isinstance TestAnalysisResult
+      contract_type: type_check
+    - test_file: test_test_analyzer.py
+      test_method: test_assertEqual_produces_test_contract
+      assertion: c isinstance TestContract
+      contract_type: type_check
+    - test_file: test_test_analyzer.py
+      test_method: test_test_count
+      assertion: result.test_count == 4
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_constant_values_are_numeric_codes
+      assertion: black.value == '30'
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_extract_constants_from_contracts_standalone
+      assertion: len(constants) == 2
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_fore_black_value
+      assertion: black.value == '30'
+      contract_type: value_equality
+    - test_file: test_test_analyzer.py
+      test_method: test_fore_reset_value
+      assertion: resets[0].value == '39'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-4
+    name: Generator
+    status: ACTIVE
+    description: Main manifest orchestrator (generator.py, 168 lines). Coordinates metrics, blocks, scanning, and interface
+      derivation into a complete Manifest. Provides caching with 1-hour TTL.
+    files:
+    - src/architecture_model/manifest/generator.py
+    kind: module
+    signatures:
+    - name: generate_manifest
+      params:
+      - 'project_root: Path'
+      - 'config: Optional[Any]'
+      returns: Manifest
+      body_hint: 'root = project_root.resolve(); report = ScanReport(); if config is None: ...; logger.info(''Computing project
+        metrics for %s'', root); metrics_result = compute_metrics(root, config); logger.info(''Metrics computed: %s'', metrics_result.values);
+        blocks_dict = config.fblock_dict; logger.info(''Processing %d functional blocks'', len(blocks_dict)); from architecture_model.manifest.types
+        import BlockManifest; functional_blocks: dict[str, BlockManifest] = {}; scanned_files: set[str] = set(); for (block_id,
+        block_def) in blocks_dict.items(): ...; logger.info(''Processed %d blocks, found %d files'', report.blocks_processed,
+        len(scanned_files)); extra_dirs: set[str] = set(); for layer in config.layers: ...; for dir_path in sorted(extra_dirs):
+        ...; logger.info(''Scanning %d files for module metadata'', len(scanned_files)); from architecture_model.manifest.types
+        import ModuleInfo; all_modules: list[ModuleInfo] = []; for rel_path in sorted(scanned_files): ...; logger.info(''Deriving
+        interfaces from %d modules'', len(all_modules)); interfaces = derive_interfaces(all_modules, root); report.interfaces_derived
+        = len(interfaces); report.log_summary(); return Manifest(generated_at=datetime.now(timezone.utc).strftime(''%Y-%m-%dT%H:%M:%S''),
+        project_root=str(root), metrics=metrics_result, functional_blocks=functional_blocks, modules=all_modules, interfaces=interfaces,
+        scan_report=report)'
+    - name: load_or_generate_manifest
+      params:
+      - 'project_root: Path'
+      - 'output_dir: Path | None'
+      returns: dict[str, Any]
+      body_hint: 'from architecture_model.config.loader import get_config; config = get_config(project_root); if output_dir
+        is None: ...; if manifest_path.exists(): ...; manifest = generate_manifest(project_root, config); manifest_dict =
+        manifest.to_dict(); manifest_path.parent.mkdir(parents=True, exist_ok=True); manifest_path.write_text(json.dumps(manifest_dict,
+        indent=2, ensure_ascii=False), encoding=''utf-8''); return manifest_dict'
+    test_contracts:
+    - test_file: test_generator_typed.py
+      test_method: test_generate_manifest_returns_manifest
+      assertion: result isinstance Manifest
+      contract_type: type_check
+    - test_file: test_generator_typed.py
+      test_method: test_generate_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_generator_typed.py
+      test_method: test_scan_report_tracks_counts
+      assertion: report.files_succeeded == report.files_attempted
+      contract_type: value_equality
+    - test_file: test_generator_typed.py
+      test_method: test_load_or_generate_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-5
+    name: Blocks
+    status: ACTIVE
+    description: Functional block processor (blocks.py, 215 lines). Loads block definitions from config, scans constituent
+      files, builds hierarchical sub-block manifests with status propagation.
+    files:
+    - src/architecture_model/manifest/blocks.py
+    kind: module
+    signatures:
+    - name: process_block
+      params:
+      - 'root: Path'
+      - 'block_id: str'
+      - 'block_def: dict'
+      - 'sub_block_configs: list | None'
+      returns: BlockManifest
+      body_hint: 'sub_functions: list[SubFunctionEntry] = []; all_files: list[Path] = []; for dir_path in block_def[''dirs'']:
+        ...; for file_path in block_def[''files'']: ...; logger.debug(''Block %s: %d files from %d dirs'', block_id, len(all_files),
+        len(block_def[''dirs''])); for (idx, filepath) in enumerate(all_files, 1): ...; block_status = ''active'' if any((sf.status
+        == ''active'' for sf in sub_func...; sub_blocks_manifest: list[dict[str, Any]] = []; if sub_block_configs: ...; logger.debug(''Block
+        %s: %d sub_functions, %d sub_blocks'', block_id, len(sub_functions), len(sub_blocks_manifest)); return BlockManifest(name=block_def[''name''],
+        status=block_status, description_source=block_def[''description_source''], sub_functions=sub_functions, sub_blocks=sub_blocks_manifest)'
+    test_contracts:
+    - test_file: test_blocks_typed.py
+      test_method: test_process_block_returns_block_manifest
+      assertion: result isinstance BlockManifest
+      contract_type: type_check
+    - test_file: test_blocks_typed.py
+      test_method: test_process_block_backward_compat
+      assertion: d['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_blocks_typed.py
+      test_method: test_deprecated_process_block_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+    - test_file: test_blocks_typed.py
+      test_method: test_sub_function_entry_has_signature_strings
+      assertion: f isinstance str
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-6
+    name: Interfaces
+    status: ACTIVE
+    description: Interface derivation engine (interfaces.py, 160 lines). Analyzes imports across scanned modules to produce
+      InterfaceEdge dependency graph with relative and absolute import resolution.
+    files:
+    - src/architecture_model/manifest/interfaces.py
+    kind: module
+    signatures:
+    - name: derive_interfaces
+      params:
+      - 'modules: list[ModuleInfo]'
+      - 'root: Path'
+      returns: list[InterfaceEdge]
+      body_hint: "file_to_module: dict[str, str] = {}; for mod in modules: ...; module_to_file: dict[str, str] = {v: k for\
+        \ k, v in file_t...; file_set: set[str] = {f.removesuffix('.py') for f in file...; interfaces: list[InterfaceEdge]\
+        \ = []; seen: set[tuple[str, str]] = set(); def _add_edge(source: str, target: str, import_path: str)...; def _resolve_dotted(dotted:\
+        \ str) -> str | None:\n    \"\"\"Re...; for mod in modules: ...; logger.debug('Derived %d interface edges from %d\
+        \ modules', len(interfaces), len(modules)); return interfaces"
+    test_contracts:
+    - test_file: test_interfaces_typed.py
+      test_method: test_derive_interfaces_returns_typed
+      assertion: result[0].source == 'pkg/a.py'
+      contract_type: value_equality
+    - test_file: test_interfaces_typed.py
+      test_method: test_derive_interfaces_no_self_reference
+      assertion: len(result) == 0
+      contract_type: value_equality
+    - test_file: test_interfaces_typed.py
+      test_method: test_derive_interfaces_deduplicates
+      assertion: len(result) == 1
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-7
+    name: Metrics
+    status: ACTIVE
+    description: Filesystem metric computer (metrics.py, 85 lines). Evaluates config-driven metric definitions (glob patterns,
+      exclusions) and always includes total_python_files.
+    files:
+    - src/architecture_model/manifest/metrics.py
+    kind: module
+    signatures:
+    - name: compute_metrics
+      params:
+      - 'root: Path'
+      - 'config: Optional[Any]'
+      returns: MetricsResult
+      body_hint: 'if config is None: ...; result: dict[str, int] = {}; for metric in config.metrics: ...; total_python = len([p
+        for p in root.rglob(''*.py'') if not any((part in EX...; result[''total_python_files''] = total_python; logger.debug(''Computed
+        %d metrics for %s: %s'', len(result), root, result); return MetricsResult(values=result)'
+    test_contracts:
+    - test_file: test_metrics_typed.py
+      test_method: test_compute_metrics_returns_metrics_result
+      assertion: result isinstance MetricsResult
+      contract_type: type_check
+    - test_file: test_metrics_typed.py
+      test_method: test_compute_metrics_backward_compat
+      assertion: d isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-8
+    name: Recursive
+    status: ACTIVE
+    description: Recursive manifest generator (recursive.py, 223 lines). Produces per-F-block RecursiveManifest objects with
+      cross-block dependency computation and JSON serialization.
+    files:
+    - src/architecture_model/manifest/recursive.py
+    kind: module
+    signatures:
+    - name: generate_block_manifest
+      params:
+      - 'root: Path'
+      - 'block_id: str'
+      - 'block_def: dict[str, Any]'
+      returns: Manifest
+      body_hint: 'report = ScanReport(); modules = []; all_files: list[Path] = []; for d in block_def.get(''dirs'', []): ...;
+        for f in block_def.get(''files'', []): ...; seen = set(); unique_files = []; for f in all_files: ...; for filepath
+        in sorted(unique_files): ...; interfaces = derive_interfaces(modules, root); report.interfaces_derived = len(interfaces);
+        metrics = MetricsResult(values={''py_files'': len(unique_files), ''tot...; return Manifest(generated_at=datetime.now(timezone.utc).isoformat(),
+        project_root=str(root), metrics=metrics, functional_blocks={}, modules=modules, interfaces=interfaces, scan_report=report)'
+    - name: generate_recursive_manifests
+      params:
+      - 'project_root: Path'
+      - 'parent_model: str'
+      returns: dict[str, RecursiveManifest]
+      body_hint: 'config = get_config(project_root); results: dict[str, RecursiveManifest] = {}; for (block_id, block_def)
+        in config.fblock_dict.items(): ...; block_deps = compute_block_dependencies(results, config); for (block_id, deps)
+        in block_deps.items(): ...; return results'
+    - name: compute_block_dependencies
+      params:
+      - 'manifests: dict[str, RecursiveManifest]'
+      - config
+      returns: dict[str, list[str]]
+      body_hint: 'file_to_block: dict[str, str] = {}; for (block_id, block_def) in config.fblock_dict.items(): ...; def _resolve_import_to_block(slash_path:
+        str) -> str | No...; dependencies: dict[str, list[str]] = {}; for (block_id, rm) in manifests.items(): ...; return
+        dependencies'
+    - name: write_recursive_manifests
+      params:
+      - 'manifests: dict[str, RecursiveManifest]'
+      - 'output_dir: Path'
+      returns: list[Path]
+      body_hint: "written: list[Path] = []; for block_id, rm in manifests.items():\n    block_dir = output_dir / block_id\n\
+        \    block_dir.mkdir(parents=True, exist_ok=True)\n    out_path = block_dir / 'manifest.json'\n    out_path.write_text(json.dumps(rm.to_dict(),\
+        \ indent=2, default=str), encoding='utf-8')\n    written.append(out_path)\n    logger.info('Wrote %s', out_path);\
+        \ return written"
+    test_contracts:
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-9
+    name: Slicers
+    status: ACTIVE
+    description: Artifact-focused manifest slicer (slicers.py, 579 lines). Provides 10 specialized slicing functions that
+      produce markdown extracts for different documentation artifacts.
+    files:
+    - src/architecture_model/manifest/slicers.py
+    kind: module
+    signatures:
+    - name: get_manifest_slice
+      params:
+      - 'manifest: Manifest | dict[str, Any]'
+      - 'artifact_name: str'
+      returns: str
+      body_hint: "if isinstance(manifest, dict):\n    logger.debug('get_manifest_slice received dict, converting to Manifest')\n\
+        \    manifest = _manifest_from_dict(manifest); slicers = {'functional-architecture': _slice_functional_architecture,\
+        \ 'logical-architecture': _slice_logical_architecture, 'data-dictionary': _slice_data_dictionary, 'icd': _slice_icd,\
+        \ 'readme': _slice_readme, 'testing': _slice_testing, 'deployment-guide': _slice_deployment_guide, 'operations-manual':\
+        \ _slice_operations_manual, 'use-cases': _slice_use_cases, 'requirements-analysis': _slice_requirements_analysis};\
+        \ slicer = slicers.get(artifact_name); if slicer is None:\n    return f'[unknown artifact: {artifact_name}]'; return\
+        \ slicer(manifest)"
+    test_contracts:
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-10
+    name: Display
+    status: ACTIVE
+    description: Terminal summary renderer (display.py, 51 lines). Prints formatted manifest summary with metrics, blocks,
+      interfaces, and module counts.
+    files:
+    - src/architecture_model/manifest/display.py
+    kind: module
+    signatures:
+    - name: print_summary
+      params:
+      - 'manifest: dict[str, Any]'
+      returns: None
+      body_hint: 'metrics = manifest[''metrics'']; blocks = manifest[''functional_blocks'']; print(f"\n{''='' * 60}"); print(''REALITY
+        MANIFEST SUMMARY''); print(f"{''='' * 60}"); print(f"  Generated: {manifest[''generated_at'']}"); print(f"  Root:      {manifest[''project_root'']}");
+        print(); print(''  METRICS:''); known_labels = [''router'', ''model'', ''migration'', ''template'']; shown = False;
+        for label in known_labels: ...; for (key, val) in metrics.items(): ...; if not shown: ...; print(f"    Python files:
+        {metrics.get(''total_python_files'', ''N/A'')}"); print(); print(''  FUNCTIONAL BLOCKS:''); for (block_id, block)
+        in blocks.items(): ...; print(); print(f"  INTERFACES: {len(manifest.get(''interfaces'', []))} dependencies detected");
+        print(f"  MODULES:    {len(manifest.get(''modules'', []))} files scanned"); print(f"{''='' * 60}")'
+    test_contracts:
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+  - id: COMP-11
+    name: Types
+    status: ACTIVE
+    description: Typed dataclasses (types.py, 258 lines). Defines Manifest, ModuleInfo, FunctionInfo, ClassInfo, ImportDetail,
+      DecoratedFunction, InterfaceEdge, BlockManifest, SubFunctionEntry, MetricsResult, ScanReport, RecursiveManifest, and
+      ModuleStatus enum. All with to_dict() for JSON serialization.
+    files:
+    - src/architecture_model/manifest/types.py
+    kind: module
+    signatures:
+    - name: to_dict
+      returns: dict[str, Any]
+      body_hint: 'return {''file'': self.file, ''name'': self.name, ''docstring'': self.docstring, ''functions'': [{''name'':
+        f.name, ''signature'': f.signature, **({''calls'': f.calls} if f.calls else {}), **({''docstring'': f.docstring} if
+        f.docstring else {}), **({''raises'': f.raises} if f.raises else {})} for f in self.functions], ''imports'': self.imports,
+        ''line_count'': self.line_count, ''status'': self.status.value, ''classes'': [{''name'': c.name, ''bases'': c.bases,
+        ''methods'': c.methods, ''is_abstract'': c.is_abstract, ''decorators'': c.decorators, ''attributes'': c.attributes}
+        for c in self.classes], ''exports'': self.exports, ''decorated_functions'': [{''name'': d.name, ''decorators'': d.decorators,
+        ''is_method'': d.is_method, ''class_name'': d.class_name} for d in self.decorated_functions], ''imports_detailed'':
+        [{''module'': i.module, ''symbols'': i.symbols, ''is_relative'': i.is_relative} for i in self.imports_detailed], ''module_constants'':
+        self.module_constants, ''module_assignments'': self.module_assignments}'
+    - name: success_rate
+      returns: float
+      decorators:
+      - property
+      body_hint: "if self.files_attempted == 0:\n    return 1.0; return self.files_succeeded / self.files_attempted"
+    - name: log_summary
+      returns: None
+      body_hint: 'logger.info(''Scan complete: %d/%d files (%.1f%%), %d funcs, %d classes, %d constants, %d interfaces, %d
+        blocks, %d unclaimed, %d errors'', self.files_succeeded, self.files_attempted, self.success_rate * 100, self.functions_extracted,
+        self.classes_extracted, self.constants_extracted, self.interfaces_derived, self.blocks_processed, self.unclaimed_files,
+        len(self.parse_errors))'
+    test_contracts:
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_creation
+      assertion: m.file == 'src/foo.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_module_status_values
+      assertion: ModuleStatus.ACTIVE.value == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_success_rate
+      assertion: r.success_rate == 0.9
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_scan_report_empty
+      assertion: r.success_rate == 1.0
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_interface_edge_creation
+      assertion: e.source == 'a/b.py'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_creation
+      assertion: m.metrics.values['total_python_files'] == 10
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest_types.py
+      test_method: test_module_info_to_dict
+      assertion: d['status'] == 'active'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_block_manifest_to_dict
+      assertion: d['name'] == 'Core'
+      contract_type: value_equality
+    - test_file: test_manifest_types.py
+      test_method: test_sub_function_entry_to_dict
+      assertion: d['id'] == 'F1.1'
+      contract_type: value_equality
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_dirs
+      assertion: block_def['dirs'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_each_block_has_files
+      assertion: block_def['files'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_metrics
+      assertion: generated['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_functional_blocks_have_sub_functions
+      assertion: block['sub_functions'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_modules
+      assertion: generated['modules'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_has_interfaces
+      assertion: generated['interfaces'] isinstance list
+      contract_type: type_check
+    - test_file: test_manifest.py
+      test_method: test_returns_non_empty_markdown
+      assertion: result isinstance str
+      contract_type: type_check
+relationships:
+- type: realizes
+  from: COMP-4
+  to: CAP-4
+- type: depends-on
+  from: COMP-4
+  to: COMP-1
+- type: depends-on
+  from: COMP-4
+  to: COMP-5
+- type: depends-on
+  from: COMP-4
+  to: COMP-6
+- type: depends-on
+  from: COMP-4
+  to: COMP-7
+- type: exposes
+  from: COMP-4
+  to: IF-1
+- type: exposes
+  from: COMP-4
+  to: IF-2
+- type: realizes
+  from: COMP-1
+  to: CAP-1
+- type: depends-on
+  from: COMP-1
+  to: COMP-11
+- type: exposes
+  from: COMP-1
+  to: IF-3
+- type: realizes
+  from: COMP-2
+  to: CAP-2
+- type: exposes
+  from: COMP-2
+  to: IF-9
+- type: exposes
+  from: COMP-2
+  to: IF-10
+- type: exposes
+  from: COMP-2
+  to: IF-11
+- type: realizes
+  from: COMP-3
+  to: CAP-3
+- type: exposes
+  from: COMP-3
+  to: IF-12
+- type: exposes
+  from: COMP-3
+  to: IF-13
+- type: realizes
+  from: COMP-5
+  to: CAP-5
+- type: depends-on
+  from: COMP-5
+  to: COMP-1
+- type: depends-on
+  from: COMP-5
+  to: COMP-11
+- type: exposes
+  from: COMP-5
+  to: IF-6
+- type: realizes
+  from: COMP-6
+  to: CAP-6
+- type: depends-on
+  from: COMP-6
+  to: COMP-11
+- type: exposes
+  from: COMP-6
+  to: IF-4
+- type: realizes
+  from: COMP-7
+  to: CAP-7
+- type: depends-on
+  from: COMP-7
+  to: COMP-11
+- type: exposes
+  from: COMP-7
+  to: IF-5
+- type: realizes
+  from: COMP-8
+  to: CAP-8
+- type: depends-on
+  from: COMP-8
+  to: COMP-1
+- type: depends-on
+  from: COMP-8
+  to: COMP-6
+- type: depends-on
+  from: COMP-8
+  to: COMP-11
+- type: exposes
+  from: COMP-8
+  to: IF-14
+- type: exposes
+  from: COMP-8
+  to: IF-15
+- type: exposes
+  from: COMP-8
+  to: IF-16
+- type: realizes
+  from: COMP-9
+  to: CAP-9
+- type: depends-on
+  from: COMP-9
+  to: COMP-11
+- type: exposes
+  from: COMP-9
+  to: IF-7
+- type: realizes
+  from: COMP-10
+  to: CAP-10
+- type: exposes
+  from: COMP-10
+  to: IF-8
+- type: realizes
+  from: COMP-11
+  to: CAP-1
+- type: consumes
+  from: ACT-1
+  to: IF-1
+- type: consumes
+  from: ACT-1
+  to: IF-7
+- type: consumes
+  from: ACT-2
+  to: IF-8
+- type: consumes
+  from: ACT-2
+  to: IF-1
+- type: consumes
+  from: ACT-3
+  to: IF-1
+- type: consumes
+  from: ACT-3
+  to: IF-7
+- type: consumes
+  from: ACT-3
+  to: IF-11
+- type: consumes
+  from: ACT-3
+  to: IF-12
+- type: consumes
+  from: ACT-3
+  to: IF-14
+- type: traces-to
+  from: COMP-4
+  to: BEH-1
+- type: traces-to
+  from: COMP-1
+  to: BEH-2
+- type: traces-to
+  from: COMP-2
+  to: BEH-3
+- type: traces-to
+  from: COMP-3
+  to: BEH-4
+- type: traces-to
+  from: COMP-4
+  to: BEH-5
+- type: traces-to
+  from: COMP-8
+  to: BEH-6
+- type: traces-to
+  from: COMP-9
+  to: BEH-7
+- type: constrained-by
+  from: COMP-11
+  to: CON-1
+- type: constrained-by
+  from: COMP-1
+  to: CON-2
+- type: constrained-by
+  from: COMP-4
+  to: CON-3
+- type: constrained-by
+  from: COMP-1
+  to: CON-4
+- type: constrained-by
+  from: COMP-2
+  to: CON-4
+- type: constrained-by
+  from: COMP-5
+  to: CON-5
+- type: constrained-by
+  from: COMP-2
+  to: CON-6

@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph ungrouped[Components]
+        COMP_1[Scanner]
+        COMP_2[Body Hints]
+        COMP_3[Test Analyzer]
+        COMP_4[Generator]
+        COMP_5[Blocks]
+        COMP_6[Interfaces]
+        COMP_7[Metrics]
+        COMP_8[Recursive]
+        COMP_9[Slicers]
+        COMP_10[Display]
+        COMP_11[Types]
+    end
+    CAP_1(AST Scanning)
+    CAP_2(Body Hint Extraction)
+    CAP_3(Test Contract Analysis)
+    CAP_4(Manifest Generation)
+    CAP_5(Functional Block Processing)
+    CAP_6(Interface Derivation)
+    CAP_7(Metric Computation)
+    CAP_8(Recursive Manifest Generation)
+    CAP_9(Manifest Slicing)
+    CAP_10(Display)
+    COMP_4 ==>|realizes| CAP_4
+    COMP_1 ==>|realizes| CAP_1
+    COMP_2 ==>|realizes| CAP_2
+    COMP_3 ==>|realizes| CAP_3
+    COMP_5 ==>|realizes| CAP_5
+    COMP_6 ==>|realizes| CAP_6
+    COMP_7 ==>|realizes| CAP_7
+    COMP_8 ==>|realizes| CAP_8
+    COMP_9 ==>|realizes| CAP_9
+    COMP_10 ==>|realizes| CAP_10
+    COMP_11 ==>|realizes| CAP_1

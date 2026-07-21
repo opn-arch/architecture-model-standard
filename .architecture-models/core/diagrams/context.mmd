@@ -1,0 +1,59 @@
+flowchart TB
+    subgraph system[architecture-model-standard/core]
+        IF_load_model{{load_model}}
+        IF_parse_raw{{_parse_raw}}
+        IF_validate_model_data{{validate_model_data}}
+        IF_dump_model{{dump_model}}
+        IF_save_model{{save_model}}
+        IF_validate_model{{validate_model}}
+        IF_slice_fblock{{slice_by_fblock}}
+        IF_slice_layer{{slice_by_layer}}
+        IF_slice_status{{slice_by_status}}
+        IF_slice_artifact{{slice_for_artifact}}
+        IF_diff_models{{diff_models}}
+        IF_merge_manifest{{merge_manifest}}
+        IF_enrich_from_manifest{{enrich_from_manifest}}
+        IF_compose_enriched{{compose_enriched_model}}
+        IF_compact{{compact_for_generation}}
+        IF_compute_complexity{{compute_complexity}}
+        IF_identify_systems{{identify_systems}}
+        IF_auto_assign_fblocks{{auto_assign_f_blocks}}
+        IF_decompose_model{{decompose_model}}
+        IF_test_affinity{{test_affinity_decompose}}
+        IF_coverage_report{{coverage_report}}
+    end
+    ACT_cli[CLI Commands]
+    ACT_mcp[MCP Server (opencode-arch)]
+    ACT_llm_context[LLM Context Formatter]
+    ACT_manifest[Manifest Generator]
+    COMP_parser -.->|exposes| IF_load_model
+    COMP_parser -.->|exposes| IF_parse_raw
+    COMP_parser -.->|exposes| IF_validate_model_data
+    COMP_parser -.->|exposes| IF_dump_model
+    COMP_parser -.->|exposes| IF_save_model
+    COMP_validator -.->|exposes| IF_validate_model
+    COMP_slicer -.->|exposes| IF_slice_fblock
+    COMP_slicer -.->|exposes| IF_slice_layer
+    COMP_slicer -.->|exposes| IF_slice_status
+    COMP_slicer -.->|exposes| IF_slice_artifact
+    COMP_differ -.->|exposes| IF_diff_models
+    COMP_merger -.->|exposes| IF_merge_manifest
+    COMP_merger -.->|exposes| IF_enrich_from_manifest
+    COMP_merger -.->|exposes| IF_compose_enriched
+    COMP_merger -.->|exposes| IF_compact
+    COMP_decomposer -.->|exposes| IF_compute_complexity
+    COMP_decomposer -.->|exposes| IF_identify_systems
+    COMP_decomposer -.->|exposes| IF_auto_assign_fblocks
+    COMP_decomposer -.->|exposes| IF_decompose_model
+    COMP_decomposer -.->|exposes| IF_test_affinity
+    COMP_coverage -.->|exposes| IF_coverage_report
+    ACT_cli -->|consumes| IF_load_model
+    ACT_cli -->|consumes| IF_validate_model
+    ACT_cli -->|consumes| IF_diff_models
+    ACT_cli -->|consumes| IF_decompose_model
+    ACT_cli -->|consumes| IF_coverage_report
+    ACT_mcp -->|consumes| IF_parse_raw
+    ACT_mcp -->|consumes| IF_validate_model
+    ACT_mcp -->|consumes| IF_slice_fblock
+    ACT_llm_context -->|consumes| IF_slice_fblock
+    ACT_llm_context -->|consumes| IF_slice_layer

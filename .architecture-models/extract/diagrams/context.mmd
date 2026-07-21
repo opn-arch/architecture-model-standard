@@ -1,0 +1,15 @@
+flowchart TB
+    subgraph system[architecture-model-standard/extract]
+        IFC_PUBLIC_API{{extract_from_code API}}
+        IFC_CONFIG{{Config Dependency}}
+        IFC_CORE_TYPES{{Core Types Dependency}}
+        IFC_MANIFEST{{Manifest Dependency}}
+        IFC_ROUTE_DETECTOR{{Route Detector Interface}}
+        IFC_CONSTRAINT_DETECTOR{{Constraint Detector Interface}}
+    end
+    ACT_CALLER[Pipeline Caller]
+    ACT_CORE[Core Type System]
+    ACT_CONFIG[Config Subsystem]
+    ACT_MANIFEST[Manifest Generator]
+    COMP_FROM_CODE -.->|exposes| IFC_PUBLIC_API
+    ACT_CALLER -->|consumes| IFC_PUBLIC_API

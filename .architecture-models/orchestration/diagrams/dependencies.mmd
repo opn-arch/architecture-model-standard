@@ -1,0 +1,8 @@
+flowchart LR
+    subgraph ungrouped[ungrouped]
+        COMP_ENRICH[enrich]
+        COMP_DECOMPOSE[decompose]
+        COMP_INIT[Package Init]
+    end
+    COMP_INIT -->|depends-on| COMP_ENRICH
+    COMP_INIT -->|depends-on| COMP_DECOMPOSE

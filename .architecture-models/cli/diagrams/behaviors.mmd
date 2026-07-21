@@ -1,0 +1,34 @@
+flowchart LR
+    BEH_DISPATCH([Command Dispatch])
+    BEH_INIT([Init Command])
+    BEH_VALIDATE([Validate Command])
+    BEH_SLICE([Slice Command])
+    BEH_DIFF([Diff Command])
+    BEH_STATS([Stats Command])
+    BEH_IMPACT([Impact Command])
+    BEH_MANIFEST([Manifest Command])
+    BEH_ENRICH([Enrich Command])
+    BEH_DECOMPOSE([Decompose Command])
+    BEH_COVERAGE([Coverage Command])
+    BEH_VISUALIZE([Visualize Command])
+    BEH_OVERVIEW_DIAGRAM([Generate Overview Diagram])
+    BEH_BLOCK_DIAGRAM([Generate Block Diagram])
+    BEH_DEPENDENCY_DIAGRAM([Generate Dependency Diagram])
+    BEH_VISUALIZE -.->|contains| BEH_OVERVIEW_DIAGRAM
+    BEH_VISUALIZE -.->|contains| BEH_BLOCK_DIAGRAM
+    BEH_VISUALIZE -.->|contains| BEH_DEPENDENCY_DIAGRAM
+    COMP_MAIN[main] -.->|traces-to| BEH_DISPATCH
+    COMP_MAIN[main] -.->|traces-to| BEH_INIT
+    COMP_MAIN[main] -.->|traces-to| BEH_VALIDATE
+    COMP_MAIN[main] -.->|traces-to| BEH_SLICE
+    COMP_MAIN[main] -.->|traces-to| BEH_DIFF
+    COMP_MAIN[main] -.->|traces-to| BEH_STATS
+    COMP_MAIN[main] -.->|traces-to| BEH_IMPACT
+    COMP_MAIN[main] -.->|traces-to| BEH_MANIFEST
+    COMP_MAIN[main] -.->|traces-to| BEH_ENRICH
+    COMP_MAIN[main] -.->|traces-to| BEH_DECOMPOSE
+    COMP_MAIN[main] -.->|traces-to| BEH_COVERAGE
+    COMP_MAIN[main] -.->|traces-to| BEH_VISUALIZE
+    COMP_VISUALIZE[visualize] -.->|traces-to| BEH_OVERVIEW_DIAGRAM
+    COMP_VISUALIZE[visualize] -.->|traces-to| BEH_BLOCK_DIAGRAM
+    COMP_VISUALIZE[visualize] -.->|traces-to| BEH_DEPENDENCY_DIAGRAM

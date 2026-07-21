@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph system[architecture-model-standard/orchestration]
+        IFC_ENRICH{{enrich_model()}}
+        IFC_DECOMPOSE{{decompose_model()}}
+        IFC_WRITE{{write_sub_models()}}
+        IFC_EXT_HINTS{{extract_file_hints (external)}}
+        IFC_EXT_TEST{{analyze_test_file (external)}}
+        IFC_EXT_PARSER{{load_model / save_model (external)}}
+        IFC_EXT_CONFIG{{get_config (external)}}
+    end
+    ACT_CLI[/CLI / Pipeline Runner\]
+    ACT_CORE[/Core Subsystem\]
+    ACT_MANIFEST[/Manifest Subsystem\]
+    ACT_CONFIG[/Config Subsystem\]
+    COMP_ENRICH -.->|exposes| IFC_ENRICH
+    COMP_DECOMPOSE -.->|exposes| IFC_DECOMPOSE
+    COMP_DECOMPOSE -.->|exposes| IFC_WRITE
+    COMP_INIT -.->|exposes| IFC_ENRICH
+    COMP_INIT -.->|exposes| IFC_DECOMPOSE
+    COMP_INIT -.->|exposes| IFC_WRITE
+    ACT_CLI -->|consumes| IFC_ENRICH
+    ACT_CLI -->|consumes| IFC_DECOMPOSE
+    ACT_CLI -->|consumes| IFC_WRITE
+    COMP_ENRICH -->|consumes| IFC_EXT_HINTS
+    COMP_ENRICH -->|consumes| IFC_EXT_TEST
+    COMP_DECOMPOSE -->|consumes| IFC_EXT_PARSER
+    COMP_DECOMPOSE -->|consumes| IFC_EXT_CONFIG

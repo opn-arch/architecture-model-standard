@@ -175,15 +175,75 @@ relationships:
 
 ## Status
 
-- Schema version: 1.4 (added Constant, FunctionSignature, TestContract on Component)
+- Schema version: 2.0
 - Package version: 0.3.0
-- Test suite: 453 passed, 97 skipped
-- Validation score: 100/100, 0 orphaned entities
-- Model entities: 79 behaviors (9 parent + 70 sub), 25 components, 25 capabilities (10 parent + 15 sub), 237 relationships
-- Model architecture: Recursive sub-models — parent has use cases + logical architecture, sub-models have functional decomposition with AST-derived behavioral detail
-- CLI commands: init, validate, slice, diff, stats, impact, manifest, coverage, enrich, decompose, visualize
+- Test suite: 509 passed
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
+
+### Hierarchical Model Architecture
+
+Each system has its own complete, self-contained model. The top-level model references subsystem models — it does not contain slices or reduced views.
+
+```
+.architecture-model.yaml                    ← top-level system model (98/100)
+.architecture-models/
+├── manifest.json                           ← top-level manifest (37 modules)
+├── core/
+│   ├── .architecture-model.yaml            ← Core system model (enriched)
+│   └── manifest.json                       ← Core manifest (9 modules, 20 functions, 57 classes)
+├── manifest/
+│   ├── .architecture-model.yaml            ← Manifest system model (enriched)
+│   └── manifest.json
+├── config/
+│   ├── .architecture-model.yaml
+│   └── manifest.json
+├── cli/
+│   ├── .architecture-model.yaml
+│   └── manifest.json
+├── orchestration/
+│   ├── .architecture-model.yaml
+│   └── manifest.json
+└── extract/
+    ├── .architecture-model.yaml
+    └── manifest.json
+```
+
+**6 subsystems** (Core, Manifest, Config, CLI, Orchestration, Extract) — each with its own model and manifest.
+**3 inline components** (Utils, Profiles, Spec) — too small for separate systems, modeled in top-level.
+
+### Standard Modeling Process
+
+1. **Scan** — `architect_scan` produces AST-based reality manifest (ground truth)
+2. **Model** — Build complete, self-contained model per system (capabilities, behaviors, components, interfaces, constraints, relationships)
+3. **Manifest** — Generate per-system manifest from AST scan
+4. **Enrich** — `architecture-model enrich` copies signatures, constants, test_contracts from manifest onto model components
+5. **Visualize** — `generate_all_diagrams()` produces 4 Mermaid diagrams per model:
+   - `context.mmd` — C4-style: actors → interfaces → system boundary
+   - `components.mmd` — Components grouped by layer, realizes edges to capabilities
+   - `behaviors.mmd` — Behavior flow with triggers/contains relationships
+   - `dependencies.mmd` — Inter-component dependency graph
+6. **Validate** — `architecture-model validate` checks structural correctness (score 0-100)
+
+**Understanding levels after each step:**
+- Model alone: WHY (capabilities, constraints) + WHAT (behaviors, relationships)
+- \+ Manifest: HOW (signatures, classes, imports, call graphs)
+- \+ Enrichment: REGEN-READY (body_hints, test_contracts, constants on components)
+
+### Current Model Metrics
+
+| System | Score | Sigs | Consts | Test Contracts |
+|--------|-------|------|--------|----------------|
+| Core | 78/100 | 44 | 7 | 101 |
+| Manifest | 0/100* | 20 | 2 | 223 |
+| Config | 98/100 | 15 | 1 | 3 |
+| CLI | 98/100 | 4 | 0 | 0 |
+| Orchestration | 98/100 | 3 | 0 | 5 |
+| Extract | 94/100 | 1 | 0 | 0 |
+| Top-level | 98/100 | 7 | 1 | 7 |
+| **TOTAL** | | **94** | **11** | **339** |
+
+\* Manifest score low due to REGEN_UNREADY checks (test contracts reference constants not yet extracted). Structurally valid.
 
 ## E2E Benchmark Results (2026-07-07)
 

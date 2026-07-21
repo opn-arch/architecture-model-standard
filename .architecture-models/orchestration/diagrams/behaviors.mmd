@@ -1,0 +1,19 @@
+flowchart LR
+    BEH_ENRICH([Enrich Model Workflow])
+    BEH_ENRICH_SIG([Enrich Signatures])
+    BEH_ENRICH_CONST([Enrich Constants])
+    BEH_ENRICH_TEST([Enrich Test Contracts])
+    BEH_DECOMPOSE([Decompose Model Workflow])
+    BEH_INJECT([Inject Sub-Behaviors])
+    BEH_WRITE([Write Sub-Models])
+    BEH_ENRICH -.->|contains| BEH_ENRICH_SIG
+    BEH_ENRICH -.->|contains| BEH_ENRICH_CONST
+    BEH_ENRICH -.->|contains| BEH_ENRICH_TEST
+    BEH_DECOMPOSE -.->|contains| BEH_INJECT
+    COMP_ENRICH[enrich] -.->|traces-to| BEH_ENRICH
+    COMP_ENRICH[enrich] -.->|traces-to| BEH_ENRICH_SIG
+    COMP_ENRICH[enrich] -.->|traces-to| BEH_ENRICH_CONST
+    COMP_ENRICH[enrich] -.->|traces-to| BEH_ENRICH_TEST
+    COMP_DECOMPOSE[decompose] -.->|traces-to| BEH_DECOMPOSE
+    COMP_DECOMPOSE[decompose] -.->|traces-to| BEH_INJECT
+    COMP_DECOMPOSE[decompose] -.->|traces-to| BEH_WRITE
