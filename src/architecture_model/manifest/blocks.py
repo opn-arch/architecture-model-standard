@@ -150,7 +150,7 @@ def process_block(
                 file=module_info.file,
                 functions=[f.signature for f in module_info.functions],
                 inputs=inputs[:6],  # Cap at 6 for readability
-                outputs=list(set(outputs))[:4],
+                outputs=sorted(set(outputs))[:4],
                 status=module_info.status.value,
                 line_count=module_info.line_count,
             )
