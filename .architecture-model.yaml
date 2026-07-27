@@ -1,5 +1,6 @@
 meta:
   schema_version: '2.0'
+  manifest_hash: aef6d7cf4b2f166a
   project: architecture-model-standard
   system: Architecture Model Standard
   generated_at: '2026-07-27T12:00:00.000000+00:00'
