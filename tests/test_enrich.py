@@ -127,3 +127,50 @@ def test_enrich_multiple_files(tmp_path):
     sig_names = [s.name for s in c.signatures]
     assert "func_a" in sig_names
     assert "func_b" in sig_names
+
+
+def test_enrich_class_methods_no_name_collision(tmp_path):
+    """Multiple classes with same method name should all be included."""
+    src = tmp_path / "src" / "tags.py"
+    src.parent.mkdir(parents=True)
+    src.write_text('''
+class TagA:
+    def to_json(self, value):
+        """Convert to JSON."""
+        return str(value)
+
+class TagB:
+    def to_json(self, value):
+        """Convert to JSON."""
+        return repr(value)
+''')
+    comp = Component(id="C1", name="tags", status="ACTIVE", files=["src/tags.py"])
+    model = _make_model(comp)
+    enriched = enrich_model(model, tmp_path)
+    c = enriched.entities["components"][0]
+    # Both should be present with qualified names
+    sig_names = [s.name for s in c.signatures]
+    assert "TagA.to_json" in sig_names
+    assert "TagB.to_json" in sig_names
+
+
+def test_enrich_class_level_constants(tmp_path):
+    """Class-level constants (non-uppercase) should be extracted."""
+    src = tmp_path / "src" / "tags.py"
+    src.parent.mkdir(parents=True)
+    src.write_text('''
+class MarkupTag:
+    key = " m"
+    ensure_ascii = False
+
+class IntTag:
+    key = " di"
+''')
+    comp = Component(id="C1", name="tags", status="ACTIVE", files=["src/tags.py"])
+    model = _make_model(comp)
+    enriched = enrich_model(model, tmp_path)
+    c = enriched.entities["components"][0]
+    const_names = [co.name for co in c.constants]
+    assert "MarkupTag.key" in const_names
+    assert "MarkupTag.ensure_ascii" in const_names
+    assert "IntTag.key" in const_names

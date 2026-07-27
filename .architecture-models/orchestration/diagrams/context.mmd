@@ -1,12 +1,12 @@
 flowchart TB
-    subgraph system[architecture-model-standard/orchestration]
-        IFC_ENRICH{{enrich_model()}}
-        IFC_DECOMPOSE{{decompose_model()}}
-        IFC_WRITE{{write_sub_models()}}
-        IFC_EXT_HINTS{{extract_file_hints (external)}}
-        IFC_EXT_TEST{{analyze_test_file (external)}}
-        IFC_EXT_PARSER{{load_model / save_model (external)}}
-        IFC_EXT_CONFIG{{get_config (external)}}
+    subgraph system["architecture-model-standard/orchestration"]
+        IFC_ENRICH{{"enrich_model()"}}
+        IFC_DECOMPOSE{{"decompose_model()"}}
+        IFC_WRITE{{"write_sub_models()"}}
+        IFC_EXT_HINTS{{"extract_file_hints (external)"}}
+        IFC_EXT_TEST{{"analyze_test_file (external)"}}
+        IFC_EXT_PARSER{{"load_model / save_model (external)"}}
+        IFC_EXT_CONFIG{{"get_config (external)"}}
     end
     ACT_CLI[/CLI / Pipeline Runner\]
     ACT_CORE[/Core Subsystem\]

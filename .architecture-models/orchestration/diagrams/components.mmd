@@ -6,7 +6,7 @@ flowchart TB
     end
     CAP_ENRICH(Model Enrichment)
     CAP_DECOMPOSE(Model Decomposition)
-    CAP_WRITE(Sub-Model Persistence)
+    CAP_WRITE("Sub-Model Persistence")
     COMP_ENRICH ==>|realizes| CAP_ENRICH
     COMP_DECOMPOSE ==>|realizes| CAP_DECOMPOSE
     COMP_DECOMPOSE ==>|realizes| CAP_WRITE

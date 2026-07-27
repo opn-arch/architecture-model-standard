@@ -62,7 +62,7 @@ def _enrich_signatures(comp: Component, root: Path) -> None:
 
 
 def _enrich_constants(comp: Component, root: Path) -> None:
-    """Extract module-level constants from source files."""
+    """Extract module-level and class-level constants from source files."""
     existing_names = {c.name for c in comp.constants}
 
     for file_path in comp.files:
@@ -86,6 +86,22 @@ def _enrich_constants(comp: Component, root: Path) -> None:
                                     Constant(name=name, value=str(value))
                                 )
                                 existing_names.add(name)
+                elif isinstance(node, ast.ClassDef):
+                    # Class-level constants (simple assigns to literals)
+                    for item in node.body:
+                        if isinstance(item, ast.Assign):
+                            for target in item.targets:
+                                if isinstance(target, ast.Name):
+                                    qualified = f"{node.name}.{target.id}"
+                                    if qualified not in existing_names:
+                                        try:
+                                            value = ast.literal_eval(item.value)
+                                        except (ValueError, TypeError):
+                                            continue  # skip non-literal class attrs
+                                        comp.constants.append(
+                                            Constant(name=qualified, value=str(value))
+                                        )
+                                        existing_names.add(qualified)
         except Exception as e:
             logger.warning("Failed to extract constants from %s: %s", fpath, e)
 

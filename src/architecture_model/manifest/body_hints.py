@@ -259,12 +259,13 @@ def extract_file_hints(
             if _should_include(node.name):
                 results.append(_node_to_signature(node, source))
         elif isinstance(node, ast.ClassDef):
-            # Class methods
+            # Class methods — use qualified name (ClassName.method)
             for item in node.body:
                 if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     if _should_include(item.name):
-                        results.append(
-                            _node_to_signature(item, source, class_name=node.name)
-                        )
+                        sig = _node_to_signature(item, source, class_name=node.name)
+                        # Qualify name to avoid collisions between classes
+                        sig.name = f"{node.name}.{item.name}"
+                        results.append(sig)
 
     return results

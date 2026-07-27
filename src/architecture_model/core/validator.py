@@ -347,7 +347,12 @@ def _check_regen_readiness(model: ArchitectureModel, result: ValidationResult) -
             referenced_constants.update(matches)
 
         if referenced_constants:
-            defined_names = {c.name for c in comp.constants}
+            # Build set with both full names and unqualified parts (e.g. "Severity.ERROR" → {"Severity.ERROR", "ERROR"})
+            defined_names: set[str] = set()
+            for c in comp.constants:
+                defined_names.add(c.name)
+                if '.' in c.name:
+                    defined_names.add(c.name.rsplit('.', 1)[1])
             covered = len(referenced_constants & defined_names)
             coverage = covered / len(referenced_constants)
 

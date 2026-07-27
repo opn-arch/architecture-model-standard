@@ -1,5 +1,5 @@
 flowchart TB
-    subgraph system[architecture-model-standard/core]
+    subgraph system["architecture-model-standard/core"]
         IF_load_model{{load_model}}
         IF_parse_raw{{_parse_raw}}
         IF_validate_model_data{{validate_model_data}}
@@ -23,7 +23,7 @@ flowchart TB
         IF_coverage_report{{coverage_report}}
     end
     ACT_cli[CLI Commands]
-    ACT_mcp[MCP Server (opencode-arch)]
+    ACT_mcp["MCP Server (opencode-arch)"]
     ACT_llm_context[LLM Context Formatter]
     ACT_manifest[Manifest Generator]
     COMP_parser -.->|exposes| IF_load_model

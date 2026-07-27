@@ -232,7 +232,8 @@ class TestExtractFileHints:
         """)
         results = extract_file_hints(filepath)
         names = [sig.name for sig in results]
-        assert "__init__" in names
+        assert "Foo.__init__" in names
+        assert "Foo._private" not in names
         assert "_private" not in names
 
     def test_include_private_flag(self, tmp_path):
@@ -259,8 +260,8 @@ class TestExtractFileHints:
         """)
         results = extract_file_hints(filepath)
         names = [sig.name for sig in results]
-        assert "method_one" in names
-        assert "method_two" in names
+        assert "MyClass.method_one" in names
+        assert "MyClass.method_two" in names
 
     def test_body_hint_populated(self, tmp_path):
         filepath = self._write_source(tmp_path, """\
@@ -315,9 +316,9 @@ class TestExtractFileHints:
                     return cls(value)
         """)
         results = extract_file_hints(filepath)
-        method_sig = next(s for s in results if s.name == "method")
+        method_sig = next(s for s in results if s.name == "Foo.method")
         assert "self" not in method_sig.params
-        create_sig = next(s for s in results if s.name == "create")
+        create_sig = next(s for s in results if s.name == "Foo.create")
         assert "cls" not in create_sig.params
 
     def test_args_and_kwargs(self, tmp_path):

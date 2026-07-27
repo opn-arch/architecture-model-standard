@@ -1,5 +1,5 @@
 flowchart TB
-    subgraph system[architecture-model-standard]
+    subgraph system["architecture-model-standard"]
         IF_GENERATE_MANIFEST{{generate_manifest}}
         IF_LOAD_MODEL{{load_model}}
         IF_VALIDATE_MODEL{{validate_model}}
@@ -12,7 +12,7 @@ flowchart TB
     end
     ACT_DEV[/Developer\]
     ACT_LLM[LLM Agent]
-    ACT_MCP[opencode-arch MCP Server]
+    ACT_MCP["opencode-arch MCP Server"]
     ACT_DEV -->|consumes| IF_CLI_MAIN
     ACT_MCP -->|consumes| IF_GENERATE_MANIFEST
     ACT_MCP -->|consumes| IF_LOAD_MODEL

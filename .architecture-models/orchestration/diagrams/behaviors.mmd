@@ -4,8 +4,8 @@ flowchart LR
     BEH_ENRICH_CONST([Enrich Constants])
     BEH_ENRICH_TEST([Enrich Test Contracts])
     BEH_DECOMPOSE([Decompose Model Workflow])
-    BEH_INJECT([Inject Sub-Behaviors])
-    BEH_WRITE([Write Sub-Models])
+    BEH_INJECT(["Inject Sub-Behaviors"])
+    BEH_WRITE(["Write Sub-Models"])
     BEH_ENRICH -.->|contains| BEH_ENRICH_SIG
     BEH_ENRICH -.->|contains| BEH_ENRICH_CONST
     BEH_ENRICH -.->|contains| BEH_ENRICH_TEST

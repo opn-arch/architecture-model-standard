@@ -1,11 +1,11 @@
 flowchart TB
-    subgraph system[architecture-model-standard/config]
-        IF_1{{load_config(root) -> ProjectConfig}}
-        IF_2{{discover_config(root) -> (ProjectConfig, DiscoveryReport)}}
-        IF_3{{get_config(root) -> ProjectConfig}}
-        IF_4{{write_config(config, root) -> Path}}
-        IF_5{{ProjectConfig.from_dict(data, root) -> ProjectConfig}}
-        IF_6{{ProjectConfig.to_dict() -> dict}}
+    subgraph system["architecture-model-standard/config"]
+        IF_1{{"load_config(root) -> ProjectConfig"}}
+        IF_2{{"discover_config(root) -> (ProjectConfig, DiscoveryReport)"}}
+        IF_3{{"get_config(root) -> ProjectConfig"}}
+        IF_4{{"write_config(config, root) -> Path"}}
+        IF_5{{"ProjectConfig.from_dict(data, root) -> ProjectConfig"}}
+        IF_6{{"ProjectConfig.to_dict() -> dict"}}
     end
     ACT_1[/CLI User\]
     ACT_2[/Pipeline Consumer\]

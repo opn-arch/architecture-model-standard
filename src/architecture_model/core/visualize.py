@@ -23,8 +23,13 @@ def _sid(node_id: str) -> str:
 
 
 def _label(name: str) -> str:
-    """Escape label for Mermaid."""
-    return name.replace('"', "'").replace("[", "(").replace("]", ")")
+    """Escape label for Mermaid (quote if contains special chars)."""
+    # Replace characters that break Mermaid syntax
+    name = name.replace('"', "'").replace("[", "(").replace("]", ")")
+    # If label contains parens, arrows, or braces, wrap in quotes
+    if any(c in name for c in "(){}->|"):
+        return f'"{name}"'
+    return name
 
 
 def _rel_type(rel) -> str:

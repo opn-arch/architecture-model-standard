@@ -462,11 +462,15 @@ def _cmd_coverage(args) -> int:
             manifest = json_mod.load(f)
     else:
         project = Path(args.project) if args.project else model_dir
-        from ..config.loader import discover_config
+        from ..config.loader import get_config
         from ..manifest.generator import generate_manifest
 
-        config = discover_config(project)
+        config = get_config(project)
         manifest = generate_manifest(project, config=config)
+
+    # Convert Manifest dataclass to dict if needed
+    if not isinstance(manifest, dict):
+        manifest = manifest.to_dict() if hasattr(manifest, 'to_dict') else manifest
 
     result = coverage_report(model, manifest)
     print(result.summary())
