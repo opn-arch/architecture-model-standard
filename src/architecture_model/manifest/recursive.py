@@ -10,7 +10,10 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from architecture_model.core.types import ArchitectureModel
 
 from architecture_model.config.loader import get_config
 from architecture_model.manifest.interfaces import derive_interfaces
@@ -26,8 +29,17 @@ from architecture_model.utils.discovery import collect_py_files
 logger = logging.getLogger(__name__)
 
 
-def _block_id_to_component_id(block_id: str, config) -> str:
-    """Map F-block ID to component ID by convention."""
+def _block_id_to_component_id(
+    block_id: str,
+    config,
+    model: "ArchitectureModel | None" = None,
+) -> str:
+    """Map F-block ID to component ID, preferring model lookup over convention."""
+    if model is not None:
+        for comp in model.entities.components:
+            if getattr(comp, "f_block", None) == block_id:
+                return comp.id
+    # Fallback to convention
     block_def = config.fblock_dict.get(block_id, {})
     name = block_def.get("name", block_id)
     return f"COMP-{name.upper().replace(' ', '-')}"
@@ -102,11 +114,21 @@ def generate_recursive_manifests(
     """Generate a RecursiveManifest for each F-block in the project config."""
     config = get_config(project_root)
     results: dict[str, RecursiveManifest] = {}
+
+    # Load parent model for component ID resolution
+    model = None
+    model_path = project_root / parent_model
+    if model_path.exists():
+        try:
+            from architecture_model import load_model
+            model = load_model(model_path)
+        except Exception:
+            pass  # Graceful degradation
     
     for block_id, block_def in config.fblock_dict.items():
         logger.info("Generating recursive manifest for %s: %s", block_id, block_def.get("name"))
         manifest = generate_block_manifest(project_root, block_id, block_def)
-        component_id = _block_id_to_component_id(block_id, config)
+        component_id = _block_id_to_component_id(block_id, config, model)
         results[block_id] = RecursiveManifest(
             block_id=block_id,
             block_name=block_def.get("name", block_id),
