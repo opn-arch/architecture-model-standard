@@ -39,6 +39,7 @@ def run_pipeline(
     project_root: Path,
     *,
     parent_model: str = ".architecture-model.yaml",
+    model_file: str | None = None,
     output_dir: str = ".architecture-models",
 ) -> PipelineResult:
     """Run the full decomposition pipeline.
@@ -49,7 +50,9 @@ def run_pipeline(
 
     Args:
         project_root: Root directory with .architecture-model.yaml
-        parent_model: Filename of the parent model (default: .architecture-model.yaml)
+        parent_model: Config filename with functional_blocks (default: .architecture-model.yaml)
+        model_file: Model filename with entities/relationships. If None, auto-detects:
+                    tries parent_model first, then .architecture-model-extracted.yaml
         output_dir: Output directory name (default: .architecture-models)
 
     Returns:
@@ -72,11 +75,30 @@ def run_pipeline(
         return result
 
     # Step 2: Decompose parent model (requires entities section)
-    model_path = project_root / parent_model
-    if model_path.exists():
-        logger.info("Step 2: Decomposing parent model into sub-models...")
+    # Auto-detect model file
+    if model_file is not None:
+        actual_model = project_root / model_file
+    else:
+        # Try parent_model first, fall back to extracted variant
+        actual_model = project_root / parent_model
+        # Check if it actually has entities (not just config)
         try:
-            sub_models = decompose_model(project_root)
+            from architecture_model.core.parser import load_model
+            test_model = load_model(actual_model)
+            if not test_model.entities.components:
+                raise ValueError("No components")
+        except Exception:
+            # Try extracted model
+            extracted = project_root / ".architecture-model-extracted.yaml"
+            if extracted.exists():
+                actual_model = extracted
+            else:
+                actual_model = None
+
+    if actual_model and actual_model.exists():
+        logger.info("Step 2: Decomposing model (%s) into sub-models...", actual_model.name)
+        try:
+            sub_models = decompose_model(project_root, model_path=actual_model)
             result.sub_models = sub_models
             if sub_models:
                 paths = write_sub_models(sub_models, out)
@@ -85,11 +107,10 @@ def run_pipeline(
             else:
                 logger.warning("  No sub-models generated (no matching components)")
         except Exception as exc:
-            # Decomposition failure is non-fatal (config-only files, etc.)
             msg = f"Decomposition skipped: {exc}"
             result.errors.append(msg)
             logger.warning(msg)
     else:
-        logger.info("Step 2: Skipped (no parent model at %s)", model_path)
+        logger.info("Step 2: Skipped (no model with entities found)")
 
     return result

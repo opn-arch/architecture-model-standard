@@ -214,7 +214,7 @@ def _inject_sub_behaviors(sub_model, sub_behaviors_path):
             ))
 
 
-def decompose_model(project_root):
+def decompose_model(project_root, *, model_path=None):
     """Generate sub-models for each F-block by tracing parent model relationships.
 
     For each F-block:
@@ -225,11 +225,14 @@ def decompose_model(project_root):
 
     Args:
         project_root: Root directory with .architecture-model.yaml
+        model_path: Optional path to model file (default: project_root/.architecture-model.yaml)
 
     Returns:
         Dict mapping block_id -> ArchitectureModel (sub-model)
     """
-    model = load_model(project_root / ".architecture-model.yaml")
+    if model_path is None:
+        model_path = project_root / ".architecture-model.yaml"
+    model = load_model(model_path)
     config = get_config(project_root)
     results = {}
 
