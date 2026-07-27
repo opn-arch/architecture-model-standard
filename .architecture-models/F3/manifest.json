@@ -1,0 +1,2167 @@
+{
+  "block_id": "F3",
+  "block_name": "Core",
+  "parent_model": ".architecture-model.yaml",
+  "component_id": "COMP-CORE",
+  "manifest": {
+    "generated_at": "2026-07-27T17:00:43.039133+00:00",
+    "project_root": ".",
+    "metrics": {
+      "py_files": 12,
+      "total_lines": 5093,
+      "functions": 25,
+      "classes": 57,
+      "constants": 1
+    },
+    "functional_blocks": {},
+    "modules": [
+      {
+        "file": "src/architecture_model/core/__init__.py",
+        "name": " Init  ",
+        "docstring": null,
+        "functions": [],
+        "imports": [],
+        "line_count": 0,
+        "status": "dormant",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/coverage.py",
+        "name": "Coverage analysis: compare architecture model against code reality (manifest)",
+        "docstring": "Coverage analysis: compare architecture model against code reality (manifest).",
+        "functions": [
+          {
+            "name": "coverage_report",
+            "signature": "coverage_report(model: 'ArchitectureModel', manifest: dict) -> CoverageResult",
+            "calls": [
+              "CoverageResult",
+              "_check_component_coverage",
+              "_check_relationship_accuracy",
+              "_check_capability_coverage",
+              "_check_interface_coverage",
+              "_check_staleness",
+              "sum",
+              "len"
+            ],
+            "docstring": "Run all coverage checks and return aggregate result."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "hashlib",
+          "json",
+          "dataclasses",
+          "pathlib",
+          "typing",
+          "types",
+          "types"
+        ],
+        "line_count": 270,
+        "status": "active",
+        "classes": [
+          {
+            "name": "CoverageCheck",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "CoverageResult",
+            "bases": [],
+            "methods": [
+              "summary"
+            ],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "hashlib",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "json",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "RelationType"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": true
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/decomposer.py",
+        "name": "Complexity scoring and system identification for architecture decomposition",
+        "docstring": "Complexity scoring and system identification for architecture decomposition.\n\nBootstrap strategy for repos without existing models.\nFor repos WITH models, use orchestration.decompose instead.",
+        "functions": [
+          {
+            "name": "compute_complexity",
+            "signature": "compute_complexity(comp: Component, model: ArchitectureModel) -> float",
+            "calls": [
+              "sum",
+              "len"
+            ],
+            "docstring": "Weighted complexity score for determining if a component should be in a System.\n\nFactors:\n    - Number of symbols x 2.0\n    - Total members (sum of all symbol members) x 0.3\n    - Number of functions x 0.5\n    - Number of depends-on relationships (inbound + outbound) x 1.5"
+          },
+          {
+            "name": "identify_systems",
+            "signature": "identify_systems(model: ArchitectureModel, manifest: dict) -> list[SystemCandidate]",
+            "calls": [
+              "defaultdict",
+              "get",
+              "items",
+              "sum",
+              "append",
+              "compute_complexity",
+              "SystemCandidate"
+            ],
+            "docstring": "Identify F-block groups that should become Systems.\n\nGroups components by f_block, computes aggregate complexity per group,\nand returns SystemCandidates for groups exceeding SYSTEM_THRESHOLD.\n\nFor components without an f_block field, they are skipped (remain as\ntop-level components).\n\nArgs:\n    model: The architecture model with enriched components.\n    manifest: Manifest dict containing functional_blocks metadata.\n\nReturns:\n    List of SystemCandidate for groups exceeding threshold."
+          },
+          {
+            "name": "decompose_model",
+            "signature": "decompose_model(model: ArchitectureModel, manifest: dict, output_dir: str) -> DecompositionResult",
+            "calls": [
+              "identify_systems",
+              "set",
+              "items",
+              "Entities",
+              "ArchitectureModel",
+              "DecompositionResult",
+              "keys",
+              "_slugify",
+              "System",
+              "append",
+              "ModelMeta",
+              "get",
+              "add",
+              "Relationship"
+            ],
+            "docstring": "Decompose a flat model into top-level + system sub-models.\n\n1. Identifies system candidates via F-block complexity\n2. For each system:\n   - Creates System entity with sub_model_ref\n   - Extracts system's components into a sub-model\n   - Partitions relationships: intra-system stay in sub-model,\n     inter-system get promoted to top-level (from/to rewritten to system ID)\n3. Remaining components stay in top-level\n\nArgs:\n    model: Flat architecture model (v1.2+ with enriched components).\n    manifest: Manifest dict with functional_blocks metadata.\n    output_dir: Directory name for sub-model refs (default \"systems\").\n\nReturns:\n    DecompositionResult with top-level model and sub-models dict."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "collections",
+          "dataclasses",
+          "architecture_model.core.types",
+          "architecture_model.core.test_affinity",
+          "architecture_model.core.fblock_assign"
+        ],
+        "line_count": 269,
+        "status": "active",
+        "classes": [
+          {
+            "name": "SystemCandidate",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "DecompositionResult",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "collections",
+            "symbols": [
+              "defaultdict"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel",
+              "Component",
+              "Entities",
+              "ModelMeta",
+              "Relationship",
+              "RelationType",
+              "Status",
+              "System"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.test_affinity",
+            "symbols": [
+              "Subsystem",
+              "test_affinity_decompose"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.fblock_assign",
+            "symbols": [
+              "auto_assign_f_blocks"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {
+          "SYSTEM_THRESHOLD": "10.0"
+        },
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/differ.py",
+        "name": "Differ: Compare two architecture model versions and produce a structured diff",
+        "docstring": "Differ: Compare two architecture model versions and produce a structured diff.\n\nUse cases:\n- Detect architectural drift between regenerations\n- Show what changed when artifacts are updated\n- Inform staleness detection (which entities changed \u2192 which artifacts are stale)",
+        "functions": [
+          {
+            "name": "diff_models",
+            "signature": "diff_models(old_model: ArchitectureModel, new_model: ArchitectureModel) -> ModelDiff",
+            "calls": [
+              "ModelDiff",
+              "_diff_entity_list",
+              "_diff_relationships"
+            ],
+            "docstring": "Compare two model versions and produce a structured diff.\n\nArgs:\n    old_model: The previous/baseline model.\n    new_model: The current/updated model.\n\nReturns:\n    ModelDiff with all detected changes."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "dataclasses",
+          "enum",
+          "typing",
+          "types"
+        ],
+        "line_count": 294,
+        "status": "active",
+        "classes": [
+          {
+            "name": "ChangeType",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "ADDED": "'added'",
+              "REMOVED": "'removed'",
+              "MODIFIED": "'modified'"
+            }
+          },
+          {
+            "name": "EntityChange",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "RelationshipChange",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "ModelDiff",
+            "bases": [],
+            "methods": [
+              "has_changes",
+              "added_count",
+              "removed_count",
+              "modified_count",
+              "summary",
+              "format_report",
+              "affected_artifacts"
+            ],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "enum",
+            "symbols": [
+              "Enum"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any",
+              "Optional"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "ArchitectureModel",
+              "Relationship",
+              "Status"
+            ],
+            "is_relative": true
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/fblock_assign.py",
+        "name": "Automatic F",
+        "docstring": "Automatic F-block assignment via dependency-graph clustering.\n\nBootstrap utility for models without f_block annotations.",
+        "functions": [
+          {
+            "name": "auto_assign_f_blocks",
+            "signature": "auto_assign_f_blocks(model: ArchitectureModel, max_cluster_size: int) -> ArchitectureModel",
+            "calls": [
+              "any",
+              "defaultdict",
+              "sorted",
+              "Entities",
+              "ArchitectureModel",
+              "len",
+              "deepcopy",
+              "append",
+              "add",
+              "get",
+              "set"
+            ],
+            "docstring": "Assign f_block values to components via dependency-graph clustering.\n\nUsed when the model has no f_block annotations (e.g., oracle-extracted models).\nGroups components by import/dependency density using greedy modularity:\n1. Build undirected adjacency from depends_on relationships\n2. Seed clusters from highest-degree nodes\n3. Grow each cluster by adding adjacent unassigned nodes (max size limit)\n4. Singletons keep their own f_block (decomposer threshold handles them)\n\nMutates nothing \u2014 returns a new model with f_block assigned on components."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "collections",
+          "copy",
+          "architecture_model.core.types"
+        ],
+        "line_count": 110,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "collections",
+            "symbols": [
+              "defaultdict"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "copy",
+            "symbols": [
+              "deepcopy"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel",
+              "Entities",
+              "RelationType"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/merger.py",
+        "name": "Merger: Merge manifest facts into an existing architecture model",
+        "docstring": "Merger: Merge manifest facts into an existing architecture model.\n\nThe manifest provides code-grounded facts (file counts, module names, import graphs).\nThe model provides architectural decisions (what things mean, how they relate).\n\nMerger SUPPLEMENTS the model with manifest data \u2014 it never overwrites architectural\ndecisions. It adds source_file/source_line provenance and fills in component file lists.",
+        "functions": [
+          {
+            "name": "merge_manifest",
+            "signature": "merge_manifest(model: ArchitectureModel, manifest_path: str | Path, project_root: str | Path | None) -> ArchitectureModel",
+            "calls": [
+              "Path",
+              "loads",
+              "read_bytes",
+              "_merge_layer_directories",
+              "_merge_component_files",
+              "_add_missing_components",
+              "exists",
+              "resolve",
+              "read_text",
+              "hexdigest",
+              "sha256"
+            ],
+            "docstring": "Merge manifest data into the architecture model (in-place mutation).\n\nWhat gets merged:\n- Component file lists get enriched with manifest-discovered files.\n- Layers get directory lists from manifest module scan.\n- Meta gets manifest_hash updated.\n\nWhat does NOT get overwritten:\n- Entity names, descriptions, status markers.\n- Relationships (these are architectural decisions).\n- Capabilities, behaviors, constraints (model-level truth).\n\nArgs:\n    model: The architecture model to enrich.\n    manifest_path: Path to the reality-manifest.json file.\n    project_root: Root of the consumer project (for config lookup).\n                  Defaults to manifest_path's grandparent (output/{project}/manifest \u2192 root).\n\nReturns the same model instance (mutated)."
+          },
+          {
+            "name": "enrich_from_manifest",
+            "signature": "enrich_from_manifest(model: ArchitectureModel, manifest: dict) -> EnrichmentResult",
+            "calls": [
+              "get",
+              "_enrich_relationship_imports",
+              "EnrichmentResult",
+              "_find_matching_module",
+              "_build_symbols",
+              "_extract_function_names",
+              "Path",
+              "len",
+              "sum"
+            ],
+            "docstring": "Enrich an ArchitectureModel with ground-truth symbols and functions from an AST manifest.\n\nReplaces component symbols/functions with manifest-derived data, enriches\nrelationship imports, and computes naming accuracy vs prior predictions.\n\nArgs:\n    model: The architecture model to enrich (mutated in-place).\n    manifest: Manifest dict as produced by the manifest generator.\n\nReturns:\n    EnrichmentResult with the enriched model and naming_accuracy score."
+          },
+          {
+            "name": "compact_for_generation",
+            "signature": "compact_for_generation(model: ArchitectureModel) -> ArchitectureModel",
+            "calls": [
+              "deepcopy",
+              "len",
+              "sorted"
+            ],
+            "docstring": "Compact an enriched model for LLM code generation.\n\nTruncates symbol members and component functions when the model is too\nlarge for a 7B model's effective context. Preserves structure (all\ncomponents, all symbol names by kind) but limits detail per entity.\n\nThe model is mutated in-place and returned.\n\nStrategy:\n- Cap symbols per component to _MAX_SYMBOLS_PER_COMPONENT (keep by importance)\n- Cap members per symbol to _MAX_MEMBERS_PER_SYMBOL (keep __init__ + public)\n- Cap functions per component to _MAX_FUNCTIONS_PER_COMPONENT\n- Prioritize: __init__ first, then alphabetical for determinism\n- Excess symbols are listed as names-only in a comment field\n- For very large models (>16 components), apply stricter per-component limits"
+          },
+          {
+            "name": "compose_enriched_model",
+            "signature": "compose_enriched_model(project_root: Path) -> ArchitectureModel",
+            "calls": [
+              "discover_source_files",
+              "discover_test_files",
+              "_map_tests_to_sources",
+              "ModelMeta",
+              "Entities",
+              "ArchitectureModel",
+              "str",
+              "_parse_file_ast",
+              "_build_constants_for_file",
+              "get",
+              "Component",
+              "append",
+              "relative_to",
+              "extract_file_hints",
+              "analyze_test_file",
+              "extend"
+            ],
+            "docstring": "Compose a fully-enriched ArchitectureModel from source code.\n\nScans all source files in the project, extracting:\n- Module constants, class attributes, module assignments \u2192 Constant objects\n- Function signatures with body hints \u2192 FunctionSignature objects\n- Test contracts from matching test files \u2192 TestContract objects\n\nEach source module becomes a Component in the resulting model.\n\nArgs:\n    project_root: Root directory of the project to scan.\n\nReturns:\n    An ArchitectureModel with one Component per source file, enriched\n    with constants, signatures, and test contracts."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "ast",
+          "json",
+          "re",
+          "dataclasses",
+          "pathlib",
+          "typing",
+          "architecture_model.utils.discovery",
+          "types",
+          "hashlib",
+          "copy",
+          "yaml",
+          "architecture_model.manifest.scanner",
+          "architecture_model.manifest.body_hints",
+          "architecture_model.manifest.scanner",
+          "architecture_model.manifest.test_analyzer",
+          "architecture_model.config.loader",
+          "architecture_model.config.loader"
+        ],
+        "line_count": 778,
+        "status": "active",
+        "classes": [
+          {
+            "name": "EnrichmentResult",
+            "bases": [],
+            "methods": [
+              "model",
+              "entities",
+              "relationships",
+              "meta"
+            ],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "ast",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "json",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.utils.discovery",
+            "symbols": [
+              "EXCLUDED_DIRS",
+              "discover_source_files",
+              "discover_test_files"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "ArchitectureModel",
+              "Component",
+              "ComponentKind",
+              "Constant",
+              "Entities",
+              "FunctionSignature",
+              "ModelMeta",
+              "Relationship",
+              "RelationType",
+              "Status",
+              "Symbol",
+              "SymbolKind",
+              "TestContract"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "hashlib",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "copy",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "yaml",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.scanner",
+            "symbols": [
+              "_extract_class_attributes",
+              "_extract_module_assignments",
+              "_extract_module_constants"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.body_hints",
+            "symbols": [
+              "extract_file_hints"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.scanner",
+            "symbols": [
+              "_parse_file_ast"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.test_analyzer",
+            "symbols": [
+              "analyze_test_file"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.config.loader",
+            "symbols": [
+              "get_config"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.config.loader",
+            "symbols": [
+              "get_config"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/parser.py",
+        "name": "Parser",
+        "docstring": "Parser: Load architecture model YAML, validate against schema, return typed ArchitectureModel.",
+        "functions": [
+          {
+            "name": "load_model",
+            "signature": "load_model(path: str | Path) -> ArchitectureModel",
+            "calls": [
+              "Path",
+              "_parse_raw",
+              "open",
+              "safe_load",
+              "ValueError"
+            ],
+            "docstring": "Load and parse an architecture model YAML file.",
+            "raises": [
+              "ValueError"
+            ]
+          },
+          {
+            "name": "validate_model_data",
+            "signature": "validate_model_data(data: dict[str, Any]) -> list[str]",
+            "calls": [
+              "loads",
+              "Draft202012Validator",
+              "read_text",
+              "iter_errors"
+            ],
+            "docstring": "Validate raw dict against JSON Schema. Returns list of error messages."
+          },
+          {
+            "name": "dump_model",
+            "signature": "dump_model(model: ArchitectureModel) -> dict[str, Any]",
+            "calls": [
+              "_dump_meta",
+              "_dump_entities",
+              "_dump_relationship"
+            ],
+            "docstring": "Serialize ArchitectureModel back to a plain dict suitable for YAML output."
+          },
+          {
+            "name": "save_model",
+            "signature": "save_model(model: ArchitectureModel, path: str | Path) -> None",
+            "calls": [
+              "Path",
+              "mkdir",
+              "dump_model",
+              "open",
+              "dump"
+            ],
+            "docstring": "Serialize and write model to YAML file."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "json",
+          "datetime",
+          "pathlib",
+          "typing",
+          "yaml",
+          "types",
+          "jsonschema"
+        ],
+        "line_count": 772,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "json",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "datetime",
+            "symbols": [
+              "datetime",
+              "timezone"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "yaml",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "Actor",
+              "ActorType",
+              "ArchitectureModel",
+              "Behavior",
+              "BehaviorPattern",
+              "Capability",
+              "Compensation",
+              "Component",
+              "ComponentKind",
+              "Constant",
+              "Constraint",
+              "ConstraintType",
+              "Data",
+              "DataField",
+              "Decision",
+              "DecisionStatus",
+              "Entities",
+              "Environment",
+              "EnvironmentKind",
+              "Event",
+              "EventKind",
+              "FunctionSignature",
+              "Interface",
+              "InterfaceType",
+              "Layer",
+              "Lifecycle",
+              "LifecyclePhase",
+              "ModelMeta",
+              "Priority",
+              "QualityAttribute",
+              "Relationship",
+              "RelationType",
+              "Resource",
+              "ResourceKind",
+              "StateTransition",
+              "Status",
+              "Strength",
+              "Symbol",
+              "SymbolKind",
+              "System",
+              "TestContract",
+              "ObservabilityContract",
+              "_enum_value"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "jsonschema",
+            "symbols": [],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/slicer.py",
+        "name": "Slicer: Extract subsets of the architecture model",
+        "docstring": "Slicer: Extract subsets of the architecture model.\n\nProduces focused model slices for:\n- Single F-block context (capability + its behaviors, components, interfaces)\n- Single layer context (layer + its components + dependency rules)\n- Status filter (only ACTIVE, or only PLANNED)\n- Artifact-specific context (what an artifact needs to regenerate itself)",
+        "functions": [
+          {
+            "name": "slice_by_fblock",
+            "signature": "slice_by_fblock(model: ArchitectureModel, f_block: str, include_relationships: bool) -> ArchitectureModel",
+            "calls": [
+              "set",
+              "ArchitectureModel",
+              "any",
+              "split",
+              "ModelMeta",
+              "Entities",
+              "add",
+              "append",
+              "strip",
+              "deepcopy"
+            ],
+            "docstring": "Extract all entities and relationships related to a specific F-block.\n\nArgs:\n    model: Full architecture model.\n    f_block: F-block identifier (e.g., \"F1\", \"F2\").\n    include_relationships: Whether to include relationships between sliced entities.\n\nReturns:\n    New ArchitectureModel containing only the F-block's entities."
+          },
+          {
+            "name": "slice_by_layer",
+            "signature": "slice_by_layer(model: ArchitectureModel, layer_id: str) -> ArchitectureModel",
+            "calls": [
+              "ArchitectureModel",
+              "deepcopy",
+              "ModelMeta",
+              "Entities"
+            ],
+            "docstring": "Extract all entities allocated to a specific layer.\n\nArgs:\n    model: Full architecture model.\n    layer_id: Layer identifier (e.g., \"web-layer\", \"pipeline-layer\").\n\nReturns:\n    New ArchitectureModel with layer-specific entities."
+          },
+          {
+            "name": "slice_by_status",
+            "signature": "slice_by_status(model: ArchitectureModel, status: Status) -> ArchitectureModel",
+            "calls": [
+              "Entities",
+              "set",
+              "ArchitectureModel",
+              "getattr",
+              "deepcopy",
+              "add"
+            ],
+            "docstring": "Filter model to only include entities with a specific status.\n\nArgs:\n    model: Full architecture model.\n    status: Status to filter by.\n\nReturns:\n    New ArchitectureModel with only matching entities."
+          },
+          {
+            "name": "slice_for_artifact",
+            "signature": "slice_for_artifact(model: ArchitectureModel, artifact_name: str) -> ArchitectureModel",
+            "calls": [
+              "get",
+              "deepcopy",
+              "slicer_fn"
+            ],
+            "docstring": "Extract the model subset relevant to a specific artifact's regeneration.\n\nArtifact-specific slicing rules:\n- functional-architecture: capabilities, behaviors (summary), relationships\n- logical-architecture: layers, components, inter-layer relationships\n- use-cases: actors, behaviors (full), capabilities (summary)\n- icd: interfaces, components (providers/consumers)\n- requirements-analysis: constraints, capabilities, behaviors (summary)\n- readme: everything (summary level)\n\nArgs:\n    model: Full architecture model.\n    artifact_name: Name of the artifact to slice for.\n\nReturns:\n    Model subset appropriate for the artifact."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "copy",
+          "typing",
+          "types"
+        ],
+        "line_count": 526,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "copy",
+            "symbols": [
+              "deepcopy"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Optional"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "ArchitectureModel",
+              "Entities",
+              "ModelMeta",
+              "Relationship",
+              "Status",
+              "RelationType"
+            ],
+            "is_relative": true
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/test_affinity.py",
+        "name": "Test",
+        "docstring": "Test-affinity-based repository decomposition.\n\nGroups source files into subsystems based on which test files import them.",
+        "functions": [
+          {
+            "name": "test_affinity_decompose",
+            "signature": "test_affinity_decompose(repo_path: Path) -> list[Subsystem]",
+            "calls": [
+              "_discover_test_files",
+              "_discover_source_files",
+              "defaultdict",
+              "items",
+              "set",
+              "sorted",
+              "extend",
+              "_subsystem_name_from_test",
+              "_extract_imports",
+              "add",
+              "keys",
+              "get",
+              "discard",
+              "len",
+              "pop",
+              "append",
+              "sort",
+              "_resolve_import_to_source",
+              "update",
+              "Subsystem"
+            ],
+            "docstring": "Decompose a repository into subsystems based on test file affinity.\n\nAlgorithm:\n1. Discover all test files (*_test.py, test_*.py)\n2. Discover all source files (non-test .py files)\n3. For each test file, AST-parse its imports to identify which source modules it tests\n4. Group source modules by their primary test file (each source \u2192 exactly one subsystem)\n5. Determine dependencies between subsystems via import analysis\n6. Return subsystems sorted topologically (leaves first)\n\nSource modules with no test \u2192 assigned to 'root' subsystem"
+          }
+        ],
+        "imports": [
+          "__future__",
+          "ast",
+          "collections",
+          "dataclasses",
+          "pathlib",
+          "architecture_model.utils.discovery"
+        ],
+        "line_count": 304,
+        "status": "active",
+        "classes": [
+          {
+            "name": "Subsystem",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "ast",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "collections",
+            "symbols": [
+              "defaultdict"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.utils.discovery",
+            "symbols": [
+              "EXCLUDED_DIRS",
+              "discover_source_files",
+              "discover_test_files"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/types.py",
+        "name": "Typed dataclasses for all Architecture Model entity types and relationships",
+        "docstring": "Typed dataclasses for all Architecture Model entity types and relationships.\n\nThese map 1:1 with the JSON Schema in spec/schema.json.",
+        "functions": [],
+        "imports": [
+          "__future__",
+          "dataclasses",
+          "enum",
+          "typing",
+          "yaml"
+        ],
+        "line_count": 968,
+        "status": "active",
+        "classes": [
+          {
+            "name": "Status",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "ACTIVE": "'ACTIVE'",
+              "PLANNED": "'PLANNED'",
+              "DORMANT": "'DORMANT'",
+              "DEPRECATED": "'DEPRECATED'"
+            }
+          },
+          {
+            "name": "RelationType",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "REALIZES": "'realizes'",
+              "CONTAINS": "'contains'",
+              "DEPENDS_ON": "'depends-on'",
+              "EXPOSES": "'exposes'",
+              "CONSUMES": "'consumes'",
+              "TRACES_TO": "'traces-to'",
+              "ALLOCATED_TO": "'allocated-to'",
+              "CONSTRAINED_BY": "'constrained-by'",
+              "MOUNTED_ON": "'mounted-on'",
+              "CONNECTED_AT": "'connected-at'",
+              "ROUTED_THROUGH": "'routed-through'",
+              "PRODUCES": "'produces'",
+              "SUBSCRIBES_TO": "'subscribes-to'",
+              "TRANSFORMS": "'transforms'",
+              "SUPERSEDES": "'supersedes'",
+              "MIGRATES_TO": "'migrates-to'",
+              "TRIGGERS": "'triggers'"
+            }
+          },
+          {
+            "name": "ActorType",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "HUMAN": "'human'",
+              "SYSTEM": "'system'",
+              "EXTERNAL_SERVICE": "'external-service'"
+            }
+          },
+          {
+            "name": "InterfaceType",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": true,
+            "decorators": [],
+            "attributes": {
+              "REST": "'REST'",
+              "WEBSOCKET": "'WebSocket'",
+              "DATABASE": "'database'",
+              "FILE": "'file'",
+              "MESSAGE_QUEUE": "'message-queue'",
+              "INTERNAL": "'internal'",
+              "EXTERNAL": "'external'"
+            }
+          },
+          {
+            "name": "ConstraintType",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "PERFORMANCE": "'performance'",
+              "SECURITY": "'security'",
+              "RELIABILITY": "'reliability'",
+              "SCALABILITY": "'scalability'",
+              "REGULATORY": "'regulatory'",
+              "TECHNOLOGY": "'technology'",
+              "OPERATIONAL": "'operational'",
+              "FAILURE_MODE": "'failure-mode'"
+            }
+          },
+          {
+            "name": "Priority",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "CRITICAL": "'critical'",
+              "HIGH": "'high'",
+              "MEDIUM": "'medium'",
+              "LOW": "'low'"
+            }
+          },
+          {
+            "name": "Strength",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "STRONG": "'strong'",
+              "MODERATE": "'moderate'",
+              "WEAK": "'weak'"
+            }
+          },
+          {
+            "name": "ComponentKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "SERVICE": "'service'",
+              "LIBRARY": "'library'",
+              "MODULE": "'module'",
+              "DATA_MODEL": "'data-model'",
+              "DATA_STORE": "'data-store'",
+              "INFRASTRUCTURE": "'infrastructure'",
+              "FRAMEWORK": "'framework'",
+              "UI": "'ui'",
+              "PIPELINE": "'pipeline'",
+              "PACKAGE": "'package'",
+              "CLI_TOOL": "'cli'"
+            }
+          },
+          {
+            "name": "BehaviorPattern",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "SEQUENTIAL": "'sequential'",
+              "EVENT_DRIVEN": "'event-driven'",
+              "STATE_MACHINE": "'state-machine'",
+              "SAGA": "'saga'",
+              "PIPELINE": "'pipeline'",
+              "PARALLEL": "'parallel'"
+            }
+          },
+          {
+            "name": "SymbolKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "CLASS": "'class'",
+              "DATACLASS": "'dataclass'",
+              "EXCEPTION": "'exception'",
+              "PROTOCOL": "'protocol'",
+              "STRUCT": "'struct'",
+              "INTERFACE": "'interface'",
+              "ENUM": "'enum'",
+              "TRAIT": "'trait'",
+              "TYPE_ALIAS": "'type-alias'"
+            }
+          },
+          {
+            "name": "EventKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "MESSAGE": "'message'",
+              "SIGNAL": "'signal'",
+              "COMMAND": "'command'",
+              "NOTIFICATION": "'notification'",
+              "ALARM": "'alarm'"
+            }
+          },
+          {
+            "name": "ResourceKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "DATABASE": "'database'",
+              "API": "'api'",
+              "HARDWARE": "'hardware'",
+              "STORAGE": "'storage'",
+              "COMPUTE": "'compute'",
+              "SENSOR": "'sensor'",
+              "ACTUATOR": "'actuator'"
+            }
+          },
+          {
+            "name": "EnvironmentKind",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "DEVELOPMENT": "'development'",
+              "STAGING": "'staging'",
+              "PRODUCTION": "'production'",
+              "TEST": "'test'",
+              "FIELD": "'field'",
+              "LABORATORY": "'laboratory'"
+            }
+          },
+          {
+            "name": "DecisionStatus",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "PROPOSED": "'proposed'",
+              "ACCEPTED": "'accepted'",
+              "DEPRECATED": "'deprecated'",
+              "SUPERSEDED": "'superseded'"
+            }
+          },
+          {
+            "name": "LifecyclePhase",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [
+              "parse"
+            ],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "CONCEPT": "'concept'",
+              "DESIGN": "'design'",
+              "PROTOTYPE": "'prototype'",
+              "DEVELOPMENT": "'development'",
+              "TESTING": "'testing'",
+              "PRODUCTION": "'production'",
+              "MAINTENANCE": "'maintenance'",
+              "END_OF_LIFE": "'end-of-life'"
+            }
+          },
+          {
+            "name": "BaseEntity",
+            "bases": [],
+            "methods": [],
+            "is_abstract": true,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Actor",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Capability",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "StateTransition",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Compensation",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Behavior",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Endpoint",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Interface",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": true,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Constraint",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Layer",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Symbol",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "DataField",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Constant",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "FunctionSignature",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "TestContract",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "ObservabilityContract",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Component",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "System",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Data",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Event",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Resource",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Environment",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "QualityAttribute",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Decision",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Lifecycle",
+            "bases": [
+              "BaseEntity"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Relationship",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "ModelMeta",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "Entities",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "ArchitectureModel",
+            "bases": [],
+            "methods": [
+              "all_entity_ids",
+              "entity_count",
+              "relationship_count",
+              "to_dict",
+              "to_yaml"
+            ],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "enum",
+            "symbols": [
+              "Enum"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any",
+              "Optional"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "yaml",
+            "symbols": [],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/core/validator.py",
+        "name": "Validator: Check architecture model invariants",
+        "docstring": "Validator: Check architecture model invariants.\n\nValidates:\n1. Referential integrity \u2014 all relationship from/to IDs exist as entities\n2. Orphan detection \u2014 entities with no relationships\n3. Status consistency \u2014 PLANNED entities shouldn't be depended on by ACTIVE ones\n4. ID uniqueness \u2014 no duplicate entity IDs across types\n5. Completeness \u2014 all capabilities have at least one realizing behavior\n6. Meta completeness \u2014 project and schema_version are set\n7. v1.1 semantics \u2014 data-model fields, state-machine reachability\n8. Regen readiness \u2014 constant/signature coverage for code regeneration",
+        "functions": [
+          {
+            "name": "validate_model",
+            "signature": "validate_model(model: ArchitectureModel, strict: bool) -> ValidationResult",
+            "calls": [
+              "ValidationResult",
+              "_check_id_uniqueness",
+              "_check_referential_integrity",
+              "_check_orphan_entities",
+              "_check_status_consistency",
+              "_check_capability_realization",
+              "_check_meta_completeness",
+              "_check_v11_semantics",
+              "_check_regen_readiness",
+              "_check_domain_profile",
+              "_check_improvement_opportunities"
+            ],
+            "docstring": "Run all validation checks on the architecture model.\n\nArgs:\n    model: The model to validate.\n    strict: If True, promote warnings to errors.\n\nReturns:\n    ValidationResult with all issues found."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "logging",
+          "dataclasses",
+          "enum",
+          "typing",
+          "types",
+          "re",
+          "types",
+          "architecture_model.config.loader",
+          "pathlib",
+          "architecture_model.profiles.schema"
+        ],
+        "line_count": 589,
+        "status": "active",
+        "classes": [
+          {
+            "name": "Severity",
+            "bases": [
+              "str",
+              "Enum"
+            ],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [],
+            "attributes": {
+              "ERROR": "'ERROR'",
+              "WARNING": "'WARNING'",
+              "INFO": "'INFO'"
+            }
+          },
+          {
+            "name": "ValidationIssue",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "ValidationResult",
+            "bases": [],
+            "methods": [
+              "error_count",
+              "warning_count",
+              "info_count",
+              "is_valid",
+              "score",
+              "summary"
+            ],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "logging",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "enum",
+            "symbols": [
+              "Enum"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Optional"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "ArchitectureModel",
+              "RelationType",
+              "Status"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "ComponentKind",
+              "BehaviorPattern"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "architecture_model.config.loader",
+            "symbols": [
+              "get_config"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.profiles.schema",
+            "symbols": [
+              "load_profile"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {
+          "logger": "logging.getLogger(__name__)"
+        }
+      },
+      {
+        "file": "src/architecture_model/core/visualize.py",
+        "name": "Generate Mermaid diagrams from architecture models",
+        "docstring": "Generate Mermaid diagrams from architecture models.\n\nProduces 4 standard views:\n- context: C4-style actors \u2192 interfaces \u2192 system boundary\n- components: grouped by layer, realizes edges to capabilities\n- behaviors: flow with triggers/contains relationships\n- dependencies: inter-component dependency graph",
+        "functions": [
+          {
+            "name": "generate_context_diagram",
+            "signature": "generate_context_diagram(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "getattr",
+              "append",
+              "join",
+              "_sid",
+              "_rel_type",
+              "_label"
+            ],
+            "docstring": "C4-style context: actors interacting with system via interfaces.\n\nShows: actors (person/system shapes), interfaces inside system boundary,\nconsumes/exposes edges."
+          },
+          {
+            "name": "generate_components_diagram",
+            "signature": "generate_components_diagram(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "defaultdict",
+              "sorted",
+              "join",
+              "append",
+              "values",
+              "next",
+              "_rel_type",
+              "_sid",
+              "_label"
+            ],
+            "docstring": "Components grouped by layer, with realizes edges to capabilities.\n\nShows: layers as subgraphs, components inside, realizes edges to capability nodes."
+          },
+          {
+            "name": "generate_behaviors_diagram",
+            "signature": "generate_behaviors_diagram(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "join",
+              "append",
+              "_rel_type",
+              "next",
+              "_sid",
+              "_label"
+            ],
+            "docstring": "Behavior flow: triggers/contains relationships between behaviors.\n\nShows: behaviors as stadium-shaped nodes, triggers/contains edges,\ntraces-to from components."
+          },
+          {
+            "name": "generate_dependencies_diagram",
+            "signature": "generate_dependencies_diagram(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "defaultdict",
+              "sorted",
+              "join",
+              "append",
+              "getattr",
+              "get",
+              "_rel_type",
+              "_sid",
+              "_label"
+            ],
+            "docstring": "Inter-component dependency graph grouped by f_block.\n\nShows: components grouped by f_block in subgraphs, depends-on edges."
+          },
+          {
+            "name": "generate_all_diagrams",
+            "signature": "generate_all_diagrams(model: 'ArchitectureModel', output_dir: Path) -> dict[str, Path]",
+            "calls": [
+              "mkdir",
+              "items",
+              "gen_fn",
+              "write_text"
+            ],
+            "docstring": "Generate all 4 standard diagrams and write to output_dir.\n\nReturns dict mapping diagram name to file path."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "collections",
+          "pathlib",
+          "typing",
+          "types"
+        ],
+        "line_count": 213,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "collections",
+            "symbols": [
+              "defaultdict"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": true
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      }
+    ],
+    "interfaces": [
+      {
+        "source": "src/architecture_model/core/coverage.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/decomposer.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "architecture_model.core.types"
+      },
+      {
+        "source": "src/architecture_model/core/decomposer.py",
+        "target": "src/architecture_model/core/test_affinity.py",
+        "import_path": "architecture_model.core.test_affinity"
+      },
+      {
+        "source": "src/architecture_model/core/decomposer.py",
+        "target": "src/architecture_model/core/fblock_assign.py",
+        "import_path": "architecture_model.core.fblock_assign"
+      },
+      {
+        "source": "src/architecture_model/core/differ.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/fblock_assign.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "architecture_model.core.types"
+      },
+      {
+        "source": "src/architecture_model/core/merger.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/parser.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/slicer.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/validator.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      },
+      {
+        "source": "src/architecture_model/core/visualize.py",
+        "target": "src/architecture_model/core/types.py",
+        "import_path": "types"
+      }
+    ]
+  },
+  "children": {},
+  "block_dependencies": [
+    "F2",
+    "F5",
+    "F7",
+    "F9"
+  ]
+}
