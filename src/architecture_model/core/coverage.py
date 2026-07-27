@@ -94,6 +94,11 @@ def _check_component_coverage(model: "ArchitectureModel", manifest: dict) -> Cov
 
 
 def _check_relationship_accuracy(model: "ArchitectureModel", manifest: dict) -> CoverageCheck:
+    """Legacy alias — delegates to _check_relationship_accuracy_legacy."""
+    return _check_relationship_accuracy_legacy(model, manifest)
+
+
+def _check_relationship_accuracy_legacy(model: "ArchitectureModel", manifest: dict) -> CoverageCheck:
     """Check model relationships against manifest import graph.
 
     Aggregates file-level imports to package-level edges for comparison
@@ -143,6 +148,57 @@ def _check_relationship_accuracy(model: "ArchitectureModel", manifest: dict) -> 
         score=len(matched) / total * 100 if total else 100.0,
         matched=len(matched),
         total=total,
+        missing=[f"{a} → {b}" for a, b in missing],
+        extra=[f"{a} → {b}" for a, b in extra],
+    )
+
+
+def _check_dependency_accuracy(
+    model: "ArchitectureModel",
+    import_deps: dict[str, set[str]] | None = None,
+    manifest: dict | None = None,
+) -> CoverageCheck:
+    """Check model depends-on relationships against import-derived F-block dependencies.
+
+    If import_deps not provided, falls back to legacy interface-based check.
+    """
+    if import_deps is None and manifest is not None:
+        return _check_relationship_accuracy_legacy(model, manifest)
+
+    if import_deps is None:
+        import_deps = {}
+
+    # Build model edges as F-block pairs
+    comp_to_fb = {c.id: c.f_block for c in model.entities.components if c.f_block}
+    model_edges: set[tuple[str, str]] = set()
+    for rel in model.relationships:
+        if rel.type == RelationType.DEPENDS_ON:
+            src_fb = comp_to_fb.get(rel.from_id)
+            tgt_fb = comp_to_fb.get(rel.to_id)
+            if src_fb and tgt_fb:
+                model_edges.add((src_fb, tgt_fb))
+
+    # Build import edges
+    import_edges: set[tuple[str, str]] = set()
+    for src_fb, targets in import_deps.items():
+        for tgt_fb in targets:
+            import_edges.add((src_fb, tgt_fb))
+
+    all_edges = model_edges | import_edges
+    if not all_edges:
+        return CoverageCheck(name="Dependency Accuracy", score=100.0, matched=0, total=0)
+
+    matched = model_edges & import_edges
+    missing = sorted(import_edges - model_edges)  # in imports but not model
+    extra = sorted(model_edges - import_edges)    # in model but not imports
+
+    score = len(matched) / len(all_edges) * 100
+
+    return CoverageCheck(
+        name="Dependency Accuracy",
+        score=score,
+        matched=len(matched),
+        total=len(all_edges),
         missing=[f"{a} → {b}" for a, b in missing],
         extra=[f"{a} → {b}" for a, b in extra],
     )
@@ -257,11 +313,19 @@ def _check_staleness(model: "ArchitectureModel", manifest: dict) -> CoverageChec
     )
 
 
-def coverage_report(model: "ArchitectureModel", manifest: dict) -> CoverageResult:
+def coverage_report(
+    model: "ArchitectureModel",
+    manifest: dict,
+    import_deps: dict[str, set[str]] | None = None,
+) -> CoverageResult:
     """Run all coverage checks and return aggregate result."""
+    if import_deps is not None:
+        rel_check = _check_dependency_accuracy(model, import_deps)
+    else:
+        rel_check = _check_relationship_accuracy_legacy(model, manifest)
     checks = [
         _check_component_coverage(model, manifest),
-        _check_relationship_accuracy(model, manifest),
+        rel_check,
         _check_capability_coverage(model, manifest),
         _check_interface_coverage(model, manifest),
         _check_staleness(model, manifest),
