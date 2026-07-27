@@ -1,0 +1,78 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Profiles
+  system: Profiles
+  generated_at: '2026-07-27T12:00:00.000000+00:00'
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-PROFILES
+entities:
+  capabilities:
+  - id: CAP-PROFILES
+    name: Domain Profiles
+    status: ACTIVE
+    description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
+    f_block: F7
+  interfaces:
+  - id: IF-LOAD-PROFILE
+    name: load_profile
+    status: ACTIVE
+    description: 'load_profile(name_or_path: str) -> DomainProfile'
+    type: function
+  components:
+  - id: COMP-PROFILES
+    name: Profiles
+    status: ACTIVE
+    description: Domain profile loading — software, controls, mechanical, electrical (85 lines)
+    f_block: F7
+    files:
+    - src/architecture_model/profiles/schema.py
+    constants:
+    - name: PROFILES_DIR
+      value: Path(__file__).parent / 'builtins'
+    signatures:
+    - name: from_dict
+      params:
+      - 'data: dict[str, Any]'
+      returns: DomainProfile
+      decorators:
+      - classmethod
+      body_hint: return cls(domain=data['domain'], extends_schema=data.get('extends_schema', '1.4'), enum_extensions=[EnumExtension(**e)
+        for e in data.get('enum_extensions', [])], entity_extensions=[EntityExtension(**e) for e in data.get('entity_extensions',
+        [])], validation_rules=[ConditionalRule(**r) for r in data.get('validation_rules', [])])
+    - name: get_extended_values
+      params:
+      - 'enum_name: str'
+      returns: list[str]
+      body_hint: "for ext in self.enum_extensions:\n    if ext.enum_name == enum_name:\n        return ext.values; return\
+        \ []"
+    - name: load_profile
+      params:
+      - 'name_or_path: str'
+      returns: DomainProfile
+      body_hint: 'if name_or_path in BUILTIN_PROFILES: ...; if not path.exists(): ...; data = yaml.safe_load(path.read_text(encoding=''utf-8''));
+        profile = DomainProfile.from_dict(data); logger.info(''Loaded domain profile: %s'', profile.domain); return profile'
+    - name: DomainProfile.from_dict
+      params:
+      - 'data: dict[str, Any]'
+      returns: DomainProfile
+      decorators:
+      - classmethod
+      body_hint: return cls(domain=data['domain'], extends_schema=data.get('extends_schema', '1.4'), enum_extensions=[EnumExtension(**e)
+        for e in data.get('enum_extensions', [])], entity_extensions=[EntityExtension(**e) for e in data.get('entity_extensions',
+        [])], validation_rules=[ConditionalRule(**r) for r in data.get('validation_rules', [])])
+    - name: DomainProfile.get_extended_values
+      params:
+      - 'enum_name: str'
+      returns: list[str]
+      body_hint: "for ext in self.enum_extensions:\n    if ext.enum_name == enum_name:\n        return ext.values; return\
+        \ []"
+relationships:
+- type: realizes
+  from: COMP-PROFILES
+  to: CAP-PROFILES
+- type: exposes
+  from: COMP-PROFILES
+  to: IF-LOAD-PROFILE
+- type: depends-on
+  from: COMP-CORE
+  to: COMP-PROFILES
