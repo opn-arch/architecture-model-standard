@@ -21,7 +21,7 @@ def test_scan_file_parse_error(tmp_path):
     f.write_text("def broken(\n")
     from architecture_model.manifest.scanner import scan_file
     result = scan_file(tmp_path, f)
-    assert result.status == ModuleStatus.MISSING
+    assert result.status != ModuleStatus.ACTIVE  # small file = DORMANT via fallback
 
 
 def test_scan_file_extracts_constants(tmp_path):

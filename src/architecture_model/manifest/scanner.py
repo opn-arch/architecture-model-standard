@@ -58,6 +58,84 @@ def _parse_file_ast(filepath: Path) -> ast.Module | None:
         return None
 
 
+# ---------------------------------------------------------------------------
+# Regex fallback scanner: extracts names when ast.parse() fails
+# ---------------------------------------------------------------------------
+
+_RE_CLASS = re.compile(
+    r"^class\s+([A-Z]\w*)\s*(?:\(([^)]*)\))?:", re.MULTILINE
+)
+_RE_FUNC = re.compile(
+    r"^(?:async\s+)?def\s+([a-zA-Z]\w*)\s*\(", re.MULTILINE
+)
+_RE_IMPORT = re.compile(
+    r"^(?:import\s+([\w.]+)|from\s+([\w.]+)\s+import)", re.MULTILINE
+)
+_RE_DOCSTRING = re.compile(
+    r"^(?:\s*#[^\n]*\n)*\s*(?:\"\"\"(.*?)(?:\"\"\"|$)|'''(.*?)(?:'''|$))",
+    re.DOTALL,
+)
+
+
+def _regex_fallback_scan(source: str) -> tuple[
+    list[ClassInfo], list[FunctionInfo], list[str], str | None
+]:
+    """Extract class/function/import names via regex when AST parsing fails.
+
+    Returns (classes, functions, imports, docstring).
+    """
+    # Classes with bases
+    classes: list[ClassInfo] = []
+    for m in _RE_CLASS.finditer(source):
+        name = m.group(1)
+        bases_str = m.group(2) or ""
+        bases = [b.strip() for b in bases_str.split(",") if b.strip()] if bases_str else []
+        classes.append(ClassInfo(
+            name=name,
+            bases=bases,
+            methods=[],
+            is_abstract=any(b in ("ABC", "Protocol") for b in bases),
+            decorators=[],
+            attributes={},
+        ))
+
+    # Functions (module-level only — no indentation)
+    functions: list[FunctionInfo] = []
+    for m in _RE_FUNC.finditer(source):
+        name = m.group(1)
+        # Skip private and methods (indented)
+        line_start = source.rfind("\n", 0, m.start()) + 1
+        if m.start() - line_start > 0:  # indented = method, skip
+            continue
+        if name.startswith("_"):
+            continue
+        functions.append(FunctionInfo(
+            name=name,
+            signature=f"{name}(...)",
+            calls=[],
+            docstring=None,
+            raises=[],
+        ))
+
+    # Imports
+    imports: list[str] = []
+    for m in _RE_IMPORT.finditer(source):
+        mod = m.group(1) or m.group(2)
+        if mod and mod not in imports:
+            imports.append(mod)
+
+    # Module docstring
+    docstring = None
+    dm = _RE_DOCSTRING.match(source)
+    if dm:
+        raw = dm.group(1) or dm.group(2)
+        if raw:
+            # Take first line as the docstring
+            docstring = raw.strip().split("\n")[0].strip()
+
+    return classes, functions, imports, docstring
+
+
 def _get_module_docstring(tree: ast.Module) -> str | None:
     """Extract the module-level docstring."""
     return ast.get_docstring(tree)
@@ -490,13 +568,20 @@ def scan_file(root: Path, filepath: Path) -> ModuleInfo:
         constants = _extract_module_constants(tree)
         assignments = _extract_module_assignments(tree)
     else:
-        classes = []
+        # AST failed — try regex fallback for partial extraction
+        try:
+            source = filepath.read_text(encoding="utf-8")
+        except OSError:
+            source = ""
+        classes, functions, imports, docstring = _regex_fallback_scan(source)
         exports = []
         decorated = []
         imports_detailed = []
         constants = {}
         assignments = {}
-        status = ModuleStatus.MISSING
+        # Keep status based on line count (file exists, just can't fully parse)
+        if source:
+            status = _determine_status(filepath, line_count)
 
     name = _derive_name_from_docstring(docstring, filepath)
 
