@@ -545,6 +545,7 @@ class ModelMeta:
     manifest_hash: str = ""
     source_language: str = ""
     domain_profile: str = "software"
+    manifest_path: str = ""
     parent_model: str | None = None
     refines_component: str | None = None
 
@@ -651,6 +652,8 @@ class ArchitectureModel:
             d["manifest_hash"] = self.meta.manifest_hash
         if self.meta.domain_profile and self.meta.domain_profile != "software":
             d["domain_profile"] = self.meta.domain_profile
+        if self.meta.manifest_path:
+            d["manifest_path"] = self.meta.manifest_path
         if self.meta.parent_model:
             d["parent_model"] = self.meta.parent_model
         if self.meta.refines_component:

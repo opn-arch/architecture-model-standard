@@ -3,6 +3,7 @@ meta:
   project: architecture-model-standard/Config
   system: Config
   generated_at: '2026-07-27T12:00:00.000000+00:00'
+  manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-CONFIG
 entities:

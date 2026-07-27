@@ -277,6 +277,7 @@ def decompose_model(project_root):
                 project=f"{model.meta.project}/{block_name}",
                 system=block_name,
                 generated_at=model.meta.generated_at,
+                manifest_path="manifest.json",
                 parent_model="../../.architecture-model.yaml",
                 refines_component=parent_comp_id or "",
             ),

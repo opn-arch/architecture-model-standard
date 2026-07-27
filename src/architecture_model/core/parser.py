@@ -144,6 +144,7 @@ def _parse_meta(d: dict) -> ModelMeta:
         manifest_hash=d.get("manifest_hash", ""),
         source_language=d.get("source_language", ""),
         domain_profile=d.get("domain_profile", "software"),
+        manifest_path=d.get("manifest_path", ""),
         parent_model=d.get("parent_model"),
         refines_component=d.get("refines_component"),
     )
@@ -444,6 +445,8 @@ def _dump_meta(m: ModelMeta) -> dict:
         d["manifest_hash"] = m.manifest_hash
     if m.source_language:
         d["source_language"] = m.source_language
+    if m.manifest_path:
+        d["manifest_path"] = m.manifest_path
     if m.parent_model:
         d["parent_model"] = m.parent_model
     if m.refines_component:
