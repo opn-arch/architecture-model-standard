@@ -104,6 +104,32 @@ def test_run_pipeline_computes_dependencies(tmp_path):
     assert "F1" in f2_deps
 
 
+def test_run_pipeline_deep_decompose(tmp_path):
+    """Pipeline with deep=True produces sub-components for large blocks."""
+    pkg = tmp_path / "bigpkg"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("")
+    for i in range(20):
+        imports = f"from bigpkg.mod{max(0,i-1)} import something\n" if i > 0 else ""
+        (pkg / f"mod{i}.py").write_text(
+            f'"""Module {i}."""\n{imports}class Cls{i}:\n    pass\n' + "\n" * 50
+        )
+
+    (tmp_path / ".architecture-model.yaml").write_text(
+        "functional_blocks:\n"
+        "  F1:\n"
+        "    name: BigPackage\n"
+        "    dirs:\n"
+        "      - bigpkg\n"
+        "    files: []\n"
+    )
+
+    result = run_pipeline(tmp_path, deep=True)
+    assert "F1" in result.deep_decompositions
+    decomp = result.deep_decompositions["F1"]
+    assert len(decomp.sub_components) >= 2
+
+
 def test_run_pipeline_config_only(tmp_path):
     """Pipeline works with config-only file (no model entities) — skips decompose."""
     pkg = tmp_path / "myapp"

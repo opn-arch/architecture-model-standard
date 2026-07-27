@@ -22,6 +22,7 @@ from architecture_model.manifest.recursive import (
 )
 from architecture_model.manifest.types import RecursiveManifest
 from architecture_model.orchestration.decompose import decompose_model, write_sub_models
+from architecture_model.orchestration.deep_decompose import DecomposeResult
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class PipelineResult:
     """Result of running the full decomposition pipeline."""
     manifests: dict[str, RecursiveManifest] = field(default_factory=dict)
     sub_models: dict[str, ArchitectureModel] = field(default_factory=dict)
+    deep_decompositions: dict[str, DecomposeResult] = field(default_factory=dict)
     written_paths: list[Path] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
@@ -41,6 +43,7 @@ def run_pipeline(
     parent_model: str = ".architecture-model.yaml",
     model_file: str | None = None,
     output_dir: str = ".architecture-models",
+    deep: bool = False,
 ) -> PipelineResult:
     """Run the full decomposition pipeline.
 
@@ -73,6 +76,18 @@ def run_pipeline(
         result.errors.append(f"Manifest generation failed: {exc}")
         logger.error("Manifest generation failed: %s", exc)
         return result
+
+    # Step 1.5: Deep decompose blocks (if deep=True)
+    if deep:
+        from architecture_model.orchestration.deep_decompose import deep_decompose_block
+        logger.info("Step 1.5: Deep decomposing blocks...")
+        for block_id, rm in manifests.items():
+            decomp = deep_decompose_block(
+                rm.manifest, block_id=block_id, block_name=rm.block_name
+            )
+            if decomp.sub_components:
+                result.deep_decompositions[block_id] = decomp
+                logger.info("  %s: %d sub-components", block_id, len(decomp.sub_components))
 
     # Step 2: Decompose parent model (requires entities section)
     # Auto-detect model file
