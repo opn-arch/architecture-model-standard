@@ -158,23 +158,47 @@ def compute_block_dependencies(
     Returns:
         Dict mapping block_id -> list of block_ids it depends on.
     """
-    # Build file -> block_id mapping from config
-    file_to_block: dict[str, str] = {}
-    for block_id, block_def in config.fblock_dict.items():
+    # Get fblock definitions - from config or reconstruct from manifests
+    if config is not None:
+        fblock_dict = config.fblock_dict
+    else:
+        fblock_dict = {}
+        for block_id, rm in manifests.items():
+            fblock_dict[block_id] = {
+                "name": rm.block_name,
+                "dirs": [],
+                "files": [m.file for m in rm.manifest.modules],
+            }
+
+    # Build lookup structures
+    dir_prefixes: dict[str, str] = {}  # normalized dir prefix -> block_id
+    file_index: dict[str, str] = {}    # module path (slash or dot form) -> block_id
+
+    for block_id, block_def in fblock_dict.items():
         for d in block_def.get("dirs", []):
-            # Normalize: store dir prefix for matching
-            file_to_block[d.rstrip("/")] = block_id
+            dir_prefixes[d.rstrip("/")] = block_id
+        for f in block_def.get("files", []):
+            # Index without .py extension in both slash and dot form
+            no_ext = f.removesuffix(".py")
+            file_index[no_ext] = block_id
+            file_index[no_ext.replace("/", ".")] = block_id
 
     def _resolve_import_to_block(slash_path: str) -> str | None:
-        """Map a slash-separated path to a block_id via directory prefix matching."""
-        for dir_prefix, bid in file_to_block.items():
-            norm_prefix = dir_prefix.replace(".", "/").rstrip("/")
-            # Direct match
+        """Map import path to block_id via file index OR dir prefix."""
+        # Try exact file match (slash form)
+        if slash_path in file_index:
+            return file_index[slash_path]
+        # Try dot form
+        dot_form = slash_path.replace("/", ".")
+        if dot_form in file_index:
+            return file_index[dot_form]
+        # Try dir prefix matching
+        for prefix, bid in dir_prefixes.items():
+            norm_prefix = prefix.replace(".", "/").rstrip("/")
             if slash_path.startswith(norm_prefix + "/") or slash_path == norm_prefix:
                 return bid
-            # Strip common src/ prefix from dir_prefix
             if norm_prefix.startswith("src/"):
-                stripped = norm_prefix[4:]  # remove "src/"
+                stripped = norm_prefix[4:]
                 if slash_path.startswith(stripped + "/") or slash_path == stripped:
                     return bid
         return None
