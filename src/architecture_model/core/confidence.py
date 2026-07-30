@@ -110,6 +110,63 @@ def compute_model_confidence(model: ArchitectureModel) -> ArchitectureModel:
     return model
 
 
+def aggregate_block_confidence(model: ArchitectureModel) -> dict[str, dict]:
+    """Aggregate confidence scores per F-block."""
+    from collections import defaultdict
+    blocks: dict[str, list[float]] = defaultdict(list)
+
+    for comp in model.entities.components:
+        block = comp.f_block or "unassigned"
+        blocks[block].append(comp.confidence)
+
+    for beh in model.entities.behaviors:
+        blocks["behaviors"].append(beh.confidence)
+
+    result = {}
+    for block_id, scores in blocks.items():
+        if not scores:
+            continue
+        result[block_id] = {
+            "avg_confidence": sum(scores) / len(scores),
+            "min_confidence": min(scores),
+            "max_confidence": max(scores),
+            "entity_count": len(scores),
+        }
+    return result
+
+
+def model_confidence_summary(model: ArchitectureModel) -> dict:
+    """Generate overall confidence summary for the model."""
+    all_scores = []
+
+    for comp in model.entities.components:
+        all_scores.append((comp.id, comp.name, comp.confidence))
+    for beh in model.entities.behaviors:
+        all_scores.append((beh.id, beh.name, beh.confidence))
+    for cap in model.entities.capabilities:
+        all_scores.append((cap.id, cap.name, cap.confidence))
+    for iface in model.entities.interfaces:
+        all_scores.append((iface.id, iface.name, iface.confidence))
+
+    if not all_scores:
+        return {"overall": 0.0, "high_confidence": 0, "low_confidence": 0, "total_entities": 0, "gaps": []}
+
+    scores_only = [s[2] for s in all_scores]
+    high = sum(1 for s in scores_only if s >= 0.8)
+    low = sum(1 for s in scores_only if s < 0.3)
+
+    sorted_entities = sorted(all_scores, key=lambda x: x[2])
+    gaps = [{"id": e[0], "name": e[1], "confidence": e[2]} for e in sorted_entities[:5]]
+
+    return {
+        "overall": sum(scores_only) / len(scores_only),
+        "high_confidence": high,
+        "low_confidence": low,
+        "total_entities": len(all_scores),
+        "gaps": gaps,
+    }
+
+
 def compute_function_confidence(func_info) -> float:
     """Compute confidence for a function from manifest FunctionInfo.
 
