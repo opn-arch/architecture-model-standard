@@ -273,6 +273,7 @@ class BaseEntity:
     source_file: Optional[str] = None
     source_line: Optional[int] = None
     extensions: dict[str, Any] = field(default_factory=dict)
+    confidence: float = 0.0
 
 
 # ---------------------------------------------------------------------------

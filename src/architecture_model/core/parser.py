@@ -180,6 +180,7 @@ def _parse_base(d: dict) -> dict:
         "source_file": d.get("source_file"),
         "source_line": d.get("source_line"),
         "extensions": d.get("extensions", {}),
+        "confidence": float(d.get("confidence", 0.0)),
     }
 
 
