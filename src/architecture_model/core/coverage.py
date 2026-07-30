@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .types import ArchitectureModel
 
+from architecture_model.monitoring import monitored
+
 from .types import RelationType
 
 
@@ -313,6 +315,10 @@ def _check_staleness(model: "ArchitectureModel", manifest: dict) -> CoverageChec
     )
 
 
+@monitored(
+    module="core.coverage",
+    quality=lambda r: {"overall_score": r.overall_score},
+)
 def coverage_report(
     model: "ArchitectureModel",
     manifest: dict,

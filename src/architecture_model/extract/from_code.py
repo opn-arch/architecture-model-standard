@@ -39,12 +39,18 @@ from ..core.types import (
 from .constraint_detector import detect_constraints
 from .route_detector import RouteInfo, detect_routes
 
+from architecture_model.monitoring import monitored
+
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 
+@monitored(
+    module="extract.from_code",
+    outputs=lambda r: {"component_count": len(r.entities.components), "relationship_count": len(r.relationships)},
+)
 def extract_from_code(
     project_root: str | Path,
     config: ProjectConfig | None = None,

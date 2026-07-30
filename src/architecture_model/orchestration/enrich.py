@@ -14,10 +14,15 @@ from architecture_model.core.types import (
 )
 from architecture_model.manifest.body_hints import extract_file_hints
 from architecture_model.manifest.test_analyzer import analyze_test_file
+from architecture_model.monitoring import monitored
 
 logger = logging.getLogger(__name__)
 
 
+@monitored(
+    module="orchestration.enrich",
+    outputs=lambda r: {"component_count": len(r.entities.components)},
+)
 def enrich_model(
     model: ArchitectureModel,
     project_root: Path,

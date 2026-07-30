@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
+from architecture_model.monitoring import monitored
+
 from .types import ArchitectureModel, Relationship, Status
 
 
@@ -137,6 +139,10 @@ class ModelDiff:
 # ---------------------------------------------------------------------------
 
 
+@monitored(
+    module="core.differ",
+    outputs=lambda r: {"added": r.added_count, "removed": r.removed_count, "modified": r.modified_count},
+)
 def diff_models(
     old_model: ArchitectureModel,
     new_model: ArchitectureModel,

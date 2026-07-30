@@ -151,6 +151,10 @@ def generate_recursive_manifests(
     return results
 
 
+@monitored(
+    module="manifest.recursive",
+    outputs=lambda r: {"total_edges": sum(len(v) for v in r.values()), "block_count": len(r)},
+)
 def compute_block_dependencies(
     manifests: dict[str, RecursiveManifest],
     config,

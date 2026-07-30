@@ -22,12 +22,15 @@ from .types import (
     RelationType,
 )
 
+from architecture_model.monitoring import monitored
+
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
 
+@monitored(module="core.slicer", outputs=lambda r: {"entities_retained": len(r.entities.components), "relationships_retained": len(r.relationships)})
 def slice_by_fblock(
     model: ArchitectureModel,
     f_block: str,
@@ -120,6 +123,7 @@ def slice_by_fblock(
     )
 
 
+@monitored(module="core.slicer", outputs=lambda r: {"entities_retained": len(r.entities.components), "relationships_retained": len(r.relationships)})
 def slice_by_layer(
     model: ArchitectureModel,
     layer_id: str,
@@ -164,6 +168,7 @@ def slice_by_layer(
     )
 
 
+@monitored(module="core.slicer", outputs=lambda r: {"entities_retained": len(r.entities.components), "relationships_retained": len(r.relationships)})
 def slice_by_status(
     model: ArchitectureModel,
     status: Status,
@@ -215,6 +220,7 @@ def slice_by_status(
     )
 
 
+@monitored(module="core.slicer", outputs=lambda r: {"entities_retained": len(r.entities.components), "relationships_retained": len(r.relationships)})
 def slice_for_artifact(
     model: ArchitectureModel,
     artifact_name: str,

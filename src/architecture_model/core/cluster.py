@@ -8,7 +8,14 @@ from __future__ import annotations
 from collections import defaultdict
 from math import ceil
 
+from architecture_model.monitoring import monitored
 
+
+@monitored(
+    module="core.cluster",
+    inputs=lambda a, kw: {"module_count": len(a[0]), "edge_count": len(a[1])},
+    outputs=lambda r: {"cluster_count": len(r), "min_size": min(len(c) for c in r) if r else 0, "max_size": max(len(c) for c in r) if r else 0, "avg_size": sum(len(c) for c in r) / len(r) if r else 0},
+)
 def cluster_modules(
     modules: list[str],
     edges: list[tuple[str, str]],

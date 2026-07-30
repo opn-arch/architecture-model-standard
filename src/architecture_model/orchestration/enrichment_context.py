@@ -5,10 +5,16 @@ that lets the agent classify every leaf with a pattern + one-sentence contract.
 """
 from __future__ import annotations
 
+from architecture_model.monitoring import monitored
 from architecture_model.orchestration.deep_decompose import DecomposeResult
 from architecture_model.patterns import load_patterns
 
 
+@monitored(
+    module="orchestration.enrichment_context",
+    inputs=lambda a, kw: {"decomposition_count": len(a[0])},
+    outputs=lambda r: {"token_estimate": len(r) // 4, "char_count": len(r)},
+)
 def format_enrichment_prompt(decompositions: list[DecomposeResult]) -> str:
     """Format all leaves for agent pattern/contract annotation.
 

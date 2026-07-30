@@ -27,6 +27,7 @@ from architecture_model.core.types import (
     Relationship,
     RelationType,
 )
+from architecture_model.monitoring import monitored
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +215,10 @@ def _inject_sub_behaviors(sub_model, sub_behaviors_path):
             ))
 
 
+@monitored(
+    module="orchestration.decompose",
+    outputs=lambda r: {"sub_model_count": len(r)},
+)
 def decompose_model(project_root, *, model_path=None):
     """Generate sub-models for each F-block by tracing parent model relationships.
 
