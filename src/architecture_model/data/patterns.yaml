@@ -1,0 +1,95 @@
+entity-platform:
+  description: "Platform adapter exposing domain devices as HA entities"
+  indicators:
+    - "class *Entity"
+    - "async_setup_entry"
+    - "PLATFORM_SCHEMA"
+  typical_files: 1-2
+  contract_template: "Exposes {domain} devices as HA {entity_type} entities"
+
+config-flow:
+  description: "Multi-step user configuration wizard"
+  indicators:
+    - "class *FlowHandler(ConfigFlow)"
+    - "async_step_user"
+    - "async_step_confirm"
+  typical_files: 1
+  contract_template: "Guides user through {integration} setup via UI steps"
+
+event-handler:
+  description: "Subscribes to events and dispatches actions"
+  indicators:
+    - "async_track_"
+    - "@callback"
+    - "hass.bus.async_listen"
+  typical_files: 1
+  contract_template: "Reacts to {event_type} events by {action}"
+
+data-class:
+  description: "Pure data container with validation"
+  indicators:
+    - "@dataclass"
+    - "TypedDict"
+    - "NamedTuple"
+  typical_files: 1
+  contract_template: "Holds {domain} data with {validation_type} validation"
+
+adapter:
+  description: "Translates between two interfaces/protocols"
+  indicators:
+    - "client"
+    - "async_connect"
+    - "parse_"
+    - "serialize_"
+  typical_files: 1-2
+  contract_template: "Translates between {source_protocol} and {target_protocol}"
+
+repository:
+  description: "Persistence layer abstracting storage"
+  indicators:
+    - "async_save"
+    - "async_load"
+    - "Store"
+    - "async_get"
+  typical_files: 1
+  contract_template: "Persists {entity} data to {storage_backend}"
+
+state-machine:
+  description: "Manages explicit state transitions"
+  indicators:
+    - "STATE_"
+    - "transition"
+    - "_state"
+    - "async_set_state"
+  typical_files: 1-2
+  contract_template: "Manages {entity} lifecycle through states: {state_list}"
+
+registry:
+  description: "Central lookup/registration for typed entries"
+  indicators:
+    - "register"
+    - "_registry"
+    - "async_get_"
+    - "DATA_"
+  typical_files: 1
+  contract_template: "Registers and resolves {entry_type} by {key_type}"
+
+message-transformer:
+  description: "Parses, validates, and transforms messages"
+  indicators:
+    - "payload"
+    - "decode"
+    - "encode"
+    - "schema"
+  typical_files: 1
+  contract_template: "Transforms {input_format} messages into {output_format}"
+
+reconnecting-client:
+  description: "Network client with automatic reconnection"
+  indicators:
+    - "async_connect"
+    - "reconnect"
+    - "_disconnect"
+    - "backoff"
+  typical_files: 1-2
+  contract_template: "Maintains persistent connection to {service} with auto-reconnect"
