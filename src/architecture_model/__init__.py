@@ -20,6 +20,7 @@ from architecture_model.core.coverage import coverage_report
 from architecture_model.orchestration.pipeline import run_pipeline
 from architecture_model.patterns import load_patterns, get_pattern
 from architecture_model.orchestration.enrichment_context import format_enrichment_prompt
+from architecture_model.monitoring import FunctionMetrics, MetricsCollector, get_collector, monitored
 
 __all__ = [
     "__version__",
@@ -35,4 +36,8 @@ __all__ = [
     "load_patterns",
     "get_pattern",
     "format_enrichment_prompt",
+    "FunctionMetrics",
+    "MetricsCollector",
+    "get_collector",
+    "monitored",
 ]
