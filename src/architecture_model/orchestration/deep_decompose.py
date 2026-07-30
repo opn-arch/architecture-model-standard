@@ -11,7 +11,7 @@ from pathlib import Path
 
 from architecture_model.core.cluster import cluster_modules
 from architecture_model.manifest.interfaces import derive_interfaces
-from architecture_model.manifest.types import Manifest
+from architecture_model.manifest.types import Manifest, MetricsResult, ScanReport
 
 logger = logging.getLogger(__name__)
 
@@ -131,3 +131,68 @@ def deep_decompose_block(
         )
 
     return result
+
+
+def iterative_decompose(
+    manifest: Manifest,
+    *,
+    block_id: str,
+    block_name: str,
+    leaf_max_files: int = 3,
+    max_depth: int = 5,
+    target_k: int = 4,
+    min_cluster_size: int = 2,
+) -> list[DecomposeResult]:
+    """Iteratively decompose until all clusters are <= leaf_max_files.
+
+    Returns list of DecomposeResult objects (one per decomposition round
+    that produced sub-components). Empty list if block is already a leaf.
+    """
+    results: list[DecomposeResult] = []
+
+    # Filter __init__ upfront
+    all_modules = [m for m in manifest.modules if Path(m.file).stem != "__init__"]
+
+    # Queue: (module_files subset, parent_id, depth)
+    queue: list[tuple[list[str], str, int]] = [
+        ([m.file for m in all_modules], block_id, 0)
+    ]
+
+    file_to_module = {m.file: m for m in all_modules}
+
+    while queue:
+        module_files, parent_id, depth = queue.pop(0)
+
+        if len(module_files) <= leaf_max_files or depth >= max_depth:
+            continue
+
+        # Build sub-manifest for this subset
+        sub_modules = [file_to_module[f] for f in module_files if f in file_to_module]
+        sub_manifest = Manifest(
+            generated_at=manifest.generated_at,
+            project_root=manifest.project_root,
+            metrics=MetricsResult(),
+            functional_blocks={},
+            modules=sub_modules,
+            interfaces=[],
+            scan_report=ScanReport(),
+        )
+
+        decomp = deep_decompose_block(
+            sub_manifest,
+            block_id=parent_id,
+            block_name=block_name,
+            max_modules=leaf_max_files,
+            target_k=target_k,
+            min_cluster_size=min_cluster_size,
+            parent_id=parent_id,
+        )
+        decomp.depth = depth + 1
+
+        if decomp.sub_components:
+            results.append(decomp)
+            for sc in decomp.sub_components:
+                if len(sc.files) > leaf_max_files:
+                    queue.append((sc.files, sc.id, depth + 1))
+
+    return results

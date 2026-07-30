@@ -79,15 +79,17 @@ def run_pipeline(
 
     # Step 1.5: Deep decompose blocks (if deep=True)
     if deep:
-        from architecture_model.orchestration.deep_decompose import deep_decompose_block
-        logger.info("Step 1.5: Deep decomposing blocks...")
+        from architecture_model.orchestration.deep_decompose import iterative_decompose
+        logger.info("Step 1.5: Iterative deep decomposition...")
         for block_id, rm in manifests.items():
-            decomp = deep_decompose_block(
+            decomps = iterative_decompose(
                 rm.manifest, block_id=block_id, block_name=rm.block_name
             )
-            if decomp.sub_components:
-                result.deep_decompositions[block_id] = decomp
-                logger.info("  %s: %d sub-components", block_id, len(decomp.sub_components))
+            if decomps:
+                result.deep_decompositions[block_id] = decomps[-1]
+                total_leaves = sum(len(d.sub_components) for d in decomps)
+                logger.info("  %s: %d rounds, %d total sub-components",
+                           block_id, len(decomps), total_leaves)
 
     # Step 2: Decompose parent model (requires entities section)
     # Auto-detect model file
