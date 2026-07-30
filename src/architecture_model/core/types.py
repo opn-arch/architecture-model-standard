@@ -423,6 +423,8 @@ class Component(BaseEntity):
     kind: ComponentKind = ComponentKind.SERVICE
     fields: list[DataField] = field(default_factory=list)
     region: str = ""
+    pattern: str = ""
+    contract: str = ""
     replicas: Optional[int] = None
     symbols: list[Symbol] = field(default_factory=list)
     functions: list[str] = field(default_factory=list)

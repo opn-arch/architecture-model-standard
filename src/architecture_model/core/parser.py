@@ -356,6 +356,8 @@ def _parse_component(d: dict) -> Component:
         kind=kind,
         fields=fields,
         region=d.get("region", ""),
+        pattern=d.get("pattern", ""),
+        contract=d.get("contract", ""),
         replicas=d.get("replicas"),
         symbols=symbols,
         functions=d.get("functions", []),
