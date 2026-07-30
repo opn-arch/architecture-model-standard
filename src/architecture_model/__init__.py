@@ -18,6 +18,8 @@ from architecture_model.core.test_affinity import test_affinity_decompose
 from architecture_model.core.merger import compose_enriched_model
 from architecture_model.core.coverage import coverage_report
 from architecture_model.orchestration.pipeline import run_pipeline
+from architecture_model.patterns import load_patterns, get_pattern
+from architecture_model.orchestration.enrichment_context import format_enrichment_prompt
 
 __all__ = [
     "__version__",
@@ -30,4 +32,7 @@ __all__ = [
     "compose_enriched_model",
     "coverage_report",
     "run_pipeline",
+    "load_patterns",
+    "get_pattern",
+    "format_enrichment_prompt",
 ]
