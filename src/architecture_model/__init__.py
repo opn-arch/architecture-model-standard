@@ -21,6 +21,12 @@ from architecture_model.orchestration.pipeline import run_pipeline
 from architecture_model.patterns import load_patterns, get_pattern
 from architecture_model.orchestration.enrichment_context import format_enrichment_prompt
 from architecture_model.monitoring import FunctionMetrics, MetricsCollector, get_collector, monitored
+from architecture_model.monitoring_checks import (
+    check_decompose_idempotency,
+    check_cluster_stability,
+    check_pattern_indicators,
+    ConsistencyResult,
+)
 
 __all__ = [
     "__version__",
@@ -40,4 +46,8 @@ __all__ = [
     "MetricsCollector",
     "get_collector",
     "monitored",
+    "check_decompose_idempotency",
+    "check_cluster_stability",
+    "check_pattern_indicators",
+    "ConsistencyResult",
 ]
