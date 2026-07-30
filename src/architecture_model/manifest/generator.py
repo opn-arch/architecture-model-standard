@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
+from architecture_model.monitoring import monitored
 from architecture_model.manifest.blocks import _get_functional_blocks, process_block
 from architecture_model.manifest.interfaces import derive_interfaces
 from architecture_model.manifest.metrics import compute_metrics
@@ -23,6 +24,10 @@ from architecture_model.manifest.types import (
 logger = logging.getLogger(__name__)
 
 
+@monitored(
+    module="manifest.generator",
+    outputs=lambda r: {"module_count": len(r.modules), "parse_failures": sum(1 for m in r.modules if m.status.value == "missing")},
+)
 def generate_manifest(project_root: Path, config: Optional[Any] = None) -> Manifest:
     """Generate a full reality manifest via AST scan of the project.
 

@@ -15,6 +15,7 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from architecture_model.monitoring import monitored
 from architecture_model.core.types import ArchitectureModel
 from architecture_model.manifest.recursive import (
     generate_recursive_manifests,
@@ -37,6 +38,11 @@ class PipelineResult:
     errors: list[str] = field(default_factory=list)
 
 
+@monitored(
+    module="orchestration.pipeline",
+    inputs=lambda a, kw: {"deep": kw.get("deep", False)},
+    outputs=lambda r: {"blocks_scanned": len(r.manifests), "blocks_decomposed": len(r.deep_decompositions), "errors": len(r.errors)},
+)
 def run_pipeline(
     project_root: Path,
     *,

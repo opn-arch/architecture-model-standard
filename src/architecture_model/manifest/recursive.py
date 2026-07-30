@@ -15,6 +15,7 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from architecture_model.core.types import ArchitectureModel
 
+from architecture_model.monitoring import monitored
 from architecture_model.config.loader import get_config
 from architecture_model.manifest.interfaces import derive_interfaces
 from architecture_model.manifest.scanner import scan_file
@@ -107,6 +108,10 @@ def generate_block_manifest(
     )
 
 
+@monitored(
+    module="manifest.recursive",
+    outputs=lambda r: {"block_count": len(r), "total_modules": sum(len(rm.manifest.modules) for rm in r.values())},
+)
 def generate_recursive_manifests(
     project_root: Path,
     parent_model: str = ".architecture-model.yaml",

@@ -9,6 +9,7 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from architecture_model.monitoring import monitored
 from architecture_model.core.cluster import cluster_modules
 from architecture_model.manifest.interfaces import derive_interfaces
 from architecture_model.manifest.types import Manifest, MetricsResult, ScanReport
@@ -45,6 +46,10 @@ class DecomposeResult:
     depth: int = 1
 
 
+@monitored(
+    module="orchestration.deep_decompose",
+    outputs=lambda r: {"cluster_count": len(r.sub_components), "avg_cluster_size": (sum(len(sc.files) for sc in r.sub_components) / len(r.sub_components)) if r.sub_components else 0},
+)
 def deep_decompose_block(
     manifest: Manifest,
     *,
@@ -133,6 +138,12 @@ def deep_decompose_block(
     return result
 
 
+@monitored(
+    module="orchestration.deep_decompose",
+    inputs=lambda a, kw: {"leaf_max_files": kw.get("leaf_max_files", 3)},
+    outputs=lambda r: {"rounds": len(r), "total_sub_components": sum(len(d.sub_components) for d in r)},
+    quality=lambda r: {"leaf_compliance_pct": 100.0 if not r else (sum(1 for d in r for sc in d.sub_components if len(sc.files) <= 3) / max(1, sum(len(d.sub_components) for d in r)) * 100)},
+)
 def iterative_decompose(
     manifest: Manifest,
     *,

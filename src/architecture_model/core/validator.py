@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
+from architecture_model.monitoring import monitored
 from .types import ArchitectureModel, RelationType, Status
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,11 @@ class ValidationResult:
 # ---------------------------------------------------------------------------
 
 
+@monitored(
+    module="core.validator",
+    quality=lambda r: {"score": r.score, "issue_count": len(r.issues)},
+    outputs=lambda r: {"error_count": r.error_count, "warning_count": r.warning_count},
+)
 def validate_model(
     model: ArchitectureModel,
     strict: bool = False,
