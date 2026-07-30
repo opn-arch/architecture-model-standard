@@ -87,6 +87,13 @@ def compute_interface_confidence(interface: Interface) -> float:
     return min(score, 1.0)
 
 
+from architecture_model.monitoring import monitored
+
+
+@monitored(
+    module="core.confidence",
+    outputs=lambda r: {"total_entities": len(r.entities.components) + len(r.entities.behaviors) + len(r.entities.capabilities) + len(r.entities.interfaces)},
+)
 def compute_model_confidence(model: ArchitectureModel) -> ArchitectureModel:
     """Compute and set confidence on all entities in the model."""
     realized_caps = set()

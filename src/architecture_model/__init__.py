@@ -21,6 +21,16 @@ from architecture_model.orchestration.pipeline import run_pipeline
 from architecture_model.patterns import load_patterns, get_pattern
 from architecture_model.orchestration.enrichment_context import format_enrichment_prompt
 from architecture_model.monitoring import FunctionMetrics, MetricsCollector, get_collector, monitored
+from architecture_model.core.confidence import (
+    compute_component_confidence,
+    compute_behavior_confidence,
+    compute_capability_confidence,
+    compute_interface_confidence,
+    compute_function_confidence,
+    compute_model_confidence,
+    aggregate_block_confidence,
+    model_confidence_summary,
+)
 from architecture_model.monitoring_checks import (
     check_decompose_idempotency,
     check_cluster_stability,
@@ -50,4 +60,12 @@ __all__ = [
     "check_cluster_stability",
     "check_pattern_indicators",
     "ConsistencyResult",
+    "compute_component_confidence",
+    "compute_behavior_confidence",
+    "compute_capability_confidence",
+    "compute_interface_confidence",
+    "compute_function_confidence",
+    "compute_model_confidence",
+    "aggregate_block_confidence",
+    "model_confidence_summary",
 ]
