@@ -95,12 +95,57 @@ def compute_model_confidence(model: ArchitectureModel) -> ArchitectureModel:
             realized_caps.add(rel.to_id)
 
     for comp in model.entities.components:
-        comp.confidence = compute_component_confidence(comp)
+        if comp.confidence == 0.0:
+            comp.confidence = compute_component_confidence(comp)
     for beh in model.entities.behaviors:
-        beh.confidence = compute_behavior_confidence(beh)
+        if beh.confidence == 0.0:
+            beh.confidence = compute_behavior_confidence(beh)
     for cap in model.entities.capabilities:
-        cap.confidence = compute_capability_confidence(cap, realized=cap.id in realized_caps)
+        if cap.confidence == 0.0:
+            cap.confidence = compute_capability_confidence(cap, realized=cap.id in realized_caps)
     for iface in model.entities.interfaces:
-        iface.confidence = compute_interface_confidence(iface)
+        if iface.confidence == 0.0:
+            iface.confidence = compute_interface_confidence(iface)
 
     return model
+
+
+def compute_function_confidence(func_info) -> float:
+    """Compute confidence for a function from manifest FunctionInfo.
+
+    Factors:
+    - Has typed signature (params with types, return type): 30%
+    - Has docstring: 25%
+    - Has call graph (calls list): 20%
+    - Has raises info: 15%
+    - Has parameters at all: 10%
+    """
+    score = 0.0
+    sig = func_info.signature or ""
+
+    # Typed signature (30%)
+    has_return_type = "->" in sig
+    has_typed_params = ":" in sig.split("->")[0] if sig else False
+    if has_return_type and has_typed_params:
+        score += 0.30
+    elif has_return_type or has_typed_params:
+        score += 0.15
+
+    # Docstring (25%)
+    if func_info.docstring:
+        score += 0.25
+
+    # Call graph (20%)
+    if func_info.calls:
+        score += 0.20 if len(func_info.calls) >= 2 else 0.10
+
+    # Raises (15%)
+    if func_info.raises:
+        score += 0.15
+
+    # Has parameters (10%)
+    inner = sig.split("(")[1].split(")")[0].strip() if "(" in sig else ""
+    if inner and inner != "self":
+        score += 0.10
+
+    return min(score, 1.0)

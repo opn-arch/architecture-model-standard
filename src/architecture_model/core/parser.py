@@ -81,7 +81,10 @@ def load_model(path: str | Path) -> ArchitectureModel:
     if raw is None:
         raise ValueError(f"Empty model file: {path}")
 
-    return _parse_raw(raw)
+    model = _parse_raw(raw)
+    from architecture_model.core.confidence import compute_model_confidence
+    compute_model_confidence(model)
+    return model
 
 
 def validate_model_data(data: dict[str, Any]) -> list[str]:

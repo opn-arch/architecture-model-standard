@@ -122,6 +122,9 @@ def validate_model(
             if issue.severity == Severity.WARNING:
                 issue.severity = Severity.ERROR
 
+    from architecture_model.core.confidence import compute_model_confidence
+    compute_model_confidence(model)
+
     return result
 
 
