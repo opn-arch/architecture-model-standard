@@ -186,14 +186,21 @@ def enrich_from_manifest(model: Any, manifest: Manifest) -> None:
             for mod in matched_modules:
                 for func in mod.functions:
                     sigs.append(_parse_signature(func.name, func))
-                # Also create signatures from class methods (name-only, no type info)
+                # Also create signatures from class methods
                 for cls in mod.classes:
-                    for method_name in cls.methods:
-                        if not method_name.startswith("_"):
-                            sigs.append(FunctionSignature(
-                                name=method_name, params=["self"], returns="",
-                                decorators=[], body_hint="",
-                            ))
+                    if cls.method_details:
+                        # Use full typed signatures from method_details
+                        for mfunc in cls.method_details:
+                            if not mfunc.name.startswith("_"):
+                                sigs.append(_parse_signature(mfunc.name, mfunc))
+                    else:
+                        # Fallback: name-only signatures
+                        for method_name in cls.methods:
+                            if not method_name.startswith("_"):
+                                sigs.append(FunctionSignature(
+                                    name=method_name, params=["self"], returns="",
+                                    decorators=[], body_hint="",
+                                ))
             comp.signatures = sigs
 
         # Extract symbols

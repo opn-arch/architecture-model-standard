@@ -40,6 +40,7 @@ class ClassInfo:
     is_abstract: bool = False
     decorators: list[str] = field(default_factory=list)
     attributes: dict[str, str] = field(default_factory=dict)
+    method_details: list[FunctionInfo] = field(default_factory=list)
 
 
 @dataclass

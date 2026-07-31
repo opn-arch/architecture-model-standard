@@ -407,11 +407,19 @@ def _extract_classes(tree: ast.Module) -> list[ClassInfo]:
 
         # Extract methods (public + __init__)
         methods: list[str] = []
+        method_details: list[FunctionInfo] = []
         has_abstractmethod = False
         for item in node.body:
             if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 if not item.name.startswith("_") or item.name == "__init__":
                     methods.append(item.name)
+                    method_details.append(FunctionInfo(
+                        name=item.name,
+                        signature=_build_signature(item),
+                        calls=_extract_function_calls(item),
+                        docstring=_extract_function_docstring(item),
+                        raises=_extract_raises(item),
+                    ))
                 for dec in item.decorator_list:
                     dec_name = None
                     if isinstance(dec, ast.Name):
@@ -449,6 +457,7 @@ def _extract_classes(tree: ast.Module) -> list[ClassInfo]:
             is_abstract=is_abstract,
             decorators=decorators,
             attributes=_extract_class_attributes(node),
+            method_details=method_details,
         ))
     return classes
 
