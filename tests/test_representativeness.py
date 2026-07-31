@@ -128,7 +128,8 @@ class TestOverall:
         model = _model(components=[_comp("C1", "A", ["a.py"])])
         modules = [_module("a.py"), _module("b.py")]
         r = compute_representativeness(model, modules, [])
-        expected = (50.0 + 100.0 + 100.0) / 3
+        # file=50%, rel=100%, coherence=100%, behavioral=100% (no complex funcs)
+        expected = (50.0 + 100.0 + 100.0 + 100.0) / 4
         assert abs(r.overall - expected) < 0.01
 
     def test_perfect_model_100(self):

@@ -54,6 +54,11 @@ def _is_trivial(mod: ModuleInfo) -> bool:
     if not mod.functions and not mod.classes:
         return True
 
+    # Vendor directories — third-party code, not project architecture
+    parts = PurePosixPath(mod.file).parts
+    if "vendor" in parts or "_vendor" in parts or "vendored" in parts:
+        return True
+
     return False
 
 

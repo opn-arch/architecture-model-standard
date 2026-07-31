@@ -29,6 +29,12 @@ class FunctionInfo:
     calls: list[str] = field(default_factory=list)
     docstring: str | None = None
     raises: list[str] = field(default_factory=list)
+    # Behavioral fields (populated by behavior.py extractors)
+    call_order: list[str] = field(default_factory=list)
+    control_flow: list[str] = field(default_factory=list)
+    data_in: list[str] = field(default_factory=list)
+    data_out: str = ""
+    guards: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -246,6 +252,7 @@ class RecursiveManifest:
     manifest: Manifest
     children: dict[str, 'RecursiveManifest'] = field(default_factory=dict)
     block_dependencies: list[str] = field(default_factory=list)
+    intra_chains: list[Any] = field(default_factory=list)  # list[EventChain]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -256,4 +263,8 @@ class RecursiveManifest:
             "manifest": self.manifest.to_dict(),
             "children": {k: v.to_dict() for k, v in self.children.items()},
             "block_dependencies": self.block_dependencies,
+            "intra_chains": [
+                {"trigger": c.trigger, "steps": c.steps, "components_involved": c.components_involved}
+                for c in self.intra_chains
+            ],
         }

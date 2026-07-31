@@ -170,9 +170,13 @@ def run_pipeline(
             logger.info("Step 2: Bootstrapping model from scratch via module grouping...")
             try:
                 from architecture_model.manifest.generator import generate_manifest
-                from architecture_model.manifest.grouping import create_components_from_manifest
+                from architecture_model.manifest.grouping import (
+                    create_components_from_manifest, group_modules,
+                )
                 from architecture_model.core.parser import save_model
                 from architecture_model.core.types import ArchitectureModel, Entities
+                from architecture_model.manifest.chains import build_block_chains
+                from architecture_model.core.representativeness import compute_representativeness
 
                 flat_manifest = generate_manifest(project_root)
                 components = create_components_from_manifest(flat_manifest)
@@ -182,6 +186,23 @@ def run_pipeline(
                     relationships=[],
                 )
                 enrich_from_manifest(model, flat_manifest)
+
+                # Build event chains for behavioral enrichment
+                try:
+                    groups = group_modules(flat_manifest.modules, flat_manifest.interfaces)
+                    chains = build_block_chains(flat_manifest, groups, block_id="root")
+                    logger.info("  Built %d event chains", len(chains))
+                except Exception as exc:
+                    logger.debug("Chain building skipped: %s", exc)
+
+                # Verify representativeness
+                try:
+                    rep = compute_representativeness(model, flat_manifest.modules, flat_manifest.interfaces)
+                    logger.info("  Representativeness: %.1f%% (file=%.1f%%, rel=%.1f%%, coh=%.1f%%)",
+                               rep.overall, rep.file_coverage, rep.relationship_accuracy, rep.boundary_coherence)
+                except Exception as exc:
+                    logger.debug("Representativeness check skipped: %s", exc)
+
                 # Save the bootstrapped model
                 model_path = project_root / ".architecture-model-extracted.yaml"
                 save_model(model, model_path)

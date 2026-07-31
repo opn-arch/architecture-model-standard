@@ -13,6 +13,8 @@ import warnings
 from pathlib import Path
 from typing import Any
 
+from architecture_model.manifest.behavior import extract_call_order, extract_control_flow, extract_guards
+
 from architecture_model.manifest.types import (
     ClassInfo,
     DecoratedFunction,
@@ -189,6 +191,28 @@ def _extract_raises(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
     return list(dict.fromkeys(raises))
 
 
+def _extract_data_in(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
+    """Extract parameter type annotations as data_in."""
+    types: list[str] = []
+    for arg in node.args.args + node.args.posonlyargs + node.args.kwonlyargs:
+        if arg.arg == "self" or arg.arg == "cls":
+            continue
+        if arg.annotation:
+            types.append(ast.unparse(arg.annotation))
+    if node.args.vararg and node.args.vararg.annotation:
+        types.append(ast.unparse(node.args.vararg.annotation))
+    if node.args.kwarg and node.args.kwarg.annotation:
+        types.append(ast.unparse(node.args.kwarg.annotation))
+    return types
+
+
+def _extract_data_out(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
+    """Extract return type annotation as data_out."""
+    if node.returns:
+        return ast.unparse(node.returns)
+    return ""
+
+
 def _extract_public_functions(tree: ast.Module) -> list[FunctionInfo]:
     """Extract public function/method signatures from module-level definitions."""
     functions: list[FunctionInfo] = []
@@ -203,6 +227,11 @@ def _extract_public_functions(tree: ast.Module) -> list[FunctionInfo]:
                 calls=_extract_function_calls(node),
                 docstring=_extract_function_docstring(node),
                 raises=_extract_raises(node),
+                call_order=extract_call_order(node),
+                control_flow=extract_control_flow(node),
+                data_in=_extract_data_in(node),
+                data_out=_extract_data_out(node),
+                guards=extract_guards(node),
             ))
     return functions
 
@@ -419,6 +448,11 @@ def _extract_classes(tree: ast.Module) -> list[ClassInfo]:
                         calls=_extract_function_calls(item),
                         docstring=_extract_function_docstring(item),
                         raises=_extract_raises(item),
+                        call_order=extract_call_order(item),
+                        control_flow=extract_control_flow(item),
+                        data_in=_extract_data_in(item),
+                        data_out=_extract_data_out(item),
+                        guards=extract_guards(item),
                     ))
                 for dec in item.decorator_list:
                     dec_name = None

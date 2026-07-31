@@ -15,10 +15,12 @@ class RepresentativenessResult:
     file_coverage: float = 0.0
     relationship_accuracy: float = 0.0
     boundary_coherence: float = 0.0
+    behavioral_coverage: float = 0.0
     overall: float = 0.0
     uncovered_files: list[str] = field(default_factory=list)
     unverified_relationships: list[str] = field(default_factory=list)
     low_coherence_components: list[str] = field(default_factory=list)
+    uncaptured_behaviors: list[str] = field(default_factory=list)
 
 
 def _is_trivial(m: ModuleInfo) -> bool:
@@ -27,6 +29,13 @@ def _is_trivial(m: ModuleInfo) -> bool:
         return True
     # __init__.py with no functions and no classes = re-export file (trivial)
     if name == "__init__.py" and not m.functions and not m.classes:
+        return True
+    # Vendor directories are third-party code, not part of project architecture
+    parts = PurePosixPath(m.file).parts
+    if "vendor" in parts or "_vendor" in parts or "vendored" in parts:
+        return True
+    # Modules with no public functions and no classes (only private internals)
+    if not m.functions and not m.classes:
         return True
     return False
 
@@ -116,7 +125,15 @@ def compute_representativeness(
         for c in components:
             files = set(c.files or [])
             if len(files) <= 1:
+                # Single-file components: check if it's an __init__.py (re-export hub)
+                # These are architectural connectors with inherently low cohesion
+                if files and all(PurePosixPath(f).name == "__init__.py" for f in files):
+                    continue  # Skip from coherence calculation
                 cohesions.append(1.0)
+                continue
+            # Skip components that are predominantly __init__.py re-export hubs
+            init_count = sum(1 for f in files if PurePosixPath(f).name == "__init__.py")
+            if init_count > len(files) / 2:
                 continue
             internal = 0
             external = 0
@@ -134,8 +151,123 @@ def compute_representativeness(
                 cohesions.append(coh)
                 if coh < 0.5:
                     result.low_coherence_components.append(c.name if hasattr(c, 'name') else c.id)
-        result.boundary_coherence = (sum(cohesions) / len(cohesions)) * 100
+        result.boundary_coherence = (sum(cohesions) / len(cohesions)) * 100 if cohesions else 100.0
+
+    # --- Behavioral Coverage ---
+    # A function is "complex" if it has call_order or control_flow (meaning our
+    # behavioral extractor found something to capture). Functions that only have
+    # `calls` from nested closures or builtins are not complex at their own level.
+    # Coverage = % of complex functions that have BOTH call_order and control_flow,
+    # or at minimum one of them populated.
+    # Simpler: if call_order or control_flow is populated, it's captured.
+    # "Uncaptured" = functions where the OLD calls field has non-builtin entries
+    # but call_order is empty AND no control_flow — these might indicate our
+    # extractor missed something.
+    _BUILTINS = frozenset({
+        "print", "len", "str", "int", "float", "bool", "list", "dict", "set",
+        "tuple", "range", "enumerate", "zip", "map", "filter", "sorted", "reversed",
+        "min", "max", "sum", "abs", "round", "isinstance", "issubclass", "hasattr",
+        "getattr", "setattr", "delattr", "type", "id", "repr", "hash", "iter",
+        "next", "super", "object", "property", "staticmethod", "classmethod",
+        "vars", "dir", "any", "all", "ord", "chr", "hex", "oct", "bin",
+        "format", "input", "open", "NotImplementedError", "ValueError",
+        "TypeError", "KeyError", "RuntimeError", "AttributeError", "ImportError",
+        "OSError", "IOError", "StopIteration", "Exception",
+    })
+
+    complex_funcs = []
+    for m in modules:
+        # Skip vendor/trivial modules for behavioral coverage
+        if _is_trivial(m):
+            continue
+        for f in m.functions:
+            if not hasattr(f, 'call_order'):
+                continue
+            if f.call_order or f.control_flow:
+                complex_funcs.append((m.name, f, True))  # captured
+            elif f.calls:
+                # Has old-style calls but no new behavioral data
+                non_builtin = [c for c in f.calls if c not in _BUILTINS]
+                if non_builtin:
+                    complex_funcs.append((m.name, f, False))  # potentially uncaptured
+        for cls in m.classes:
+            for method in getattr(cls, 'method_details', []):
+                if not hasattr(method, 'call_order'):
+                    continue
+                if method.call_order or method.control_flow:
+                    complex_funcs.append((m.name, method, True))
+                elif method.calls:
+                    non_builtin = [c for c in method.calls if c not in _BUILTINS]
+                    if non_builtin:
+                        complex_funcs.append((m.name, method, False))
+
+    if complex_funcs:
+        captured = sum(1 for _, _, is_captured in complex_funcs if is_captured)
+        for mod_name, f, is_captured in complex_funcs:
+            if not is_captured:
+                result.uncaptured_behaviors.append(f"{mod_name}.{f.name}")
+        result.behavioral_coverage = (captured / len(complex_funcs)) * 100
+    else:
+        result.behavioral_coverage = 100.0  # No complex functions = vacuously true
 
     # --- Overall ---
-    result.overall = (result.file_coverage + result.relationship_accuracy + result.boundary_coherence) / 3
+    result.overall = (
+        result.file_coverage + result.relationship_accuracy +
+        result.boundary_coherence + result.behavioral_coverage
+    ) / 4
+    return result
+
+
+@dataclass
+class HierarchicalRepresentativenessResult:
+    """Representativeness at root + per-block level."""
+    root: RepresentativenessResult = field(default_factory=RepresentativenessResult)
+    blocks: dict[str, RepresentativenessResult] = field(default_factory=dict)
+    overall: float = 0.0
+
+
+def compute_hierarchical_representativeness(
+    root_model: ArchitectureModel,
+    sub_models: dict[str, ArchitectureModel],
+    recursive_manifests: dict[str, "RecursiveManifest"],
+) -> HierarchicalRepresentativenessResult:
+    """Verify representativeness at every level of decomposition.
+    
+    Root level: checks that all blocks are represented and cross-block relationships
+    match real import dependencies.
+    
+    Block level: standard file_coverage + relationship_accuracy + boundary_coherence
+    within each block's scope.
+    """
+    from architecture_model.manifest.types import RecursiveManifest
+
+    result = HierarchicalRepresentativenessResult()
+
+    # --- Root level ---
+    # Collect all modules across all blocks for root-level check
+    all_modules = []
+    all_interfaces = []
+    for rm in recursive_manifests.values():
+        all_modules.extend(rm.manifest.modules)
+        all_interfaces.extend(rm.manifest.interfaces)
+
+    result.root = compute_representativeness(root_model, all_modules, all_interfaces)
+
+    # --- Per-block level ---
+    block_scores: list[float] = []
+    for block_id, rm in recursive_manifests.items():
+        if block_id in sub_models:
+            sub_model = sub_models[block_id]
+            block_result = compute_representativeness(
+                sub_model, rm.manifest.modules, rm.manifest.interfaces
+            )
+            result.blocks[block_id] = block_result
+            block_scores.append(block_result.overall)
+
+    # --- Overall ---
+    if block_scores:
+        result.overall = (result.root.overall + sum(block_scores) / len(block_scores)) / 2
+    else:
+        result.overall = result.root.overall
+
     return result

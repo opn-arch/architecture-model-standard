@@ -147,7 +147,18 @@ def generate_recursive_manifests(
     for block_id, deps in block_deps.items():
         if block_id in results:
             results[block_id].block_dependencies = deps
-    
+
+    # Build intra-block event chains
+    try:
+        from architecture_model.manifest.chains import build_block_chains
+        from architecture_model.manifest.grouping import group_modules
+        for block_id, rm in results.items():
+            if rm.manifest.modules:
+                groups = group_modules(rm.manifest.modules, rm.manifest.interfaces)
+                rm.intra_chains = build_block_chains(rm.manifest, groups, block_id)
+    except Exception:
+        logger.debug("Chain building skipped (non-critical)", exc_info=True)
+
     return results
 
 
