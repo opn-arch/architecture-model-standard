@@ -51,6 +51,7 @@ def run_pipeline(
     model_file: str | None = None,
     output_dir: str = ".architecture-models",
     deep: bool = False,
+    compact: bool = False,
 ) -> PipelineResult:
     """Run the full decomposition pipeline.
 
@@ -143,6 +144,18 @@ def run_pipeline(
                 logger.info("  Generated %d sub-models", len(sub_models))
             else:
                 logger.warning("  No sub-models generated (no matching components)")
+
+            # Step 3: Compact root model (if compact=True and sub-models exist)
+            if compact and sub_models:
+                from architecture_model.orchestration.decompose import compact_root_model
+                from architecture_model.core.parser import load_model as _load, save_model
+
+                block_ids = list(sub_models.keys())
+                root = _load(actual_model)
+                compact_root_model(root, block_ids=block_ids)
+                save_model(root, actual_model)
+                logger.info("  Compacted root model (stripped %d blocks)", len(block_ids))
+
         except Exception as exc:
             msg = f"Decomposition skipped: {exc}"
             result.errors.append(msg)
