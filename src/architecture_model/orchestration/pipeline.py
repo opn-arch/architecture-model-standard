@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from architecture_model.monitoring import monitored
-from architecture_model.core.types import ArchitectureModel
+from architecture_model.core.types import ArchitectureModel, ModelMeta
 from architecture_model.manifest.recursive import (
     generate_recursive_manifests,
     write_recursive_manifests,
@@ -182,7 +182,7 @@ def run_pipeline(
                 flat_manifest = generate_manifest(project_root)
                 components = create_components_from_manifest(flat_manifest)
                 model = ArchitectureModel(
-                    meta={"project": project_root.name, "schema_version": "1.3"},
+                    meta=ModelMeta(project=project_root.name, schema_version="1.3"),
                     entities=Entities(components=components),
                     relationships=[],
                 )
@@ -204,6 +204,15 @@ def run_pipeline(
                     if fblock_config:
                         logger.info("  Generated %d F-blocks from module groups", len(fblock_config))
                         result.fblock_config = fblock_config
+
+                        # Generate per-block recursive manifests using auto-F-blocks
+                        block_manifests = generate_recursive_manifests(
+                            project_root, fblock_override=fblock_config
+                        )
+                        result.manifests = block_manifests
+                        paths = write_recursive_manifests(block_manifests, out)
+                        result.written_paths.extend(paths)
+                        logger.info("  Generated %d block manifests from auto-F-blocks", len(block_manifests))
                 except Exception as exc:
                     logger.debug("Auto F-block generation skipped: %s", exc)
 

@@ -115,9 +115,18 @@ def generate_block_manifest(
 def generate_recursive_manifests(
     project_root: Path,
     parent_model: str = ".architecture-model.yaml",
+    fblock_override: dict[str, dict] | None = None,
 ) -> dict[str, RecursiveManifest]:
-    """Generate a RecursiveManifest for each F-block in the project config."""
+    """Generate a RecursiveManifest for each F-block in the project config.
+
+    Args:
+        project_root: Repository root path.
+        parent_model: Config/model filename to read F-blocks from.
+        fblock_override: If provided, use these F-block definitions instead of
+            reading from config. Dict mapping block_id -> {name, dirs, files}.
+    """
     config = get_config(project_root)
+    fblock_dict = fblock_override if fblock_override is not None else config.fblock_dict
     results: dict[str, RecursiveManifest] = {}
 
     # Load parent model for component ID resolution
@@ -130,10 +139,10 @@ def generate_recursive_manifests(
         except Exception:
             pass  # Graceful degradation
     
-    for block_id, block_def in config.fblock_dict.items():
+    for block_id, block_def in fblock_dict.items():
         logger.info("Generating recursive manifest for %s: %s", block_id, block_def.get("name"))
         manifest = generate_block_manifest(project_root, block_id, block_def)
-        component_id = _block_id_to_component_id(block_id, config, model)
+        component_id = _block_id_to_component_id(block_id, type("_C", (), {"fblock_dict": fblock_dict})(), model)
         results[block_id] = RecursiveManifest(
             block_id=block_id,
             block_name=block_def.get("name", block_id),
