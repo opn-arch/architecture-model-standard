@@ -314,6 +314,49 @@ def decompose_model(project_root, *, model_path=None):
     return results
 
 
+_COMPACT_KEEP = frozenset({
+    "id", "name", "f_block", "status", "contract", "pattern",
+    "kind", "layer", "description", "tags",
+})
+
+_COMPACT_STRIP = frozenset({
+    "signatures", "symbols", "constants", "files",
+    "responsibilities", "test_contracts", "observability",
+    "fields", "functions",
+})
+
+
+@monitored(module="orchestration.compact_root_model")
+def compact_root_model(model, *, block_ids: list[str]) -> None:
+    """Strip implementation detail from components in-place, keeping identity.
+
+    After decomposition, the root model no longer needs heavy detail on
+    components that have been decomposed into sub-models.  This function
+    zeroes out implementation-level fields while preserving identity and
+    architectural contract fields.
+    """
+    components = (
+        model.entities.components
+        if hasattr(model.entities, "components")
+        else model.entities.get("components", [])
+        if hasattr(model.entities, "get")
+        else []
+    )
+
+    target_blocks = set(block_ids)
+    for comp in components:
+        fb = comp.f_block if hasattr(comp, "f_block") else comp.get("f_block", "")
+        if fb not in target_blocks:
+            continue
+        for attr in _COMPACT_STRIP:
+            if hasattr(comp, attr):
+                val = getattr(comp, attr)
+                if isinstance(val, list):
+                    setattr(comp, attr, [])
+                else:
+                    setattr(comp, attr, type(val)())
+
+
 def write_sub_models(sub_models, output_dir):
     """Write sub-models to YAML files.
 

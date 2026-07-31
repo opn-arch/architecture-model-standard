@@ -32,6 +32,7 @@ from architecture_model.core.confidence import (
     aggregate_block_confidence,
     model_confidence_summary,
 )
+from architecture_model.orchestration.decompose import compact_root_model
 from architecture_model.monitoring_checks import (
     check_decompose_idempotency,
     check_cluster_stability,
@@ -73,4 +74,5 @@ __all__ = [
     "compute_model_confidence",
     "aggregate_block_confidence",
     "model_confidence_summary",
+    "compact_root_model",
 ]
