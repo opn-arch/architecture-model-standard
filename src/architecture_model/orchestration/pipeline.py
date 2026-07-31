@@ -41,7 +41,7 @@ class PipelineResult:
 
 @monitored(
     module="orchestration.pipeline",
-    inputs=lambda a, kw: {"deep": kw.get("deep", False)},
+    inputs=lambda a, kw: {"deep": kw.get("deep", False), "from_scratch": kw.get("from_scratch", False)},
     outputs=lambda r: {"blocks_scanned": len(r.manifests), "blocks_decomposed": len(r.deep_decompositions), "errors": len(r.errors)},
 )
 def run_pipeline(
@@ -52,6 +52,7 @@ def run_pipeline(
     output_dir: str = ".architecture-models",
     deep: bool = False,
     compact: bool = False,
+    from_scratch: bool = False,
 ) -> PipelineResult:
     """Run the full decomposition pipeline.
 
@@ -65,6 +66,10 @@ def run_pipeline(
         model_file: Model filename with entities/relationships. If None, auto-detects:
                     tries parent_model first, then .architecture-model-extracted.yaml
         output_dir: Output directory name (default: .architecture-models)
+        deep: Enable iterative deep decomposition of blocks
+        compact: Compact root model after decomposition
+        from_scratch: If True and no model exists, bootstrap one from manifest
+                      using module grouping and auto-enrichment
 
     Returns:
         PipelineResult with manifests, sub_models, and written paths.
@@ -161,6 +166,32 @@ def run_pipeline(
             result.errors.append(msg)
             logger.warning(msg)
     else:
-        logger.info("Step 2: Skipped (no model with entities found)")
+        if from_scratch:
+            logger.info("Step 2: Bootstrapping model from scratch via module grouping...")
+            try:
+                from architecture_model.manifest.generator import generate_manifest
+                from architecture_model.manifest.grouping import create_components_from_manifest
+                from architecture_model.core.parser import save_model
+                from architecture_model.core.types import ArchitectureModel, Entities
+
+                flat_manifest = generate_manifest(project_root)
+                components = create_components_from_manifest(flat_manifest)
+                model = ArchitectureModel(
+                    meta={"project": project_root.name, "schema_version": "1.3"},
+                    entities=Entities(components=components),
+                    relationships=[],
+                )
+                enrich_from_manifest(model, flat_manifest)
+                # Save the bootstrapped model
+                model_path = project_root / ".architecture-model-extracted.yaml"
+                save_model(model, model_path)
+                result.written_paths.append(model_path)
+                logger.info("  Bootstrapped model with %d components → %s", len(components), model_path.name)
+            except Exception as exc:
+                msg = f"From-scratch bootstrap failed: {exc}"
+                result.errors.append(msg)
+                logger.error(msg)
+        else:
+            logger.info("Step 2: Skipped (no model with entities found)")
 
     return result

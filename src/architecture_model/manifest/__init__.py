@@ -17,6 +17,11 @@ from architecture_model.manifest.interfaces import derive_interfaces
 from architecture_model.manifest.metrics import compute_metrics
 from architecture_model.manifest.scanner import scan_file
 from architecture_model.manifest.slicers import get_manifest_slice
+from architecture_model.manifest.grouping import (
+    group_modules,
+    create_components_from_manifest,
+    ModuleGroup,
+)
 from architecture_model.manifest.types import (
     BlockManifest,
     ClassInfo,
@@ -55,4 +60,8 @@ __all__ = [
     "derive_interfaces",
     "compute_metrics",
     "process_block",
+    # Grouping
+    "group_modules",
+    "create_components_from_manifest",
+    "ModuleGroup",
 ]

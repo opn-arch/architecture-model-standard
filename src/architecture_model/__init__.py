@@ -33,6 +33,7 @@ from architecture_model.core.confidence import (
     model_confidence_summary,
 )
 from architecture_model.orchestration.decompose import compact_root_model
+from architecture_model.manifest.grouping import group_modules, create_components_from_manifest, ModuleGroup
 from architecture_model.monitoring_checks import (
     check_decompose_idempotency,
     check_cluster_stability,
@@ -75,4 +76,7 @@ __all__ = [
     "aggregate_block_confidence",
     "model_confidence_summary",
     "compact_root_model",
+    "group_modules",
+    "create_components_from_manifest",
+    "ModuleGroup",
 ]

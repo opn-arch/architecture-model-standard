@@ -174,3 +174,184 @@ queue:
     - "priority"
   typical_files: 1
   contract_template: "Manages ordered {item_type} processing via {queue_type} queue"
+
+parser:
+  description: "Parses structured input into internal representations"
+  indicators:
+    - "parse"
+    - "token"
+    - "lexer"
+    - "grammar"
+    - "syntax"
+    - "visitor"
+    - "tokenize"
+    - "ast_node"
+  typical_files: 1-3
+  contract_template: "Parses {input_format} into {output_structure}"
+
+middleware:
+  description: "Intercepts request/response flow in a processing chain"
+  indicators:
+    - "middleware"
+    - "before_request"
+    - "after_request"
+    - "intercept"
+    - "pre_process"
+    - "post_process"
+    - "request_hook"
+    - "response_hook"
+  typical_files: 1-2
+  contract_template: "Intercepts {flow_type} to apply {concern}"
+
+serializer:
+  description: "Converts objects to/from wire or storage formats"
+  indicators:
+    - "serializer"
+    - "deserializer"
+    - "encoder"
+    - "decoder"
+    - "to_json"
+    - "from_json"
+    - "to_dict"
+    - "from_dict"
+    - "dump_model"
+    - "load_model"
+    - "encode_content"
+    - "encode_json"
+    - "encode_request"
+    - "encode_response"
+  typical_files: 1-2
+  contract_template: "Serializes {domain} objects to/from {format}"
+
+cli:
+  description: "Command-line interface with commands and arguments"
+  indicators:
+    - "command"
+    - "argument"
+    - "option"
+    - "subcommand"
+    - "cli_group"
+    - "invoke"
+    - "param"
+    - "argparse"
+    - "click"
+  typical_files: 1-5
+  contract_template: "Provides CLI for {domain} operations"
+
+router:
+  description: "Routes requests to appropriate handlers by path or key"
+  indicators:
+    - "route"
+    - "router"
+    - "endpoint"
+    - "add_route"
+    - "include_router"
+    - "url_for"
+    - "path_param"
+    - "dispatch_route"
+  typical_files: 1-3
+  contract_template: "Routes {request_type} requests to handlers by {routing_key}"
+
+validator:
+  description: "Validates input against rules or schemas"
+  indicators:
+    - "validate"
+    - "validator"
+    - "is_valid"
+    - "assert_valid"
+    - "constraint"
+    - "field_validator"
+    - "check_value"
+    - "validation_error"
+  typical_files: 1-2
+  contract_template: "Validates {input_type} against {rule_set}"
+
+factory:
+  description: "Creates configured instances via builder or factory methods"
+  indicators:
+    - "factory"
+    - "builder"
+    - "from_config"
+    - "instantiate"
+    - "create_instance"
+    - "build_from"
+    - "make_instance"
+  typical_files: 1-2
+  contract_template: "Creates {product_type} instances from {config_source}"
+
+decorator-pattern:
+  description: "Wraps functions or classes to add cross-cutting behavior"
+  indicators:
+    - "decorator"
+    - "wrapper"
+    - "wraps"
+    - "decorate"
+    - "wrap_function"
+    - "before_call"
+    - "after_call"
+    - "functools"
+  typical_files: 1-2
+  contract_template: "Decorates {target} to add {behavior}"
+
+transport:
+  description: "Network I/O layer handling send/receive of data"
+  indicators:
+    - "transport"
+    - "handle_request"
+    - "handle_async_request"
+    - "connection_pool"
+    - "send_request"
+    - "receive_response"
+    - "open_connection"
+    - "close_connection"
+    - "aclose"
+  typical_files: 1-3
+  contract_template: "Handles network I/O for {protocol} communication"
+
+plugin:
+  description: "Extensible plugin/hook registration system"
+  indicators:
+    - "plugin"
+    - "extension"
+    - "load_plugin"
+    - "entry_point"
+    - "addon"
+    - "plugin_manager"
+    - "hook_impl"
+    - "get_plugin"
+    - "completion_class"
+    - "add_completion"
+    - "get_completion"
+  typical_files: 1-3
+  contract_template: "Manages {plugin_type} plugins via {loading_mechanism}"
+
+pipeline:
+  description: "Sequential processing through ordered stages"
+  indicators:
+    - "pipeline"
+    - "stage"
+    - "pipe"
+    - "add_stage"
+    - "run_pipeline"
+    - "process_step"
+    - "transform_step"
+    - "chain"
+  typical_files: 1-3
+  contract_template: "Processes {input_type} through {stage_count} sequential stages"
+
+formatter:
+  description: "Formats or renders data for display or output"
+  indicators:
+    - "format_output"
+    - "formatter"
+    - "render"
+    - "pretty_print"
+    - "format_help"
+    - "style_text"
+    - "ansi"
+    - "template"
+    - "wrap_text"
+    - "indent"
+    - "dedent"
+  typical_files: 1-2
+  contract_template: "Formats {data_type} for {output_target}"
