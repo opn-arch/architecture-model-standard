@@ -273,3 +273,69 @@ def create_components_from_manifest(
         components.append(comp)
 
     return components
+
+
+# ---------------------------------------------------------------------------
+# Auto F-block generation
+# ---------------------------------------------------------------------------
+
+
+def auto_fblocks(groups: list[ModuleGroup], threshold: int = 3) -> dict:
+    """Generate F-block config from flat module groups.
+
+    Groups with >= threshold files become individual F-blocks.
+    Smaller groups are merged into a 'Shared' F-block.
+
+    Args:
+        groups: Module groups from group_modules()
+        threshold: Minimum files to become a standalone F-block (default: 3)
+
+    Returns:
+        Dict of F-block definitions suitable for config:
+        {
+            "F1": {"name": "Auth", "dirs": ["src/auth"], "files": ["auth/login.py", ...]},
+            "F2": {"name": "API", "dirs": ["src/api"], "files": [...]},
+            "F0": {"name": "Shared", "dirs": [], "files": [...]},  # small groups merged
+        }
+    """
+    fblocks: dict[str, dict] = {}
+    shared_files: list[str] = []
+    block_num = 1
+
+    for group in groups:
+        files = group.modules
+        file_count = len(files)
+
+        if file_count >= threshold:
+            # Find common directory prefix for this group's files
+            if files:
+                parts_list = [PurePosixPath(f).parts for f in files]
+                common_parts: list[str] = []
+                if parts_list:
+                    for parts in zip(*parts_list):
+                        if len(set(parts)) == 1:
+                            common_parts.append(parts[0])
+                        else:
+                            break
+                common_dir = str(PurePosixPath(*common_parts)) if common_parts else ""
+            else:
+                common_dir = ""
+
+            fblocks[f"F{block_num}"] = {
+                "name": group.name,
+                "dirs": [common_dir] if common_dir else [],
+                "files": list(files),
+            }
+            block_num += 1
+        else:
+            shared_files.extend(files)
+
+    # Merge small groups into Shared block
+    if shared_files:
+        fblocks["F0"] = {
+            "name": "Shared",
+            "dirs": [],
+            "files": shared_files,
+        }
+
+    return fblocks

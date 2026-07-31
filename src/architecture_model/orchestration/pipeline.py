@@ -37,6 +37,7 @@ class PipelineResult:
     deep_decompositions: dict[str, DecomposeResult] = field(default_factory=dict)
     written_paths: list[Path] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    fblock_config: dict = field(default_factory=dict)
 
 
 @monitored(
@@ -171,7 +172,7 @@ def run_pipeline(
             try:
                 from architecture_model.manifest.generator import generate_manifest
                 from architecture_model.manifest.grouping import (
-                    create_components_from_manifest, group_modules,
+                    auto_fblocks, create_components_from_manifest, group_modules,
                 )
                 from architecture_model.core.parser import save_model
                 from architecture_model.core.types import ArchitectureModel, Entities
@@ -194,6 +195,17 @@ def run_pipeline(
                     logger.info("  Built %d event chains", len(chains))
                 except Exception as exc:
                     logger.debug("Chain building skipped: %s", exc)
+
+                # Generate F-block config for hierarchical decomposition
+                try:
+                    if not groups:
+                        groups = group_modules(flat_manifest.modules, flat_manifest.interfaces)
+                    fblock_config = auto_fblocks(groups, threshold=3)
+                    if fblock_config:
+                        logger.info("  Generated %d F-blocks from module groups", len(fblock_config))
+                        result.fblock_config = fblock_config
+                except Exception as exc:
+                    logger.debug("Auto F-block generation skipped: %s", exc)
 
                 # Verify representativeness
                 _rep = None
