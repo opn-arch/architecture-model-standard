@@ -24,8 +24,8 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/anomalyco/architecture-model-standard"
-Repository = "https://github.com/anomalyco/architecture-model-standard"
+Homepage = "https://github.com/opn-arch/architecture-model-standard"
+Repository = "https://github.com/opn-arch/architecture-model-standard"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21"]
