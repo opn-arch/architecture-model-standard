@@ -159,7 +159,13 @@ def enrich_from_manifest(model: Any, manifest: Manifest) -> None:
     for mod in manifest.modules:
         file_lookup[mod.file] = mod
 
-    components = model.entities.get("components", [])
+    components = (
+        model.entities.components
+        if hasattr(model.entities, "components")
+        else model.entities.get("components", [])
+        if hasattr(model.entities, "get")
+        else []
+    )
 
     for comp in components:
         if not isinstance(comp, Component):
@@ -174,12 +180,20 @@ def enrich_from_manifest(model: Any, manifest: Manifest) -> None:
         if not matched_modules:
             continue
 
-        # Extract signatures
+        # Extract signatures (from top-level functions AND class methods)
         if not comp.signatures:
             sigs: list[FunctionSignature] = []
             for mod in matched_modules:
                 for func in mod.functions:
                     sigs.append(_parse_signature(func.name, func))
+                # Also create signatures from class methods (name-only, no type info)
+                for cls in mod.classes:
+                    for method_name in cls.methods:
+                        if not method_name.startswith("_"):
+                            sigs.append(FunctionSignature(
+                                name=method_name, params=["self"], returns="",
+                                decorators=[], body_hint="",
+                            ))
             comp.signatures = sigs
 
         # Extract symbols
@@ -221,6 +235,15 @@ def enrich_from_manifest(model: Any, manifest: Manifest) -> None:
             if resps:
                 comp.responsibilities = resps
 
+    # Recompute confidence scores after enrichment
+    try:
+        from ..core.confidence import compute_component_confidence
+        for comp in components:
+            if isinstance(comp, Component):
+                comp.confidence = compute_component_confidence(comp)
+    except ImportError:
+        pass
+
 
 def _extract_trigger(decorated_functions: list, func_name: str) -> str:
     """Find trigger decorator for a function."""
@@ -260,7 +283,13 @@ def enrich_behaviors_from_manifest(model: Any, manifest: Manifest) -> None:
     for mod in manifest.modules:
         file_lookup[mod.file] = mod
 
-    behaviors = model.entities.get("behaviors", [])
+    behaviors = (
+        model.entities.behaviors
+        if hasattr(model.entities, "behaviors")
+        else model.entities.get("behaviors", [])
+        if hasattr(model.entities, "get")
+        else []
+    )
 
     for behavior in behaviors:
         if not isinstance(behavior, Behavior):
