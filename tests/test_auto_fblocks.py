@@ -53,14 +53,52 @@ class TestAutoFblocks:
         assert result == {}
 
     def test_all_small_groups(self):
+        """With 2+ small groups, flat-repo fallback promotes each to its own F-block."""
         groups = [
             ModuleGroup(name="A", modules=["a.py"], primary_file="a.py"),
             ModuleGroup(name="B", modules=["b.py"], primary_file="b.py"),
         ]
         result = auto_fblocks(groups, threshold=3)
+        # Flat-repo fallback: each group becomes its own F-block
+        assert "F1" in result
+        assert "F2" in result
+        assert result["F1"]["files"] == ["a.py"]
+        assert result["F2"]["files"] == ["b.py"]
+
+    def test_flat_repo_fallback_promotes_groups(self):
+        """When all groups are below threshold, promote each to its own F-block."""
+        # 6 single-file groups (flat repo scenario)
+        groups = [
+            ModuleGroup(name="app", modules=["src/app.py"], primary_file="src/app.py"),
+            ModuleGroup(name="models", modules=["src/models.py"], primary_file="src/models.py"),
+            ModuleGroup(name="views", modules=["src/views.py"], primary_file="src/views.py"),
+            ModuleGroup(name="utils", modules=["src/utils.py"], primary_file="src/utils.py"),
+            ModuleGroup(name="config", modules=["src/config.py"], primary_file="src/config.py"),
+            ModuleGroup(name="auth", modules=["src/auth.py"], primary_file="src/auth.py"),
+        ]
+
+        result = auto_fblocks(groups, threshold=3)
+
+        # Should NOT collapse everything to F0
+        assert len(result) > 1, f"Expected multiple F-blocks, got: {list(result.keys())}"
+        # All files should be assigned somewhere
+        all_files = []
+        for v in result.values():
+            all_files.extend(v["files"])
+        assert len(all_files) == 6
+
+    def test_flat_repo_fallback_not_triggered_when_fblocks_exist(self):
+        """When some groups meet threshold, normal behavior applies."""
+        groups = [
+            ModuleGroup(name="core", modules=["a.py", "b.py", "c.py"], primary_file="a.py"),
+            ModuleGroup(name="small", modules=["d.py"], primary_file="d.py"),
+        ]
+
+        result = auto_fblocks(groups, threshold=3)
+
+        # "core" meets threshold -> F1, "small" -> F0
+        assert "F1" in result
         assert "F0" in result
-        assert len(result) == 1  # Only Shared block
-        assert set(result["F0"]["files"]) == {"a.py", "b.py"}
 
     def test_threshold_customizable(self):
         groups = [

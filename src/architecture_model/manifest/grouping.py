@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 
 from architecture_model.manifest.types import InterfaceEdge, ModuleInfo, Manifest
+from architecture_model.manifest.protocol import DependencyEdge, SourceGraph, SourceUnit
 from architecture_model.core.types import Component
 
 
@@ -330,6 +331,18 @@ def auto_fblocks(groups: list[ModuleGroup], threshold: int = 3) -> dict:
         else:
             shared_files.extend(files)
 
+    # Flat-repo fallback: if no F-blocks were created (all groups below threshold),
+    # promote each group to its own F-block instead of collapsing to F0
+    if not fblocks and len(groups) >= 2:
+        for i, g in enumerate(groups, 1):
+            if g.modules:
+                fblocks[f"F{i}"] = {
+                    "name": g.name,
+                    "dirs": [],
+                    "files": list(g.modules),
+                }
+        return fblocks
+
     # Merge small groups into Shared block
     if shared_files:
         fblocks["F0"] = {
@@ -339,3 +352,63 @@ def auto_fblocks(groups: list[ModuleGroup], threshold: int = 3) -> dict:
         }
 
     return fblocks
+
+
+# ---------------------------------------------------------------------------
+# SourceGraph-based grouping (language-agnostic)
+# ---------------------------------------------------------------------------
+
+
+def group_source_graph(
+    graph: SourceGraph,
+    *,
+    target_groups: int | None = None,
+    min_group_size: int = 1,
+) -> list[ModuleGroup]:
+    """Group source units using multi-signal affinity (language-agnostic).
+
+    This is the SourceGraph equivalent of group_modules(). It converts
+    SourceUnits into lightweight ModuleInfo-compatible objects and delegates
+    to the existing grouping algorithm.
+
+    Args:
+        graph: A SourceGraph instance (from any language scanner or JSON).
+        target_groups: Desired number of groups. None = auto-calculate.
+        min_group_size: Minimum modules per group (after merging).
+
+    Returns:
+        List of ModuleGroup objects.
+    """
+    from architecture_model.manifest.types import FunctionInfo, ClassInfo, ModuleStatus
+
+    # Convert SourceUnits to ModuleInfo for reuse of existing algorithm
+    modules: list[ModuleInfo] = []
+    for unit in graph.units:
+        functions = []
+        classes = []
+        for exp in unit.exports:
+            if exp.kind == "class":
+                classes.append(ClassInfo(name=exp.name))
+            else:
+                functions.append(FunctionInfo(name=exp.name, signature=exp.signature))
+
+        modules.append(ModuleInfo(
+            file=unit.file,
+            name=PurePosixPath(unit.file).stem,
+            docstring=None,
+            functions=functions,
+            imports=[],
+            line_count=1 if unit.has_content else 0,
+            status=ModuleStatus.ACTIVE,
+            classes=classes,
+        ))
+
+    # Convert DependencyEdges to InterfaceEdges
+    interfaces: list[InterfaceEdge] = [
+        InterfaceEdge(source=e.source, target=e.target, import_path="")
+        for e in graph.edges
+    ]
+
+    return group_modules(
+        modules, interfaces, target_groups=target_groups, min_group_size=min_group_size
+    )
