@@ -72,6 +72,21 @@ SCHEMA_PATH = Path(__file__).parent.parent / "spec" / "schema.json"
 # ---------------------------------------------------------------------------
 
 
+def load_block_model(
+    project_root: str | Path,
+    block_id: str,
+    output_dir: str = ".architecture-models",
+) -> ArchitectureModel | None:
+    """Load a block sub-model from the .architecture-models/ directory.
+    Returns None if the sub-model doesn't exist.
+    """
+    root = Path(project_root)
+    sub_model_path = root / output_dir / block_id / ".architecture-model.yaml"
+    if not sub_model_path.exists():
+        return None
+    return load_model(sub_model_path)
+
+
 def load_model(path: str | Path) -> ArchitectureModel:
     """Load and parse an architecture model YAML file."""
     path = Path(path)
