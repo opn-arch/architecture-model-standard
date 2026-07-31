@@ -247,9 +247,42 @@ def enrich_from_manifest(model: Any, manifest: Manifest) -> None:
         from ..core.confidence import compute_component_confidence
         for comp in components:
             if isinstance(comp, Component):
+                # Guarantee minimum contract: every component must have one
+                if not comp.contract:
+                    comp.contract = _synthesize_contract(comp)
                 comp.confidence = compute_component_confidence(comp)
     except ImportError:
         pass
+
+
+def _synthesize_contract(comp: Component) -> str:
+    """Generate a minimum contract from available component metadata.
+
+    Telemetry shows 0 contracts → 32% pass rate vs 70% with contracts.
+    Every component must have at least a basic contract describing its role.
+    """
+    parts: list[str] = []
+
+    # Use pattern if available
+    if comp.pattern:
+        parts.append(f"Implements {comp.pattern} pattern.")
+
+    # Describe public API from signatures
+    if comp.signatures:
+        pub_sigs = [s.name for s in comp.signatures if not s.name.startswith("_")][:5]
+        if pub_sigs:
+            parts.append(f"Exposes: {', '.join(pub_sigs)}.")
+
+    # Describe responsibilities
+    if comp.responsibilities:
+        parts.append(f"Responsible for: {'; '.join(comp.responsibilities[:3])}.")
+
+    # Fallback: describe by files and name
+    if not parts:
+        file_hint = f" across {len(comp.files)} files" if comp.files else ""
+        parts.append(f"Provides {comp.name} functionality{file_hint}.")
+
+    return " ".join(parts)
 
 
 def _extract_trigger(decorated_functions: list, func_name: str) -> str:
@@ -397,3 +430,167 @@ def enrich_with_block_context(
                 comp.confidence = compute_component_confidence(comp)
         except ImportError:
             pass
+
+
+# ---------------------------------------------------------------------------
+# Interface contract extraction from SourceGraph
+# ---------------------------------------------------------------------------
+
+
+def extract_component_interfaces(
+    model: Any,
+    graph: "SourceGraph",
+) -> int:
+    """Extract interface contracts between components from cross-boundary edges.
+
+    For each dependency edge that crosses a component boundary:
+    - The source component gets a 'requires' interface
+    - The target component gets a 'provides' interface
+
+    Args:
+        model: ArchitectureModel with entities.components
+        graph: SourceGraph with edges (dependency info)
+
+    Returns:
+        Number of interfaces added.
+    """
+    from architecture_model.core.types import ComponentInterface
+    from architecture_model.manifest.protocol import SourceGraph
+
+    # Build file -> component mapping
+    components = _get_components(model)
+    file_to_comp: dict[str, Component] = {}
+    for comp in components:
+        for f in comp.files:
+            file_to_comp[f] = comp
+
+    # Build file -> exports mapping from graph
+    file_exports: dict[str, list[str]] = {}
+    for unit in graph.units:
+        file_exports[unit.file] = unit.export_names
+
+    added = 0
+    # Track existing interfaces to avoid duplicates
+    seen: set[tuple[str, str, str]] = set()  # (comp_id, kind, target_comp_id)
+
+    for edge in graph.edges:
+        src_comp = file_to_comp.get(edge.source)
+        tgt_comp = file_to_comp.get(edge.target)
+
+        # Only care about cross-boundary edges
+        if not src_comp or not tgt_comp or src_comp is tgt_comp:
+            continue
+
+        # Determine what symbols are being imported
+        symbols = edge.symbols if edge.symbols else file_exports.get(edge.target, [])
+
+        # Source component REQUIRES from target component
+        req_key = (src_comp.id, "requires", tgt_comp.id)
+        if req_key not in seen:
+            seen.add(req_key)
+            src_comp.interfaces.append(ComponentInterface(
+                name=f"uses_{tgt_comp.name}",
+                kind="requires",
+                target_component=tgt_comp.id,
+                symbols=symbols[:10],  # cap at 10 most relevant
+            ))
+            added += 1
+
+        # Target component PROVIDES to source component
+        prov_key = (tgt_comp.id, "provides", src_comp.id)
+        if prov_key not in seen:
+            seen.add(prov_key)
+            tgt_comp.interfaces.append(ComponentInterface(
+                name=f"exposes_to_{src_comp.name}",
+                kind="provides",
+                target_component=src_comp.id,
+                symbols=symbols[:10],
+            ))
+            added += 1
+
+    return added
+
+
+def enrich_from_source_graph(model: Any, graph: "SourceGraph") -> None:
+    """Enrich model components from SourceGraph export data (language-agnostic).
+
+    Populates signatures, symbols, contracts, patterns, and responsibilities
+    from ExportedSymbol data. Enables non-Python repos to reach higher confidence.
+    """
+    from architecture_model.manifest.protocol import SourceGraph as SG
+    from architecture_model.core.confidence import compute_component_confidence
+
+    # Build file -> unit lookup
+    unit_map = {u.file: u for u in graph.units}
+
+    components = _get_components(model)
+    for comp in components:
+        if not comp.files:
+            continue
+
+        # Collect exports for this component
+        all_exports = []
+        for f in comp.files:
+            unit = unit_map.get(f)
+            if unit:
+                all_exports.extend(unit.exports)
+
+        if not all_exports:
+            continue
+
+        # Signatures from function exports
+        if not comp.signatures:
+            comp.signatures = [
+                FunctionSignature(name=e.name, params=[], returns="", decorators=[], body_hint=e.doc or "")
+                for e in all_exports if e.kind == "function" and e.signature
+            ]
+
+        # Symbols from class/type/interface exports
+        if not comp.symbols:
+            comp.symbols = [
+                Symbol(name=e.name, kind=SymbolKind.INTERFACE if e.kind == "interface" else SymbolKind.CLASS,
+                       members=[], supers=[])
+                for e in all_exports if e.kind in ("class", "type", "interface")
+            ]
+
+        # Contract from docstrings
+        if not comp.contract:
+            docs = [e.doc for e in all_exports if e.doc]
+            if docs:
+                comp.contract = "; ".join(docs[:3])
+            else:
+                names = [e.name for e in all_exports[:5]]
+                comp.contract = f"Provides: {', '.join(names)}"
+
+        # Responsibilities from function exports
+        if not comp.responsibilities:
+            funcs = [e.name for e in all_exports if e.kind == "function"]
+            if funcs:
+                comp.responsibilities = funcs[:10]
+
+        # Pattern detection from export names
+        if not comp.pattern:
+            names_lower = " ".join(e.name.lower() for e in all_exports)
+            if any(kw in names_lower for kw in ("handle", "route", "endpoint", "controller")):
+                comp.pattern = "handler"
+            elif any(kw in names_lower for kw in ("connect", "query", "repository", "store")):
+                comp.pattern = "repository"
+            elif any(kw in names_lower for kw in ("create", "build", "factory", "new")):
+                comp.pattern = "factory"
+            elif any(kw in names_lower for kw in ("middleware", "interceptor", "filter")):
+                comp.pattern = "middleware"
+            elif any(kw in names_lower for kw in ("service", "manager", "provider")):
+                comp.pattern = "service"
+
+        # Recompute confidence
+        comp.confidence = compute_component_confidence(comp)
+
+
+def _get_components(model: Any) -> list[Component]:
+    """Get components from model handling both dict and Entities."""
+    entities = model.entities if hasattr(model, "entities") else model.get("entities", {})
+    if hasattr(entities, "components"):
+        return entities.components
+    elif isinstance(entities, dict):
+        return entities.get("components", [])
+    return []
