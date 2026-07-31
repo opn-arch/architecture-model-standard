@@ -24,7 +24,8 @@ from architecture_model.manifest.recursive import (
 from architecture_model.manifest.types import RecursiveManifest
 from architecture_model.orchestration.decompose import decompose_model, write_sub_models
 from architecture_model.orchestration.deep_decompose import DecomposeResult
-from architecture_model.orchestration.auto_enrich import enrich_from_manifest
+from architecture_model.orchestration.auto_enrich import enrich_from_manifest, extract_component_interfaces
+from architecture_model.orchestration.enrich import _enrich_test_contracts, _enum_str
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,20 @@ def run_pipeline(
             _enrichment_model = _load_model(actual_model)
             _flat_manifest = generate_manifest(project_root)
             enrich_from_manifest(_enrichment_model, _flat_manifest)
+            # Enrich test contracts
+            try:
+                for _comp in _enrichment_model.entities.components:
+                    if _enum_str(_comp.status) == "ACTIVE" and _comp.files:
+                        _enrich_test_contracts(_comp, project_root)
+            except Exception:
+                pass
+            # Also extract interface contracts
+            try:
+                from architecture_model.manifest.protocol import SourceGraph as _SG
+                _graph = _SG.from_manifest(_flat_manifest)
+                extract_component_interfaces(_enrichment_model, _graph)
+            except Exception:
+                pass
             logger.info("Step 1.8: Auto-enriched model components from manifest")
         except Exception as exc:
             logger.debug("Auto-enrichment skipped: %s", exc)
@@ -187,7 +202,23 @@ def run_pipeline(
                     relationships=[],
                 )
                 enrich_from_manifest(model, flat_manifest)
+                # Enrich test contracts
+                try:
+                    for _comp in model.entities.components:
+                        if _enum_str(_comp.status) == "ACTIVE" and _comp.files:
+                            _enrich_test_contracts(_comp, project_root)
+                except Exception:
+                    pass
 
+                # Extract cross-component interface contracts
+                try:
+                    from architecture_model.manifest.protocol import SourceGraph
+                    graph = SourceGraph.from_manifest(flat_manifest)
+                    n_ifaces = extract_component_interfaces(model, graph)
+                    if n_ifaces:
+                        logger.info("  Extracted %d interface contracts", n_ifaces)
+                except Exception as exc:
+                    logger.debug("Interface extraction skipped: %s", exc)
                 # Build event chains for behavioral enrichment
                 try:
                     groups = group_modules(flat_manifest.modules, flat_manifest.interfaces)
