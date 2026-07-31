@@ -36,8 +36,8 @@ def _parse_signature(name: str, func: FunctionInfo) -> FunctionSignature:
     params: list[str] = []
     returns = ""
 
-    # Extract params and return type from "(a: int, b: int) -> int"
-    m = re.match(r"\((.*?)\)\s*(?:->\s*(.+))?", sig)
+    # Extract params and return type from "(a: int, b: int) -> int" or "name(a: int) -> int"
+    m = re.match(r"(?:\w+)?\((.*?)\)\s*(?:->\s*(.+))?", sig)
     if m:
         param_str = m.group(1).strip()
         if param_str:
