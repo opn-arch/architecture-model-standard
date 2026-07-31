@@ -54,9 +54,15 @@ def _is_trivial(m: ModuleInfo) -> bool:
 
 
 def _files_match(model_file: str, manifest_file: str) -> bool:
-    if model_file == manifest_file:
+    # Normalize: strip leading ./
+    a = model_file.lstrip("./") if model_file.startswith("./") else model_file
+    b = manifest_file.lstrip("./") if manifest_file.startswith("./") else manifest_file
+    if a == b:
         return True
-    return PurePosixPath(model_file).name == PurePosixPath(manifest_file).name
+    # Suffix match: one path ends with /other (handles src/ prefix differences)
+    if a.endswith("/" + b) or b.endswith("/" + a):
+        return True
+    return False
 
 
 def _rel_type_matches(r: Relationship) -> bool:
