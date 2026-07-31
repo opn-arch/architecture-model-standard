@@ -4,7 +4,7 @@ import pytest
 from dataclasses import dataclass, field
 from architecture_model.core.types import ArchitectureModel, Component, Entities, Relationship
 from architecture_model.manifest.types import ModuleInfo, InterfaceEdge
-from architecture_model.core.representativeness import compute_representativeness, RepresentativenessResult
+from architecture_model.core.representativeness import compute_representativeness, RepresentativenessResult, HierarchicalRepresentativenessResult
 
 
 def _model(components=None, relationships=None):
@@ -141,3 +141,42 @@ class TestOverall:
         edges = [_edge("a.py", "b.py")]
         r = compute_representativeness(model, modules, edges)
         assert r.overall == 100.0
+
+
+class TestToDict:
+    def test_representativeness_result_to_dict(self):
+        r = RepresentativenessResult(
+            file_coverage=80.0,
+            relationship_accuracy=90.0,
+            boundary_coherence=70.0,
+            behavioral_coverage=100.0,
+            overall=85.0,
+            uncovered_files=["x.py"],
+            unverified_relationships=["A → B"],
+            low_coherence_components=["C1"],
+            uncaptured_behaviors=["mod.func"],
+        )
+        d = r.to_dict()
+        assert d["file_coverage"] == 80.0
+        assert d["relationship_accuracy"] == 90.0
+        assert d["boundary_coherence"] == 70.0
+        assert d["behavioral_coverage"] == 100.0
+        assert d["overall"] == 85.0
+        assert d["uncovered_files"] == ["x.py"]
+        assert d["unverified_relationships"] == ["A → B"]
+        assert d["low_coherence_components"] == ["C1"]
+        assert d["uncaptured_behaviors"] == ["mod.func"]
+
+    def test_hierarchical_result_to_dict(self):
+        block_result = RepresentativenessResult(file_coverage=75.0, overall=75.0)
+        root_result = RepresentativenessResult(file_coverage=90.0, overall=90.0)
+        h = HierarchicalRepresentativenessResult(
+            root=root_result,
+            blocks={"F1": block_result},
+            overall=82.5,
+        )
+        d = h.to_dict()
+        assert d["overall"] == 82.5
+        assert d["root"]["file_coverage"] == 90.0
+        assert d["blocks"]["F1"]["file_coverage"] == 75.0
+        assert d["blocks"]["F1"]["overall"] == 75.0

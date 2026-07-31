@@ -196,10 +196,11 @@ def run_pipeline(
                     logger.debug("Chain building skipped: %s", exc)
 
                 # Verify representativeness
+                _rep = None
                 try:
-                    rep = compute_representativeness(model, flat_manifest.modules, flat_manifest.interfaces)
+                    _rep = compute_representativeness(model, flat_manifest.modules, flat_manifest.interfaces)
                     logger.info("  Representativeness: %.1f%% (file=%.1f%%, rel=%.1f%%, coh=%.1f%%)",
-                               rep.overall, rep.file_coverage, rep.relationship_accuracy, rep.boundary_coherence)
+                               _rep.overall, _rep.file_coverage, _rep.relationship_accuracy, _rep.boundary_coherence)
                 except Exception as exc:
                     logger.debug("Representativeness check skipped: %s", exc)
 
@@ -207,6 +208,13 @@ def run_pipeline(
                 model_path = project_root / ".architecture-model-extracted.yaml"
                 save_model(model, model_path)
                 result.written_paths.append(model_path)
+
+                # Persist full project bundle
+                from architecture_model.persistence.store import save_project as _save_project
+                _save_project(
+                    project_root, model, flat_manifest,
+                    representativeness=_rep,
+                )
                 logger.info("  Bootstrapped model with %d components → %s", len(components), model_path.name)
             except Exception as exc:
                 msg = f"From-scratch bootstrap failed: {exc}"

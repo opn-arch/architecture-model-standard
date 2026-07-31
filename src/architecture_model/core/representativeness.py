@@ -22,6 +22,19 @@ class RepresentativenessResult:
     low_coherence_components: list[str] = field(default_factory=list)
     uncaptured_behaviors: list[str] = field(default_factory=list)
 
+    def to_dict(self) -> dict:
+        return {
+            "file_coverage": self.file_coverage,
+            "relationship_accuracy": self.relationship_accuracy,
+            "boundary_coherence": self.boundary_coherence,
+            "behavioral_coverage": self.behavioral_coverage,
+            "overall": self.overall,
+            "uncovered_files": self.uncovered_files,
+            "unverified_relationships": self.unverified_relationships,
+            "low_coherence_components": self.low_coherence_components,
+            "uncaptured_behaviors": self.uncaptured_behaviors,
+        }
+
 
 def _is_trivial(m: ModuleInfo) -> bool:
     name = PurePosixPath(m.file).name
@@ -224,6 +237,13 @@ class HierarchicalRepresentativenessResult:
     root: RepresentativenessResult = field(default_factory=RepresentativenessResult)
     blocks: dict[str, RepresentativenessResult] = field(default_factory=dict)
     overall: float = 0.0
+
+    def to_dict(self) -> dict:
+        return {
+            "root": self.root.to_dict(),
+            "blocks": {k: v.to_dict() for k, v in self.blocks.items()},
+            "overall": self.overall,
+        }
 
 
 def compute_hierarchical_representativeness(
