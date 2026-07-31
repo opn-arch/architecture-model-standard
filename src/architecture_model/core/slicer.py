@@ -11,7 +11,8 @@ Produces focused model slices for:
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Union
 
 from .types import (
     ArchitectureModel,
@@ -35,6 +36,8 @@ def slice_by_fblock(
     model: ArchitectureModel,
     f_block: str,
     include_relationships: bool = True,
+    *,
+    project_root: Union[Path, str, None] = None,
 ) -> ArchitectureModel:
     """
     Extract all entities and relationships related to a specific F-block.
@@ -47,6 +50,13 @@ def slice_by_fblock(
     Returns:
         New ArchitectureModel containing only the F-block's entities.
     """
+    # Try loading sub-model if project_root is provided
+    if project_root is not None:
+        from .parser import load_block_model
+        sub_model = load_block_model(project_root, f_block)
+        if sub_model is not None:
+            return sub_model
+
     # Find capability for this f-block
     cap_ids = {c.id for c in model.entities.capabilities if c.f_block == f_block}
 
