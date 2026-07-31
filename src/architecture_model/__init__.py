@@ -20,7 +20,7 @@ from architecture_model.core.coverage import coverage_report
 from architecture_model.orchestration.pipeline import run_pipeline
 from architecture_model.patterns import load_patterns, get_pattern
 from architecture_model.orchestration.enrichment_context import format_enrichment_prompt
-from architecture_model.orchestration.auto_enrich import enrich_from_manifest, enrich_behaviors_from_manifest
+from architecture_model.orchestration.auto_enrich import enrich_from_manifest, enrich_behaviors_from_manifest, enrich_with_block_context
 from architecture_model.monitoring import FunctionMetrics, MetricsCollector, get_collector, monitored
 from architecture_model.core.confidence import (
     compute_component_confidence,
@@ -55,6 +55,7 @@ __all__ = [
     "format_enrichment_prompt",
     "enrich_from_manifest",
     "enrich_behaviors_from_manifest",
+    "enrich_with_block_context",
     "FunctionMetrics",
     "MetricsCollector",
     "get_collector",

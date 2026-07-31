@@ -94,7 +94,7 @@ def _extract_contract(module: ModuleInfo, classes: list[ClassInfo]) -> str:
     return ""
 
 
-def _classify_pattern(modules: list[ModuleInfo]) -> str:
+def _classify_pattern(modules: list[ModuleInfo], threshold: int = 2) -> str:
     """Classify component pattern using pattern catalog indicators."""
     catalog = load_patterns()
 
@@ -127,7 +127,7 @@ def _classify_pattern(modules: list[ModuleInfo]) -> str:
                 continue
             if clean in name_text:
                 match_count += 1
-        if match_count >= 2 and match_count > best_count:
+        if match_count >= threshold and match_count > best_count:
             best_count = match_count
             best_pattern = pattern_name
 
@@ -327,3 +327,73 @@ def enrich_behaviors_from_manifest(model: Any, manifest: Manifest) -> None:
             conditions = _extract_error_conditions(module.functions, entry_name)
             if conditions:
                 behavior.postconditions = [f"raises {exc}" for exc in conditions]
+
+
+@monitored("orchestration.enrich_with_block_context")
+def enrich_with_block_context(
+    model: Any,
+    recursive_manifests: dict,  # dict[str, RecursiveManifest]
+) -> None:
+    """Second-pass enrichment using block-level context.
+
+    Uses recursive manifests to:
+    1. Classify patterns at block level (more indicators available)
+    2. Propagate block pattern to unclassified components
+    3. Infer contracts from block name when module docstring is absent
+    """
+    components = (
+        model.entities.components
+        if hasattr(model.entities, "components")
+        else model.entities.get("components", [])
+        if hasattr(model.entities, "get")
+        else []
+    )
+
+    # Group components by block
+    block_components: dict[str, list] = {}
+    for comp in components:
+        if isinstance(comp, Component):
+            bid = comp.f_block
+            if bid:
+                block_components.setdefault(bid, []).append(comp)
+
+    for block_id, rm in recursive_manifests.items():
+        comps = block_components.get(block_id, [])
+        if not comps:
+            continue
+
+        # Classify pattern at block level (all modules combined)
+        all_modules = rm.manifest.modules
+        block_pattern = _classify_pattern(all_modules, threshold=2)
+
+        # Propagate to unclassified components
+        for comp in comps:
+            if not comp.pattern:
+                if block_pattern:
+                    comp.pattern = block_pattern
+                else:
+                    # Try individual with threshold=1 (lowered because we have block context)
+                    matched = [
+                        m for m in all_modules
+                        if m.file in comp.files
+                        or any(
+                            m.file.endswith(f) or f.endswith(m.file)
+                            for f in comp.files
+                        )
+                    ]
+                    if matched:
+                        individual = _classify_pattern(matched, threshold=1)
+                        if individual:
+                            comp.pattern = individual
+
+            # Infer contract from block name if still missing
+            if not comp.contract:
+                comp.contract = f"{comp.name} in {rm.block_name} block."
+
+        # Recompute confidence for affected components
+        try:
+            from ..core.confidence import compute_component_confidence
+            for comp in comps:
+                comp.confidence = compute_component_confidence(comp)
+        except ImportError:
+            pass
