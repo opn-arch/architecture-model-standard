@@ -38,7 +38,6 @@ data-class:
     - "@dataclass"
     - "TypedDict"
     - "NamedTuple"
-    - "dataclass"
     - "BaseModel"
     - "Schema"
     - "fields"
