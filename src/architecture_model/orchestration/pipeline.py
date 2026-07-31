@@ -24,6 +24,7 @@ from architecture_model.manifest.recursive import (
 from architecture_model.manifest.types import RecursiveManifest
 from architecture_model.orchestration.decompose import decompose_model, write_sub_models
 from architecture_model.orchestration.deep_decompose import DecomposeResult
+from architecture_model.orchestration.auto_enrich import enrich_from_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,19 @@ def run_pipeline(
                 actual_model = extracted
             else:
                 actual_model = None
+
+    # Step 1.8: Auto-enrich model from manifest (if model available)
+    if actual_model and actual_model.exists():
+        try:
+            from architecture_model.core.parser import load_model as _load_model
+            from architecture_model.manifest.generator import generate_manifest
+
+            _enrichment_model = _load_model(actual_model)
+            _flat_manifest = generate_manifest(project_root)
+            enrich_from_manifest(_enrichment_model, _flat_manifest)
+            logger.info("Step 1.8: Auto-enriched model components from manifest")
+        except Exception as exc:
+            logger.debug("Auto-enrichment skipped: %s", exc)
 
     if actual_model and actual_model.exists():
         logger.info("Step 2: Decomposing model (%s) into sub-models...", actual_model.name)
