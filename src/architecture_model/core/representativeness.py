@@ -25,7 +25,8 @@ def _is_trivial(m: ModuleInfo) -> bool:
     name = PurePosixPath(m.file).name
     if name in ("__version__.py", "__main__.py"):
         return True
-    if name == "__init__.py" and m.line_count <= 5 and not m.functions and not m.classes:
+    # __init__.py with no functions and no classes = re-export file (trivial)
+    if name == "__init__.py" and not m.functions and not m.classes:
         return True
     return False
 

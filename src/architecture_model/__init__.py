@@ -34,6 +34,7 @@ from architecture_model.core.confidence import (
 )
 from architecture_model.orchestration.decompose import compact_root_model
 from architecture_model.manifest.grouping import group_modules, create_components_from_manifest, ModuleGroup
+from architecture_model.core.representativeness import compute_representativeness, RepresentativenessResult
 from architecture_model.monitoring_checks import (
     check_decompose_idempotency,
     check_cluster_stability,
@@ -79,4 +80,6 @@ __all__ = [
     "group_modules",
     "create_components_from_manifest",
     "ModuleGroup",
+    "compute_representativeness",
+    "RepresentativenessResult",
 ]
