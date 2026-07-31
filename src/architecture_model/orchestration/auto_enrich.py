@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 from architecture_model.core.types import (
+    Behavior,
     Component,
     Constant,
     FunctionSignature,
@@ -19,6 +20,14 @@ from architecture_model.core.types import (
 from architecture_model.manifest.types import ClassInfo, FunctionInfo, Manifest, ModuleInfo
 from architecture_model.monitoring import monitored
 from architecture_model.patterns import load_patterns
+
+# Decorators that indicate a trigger
+_TRIGGER_DECORATORS = re.compile(
+    r"(route|get|post|put|delete|patch|"
+    r"event|signal|handler|listen|subscribe|"
+    r"on_event|on_message|webhook|cron|scheduled)",
+    re.IGNORECASE,
+)
 
 
 def _parse_signature(name: str, func: FunctionInfo) -> FunctionSignature:
@@ -211,3 +220,74 @@ def enrich_from_manifest(model: Any, manifest: Manifest) -> None:
             resps = _extract_responsibilities(all_classes)
             if resps:
                 comp.responsibilities = resps
+
+
+def _extract_trigger(decorated_functions: list, func_name: str) -> str:
+    """Find trigger decorator for a function."""
+    for dec_func in decorated_functions:
+        if dec_func.name == func_name:
+            for dec in dec_func.decorators:
+                if _TRIGGER_DECORATORS.search(dec):
+                    return dec
+    return ""
+
+
+def _extract_steps(functions: list[FunctionInfo], entry_name: str) -> list[str]:
+    """Extract ordered call steps from the entry point function's call graph."""
+    for func in functions:
+        if func.name == entry_name:
+            return list(func.calls) if func.calls else []
+    return []
+
+
+def _extract_error_conditions(functions: list[FunctionInfo], entry_name: str) -> list[str]:
+    """Extract error/post conditions from raises in the entry function."""
+    for func in functions:
+        if func.name == entry_name:
+            return list(func.raises) if func.raises else []
+    return []
+
+
+@monitored("orchestration.auto_enrich_behaviors")
+def enrich_behaviors_from_manifest(model: Any, manifest: Manifest) -> None:
+    """Enrich model behaviors in-place from manifest data.
+
+    Populates trigger, steps, and postconditions for each behavior by matching
+    source_file to manifest modules and using the behavior name as entry point.
+    """
+    # Build file -> ModuleInfo lookup
+    file_lookup: dict[str, ModuleInfo] = {}
+    for mod in manifest.modules:
+        file_lookup[mod.file] = mod
+
+    behaviors = model.entities.get("behaviors", [])
+
+    for behavior in behaviors:
+        if not isinstance(behavior, Behavior):
+            continue
+
+        # Match source_file to module
+        module = file_lookup.get(behavior.source_file or "")
+        if not module:
+            continue
+
+        # Use behavior name (snake_case) as entry point function name
+        entry_name = behavior.name.lower().replace(" ", "_").replace("-", "_")
+
+        # Extract trigger from decorated functions (don't overwrite)
+        if not behavior.trigger:
+            trigger = _extract_trigger(module.decorated_functions, entry_name)
+            if trigger:
+                behavior.trigger = trigger
+
+        # Extract steps from call graph (don't overwrite)
+        if not behavior.steps:
+            steps = _extract_steps(module.functions, entry_name)
+            if steps:
+                behavior.steps = steps
+
+        # Extract postconditions from raises (don't overwrite)
+        if not behavior.postconditions:
+            conditions = _extract_error_conditions(module.functions, entry_name)
+            if conditions:
+                behavior.postconditions = [f"raises {exc}" for exc in conditions]
