@@ -85,6 +85,11 @@ def main(argv: list[str] | None = None) -> int:
     p_coverage.add_argument("--project", "-p", help="Project path for manifest generation (default: model directory)")
     p_coverage.add_argument("--manifest", help="Path to pre-generated manifest JSON")
 
+    # --- docs ---
+    p_docs = subparsers.add_parser("docs", help="Generate architecture documentation site")
+    p_docs.add_argument("repo", help="Repository root path")
+    p_docs.add_argument("-o", "--output", help="Output directory (default: {repo}/.architecture-models/docs)")
+
     # --- visualize ---
     p_visualize = subparsers.add_parser("visualize", help="Generate Mermaid diagrams from architecture model")
     p_visualize.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
@@ -109,6 +114,7 @@ def main(argv: list[str] | None = None) -> int:
         "enrich": _cmd_enrich,
         "decompose": _cmd_decompose,
         "visualize": _cmd_visualize,
+        "docs": _cmd_docs,
     }
     return handlers[args.command](args)
 
@@ -565,6 +571,44 @@ def _cmd_visualize(args) -> int:
     print(f"Generated diagrams in {out_dir}/")
     for g in sorted(generated):
         print(f"  {g}")
+
+    return 0
+
+
+def _cmd_docs(args) -> int:
+    """Generate architecture documentation."""
+    from ..core.parser import load_model
+    from ..docs import generate_docs
+
+    repo = Path(args.repo).resolve()
+    if not repo.is_dir():
+        print(f"ERROR: {repo} is not a directory")
+        return 1
+
+    # Find model file
+    model_path = repo / ".architecture-model-extracted.yaml"
+    if not model_path.exists():
+        model_path = repo / ".architecture-model.yaml"
+    if not model_path.exists():
+        print(f"ERROR: No architecture model found in {repo}")
+        return 1
+
+    model = load_model(model_path)
+
+    # Optionally generate manifest for health report
+    manifest = None
+    try:
+        from ..manifest import generate_manifest
+        manifest = generate_manifest(repo)
+    except Exception:
+        pass
+
+    output_dir = Path(args.output) if args.output else repo / ".architecture-models" / "docs"
+    result = generate_docs(model, output_dir=output_dir, manifest=manifest)
+
+    print(f"Generated docs in {output_dir}/")
+    for f in sorted(output_dir.rglob("*.md")):
+        print(f"  {f.relative_to(output_dir)}")
 
     return 0
 

@@ -155,3 +155,32 @@ class TestFullGeneration:
         assert (tmp_path / "icd.md").exists()
         assert (tmp_path / "health.md").exists()
         assert (tmp_path / "components" / "COMP-1.md").exists()
+
+
+class TestDocsCLI:
+    def test_cli_generates_docs(self, tmp_path):
+        from architecture_model.core.types import ArchitectureModel, Component, Entities, ModelMeta
+        from architecture_model.core.parser import save_model
+
+        model = ArchitectureModel(
+            meta=ModelMeta(project="cli-test", schema_version="1.3"),
+            entities=Entities(components=[
+                Component(id="COMP-1", name="Core", status="ACTIVE", files=["core.py"], contract="Core logic.")
+            ]),
+            relationships=[],
+        )
+        save_model(model, tmp_path / ".architecture-model-extracted.yaml")
+
+        # Import and call the CLI handler directly
+        from architecture_model.cli.main import main
+        import sys
+        old_argv = sys.argv
+        sys.argv = ["architecture-model", "docs", str(tmp_path)]
+        try:
+            main()
+        except SystemExit:
+            pass
+        finally:
+            sys.argv = old_argv
+
+        assert (tmp_path / ".architecture-models" / "docs" / "README.md").exists()

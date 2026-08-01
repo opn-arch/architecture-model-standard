@@ -156,6 +156,14 @@ def run_pipeline(
             _save_model(_enrichment_model, _enriched_path)
             actual_model = _enriched_path
             logger.info("Step 1.8: Auto-enriched model components from manifest")
+            # Auto-generate docs
+            try:
+                from architecture_model.docs import generate_docs
+                _docs_dir = (project_root / ".architecture-models" / "docs")
+                generate_docs(_enrichment_model, output_dir=_docs_dir, manifest=_flat_manifest)
+                logger.info("  Generated architecture docs")
+            except Exception as exc:
+                logger.debug("Doc generation skipped: %s", exc)
         except Exception as exc:
             logger.debug("Auto-enrichment skipped: %s", exc)
 
@@ -265,6 +273,15 @@ def run_pipeline(
                 model_path = project_root / ".architecture-model-extracted.yaml"
                 save_model(model, model_path)
                 result.written_paths.append(model_path)
+
+                # Auto-generate docs
+                try:
+                    from architecture_model.docs import generate_docs
+                    _docs_dir = (project_root / ".architecture-models" / "docs")
+                    generate_docs(model, output_dir=_docs_dir, manifest=flat_manifest)
+                    logger.info("  Generated architecture docs")
+                except Exception as exc:
+                    logger.debug("Doc generation skipped: %s", exc)
 
                 # Persist full project bundle
                 from architecture_model.persistence.store import save_project as _save_project
