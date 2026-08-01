@@ -1,14 +1,16 @@
 # architecture-model-standard
 
-A universal, machine-readable Architecture-as-Code standard for LLM-driven system engineering.
+The open standard for architecture-as-code. Like OpenAPI, but for system architecture.
 
 ## Overview
 
-The Architecture Model Standard defines a YAML schema (v1.4) for capturing software system architecture — entities, relationships, constraints — in a format that is human-editable, git-diffable, and optimized for LLM token budgets. It serves as the architectural spine between raw code analysis and artifact generation: code is scanned into a Reality Manifest, parsed into a structured architecture model, and projected as compact context for LLM-driven code generation.
+Define your software architecture in YAML — entities, relationships, layers, constraints — in a format that is human-editable, git-diffable, and optimized for LLM token budgets. One command scans your codebase, produces a structured model, and compresses it into ~4000 tokens of dense context for AI-driven development.
 
 ```
-Code --> [AST Scan] --> Reality Manifest --> [Architecture Model] --> LLM Context --> Code Generation
+Code --> [AST Scan] --> Reality Manifest --> [Architecture Model] --> LLM Context (50x compression)
 ```
+
+**Key value:** A 50K-line codebase compressed to ~4000 tokens while preserving all structural relationships. Your AI coding tool understands your architecture without reading every file.
 
 ## Installation
 
@@ -16,28 +18,40 @@ Code --> [AST Scan] --> Reality Manifest --> [Architecture Model] --> LLM Contex
 pip install architecture-model-standard
 ```
 
-Python 3.11+ required.
-
-For development:
-
-```bash
-pip install -e ".[dev]"
-```
+Python 3.11+ required. For JS/TS projects, also see [@arch-model/scanner-js](#jsts-scanner).
 
 ## Quick Start
 
-### CLI Usage
-
-Initialize a project descriptor by scanning directory structure:
+### One-Command Bootstrap
 
 ```bash
+# Scan project, generate config, run pipeline, produce docs — all in one shot
 architecture-model init /path/to/project
+
+# Output:
+#   .architecture-model.yaml          (config)
+#   .architecture-models/              (manifests per F-block)
+#   .architecture-models/docs/         (component specs, ICD, health report)
+#
+#   --- Token Savings ---
+#   Source code: ~12,500 tokens (50,000 bytes)
+#   Model:       ~250 tokens (1,000 bytes)
+#   Compression: 50.0x (12,250 tokens saved)
 ```
 
-Validate the model and report a consistency score:
+For config-only (no pipeline): `architecture-model init . --config-only`
+
+### Validate
 
 ```bash
 architecture-model validate .architecture-model.yaml
+```
+
+### Generate Docs
+
+```bash
+architecture-model docs /path/to/project
+# Produces: component specs, dependency matrix, ICD, health report
 ```
 
 ### Python API
@@ -49,8 +63,8 @@ from architecture_model import (
     generate_manifest,
     format_model_context,
     slice_by_fblock,
-    slice_by_layer,
 )
+from architecture_model.core.compression import compute_compression_stats
 
 # Load and validate a model
 model = load_model("path/to/.architecture-model.yaml")
@@ -60,12 +74,27 @@ print(f"Score: {result.score}/100, Valid: {result.is_valid}")
 # Generate a reality manifest from source code
 manifest = generate_manifest("/path/to/project")
 
-# Format model as compressed LLM context
+# Format model as compressed LLM context (token arbitrage)
 context = format_model_context(model, max_tokens=4000, detail_level="standard")
 
-# Slice model by functional block or layer
+# Slice model by functional block
 sliced = slice_by_fblock(model, fblock_id="F1")
+
+# See your token savings
+stats = compute_compression_stats(Path("/path/to/project"))
+print(f"Compression: {stats['compression_ratio']}x")
 ```
+
+### AI Tool Integration
+
+Works with any MCP-compatible tool. See [docs/integrations/](docs/integrations/) for setup guides:
+
+| Tool | Method |
+|------|--------|
+| **OpenCode** | Built-in MCP (`opencode mcp add`) |
+| **Cursor** | [MCP config](docs/integrations/cursor-mcp.md) + [.cursorrules](docs/integrations/.cursorrules) |
+| **Cline** | [MCP config](docs/integrations/cline-mcp.md) |
+| **Continue** | [MCP config](docs/integrations/continue-mcp.md) |
 
 ## Schema Reference
 
@@ -124,33 +153,65 @@ prompt_context = enrich_manifest_slice(manifest, "icd", project_root)
 
 ## CLI Reference
 
-The `architecture-model` CLI provides commands for the full model lifecycle:
-
 | Command | Description |
 |---------|-------------|
-| `init <path>` | Scan directory structure and generate `.architecture-model.yaml` |
-| `extract <artifacts-dir>` | Build architecture model from markdown artifacts |
+| `init <path>` | **Full bootstrap** — scan, config, pipeline, docs, show token savings |
+| `init <path> --config-only` | Only generate `.architecture-model.yaml` config |
 | `validate <model.yaml>` | Check invariants, report score (0-100) |
-| `slice <model.yaml> --fblock F3` | Extract a focused subset of the model by functional block |
-| `diff <old.yaml> <new.yaml>` | Structural comparison between two model versions |
-| `query <model.yaml> "question"` | Answer structural questions via graph traversal |
-| `context <model.yaml> --artifact icd` | Generate LLM context optimized for a specific artifact |
-| `stats <model.yaml>` | Report entity and relationship counts |
+| `docs <path>` | Generate component specs, ICD, dependency matrix, health report |
+| `manifest <path>` | Generate reality manifest (AST scan) |
+| `slice <model.yaml> --fblock F3` | Extract focused subset by F-block |
+| `diff <old.yaml> <new.yaml>` | Structural comparison between model versions |
+| `stats <model.yaml>` | Entity/relationship counts + compression ratio |
 | `impact <model.yaml> CAP-F1` | Trace change impact through relationships |
-| `generate` | Test-guided code generation from architecture models |
+| `decompose <path>` | Recursive decomposition into F-blocks |
+| `enrich <model.yaml>` | Auto-enrich model with test contracts, patterns |
+| `coverage <model.yaml>` | Check model coverage against source |
+| `visualize <path>` | Generate Mermaid diagrams |
+
+## JS/TS Scanner
+
+For TypeScript/JavaScript projects, use the dedicated scanner:
+
+```bash
+# Via npx (recommended for JS/TS projects)
+npx @arch-model/scanner-js /path/to/project
+
+# Outputs .architecture-models/source-graph.json
+# Then use: architecture-model init . (picks up source-graph.json automatically)
+```
+
+The scanner uses ts-morph for full type resolution, re-export handling, and JSDoc extraction. A Python regex fallback is available when Node.js is not installed.
 
 ## Package Structure
 
 ```
 src/architecture_model/
-├── cli/          — CLI commands (init, extract, validate, slice, diff, query, context, stats, impact, generate)
-├── config/       — Configuration loading, auto-discovery, schema definition
-├── core/         — Parser, validator, slicer, differ, merger, decomposer, type system
-├── extract/      — Extract model from generated Tier 1 artifacts
-├── integrations/ — LLM context formatting, pipeline bridge
-├── manifest/     — Reality Manifest generator (AST scanning, metrics, blocks, interfaces)
-└── spec/         — JSON Schema for model validation
+├── cli/            — CLI commands (init, validate, docs, slice, diff, stats, etc.)
+├── config/         — Configuration loading, auto-discovery, schema definition
+├── core/           — Parser, validator, slicer, differ, merger, decomposer, compression
+├── docs/           — Deterministic doc generators (component specs, ICD, health, drift)
+├── integrations/   — LLM context formatting, pipeline bridge
+├── manifest/       — Reality Manifest generator (AST scanning, grouping, TS scanner)
+├── orchestration/  — Pipeline, auto-enrichment, source graph enrichment
+└── spec/           — JSON Schema for model validation
+
+packages/
+└── scanner-js/     — @arch-model/scanner-js (ts-morph based TS/JS scanner)
 ```
+
+## Generated Documentation
+
+`architecture-model docs <repo>` produces:
+
+| Document | Purpose |
+|----------|---------|
+| **Component Spec Sheet** | Per-component markdown (responsibilities, interfaces, dependencies) |
+| **Dependency Matrix** | NxN coupling table between all components |
+| **ICD** | Interface Control Document (provider→consumer contracts) |
+| **Health Report** | Confidence scores, fill rates, token savings, action items |
+| **Drift Report** | Changes since last extraction |
+| **Index/README** | Links to all generated docs |
 
 ## Documentation
 
@@ -161,15 +222,8 @@ Detailed documentation is available in the `docs/` directory:
 
 ## Development
 
-Install in editable mode with development dependencies:
-
 ```bash
 pip install -e ".[dev]"
-```
-
-Run the test suite:
-
-```bash
 pytest tests/ --ignore=tests/test_config_loader.py
 ```
 
@@ -178,10 +232,11 @@ pytest tests/ --ignore=tests/test_config_loader.py
 | Item | Value |
 |------|-------|
 | Schema version | 1.4 |
-| Package version | 0.3.0 |
+| Package version | 1.0.0 |
 | Python | 3.11+ |
-| Test suite | 402 tests passing |
+| Test suite | 780+ tests passing |
 | Entity types | 7 |
 | Relationship types | 8 |
-| LLM protocol verbs | 6 |
-| CLI commands | 10 |
+| CLI commands | 13 |
+| Doc generators | 6 |
+| AI tool integrations | 4 (OpenCode, Cursor, Cline, Continue) |
