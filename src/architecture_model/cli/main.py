@@ -56,6 +56,7 @@ def main(argv: list[str] | None = None) -> int:
         "path", nargs="?", default=".", help="Project root directory (default: cwd)"
     )
     p_init.add_argument("--force", action="store_true", help="Overwrite existing config file")
+    p_init.add_argument("--config-only", action="store_true", help="Only write config, skip pipeline and docs")
 
     # --- impact ---
     p_impact = subparsers.add_parser("impact", help="Impact analysis for an entity")
@@ -159,6 +160,44 @@ def _cmd_init(args) -> int:
     # Write
     out_path = write_config(config, root)
     print(f"\nWritten: {out_path}")
+
+    if getattr(args, "config_only", False):
+        return 0
+
+    # Run full pipeline
+    try:
+        from ..orchestration.pipeline import run_pipeline
+
+        print("\nRunning pipeline...")
+        run_pipeline(root, from_scratch=True)
+        print("Pipeline complete.")
+    except Exception as e:
+        print(f"Pipeline warning: {e}")
+
+    # Generate docs
+    try:
+        from ..core.parser import load_model
+        from ..docs import generate_docs
+
+        model_path = root / ".architecture-model.yaml"
+        if model_path.exists():
+            model = load_model(str(model_path))
+            docs_dir = root / ".architecture-models" / "docs"
+            generate_docs(model, docs_dir)
+            print(f"Docs generated: {docs_dir}")
+    except Exception as e:
+        print(f"Docs warning: {e}")
+
+    # Show compression stats
+    try:
+        from ..core.compression import compute_compression_stats, format_compression_summary
+
+        stats = compute_compression_stats(root)
+        summary = format_compression_summary(stats)
+        print(f"\n{summary}")
+    except Exception as e:
+        print(f"Compression stats warning: {e}")
+
     return 0
 
 
