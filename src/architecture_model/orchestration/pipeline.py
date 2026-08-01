@@ -150,6 +150,11 @@ def run_pipeline(
                 extract_component_interfaces(_enrichment_model, _graph)
             except Exception:
                 pass
+            # Save enriched model to the extracted path (preserve original config)
+            from architecture_model.core.parser import save_model as _save_model
+            _enriched_path = project_root / ".architecture-model-extracted.yaml"
+            _save_model(_enrichment_model, _enriched_path)
+            actual_model = _enriched_path
             logger.info("Step 1.8: Auto-enriched model components from manifest")
         except Exception as exc:
             logger.debug("Auto-enrichment skipped: %s", exc)
