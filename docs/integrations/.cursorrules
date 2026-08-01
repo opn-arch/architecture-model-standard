@@ -1,0 +1,43 @@
+# Architecture Model Rules
+
+This project uses architecture-model-standard for structural documentation.
+
+## Key Files
+- `.architecture-model.yaml` — Project configuration (layers, functional blocks)
+- `.architecture-model-extracted.yaml` — Full architecture model (entities + relationships)
+- `.architecture-models/` — Per-block manifests and generated docs
+- `.architecture-models/docs/` — Generated documentation (component specs, ICD, health report)
+
+## How to Use
+
+### Before making changes:
+1. Read `.architecture-models/docs/README.md` for project overview
+2. Check the relevant component spec in `.architecture-models/docs/components/`
+3. Review the dependency matrix to understand coupling
+
+### When adding new features:
+1. Identify which functional block (F-block) the feature belongs to
+2. Check `.architecture-model.yaml` for block boundaries
+3. Keep dependencies flowing downward through layers (see `layers:` in config)
+
+### Architecture constraints:
+- Components in higher layers should not depend on lower layers
+- Each F-block should be independently comprehensible
+- Cross-block dependencies indicate coupling — minimize them
+
+## Model Schema (for reference)
+
+entities:
+  components:
+    - id: COMP-1
+      name: ComponentName
+      status: ACTIVE
+  capabilities:
+    - id: CAP-1
+      name: CapabilityName
+relationships:
+  - from: COMP-1
+    to: CAP-1
+    type: realizes
+
+## Relationship types: realizes, uses, constrains, contains, triggers, depends_on, implements, exposes
