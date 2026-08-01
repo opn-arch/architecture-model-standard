@@ -284,6 +284,18 @@ def _cmd_stats(args) -> int:
     result = validate_model(model)
     print(f"Validation: {result.summary()}")
 
+    # Compression stats
+    try:
+        from ..core.compression import compute_compression_stats, format_compression_summary
+        model_path = Path(args.model)
+        project_root = model_path.parent if model_path.is_file() else model_path
+        stats = compute_compression_stats(project_root)
+        if stats["source_bytes"] > 0:
+            print()
+            print(format_compression_summary(stats))
+    except Exception:
+        pass
+
     return 0
 
 

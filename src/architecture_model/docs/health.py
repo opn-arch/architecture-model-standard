@@ -1,5 +1,6 @@
 """Generate health metrics report."""
 from __future__ import annotations
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -7,7 +8,7 @@ if TYPE_CHECKING:
     from architecture_model.manifest.types import Manifest
 
 
-def generate_health_report(model: "ArchitectureModel", manifest: "Manifest | None" = None) -> str:
+def generate_health_report(model: "ArchitectureModel", manifest: "Manifest | None" = None, root: "Path | None" = None) -> str:
     """Generate architecture health metrics."""
     lines = ["# Architecture Health Report", ""]
     lines.append(f"**Project:** {model.meta.project}")
@@ -16,7 +17,22 @@ def generate_health_report(model: "ArchitectureModel", manifest: "Manifest | Non
     components = model.entities.components if hasattr(model.entities, 'components') else []
     if not components:
         lines.append("No components found.")
-        return "\n".join(lines)
+    # Token Savings section
+    if root is not None:
+        from ..core.compression import compute_compression_stats
+        stats = compute_compression_stats(root)
+        if stats["compression_ratio"] > 0:
+            lines.append("## Token Savings")
+            lines.append("")
+            lines.append("| Metric | Value |")
+            lines.append("|--------|-------|")
+            lines.append(f"| Source tokens | ~{stats['source_tokens']:,} |")
+            lines.append(f"| Model tokens | ~{stats['model_tokens']:,} |")
+            lines.append(f"| Compression | {stats['compression_ratio']}x |")
+            lines.append(f"| Tokens saved | ~{stats['tokens_saved']:,} |")
+            lines.append("")
+
+    return "\n".join(lines)
 
     avg_conf = sum(c.confidence or 0 for c in components) / len(components)
 
