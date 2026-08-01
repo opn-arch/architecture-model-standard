@@ -88,3 +88,70 @@ class TestDocGenerator:
         result = generate_docs(sample_model, output_dir=tmp_path)
         assert "components" in result
         assert len(result["components"]) == 2
+
+
+class TestDependencyMatrix:
+    def test_generates_table(self, sample_model):
+        from architecture_model.docs.dependency_matrix import generate_dependency_matrix
+        md = generate_dependency_matrix(sample_model)
+        assert "COMP-1" in md or "JsonProvider" in md
+
+    def test_shows_direction(self, sample_model):
+        from architecture_model.docs.dependency_matrix import generate_dependency_matrix
+        md = generate_dependency_matrix(sample_model)
+        assert "\u2192" in md or "\u2190" in md
+
+
+class TestICD:
+    def test_generates_interfaces(self, sample_model):
+        from architecture_model.docs.icd import generate_icd
+        md = generate_icd(sample_model)
+        assert "JsonProvider" in md
+        assert "dumps" in md
+
+
+class TestHealthReport:
+    def test_includes_confidence(self, sample_model):
+        from architecture_model.docs.health import generate_health_report
+        md = generate_health_report(sample_model)
+        assert "85%" in md
+
+    def test_includes_components(self, sample_model):
+        from architecture_model.docs.health import generate_health_report
+        md = generate_health_report(sample_model)
+        assert "JsonProvider" in md
+        assert "Router" in md
+
+
+class TestDriftReport:
+    def test_detects_added(self, sample_model):
+        from copy import deepcopy
+        from architecture_model.docs.drift import generate_drift_report
+        old = deepcopy(sample_model)
+        old.entities.components = [old.entities.components[0]]
+        md = generate_drift_report(old, sample_model)
+        assert "Added" in md or "added" in md
+        assert "Router" in md or "COMP-2" in md
+
+    def test_no_changes(self, sample_model):
+        from architecture_model.docs.drift import generate_drift_report
+        md = generate_drift_report(sample_model, sample_model)
+        assert "No changes" in md
+
+
+class TestIndex:
+    def test_generates_index(self, sample_model, tmp_path):
+        result = generate_docs(sample_model, output_dir=tmp_path)
+        readme = (tmp_path / "README.md").read_text()
+        assert "test-project" in readme
+        assert "Component Specifications" in readme
+
+
+class TestFullGeneration:
+    def test_all_docs_generated(self, sample_model, tmp_path):
+        result = generate_docs(sample_model, output_dir=tmp_path)
+        assert (tmp_path / "README.md").exists()
+        assert (tmp_path / "dependency-matrix.md").exists()
+        assert (tmp_path / "icd.md").exists()
+        assert (tmp_path / "health.md").exists()
+        assert (tmp_path / "components" / "COMP-1.md").exists()
