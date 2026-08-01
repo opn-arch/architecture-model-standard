@@ -1,0 +1,25 @@
+{
+  "name": "@arch-model/scanner-js",
+  "version": "0.1.0",
+  "description": "TypeScript/JavaScript source scanner for architecture-model-standard",
+  "bin": {
+    "arch-model-scan": "./bin/scan.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "ts-morph": "^22.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.0.0"
+  },
+  "files": ["dist/", "bin/"],
+  "license": "MIT"
+}
