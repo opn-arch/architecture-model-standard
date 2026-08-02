@@ -61,6 +61,7 @@ from .types import (
     System,
     TestContract,
     ObservabilityContract,
+    ComponentInterface,
     _enum_value,
 )
 
@@ -168,23 +169,52 @@ def _parse_meta(d: dict) -> ModelMeta:
     )
 
 
+def _normalize_entity_list(raw, id_key: str = "id") -> list[dict]:
+    """Accept both list-of-dicts and dict-of-dicts (keyed by ID) formats.
+    
+    Agents often produce entities as:
+        components:
+          COMP-1:
+            name: Foo
+    Instead of:
+        components:
+          - id: COMP-1
+            name: Foo
+    
+    This normalizes both to list-of-dicts.
+    """
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, dict):
+        result = []
+        for key, val in raw.items():
+            if isinstance(val, dict):
+                entry = dict(val)
+                if id_key not in entry:
+                    entry[id_key] = key
+                result.append(entry)
+            # Skip non-dict values (shouldn't happen but be defensive)
+        return result
+    return []
+
+
 def _parse_entities(d: dict) -> Entities:
     return Entities(
-        actors=[_parse_actor(a) for a in d.get("actors", [])],
-        capabilities=[_parse_capability(c) for c in d.get("capabilities", [])],
-        behaviors=[_parse_behavior(b) for b in d.get("behaviors", [])],
-        interfaces=[_parse_interface(i) for i in d.get("interfaces", [])],
-        constraints=[_parse_constraint(c) for c in d.get("constraints", [])],
-        layers=[_parse_layer(l) for l in d.get("layers", [])],
-        components=[_parse_component(c) for c in d.get("components", [])],
-        systems=[_parse_system(s) for s in d.get("systems", [])],
-        data=[_parse_data(x) for x in d.get("data", [])],
-        events=[_parse_event(x) for x in d.get("events", [])],
-        resources=[_parse_resource(x) for x in d.get("resources", [])],
-        environments=[_parse_environment(x) for x in d.get("environments", [])],
-        quality_attributes=[_parse_quality_attribute(x) for x in d.get("quality_attributes", [])],
-        decisions=[_parse_decision(x) for x in d.get("decisions", [])],
-        lifecycles=[_parse_lifecycle(x) for x in d.get("lifecycles", [])],
+        actors=[_parse_actor(a) for a in _normalize_entity_list(d.get("actors", []))],
+        capabilities=[_parse_capability(c) for c in _normalize_entity_list(d.get("capabilities", []))],
+        behaviors=[_parse_behavior(b) for b in _normalize_entity_list(d.get("behaviors", []))],
+        interfaces=[_parse_interface(i) for i in _normalize_entity_list(d.get("interfaces", []))],
+        constraints=[_parse_constraint(c) for c in _normalize_entity_list(d.get("constraints", []))],
+        layers=[_parse_layer(l) for l in _normalize_entity_list(d.get("layers", []))],
+        components=[_parse_component(c) for c in _normalize_entity_list(d.get("components", []))],
+        systems=[_parse_system(s) for s in _normalize_entity_list(d.get("systems", []))],
+        data=[_parse_data(x) for x in _normalize_entity_list(d.get("data", []))],
+        events=[_parse_event(x) for x in _normalize_entity_list(d.get("events", []))],
+        resources=[_parse_resource(x) for x in _normalize_entity_list(d.get("resources", []))],
+        environments=[_parse_environment(x) for x in _normalize_entity_list(d.get("environments", []))],
+        quality_attributes=[_parse_quality_attribute(x) for x in _normalize_entity_list(d.get("quality_attributes", []))],
+        decisions=[_parse_decision(x) for x in _normalize_entity_list(d.get("decisions", []))],
+        lifecycles=[_parse_lifecycle(x) for x in _normalize_entity_list(d.get("lifecycles", []))],
     )
 
 
@@ -365,6 +395,17 @@ def _parse_component(d: dict) -> Component:
         for o in d.get("observability", [])
     ]
 
+    interfaces = [
+        ComponentInterface(
+            name=ci.get("name", ""),
+            kind=ci.get("kind", "provides"),
+            target_component=ci.get("target_component", ""),
+            signature=ci.get("signature", ""),
+            symbols=ci.get("symbols", []),
+        )
+        for ci in d.get("interfaces", [])
+    ]
+
     return Component(
         **base,
         layer=d.get("layer", ""),
@@ -384,6 +425,7 @@ def _parse_component(d: dict) -> Component:
         signatures=signatures,
         test_contracts=test_contracts,
         observability=observability,
+        interfaces=interfaces,
     )
 
 
@@ -436,10 +478,13 @@ def _parse_lifecycle(d: dict) -> Lifecycle:
 
 
 def _parse_relationship(d: dict) -> Relationship:
+    # Accept multiple key formats agents might use
+    from_id = d.get("from") or d.get("from_id") or d.get("source") or ""
+    to_id = d.get("to") or d.get("to_id") or d.get("target") or ""
     return Relationship(
         type=RelationType.parse(d.get("type", "depends-on")),
-        from_id=d.get("from", ""),
-        to_id=d.get("to", ""),
+        from_id=from_id,
+        to_id=to_id,
         description=d.get("description", ""),
         strength=Strength(d.get("strength", "moderate")),
         extensions=d.get("extensions", {}),
@@ -646,6 +691,10 @@ def _dump_component(c: Component) -> dict:
         ]
     if c.region:
         d["region"] = c.region
+    if c.contract:
+        d["contract"] = c.contract
+    if c.pattern:
+        d["pattern"] = c.pattern
     if c.replicas is not None:
         d["replicas"] = c.replicas
     if c.symbols:
@@ -688,6 +737,14 @@ def _dump_component(c: Component) -> dict:
             | ({"on_error": o.on_error} if o.on_error != "ERROR" else {})
             | ({"on_success": o.on_success} if o.on_success else {})
             for o in c.observability
+        ]
+    if c.interfaces:
+        d["interfaces"] = [
+            {"name": ci.name, "kind": ci.kind}
+            | ({"target_component": ci.target_component} if ci.target_component else {})
+            | ({"signature": ci.signature} if ci.signature else {})
+            | ({"symbols": ci.symbols} if ci.symbols else {})
+            for ci in c.interfaces
         ]
     return d
 

@@ -136,9 +136,16 @@ def group_modules(
     if target_groups is None:
         n_unlocked = sum(1 for _, _, locked in initial_groups if not locked)
         n_locked = sum(1 for _, _, locked in initial_groups if locked)
-        # Only merge unlocked groups; keep all if few enough
-        target_unlocked = max(n_unlocked, 3) if n_unlocked <= 10 else max(8, int(n_unlocked * 0.65))
+        # Aggressive merging: aim for 5-15 total groups regardless of module count
+        if n_unlocked <= 10:
+            target_unlocked = max(n_unlocked, 3)
+        else:
+            # sqrt scaling: 100 modules → ~10 groups, 400 → ~20
+            import math
+            target_unlocked = max(5, min(15, int(math.sqrt(n_unlocked) * 1.2)))
         target_groups = target_unlocked + n_locked
+        # Hard cap: never exceed 20 total groups (agents can't reason about more)
+        target_groups = min(target_groups, 20)
 
     # Step 4: Import-affinity merging (only unlocked groups)
     locked = [(n, f) for n, f, lk in initial_groups if lk]
