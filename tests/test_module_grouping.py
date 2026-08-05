@@ -231,3 +231,142 @@ class TestAutoTargetGroups:
         ]
         groups = group_modules(modules, [])
         assert 3 <= len(groups) <= 15
+
+
+class TestNamePrefixPreGrouping:
+    """Name-prefix affinity: files sharing a prefix get pre-grouped."""
+
+    def test_shared_prefix_groups_together(self):
+        """auth_login.py + auth_utils.py + auth_middleware.py → one group."""
+        from architecture_model.manifest.grouping import group_modules
+        modules = [
+            _mod("src/app/auth_login.py", functions=[
+                FunctionInfo(name="login", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/auth_utils.py", functions=[
+                FunctionInfo(name="hash_pw", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/auth_middleware.py", functions=[
+                FunctionInfo(name="check", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/db_connection.py", functions=[
+                FunctionInfo(name="connect", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/db_queries.py", functions=[
+                FunctionInfo(name="query", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/server.py", functions=[
+                FunctionInfo(name="start", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+        ]
+        groups = group_modules(modules, [])
+        # Should get ~3 groups: auth (3 files), db (2 files), server (1 file)
+        assert len(groups) <= 4
+        auth_group = next(g for g in groups if any("auth" in f for f in g.modules))
+        assert len(auth_group.modules) == 3
+
+    def test_single_char_prefix_not_grouped(self):
+        """Single-char prefixes (a_foo, a_bar) should NOT trigger grouping."""
+        from architecture_model.manifest.grouping import group_modules
+        modules = [
+            _mod("src/app/a_foo.py", functions=[
+                FunctionInfo(name="foo", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/a_bar.py", functions=[
+                FunctionInfo(name="bar", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/baz.py", functions=[
+                FunctionInfo(name="baz", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+        ]
+        groups = group_modules(modules, [])
+        # All singletons (prefix "a" too short to be meaningful)
+        assert len(groups) == 3
+
+    def test_prefix_needs_two_plus_files(self):
+        """A prefix with only one file doesn't form a group."""
+        from architecture_model.manifest.grouping import group_modules
+        modules = [
+            _mod("src/app/auth_login.py", functions=[
+                FunctionInfo(name="login", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/db_conn.py", functions=[
+                FunctionInfo(name="connect", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+            _mod("src/app/db_pool.py", functions=[
+                FunctionInfo(name="pool", signature="() -> None", calls=[], docstring=None, raises=[])
+            ]),
+        ]
+        groups = group_modules(modules, [])
+        db_group = next(g for g in groups if any("db_" in f for f in g.modules))
+        assert len(db_group.modules) == 2
+
+
+class TestNormalizedAffinity:
+    """Normalized scoring prevents mega-group attraction."""
+
+    def test_no_mega_group_with_target(self):
+        """With target_groups=4, should NOT produce one group with >60% of files."""
+        from architecture_model.manifest.grouping import group_modules
+        modules = [_mod(f"src/app/mod_{i}.py", functions=[
+            FunctionInfo(name=f"fn_{i}", signature="() -> None", calls=[], docstring=None, raises=[])
+        ]) for i in range(20)]
+        # Create import clusters: 0-4, 5-9, 10-14, 15-19
+        interfaces = []
+        for cluster_start in range(0, 20, 5):
+            for i in range(cluster_start, cluster_start + 5):
+                for j in range(i + 1, cluster_start + 5):
+                    interfaces.append(InterfaceEdge(
+                        source=f"src/app/mod_{i}.py",
+                        target=f"src/app/mod_{j}.py",
+                        import_path="",
+                    ))
+        groups = group_modules(modules, interfaces, target_groups=4)
+        assert len(groups) == 4
+        # No single group should have more than 8 files
+        assert all(len(g.modules) <= 8 for g in groups)
+
+    def test_clusters_preserved(self):
+        """Import clusters should be kept together, not split."""
+        from architecture_model.manifest.grouping import group_modules
+        modules = [_mod(f"src/app/mod_{i}.py", functions=[
+            FunctionInfo(name=f"fn_{i}", signature="() -> None", calls=[], docstring=None, raises=[])
+        ]) for i in range(12)]
+        # 3 clusters of 4 with dense internal imports
+        interfaces = []
+        for cluster_start in range(0, 12, 4):
+            for i in range(cluster_start, cluster_start + 4):
+                for j in range(i + 1, cluster_start + 4):
+                    interfaces.append(InterfaceEdge(
+                        source=f"src/app/mod_{i}.py",
+                        target=f"src/app/mod_{j}.py",
+                        import_path="",
+                    ))
+        groups = group_modules(modules, interfaces, target_groups=3)
+        assert len(groups) == 3
+        sizes = sorted(len(g.modules) for g in groups)
+        assert sizes == [4, 4, 4]
+
+
+class TestAutoTargetFix:
+    """Auto-target always triggers meaningful merging."""
+
+    def test_eight_modules_get_merged(self):
+        """8 flat modules with imports should merge, not stay as 8 singletons."""
+        from architecture_model.manifest.grouping import group_modules
+        modules = [_mod(f"src/app/{name}.py", functions=[
+            FunctionInfo(name="fn", signature="() -> None", calls=[], docstring=None, raises=[])
+        ]) for name in [
+            "auth", "users", "posts", "comments", "db", "cache", "config", "server"
+        ]]
+        # auth↔users, posts↔comments, db↔cache — 3 natural pairs + 2 singletons
+        interfaces = [
+            InterfaceEdge(source="src/app/auth.py", target="src/app/users.py", import_path=""),
+            InterfaceEdge(source="src/app/users.py", target="src/app/auth.py", import_path=""),
+            InterfaceEdge(source="src/app/posts.py", target="src/app/comments.py", import_path=""),
+            InterfaceEdge(source="src/app/comments.py", target="src/app/posts.py", import_path=""),
+            InterfaceEdge(source="src/app/db.py", target="src/app/cache.py", import_path=""),
+        ]
+        groups = group_modules(modules, interfaces)
+        # Should merge to ~5 groups (3 pairs + 2 singletons), not stay at 8
+        assert len(groups) <= 6

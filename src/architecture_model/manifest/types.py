@@ -35,6 +35,7 @@ class FunctionInfo:
     data_in: list[str] = field(default_factory=list)
     data_out: str = ""
     guards: list[str] = field(default_factory=list)
+    id: str = ""
 
 
 @dataclass

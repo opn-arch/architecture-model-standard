@@ -8,6 +8,10 @@ if TYPE_CHECKING:
     from architecture_model.core.types import ArchitectureModel, Component
 
 
+def _rel_type_str(rel_type) -> str:
+    return rel_type.value if hasattr(rel_type, 'value') else str(rel_type)
+
+
 def _resolve_name(comp_id: str, model: "ArchitectureModel") -> str:
     """Resolve component ID to 'ID (Name)'."""
     for comp in model.entities.components:
@@ -17,51 +21,95 @@ def _resolve_name(comp_id: str, model: "ArchitectureModel") -> str:
 
 
 def generate_component_spec(comp: "Component", model: "ArchitectureModel") -> str:
-    """Generate a markdown spec sheet for a single component."""
+    """Generate a rich markdown spec sheet for a single component."""
     lines: list[str] = []
 
     # Header
-    lines.append(f"# {comp.id}: {comp.name}")
+    lines.append(f"# Component: {comp.name} ({comp.id})")
     lines.append("")
 
-    # Metadata
-    meta_parts = []
-    if comp.status:
-        meta_parts.append(f"**Status:** {comp.status}")
-    if comp.pattern:
-        meta_parts.append(f"**Pattern:** {comp.pattern}")
-    if comp.f_block:
-        meta_parts.append(f"**F-Block:** {comp.f_block}")
-    if comp.confidence is not None:
-        meta_parts.append(f"**Confidence:** {comp.confidence:.0%}")
-    if meta_parts:
-        lines.append(" | ".join(meta_parts))
-        lines.append("")
-
-    # Contract
-    if comp.contract:
-        lines.append("## Contract")
-        lines.append("")
-        lines.append(comp.contract)
-        lines.append("")
+    # Status & Description
+    lines.append(f"**Status:** {comp.status or '—'}")
+    lines.append(f"**Description:** {comp.description or '—'}")
+    lines.append("")
 
     # Files
+    lines.append("## Files")
+    lines.append("")
     if comp.files:
-        lines.append("## Files")
-        lines.append("")
+        lines.append("| File | Functions | Classes |")
+        lines.append("|------|-----------|---------|")
         for f in comp.files:
-            lines.append(f"- `{f}`")
-        lines.append("")
+            funcs = "—"
+            classes = "—"
+            if comp.extensions:
+                file_stats = comp.extensions.get("file_stats", {}).get(f, {})
+                if file_stats:
+                    funcs = str(file_stats.get("functions", "—"))
+                    classes = str(file_stats.get("classes", "—"))
+            lines.append(f"| `{f}` | {funcs} | {classes} |")
+    else:
+        lines.append("None")
+    lines.append("")
 
     # Responsibilities
+    lines.append("## Responsibilities")
+    lines.append("")
     if comp.responsibilities:
-        lines.append("## Responsibilities")
-        lines.append("")
         for r in comp.responsibilities:
             lines.append(f"- {r}")
-        lines.append("")
+    else:
+        lines.append("—")
+    lines.append("")
 
-    # Public API
+    # Relationships
+    outgoing = [r for r in model.relationships if r.from_id == comp.id]
+    incoming = [r for r in model.relationships if r.to_id == comp.id]
+
+    lines.append("## Relationships")
+    lines.append("")
+    lines.append("### Dependencies (outgoing)")
+    lines.append("")
+    if outgoing:
+        lines.append("| Target | Type | Description |")
+        lines.append("|--------|------|-------------|")
+        for r in outgoing:
+            target = _resolve_name(r.to_id, model)
+            lines.append(f"| {target} | {_rel_type_str(r.type)} | {r.description or '—'} |")
+    else:
+        lines.append("None")
+    lines.append("")
+
+    lines.append("### Dependents (incoming)")
+    lines.append("")
+    if incoming:
+        lines.append("| Source | Type | Description |")
+        lines.append("|--------|------|-------------|")
+        for r in incoming:
+            source = _resolve_name(r.from_id, model)
+            lines.append(f"| {source} | {_rel_type_str(r.type)} | {r.description or '—'} |")
+    else:
+        lines.append("None")
+    lines.append("")
+
+    # Behaviors Realized
+    realized_behavior_ids = {
+        r.to_id for r in model.relationships
+        if         r.from_id == comp.id and _rel_type_str(r.type) == "realizes"
+    }
+    behaviors = getattr(model.entities, 'behaviors', []) or []
+    realized = [b for b in behaviors if b.id in realized_behavior_ids]
+
+    lines.append("## Behaviors Realized")
+    lines.append("")
+    if realized:
+        for b in realized:
+            lines.append(f"- {b.name} ({b.id})")
+    else:
+        lines.append("None")
+    lines.append("")
+
+    # Public API (signatures)
     if comp.signatures:
         lines.append("## Public API")
         lines.append("")
@@ -73,22 +121,9 @@ def generate_component_spec(comp: "Component", model: "ArchitectureModel") -> st
             lines.append(f"| `{sig.name}` | `{params}` | `{sig.returns}` | {doc} |")
         lines.append("")
 
-    # Classes
-    if comp.symbols:
-        lines.append("## Classes")
-        lines.append("")
-        lines.append("| Class | Kind | Bases | Methods |")
-        lines.append("|-------|------|-------|---------|")
-        for sym in comp.symbols:
-            kind = sym.kind.value if hasattr(sym.kind, "value") else str(sym.kind)
-            bases = ", ".join(sym.supers) if sym.supers else ""
-            methods = ", ".join(sym.members) if sym.members else ""
-            lines.append(f"| `{sym.name}` | {kind} | {bases} | {methods} |")
-        lines.append("")
-
-    # Dependencies
+    # Interface Dependencies
     if comp.interfaces:
-        lines.append("## Dependencies")
+        lines.append("## Interface Dependencies")
         lines.append("")
         for iface in comp.interfaces:
             target = _resolve_name(iface.target_component, model)
@@ -96,15 +131,30 @@ def generate_component_spec(comp: "Component", model: "ArchitectureModel") -> st
             lines.append(f"- **{iface.kind}** `{iface.name}` → {target} [{symbols}]")
         lines.append("")
 
-    # Test Coverage
-    if comp.test_contracts:
-        lines.append("## Test Coverage")
-        lines.append("")
-        contracts = comp.test_contracts[:20]
-        for tc in contracts:
-            lines.append(f"- `{tc.test_file}::{tc.test_method}` — {tc.contract_type}")
-        if len(comp.test_contracts) > 20:
-            lines.append(f"- ... and {len(comp.test_contracts) - 20} more")
-        lines.append("")
+    # Patterns
+    lines.append("## Patterns")
+    lines.append("")
+    if comp.pattern:
+        lines.append(f"- {comp.pattern}")
+    else:
+        lines.append("None")
+    lines.append("")
+
+    # Confidence
+    confidence = None
+    if comp.confidence is not None:
+        confidence = comp.confidence
+    elif comp.extensions:
+        prov = comp.extensions.get("fblock_provenance", {})
+        if isinstance(prov, dict):
+            confidence = prov.get("confidence")
+
+    lines.append("## Confidence")
+    lines.append("")
+    if confidence is not None:
+        lines.append(f"{confidence:.0%}")
+    else:
+        lines.append("—")
+    lines.append("")
 
     return "\n".join(lines)

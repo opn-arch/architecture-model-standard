@@ -315,6 +315,80 @@ def _check_staleness(model: "ArchitectureModel", manifest: dict) -> CoverageChec
     )
 
 
+def _check_fblock_quality(model: "ArchitectureModel") -> CoverageCheck:
+    """Check F-block quality metrics (dimension 6)."""
+    from .fblock_quality import compute_fblock_quality
+
+    quality = compute_fblock_quality(model)
+
+    # Score: weighted combination of metrics (0-100)
+    # modularity (capped at 0.5 = perfect), low orphan rate, low cycle ratio, balance
+    mod_score = min(quality.modularity / 0.5, 1.0) * 100 if quality.modularity > 0 else 0.0
+    orphan_score = (1 - quality.orphan_rate) * 100
+    cycle_score = (1 - quality.cross_block_cycle_ratio) * 100
+    balance_score = (1 - quality.cluster_balance) * 100
+
+    score = 0.4 * mod_score + 0.2 * orphan_score + 0.2 * cycle_score + 0.2 * balance_score
+
+    details_parts = [
+        f"modularity={quality.modularity:.3f}",
+        f"orphan_rate={quality.orphan_rate:.2f}",
+        f"cycle_ratio={quality.cross_block_cycle_ratio:.2f}",
+        f"cluster_balance={quality.cluster_balance:.2f}",
+    ]
+    if quality.agreement_rate is not None:
+        details_parts.append(f"agreement={quality.agreement_rate:.2f}")
+
+    return CoverageCheck(
+        name="F-Block Quality",
+        score=round(score, 1),
+        matched=int(score),
+        total=100,
+        details=", ".join(details_parts),
+    )
+
+
+def _check_requirement_traceability(model: "ArchitectureModel") -> CoverageCheck:
+    """Check requirement traceability coverage (dimension 8).
+
+    Reports orphan requirements (no incoming 'satisfies' edges).
+    Returns not_run result if no requirements exist (opt-in feature).
+    """
+    requirements = getattr(getattr(model, "entities", None), "requirements", None) or []
+
+    # Only count ACTIVE requirements
+    active_reqs = {r.id for r in requirements if r.status in ("ACTIVE", "active")}
+
+    if not active_reqs:
+        return CoverageCheck(
+            name="requirement_traceability",
+            score=100,
+            matched=0,
+            total=0,
+            details="not_run: no requirements configured",
+        )
+
+    # Find requirements with satisfies edges
+    satisfied_ids: set[str] = set()
+    for rel in model.relationships:
+        rel_type = rel.type if isinstance(rel.type, str) else rel.type.value
+        if rel_type == "satisfies":
+            satisfied_ids.add(rel.to_id)
+
+    orphan_reqs = sorted(active_reqs - satisfied_ids)
+    covered = len(active_reqs) - len(orphan_reqs)
+    score = int(100 * covered / len(active_reqs))
+
+    return CoverageCheck(
+        name="requirement_traceability",
+        score=score,
+        matched=covered,
+        total=len(active_reqs),
+        missing=[f"Orphan requirement (no satisfies edge): {rid}" for rid in orphan_reqs],
+        details=f"{covered}/{len(active_reqs)} requirements covered",
+    )
+
+
 @monitored(
     module="core.coverage",
     quality=lambda r: {"overall_score": r.overall_score},
@@ -335,6 +409,8 @@ def coverage_report(
         _check_capability_coverage(model, manifest),
         _check_interface_coverage(model, manifest),
         _check_staleness(model, manifest),
+        _check_fblock_quality(model),
+        _check_requirement_traceability(model),
     ]
     overall = sum(c.score for c in checks) / len(checks) if checks else 0.0
     return CoverageResult(checks=checks, overall_score=overall)

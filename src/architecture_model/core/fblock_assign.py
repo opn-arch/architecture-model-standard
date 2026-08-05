@@ -49,7 +49,7 @@ def auto_assign_f_blocks(
                 adj[rel.to_id].add(rel.from_id)
 
     # Sort components by degree (most connected first → seed clusters)
-    sorted_comps = sorted(comps, key=lambda c: len(adj.get(c.id, set())), reverse=True)
+    sorted_comps = sorted(comps, key=lambda c: (-len(adj.get(c.id, set())), c.id))
 
     assigned: dict[str, str] = {}  # comp_id → f_block_id
     cluster_id = 0

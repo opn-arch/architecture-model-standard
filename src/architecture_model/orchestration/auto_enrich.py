@@ -14,6 +14,9 @@ from architecture_model.core.types import (
     Component,
     Constant,
     FunctionSignature,
+    Relationship,
+    RelationType,
+    Status,
     Symbol,
     SymbolKind,
 )
@@ -437,6 +440,60 @@ def enrich_with_block_context(
 # ---------------------------------------------------------------------------
 
 
+def manifest_to_source_graph(manifest: Any, model: Any) -> "SourceGraph":
+    """Convert a Manifest's import data into a SourceGraph for interface extraction.
+
+    Resolves module-name imports (e.g. 'src.b.core') to file paths by matching
+    against manifest modules, then creates DependencyEdge objects.
+    """
+    from architecture_model.manifest.protocol import SourceGraph, SourceUnit, DependencyEdge
+
+    # Build a lookup: module name (dot-separated) -> file path
+    # e.g. "src.a.main" -> "src/a/main.py"
+    name_to_file: dict[str, str] = {}
+    for mod in manifest.modules:
+        # mod.name is typically dot-separated; mod.file is the path
+        name_to_file[mod.name] = mod.file
+        # Also index by converting file path to dot notation
+        dot_name = mod.file.replace("/", ".").replace(".py", "")
+        name_to_file[dot_name] = mod.file
+
+    # Build SourceUnits (one per module)
+    units = [
+        SourceUnit(file=mod.file, exports=[], language="python")
+        for mod in manifest.modules
+    ]
+
+    # Build edges from imports
+    edges: list[DependencyEdge] = []
+    known_files = {mod.file for mod in manifest.modules}
+
+    for mod in manifest.modules:
+        for imp in mod.imports:
+            # Try to resolve import to a manifest module file
+            target_file = name_to_file.get(imp)
+            if not target_file:
+                # Try prefix matching (e.g. "src.b" might match "src.b.__init__")
+                # or the import might be a package — skip stdlib/external
+                continue
+            if target_file == mod.file:
+                continue  # skip self-imports
+            if target_file not in known_files:
+                continue
+            edges.append(DependencyEdge(
+                source=mod.file,
+                target=target_file,
+                symbols=[],
+            ))
+
+    return SourceGraph(
+        units=units,
+        edges=edges,
+        root=getattr(manifest, 'project_root', ''),
+        language="python",
+    )
+
+
 def extract_component_interfaces(
     model: Any,
     graph: "SourceGraph",
@@ -594,3 +651,127 @@ def _get_components(model: Any) -> list[Component]:
     elif isinstance(entities, dict):
         return entities.get("components", [])
     return []
+
+
+@monitored("orchestration.create_behaviors")
+def create_behaviors_from_manifest(
+    model: Any,
+    manifest: Manifest,
+) -> tuple[list[Behavior], list[Relationship]]:
+    """Auto-create granular behaviors from manifest, one per significant function.
+
+    Scans all modules in the manifest, creates a Behavior for each function
+    in router and service modules. Links behaviors to components via relationships.
+
+    Args:
+        model: ArchitectureModel with entities.components populated.
+        manifest: Manifest with modules and interfaces.
+
+    Returns:
+        Tuple of (behaviors created, relationships linking components to behaviors).
+    """
+    # Build file→component mapping
+    components = _get_components(model)
+    file_to_comp: dict[str, str] = {}
+    for comp in components:
+        for f in (comp.files or []):
+            file_to_comp[f] = comp.id
+
+    # Build import graph: which files import which
+    imports_from: dict[str, set[str]] = {}
+    for iface in (manifest.interfaces or []):
+        src = iface.source if hasattr(iface, 'source') else iface.get('source', '')
+        tgt = iface.target if hasattr(iface, 'target') else iface.get('target', '')
+        if src and tgt:
+            imports_from.setdefault(src, set()).add(tgt)
+
+    behaviors: list[Behavior] = []
+    new_rels: list[Relationship] = []
+    beh_id = 1
+
+    for mod in manifest.modules:
+        # Skip __init__.py files
+        if mod.file.endswith("__init__.py"):
+            continue
+
+        comp_id = file_to_comp.get(mod.file)
+        if not comp_id:
+            continue
+
+        # Only create behaviors for router and service modules
+        is_router = "routers/" in mod.file or "routes/" in mod.file or "views/" in mod.file
+        is_service = "services/" in mod.file or "pipeline" in mod.file
+        if not is_router and not is_service:
+            continue
+
+        functions = mod.functions or []
+        for func in functions:
+            fname = func.name if hasattr(func, 'name') else str(func)
+
+            # Skip private/dunder functions
+            if fname.startswith("_"):
+                continue
+
+            # Determine trigger
+            if is_router:
+                trigger = _infer_http_trigger(fname, mod.file)
+            else:
+                trigger = "internal service call"
+
+            # Determine steps from function's calls
+            steps = []
+            if hasattr(func, 'calls') and func.calls:
+                steps = [call for call in func.calls if not call.startswith("_")][:10]
+
+            # Determine involved components
+            involved = {comp_id}
+            imported_files = imports_from.get(mod.file, set())
+            for imp_file in imported_files:
+                imp_comp = file_to_comp.get(imp_file)
+                if imp_comp and imp_comp != comp_id:
+                    involved.add(imp_comp)
+
+            beh = Behavior(
+                id=f"BEH-{beh_id}",
+                name=fname,
+                status=Status.ACTIVE,
+                source_file=mod.file,
+                trigger=trigger,
+                steps=steps,
+            )
+            behaviors.append(beh)
+
+            # Create realizes relationships (component → behavior)
+            for cid in involved:
+                new_rels.append(Relationship(
+                    type=RelationType.REALIZES,
+                    from_id=cid,
+                    to_id=beh.id,
+                    description=f"{cid} participates in {fname}",
+                ))
+
+            beh_id += 1
+
+    return behaviors, new_rels
+
+
+def _infer_http_trigger(func_name: str, file_path: str) -> str:
+    """Infer HTTP trigger from function name and file path."""
+    import os
+    resource = os.path.splitext(os.path.basename(file_path))[0]
+
+    name_lower = func_name.lower()
+    if name_lower.startswith(("create", "add", "new", "post")):
+        return f"POST /{resource}"
+    elif name_lower.startswith(("list", "get_all", "search", "index")):
+        return f"GET /{resource}"
+    elif name_lower.startswith(("get", "read", "fetch", "retrieve", "show")):
+        return f"GET /{resource}/{{id}}"
+    elif name_lower.startswith(("update", "edit", "modify", "put", "patch")):
+        return f"PATCH /{resource}/{{id}}"
+    elif name_lower.startswith(("delete", "remove", "destroy")):
+        return f"DELETE /{resource}/{{id}}"
+    elif name_lower.startswith(("approve", "reject", "toggle", "archive")):
+        return f"POST /{resource}/{{id}}/{name_lower}"
+    else:
+        return f"POST /{resource}/{func_name}"

@@ -1,11 +1,11 @@
 meta:
   schema_version: '2.0'
-  manifest_hash: 5a6889929f8b8208
   project: architecture-model-standard
   system: Architecture Model Standard
   generated_at: '2026-07-27T12:00:00.000000+00:00'
   source_artifacts:
   - .architecture-model.yaml
+  manifest_hash: 5a6889929f8b8208
 entities:
   actors:
   - id: ACT-DEV
@@ -96,115 +96,16 @@ entities:
     description: Shared file discovery, exclusion patterns, and source/test file separation
     f_block: F9
   behaviors:
-  - id: BEH-INIT
-    name: Initialize Project
+  - id: BEH-CRUD-_unknown
+    name: 'CRUD: 6 CRUD endpoints (1 CLI, 4 CLI:, 1 MCP)'
     status: ACTIVE
-    description: Bootstrap a new project with auto-discovered configuration and initial architecture model
-    trigger: 'CLI: architecture-model init <path>'
-    preconditions:
-    - Project directory exists with Python source
-    postconditions:
-    - .architecture-model.yaml written with discovered F-blocks and layers
+    trigger: 6 endpoints
     steps:
-    - Config auto-discovers project structure (source root, packages, F-blocks)
-    - Config writes .architecture-model.yaml
-  - id: BEH-VALIDATE
-    name: Validate Architecture Model
-    status: ACTIVE
-    description: Load a model and check structural correctness, producing a score 0-100
-    trigger: 'CLI: architecture-model validate <model.yaml>'
-    preconditions:
-    - Model YAML file exists
-    postconditions:
-    - Validation score and issues reported
-    steps:
-    - Core parses YAML into ArchitectureModel
-    - Core validates (ID uniqueness, referential integrity, orphan detection, capability realization)
-    - Score computed and issues listed
-  - id: BEH-MANIFEST
-    name: Generate Reality Manifest
-    status: ACTIVE
-    description: Scan source code via AST to produce ground-truth inventory
-    trigger: 'CLI: architecture-model manifest <path>'
-    preconditions:
-    - Project root with Python source files
-    postconditions:
-    - Manifest with modules, functions, classes, imports, metrics, body hints
-    steps:
-    - Config provides project configuration
-    - Manifest scans all Python files via AST
-    - Manifest extracts functions, classes, imports, body hints
-    - Manifest derives interfaces from import analysis
-    - Manifest computes project metrics
-  - id: BEH-EXTRACT
-    name: Extract Model from Code
-    status: ACTIVE
-    description: Analyze source code to produce an architecture model automatically
-    trigger: 'MCP tool: architect_extract'
-    preconditions:
-    - Project root with source code
-    postconditions:
-    - ArchitectureModel with components, capabilities, and relationships
-    steps:
-    - Config provides project configuration
-    - Manifest generates code inventory
-    - Extract derives entities and relationships from inventory
-    - Core validates the produced model
-  - id: BEH-SLICE
-    name: Slice Model for Context
-    status: ACTIVE
-    description: Extract a subset of the model focused on a specific F-block, layer, or artifact
-    trigger: 'CLI or MCP: architect_slice'
-    preconditions:
-    - Valid architecture model loaded
-    postconditions:
-    - Subset model containing only relevant entities and relationships
-    steps:
-    - Core loads model
-    - Core slices by fblock/layer/status/artifact
-    - Context formatter compresses to token budget
-  - id: BEH-ENRICH-DECOMPOSE
-    name: Enrich and Decompose Model
-    status: ACTIVE
-    description: Populate AST-derived data on components and generate recursive sub-models
-    trigger: 'CLI: architecture-model enrich / decompose'
-    preconditions:
-    - Architecture model exists
-    - Source code accessible
-    postconditions:
-    - Components enriched with signatures, constants, test_contracts
-    - Sub-models written to .architecture-models/
-    steps:
-    - Orchestration enriches model from Manifest AST data
-    - Orchestration decomposes into per-subsystem models
-    - Core validates each sub-model
-  - id: BEH-DIFF
-    name: Compare Model Versions
-    status: ACTIVE
-    description: Produce structured diff between two model versions
-    trigger: 'CLI: architecture-model diff <old.yaml> <new.yaml>'
-    preconditions:
-    - Two model YAML files exist
-    postconditions:
-    - Structured diff with added/removed/changed entities and relationships
-  - id: BEH-COVERAGE
-    name: Assess Model Coverage
-    status: ACTIVE
-    description: Compare architecture model against manifest to find gaps
-    trigger: 'CLI: architecture-model coverage'
-    preconditions:
-    - Architecture model and manifest available
-    postconditions:
-    - Coverage report with component, capability, interface, and relationship coverage
-  - id: BEH-VISUALIZE
-    name: Visualize Architecture
-    status: ACTIVE
-    description: Generate Mermaid diagrams for model visualization
-    trigger: 'CLI: architecture-model visualize <path>'
-    preconditions:
-    - Valid architecture model loaded
-    postconditions:
-    - Mermaid diagram files written to output directory
+    - Initialize Project
+    - Validate Architecture Model
+    - Generate Reality Manifest
+    - Extract Model from Code
+    - Slice Model for Context
   interfaces:
   - id: IF-GENERATE-MANIFEST
     name: generate_manifest

@@ -1,0 +1,1489 @@
+{
+  "generated_at": "2026-08-03T01:26:15.455546+00:00",
+  "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+  "metrics": {
+    "py_files": 9,
+    "total_lines": 2073,
+    "functions": 20,
+    "classes": 6,
+    "constants": 0
+  },
+  "functional_blocks": {},
+  "modules": [
+    {
+      "file": "src/architecture_model/orchestration/__init__.py",
+      "name": "Orchestration \u2014 enrich and decompose workflows for architecture models",
+      "docstring": "Orchestration \u2014 enrich and decompose workflows for architecture models.",
+      "functions": [],
+      "imports": [
+        "architecture_model.orchestration.enrich",
+        "architecture_model.orchestration.decompose",
+        "architecture_model.orchestration.pipeline",
+        "architecture_model.orchestration.deep_decompose",
+        "architecture_model.orchestration.enrichment_context",
+        "architecture_model.orchestration.auto_enrich"
+      ],
+      "line_count": 10,
+      "status": "dormant",
+      "classes": [],
+      "exports": [
+        "enrich_model",
+        "decompose_model",
+        "write_sub_models",
+        "compact_root_model",
+        "run_pipeline",
+        "iterative_decompose",
+        "format_enrichment_prompt",
+        "enrich_from_manifest",
+        "enrich_behaviors_from_manifest",
+        "enrich_with_block_context"
+      ],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "architecture_model.orchestration.enrich",
+          "symbols": [
+            "enrich_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.decompose",
+          "symbols": [
+            "decompose_model",
+            "write_sub_models",
+            "compact_root_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.pipeline",
+          "symbols": [
+            "run_pipeline"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.deep_decompose",
+          "symbols": [
+            "iterative_decompose"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.enrichment_context",
+          "symbols": [
+            "format_enrichment_prompt"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.auto_enrich",
+          "symbols": [
+            "enrich_from_manifest",
+            "enrich_behaviors_from_manifest",
+            "enrich_with_block_context"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/orchestration/auto_enrich.py",
+      "name": "Auto",
+      "docstring": "Auto-enrichment of architecture model components from manifest data.\n\nPopulates Component fields (signatures, symbols, constants, contract, pattern,\nresponsibilities) by matching component files to manifest modules.",
+      "functions": [
+        {
+          "name": "enrich_from_manifest",
+          "signature": "enrich_from_manifest(model: Any, manifest: Manifest) -> None",
+          "calls": [
+            "monitored",
+            "hasattr",
+            "get",
+            "isinstance",
+            "_classify_pattern",
+            "_extract_responsibilities",
+            "append",
+            "items",
+            "_extract_contract",
+            "extend",
+            "compute_component_confidence",
+            "_synthesize_contract",
+            "_parse_signature",
+            "_class_to_symbol",
+            "Constant",
+            "startswith",
+            "FunctionSignature"
+          ],
+          "docstring": "Enrich model components in-place from manifest data.\n\nPopulates signatures, symbols, constants, contract, pattern, and\nresponsibilities for each component by matching files to manifest modules."
+        },
+        {
+          "name": "enrich_behaviors_from_manifest",
+          "signature": "enrich_behaviors_from_manifest(model: Any, manifest: Manifest) -> None",
+          "calls": [
+            "monitored",
+            "hasattr",
+            "get",
+            "replace",
+            "isinstance",
+            "_extract_trigger",
+            "_extract_steps",
+            "_extract_error_conditions",
+            "lower"
+          ],
+          "docstring": "Enrich model behaviors in-place from manifest data.\n\nPopulates trigger, steps, and postconditions for each behavior by matching\nsource_file to manifest modules and using the behavior name as entry point."
+        },
+        {
+          "name": "enrich_with_block_context",
+          "signature": "enrich_with_block_context(model: Any, recursive_manifests: dict) -> None",
+          "calls": [
+            "monitored",
+            "items",
+            "hasattr",
+            "isinstance",
+            "get",
+            "_classify_pattern",
+            "append",
+            "compute_component_confidence",
+            "setdefault",
+            "any",
+            "endswith"
+          ],
+          "docstring": "Second-pass enrichment using block-level context.\n\nUses recursive manifests to:\n1. Classify patterns at block level (more indicators available)\n2. Propagate block pattern to unclassified components\n3. Infer contracts from block name when module docstring is absent"
+        },
+        {
+          "name": "extract_component_interfaces",
+          "signature": "extract_component_interfaces(model: Any, graph: 'SourceGraph') -> int",
+          "calls": [
+            "_get_components",
+            "set",
+            "get",
+            "add",
+            "append",
+            "ComponentInterface"
+          ],
+          "docstring": "Extract interface contracts between components from cross-boundary edges.\n\nFor each dependency edge that crosses a component boundary:\n- The source component gets a 'requires' interface\n- The target component gets a 'provides' interface\n\nArgs:\n    model: ArchitectureModel with entities.components\n    graph: SourceGraph with edges (dependency info)\n\nReturns:\n    Number of interfaces added."
+        },
+        {
+          "name": "enrich_from_source_graph",
+          "signature": "enrich_from_source_graph(model: Any, graph: 'SourceGraph') -> None",
+          "calls": [
+            "_get_components",
+            "compute_component_confidence",
+            "get",
+            "join",
+            "any",
+            "extend",
+            "FunctionSignature",
+            "Symbol",
+            "lower"
+          ],
+          "docstring": "Enrich model components from SourceGraph export data (language-agnostic).\n\nPopulates signatures, symbols, contracts, patterns, and responsibilities\nfrom ExportedSymbol data. Enables non-Python repos to reach higher confidence."
+        },
+        {
+          "name": "create_behaviors_from_manifest",
+          "signature": "create_behaviors_from_manifest(model: Any, manifest: Manifest) -> tuple[list[Behavior], list[Relationship]]",
+          "calls": [
+            "monitored",
+            "_get_components",
+            "endswith",
+            "get",
+            "hasattr",
+            "add",
+            "startswith",
+            "Behavior",
+            "append",
+            "str",
+            "_infer_http_trigger",
+            "set",
+            "setdefault",
+            "Relationship"
+          ],
+          "docstring": "Auto-create granular behaviors from manifest, one per significant function.\n\nScans all modules in the manifest, creates a Behavior for each function\nin router and service modules. Links behaviors to components via relationships.\n\nArgs:\n    model: ArchitectureModel with entities.components populated.\n    manifest: Manifest with modules and interfaces.\n\nReturns:\n    Tuple of (behaviors created, relationships linking components to behaviors)."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "typing",
+        "architecture_model.core.types",
+        "architecture_model.manifest.types",
+        "architecture_model.monitoring",
+        "architecture_model.patterns",
+        "architecture_model.core.types",
+        "architecture_model.manifest.protocol",
+        "architecture_model.manifest.protocol",
+        "architecture_model.core.confidence",
+        "os",
+        "core.confidence",
+        "core.confidence"
+      ],
+      "line_count": 723,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [
+        {
+          "name": "enrich_from_manifest",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        },
+        {
+          "name": "enrich_behaviors_from_manifest",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        },
+        {
+          "name": "enrich_with_block_context",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        },
+        {
+          "name": "create_behaviors_from_manifest",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        }
+      ],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "re",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "Behavior",
+            "Component",
+            "Constant",
+            "FunctionSignature",
+            "Relationship",
+            "RelationType",
+            "Status",
+            "Symbol",
+            "SymbolKind"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.types",
+          "symbols": [
+            "ClassInfo",
+            "FunctionInfo",
+            "Manifest",
+            "ModuleInfo"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.monitoring",
+          "symbols": [
+            "monitored"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.patterns",
+          "symbols": [
+            "load_patterns"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ComponentInterface"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.protocol",
+          "symbols": [
+            "SourceGraph"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.protocol",
+          "symbols": [
+            "SourceGraph"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.confidence",
+          "symbols": [
+            "compute_component_confidence"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "os",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "core.confidence",
+          "symbols": [
+            "compute_component_confidence"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.confidence",
+          "symbols": [
+            "compute_component_confidence"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/orchestration/behavior_flows.py",
+      "name": "Behavior flow filtering, grouping, scoped manifests & sub",
+      "docstring": "Behavior flow filtering, grouping, scoped manifests & sub-models.",
+      "functions": [
+        {
+          "name": "classify_behaviors",
+          "signature": "classify_behaviors(behaviors: list[Behavior], relationships: list[Relationship], call_graph: CallGraph, file_to_comp: dict[str, str]) -> BehaviorClassification",
+          "calls": [
+            "BehaviorClassification",
+            "_trace_behavior",
+            "set",
+            "len",
+            "append",
+            "setdefault"
+          ],
+          "docstring": "Classify behaviors into cross-component, single-component CRUD, and trivial."
+        },
+        {
+          "name": "summarize_crud_group",
+          "signature": "summarize_crud_group(component_id: str, behaviors: list[Behavior]) -> CrudSummary",
+          "calls": [
+            "CrudSummary",
+            "upper",
+            "get",
+            "sorted",
+            "len",
+            "join",
+            "items",
+            "split"
+          ],
+          "docstring": "Summarize a group of CRUD behaviors for one component."
+        },
+        {
+          "name": "build_behavior_manifest",
+          "signature": "build_behavior_manifest(behavior: Behavior, flow_trace: FlowTrace, manifest: Manifest) -> Manifest",
+          "calls": [
+            "Manifest",
+            "MetricsResult"
+          ],
+          "docstring": "Build a scoped manifest containing only modules touched by the flow."
+        },
+        {
+          "name": "build_behavior_sub_model",
+          "signature": "build_behavior_sub_model(behavior: Behavior, flow_trace: FlowTrace, model: ArchitectureModel, file_to_comp: dict[str, str]) -> ArchitectureModel",
+          "calls": [
+            "set",
+            "ModelMeta",
+            "ArchitectureModel",
+            "Entities",
+            "getattr"
+          ],
+          "docstring": "Build a sub-model for a specific behavior flow."
+        },
+        {
+          "name": "build_file_to_comp",
+          "signature": "build_file_to_comp(model: ArchitectureModel, manifest: Manifest) -> dict[str, str]",
+          "calls": [
+            "isinstance"
+          ],
+          "docstring": "Build file->component mapping from model + manifest."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "typing",
+        "architecture_model.core.types",
+        "architecture_model.manifest.call_graph",
+        "architecture_model.manifest.types"
+      ],
+      "line_count": 175,
+      "status": "active",
+      "classes": [
+        {
+          "name": "BehaviorClassification",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "CrudSummary",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ArchitectureModel",
+            "Behavior",
+            "Component",
+            "Entities",
+            "Interface",
+            "ModelMeta",
+            "Relationship",
+            "RelationType",
+            "Status"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.call_graph",
+          "symbols": [
+            "CallGraph",
+            "FlowTrace",
+            "map_flow_to_components",
+            "trace_flow"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.types",
+          "symbols": [
+            "InterfaceEdge",
+            "Manifest",
+            "MetricsResult"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/orchestration/decompose.py",
+      "name": "Generate recursive sub",
+      "docstring": "Generate recursive sub-models from parent model via relationship tracing.\n\nFor each F-block, produces an ArchitectureModel by tracing relationships\noutward from the block's components:\n- realizes --> Capability\n- exposes --> Interface\n- traces-to --> Behavior\n- constrained-by --> Constraint\n- depends-on --> boundary relationships to external components\n\nThis produces sub-models that are faithful slices of the parent model,\nnot invented entities.",
+      "functions": [
+        {
+          "name": "decompose_model",
+          "signature": "decompose_model(project_root, model_path)",
+          "calls": [
+            "monitored",
+            "load_model",
+            "get_config",
+            "items",
+            "get",
+            "info",
+            "_find_block_components",
+            "_find_parent_component",
+            "copy",
+            "_trace_entities",
+            "update",
+            "_collect_relationships",
+            "ArchitectureModel",
+            "_inject_sub_behaviors",
+            "warning",
+            "add",
+            "len",
+            "ModelMeta",
+            "Entities"
+          ],
+          "docstring": "Generate sub-models for each F-block by tracing parent model relationships.\n\nFor each F-block:\n1. Find components by file path matching\n2. Trace realizes/exposes/traces-to/constrained-by to find connected entities\n3. Collect internal + boundary relationships\n4. Build sub-model with parent's actual entities (not invented ones)\n\nArgs:\n    project_root: Root directory with .architecture-model.yaml\n    model_path: Optional path to model file (default: project_root/.architecture-model.yaml)\n\nReturns:\n    Dict mapping block_id -> ArchitectureModel (sub-model)"
+        },
+        {
+          "name": "compact_root_model",
+          "signature": "compact_root_model(model, block_ids: list[str]) -> None",
+          "calls": [
+            "monitored",
+            "set",
+            "hasattr",
+            "get",
+            "getattr",
+            "isinstance",
+            "setattr",
+            "type"
+          ],
+          "docstring": "Strip implementation detail from components in-place, keeping identity.\n\nAfter decomposition, the root model no longer needs heavy detail on\ncomponents that have been decomposed into sub-models.  This function\nzeroes out implementation-level fields while preserving identity and\narchitectural contract fields."
+        },
+        {
+          "name": "write_sub_models",
+          "signature": "write_sub_models(sub_models, output_dir)",
+          "calls": [
+            "items",
+            "mkdir",
+            "save_model",
+            "append",
+            "info"
+          ],
+          "docstring": "Write sub-models to YAML files.\n\nOutput structure:\n    output_dir/<block_id>/.architecture-model.yaml"
+        }
+      ],
+      "imports": [
+        "__future__",
+        "logging",
+        "pathlib",
+        "yaml",
+        "architecture_model.config.loader",
+        "architecture_model.core.parser",
+        "architecture_model.core.types",
+        "architecture_model.monitoring"
+      ],
+      "line_count": 374,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [
+        {
+          "name": "decompose_model",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        },
+        {
+          "name": "compact_root_model",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        }
+      ],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "logging",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "yaml",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.config.loader",
+          "symbols": [
+            "get_config"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "load_model",
+            "save_model",
+            "_parse_behavior"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ArchitectureModel",
+            "Entities",
+            "ModelMeta",
+            "Relationship",
+            "RelationType"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.monitoring",
+          "symbols": [
+            "monitored"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {
+        "logger": "logging.getLogger(__name__)"
+      }
+    },
+    {
+      "file": "src/architecture_model/orchestration/deep_decompose.py",
+      "name": "Recursive deep decomposition of a block into sub",
+      "docstring": "Recursive deep decomposition of a block into sub-components.\n\nTakes a block manifest (modules + import edges) and clusters modules\ninto sub-components using import-graph affinity.",
+      "functions": [
+        {
+          "name": "deep_decompose_block",
+          "signature": "deep_decompose_block(manifest: Manifest, block_id: str, block_name: str, max_modules: int, target_k: int, min_cluster_size: int, parent_id: str) -> DecomposeResult",
+          "calls": [
+            "monitored",
+            "DecomposeResult",
+            "derive_interfaces",
+            "cluster_modules",
+            "enumerate",
+            "items",
+            "len",
+            "Path",
+            "append",
+            "get",
+            "SubComponent",
+            "InternalRelationship",
+            "extend",
+            "sum"
+          ],
+          "docstring": "Decompose a block manifest into sub-components via import clustering.\n\nArgs:\n    manifest: Block manifest with modules and their imports.\n    block_id: F-block ID (e.g., \"F6\").\n    block_name: Human name (e.g., \"Integration MQTT\").\n    max_modules: Don't decompose if fewer modules than this.\n    target_k: Target number of sub-components.\n    min_cluster_size: Merge clusters smaller than this.\n    parent_id: Parent component ID prefix for naming.\n\nReturns:\n    DecomposeResult with sub_components and internal_relationships.\n    Empty sub_components if block is too small to decompose."
+        },
+        {
+          "name": "iterative_decompose",
+          "signature": "iterative_decompose(manifest: Manifest, block_id: str, block_name: str, leaf_max_files: int, max_depth: int, target_k: int, min_cluster_size: int) -> list[DecomposeResult]",
+          "calls": [
+            "monitored",
+            "pop",
+            "Manifest",
+            "deep_decompose_block",
+            "append",
+            "len",
+            "MetricsResult",
+            "ScanReport",
+            "get",
+            "sum",
+            "Path",
+            "max"
+          ],
+          "docstring": "Iteratively decompose until all clusters are <= leaf_max_files.\n\nReturns list of DecomposeResult objects (one per decomposition round\nthat produced sub-components). Empty list if block is already a leaf."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "logging",
+        "dataclasses",
+        "pathlib",
+        "architecture_model.monitoring",
+        "architecture_model.core.cluster",
+        "architecture_model.manifest.interfaces",
+        "architecture_model.manifest.types"
+      ],
+      "line_count": 209,
+      "status": "active",
+      "classes": [
+        {
+          "name": "SubComponent",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "InternalRelationship",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "DecomposeResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [
+        {
+          "name": "deep_decompose_block",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        },
+        {
+          "name": "iterative_decompose",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        }
+      ],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "logging",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.monitoring",
+          "symbols": [
+            "monitored"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.cluster",
+          "symbols": [
+            "cluster_modules"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.interfaces",
+          "symbols": [
+            "derive_interfaces"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.types",
+          "symbols": [
+            "Manifest",
+            "MetricsResult",
+            "ScanReport"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {
+        "logger": "logging.getLogger(__name__)"
+      }
+    },
+    {
+      "file": "src/architecture_model/orchestration/enrich.py",
+      "name": "Auto",
+      "docstring": "Auto-enrichment of architecture models from AST data.\n\nPopulates FunctionSignature, Constant, and TestContract on components\nby scanning their source files and discovering matching test files.",
+      "functions": [
+        {
+          "name": "enrich_model",
+          "signature": "enrich_model(model: ArchitectureModel, project_root: Path) -> ArchitectureModel",
+          "calls": [
+            "monitored",
+            "isinstance",
+            "get",
+            "_enrich_signatures",
+            "_enrich_constants",
+            "_enrich_test_contracts",
+            "_enum_str",
+            "len"
+          ],
+          "docstring": "Auto-populate signatures, constants, test_contracts on components."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "ast",
+        "logging",
+        "pathlib",
+        "architecture_model.core.types",
+        "architecture_model.manifest.body_hints",
+        "architecture_model.manifest.test_analyzer",
+        "architecture_model.monitoring"
+      ],
+      "line_count": 177,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [
+        {
+          "name": "enrich_model",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        }
+      ],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "ast",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "logging",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ArchitectureModel",
+            "Component",
+            "Constant",
+            "FunctionSignature",
+            "TestContract"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.body_hints",
+          "symbols": [
+            "extract_file_hints"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.test_analyzer",
+          "symbols": [
+            "analyze_test_file"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.monitoring",
+          "symbols": [
+            "monitored"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {
+        "logger": "logging.getLogger(__name__)"
+      }
+    },
+    {
+      "file": "src/architecture_model/orchestration/enrichment_context.py",
+      "name": "Format enrichment context for single",
+      "docstring": "Format enrichment context for single-pass agent annotation.\n\nGiven a tree of decomposition results, produces a compact prompt\nthat lets the agent classify every leaf with a pattern + one-sentence contract.",
+      "functions": [
+        {
+          "name": "format_enrichment_prompt",
+          "signature": "format_enrichment_prompt(decompositions: list[DecomposeResult]) -> str",
+          "calls": [
+            "monitored",
+            "load_patterns",
+            "append",
+            "items",
+            "join",
+            "len"
+          ],
+          "docstring": "Format all leaves for agent pattern/contract annotation.\n\nReturns a prompt string containing:\n1. Available patterns with indicators\n2. All leaf components with their files/classes/functions\n3. Instructions for annotation format"
+        }
+      ],
+      "imports": [
+        "__future__",
+        "architecture_model.monitoring",
+        "architecture_model.orchestration.deep_decompose",
+        "architecture_model.patterns"
+      ],
+      "line_count": 69,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [
+        {
+          "name": "format_enrichment_prompt",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        }
+      ],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.monitoring",
+          "symbols": [
+            "monitored"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.deep_decompose",
+          "symbols": [
+            "DecomposeResult"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.patterns",
+          "symbols": [
+            "load_patterns"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/orchestration/naming_context.py",
+      "name": "Format decomposition results as compact context for agent naming",
+      "docstring": "Format decomposition results as compact context for agent naming.",
+      "functions": [
+        {
+          "name": "format_naming_context",
+          "signature": "format_naming_context(result: DecomposeResult) -> str",
+          "calls": [
+            "join",
+            "append",
+            "sorted",
+            "removesuffix",
+            "len",
+            "rsplit"
+          ],
+          "docstring": "Format a DecomposeResult for the agent to assign semantic names.\n\nReturns a compact string showing each cluster's key files, classes,\nand inter-cluster dependencies."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "architecture_model.orchestration.deep_decompose"
+      ],
+      "line_count": 36,
+      "status": "dormant",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.deep_decompose",
+          "symbols": [
+            "DecomposeResult"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/orchestration/pipeline.py",
+      "name": "Unified decomposition pipeline",
+      "docstring": "Unified decomposition pipeline.\n\nSingle entry point that chains:\n1. Generate recursive manifests (per-block AST scan)\n2. Decompose parent model into sub-models (relationship tracing)\n3. Write all artifacts to .architecture-models/<block_id>/\n\nUsage:\n    from architecture_model.orchestration.pipeline import run_pipeline\n    result = run_pipeline(Path(\"/path/to/repo\"))",
+      "functions": [
+        {
+          "name": "run_pipeline",
+          "signature": "run_pipeline(project_root: Path, parent_model: str, model_file: str | None, output_dir: str, deep: bool, compact: bool, from_scratch: bool) -> PipelineResult",
+          "calls": [
+            "monitored",
+            "PipelineResult",
+            "info",
+            "generate_recursive_manifests",
+            "write_recursive_manifests",
+            "extend",
+            "items",
+            "exists",
+            "len",
+            "append",
+            "error",
+            "iterative_decompose",
+            "load_model",
+            "_load_model",
+            "generate_manifest",
+            "enrich_from_manifest",
+            "_save_model",
+            "decompose_model",
+            "sum",
+            "ValueError",
+            "from_manifest",
+            "extract_component_interfaces",
+            "generate_docs",
+            "debug",
+            "write_sub_models",
+            "warning",
+            "list",
+            "_load",
+            "compact_root_model",
+            "save_model",
+            "create_components_from_manifest",
+            "ArchitectureModel",
+            "_save_project",
+            "get",
+            "keys",
+            "group_modules",
+            "build_block_chains",
+            "auto_fblocks",
+            "compute_representativeness",
+            "_enrich_test_contracts",
+            "ModelMeta",
+            "Entities",
+            "_enum_str"
+          ],
+          "docstring": "Run the full decomposition pipeline.\n\n1. Generate recursive manifests (per-block AST scan + dependency analysis)\n2. Decompose parent model into sub-models (relationship tracing)\n3. Write all artifacts to output_dir/<block_id>/\n\nArgs:\n    project_root: Root directory with .architecture-model.yaml\n    parent_model: Config filename with functional_blocks (default: .architecture-model.yaml)\n    model_file: Model filename with entities/relationships. If None, auto-detects:\n                tries parent_model first, then .architecture-model-extracted.yaml\n    output_dir: Output directory name (default: .architecture-models)\n    deep: Enable iterative deep decomposition of blocks\n    compact: Compact root model after decomposition\n    from_scratch: If True and no model exists, bootstrap one from manifest\n                  using module grouping and auto-enrichment\n\nReturns:\n    PipelineResult with manifests, sub_models, and written paths.",
+          "raises": [
+            "ValueError"
+          ]
+        }
+      ],
+      "imports": [
+        "__future__",
+        "logging",
+        "dataclasses",
+        "pathlib",
+        "architecture_model.monitoring",
+        "architecture_model.core.types",
+        "architecture_model.manifest.recursive",
+        "architecture_model.manifest.types",
+        "architecture_model.orchestration.decompose",
+        "architecture_model.orchestration.deep_decompose",
+        "architecture_model.orchestration.auto_enrich",
+        "architecture_model.orchestration.enrich",
+        "architecture_model.orchestration.deep_decompose",
+        "architecture_model.core.parser",
+        "architecture_model.core.parser",
+        "architecture_model.manifest.generator",
+        "architecture_model.core.parser",
+        "architecture_model.manifest.protocol",
+        "architecture_model.docs",
+        "architecture_model.orchestration.decompose",
+        "architecture_model.core.parser",
+        "architecture_model.manifest.generator",
+        "architecture_model.manifest.grouping",
+        "architecture_model.core.parser",
+        "architecture_model.core.types",
+        "architecture_model.manifest.chains",
+        "architecture_model.core.representativeness",
+        "architecture_model.persistence.store",
+        "architecture_model.manifest.protocol",
+        "architecture_model.docs"
+      ],
+      "line_count": 300,
+      "status": "active",
+      "classes": [
+        {
+          "name": "PipelineResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [
+        {
+          "name": "run_pipeline",
+          "decorators": [
+            "monitored"
+          ],
+          "is_method": false,
+          "class_name": null
+        }
+      ],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "logging",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.monitoring",
+          "symbols": [
+            "monitored"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ArchitectureModel",
+            "ModelMeta"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.recursive",
+          "symbols": [
+            "generate_recursive_manifests",
+            "write_recursive_manifests"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.types",
+          "symbols": [
+            "RecursiveManifest"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.decompose",
+          "symbols": [
+            "decompose_model",
+            "write_sub_models"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.deep_decompose",
+          "symbols": [
+            "DecomposeResult"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.auto_enrich",
+          "symbols": [
+            "enrich_from_manifest",
+            "extract_component_interfaces"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.enrich",
+          "symbols": [
+            "_enrich_test_contracts",
+            "_enum_str"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.deep_decompose",
+          "symbols": [
+            "iterative_decompose"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.generator",
+          "symbols": [
+            "generate_manifest"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "save_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.protocol",
+          "symbols": [
+            "SourceGraph"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.docs",
+          "symbols": [
+            "generate_docs"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.orchestration.decompose",
+          "symbols": [
+            "compact_root_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "load_model",
+            "save_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.generator",
+          "symbols": [
+            "generate_manifest"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.grouping",
+          "symbols": [
+            "auto_fblocks",
+            "create_components_from_manifest",
+            "group_modules"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "save_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ArchitectureModel",
+            "Entities"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.chains",
+          "symbols": [
+            "build_block_chains"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.representativeness",
+          "symbols": [
+            "compute_representativeness"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.persistence.store",
+          "symbols": [
+            "save_project"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.protocol",
+          "symbols": [
+            "SourceGraph"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.docs",
+          "symbols": [
+            "generate_docs"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {
+        "logger": "logging.getLogger(__name__)"
+      }
+    }
+  ],
+  "interfaces": [
+    {
+      "source": "src/architecture_model/orchestration/__init__.py",
+      "target": "src/architecture_model/orchestration/enrich.py",
+      "import_path": "architecture_model.orchestration.enrich"
+    },
+    {
+      "source": "src/architecture_model/orchestration/__init__.py",
+      "target": "src/architecture_model/orchestration/decompose.py",
+      "import_path": "architecture_model.orchestration.decompose"
+    },
+    {
+      "source": "src/architecture_model/orchestration/__init__.py",
+      "target": "src/architecture_model/orchestration/pipeline.py",
+      "import_path": "architecture_model.orchestration.pipeline"
+    },
+    {
+      "source": "src/architecture_model/orchestration/__init__.py",
+      "target": "src/architecture_model/orchestration/deep_decompose.py",
+      "import_path": "architecture_model.orchestration.deep_decompose"
+    },
+    {
+      "source": "src/architecture_model/orchestration/__init__.py",
+      "target": "src/architecture_model/orchestration/enrichment_context.py",
+      "import_path": "architecture_model.orchestration.enrichment_context"
+    },
+    {
+      "source": "src/architecture_model/orchestration/__init__.py",
+      "target": "src/architecture_model/orchestration/auto_enrich.py",
+      "import_path": "architecture_model.orchestration.auto_enrich"
+    },
+    {
+      "source": "src/architecture_model/orchestration/enrichment_context.py",
+      "target": "src/architecture_model/orchestration/deep_decompose.py",
+      "import_path": "architecture_model.orchestration.deep_decompose"
+    },
+    {
+      "source": "src/architecture_model/orchestration/naming_context.py",
+      "target": "src/architecture_model/orchestration/deep_decompose.py",
+      "import_path": "architecture_model.orchestration.deep_decompose"
+    },
+    {
+      "source": "src/architecture_model/orchestration/pipeline.py",
+      "target": "src/architecture_model/orchestration/decompose.py",
+      "import_path": "architecture_model.orchestration.decompose"
+    },
+    {
+      "source": "src/architecture_model/orchestration/pipeline.py",
+      "target": "src/architecture_model/orchestration/deep_decompose.py",
+      "import_path": "architecture_model.orchestration.deep_decompose"
+    },
+    {
+      "source": "src/architecture_model/orchestration/pipeline.py",
+      "target": "src/architecture_model/orchestration/auto_enrich.py",
+      "import_path": "architecture_model.orchestration.auto_enrich"
+    },
+    {
+      "source": "src/architecture_model/orchestration/pipeline.py",
+      "target": "src/architecture_model/orchestration/enrich.py",
+      "import_path": "architecture_model.orchestration.enrich"
+    }
+  ]
+}

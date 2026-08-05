@@ -36,5 +36,8 @@ architecture-model = "architecture_model.cli.main:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/architecture_model"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [".venv*", "*.egg-info", ".git", "__pycache__", "packages/"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

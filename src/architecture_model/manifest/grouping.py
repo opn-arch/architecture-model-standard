@@ -125,27 +125,38 @@ def group_modules(
             for f in normal_files:
                 name = PurePosixPath(f).stem.replace("_", " ").title().replace(" ", "")
                 initial_groups.append((name, [f], False))
+        elif len(files) > 1 and len(dir_groups) > 1:
+            # Directory with multiple files in a multi-directory project:
+            # pre-group by directory (unlocked, can still be merged)
+            dir_name = PurePosixPath(dir_path).name
+            initial_groups.append((dir_name.lstrip("_").title(), files, False))
         else:
-            # Default: each file gets its own group
-            for f in files:
-                stem = PurePosixPath(f).stem
-                name = stem.lstrip("_").replace("_", " ").title().replace(" ", "")
-                initial_groups.append((name, [f], False))
+            # Single-directory project or single-file dir: use name-prefix grouping
+            prefix_groups = _group_by_prefix(files)
+            for prefix, pfiles in prefix_groups.items():
+                if prefix and len(pfiles) >= 2:
+                    name = prefix.replace("_", " ").title().replace(" ", "")
+                    initial_groups.append((name, pfiles, False))
+                else:
+                    for f in pfiles:
+                        stem = PurePosixPath(f).stem
+                        name = stem.lstrip("_").replace("_", " ").title().replace(" ", "")
+                        initial_groups.append((name, [f], False))
 
     # Step 3: Calculate target
     if target_groups is None:
         n_unlocked = sum(1 for _, _, locked in initial_groups if not locked)
         n_locked = sum(1 for _, _, locked in initial_groups if locked)
-        # Aggressive merging: aim for 5-15 total groups regardless of module count
-        if n_unlocked <= 10:
-            target_unlocked = max(n_unlocked, 3)
+        # Use total FILE count (not group count) for target calculation
+        # This prevents over-merging when directories already form good groups
+        n_files = sum(len(f) for _, f, lk in initial_groups if not lk)
+        if n_files <= 3:
+            target_unlocked = n_unlocked
         else:
-            # sqrt scaling: 100 modules → ~10 groups, 400 → ~20
-            import math
-            target_unlocked = max(5, min(15, int(math.sqrt(n_unlocked) * 1.2)))
+            # sqrt(files) * 0.8, clamped to [3, 12], but never exceed group count
+            target_unlocked = max(3, min(12, min(n_unlocked, int(math.sqrt(n_files) * 0.8))))
         target_groups = target_unlocked + n_locked
-        # Hard cap: never exceed 20 total groups (agents can't reason about more)
-        target_groups = min(target_groups, 20)
+        target_groups = min(target_groups, 15)
 
     # Step 4: Import-affinity merging (only unlocked groups)
     locked = [(n, f) for n, f, lk in initial_groups if lk]
@@ -182,44 +193,78 @@ def _is_subdirectory_group(dir_path: str, all_dirs: dict[str, list[str]]) -> boo
     return False
 
 
+def _group_by_prefix(files: list[str]) -> dict[str, list[str]]:
+    """Group files by shared name prefix (minimum 2 chars before first underscore).
+    
+    Examples:
+        auth_login.py, auth_utils.py → prefix "auth"
+        db_connection.py, db_pool.py → prefix "db"
+        server.py → no prefix (no underscore)
+        a_foo.py → no prefix (single char too short)
+    """
+    prefix_map: dict[str, list[str]] = defaultdict(list)
+    no_prefix: list[str] = []
+    
+    for f in files:
+        stem = PurePosixPath(f).stem.lstrip("_")
+        if "_" in stem:
+            prefix = stem.split("_", 1)[0]
+            if len(prefix) >= 2:
+                prefix_map[prefix].append(f)
+            else:
+                no_prefix.append(f)
+        else:
+            no_prefix.append(f)
+    
+    # Only keep prefixes with 2+ files AND not dominating the directory
+    # A prefix capturing >60% of a large directory is just a naming convention
+    total = len(files)
+    result: dict[str, list[str]] = {}
+    for prefix, pfiles in prefix_map.items():
+        is_dominant = total >= 6 and len(pfiles) > total * 0.6
+        if len(pfiles) >= 2 and not is_dominant:
+            result[prefix] = pfiles
+        else:
+            no_prefix.extend(pfiles)
+    
+    if no_prefix:
+        result[""] = no_prefix
+    return result
+
+
 def _merge_by_import_affinity(
     groups: list[tuple[str, list[str]]],
     interfaces: list[InterfaceEdge],
     target: int,
 ) -> list[tuple[str, list[str]]]:
-    """Iteratively merge groups with highest import affinity until at target."""
-    # Build edge count between file pairs
-    edge_count: dict[tuple[str, str], int] = defaultdict(int)
+    """Iteratively merge groups with highest normalized import affinity."""
+    # Build edge set between file pairs
+    edges: set[tuple[str, str]] = set()
     for iface in interfaces:
         key = (min(iface.source, iface.target), max(iface.source, iface.target))
-        edge_count[key] += 1
+        edges.add(key)
 
-    groups = list(groups)  # copy
+    groups = list(groups)
 
     while len(groups) > target:
-        # Find the pair of groups with highest cross-edge count
-        best_score = -1
+        best_score = -1.0
         best_pair = (0, 1)
 
         for i in range(len(groups)):
             for j in range(i + 1, len(groups)):
-                score = _cross_edge_count(groups[i][1], groups[j][1], edge_count)
+                score = _normalized_affinity(groups[i][1], groups[j][1], edges)
                 if score > best_score:
                     best_score = score
                     best_pair = (i, j)
 
-        # If no import affinity exists, merge smallest groups
+        # If no import affinity, merge two smallest groups
         if best_score <= 0:
-            # Find two smallest groups
             sizes = [(len(g[1]), idx) for idx, g in enumerate(groups)]
             sizes.sort()
             best_pair = (sizes[0][1], sizes[1][1])
 
         i, j = best_pair
-        # Merge j into i
-        merged_name = groups[i][0]  # keep the larger group's name
-        if len(groups[j][1]) > len(groups[i][1]):
-            merged_name = groups[j][0]
+        merged_name = groups[i][0] if len(groups[i][1]) >= len(groups[j][1]) else groups[j][0]
         merged_files = groups[i][1] + groups[j][1]
         groups[i] = (merged_name, merged_files)
         groups.pop(j)
@@ -227,16 +272,26 @@ def _merge_by_import_affinity(
     return groups
 
 
-def _cross_edge_count(
-    files_a: list[str], files_b: list[str], edge_count: dict[tuple[str, str], int]
-) -> int:
-    """Count import edges between two sets of files."""
-    total = 0
+def _normalized_affinity(
+    files_a: list[str], files_b: list[str], edges: set[tuple[str, str]]
+) -> float:
+    """Normalized affinity: actual_edges / possible_edges between two groups.
+    
+    Prevents large groups from always winning since more files = more 
+    possible edges = lower score unless connections are dense.
+    """
+    possible = len(files_a) * len(files_b)
+    if possible == 0:
+        return 0.0
+    
+    actual = 0
     for a in files_a:
         for b in files_b:
             key = (min(a, b), max(a, b))
-            total += edge_count.get(key, 0)
-    return total
+            if key in edges:
+                actual += 1
+    
+    return actual / possible
 
 
 # ---------------------------------------------------------------------------

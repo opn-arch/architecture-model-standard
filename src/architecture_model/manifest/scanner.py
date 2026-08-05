@@ -581,16 +581,22 @@ def _determine_status(filepath: Path, line_count: int) -> ModuleStatus:
     return ModuleStatus.DORMANT
 
 
-def scan_file(root: Path, filepath: Path) -> ModuleInfo:
+def scan_file(root: Path, filepath: Path, cache=None) -> ModuleInfo:
     """Scan a single Python file and return typed metadata.
 
     Args:
         root: Project root directory.
         filepath: Absolute path to the Python file.
+        cache: Optional ScanCache for pipeline-scoped deduplication.
 
     Returns:
         ModuleInfo with all extracted metadata.
     """
+    if cache is not None:
+        cached = cache.get(filepath)
+        if cached is not None:
+            return cached
+
     rel_path = str(filepath.relative_to(root))
     line_count = _file_line_count(filepath)
     status = _determine_status(filepath, line_count)
@@ -633,7 +639,7 @@ def scan_file(root: Path, filepath: Path) -> ModuleInfo:
         rel_path, len(functions), len(classes), len(constants),
     )
 
-    return ModuleInfo(
+    result = ModuleInfo(
         file=rel_path,
         name=name,
         docstring=docstring,
@@ -648,6 +654,11 @@ def scan_file(root: Path, filepath: Path) -> ModuleInfo:
         module_constants=constants,
         module_assignments=assignments,
     )
+
+    if cache is not None:
+        cache.put(filepath, result)
+
+    return result
 
 
 def _scan_file(root: Path, filepath: Path) -> dict[str, Any]:

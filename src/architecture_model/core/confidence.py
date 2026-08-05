@@ -36,6 +36,10 @@ def compute_component_confidence(comp: Component) -> float:
         score += 0.05
     if comp.files:
         score += 0.05
+    if comp.interfaces:
+        has_requires = any(i.kind == "requires" for i in comp.interfaces)
+        has_provides = any(i.kind == "provides" for i in comp.interfaces)
+        score += 0.10 if (has_requires and has_provides) else 0.05
     return min(score, 1.0)
 
 

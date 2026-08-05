@@ -301,5 +301,8 @@ class TestCoverageReport:
             manifest_hash=h,
         )
         result = coverage_report(model, manifest)
-        assert len(result.checks) == 5
+        assert len(result.checks) == 7
         assert result.overall_score > 0
+        check_names = [c.name for c in result.checks]
+        assert "F-Block Quality" in check_names
+        assert "requirement_traceability" in check_names

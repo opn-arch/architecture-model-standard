@@ -51,6 +51,7 @@ from .types import (
     QualityAttribute,
     Relationship,
     RelationType,
+    Requirement,
     Resource,
     ResourceKind,
     StateTransition,
@@ -215,6 +216,7 @@ def _parse_entities(d: dict) -> Entities:
         quality_attributes=[_parse_quality_attribute(x) for x in _normalize_entity_list(d.get("quality_attributes", []))],
         decisions=[_parse_decision(x) for x in _normalize_entity_list(d.get("decisions", []))],
         lifecycles=[_parse_lifecycle(x) for x in _normalize_entity_list(d.get("lifecycles", []))],
+        requirements=[_parse_requirement(x) for x in _normalize_entity_list(d.get("requirements", []))],
     )
 
 
@@ -477,6 +479,11 @@ def _parse_lifecycle(d: dict) -> Lifecycle:
     return Lifecycle(**base, phase=LifecyclePhase.parse(d.get("phase","production")), version=d.get("version",""), start_date=d.get("start_date",""), end_date=d.get("end_date",""), migration_from=d.get("migration_from",""), migration_to=d.get("migration_to",""), milestones=d.get("milestones",[]))
 
 
+def _parse_requirement(d: dict) -> Requirement:
+    base = _parse_base(d)
+    return Requirement(**base, text=d.get("text",""), source_doc=d.get("source_doc",""), source_anchor=d.get("source_anchor",""), content_hash=d.get("content_hash",""))
+
+
 def _parse_relationship(d: dict) -> Relationship:
     # Accept multiple key formats agents might use
     from_id = d.get("from") or d.get("from_id") or d.get("source") or ""
@@ -552,6 +559,8 @@ def _dump_entities(e: Entities) -> dict:
         d["decisions"] = [_dump_decision(x) for x in e.decisions]
     if e.lifecycles:
         d["lifecycles"] = [_dump_lifecycle(x) for x in e.lifecycles]
+    if e.requirements:
+        d["requirements"] = [_dump_requirement(x) for x in e.requirements]
     return d
 
 
@@ -833,6 +842,15 @@ def _dump_lifecycle(lc: Lifecycle) -> dict:
     if lc.migration_from: r["migration_from"] = lc.migration_from
     if lc.migration_to: r["migration_to"] = lc.migration_to
     if lc.milestones: r["milestones"] = lc.milestones
+    return r
+
+
+def _dump_requirement(req: Requirement) -> dict:
+    r = _dump_base(req)
+    if req.text: r["text"] = req.text
+    if req.source_doc: r["source_doc"] = req.source_doc
+    if req.source_anchor: r["source_anchor"] = req.source_anchor
+    if req.content_hash: r["content_hash"] = req.content_hash
     return r
 
 

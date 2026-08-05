@@ -1,0 +1,206 @@
+{
+  "generated_at": "2026-08-03T01:26:15.458739+00:00",
+  "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+  "metrics": {
+    "py_files": 2,
+    "total_lines": 176,
+    "functions": 3,
+    "classes": 1,
+    "constants": 0
+  },
+  "functional_blocks": {},
+  "modules": [
+    {
+      "file": "src/architecture_model/persistence/__init__.py",
+      "name": "Persistence layer for architecture artifacts",
+      "docstring": "Persistence layer for architecture artifacts.",
+      "functions": [],
+      "imports": [
+        "architecture_model.persistence.store"
+      ],
+      "line_count": 15,
+      "status": "dormant",
+      "classes": [],
+      "exports": [
+        "ProjectSnapshot",
+        "load_project",
+        "save_block",
+        "save_project"
+      ],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "architecture_model.persistence.store",
+          "symbols": [
+            "ProjectSnapshot",
+            "load_project",
+            "save_block",
+            "save_project"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/persistence/store.py",
+      "name": "Persist architecture artifacts to",
+      "docstring": "Persist architecture artifacts to .architecture/ directory.\n\nStores model, manifest, and metrics as a complete project snapshot.",
+      "functions": [
+        {
+          "name": "save_project",
+          "signature": "save_project(root: Path, model: Any, manifest: Any, representativeness: Any | None, telemetry: dict | None) -> Path",
+          "calls": [
+            "mkdir",
+            "save_model",
+            "info",
+            "write_text",
+            "hasattr",
+            "to_dict",
+            "dumps",
+            "isoformat",
+            "now"
+          ],
+          "docstring": "Persist model + manifest + metrics to .architecture/ directory.\n\nArgs:\n    root: Repository root directory\n    model: ArchitectureModel instance\n    manifest: Manifest instance (has .to_dict())\n    representativeness: RepresentativenessResult instance (has .to_dict())\n    telemetry: Optional telemetry dict (token_budget, iterations, etc.)\n\nReturns:\n    Path to the .architecture/ directory"
+        },
+        {
+          "name": "save_block",
+          "signature": "save_block(root: Path, block_id: str, model: Any, manifest: Any, representativeness: Any | None) -> Path",
+          "calls": [
+            "mkdir",
+            "save_model",
+            "write_text",
+            "hasattr",
+            "to_dict",
+            "dumps",
+            "isoformat",
+            "now"
+          ],
+          "docstring": "Persist a hierarchical block's artifacts to .architecture/<block_id>/.\n\nArgs:\n    root: Repository root directory\n    block_id: F-block ID (e.g., \"F1\")\n    model: ArchitectureModel for this block\n    manifest: Manifest for this block\n    representativeness: Optional RepresentativenessResult for this block\n\nReturns:\n    Path to the block directory"
+        },
+        {
+          "name": "load_project",
+          "signature": "load_project(root: Path) -> ProjectSnapshot",
+          "calls": [
+            "ProjectSnapshot",
+            "exists",
+            "load_model",
+            "loads",
+            "read_text"
+          ],
+          "docstring": "Load model + manifest + metrics from .architecture/ directory.\n\nArgs:\n    root: Repository root directory\n\nReturns:\n    ProjectSnapshot with loaded data"
+        }
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "logging",
+        "dataclasses",
+        "datetime",
+        "pathlib",
+        "typing",
+        "architecture_model.core.parser",
+        "architecture_model.core.parser",
+        "architecture_model.core.parser"
+      ],
+      "line_count": 161,
+      "status": "active",
+      "classes": [
+        {
+          "name": "ProjectSnapshot",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "json",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "logging",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "datetime",
+          "symbols": [
+            "datetime",
+            "timezone"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "save_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "save_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {
+        "logger": "logging.getLogger(__name__)"
+      }
+    }
+  ],
+  "interfaces": [
+    {
+      "source": "src/architecture_model/persistence/__init__.py",
+      "target": "src/architecture_model/persistence/store.py",
+      "import_path": "architecture_model.persistence.store"
+    }
+  ]
+}

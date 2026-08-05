@@ -13,6 +13,7 @@ from architecture_model.monitoring import monitored
 from architecture_model.manifest.blocks import _get_functional_blocks, process_block
 from architecture_model.manifest.interfaces import derive_interfaces
 from architecture_model.manifest.metrics import compute_metrics
+from architecture_model.manifest.scan_cache import ScanCache
 from architecture_model.manifest.scanner import scan_file
 from architecture_model.utils.discovery import collect_py_files
 from architecture_model.manifest.types import (
@@ -40,6 +41,7 @@ def generate_manifest(project_root: Path, config: Optional[Any] = None) -> Manif
     """
     root = project_root.resolve()
     report = ScanReport()
+    cache = ScanCache()
 
     if config is None:
         from architecture_model.config.loader import get_config
@@ -100,7 +102,7 @@ def generate_manifest(project_root: Path, config: Optional[Any] = None) -> Manif
         if filepath.exists():
             report.files_attempted += 1
             try:
-                meta = scan_file(root, filepath)
+                meta = scan_file(root, filepath, cache=cache)
                 all_modules.append(meta)
                 report.files_succeeded += 1
                 report.functions_extracted += len(meta.functions)

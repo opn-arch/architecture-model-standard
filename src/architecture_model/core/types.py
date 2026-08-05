@@ -52,6 +52,8 @@ class RelationType(str, Enum):
     MIGRATES_TO = "migrates-to"
     # Behavioral flow
     TRIGGERS = "triggers"
+    # Requirements traceability
+    SATISFIES = "satisfies"
 
     @classmethod
     def parse(cls, value: str) -> RelationType | str:
@@ -392,6 +394,7 @@ class FunctionSignature:
     decorators: list[str] = field(default_factory=list)
     body_hint: str = ""
     complexity: Optional[str] = None  # TRIVIAL, SHORT, COMPLEX
+    id: str = ""
 
 
 @dataclass
@@ -415,6 +418,20 @@ class ObservabilityContract:
 
 
 @dataclass
+class ComponentInterface:
+    """An interface contract that a component exposes or consumes.
+
+    Captures what a component provides to (or requires from) other components.
+    Used to generate cross-dependency stubs during regeneration.
+    """
+    name: str  # e.g. "authenticate", "get_user"
+    kind: str = "provides"  # provides | requires
+    target_component: str = ""  # ID of the other component (for 'requires')
+    signature: str = ""  # e.g. "(token: str) -> User"
+    symbols: list[str] = field(default_factory=list)  # specific symbols involved
+
+
+@dataclass
 class Component(BaseEntity):
     layer: str = ""
     f_block: str = ""
@@ -433,6 +450,7 @@ class Component(BaseEntity):
     signatures: list[FunctionSignature] = field(default_factory=list)
     test_contracts: list[TestContract] = field(default_factory=list)
     observability: list[ObservabilityContract] = field(default_factory=list)
+    interfaces: list[ComponentInterface] = field(default_factory=list)
 
 
 @dataclass
@@ -517,6 +535,15 @@ class Lifecycle(BaseEntity):
     milestones: list[str] = field(default_factory=list)
 
 
+@dataclass
+class Requirement(BaseEntity):
+    """A traceable requirement."""
+    text: str = ""
+    source_doc: str = ""
+    source_anchor: str = ""
+    content_hash: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Relationships
 # ---------------------------------------------------------------------------
@@ -570,6 +597,7 @@ class Entities:
     quality_attributes: list[QualityAttribute] = field(default_factory=list)
     decisions: list[Decision] = field(default_factory=list)
     lifecycles: list[Lifecycle] = field(default_factory=list)
+    requirements: list[Requirement] = field(default_factory=list)
 
 
 @dataclass
@@ -612,6 +640,8 @@ class ArchitectureModel:
             ids.add(d.id)
         for lc in self.entities.lifecycles:
             ids.add(lc.id)
+        for req in self.entities.requirements:
+            ids.add(req.id)
         return ids
 
     @property
@@ -695,6 +725,8 @@ class ArchitectureModel:
             d["decisions"] = [self._dump_decision(x) for x in self.entities.decisions]
         if self.entities.lifecycles:
             d["lifecycles"] = [self._dump_lifecycle(x) for x in self.entities.lifecycles]
+        if self.entities.requirements:
+            d["requirements"] = [self._dump_requirement(x) for x in self.entities.requirements]
         return d
 
     @staticmethod
@@ -956,6 +988,15 @@ class ArchitectureModel:
         if lc.migration_from: d["migration_from"] = lc.migration_from
         if lc.migration_to: d["migration_to"] = lc.migration_to
         if lc.milestones: d["milestones"] = lc.milestones
+        return d
+
+    @classmethod
+    def _dump_requirement(cls, req: "Requirement") -> dict[str, Any]:
+        d = cls._dump_base(req)
+        if req.text: d["text"] = req.text
+        if req.source_doc: d["source_doc"] = req.source_doc
+        if req.source_anchor: d["source_anchor"] = req.source_anchor
+        if req.content_hash: d["content_hash"] = req.content_hash
         return d
 
     @staticmethod

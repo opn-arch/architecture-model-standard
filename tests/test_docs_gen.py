@@ -58,7 +58,7 @@ class TestComponentSpec:
     def test_generates_markdown(self, sample_model):
         comp = sample_model.entities.components[0]
         md = generate_component_spec(comp, sample_model)
-        assert "# COMP-1: JsonProvider" in md
+        assert "# Component: JsonProvider (COMP-1)" in md
         assert "ACTIVE" in md
         assert "provider" in md
 
