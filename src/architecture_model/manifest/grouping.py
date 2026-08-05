@@ -165,6 +165,9 @@ def group_modules(
     target_unlocked = target_groups - len(locked)
     if len(unlocked) > target_unlocked and target_unlocked > 0:
         unlocked = _merge_by_import_affinity(unlocked, interfaces, target_unlocked)
+    elif len(unlocked) < target_unlocked and target_unlocked > 0:
+        # Need MORE groups: split largest unlocked groups by import sub-clustering
+        unlocked = _split_to_target(unlocked, interfaces, target_unlocked, mod_by_file)
     
     merged_groups = locked + unlocked
 
@@ -292,6 +295,85 @@ def _normalized_affinity(
                 actual += 1
     
     return actual / possible
+
+
+def _split_to_target(
+    groups: list[tuple[str, list[str]]],
+    interfaces: list[InterfaceEdge],
+    target: int,
+    mod_by_file: dict[str, ModuleInfo],
+) -> list[tuple[str, list[str]]]:
+    """Split largest groups until we reach target count.
+    
+    Uses a simple bisection: find the file with least affinity to the rest
+    of its group, split it off as a seed for a new group, then reassign
+    files that are closer to the new group.
+    """
+    # Build edge set
+    edges: set[tuple[str, str]] = set()
+    for iface in interfaces:
+        key = (min(iface.source, iface.target), max(iface.source, iface.target))
+        edges.add(key)
+
+    groups = list(groups)
+
+    while len(groups) < target:
+        # Find largest group with >1 file
+        largest_idx = -1
+        largest_size = 1
+        for idx, (_, files) in enumerate(groups):
+            if len(files) > largest_size:
+                largest_size = len(files)
+                largest_idx = idx
+
+        if largest_idx < 0:
+            break  # Can't split further
+
+        name, files = groups[largest_idx]
+
+        # Find file with lowest internal affinity (least connected to group)
+        min_affinity = float('inf')
+        split_file = files[0]
+        for f in files:
+            others = [o for o in files if o != f]
+            aff = sum(1 for o in others if (min(f, o), max(f, o)) in edges)
+            if aff < min_affinity:
+                min_affinity = aff
+                split_file = f
+
+        # Seed new group with that file, then pull files closer to it than to remainder
+        new_group = [split_file]
+        remainder = [f for f in files if f != split_file]
+
+        # Reassign: for each remaining file, check if it's more connected to new_group
+        changed = True
+        while changed:
+            changed = False
+            still_remainder = []
+            for f in remainder:
+                aff_to_new = sum(1 for n in new_group if (min(f, n), max(f, n)) in edges)
+                aff_to_rem = sum(1 for r in remainder if r != f and (min(f, r), max(f, r)) in edges)
+                if aff_to_new > aff_to_rem and len(remainder) > 1:
+                    new_group.append(f)
+                    changed = True
+                else:
+                    still_remainder.append(f)
+            remainder = still_remainder
+
+        if not remainder:
+            # Splitting failed (everything moved to new group) - force even split
+            mid = len(files) // 2
+            remainder = files[:mid]
+            new_group = files[mid:]
+
+        # Name new group from its primary file
+        primary = max(new_group, key=lambda f: mod_by_file[f].line_count if f in mod_by_file else 0)
+        new_name = PurePosixPath(primary).stem.lstrip("_").replace("_", " ").title().replace(" ", "")
+
+        groups[largest_idx] = (name, remainder)
+        groups.append((new_name, new_group))
+
+    return groups
 
 
 # ---------------------------------------------------------------------------
