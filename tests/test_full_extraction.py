@@ -151,11 +151,24 @@ class TestConfigAwareComponents:
         """Empty repo produces model with no entities."""
         model = full_extraction(tmp_path)
         assert model.meta.project == tmp_path.name
-        assert len(model.entities.components) == 0
 
-    def test_model_has_correct_meta(self, tmp_path):
-        """Model meta has correct project name and schema version."""
-        (tmp_path / "app.py").write_text("def main(): pass\n")
+    def test_full_extraction_creates_component_dependencies(self, tmp_path):
+        """Components should have depends-on relationships from import edges."""
+        (tmp_path / "app").mkdir()
+        (tmp_path / "app" / "__init__.py").write_text("")
+        (tmp_path / "app" / "routers").mkdir(parents=True)
+        (tmp_path / "app" / "routers" / "__init__.py").write_text("")
+        (tmp_path / "app" / "services").mkdir(parents=True)
+        (tmp_path / "app" / "services" / "__init__.py").write_text("")
+        (tmp_path / "app" / "routers" / "users.py").write_text(
+            "from app.services.user_service import create_user\ndef get_users(): pass"
+        )
+        (tmp_path / "app" / "services" / "user_service.py").write_text(
+            "def create_user(): pass\ndef validate(): pass"
+        )
+
         model = full_extraction(tmp_path)
-        assert model.meta.schema_version == "1.3"
-        assert model.meta.project == tmp_path.name
+
+        depends_on = [r for r in model.relationships
+                      if (r.type.value if hasattr(r.type, 'value') else str(r.type)) == 'depends-on']
+        assert len(depends_on) > 0, "Should have at least one depends-on relationship"

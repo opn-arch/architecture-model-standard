@@ -5,8 +5,12 @@ from collections import defaultdict
 from dataclasses import replace as dc_replace
 
 from architecture_model.core.types import (
-    ArchitectureModel, Behavior, Entities, Relationship
+    ArchitectureModel, Behavior, BehaviorPattern, Entities, Relationship, RelationType
 )
+
+
+def _rel_type_str(rel_type) -> str:
+    return rel_type.value if hasattr(rel_type, 'value') else str(rel_type)
 
 
 def _find_chains(triggers: list[Relationship]) -> list[list[str]]:
@@ -47,7 +51,7 @@ def infer_composite_behaviors(model: ArchitectureModel) -> ArchitectureModel:
     2. Add contains relationships from composite to each chain member
     3. Composite inherits trigger and actor from chain head
     """
-    triggers = [r for r in model.relationships if r.type == "triggers"]
+    triggers = [r for r in model.relationships if _rel_type_str(r.type) == "triggers"]
     if not triggers:
         return model
     
@@ -72,11 +76,12 @@ def infer_composite_behaviors(model: ArchitectureModel) -> ArchitectureModel:
             trigger=head.trigger,
             actor=head.actor,
             steps=[beh_index[bid].name for bid in chain if bid in beh_index],
+            pattern=BehaviorPattern.SEQUENTIAL,
         )
         new_behaviors.append(composite)
         
         for bid in chain:
-            new_rels.append(Relationship(type="contains", from_id=composite.id, to_id=bid))
+            new_rels.append(Relationship(type=RelationType.CONTAINS, from_id=composite.id, to_id=bid))
     
     all_behaviors = list(model.entities.behaviors or []) + new_behaviors
     all_rels = list(model.relationships) + new_rels

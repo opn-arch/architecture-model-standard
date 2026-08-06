@@ -79,6 +79,42 @@ def _components_from_config(config, manifest, source_graph=None):
     return components
 
 
+def _derive_component_dependencies(components, manifest):
+    """Create depends-on relationships between components based on import edges."""
+    from architecture_model.core.types import Relationship, RelationType
+
+    file_to_comp = {}
+    for comp in components:
+        for f in (comp.files or []):
+            file_to_comp[f] = comp.id
+
+    name_to_file = {}
+    for mod in manifest.modules:
+        name_to_file[mod.name] = mod.file
+
+    edges = set()
+    for mod in manifest.modules:
+        src_comp = file_to_comp.get(mod.file)
+        if not src_comp:
+            continue
+        for imp in (mod.imports or []):
+            target_file = name_to_file.get(imp)
+            if not target_file:
+                for mname, mfile in name_to_file.items():
+                    if imp.startswith(mname + ".") or mname.startswith(imp + "."):
+                        target_file = mfile
+                        break
+            if target_file:
+                tgt_comp = file_to_comp.get(target_file)
+                if tgt_comp and tgt_comp != src_comp:
+                    edges.add((src_comp, tgt_comp))
+
+    return [
+        Relationship(type=RelationType.DEPENDS_ON, from_id=src, to_id=tgt)
+        for src, tgt in sorted(edges)
+    ]
+
+
 def full_extraction(repo_path: Path, target_systems: int = 0) -> ArchitectureModel:
     """Run complete architecture extraction pipeline.
     

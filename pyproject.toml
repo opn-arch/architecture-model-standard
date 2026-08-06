@@ -29,6 +29,7 @@ Repository = "https://github.com/opn-arch/architecture-model-standard"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21"]
+jvm = ["tree-sitter>=0.22", "tree-sitter-kotlin>=0.1", "tree-sitter-java>=0.1"]
 
 [project.scripts]
 architecture-model = "architecture_model.cli.main:main"

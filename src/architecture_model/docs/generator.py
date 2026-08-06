@@ -9,6 +9,8 @@ from architecture_model.docs.component_spec import generate_component_spec
 from architecture_model.docs.dependency_matrix import generate_dependency_matrix
 from architecture_model.docs.icd import generate_icd
 from architecture_model.docs.health import generate_health_report
+from architecture_model.docs.system_design import generate_system_design
+from architecture_model.docs.integration_flows import generate_integration_flows
 from architecture_model.docs.drift import generate_drift_report
 from architecture_model.docs.index import generate_index
 
@@ -68,6 +70,18 @@ def generate_docs(
     health_path = output_dir / "health.md"
     health_path.write_text(health_md)
     result["health"] = [health_path]
+
+    # System design
+    sys_md = generate_system_design(model, manifest)
+    sys_path = output_dir / "system-design.md"
+    sys_path.write_text(sys_md)
+    result["system_design"] = [sys_path]
+
+    # Integration flows
+    flows_md = generate_integration_flows(model)
+    flows_path = output_dir / "integration-flows.md"
+    flows_path.write_text(flows_md)
+    result["integration_flows"] = [flows_path]
 
     # Drift report (only if previous model provided)
     if previous_model is not None:

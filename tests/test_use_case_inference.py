@@ -2,7 +2,7 @@
 import pytest
 from architecture_model.orchestration.use_case_inference import infer_composite_behaviors
 from architecture_model.core.types import (
-    ArchitectureModel, ModelMeta, Entities, Behavior, Relationship
+    ArchitectureModel, ModelMeta, Entities, Behavior, Relationship, RelationType
 )
 
 
@@ -83,3 +83,22 @@ class TestInferCompositeBehaviors:
         result = infer_composite_behaviors(model)
         assert result.entities.behaviors == model.entities.behaviors
         assert result.relationships == model.relationships
+
+    def test_enum_type_triggers_detected(self):
+        """Trigger relationships using RelationType enum should be detected."""
+        model = ArchitectureModel(
+            meta=ModelMeta(project="test", schema_version="1.3"),
+            entities=Entities(behaviors=[
+                Behavior(id="BEH-1", name="Ingest", status="ACTIVE", trigger="POST /data"),
+                Behavior(id="BEH-2", name="Transform", status="ACTIVE", trigger="internal"),
+            ]),
+            relationships=[
+                Relationship(type=RelationType.TRIGGERS, from_id="BEH-1", to_id="BEH-2"),
+            ]
+        )
+        result = infer_composite_behaviors(model)
+        composites = [b for b in result.entities.behaviors if b.id.startswith("UC-")]
+        assert len(composites) == 1
+        assert composites[0].steps == ["Ingest", "Transform"]
+        contains = [r for r in result.relationships if r.from_id == "UC-1"]
+        assert len(contains) == 2
