@@ -57,6 +57,9 @@ class RelationType(str, Enum):
     # V&V traceability
     DERIVES_FROM = "derives-from"  # Child requirement refines parent
     VERIFIES = "verifies"  # Test evidence requirement is met
+    # Decision wiring
+    RESOLVES = "resolves"  # Decision → Constraint (decision resolves/addresses a constraint)
+    AFFECTS = "affects"  # Decision → Component (decision affects component design)
 
     @classmethod
     def parse(cls, value: str) -> RelationType | str:
@@ -579,6 +582,7 @@ class ModelMeta:
     source_language: str = ""
     domain_profile: str = "software"
     manifest_path: str = ""
+    lifecycle_phase: str = "production"  # "concept" or "production"
     parent_model: str | None = None
     refines_component: str | None = None
 

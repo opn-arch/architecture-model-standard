@@ -490,7 +490,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["realizes", "contains", "depends-on", "exposes", "consumes", "traces-to", "allocated-to", "constrained-by", "mounted-on", "connected-at", "routed-through", "produces", "subscribes-to", "transforms", "supersedes", "migrates-to", "triggers", "satisfies", "derives-from", "verifies"]
+          "enum": ["realizes", "contains", "depends-on", "exposes", "consumes", "traces-to", "allocated-to", "constrained-by", "mounted-on", "connected-at", "routed-through", "produces", "subscribes-to", "transforms", "supersedes", "migrates-to", "triggers", "satisfies", "derives-from", "verifies", "resolves", "affects"]
         },
         "from": { "type": "string" },
         "to": { "type": "string" },

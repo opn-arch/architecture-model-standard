@@ -117,6 +117,14 @@ def validate_model(
     _check_improvement_opportunities(model, result)
     _check_requirements_verification(model, result)
 
+    # Lifecycle-gated: skip verification checks in concept phase
+    lifecycle_phase = getattr(model.meta, 'lifecycle_phase', 'production')
+    if lifecycle_phase == "concept":
+        result.issues = [
+            i for i in result.issues
+            if not (i.code and "UNVERIFIED" in i.code)
+        ]
+
     if strict:
         # Promote warnings to errors
         for issue in result.issues:
