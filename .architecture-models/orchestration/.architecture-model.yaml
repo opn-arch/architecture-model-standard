@@ -26,7 +26,7 @@ entities:
   - id: ACT-CONFIG
     name: Config Subsystem
     status: ACTIVE
-    description: External dependency providing get_config() which returns project configuration with fblock_dict for decomposition.
+    description: External dependency providing get_config() which returns project configuration with source_block_dict for decomposition.
     type: human
   capabilities:
   - id: CAP-ENRICH
@@ -76,7 +76,7 @@ entities:
       to connected entities, collect internal + boundary relationships, build sub-model, inject sub-behaviors from sub-behaviors.yaml.
     steps:
     - Load parent .architecture-model.yaml
-    - Get config with fblock_dict
+    - Get config with source_block_dict
     - For each F-block find components via _find_block_components
     - Find parent component via _find_parent_component
     - Trace entities via _trace_entities (realizes/exposes/traces-to/constrained-by)
@@ -128,7 +128,7 @@ entities:
   - id: IFC-EXT-CONFIG
     name: get_config (external)
     status: ACTIVE
-    description: Consumed from architecture_model.config.loader. Returns project configuration with fblock_dict.
+    description: Consumed from architecture_model.config.loader. Returns project configuration with source_block_dict.
     type: internal
   constraints:
   - id: CON-DEDUP
@@ -186,7 +186,7 @@ entities:
       params:
       - project_root
       body_hint: "model = load_model(project_root / '.architecture-model.yaml'); config = get_config(project_root); results\
-        \ = {}; for block_id, block_def in config.fblock_dict.items():\n    block_name = block_def.get('name', block_id)\n\
+        \ = {}; for block_id, block_def in config.source_block_dict.items():\n    block_name = block_def.get('name', block_id)\n\
         \    block_dirs = block_def.get('dirs', [])\n    block_files = block_def.get('files', [])\n    logger.info('Decomposing\
         \ %s: %s', block_id, block_name)\n    components = _find_block_components(model, block_dirs, block_files)\n    if\
         \ not components:\n        logger.warning('No components found for %s (dirs: %s)', block_id, block_dirs)\n       \

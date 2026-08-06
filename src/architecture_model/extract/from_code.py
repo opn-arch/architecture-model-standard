@@ -141,7 +141,7 @@ def _slugify(text: str) -> str:
     return slug.strip("-").lower()
 
 
-def _file_to_fblock(file_path: str, config: ProjectConfig) -> str | None:
+def _file_to_source_block(file_path: str, config: ProjectConfig) -> str | None:
     """Determine which F-block a file belongs to based on directory membership."""
     for block in config.functional_blocks:
         for d in block.dirs:
@@ -185,7 +185,7 @@ def _derive_capabilities(config: ProjectConfig) -> list[Capability]:
                 name=block.name,
                 status=Status.ACTIVE,
                 description=block.description_source or f"Capability for {block.name}",
-                f_block=block.id,
+                source_block=block.id,
             )
         )
     return capabilities
@@ -274,8 +274,8 @@ def _derive_route_behaviors(
         # Determine actor
         actor = "ACT-USER" if route.is_authenticated else "ACT-ANON"
 
-        # Determine f_block from file location
-        f_block = _file_to_fblock(route.file, config) or ""
+        # Determine source_block from file location
+        source_block = _file_to_source_block(route.file, config) or ""
 
         behaviors.append(
             Behavior(
@@ -287,7 +287,7 @@ def _derive_route_behaviors(
                 actor=actor,
                 priority=priority,
                 source_file=route.file,
-                tags=[route.framework, f_block] if f_block else [route.framework],
+                tags=[route.framework, source_block] if source_block else [route.framework],
             )
         )
 
@@ -323,7 +323,7 @@ def _detect_service_behaviors(
 
             rel_path = str(py_file.relative_to(project_root))
             module_name = py_file.stem
-            f_block = _file_to_fblock(rel_path, config) or ""
+            source_block = _file_to_source_block(rel_path, config) or ""
 
             # Parse AST and extract public functions
             try:
@@ -354,7 +354,7 @@ def _detect_service_behaviors(
                         description=first_line or f"Service function: {module_name}.{node.name}",
                         source_file=rel_path,
                         source_line=node.lineno,
-                        tags=["internal", f_block] if f_block else ["internal"],
+                        tags=["internal", source_block] if source_block else ["internal"],
                         priority=Priority.MEDIUM,
                     )
                 )
@@ -372,8 +372,8 @@ def _derive_components(manifest: dict, config: ProjectConfig) -> list[Component]
         if not file_path:
             continue
 
-        f_block = _file_to_fblock(file_path, config)
-        if f_block is None:
+        source_block = _file_to_source_block(file_path, config)
+        if source_block is None:
             # Skip modules outside F-block directories (tests, scripts, etc.)
             continue
 
@@ -399,7 +399,7 @@ def _derive_components(manifest: dict, config: ProjectConfig) -> list[Component]
                 status=Status.ACTIVE,
                 description=description,
                 layer=layer,
-                f_block=f_block,
+                source_block=source_block,
                 files=[file_path],
                 source_file=file_path,
             )
@@ -417,8 +417,8 @@ def _derive_interfaces(manifest: dict, config: ProjectConfig) -> list[Interface]
         source_file = iface.get("source", "")
         target_file = iface.get("target", "")
 
-        source_block = _file_to_fblock(source_file, config)
-        target_block = _file_to_fblock(target_file, config)
+        source_block = _file_to_source_block(source_file, config)
+        target_block = _file_to_source_block(target_file, config)
 
         if source_block and target_block and source_block != target_block:
             # source_block = importer (consumer), target_block = importee (provider)
@@ -443,7 +443,7 @@ def _derive_interfaces(manifest: dict, config: ProjectConfig) -> list[Interface]
     external_targets: set[str] = set()
     for iface in manifest.get("interfaces", []):
         target_file = iface.get("target", "")
-        target_block = _file_to_fblock(target_file, config)
+        target_block = _file_to_source_block(target_file, config)
         if target_block is None and target_file:
             # This is an import to something outside known F-blocks
             import_path = iface.get("import_path", "")
@@ -528,18 +528,18 @@ def _derive_relationships(
 
     # realizes: behavior → capability of its F-block
     for beh in behaviors:
-        f_block = ""
-        # Extract f_block from tags
+        source_block = ""
+        # Extract source_block from tags
         for tag in beh.tags:
             for block in config.functional_blocks:
                 if tag == block.id:
-                    f_block = tag
+                    source_block = tag
                     break
-            if f_block:
+            if source_block:
                 break
 
-        if f_block:
-            cap_id = f"CAP-{f_block}"
+        if source_block:
+            cap_id = f"CAP-{source_block}"
             if cap_id in cap_ids:
                 relationships.append(
                     Relationship(
@@ -552,8 +552,8 @@ def _derive_relationships(
 
     # realizes: component → capability of its F-block
     for comp in components:
-        if comp.f_block:
-            cap_id = f"CAP-{comp.f_block}"
+        if comp.source_block:
+            cap_id = f"CAP-{comp.source_block}"
             if cap_id in cap_ids:
                 relationships.append(
                     Relationship(

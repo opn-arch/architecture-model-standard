@@ -172,11 +172,11 @@ class TestToDict:
         root_result = RepresentativenessResult(file_coverage=90.0, overall=90.0)
         h = HierarchicalRepresentativenessResult(
             root=root_result,
-            blocks={"F1": block_result},
+            blocks={"S1": block_result},
             overall=82.5,
         )
         d = h.to_dict()
         assert d["overall"] == 82.5
         assert d["root"]["file_coverage"] == 90.0
-        assert d["blocks"]["F1"]["file_coverage"] == 75.0
-        assert d["blocks"]["F1"]["overall"] == 75.0
+        assert d["blocks"]["S1"]["file_coverage"] == 75.0
+        assert d["blocks"]["S1"]["overall"] == 75.0

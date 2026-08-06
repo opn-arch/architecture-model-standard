@@ -3,7 +3,7 @@ CLI for the Architecture Model Standard.
 
 Usage:
     architecture-model validate <model.yaml> [--strict]
-    architecture-model slice <model.yaml> --fblock F3
+    architecture-model slice <model.yaml> --source_block F3
     architecture-model slice <model.yaml> --artifact use-cases
     architecture-model diff <old.yaml> <new.yaml>
     architecture-model stats <model.yaml>
@@ -33,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
     # --- slice ---
     p_slice = subparsers.add_parser("slice", help="Extract model subset")
     p_slice.add_argument("model", help="Path to architecture-model.yaml")
-    p_slice.add_argument("--fblock", help="Filter by F-block (e.g., F3)")
+    p_slice.add_argument("--source_block", help="Filter by F-block (e.g., F3)")
     p_slice.add_argument("--layer", help="Filter by layer (e.g., web-layer)")
     p_slice.add_argument("--artifact", help="Slice for artifact regeneration")
     p_slice.add_argument("--status", help="Filter by status (ACTIVE, PLANNED)")
@@ -219,14 +219,14 @@ def _cmd_validate(args) -> int:
 
 def _cmd_slice(args) -> int:
     from ..core.parser import load_model, save_model
-    from ..core.slicer import slice_by_fblock, slice_by_layer, slice_by_status, slice_for_artifact
+    from ..core.slicer import slice_by_source_block, slice_by_layer, slice_by_status, slice_for_artifact
     from ..core.types import Status
 
     model = load_model(args.model)
 
-    if args.fblock:
-        sliced = slice_by_fblock(model, args.fblock)
-        label = f"F-block: {args.fblock}"
+    if args.source_block:
+        sliced = slice_by_source_block(model, args.source_block)
+        label = f"F-block: {args.source_block}"
     elif args.layer:
         sliced = slice_by_layer(model, args.layer)
         label = f"Layer: {args.layer}"
@@ -237,7 +237,7 @@ def _cmd_slice(args) -> int:
         sliced = slice_by_status(model, Status(args.status.upper()))
         label = f"Status: {args.status}"
     else:
-        print("ERROR: Provide --fblock, --layer, --artifact, or --status")
+        print("ERROR: Provide --source_block, --layer, --artifact, or --status")
         return 1
 
     print(
@@ -581,33 +581,33 @@ def _cmd_visualize(args) -> int:
             if pb:
                 parent_groups[pb].append(sb)
 
-        # Map behavior -> f_block via traces-to relationships
-        beh_to_fblock: dict[str, str] = {}
+        # Map behavior -> source_block via traces-to relationships
+        beh_to_source_block: dict[str, str] = {}
         for rel in model.relationships:
             if rel.type.value == "traces-to":
-                # Find component's f_block
+                # Find component's source_block
                 for comp in model.entities.components:
-                    if comp.id == rel.from_id and comp.f_block:
-                        beh_to_fblock[rel.to_id] = comp.f_block
+                    if comp.id == rel.from_id and comp.source_block:
+                        beh_to_source_block[rel.to_id] = comp.source_block
                         break
 
-        # Get f_block names from capabilities
-        fblock_names: dict[str, str] = {}
+        # Get source_block names from capabilities
+        source_block_names: dict[str, str] = {}
         for cap in model.entities.capabilities:
-            if cap.f_block:
-                fblock_names[cap.f_block] = cap.name
+            if cap.source_block:
+                source_block_names[cap.source_block] = cap.name
 
-        # Group parent behaviors by f_block
-        fblock_behs: dict[str, list[str]] = defaultdict(list)
+        # Group parent behaviors by source_block
+        source_block_behs: dict[str, list[str]] = defaultdict(list)
         for parent_beh_id in parent_groups:
-            fb = beh_to_fblock.get(parent_beh_id, "")
+            fb = beh_to_source_block.get(parent_beh_id, "")
             if fb:
-                fblock_behs[fb].append(parent_beh_id)
+                source_block_behs[fb].append(parent_beh_id)
 
-        for fb in sorted(fblock_behs):
-            block_name = fblock_names.get(fb, fb)
+        for fb in sorted(source_block_behs):
+            block_name = source_block_names.get(fb, fb)
             diagrams = []
-            for parent_beh_id in sorted(fblock_behs[fb]):
+            for parent_beh_id in sorted(source_block_behs[fb]):
                 d = generate_block_diagram(model, sub_behaviors, block_name, parent_beh_id)
                 if d:
                     diagrams.append(d)

@@ -41,7 +41,7 @@ def test_iterative_decompose_reaches_leaf_size():
     """With 30 modules and leaf_max=3, all leaves should have <= 3 files."""
     manifest = _make_manifest(30)
     results = iterative_decompose(
-        manifest, block_id="F1", block_name="Test", leaf_max_files=3
+        manifest, block_id="S1", block_name="Test", leaf_max_files=3
     )
     assert len(results) >= 1
     # Collect all leaf sub-components (those not further decomposed)
@@ -62,7 +62,7 @@ def test_iterative_decompose_small_block_returns_empty():
     """A 3-file block is already a leaf — no decomposition needed."""
     manifest = _make_manifest(3)
     results = iterative_decompose(
-        manifest, block_id="F1", block_name="Test", leaf_max_files=3
+        manifest, block_id="S1", block_name="Test", leaf_max_files=3
     )
     assert results == []
 
@@ -71,7 +71,7 @@ def test_iterative_decompose_depth_tracked():
     """Each iteration increases depth."""
     manifest = _make_manifest(20)
     results = iterative_decompose(
-        manifest, block_id="F1", block_name="Test", leaf_max_files=3
+        manifest, block_id="S1", block_name="Test", leaf_max_files=3
     )
     if results:
         depths = [r.depth for r in results]

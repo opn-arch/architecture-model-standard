@@ -21,7 +21,7 @@ meta:
   project: test-enrichment
   schema_version: '1.3'
 functional_blocks:
-  F1:
+  S1:
     name: MyApp
     dirs:
       - myapp
@@ -31,7 +31,7 @@ relationships: []
 """)
 
     result = run_pipeline(tmp_path, deep=True)
-    assert "F1" in result.manifests
+    assert "S1" in result.manifests
     assert len(result.deep_decompositions) > 0
 
     prompt = format_enrichment_prompt(list(result.deep_decompositions.values()))

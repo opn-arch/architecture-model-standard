@@ -27,7 +27,7 @@ SYSTEM_THRESHOLD = 10.0
 @dataclass
 class SystemCandidate:
     """A proposed system identified from F-block complexity analysis."""
-    f_block: str
+    source_block: str
     name: str
     component_ids: list[str]
     complexity_score: float
@@ -70,10 +70,10 @@ def identify_systems(
 ) -> list[SystemCandidate]:
     """Identify F-block groups that should become Systems.
 
-    Groups components by f_block, computes aggregate complexity per group,
+    Groups components by source_block, computes aggregate complexity per group,
     and returns SystemCandidates for groups exceeding SYSTEM_THRESHOLD.
 
-    For components without an f_block field, they are skipped (remain as
+    For components without an source_block field, they are skipped (remain as
     top-level components).
 
     Args:
@@ -83,29 +83,29 @@ def identify_systems(
     Returns:
         List of SystemCandidate for groups exceeding threshold.
     """
-    # Group components by f_block (skip empty f_block)
+    # Group components by source_block (skip empty source_block)
     groups: dict[str, list[Component]] = defaultdict(list)
     for comp in model.entities.components:
-        if comp.f_block:
-            groups[comp.f_block].append(comp)
+        if comp.source_block:
+            groups[comp.source_block].append(comp)
 
     # Get functional_blocks metadata for naming
-    fblocks_meta = manifest.get("functional_blocks", {})
+    source_blocks_meta = manifest.get("functional_blocks", {})
 
     candidates: list[SystemCandidate] = []
-    for fblock_id, components in groups.items():
+    for source_block_id, components in groups.items():
         # Sum complexity across all components in this F-block
         total_complexity = sum(
             compute_complexity(comp, model) for comp in components
         )
 
         if total_complexity > SYSTEM_THRESHOLD:
-            # Resolve name from manifest, fall back to f_block ID
-            block_info = fblocks_meta.get(fblock_id)
-            name = block_info["name"] if block_info else fblock_id
+            # Resolve name from manifest, fall back to source_block ID
+            block_info = source_blocks_meta.get(source_block_id)
+            name = block_info["name"] if block_info else source_block_id
 
             candidates.append(SystemCandidate(
-                f_block=fblock_id,
+                source_block=source_block_id,
                 name=name,
                 component_ids=[c.id for c in components],
                 complexity_score=total_complexity,
@@ -177,7 +177,7 @@ def decompose_model(
             id=sys_id,
             name=candidate.name,
             status=Status.ACTIVE,
-            f_block=candidate.f_block,
+            source_block=candidate.source_block,
             complexity_score=candidate.complexity_score,
             sub_model_ref=sub_model_ref,
             component_ids=candidate.component_ids,
@@ -266,4 +266,4 @@ def decompose_model(
 
 # Re-exports for backward compatibility
 from architecture_model.core.test_affinity import Subsystem, test_affinity_decompose  # noqa: E402, F401
-from architecture_model.core.fblock_assign import auto_assign_f_blocks  # noqa: E402, F401
+from architecture_model.core.source_block_assign import auto_assign_source_blocks  # noqa: E402, F401

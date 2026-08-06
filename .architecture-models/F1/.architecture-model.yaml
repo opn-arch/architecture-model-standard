@@ -13,7 +13,7 @@ entities:
     status: ACTIVE
     description: Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich, decompose,
       visualize
-    f_block: F1
+    source_block: S1
   interfaces:
   - id: IF-CLI-MAIN
     name: CLI Entry Point
@@ -25,7 +25,7 @@ entities:
     name: CLI
     status: ACTIVE
     description: Command-line interface — argparse dispatch, Mermaid visualization shim
-    f_block: F1
+    source_block: S1
     files:
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
@@ -38,7 +38,7 @@ entities:
         help=''Available com...; p_validate = subparsers.add_parser(''validate'', help=''Validate model in...; p_validate.add_argument(''model'',
         help=''Path to architecture-model.yaml''); p_validate.add_argument(''--strict'', action=''store_true'', help=''Promote
         warnings to errors''); p_slice = subparsers.add_parser(''slice'', help=''Extract model subset''); p_slice.add_argument(''model'',
-        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--fblock'', help=''Filter by F-block (e.g., F3)'');
+        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--source_block'', help=''Filter by F-block (e.g., F3)'');
         p_slice.add_argument(''--layer'', help=''Filter by layer (e.g., web-layer)''); p_slice.add_argument(''--artifact'',
         help=''Slice for artifact regeneration''); p_slice.add_argument(''--status'', help=''Filter by status (ACTIVE, PLANNED)'');
         p_slice.add_argument(''-o'', ''--output'', help=''Output YAML path (default: stdout summary)''); p_diff = subparsers.add_parser(''diff'',

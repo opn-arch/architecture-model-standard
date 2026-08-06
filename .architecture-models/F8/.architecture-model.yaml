@@ -12,7 +12,7 @@ entities:
     name: Auto-Enrichment & Decomposition
     status: ACTIVE
     description: Populate signatures, constants, test_contracts from AST and decompose into recursive sub-models
-    f_block: F6
+    source_block: S6
   behaviors:
   - id: BEH-ENRICH-DECOMPOSE
     name: Enrich and Decompose Model
@@ -45,7 +45,7 @@ entities:
     name: Orchestration
     status: ACTIVE
     description: Workflow orchestration — enrichment and decomposition pipelines
-    f_block: F6
+    source_block: S6
     files:
     - src/architecture_model/orchestration/decompose.py
     - src/architecture_model/orchestration/enrich.py
@@ -54,7 +54,7 @@ entities:
       params:
       - project_root
       body_hint: "model = load_model(project_root / '.architecture-model.yaml'); config = get_config(project_root); results\
-        \ = {}; for block_id, block_def in config.fblock_dict.items():\n    block_name = block_def.get('name', block_id)\n\
+        \ = {}; for block_id, block_def in config.source_block_dict.items():\n    block_name = block_def.get('name', block_id)\n\
         \    block_dirs = block_def.get('dirs', [])\n    block_files = block_def.get('files', [])\n    logger.info('Decomposing\
         \ %s: %s', block_id, block_name)\n    components = _find_block_components(model, block_dirs, block_files)\n    if\
         \ not components:\n        logger.warning('No components found for %s (dirs: %s)', block_id, block_dirs)\n       \

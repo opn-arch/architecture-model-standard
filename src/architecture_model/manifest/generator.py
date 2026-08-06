@@ -54,7 +54,7 @@ def generate_manifest(project_root: Path, config: Optional[Any] = None) -> Manif
     logger.info("Metrics computed: %s", metrics_result.values)
 
     # Get functional blocks from config
-    blocks_dict = config.fblock_dict
+    blocks_dict = config.source_block_dict
 
     # Process functional blocks
     logger.info("Processing %d functional blocks", len(blocks_dict))

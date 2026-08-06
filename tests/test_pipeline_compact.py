@@ -10,10 +10,10 @@ def compact_repo(tmp_path):
     (tmp_path / "architecture.yaml").write_text("""
 project: test-compact
 functional_blocks:
-  F1:
+  S1:
     name: Core
     dirs: [core]
-  F2:
+  S2:
     name: API
     dirs: [api]
 """)
@@ -22,10 +22,10 @@ meta:
   project: test-compact
   schema_version: '1.3'
 functional_blocks:
-  F1:
+  S1:
     name: Core
     dirs: [core]
-  F2:
+  S2:
     name: API
     dirs: [api]
 entities:
@@ -33,12 +33,12 @@ entities:
     - id: COMP-1
       name: Engine
       status: ACTIVE
-      f_block: F1
+      source_block: S1
       files: [core/engine.py]
     - id: COMP-2
       name: Router
       status: ACTIVE
-      f_block: F2
+      source_block: S2
       files: [api/router.py]
 relationships: []
 """)
@@ -72,13 +72,13 @@ def test_compact_mode_strips_root_detail(compact_repo):
     for comp in comps:
         assert comp.signatures == [], f"{comp.name} should have empty signatures in root"
         assert comp.symbols == [], f"{comp.name} should have empty symbols in root"
-        assert comp.f_block  # identity preserved
+        assert comp.source_block  # identity preserved
 
 
 def test_compact_mode_creates_sub_models(compact_repo):
     run_pipeline(compact_repo, compact=True)
 
-    f1 = load_block_model(compact_repo, "F1")
+    f1 = load_block_model(compact_repo, "S1")
     assert f1 is not None
 
 

@@ -14,7 +14,7 @@ def test_process_block_returns_block_manifest(tmp_path):
     from architecture_model.manifest.blocks import process_block
 
     block_def = {"name": "MyBlock", "dirs": ["mymod"], "files": [], "description_source": "test"}
-    result = process_block(tmp_path, "F1", block_def)
+    result = process_block(tmp_path, "S1", block_def)
     assert isinstance(result, BlockManifest)
     assert result.name == "MyBlock"
     assert len(result.sub_functions) >= 1
@@ -29,7 +29,7 @@ def test_process_block_backward_compat(tmp_path):
     from architecture_model.manifest.blocks import process_block
 
     block_def = {"name": "Test", "dirs": ["mod"], "files": [], "description_source": "test"}
-    d = process_block(tmp_path, "F1", block_def).to_dict()
+    d = process_block(tmp_path, "S1", block_def).to_dict()
     assert "name" in d
     assert "sub_functions" in d
     assert isinstance(d["sub_functions"], list)
@@ -44,7 +44,7 @@ def test_deprecated_process_block_returns_dict(tmp_path):
     from architecture_model.manifest.blocks import _process_block
 
     block_def = {"name": "Pkg", "dirs": ["pkg"], "files": [], "description_source": "test"}
-    result = _process_block(tmp_path, "F1", block_def)
+    result = _process_block(tmp_path, "S1", block_def)
     assert isinstance(result, dict)
     assert result["name"] == "Pkg"
 
@@ -58,7 +58,7 @@ def test_sub_function_entry_has_signature_strings(tmp_path):
     from architecture_model.manifest.blocks import process_block
 
     block_def = {"name": "M", "dirs": ["mymod"], "files": [], "description_source": "t"}
-    result = process_block(tmp_path, "F1", block_def)
+    result = process_block(tmp_path, "S1", block_def)
     for sf in result.sub_functions:
         for f in sf.functions:
             assert isinstance(f, str), f"Expected str, got {type(f)}"

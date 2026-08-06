@@ -51,12 +51,12 @@ class TestBuildFlatExport:
 
     def test_with_submodels(self, tmp_path):
         (tmp_path / ".architecture-model.yaml").write_text("meta: {}")
-        sub = tmp_path / ".architecture-models" / "F1"
+        sub = tmp_path / ".architecture-models" / "S1"
         sub.mkdir(parents=True)
         (sub / ".architecture-model.yaml").write_text("meta: {project: sub}")
         result = build_flat_export(tmp_path, prefix="test")
         assert "test--submodels.yaml" in result.files
-        assert "Sub-Model: F1" in result.files["test--submodels.yaml"]
+        assert "Sub-Model: S1" in result.files["test--submodels.yaml"]
 
     def test_skips_missing(self, tmp_path):
         """Only includes files that exist."""
@@ -81,10 +81,10 @@ class TestManifestsToMarkdown:
                 {"file": "src/foo.py", "name": "foo", "functions": [{"name": "bar", "signature": "()"}], "imports": ["app.models"]}
             ]
         }
-        (tmp_path / "F1.json").write_text(json.dumps(manifest))
+        (tmp_path / "S1.json").write_text(json.dumps(manifest))
         result = manifests_to_markdown(tmp_path)
         assert result is not None
-        assert "F1" in result
+        assert "S1" in result
         assert "src/foo.py" in result
         assert "bar" in result
 
@@ -102,13 +102,13 @@ class TestManifestsToMarkdown:
 
 class TestConcatSubmodels:
     def test_with_headers(self, tmp_path):
-        sub = tmp_path / ".architecture-models" / "F1"
+        sub = tmp_path / ".architecture-models" / "S1"
         sub.mkdir(parents=True)
         (sub / ".architecture-model.yaml").write_text("meta: {project: f1}")
         result = concat_submodels(tmp_path)
         assert result is not None
         assert "<!-- FILE:" in result
-        assert "Sub-Model: F1" in result
+        assert "Sub-Model: S1" in result
 
 
 class TestReferenceGenerators:

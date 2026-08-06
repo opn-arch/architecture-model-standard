@@ -59,7 +59,7 @@ def test_run_pipeline_emits_metrics(tmp_path):
   project: test
   schema_version: '1.3'
 functional_blocks:
-  F1:
+  S1:
     name: App
     dirs:
       - app

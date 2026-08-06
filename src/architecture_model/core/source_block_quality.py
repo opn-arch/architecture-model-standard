@@ -62,8 +62,8 @@ def compute_modularity(model: "ArchitectureModel") -> float:
         degree[a] += 1
         degree[b] += 1
 
-    # Community assignment: component -> f_block
-    comp_to_fb = {c.id: c.f_block for c in model.entities.components}
+    # Community assignment: component -> source_block
+    comp_to_fb = {c.id: c.source_block for c in model.entities.components}
 
     # Adjacency set for quick lookup
     adj_set: set[tuple[str, str]] = set()
@@ -94,13 +94,13 @@ def compute_conductance(model: "ArchitectureModel") -> dict[str, float]:
     edges_out = edges with exactly one endpoint in the block.
     """
     directed = _depends_on_edges(model)
-    comp_to_fb = {c.id: c.f_block for c in model.entities.components}
+    comp_to_fb = {c.id: c.source_block for c in model.entities.components}
 
-    # Group components by f_block
+    # Group components by source_block
     fb_members: dict[str, set[str]] = defaultdict(set)
     for c in model.entities.components:
-        if c.f_block:
-            fb_members[c.f_block].add(c.id)
+        if c.source_block:
+            fb_members[c.source_block].add(c.id)
 
     result: dict[str, float] = {}
     for fb, members in fb_members.items():
@@ -120,36 +120,36 @@ def compute_conductance(model: "ArchitectureModel") -> dict[str, float]:
 
 
 def compute_agreement_rate(model: "ArchitectureModel") -> float:
-    """Compare existing f_block assignments with auto_assign_f_blocks output.
+    """Compare existing source_block assignments with auto_assign_source_blocks output.
 
     Returns fraction of components where assignments agree.
     """
-    from .fblock_assign import auto_assign_f_blocks
+    from .source_block_assign import auto_assign_source_blocks
 
     comps = model.entities.components
     if not comps:
         return 1.0
 
-    # Check if any components have f_block set
-    has_fblocks = any(c.f_block for c in comps)
-    if not has_fblocks:
+    # Check if any components have source_block set
+    has_source_blocks = any(c.source_block for c in comps)
+    if not has_source_blocks:
         return 1.0
 
-    # Create a copy without f_blocks to force auto_assign to run
+    # Create a copy without source_blocks to force auto_assign to run
     model_copy = deepcopy(model)
     for c in model_copy.entities.components:
-        c.f_block = ""
+        c.source_block = ""
 
-    auto_model = auto_assign_f_blocks(model_copy)
-    auto_fb = {c.id: c.f_block for c in auto_model.entities.components}
+    auto_model = auto_assign_source_blocks(model_copy)
+    auto_fb = {c.id: c.source_block for c in auto_model.entities.components}
 
     # Compare: we check if the *partitioning* agrees, not the labels.
-    # Two components in the same f_block in original should be in the same
-    # f_block in auto, and vice versa.
+    # Two components in the same source_block in original should be in the same
+    # source_block in auto, and vice versa.
     # Simpler approach: direct label comparison (as specified).
     # But labels will differ. Use partition agreement instead.
-    # Group by f_block in each assignment
-    original_fb = {c.id: c.f_block for c in comps}
+    # Group by source_block in each assignment
+    original_fb = {c.id: c.source_block for c in comps}
 
     # Build partition: which pairs are co-clustered?
     ids = sorted(original_fb.keys())
@@ -186,7 +186,7 @@ def _compute_intra_inter_ratio(model: "ArchitectureModel") -> float:
     directed = _depends_on_edges(model)
     if not directed:
         return 0.0
-    comp_to_fb = {c.id: c.f_block for c in model.entities.components}
+    comp_to_fb = {c.id: c.source_block for c in model.entities.components}
     intra = sum(1 for a, b in directed if comp_to_fb.get(a) == comp_to_fb.get(b) and comp_to_fb.get(a))
     return intra / len(directed)
 
@@ -206,11 +206,11 @@ def _compute_orphan_rate(model: "ArchitectureModel") -> float:
 
 
 def _compute_cluster_balance(model: "ArchitectureModel") -> float:
-    """Gini coefficient of f_block cluster sizes. 0=balanced, 1=imbalanced."""
+    """Gini coefficient of source_block cluster sizes. 0=balanced, 1=imbalanced."""
     fb_sizes: dict[str, int] = defaultdict(int)
     for c in model.entities.components:
-        if c.f_block:
-            fb_sizes[c.f_block] += 1
+        if c.source_block:
+            fb_sizes[c.source_block] += 1
     if not fb_sizes:
         return 0.0
     sizes = sorted(fb_sizes.values())
@@ -228,7 +228,7 @@ def _compute_cluster_balance(model: "ArchitectureModel") -> float:
 def _compute_cross_block_cycle_ratio(model: "ArchitectureModel") -> float:
     """Fraction of F-block pairs with bidirectional edges."""
     directed = _depends_on_edges(model)
-    comp_to_fb = {c.id: c.f_block for c in model.entities.components}
+    comp_to_fb = {c.id: c.source_block for c in model.entities.components}
 
     # Build cross-block directed edges at F-block level
     fb_edges: set[tuple[str, str]] = set()
@@ -255,7 +255,7 @@ def _compute_cross_block_cycle_ratio(model: "ArchitectureModel") -> float:
     return len(bidirectional) / len(pairs_with_edges) if pairs_with_edges else 0.0
 
 
-def compute_fblock_quality(model: "ArchitectureModel") -> FBlockQuality:
+def compute_source_block_quality(model: "ArchitectureModel") -> FBlockQuality:
     """Compute all F-block quality metrics."""
     conductance = compute_conductance(model)
     try:
@@ -301,7 +301,7 @@ def compute_provenance(
         connected.add(b)
 
     for comp in model.entities.components:
-        fb = comp.f_block or ""
+        fb = comp.source_block or ""
         cond = quality.conductance.get(fb, 0.0)
         orphan_flag = 0.0 if comp.id in connected else 1.0
         agreement_val = 1.0 if quality.agreement_rate and quality.agreement_rate > 0.5 else 0.0
@@ -325,7 +325,7 @@ def compute_provenance(
             source = "manual"
 
         content_hash = hashlib.sha256(
-            json.dumps({"id": comp.id, "f_block": fb}, sort_keys=True).encode()
+            json.dumps({"id": comp.id, "source_block": fb}, sort_keys=True).encode()
         ).hexdigest()[:16]
 
         prov = FBlockProvenance(
@@ -342,7 +342,7 @@ def compute_provenance(
         result[comp.id] = prov
 
         # Store in extensions
-        comp.extensions["fblock_provenance"] = {
+        comp.extensions["source_block_provenance"] = {
             "source": prov.source,
             "confidence": prov.confidence,
             "metrics": prov.metrics,

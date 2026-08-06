@@ -61,15 +61,15 @@ class TestMergeManifest:
         new_count = len(model_copy.entities.components)
         assert new_count >= original_count
 
-    def test_new_components_have_fblock(self, model: ArchitectureModel):
-        """Newly discovered components get f_block assigned via heuristics."""
+    def test_new_components_have_source_block(self, model: ArchitectureModel):
+        """Newly discovered components get source_block assigned via heuristics."""
         model_copy = deepcopy(model)
         original_ids = {c.id for c in model_copy.entities.components}
         merge_manifest(model_copy, MANIFEST_PATH)
         new_components = [c for c in model_copy.entities.components if c.id not in original_ids]
-        with_fblock = [c for c in new_components if c.f_block]
+        with_source_block = [c for c in new_components if c.source_block]
         if new_components:
-            assert len(with_fblock) > 0, "New components should get f_block from heuristics"
+            assert len(with_source_block) > 0, "New components should get source_block from heuristics"
 
     def test_realizes_relationships_wired(self, model: ArchitectureModel):
         """After merge, new components get realizes relationships to capabilities."""
@@ -133,7 +133,7 @@ class TestMergeEdgeCases:
             ),
             entities=Entities(
                 capabilities=[
-                    Capability(id="CAP-F1", name="Ingest", status=Status.ACTIVE, f_block="F1")
+                    Capability(id="CAP-S1", name="Ingest", status=Status.ACTIVE, source_block="S1")
                 ],
             ),
             relationships=[],

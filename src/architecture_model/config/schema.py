@@ -147,7 +147,7 @@ class ProjectConfig:
         return {layer.id: layer.dirs for layer in self.layers if layer.dirs}
 
     @property
-    def fblock_dir_map(self) -> dict[str, str]:
+    def source_block_dir_map(self) -> dict[str, str]:
         """Map directory/file prefixes to F-block IDs (for merger.py heuristics).
 
         Produces entries like: {"scripts/ingestion": "F1", "app/routers": "F4"}
@@ -163,7 +163,7 @@ class ProjectConfig:
         return result
 
     @property
-    def fblock_dict(self) -> dict[str, dict[str, Any]]:
+    def source_block_dict(self) -> dict[str, dict[str, Any]]:
         """FUNCTIONAL_BLOCKS in the legacy dict format (backward compat)."""
         return {
             block.id: {

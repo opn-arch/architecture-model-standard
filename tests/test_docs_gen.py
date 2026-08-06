@@ -14,7 +14,7 @@ def sample_model():
         entities=Entities(components=[
             Component(
                 id="COMP-1", name="JsonProvider", status="ACTIVE",
-                f_block="F1", pattern="provider",
+                source_block="S1", pattern="provider",
                 files=["src/flask/json/__init__.py", "src/flask/json/provider.py"],
                 contract="Provides JSON serialization for Flask applications.",
                 responsibilities=["serialize", "deserialize", "configure"],
@@ -40,7 +40,7 @@ def sample_model():
             ),
             Component(
                 id="COMP-2", name="Router", status="ACTIVE",
-                f_block="F1", pattern="router",
+                source_block="S1", pattern="router",
                 files=["src/flask/routing.py"],
                 contract="URL routing and dispatch.",
                 interfaces=[

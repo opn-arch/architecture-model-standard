@@ -152,7 +152,7 @@ def test_parent_linkage_round_trip():
 
 # --- Slicer tests for new entity types ---
 
-from architecture_model.core.slicer import slice_by_status, slice_by_fblock
+from architecture_model.core.slicer import slice_by_status, slice_by_source_block
 
 
 def test_slice_by_status_includes_new_entities():

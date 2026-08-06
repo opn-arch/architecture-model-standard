@@ -247,7 +247,7 @@ def _parse_capability(d: dict) -> Capability:
     base = _parse_base(d)
     return Capability(
         **base,
-        f_block=d.get("f_block", ""),
+        source_block=d.get("source_block", "") or d.get("f_block", ""),
         priority=_parse_priority(d.get("priority")),
         requirements=d.get("requirements", []),
     )
@@ -411,7 +411,7 @@ def _parse_component(d: dict) -> Component:
     return Component(
         **base,
         layer=d.get("layer", ""),
-        f_block=d.get("f_block", ""),
+        source_block=d.get("source_block", "") or d.get("f_block", ""),
         technology=d.get("technology", ""),
         files=d.get("files", []),
         responsibilities=d.get("responsibilities", []),
@@ -436,7 +436,7 @@ def _parse_system(d: dict) -> System:
     return System(
         **base,
         layer=d.get("layer", ""),
-        f_block=d.get("f_block", ""),
+        source_block=d.get("source_block", "") or d.get("f_block", ""),
         complexity_score=float(d.get("complexity_score", 0.0)),
         sub_model_ref=d.get("sub_model_ref", ""),
         component_ids=d.get("component_ids", []),
@@ -598,8 +598,8 @@ def _dump_actor(a: Actor) -> dict:
 
 def _dump_capability(c: Capability) -> dict:
     d = _dump_base(c)
-    if c.f_block:
-        d["f_block"] = c.f_block
+    if c.source_block:
+        d["source_block"] = c.source_block
     if c.priority != Priority.MEDIUM:
         d["priority"] = _enum_val(c.priority)
     if c.requirements:
@@ -682,8 +682,8 @@ def _dump_component(c: Component) -> dict:
     d = _dump_base(c)
     if c.layer:
         d["layer"] = c.layer
-    if c.f_block:
-        d["f_block"] = c.f_block
+    if c.source_block:
+        d["source_block"] = c.source_block
     if c.technology:
         d["technology"] = c.technology
     if c.files:
@@ -762,8 +762,8 @@ def _dump_system(s: System) -> dict:
     d = _dump_base(s)
     if s.layer:
         d["layer"] = s.layer
-    if s.f_block:
-        d["f_block"] = s.f_block
+    if s.source_block:
+        d["source_block"] = s.source_block
     if s.complexity_score:
         d["complexity_score"] = s.complexity_score
     if s.sub_model_ref:

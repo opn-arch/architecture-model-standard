@@ -145,7 +145,7 @@ def generate_component_spec(comp: "Component", model: "ArchitectureModel") -> st
     if comp.confidence is not None:
         confidence = comp.confidence
     elif comp.extensions:
-        prov = comp.extensions.get("fblock_provenance", {})
+        prov = comp.extensions.get("source_block_provenance", {})
         if isinstance(prov, dict):
             confidence = prov.get("confidence")
 

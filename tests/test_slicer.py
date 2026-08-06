@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from architecture_model.core.slicer import (
-    slice_by_fblock,
+    slice_by_source_block,
     slice_by_layer,
     slice_by_status,
     slice_for_artifact,
@@ -16,7 +16,7 @@ from .conftest import requires_model
 
 
 # ---------------------------------------------------------------------------
-# slice_by_fblock
+# slice_by_source_block
 # ---------------------------------------------------------------------------
 
 
@@ -24,46 +24,46 @@ from .conftest import requires_model
 class TestSliceByFblock:
     """Test slicing model by F-block identifier."""
 
-    def test_returns_only_fblock_capabilities(self, model: ArchitectureModel):
+    def test_returns_only_source_block_capabilities(self, model: ArchitectureModel):
         """Sliced model contains only capabilities for the requested F-block."""
-        sliced = slice_by_fblock(model, "F1")
+        sliced = slice_by_source_block(model, "S1")
         for cap in sliced.entities.capabilities:
-            assert cap.f_block == "F1", f"Cap {cap.id} has f_block={cap.f_block}, expected F1"
+            assert cap.source_block == "S1", f"Cap {cap.id} has source_block={cap.source_block}, expected S1"
 
-    def test_returns_only_fblock_components(self, model: ArchitectureModel):
+    def test_returns_only_source_block_components(self, model: ArchitectureModel):
         """Sliced model contains only components allocated to the requested F-block."""
-        sliced = slice_by_fblock(model, "F2")
+        sliced = slice_by_source_block(model, "S2")
         for comp in sliced.entities.components:
-            assert comp.f_block == "F2", f"Comp {comp.id} has f_block={comp.f_block}, expected F2"
+            assert comp.source_block == "S2", f"Comp {comp.id} has source_block={comp.source_block}, expected S2"
 
     def test_slice_is_proper_subset(self, model: ArchitectureModel):
         """Sliced model has fewer or equal entities than the full model."""
-        sliced = slice_by_fblock(model, "F1")
+        sliced = slice_by_source_block(model, "S1")
         assert sliced.entity_count <= model.entity_count
 
     def test_slice_has_relationships(self, model: ArchitectureModel):
         """Sliced model includes relationships for sliced entities."""
-        sliced = slice_by_fblock(model, "F1")
-        # Should have at least some relationships if model has behaviors tagged F1
+        sliced = slice_by_source_block(model, "S1")
+        # Should have at least some relationships if model has behaviors tagged S1
         if sliced.entities.behaviors:
             assert sliced.relationship_count > 0
 
-    def test_nonexistent_fblock_returns_empty(self, model: ArchitectureModel):
+    def test_nonexistent_source_block_returns_empty(self, model: ArchitectureModel):
         """Slicing by non-existent F-block returns empty entities."""
-        sliced = slice_by_fblock(model, "F99")
+        sliced = slice_by_source_block(model, "S99")
         assert len(sliced.entities.capabilities) == 0
         assert len(sliced.entities.components) == 0
 
     def test_no_relationship_mode(self, model: ArchitectureModel):
         """include_relationships=False returns no relationships."""
-        sliced = slice_by_fblock(model, "F1", include_relationships=False)
+        sliced = slice_by_source_block(model, "S1", include_relationships=False)
         assert sliced.relationship_count == 0
 
-    def test_behaviors_tagged_with_fblock(self, model: ArchitectureModel):
+    def test_behaviors_tagged_with_source_block(self, model: ArchitectureModel):
         """Sliced behaviors should all be tagged with the F-block."""
-        sliced = slice_by_fblock(model, "F1")
+        sliced = slice_by_source_block(model, "S1")
         for beh in sliced.entities.behaviors:
-            assert "F1" in beh.tags, f"Behavior {beh.id} not tagged with F1"
+            assert "S1" in beh.tags, f"Behavior {beh.id} not tagged with S1"
 
 
 # ---------------------------------------------------------------------------

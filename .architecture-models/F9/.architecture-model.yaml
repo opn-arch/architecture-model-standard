@@ -12,7 +12,7 @@ entities:
     name: File Discovery Utilities
     status: ACTIVE
     description: Shared file discovery, exclusion patterns, and source/test file separation
-    f_block: F9
+    source_block: S9
   interfaces:
   - id: IF-DISCOVER-FILES
     name: discover_source_files
@@ -24,7 +24,7 @@ entities:
     name: Utils
     status: ACTIVE
     description: Shared file discovery and exclusion patterns (72 lines)
-    f_block: F9
+    source_block: S9
     files:
     - src/architecture_model/utils/discovery.py
     signatures:

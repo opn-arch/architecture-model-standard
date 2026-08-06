@@ -124,11 +124,11 @@ entities:
   - id: BEH-SLICE
     name: Slice Command
     status: ACTIVE
-    description: Load model and extract subset by fblock, layer, artifact, or status filter.
-    trigger: architecture-model slice <model> --fblock|--layer|--artifact|--status
+    description: Load model and extract subset by source_block, layer, artifact, or status filter.
+    trigger: architecture-model slice <model> --source_block|--layer|--artifact|--status
     steps:
     - Load model from YAML path
-    - Determine slice type from args (fblock/layer/artifact/status)
+    - Determine slice type from args (source_block/layer/artifact/status)
     - Call appropriate slicer function
     - Print entity and relationship counts
     - Optionally save to output path
@@ -222,11 +222,11 @@ entities:
   - id: BEH-OVERVIEW-DIAGRAM
     name: Generate Overview Diagram
     status: ACTIVE
-    description: Create flowchart TB showing behaviors, components grouped by f_block subgraphs, and traces-to edges.
+    description: Create flowchart TB showing behaviors, components grouped by source_block subgraphs, and traces-to edges.
     trigger: Called by visualize command
     steps:
-    - Group components by f_block
-    - Get f_block display names from capabilities
+    - Group components by source_block
+    - Get source_block display names from capabilities
     - Emit subgraphs (collapse if >8 components)
     - Emit behavior nodes (stadium shape)
     - Emit traces-to relationship edges
@@ -244,11 +244,11 @@ entities:
   - id: BEH-DEPENDENCY-DIAGRAM
     name: Generate Dependency Diagram
     status: ACTIVE
-    description: Create flowchart LR showing inter-component depends-on relationships grouped by f_block.
+    description: Create flowchart LR showing inter-component depends-on relationships grouped by source_block.
     trigger: Called by visualize command
     steps:
-    - Group components by f_block
-    - Emit subgraphs per f_block
+    - Group components by source_block
+    - Emit subgraphs per source_block
     - Emit depends-on relationship edges
   interfaces:
   - id: IF-CLI-ENTRY
@@ -272,7 +272,7 @@ entities:
   - id: IF-CORE-API
     name: Core Module API
     status: ACTIVE
-    description: 'Imports from core: load_model, save_model, validate_model, slice_by_fblock, slice_by_layer, slice_by_status,
+    description: 'Imports from core: load_model, save_model, validate_model, slice_by_source_block, slice_by_layer, slice_by_status,
       slice_for_artifact, diff_models, coverage_report, Status, RelationType.'
     type: internal
   - id: IF-CONFIG-API
@@ -330,7 +330,7 @@ entities:
         help=''Available com...; p_validate = subparsers.add_parser(''validate'', help=''Validate model in...; p_validate.add_argument(''model'',
         help=''Path to architecture-model.yaml''); p_validate.add_argument(''--strict'', action=''store_true'', help=''Promote
         warnings to errors''); p_slice = subparsers.add_parser(''slice'', help=''Extract model subset''); p_slice.add_argument(''model'',
-        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--fblock'', help=''Filter by F-block (e.g., F3)'');
+        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--source_block'', help=''Filter by F-block (e.g., F3)'');
         p_slice.add_argument(''--layer'', help=''Filter by layer (e.g., web-layer)''); p_slice.add_argument(''--artifact'',
         help=''Slice for artifact regeneration''); p_slice.add_argument(''--status'', help=''Filter by status (ACTIVE, PLANNED)'');
         p_slice.add_argument(''-o'', ''--output'', help=''Output YAML path (default: stdout summary)''); p_diff = subparsers.add_parser(''diff'',
@@ -368,8 +368,8 @@ entities:
       params:
       - 'model: ArchitectureModel'
       returns: str
-      body_hint: 'lines = [''flowchart TB'']; fblock_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
-        ...; fblock_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(fblock_groups):
+      body_hint: 'lines = [''flowchart TB'']; source_block_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
+        ...; source_block_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(source_block_groups):
         ...; for beh in model.entities.behaviors: ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
     - name: generate_block_diagram
       params:
@@ -386,8 +386,8 @@ entities:
       params:
       - 'model: ArchitectureModel'
       returns: str
-      body_hint: 'lines = [''flowchart LR'']; fblock_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
-        ...; fblock_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(fblock_groups):
+      body_hint: 'lines = [''flowchart LR'']; source_block_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
+        ...; source_block_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(source_block_groups):
         ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
 relationships:
 - type: consumes

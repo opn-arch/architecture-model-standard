@@ -703,7 +703,7 @@ entities:
       returns: Manifest
       body_hint: 'root = project_root.resolve(); report = ScanReport(); if config is None: ...; logger.info(''Computing project
         metrics for %s'', root); metrics_result = compute_metrics(root, config); logger.info(''Metrics computed: %s'', metrics_result.values);
-        blocks_dict = config.fblock_dict; logger.info(''Processing %d functional blocks'', len(blocks_dict)); from architecture_model.manifest.types
+        blocks_dict = config.source_block_dict; logger.info(''Processing %d functional blocks'', len(blocks_dict)); from architecture_model.manifest.types
         import BlockManifest; functional_blocks: dict[str, BlockManifest] = {}; scanned_files: set[str] = set(); for (block_id,
         block_def) in blocks_dict.items(): ...; logger.info(''Processed %d blocks, found %d files'', report.blocks_processed,
         len(scanned_files)); extra_dirs: set[str] = set(); for layer in config.layers: ...; for dir_path in sorted(extra_dirs):
@@ -1134,14 +1134,14 @@ entities:
       - 'parent_model: str'
       returns: dict[str, RecursiveManifest]
       body_hint: 'config = get_config(project_root); results: dict[str, RecursiveManifest] = {}; for (block_id, block_def)
-        in config.fblock_dict.items(): ...; block_deps = compute_block_dependencies(results, config); for (block_id, deps)
+        in config.source_block_dict.items(): ...; block_deps = compute_block_dependencies(results, config); for (block_id, deps)
         in block_deps.items(): ...; return results'
     - name: compute_block_dependencies
       params:
       - 'manifests: dict[str, RecursiveManifest]'
       - config
       returns: dict[str, list[str]]
-      body_hint: 'file_to_block: dict[str, str] = {}; for (block_id, block_def) in config.fblock_dict.items(): ...; def _resolve_import_to_block(slash_path:
+      body_hint: 'file_to_block: dict[str, str] = {}; for (block_id, block_def) in config.source_block_dict.items(): ...; def _resolve_import_to_block(slash_path:
         str) -> str | No...; dependencies: dict[str, list[str]] = {}; for (block_id, rm) in manifests.items(): ...; return
         dependencies'
     - name: write_recursive_manifests

@@ -96,28 +96,28 @@ class TestSaveBlock:
     def test_creates_block_dir(self, tmp_path):
         model = _make_minimal_model()
         manifest = _make_minimal_manifest(tmp_path)
-        result = save_block(tmp_path, "F1", model, manifest)
-        assert result == tmp_path / ".architecture" / "F1"
+        result = save_block(tmp_path, "S1", model, manifest)
+        assert result == tmp_path / ".architecture" / "S1"
         assert result.is_dir()
 
     def test_saves_block_model(self, tmp_path):
         model = _make_minimal_model()
         manifest = _make_minimal_manifest(tmp_path)
-        save_block(tmp_path, "F1", model, manifest)
-        assert (tmp_path / ".architecture" / "F1" / ".architecture-model.yaml").exists()
+        save_block(tmp_path, "S1", model, manifest)
+        assert (tmp_path / ".architecture" / "S1" / ".architecture-model.yaml").exists()
 
     def test_saves_block_manifest(self, tmp_path):
         model = _make_minimal_model()
         manifest = _make_minimal_manifest(tmp_path)
-        save_block(tmp_path, "F1", model, manifest)
-        assert (tmp_path / ".architecture" / "F1" / "manifest.json").exists()
+        save_block(tmp_path, "S1", model, manifest)
+        assert (tmp_path / ".architecture" / "S1" / "manifest.json").exists()
 
     def test_saves_block_metrics(self, tmp_path):
         model = _make_minimal_model()
         manifest = _make_minimal_manifest(tmp_path)
         rep = _make_repr_result()
-        save_block(tmp_path, "F1", model, manifest, representativeness=rep)
-        data = json.loads((tmp_path / ".architecture" / "F1" / "metrics.json").read_text())
+        save_block(tmp_path, "S1", model, manifest, representativeness=rep)
+        data = json.loads((tmp_path / ".architecture" / "S1" / "metrics.json").read_text())
         assert data["representativeness"]["boundary_coherence"] == 0.95
 
 

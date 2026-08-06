@@ -127,7 +127,7 @@ def aggregate_block_confidence(model: ArchitectureModel) -> dict[str, dict]:
     blocks: dict[str, list[float]] = defaultdict(list)
 
     for comp in model.entities.components:
-        block = comp.f_block or "unassigned"
+        block = comp.source_block or "unassigned"
         blocks[block].append(comp.confidence)
 
     for beh in model.entities.behaviors:

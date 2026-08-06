@@ -9,7 +9,7 @@ import pytest
 from architecture_model.config.loader import _discover_functional_blocks
 
 
-def test_fblock_naming_from_imports(tmp_path):
+def test_source_block_naming_from_imports(tmp_path):
     """F-blocks with common import patterns should get semantic names."""
     pkg = tmp_path / "app"
     pkg.mkdir()
@@ -36,7 +36,7 @@ def test_fblock_naming_from_imports(tmp_path):
     assert "Database Access" in names, f"Expected 'Database Access' in {names}"
 
 
-def test_fblock_naming_fallback_when_no_characteristic_imports(tmp_path):
+def test_source_block_naming_fallback_when_no_characteristic_imports(tmp_path):
     """F-blocks without recognizable imports should fall back to title-cased dir name."""
     pkg = tmp_path / "mylib"
     pkg.mkdir()

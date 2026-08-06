@@ -52,10 +52,10 @@ class TestLoadModel:
         """Loaded model has relationships."""
         assert model.relationship_count > 0
 
-    def test_capabilities_have_fblock(self, model: ArchitectureModel):
+    def test_capabilities_have_source_block(self, model: ArchitectureModel):
         """Each capability should reference an F-block."""
         for cap in model.entities.capabilities:
-            assert cap.f_block, f"Capability {cap.id} missing f_block"
+            assert cap.source_block, f"Capability {cap.id} missing source_block"
 
 
 class TestLoadModelErrors:

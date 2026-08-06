@@ -147,7 +147,7 @@ entities:
     status: ACTIVE
     description: 'Dataclass definitions: ProjectConfig, OutputConfig, ResolvedOutputConfig, LayerConfig, FunctionalBlockConfig,
       SubBlockConfig, MetricConfig, DiscoveryReport, DiscoveryCandidate. Includes from_dict/to_dict serialization and derived
-      property accessors (layer_dir_map, fblock_dir_map, fblock_dict, metrics_paths).'
+      property accessors (layer_dir_map, source_block_dir_map, source_block_dict, metrics_paths).'
     files:
     - src/architecture_model/config/schema.py
     signatures:
@@ -163,14 +163,14 @@ entities:
       decorators:
       - property
       body_hint: 'return {layer.id: layer.dirs for layer in self.layers if layer.dirs}'
-    - name: fblock_dir_map
+    - name: source_block_dir_map
       returns: dict[str, str]
       decorators:
       - property
       body_hint: "result: dict[str, str] = {}; for block in self.functional_blocks:\n    for d in block.dirs:\n        result[d]\
         \ = block.id\n    for f in block.files:\n        prefix = f.rsplit('.py', 1)[0] if f.endswith('.py') else f\n    \
         \    result[prefix] = block.id; return result"
-    - name: fblock_dict
+    - name: source_block_dict
       returns: dict[str, dict[str, Any]]
       decorators:
       - property
@@ -234,7 +234,7 @@ entities:
     status: ACTIVE
     description: 'Config loading and auto-discovery engine: load_config(), discover_config(), get_config(), write_config().
       Private heuristics: _LAYER_HEURISTICS, _METRIC_HEURISTICS, _find_source_root(), _get_code_subdirectories(), _discover_functional_blocks(),
-      _discover_sub_blocks(), _discover_layers(), _discover_metrics(), _derive_layers_from_blocks(), _fblocks_from_top_level_dirs(),
+      _discover_sub_blocks(), _discover_layers(), _discover_metrics(), _derive_layers_from_blocks(), _source_blocks_from_top_level_dirs(),
       _get_package_description().'
     files:
     - src/architecture_model/config/loader.py

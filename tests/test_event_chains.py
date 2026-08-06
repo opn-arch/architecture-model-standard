@@ -54,13 +54,13 @@ class TestBuildBlockChains:
             ModuleGroup(name="repo", modules=["block/repo.py"], primary_file="block/repo.py"),
         ]
         manifest = _make_manifest(modules)
-        chains = build_block_chains(manifest, groups, block_id="F1")
+        chains = build_block_chains(manifest, groups, block_id="S1")
         assert len(chains) > 0
         # The chain starting from handle_request should span multiple components
         multi_comp = [c for c in chains if len(c.components_involved) >= 2]
         assert len(multi_comp) > 0
         assert all(c.scope == "intra" for c in chains)
-        assert all(c.block_id == "F1" for c in chains)
+        assert all(c.block_id == "S1" for c in chains)
 
     def test_single_component_no_chains(self):
         """No cross-component chains if everything is in one group."""
@@ -74,7 +74,7 @@ class TestBuildBlockChains:
             ModuleGroup(name="pkg", modules=["pkg/a.py", "pkg/b.py"], primary_file="pkg/a.py"),
         ]
         manifest = _make_manifest(modules)
-        chains = build_block_chains(manifest, groups, block_id="F1")
+        chains = build_block_chains(manifest, groups, block_id="S1")
         # All calls within one component - no cross-component chains
         cross_comp = [c for c in chains if len(c.components_involved) >= 2]
         assert cross_comp == []
@@ -82,7 +82,7 @@ class TestBuildBlockChains:
 
 class TestBuildCrossBlockChains:
     def test_cross_block_chain(self):
-        """Call from F1 module that resolves to F2 module creates cross-block chain."""
+        """Call from S1 module that resolves to S2 module creates cross-block chain."""
         f1_modules = [
             _mod("f1/handler.py", "handler",
                  functions=[FunctionInfo(
@@ -98,19 +98,19 @@ class TestBuildCrossBlockChains:
         f2_manifest = _make_manifest(f2_modules)
 
         recursive_manifests = {
-            "F1": RecursiveManifest(
-                block_id="F1", block_name="handlers", parent_model="model.yaml",
+            "S1": RecursiveManifest(
+                block_id="S1", block_name="handlers", parent_model="model.yaml",
                 component_id="COMP-1", manifest=f1_manifest,
-                block_dependencies=["F2"],
+                block_dependencies=["S2"],
             ),
-            "F2": RecursiveManifest(
-                block_id="F2", block_name="auth", parent_model="model.yaml",
+            "S2": RecursiveManifest(
+                block_id="S2", block_name="auth", parent_model="model.yaml",
                 component_id="COMP-2", manifest=f2_manifest,
             ),
         }
         block_groups = {
-            "F1": [ModuleGroup(name="handler", modules=["f1/handler.py"], primary_file="f1/handler.py")],
-            "F2": [ModuleGroup(name="auth", modules=["f2/auth.py"], primary_file="f2/auth.py")],
+            "S1": [ModuleGroup(name="handler", modules=["f1/handler.py"], primary_file="f1/handler.py")],
+            "S2": [ModuleGroup(name="auth", modules=["f2/auth.py"], primary_file="f2/auth.py")],
         }
 
         chains = build_cross_block_chains(recursive_manifests, block_groups)
@@ -127,13 +127,13 @@ class TestBuildCrossBlockChains:
         ]
         manifest = _make_manifest(modules)
         recursive_manifests = {
-            "F1": RecursiveManifest(
-                block_id="F1", block_name="core", parent_model="model.yaml",
+            "S1": RecursiveManifest(
+                block_id="S1", block_name="core", parent_model="model.yaml",
                 component_id="COMP-1", manifest=manifest,
             ),
         }
         block_groups = {
-            "F1": [ModuleGroup(name="core", modules=["f1/a.py", "f1/b.py"], primary_file="f1/a.py")],
+            "S1": [ModuleGroup(name="core", modules=["f1/a.py", "f1/b.py"], primary_file="f1/a.py")],
         }
         chains = build_cross_block_chains(recursive_manifests, block_groups)
         assert chains == []

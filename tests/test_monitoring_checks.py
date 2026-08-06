@@ -22,14 +22,14 @@ def _make_manifest(n: int) -> Manifest:
     block = BlockManifest(name="Test", status="active", description_source="test")
     return Manifest(
         generated_at="2026-01-01", project_root="pkg",
-        metrics=MetricsResult(), functional_blocks={"F1": block},
+        metrics=MetricsResult(), functional_blocks={"S1": block},
         modules=modules, interfaces=[],
     )
 
 
 def test_decompose_idempotency_pass():
     manifest = _make_manifest(15)
-    result = check_decompose_idempotency(manifest, block_id="F1", block_name="Test")
+    result = check_decompose_idempotency(manifest, block_id="S1", block_name="Test")
     assert isinstance(result, ConsistencyResult)
     assert result.passed is True
     assert result.metric_name == "decompose_idempotency"

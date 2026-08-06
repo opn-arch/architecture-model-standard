@@ -135,11 +135,11 @@ class TestComplexityScorer:
 
 
 class TestIdentifySystems:
-    def test_identifies_complex_fblock_group(self):
+    def test_identifies_complex_source_block_group(self):
         comps = [
             Component(
                 id=f"comp-{i}", name=f"mod{i}", status=Status.ACTIVE,
-                f_block="F1",
+                source_block="S1",
                 symbols=[
                     Symbol(name=f"C{j}", kind=SymbolKind.CLASS,
                            members=[f"m{k}" for k in range(4)])
@@ -150,17 +150,17 @@ class TestIdentifySystems:
         ]
         comps.append(Component(
             id="comp-simple", name="simple", status=Status.ACTIVE,
-            f_block="F2", symbols=[],
+            source_block="S2", symbols=[],
         ))
         model = ArchitectureModel(
             meta=ModelMeta(schema_version="1.3", project="test"),
             entities=Entities(components=comps),
             relationships=[],
         )
-        manifest = {"functional_blocks": {"F1": {"name": "Core"}, "F2": {"name": "Utils"}}}
+        manifest = {"functional_blocks": {"S1": {"name": "Core"}, "S2": {"name": "Utils"}}}
         systems = identify_systems(model, manifest)
         assert len(systems) == 1
-        assert systems[0].f_block == "F1"
+        assert systems[0].source_block == "S1"
         assert systems[0].name == "Core"
         assert len(systems[0].component_ids) == 3
         assert systems[0].complexity_score > SYSTEM_THRESHOLD
@@ -168,22 +168,22 @@ class TestIdentifySystems:
     def test_simple_model_no_systems(self):
         comp = Component(
             id="comp-a", name="a", status=Status.ACTIVE,
-            f_block="F1", symbols=[],
+            source_block="S1", symbols=[],
         )
         model = ArchitectureModel(
             meta=ModelMeta(schema_version="1.3", project="test"),
             entities=Entities(components=[comp]),
             relationships=[],
         )
-        manifest = {"functional_blocks": {"F1": {"name": "Simple"}}}
+        manifest = {"functional_blocks": {"S1": {"name": "Simple"}}}
         systems = identify_systems(model, manifest)
         assert len(systems) == 0
 
-    def test_components_without_fblock_not_grouped(self):
-        # A complex component without f_block should NOT become a system
+    def test_components_without_source_block_not_grouped(self):
+        # A complex component without source_block should NOT become a system
         comp = Component(
             id="comp-big", name="big", status=Status.ACTIVE,
-            f_block="",  # No f_block
+            source_block="",  # No source_block
             symbols=[Symbol(name=f"C{i}", kind=SymbolKind.CLASS,
                      members=[f"m{j}" for j in range(5)]) for i in range(6)],
         )
@@ -199,11 +199,11 @@ class TestIdentifySystems:
     def test_multiple_systems_identified(self):
         # Two F-blocks both exceeding threshold
         comps = []
-        for fblock in ["F1", "F2"]:
+        for source_block in ["S1", "S2"]:
             for i in range(2):
                 comps.append(Component(
-                    id=f"comp-{fblock}-{i}", name=f"{fblock}_{i}", status=Status.ACTIVE,
-                    f_block=fblock,
+                    id=f"comp-{source_block}-{i}", name=f"{source_block}_{i}", status=Status.ACTIVE,
+                    source_block=source_block,
                     symbols=[Symbol(name=f"Big{i}", kind=SymbolKind.CLASS,
                              members=[f"m{j}" for j in range(8)])
                              for _ in range(3)],
@@ -213,17 +213,17 @@ class TestIdentifySystems:
             entities=Entities(components=comps),
             relationships=[],
         )
-        manifest = {"functional_blocks": {"F1": {"name": "Core"}, "F2": {"name": "API"}}}
+        manifest = {"functional_blocks": {"S1": {"name": "Core"}, "S2": {"name": "API"}}}
         systems = identify_systems(model, manifest)
         assert len(systems) == 2
         names = {s.name for s in systems}
         assert "Core" in names
         assert "API" in names
 
-    def test_uses_fblock_id_as_name_when_not_in_manifest(self):
+    def test_uses_source_block_id_as_name_when_not_in_manifest(self):
         comp = Component(
             id="comp-x", name="x", status=Status.ACTIVE,
-            f_block="F99",
+            source_block="S99",
             symbols=[Symbol(name=f"C{i}", kind=SymbolKind.CLASS,
                      members=[f"m{j}" for j in range(5)]) for i in range(6)],
         )
@@ -232,19 +232,19 @@ class TestIdentifySystems:
             entities=Entities(components=[comp]),
             relationships=[],
         )
-        manifest = {"functional_blocks": {}}  # F99 not listed
+        manifest = {"functional_blocks": {}}  # S99 not listed
         systems = identify_systems(model, manifest)
         assert len(systems) == 1
-        assert systems[0].name == "F99"  # Falls back to ID
+        assert systems[0].name == "S99"  # Falls back to ID
 
 
 class TestDecomposeModel:
     def _make_complex_model(self):
-        """Model with F1 (3 complex components) and F2 (1 simple)."""
+        """Model with S1 (3 complex components) and S2 (1 simple)."""
         complex_comps = [
             Component(
                 id=f"comp-c{i}", name=f"c{i}", status=Status.ACTIVE,
-                f_block="F1",
+                source_block="S1",
                 symbols=[
                     Symbol(name=f"Big{i}_{j}", kind=SymbolKind.CLASS,
                            members=[f"m{k}" for k in range(6)])
@@ -256,12 +256,12 @@ class TestDecomposeModel:
         ]
         simple_comp = Component(
             id="comp-simple", name="simple", status=Status.ACTIVE,
-            f_block="F2",
+            source_block="S2",
         )
         all_comps = complex_comps + [simple_comp]
 
-        # Intra-system rel: comp-c0 → comp-c1 (both in F1)
-        # Inter-system rel: comp-c0 → comp-simple (F1 → F2)
+        # Intra-system rel: comp-c0 → comp-c1 (both in S1)
+        # Inter-system rel: comp-c0 → comp-simple (S1 → S2)
         rels = [
             Relationship(type=RelationType.DEPENDS_ON, from_id="comp-c0", to_id="comp-c1",
                          imports=["ClassB"]),
@@ -274,7 +274,7 @@ class TestDecomposeModel:
             entities=Entities(components=all_comps),
             relationships=rels,
         )
-        manifest = {"functional_blocks": {"F1": {"name": "Core Engine"}, "F2": {"name": "Utils"}}}
+        manifest = {"functional_blocks": {"S1": {"name": "Core Engine"}, "S2": {"name": "Utils"}}}
         return model, manifest
 
     def test_decompose_creates_system(self):
@@ -285,7 +285,7 @@ class TestDecomposeModel:
         assert len(result.top_level.entities.systems) == 1
         sys = result.top_level.entities.systems[0]
         assert sys.name == "Core Engine"
-        assert sys.f_block == "F1"
+        assert sys.source_block == "S1"
         assert set(sys.component_ids) == {"comp-c0", "comp-c1", "comp-c2"}
         assert "systems/" in sys.sub_model_ref
         assert sys.complexity_score > SYSTEM_THRESHOLD
@@ -355,14 +355,14 @@ class TestDecomposeModel:
         """When no F-block exceeds threshold, model returned as-is."""
         comp = Component(
             id="comp-a", name="a", status=Status.ACTIVE,
-            f_block="F1",
+            source_block="S1",
         )
         model = ArchitectureModel(
             meta=ModelMeta(schema_version="1.3", project="test"),
             entities=Entities(components=[comp]),
             relationships=[],
         )
-        manifest = {"functional_blocks": {"F1": {"name": "Simple"}}}
+        manifest = {"functional_blocks": {"S1": {"name": "Simple"}}}
         result = decompose_model(model, manifest)
 
         assert len(result.top_level.entities.systems) == 0

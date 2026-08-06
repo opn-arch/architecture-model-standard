@@ -10,16 +10,16 @@ MODEL_PATH = Path(".architecture-model.yaml")
 
 # Task 1: Capability renames
 CAP_RENAME = {
-    "CAP-F1": "CAP-PARSE-VALIDATE",
-    "CAP-F2": "CAP-MANIFEST",
-    "CAP-F3": "CAP-SLICE-DIFF",
-    "CAP-F4": "CAP-CLI",
-    "CAP-F5": "CAP-CONFIG",
-    "CAP-F6": "CAP-SCHEMA",
-    "CAP-F7": "CAP-EXTRACT",
-    "CAP-F8": "CAP-PROFILES",
-    "CAP-F9": "CAP-UTILS",
-    "CAP-F10": "CAP-ENRICH",
+    "CAP-S1": "CAP-PARSE-VALIDATE",
+    "CAP-S2": "CAP-MANIFEST",
+    "CAP-S3": "CAP-SLICE-DIFF",
+    "CAP-S4": "CAP-CLI",
+    "CAP-S5": "CAP-CONFIG",
+    "CAP-S6": "CAP-SCHEMA",
+    "CAP-S7": "CAP-EXTRACT",
+    "CAP-S8": "CAP-PROFILES",
+    "CAP-S9": "CAP-UTILS",
+    "CAP-S10": "CAP-ENRICH",
 }
 
 # Task 2: Sub-capabilities {parent_id: [(id, name, description)]}
@@ -70,7 +70,7 @@ USE_CASES = {
         "trigger": "CLI: architecture-model validate <path>",
         "preconditions": [".architecture-model.yaml exists", "File is valid YAML"],
         "steps": [
-            "Parse YAML into ArchitectureModel (F3: parser)",
+            "Parse YAML into ArchitectureModel (S3: parser)",
             "Check ID uniqueness across all entity types",
             "Verify referential integrity of all relationship endpoints",
             "Detect orphaned entities with no relationships",
@@ -79,9 +79,9 @@ USE_CASES = {
             "Validate meta section completeness",
             "Apply v1.1 semantic rules",
             "Score regen readiness per component",
-            "Apply domain profile rules if set (F7: profiles)",
+            "Apply domain profile rules if set (S7: profiles)",
             "Aggregate issues by severity, compute score 0-100",
-            "Display results to developer (F1: CLI)",
+            "Display results to developer (S1: CLI)",
         ],
         "postconditions": ["Validation score 0-100 reported", "Issues listed by severity (ERROR, WARNING, INFO)"],
     },
@@ -90,13 +90,13 @@ USE_CASES = {
         "trigger": "CLI: architecture-model manifest <path>",
         "preconditions": ["Project directory exists", "Configuration available (auto-discovered or .architecture-model.yaml)"],
         "steps": [
-            "Load or discover project configuration (F2: config)",
+            "Load or discover project configuration (S2: config)",
             "Compute project-wide metrics (total lines, file counts)",
             "Assemble functional blocks from config",
-            "Scan all source files via AST (F5: scanner)",
+            "Scan all source files via AST (S5: scanner)",
             "Extract functions, classes, imports, constants per file",
-            "Classify function complexity and generate body hints (F5: body_hints)",
-            "Discover inter-block interfaces from import analysis (F5: interfaces)",
+            "Classify function complexity and generate body hints (S5: body_hints)",
+            "Discover inter-block interfaces from import analysis (S5: interfaces)",
             "Assemble final manifest with blocks, interfaces, metrics",
         ],
         "postconditions": ["Manifest JSON written with all blocks and metrics", "Each file scanned with function signatures and body hints"],
@@ -171,10 +171,10 @@ USE_CASES = {
     "BEH-DECOMPOSE": {
         "actor": "ACT-DEV",
         "trigger": "CLI: architecture-model decompose <path>",
-        "preconditions": [".architecture-model.yaml exists", "Components have f_block assignments"],
+        "preconditions": [".architecture-model.yaml exists", "Components have source_block assignments"],
         "steps": [
             "Load parent architecture model",
-            "For each F-block, find all components with matching f_block",
+            "For each F-block, find all components with matching source_block",
             "Find parent component for each block's component hierarchy",
             "Trace relationships to find connected capabilities, interfaces, behaviors, constraints",
             "Collect internal and boundary relationships",
@@ -229,11 +229,11 @@ def main():
     existing_cap_ids = {c.id for c in model.entities.capabilities}
     existing_rels = {(r.type.value if hasattr(r.type, 'value') else r.type, r.from_id, r.to_id) for r in model.relationships}
 
-    # Build parent f_block lookup
-    parent_fblock = {c.id: c.f_block for c in model.entities.capabilities}
+    # Build parent source_block lookup
+    parent_source_block = {c.id: c.source_block for c in model.entities.capabilities}
 
     for parent_id, subs in SUB_CAPS.items():
-        fblock = parent_fblock.get(parent_id, "")
+        source_block = parent_source_block.get(parent_id, "")
         for sub_id, sub_name, sub_desc in subs:
             if sub_id not in existing_cap_ids:
                 model.entities.capabilities.append(Capability(
@@ -241,7 +241,7 @@ def main():
                     name=sub_name,
                     status=Status.ACTIVE,
                     description=sub_desc,
-                    f_block=fblock,
+                    source_block=source_block,
                     priority=Priority.HIGH,
                 ))
                 existing_cap_ids.add(sub_id)

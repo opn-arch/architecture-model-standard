@@ -93,10 +93,10 @@ def test_block_manifest_to_dict():
 
 def test_sub_function_entry_to_dict():
     sf = SubFunctionEntry(
-        id="F1.1", name="Handler", file="handler.py",
+        id="S1.1", name="Handler", file="handler.py",
         functions=["handle"], inputs=["request"], outputs=["response"],
         status="active", line_count=100,
     )
     d = sf.to_dict()
-    assert d["id"] == "F1.1"
+    assert d["id"] == "S1.1"
     assert d["functions"] == ["handle"]

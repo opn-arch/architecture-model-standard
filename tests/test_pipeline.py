@@ -35,19 +35,19 @@ def _setup_project(tmp_path):
             - id: COMP-CORE
               name: Core
               status: ACTIVE
-              f_block: F1
+              source_block: S1
               files:
                 - src/myapp/core/bus.py
             - id: COMP-API
               name: API
               status: ACTIVE
-              f_block: F2
+              source_block: S2
               files:
                 - src/myapp/api/handler.py
           capabilities:
             - id: CAP-EVENTS
               name: Event System
-              f_block: F1
+              source_block: S1
               status: ACTIVE
         relationships:
           - from: COMP-CORE
@@ -57,12 +57,12 @@ def _setup_project(tmp_path):
             to: COMP-CORE
             type: depends-on
         functional_blocks:
-          F1:
+          S1:
             name: Core
             dirs:
               - src/myapp/core
             files: []
-          F2:
+          S2:
             name: API
             dirs:
               - src/myapp/api
@@ -78,10 +78,10 @@ def test_run_pipeline_produces_manifests_and_sub_models(tmp_path):
     result = run_pipeline(root)
 
     assert isinstance(result, PipelineResult)
-    assert "F1" in result.manifests
-    assert "F2" in result.manifests
-    assert "F1" in result.sub_models
-    assert any(c.id == "COMP-CORE" for c in result.sub_models["F1"].entities.components)
+    assert "S1" in result.manifests
+    assert "S2" in result.manifests
+    assert "S1" in result.sub_models
+    assert any(c.id == "COMP-CORE" for c in result.sub_models["S1"].entities.components)
 
 
 def test_run_pipeline_writes_artifacts(tmp_path):
@@ -90,9 +90,9 @@ def test_run_pipeline_writes_artifacts(tmp_path):
     result = run_pipeline(root)
 
     out = root / ".architecture-models"
-    assert (out / "F1" / "manifest.json").exists()
-    assert (out / "F2" / "manifest.json").exists()
-    assert (out / "F1" / ".architecture-model.yaml").exists()
+    assert (out / "S1" / "manifest.json").exists()
+    assert (out / "S2" / "manifest.json").exists()
+    assert (out / "S1" / ".architecture-model.yaml").exists()
 
 
 def test_run_pipeline_computes_dependencies(tmp_path):
@@ -100,8 +100,8 @@ def test_run_pipeline_computes_dependencies(tmp_path):
     root = _setup_project(tmp_path)
     result = run_pipeline(root)
 
-    f2_deps = result.manifests["F2"].block_dependencies
-    assert "F1" in f2_deps
+    f2_deps = result.manifests["S2"].block_dependencies
+    assert "S1" in f2_deps
 
 
 def test_run_pipeline_deep_decompose(tmp_path):
@@ -117,7 +117,7 @@ def test_run_pipeline_deep_decompose(tmp_path):
 
     (tmp_path / ".architecture-model.yaml").write_text(
         "functional_blocks:\n"
-        "  F1:\n"
+        "  S1:\n"
         "    name: BigPackage\n"
         "    dirs:\n"
         "      - bigpkg\n"
@@ -125,8 +125,8 @@ def test_run_pipeline_deep_decompose(tmp_path):
     )
 
     result = run_pipeline(tmp_path, deep=True)
-    assert "F1" in result.deep_decompositions
-    decomp = result.deep_decompositions["F1"]
+    assert "S1" in result.deep_decompositions
+    decomp = result.deep_decompositions["S1"]
     assert len(decomp.sub_components) >= 2
 
 
@@ -139,7 +139,7 @@ def test_run_pipeline_config_only(tmp_path):
 
     (tmp_path / ".architecture-model.yaml").write_text(
         "functional_blocks:\n"
-        "  F1:\n"
+        "  S1:\n"
         "    name: Core\n"
         "    dirs:\n"
         "      - myapp\n"
@@ -147,5 +147,5 @@ def test_run_pipeline_config_only(tmp_path):
     )
 
     result = run_pipeline(tmp_path)
-    assert "F1" in result.manifests
+    assert "S1" in result.manifests
     assert len(result.sub_models) == 0  # No model to decompose

@@ -48,10 +48,10 @@ def _make_meta(**overrides) -> ModelMeta:
 def _make_perfect_model() -> ArchitectureModel:
     """Create a model that should score 100/100 — no errors, no warnings."""
     cap = Capability(
-        id="CAP-F1",
+        id="CAP-S1",
         name="Ingest Data",
         status=Status.ACTIVE,
-        f_block="F1",
+        source_block="S1",
         priority=Priority.HIGH,
     )
     behavior = Behavior(
@@ -59,7 +59,7 @@ def _make_perfect_model() -> ArchitectureModel:
         name="Ingest Log",
         status=Status.ACTIVE,
         actor="actor-dev",
-        tags=["F1"],
+        tags=["S1"],
     )
     actor = Actor(
         id="actor-dev",
@@ -72,18 +72,18 @@ def _make_perfect_model() -> ArchitectureModel:
         name="ingest.py",
         status=Status.ACTIVE,
         layer="pipeline-layer",
-        f_block="F1",
+        source_block="S1",
     )
     realizes_rel = Relationship(
         type=RelationType.REALIZES,
         from_id="UC-01",
-        to_id="CAP-F1",
+        to_id="CAP-S1",
         description="UC realizes capability",
     )
     comp_realizes_rel = Relationship(
         type=RelationType.REALIZES,
         from_id="comp-ingest",
-        to_id="CAP-F1",
+        to_id="CAP-S1",
         description="Component realizes capability",
     )
     return ArchitectureModel(
@@ -172,7 +172,7 @@ class TestDuplicateIDs:
                 ],
                 capabilities=[
                     Capability(
-                        id="shared-id", name="Capability", status=Status.ACTIVE, f_block="F1"
+                        id="shared-id", name="Capability", status=Status.ACTIVE, source_block="S1"
                     )
                 ],
             ),
@@ -227,14 +227,14 @@ class TestDanglingRefs:
             meta=_make_meta(),
             entities=Entities(
                 capabilities=[
-                    Capability(id="CAP-F1", name="Cap", status=Status.ACTIVE, f_block="F1")
+                    Capability(id="CAP-S1", name="Cap", status=Status.ACTIVE, source_block="S1")
                 ],
             ),
             relationships=[
                 Relationship(
                     type=RelationType.REALIZES,
                     from_id="nonexistent-entity",
-                    to_id="CAP-F1",
+                    to_id="CAP-S1",
                 )
             ],
         )
@@ -247,7 +247,7 @@ class TestDanglingRefs:
         model = ArchitectureModel(
             meta=_make_meta(),
             entities=Entities(
-                behaviors=[Behavior(id="UC-01", name="UC", status=Status.ACTIVE, tags=["F1"])],
+                behaviors=[Behavior(id="UC-01", name="UC", status=Status.ACTIVE, tags=["S1"])],
             ),
             relationships=[
                 Relationship(

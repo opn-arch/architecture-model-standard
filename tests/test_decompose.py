@@ -18,7 +18,7 @@ def _setup_project(tmp_path):
     """Create a project with parent model that has all entity types + relationships.
 
     Uses src-layout so discover_config() finds source_root=src/myproject
-    and creates F1 for the 'core' subpackage.
+    and creates S1 for the 'core' subpackage.
     """
     # Source files
     pkg_root = tmp_path / "src" / "myproject"
@@ -47,20 +47,20 @@ def _setup_project(tmp_path):
         entities=Entities(
             components=[
                 Component(id="COMP-CORE", name="Core", status=Status.ACTIVE,
-                          kind=ComponentKind.PACKAGE, f_block="F1"),
+                          kind=ComponentKind.PACKAGE, source_block="S1"),
                 Component(id="COMP-CORE-PARSER", name="Parser", status=Status.ACTIVE,
                           files=["src/myproject/core/parser.py"],
-                          kind=ComponentKind.MODULE, f_block="F1"),
+                          kind=ComponentKind.MODULE, source_block="S1"),
                 Component(id="COMP-CORE-VALIDATOR", name="Validator", status=Status.ACTIVE,
                           files=["src/myproject/core/validator.py"],
-                          kind=ComponentKind.MODULE, f_block="F1"),
+                          kind=ComponentKind.MODULE, source_block="S1"),
                 Component(id="COMP-EXTERNAL", name="External", status=Status.ACTIVE,
                           files=["src/myproject/external.py"],
-                          kind=ComponentKind.MODULE, f_block="F2"),
+                          kind=ComponentKind.MODULE, source_block="S2"),
             ],
             capabilities=[
                 Capability(id="CAP-PARSE", name="Parsing", status=Status.ACTIVE,
-                           f_block="F1", description="Parse data"),
+                           source_block="S1", description="Parse data"),
             ],
             interfaces=[
                 Interface(id="IF-PARSE-API", name="Parser API", status=Status.ACTIVE,
@@ -90,7 +90,7 @@ def _setup_project(tmp_path):
     )
     save_model(model, tmp_path / ".architecture-model.yaml")
 
-    block_id = "F1"
+    block_id = "S1"
     return tmp_path, block_id
 
 

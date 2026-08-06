@@ -241,7 +241,7 @@ def decompose_model(project_root, *, model_path=None):
     config = get_config(project_root)
     results = {}
 
-    for block_id, block_def in config.fblock_dict.items():
+    for block_id, block_def in config.source_block_dict.items():
         block_name = block_def.get("name", block_id)
         block_dirs = block_def.get("dirs", [])
         block_files = block_def.get("files", [])
@@ -315,7 +315,7 @@ def decompose_model(project_root, *, model_path=None):
 
 
 _COMPACT_KEEP = frozenset({
-    "id", "name", "f_block", "status", "contract", "pattern",
+    "id", "name", "source_block", "status", "contract", "pattern",
     "kind", "layer", "description", "tags",
 })
 
@@ -345,7 +345,7 @@ def compact_root_model(model, *, block_ids: list[str]) -> None:
 
     target_blocks = set(block_ids)
     for comp in components:
-        fb = comp.f_block if hasattr(comp, "f_block") else comp.get("f_block", "")
+        fb = comp.source_block if hasattr(comp, "source_block") else comp.get("source_block", "")
         if fb not in target_blocks:
             continue
         for attr in _COMPACT_STRIP:

@@ -5,16 +5,16 @@ from architecture_model.orchestration.deep_decompose import DecomposeResult, Sub
 
 def _sample_tree() -> list[DecomposeResult]:
     return [DecomposeResult(
-        block_id="F6",
+        block_id="S6",
         block_name="MQTT",
         sub_components=[
-            SubComponent(id="COMP-F6-1", name="", files=["mqtt/client.py", "mqtt/connection.py"], classes=["MQTTClient"], functions=["async_connect"], line_count=200),
-            SubComponent(id="COMP-F6-2", name="", files=["mqtt/fan.py"], classes=["MqttFan"], functions=["async_setup_entry"], line_count=80),
-            SubComponent(id="COMP-F6-3", name="", files=["mqtt/light.py"], classes=["MqttLight"], functions=["async_setup_entry"], line_count=90),
+            SubComponent(id="COMP-S6-1", name="", files=["mqtt/client.py", "mqtt/connection.py"], classes=["MQTTClient"], functions=["async_connect"], line_count=200),
+            SubComponent(id="COMP-S6-2", name="", files=["mqtt/fan.py"], classes=["MqttFan"], functions=["async_setup_entry"], line_count=80),
+            SubComponent(id="COMP-S6-3", name="", files=["mqtt/light.py"], classes=["MqttLight"], functions=["async_setup_entry"], line_count=90),
         ],
         internal_relationships=[
-            InternalRelationship(from_id="COMP-F6-2", to_id="COMP-F6-1", edge_count=3),
-            InternalRelationship(from_id="COMP-F6-3", to_id="COMP-F6-1", edge_count=2),
+            InternalRelationship(from_id="COMP-S6-2", to_id="COMP-S6-1", edge_count=3),
+            InternalRelationship(from_id="COMP-S6-3", to_id="COMP-S6-1", edge_count=2),
         ],
         depth=1,
     )]
@@ -22,9 +22,9 @@ def _sample_tree() -> list[DecomposeResult]:
 
 def test_format_enrichment_prompt_contains_all_leaves():
     prompt = format_enrichment_prompt(_sample_tree())
-    assert "COMP-F6-1" in prompt
-    assert "COMP-F6-2" in prompt
-    assert "COMP-F6-3" in prompt
+    assert "COMP-S6-1" in prompt
+    assert "COMP-S6-2" in prompt
+    assert "COMP-S6-3" in prompt
 
 
 def test_format_enrichment_prompt_includes_pattern_catalog():

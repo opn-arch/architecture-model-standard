@@ -43,58 +43,58 @@ entities:
     name: Model Parsing & Validation
     status: ACTIVE
     description: Parse YAML models and validate structural correctness (score 0-100)
-    f_block: F3
+    source_block: S3
   - id: CAP-MANIFEST
     name: Reality Manifest Generation
     status: ACTIVE
     description: AST scanning to produce ground-truth code inventories with metrics, body hints, and test contracts
-    f_block: F5
+    source_block: S5
   - id: CAP-SLICE-DIFF
     name: Model Slicing & Diffing
     status: ACTIVE
     description: Subset extraction by F-block/layer, model version comparison, and enriched model composition
-    f_block: F3
+    source_block: S3
   - id: CAP-CLI
     name: CLI Operations
     status: ACTIVE
     description: Command-line interface for init, validate, slice, diff, stats, impact, manifest, coverage, enrich, decompose,
       visualize
-    f_block: F1
+    source_block: S1
   - id: CAP-CONFIG
     name: Configuration Management
     status: ACTIVE
     description: Auto-discovery config loading and project configuration schema
-    f_block: F2
+    source_block: S2
   - id: CAP-EXTRACT
     name: Model Extraction
     status: ACTIVE
     description: Extract architecture model directly from source code analysis
-    f_block: F4
+    source_block: S4
   - id: CAP-ENRICH
     name: Auto-Enrichment & Decomposition
     status: ACTIVE
     description: Populate signatures, constants, test_contracts from AST and decompose into recursive sub-models
-    f_block: F6
+    source_block: S6
   - id: CAP-PROFILES
     name: Domain Profiles
     status: ACTIVE
     description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
-    f_block: F7
+    source_block: S7
   - id: CAP-SCHEMA
     name: Schema Specification
     status: ACTIVE
     description: JSON Schema definitions for architecture model validation
-    f_block: F8
+    source_block: S8
   - id: CAP-VISUALIZE
     name: Mermaid Visualization
     status: ACTIVE
     description: Generate Mermaid diagrams (context, components, behaviors, dependencies) from architecture models
-    f_block: F3
+    source_block: S3
   - id: CAP-UTILS
     name: File Discovery Utilities
     status: ACTIVE
     description: Shared file discovery, exclusion patterns, and source/test file separation
-    f_block: F9
+    source_block: S9
   behaviors:
   - id: BEH-CRUD-_unknown
     name: 'CRUD: 6 CRUD endpoints (1 CLI, 4 CLI:, 1 MCP)'
@@ -123,9 +123,9 @@ entities:
     description: 'validate_model(model: ArchitectureModel) -> ValidationResult'
     type: function
   - id: IF-SLICE-FBLOCK
-    name: slice_by_fblock
+    name: slice_by_source_block
     status: ACTIVE
-    description: slice_by_fblock(model, f_block, include_relationships) -> ArchitectureModel
+    description: slice_by_source_block(model, source_block, include_relationships) -> ArchitectureModel
     type: function
   - id: IF-COVERAGE-REPORT
     name: coverage_report
@@ -215,7 +215,7 @@ entities:
     name: Core
     status: ACTIVE
     description: Central library — type system, parser, validator, slicer, differ, merger, decomposer, coverage, Mermaid visualization
-    f_block: F3
+    source_block: S3
     files:
     - src/architecture_model/core/coverage.py
     - src/architecture_model/core/decomposer.py
@@ -485,15 +485,15 @@ entities:
       - 'model: ArchitectureModel'
       - 'manifest: dict'
       returns: list[SystemCandidate]
-      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; fblocks_meta
-        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (fblock_id, components) in
+      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; source_blocks_meta
+        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (source_block_id, components) in
         groups.items(): ...; return candidates'
-    - name: auto_assign_f_blocks
+    - name: auto_assign_source_blocks
       params:
       - 'model: ArchitectureModel'
       - 'max_cluster_size: int'
       returns: ArchitectureModel
-      body_hint: 'has_fblocks = any((c.f_block for c in model.entities.components)); if has_fblocks: ...; comps = model.entities.components;
+      body_hint: 'has_source_blocks = any((c.source_block for c in model.entities.components)); if has_source_blocks: ...; comps = model.entities.components;
         if len(comps) <= 1: ...; adj: dict[str, set[str]] = defaultdict(set); comp_ids = {c.id for c in comps}; for rel in
         model.relationships: ...; sorted_comps = sorted(comps, key=lambda c: len(adj.get(c.id, set())), re...; assigned: dict[str,
         str] = {}; cluster_id = 0; for comp in sorted_comps: ...; for comp in comps: ...; from copy import deepcopy; new_comps
@@ -662,22 +662,22 @@ entities:
       body_hint: "path = Path(path); path.parent.mkdir(parents=True, exist_ok=True); data = dump_model(model); with open(path,\
         \ 'w', encoding='utf-8') as f:\n    yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True,\
         \ width=120)"
-    - name: slice_by_fblock
+    - name: slice_by_source_block
       params:
       - 'model: ArchitectureModel'
-      - 'f_block: str'
+      - 'source_block: str'
       - 'include_relationships: bool'
       returns: ArchitectureModel
-      body_hint: 'cap_ids = {c.id for c in model.entities.capabilities if c.f_block =...; behaviors = [b for b in model.entities.behaviors
-        if f_block in b.tags]; behavior_ids = {b.id for b in behaviors}; components = [c for c in model.entities.components
-        if c.f_block == f_b...; component_ids = {c.id for c in components}; interfaces = [i for i in model.entities.interfaces
-        if f_block in i.pro...; interface_ids = {i.id for i in interfaces}; relevant_ids = cap_ids | behavior_ids | component_ids
+      body_hint: 'cap_ids = {c.id for c in model.entities.capabilities if c.source_block =...; behaviors = [b for b in model.entities.behaviors
+        if source_block in b.tags]; behavior_ids = {b.id for b in behaviors}; components = [c for c in model.entities.components
+        if c.source_block == f_b...; component_ids = {c.id for c in components}; interfaces = [i for i in model.entities.interfaces
+        if source_block in i.pro...; interface_ids = {i.id for i in interfaces}; relevant_ids = cap_ids | behavior_ids | component_ids
         | interface_ids; data_entities = [d for d in model.entities.data if d.owner in component_ids]; data_ids = {d.id for
         d in data_entities}; events = [e for e in model.entities.events if e.source in componen...; event_ids = {e.id for
         e in events}; quality_attrs = [q for q in model.entities.quality_attributes if any((a i...; qa_ids = {q.id for q in
         quality_attrs}; relevant_ids = relevant_ids | data_ids | event_ids | qa_ids; actor_refs = set(); for beh in behaviors:
         ...; actors = [a for a in model.entities.actors if a.id in actor_refs]; relationships = []; if include_relationships:
-        ...; capabilities = [c for c in model.entities.capabilities if c.f_block == f...; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version,
+        ...; capabilities = [c for c in model.entities.capabilities if c.source_block == f...; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version,
         project=model.meta.project, system=model.meta.system, generated_at=model.meta.generated_at, source_artifacts=model.meta.source_artifacts),
         entities=Entities(actors=actors, capabilities=capabilities, behaviors=behaviors, interfaces=interfaces, constraints=[],
         layers=[], components=components, data=data_entities, events=events, quality_attributes=quality_attrs), relationships=relationships)'
@@ -888,8 +888,8 @@ entities:
       params:
       - 'model: ''ArchitectureModel'''
       returns: str
-      body_hint: 'lines = [''flowchart LR'']; fblock_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
-        ...; fblock_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(fblock_groups):
+      body_hint: 'lines = [''flowchart LR'']; source_block_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
+        ...; source_block_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(source_block_groups):
         ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
     - name: generate_all_diagrams
       params:
@@ -946,11 +946,11 @@ entities:
       assertion: result.score == 100.0
       contract_type: value_equality
     - test_file: test_coverage.py
-      test_method: test_missing_fblock
+      test_method: test_missing_source_block
       assertion: result.score == 50.0
       contract_type: value_equality
     - test_file: test_coverage.py
-      test_method: test_extra_fblock
+      test_method: test_extra_source_block
       assertion: result.score == 100.0
       contract_type: value_equality
     - test_file: test_coverage.py
@@ -1006,7 +1006,7 @@ entities:
       assertion: score == 0.0
       contract_type: value_equality
     - test_file: test_decomposer.py
-      test_method: test_identifies_complex_fblock_group
+      test_method: test_identifies_complex_source_block_group
       assertion: len(systems) == 1
       contract_type: value_equality
     - test_file: test_decomposer.py
@@ -1014,7 +1014,7 @@ entities:
       assertion: len(systems) == 0
       contract_type: value_equality
     - test_file: test_decomposer.py
-      test_method: test_components_without_fblock_not_grouped
+      test_method: test_components_without_source_block_not_grouped
       assertion: len(systems) == 0
       contract_type: value_equality
     - test_file: test_decomposer.py
@@ -1022,7 +1022,7 @@ entities:
       assertion: len(systems) == 2
       contract_type: value_equality
     - test_file: test_decomposer.py
-      test_method: test_uses_fblock_id_as_name_when_not_in_manifest
+      test_method: test_uses_source_block_id_as_name_when_not_in_manifest
       assertion: len(systems) == 1
       contract_type: value_equality
     - test_file: test_decomposer.py
@@ -1094,15 +1094,15 @@ entities:
       assertion: real_errors isinstance list
       contract_type: type_check
     - test_file: test_slicer.py
-      test_method: test_returns_only_fblock_capabilities
-      assertion: cap.f_block == 'F1'
+      test_method: test_returns_only_source_block_capabilities
+      assertion: cap.source_block == 'F1'
       contract_type: value_equality
     - test_file: test_slicer.py
-      test_method: test_returns_only_fblock_components
-      assertion: comp.f_block == 'F2'
+      test_method: test_returns_only_source_block_components
+      assertion: comp.source_block == 'F2'
       contract_type: value_equality
     - test_file: test_slicer.py
-      test_method: test_nonexistent_fblock_returns_empty
+      test_method: test_nonexistent_source_block_returns_empty
       assertion: len(sliced.entities.capabilities) == 0
       contract_type: value_equality
     - test_file: test_slicer.py
@@ -1187,7 +1187,7 @@ entities:
       contract_type: value_equality
     - test_file: test_types.py
       test_method: test_capability_fields
-      assertion: cap['f_block'] == 'FB-CodeGen'
+      assertion: cap['source_block'] == 'FB-CodeGen'
       contract_type: value_equality
     - test_file: test_types.py
       test_method: test_behavior_fields
@@ -1302,7 +1302,7 @@ entities:
     status: ACTIVE
     description: Reality Manifest Generator — AST scanning, body hints, test contracts, metrics, recursive manifests, typed
       dataclasses
-    f_block: F5
+    source_block: S5
     files:
     - src/architecture_model/manifest/blocks.py
     - src/architecture_model/manifest/body_hints.py
@@ -1390,7 +1390,7 @@ entities:
       returns: Manifest
       body_hint: 'root = project_root.resolve(); report = ScanReport(); if config is None: ...; logger.info(''Computing project
         metrics for %s'', root); metrics_result = compute_metrics(root, config); logger.info(''Metrics computed: %s'', metrics_result.values);
-        blocks_dict = config.fblock_dict; logger.info(''Processing %d functional blocks'', len(blocks_dict)); from architecture_model.manifest.types
+        blocks_dict = config.source_block_dict; logger.info(''Processing %d functional blocks'', len(blocks_dict)); from architecture_model.manifest.types
         import BlockManifest; functional_blocks: dict[str, BlockManifest] = {}; scanned_files: set[str] = set(); for (block_id,
         block_def) in blocks_dict.items(): ...; logger.info(''Processed %d blocks, found %d files'', report.blocks_processed,
         len(scanned_files)); extra_dirs: set[str] = set(); for layer in config.layers: ...; for dir_path in sorted(extra_dirs):
@@ -1444,14 +1444,14 @@ entities:
       - 'parent_model: str'
       returns: dict[str, RecursiveManifest]
       body_hint: 'config = get_config(project_root); results: dict[str, RecursiveManifest] = {}; for (block_id, block_def)
-        in config.fblock_dict.items(): ...; block_deps = compute_block_dependencies(results, config); for (block_id, deps)
+        in config.source_block_dict.items(): ...; block_deps = compute_block_dependencies(results, config); for (block_id, deps)
         in block_deps.items(): ...; return results'
     - name: compute_block_dependencies
       params:
       - 'manifests: dict[str, RecursiveManifest]'
       - config
       returns: dict[str, list[str]]
-      body_hint: 'file_to_block: dict[str, str] = {}; for (block_id, block_def) in config.fblock_dict.items(): ...; def _resolve_import_to_block(slash_path:
+      body_hint: 'file_to_block: dict[str, str] = {}; for (block_id, block_def) in config.source_block_dict.items(): ...; def _resolve_import_to_block(slash_path:
         str) -> str | No...; dependencies: dict[str, list[str]] = {}; for (block_id, rm) in manifests.items(): ...; return
         dependencies'
     - name: write_recursive_manifests
@@ -1766,7 +1766,7 @@ entities:
     name: Config
     status: ACTIVE
     description: Self-bootstrapping configuration — auto-discovery, schema, loader
-    f_block: F2
+    source_block: S2
     files:
     - src/architecture_model/config/loader.py
     - src/architecture_model/config/schema.py
@@ -1819,14 +1819,14 @@ entities:
       decorators:
       - property
       body_hint: 'return {layer.id: layer.dirs for layer in self.layers if layer.dirs}'
-    - name: ProjectConfig.fblock_dir_map
+    - name: ProjectConfig.source_block_dir_map
       returns: dict[str, str]
       decorators:
       - property
       body_hint: "result: dict[str, str] = {}; for block in self.functional_blocks:\n    for d in block.dirs:\n        result[d]\
         \ = block.id\n    for f in block.files:\n        prefix = f.rsplit('.py', 1)[0] if f.endswith('.py') else f\n    \
         \    result[prefix] = block.id; return result"
-    - name: ProjectConfig.fblock_dict
+    - name: ProjectConfig.source_block_dict
       returns: dict[str, dict[str, Any]]
       decorators:
       - property
@@ -1889,7 +1889,7 @@ entities:
     name: CLI
     status: ACTIVE
     description: Command-line interface — argparse dispatch, Mermaid visualization shim
-    f_block: F1
+    source_block: S1
     files:
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
@@ -1902,7 +1902,7 @@ entities:
         help=''Available com...; p_validate = subparsers.add_parser(''validate'', help=''Validate model in...; p_validate.add_argument(''model'',
         help=''Path to architecture-model.yaml''); p_validate.add_argument(''--strict'', action=''store_true'', help=''Promote
         warnings to errors''); p_slice = subparsers.add_parser(''slice'', help=''Extract model subset''); p_slice.add_argument(''model'',
-        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--fblock'', help=''Filter by F-block (e.g., F3)'');
+        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--source_block'', help=''Filter by F-block (e.g., F3)'');
         p_slice.add_argument(''--layer'', help=''Filter by layer (e.g., web-layer)''); p_slice.add_argument(''--artifact'',
         help=''Slice for artifact regeneration''); p_slice.add_argument(''--status'', help=''Filter by status (ACTIVE, PLANNED)'');
         p_slice.add_argument(''-o'', ''--output'', help=''Output YAML path (default: stdout summary)''); p_diff = subparsers.add_parser(''diff'',
@@ -1937,7 +1937,7 @@ entities:
     name: Orchestration
     status: ACTIVE
     description: Workflow orchestration — enrichment and decomposition pipelines
-    f_block: F6
+    source_block: S6
     files:
     - src/architecture_model/orchestration/decompose.py
     - src/architecture_model/orchestration/enrich.py
@@ -1946,7 +1946,7 @@ entities:
       params:
       - project_root
       body_hint: "model = load_model(project_root / '.architecture-model.yaml'); config = get_config(project_root); results\
-        \ = {}; for block_id, block_def in config.fblock_dict.items():\n    block_name = block_def.get('name', block_id)\n\
+        \ = {}; for block_id, block_def in config.source_block_dict.items():\n    block_name = block_def.get('name', block_id)\n\
         \    block_dirs = block_def.get('dirs', [])\n    block_files = block_def.get('files', [])\n    logger.info('Decomposing\
         \ %s: %s', block_id, block_name)\n    components = _find_block_components(model, block_dirs, block_files)\n    if\
         \ not components:\n        logger.warning('No components found for %s (dirs: %s)', block_id, block_dirs)\n       \
@@ -2004,7 +2004,7 @@ entities:
     name: Extract
     status: ACTIVE
     description: Model extraction from source code analysis
-    f_block: F4
+    source_block: S4
     files:
     - src/architecture_model/extract/from_code.py
     signatures:
@@ -2026,7 +2026,7 @@ entities:
     name: Utils
     status: ACTIVE
     description: Shared file discovery and exclusion patterns (72 lines)
-    f_block: F9
+    source_block: S9
     files:
     - src/architecture_model/utils/discovery.py
     signatures:
@@ -2090,7 +2090,7 @@ entities:
     name: Profiles
     status: ACTIVE
     description: Domain profile loading — software, controls, mechanical, electrical (85 lines)
-    f_block: F7
+    source_block: S7
     files:
     - src/architecture_model/profiles/schema.py
     constants:
@@ -2137,7 +2137,7 @@ entities:
     name: Spec
     status: ACTIVE
     description: JSON Schema definitions for model validation (data only, no code)
-    f_block: F8
+    source_block: S8
 relationships:
 - type: consumes
   from: ACT-DEV

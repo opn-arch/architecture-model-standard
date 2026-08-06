@@ -168,9 +168,9 @@ def _add_missing_components(model: ArchitectureModel, manifest: dict, project_ro
         from architecture_model.config.loader import get_config
 
         config = get_config(project_root)
-        fblock_dirs = config.fblock_dir_map
+        source_block_dirs = config.source_block_dir_map
     except Exception:
-        fblock_dirs = {}
+        source_block_dirs = {}
         config = None
 
     for mod in modules:
@@ -183,11 +183,11 @@ def _add_missing_components(model: ArchitectureModel, manifest: dict, project_ro
         if filename in existing_files or path in existing_files:
             continue
 
-        # Determine f_block
-        f_block = ""
-        for prefix, fb in fblock_dirs.items():
+        # Determine source_block
+        source_block = ""
+        for prefix, fb in source_block_dirs.items():
             if path.startswith(prefix):
-                f_block = fb
+                source_block = fb
                 break
 
         # Determine layer from config
@@ -212,7 +212,7 @@ def _add_missing_components(model: ArchitectureModel, manifest: dict, project_ro
                 name=filename,
                 status=Status.ACTIVE,
                 layer=layer,
-                f_block=f_block,
+                source_block=source_block,
                 files=[path],
                 source_file=path,
                 description=f"Auto-discovered from manifest ({loc} LOC)",
@@ -220,18 +220,18 @@ def _add_missing_components(model: ArchitectureModel, manifest: dict, project_ro
         )
 
     # Wire realizes relationships for newly added components
-    fblock_to_cap = {cap.f_block: cap.id for cap in model.entities.capabilities}
+    source_block_to_cap = {cap.source_block: cap.id for cap in model.entities.capabilities}
     existing_rels = {(r.from_id, r.to_id, r.type) for r in model.relationships}
     for comp in model.entities.components:
-        if comp.f_block and comp.f_block in fblock_to_cap:
-            key = (comp.id, fblock_to_cap[comp.f_block], RelationType.REALIZES)
+        if comp.source_block and comp.source_block in source_block_to_cap:
+            key = (comp.id, source_block_to_cap[comp.source_block], RelationType.REALIZES)
             if key not in existing_rels:
                 model.relationships.append(
                     Relationship(
                         type=RelationType.REALIZES,
                         from_id=comp.id,
-                        to_id=fblock_to_cap[comp.f_block],
-                        description=f"{comp.name} realizes {comp.f_block}",
+                        to_id=source_block_to_cap[comp.source_block],
+                        description=f"{comp.name} realizes {comp.source_block}",
                     )
                 )
                 existing_rels.add(key)

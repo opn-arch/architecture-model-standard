@@ -19,26 +19,26 @@ MINIMAL_MODEL = textwrap.dedent("""\
 
 
 def test_loads_existing_block(tmp_path: Path):
-    block_dir = tmp_path / ".architecture-models" / "F1"
+    block_dir = tmp_path / ".architecture-models" / "S1"
     block_dir.mkdir(parents=True)
     (block_dir / ".architecture-model.yaml").write_text(MINIMAL_MODEL)
 
-    model = load_block_model(tmp_path, "F1")
+    model = load_block_model(tmp_path, "S1")
     assert model is not None
     assert model.meta.project == "test-block"
     assert len(model.entities.components) == 1
 
 
 def test_returns_none_for_missing_block(tmp_path: Path):
-    result = load_block_model(tmp_path, "F99")
+    result = load_block_model(tmp_path, "S99")
     assert result is None
 
 
 def test_custom_output_dir(tmp_path: Path):
-    block_dir = tmp_path / "custom-models" / "F2"
+    block_dir = tmp_path / "custom-models" / "S2"
     block_dir.mkdir(parents=True)
     (block_dir / ".architecture-model.yaml").write_text(MINIMAL_MODEL)
 
-    model = load_block_model(tmp_path, "F2", output_dir="custom-models")
+    model = load_block_model(tmp_path, "S2", output_dir="custom-models")
     assert model is not None
     assert model.meta.project == "test-block"

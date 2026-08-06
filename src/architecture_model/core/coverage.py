@@ -171,7 +171,7 @@ def _check_dependency_accuracy(
         import_deps = {}
 
     # Build model edges as F-block pairs
-    comp_to_fb = {c.id: c.f_block for c in model.entities.components if c.f_block}
+    comp_to_fb = {c.id: c.source_block for c in model.entities.components if c.source_block}
     model_edges: set[tuple[str, str]] = set()
     for rel in model.relationships:
         if rel.type == RelationType.DEPENDS_ON:
@@ -208,12 +208,12 @@ def _check_dependency_accuracy(
 
 def _check_capability_coverage(model: "ArchitectureModel", manifest: dict) -> CoverageCheck:
     """Check model capabilities against manifest functional blocks."""
-    manifest_fblocks = set(manifest.get("functional_blocks", {}).keys())
-    model_fblocks = {c.f_block for c in model.entities.capabilities if c.f_block}
+    manifest_source_blocks = set(manifest.get("functional_blocks", {}).keys())
+    model_source_blocks = {c.source_block for c in model.entities.capabilities if c.source_block}
 
     # Case-insensitive comparison
-    manifest_lower = {f.lower() for f in manifest_fblocks}
-    model_lower = {f.lower() for f in model_fblocks}
+    manifest_lower = {f.lower() for f in manifest_source_blocks}
+    model_lower = {f.lower() for f in model_source_blocks}
 
     matched = manifest_lower & model_lower
     missing = sorted(manifest_lower - model_lower)
@@ -315,11 +315,11 @@ def _check_staleness(model: "ArchitectureModel", manifest: dict) -> CoverageChec
     )
 
 
-def _check_fblock_quality(model: "ArchitectureModel") -> CoverageCheck:
+def _check_source_block_quality(model: "ArchitectureModel") -> CoverageCheck:
     """Check F-block quality metrics (dimension 6)."""
-    from .fblock_quality import compute_fblock_quality
+    from .source_block_quality import compute_source_block_quality
 
-    quality = compute_fblock_quality(model)
+    quality = compute_source_block_quality(model)
 
     # Score: weighted combination of metrics (0-100)
     # modularity (capped at 0.5 = perfect), low orphan rate, low cycle ratio, balance
@@ -409,7 +409,7 @@ def coverage_report(
         _check_capability_coverage(model, manifest),
         _check_interface_coverage(model, manifest),
         _check_staleness(model, manifest),
-        _check_fblock_quality(model),
+        _check_source_block_quality(model),
         _check_requirement_traceability(model),
     ]
     overall = sum(c.score for c in checks) / len(checks) if checks else 0.0

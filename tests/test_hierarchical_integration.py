@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 from architecture_model.core.parser import load_model, load_block_model
-from architecture_model.core.slicer import slice_by_fblock
+from architecture_model.core.slicer import slice_by_source_block
 from architecture_model.orchestration.pipeline import run_pipeline
 
 
@@ -12,10 +12,10 @@ def hierarchical_repo(tmp_path):
     (tmp_path / "architecture.yaml").write_text("""
 project: hierarchy-test
 functional_blocks:
-  F1:
+  S1:
     name: Core
     dirs: [core]
-  F2:
+  S2:
     name: Web
     dirs: [web]
 """)
@@ -24,10 +24,10 @@ meta:
   project: hierarchy-test
   schema_version: '1.3'
 functional_blocks:
-  F1:
+  S1:
     name: Core
     dirs: [core]
-  F2:
+  S2:
     name: Web
     dirs: [web]
 entities:
@@ -35,12 +35,12 @@ entities:
     - id: COMP-1
       name: Database
       status: ACTIVE
-      f_block: F1
+      source_block: S1
       files: [core/db.py]
     - id: COMP-2
       name: Server
       status: ACTIVE
-      f_block: F2
+      source_block: S2
       files: [web/server.py]
   capabilities:
     - id: CAP-1
@@ -99,7 +99,7 @@ def test_pipeline_creates_hierarchy(hierarchical_repo):
         assert comp.symbols == [], f"{comp.name} should have no symbols in root"
 
     # Sub-models should exist
-    f1 = load_block_model(hierarchical_repo, "F1")
+    f1 = load_block_model(hierarchical_repo, "S1")
     assert f1 is not None
 
 
@@ -108,7 +108,7 @@ def test_slicer_returns_rich_sub_model(hierarchical_repo):
     run_pipeline(hierarchical_repo, compact=True)
 
     root = load_model(str(hierarchical_repo / ".architecture-model.yaml"))
-    sliced = slice_by_fblock(root, "F1", project_root=hierarchical_repo)
+    sliced = slice_by_source_block(root, "S1", project_root=hierarchical_repo)
 
     comps = sliced.entities.components if hasattr(sliced.entities, "components") else sliced.entities.get("components", [])
     assert len(comps) >= 1

@@ -136,7 +136,7 @@
       "properties": {
         "id": true, "name": true, "description": true, "status": true,
         "tags": true, "source_file": true, "source_line": true,
-        "f_block": { "type": "string" },
+        "source_block": { "type": "string" },
         "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
         "requirements": { "type": "array", "items": { "type": "string" } },
         "extensions": { "$ref": "#/$defs/extensions" }
@@ -253,7 +253,7 @@
         "id": true, "name": true, "description": true, "status": true,
         "tags": true, "source_file": true, "source_line": true,
         "layer": { "type": "string" },
-        "f_block": { "type": "string" },
+        "source_block": { "type": "string" },
         "technology": { "type": "string" },
         "files": { "type": "array", "items": { "type": "string" } },
         "responsibilities": { "type": "array", "items": { "type": "string" } },
@@ -364,7 +364,7 @@
         "id": true, "name": true, "description": true, "status": true,
         "tags": true, "source_file": true, "source_line": true,
         "layer": { "type": "string" },
-        "f_block": { "type": "string" },
+        "source_block": { "type": "string" },
         "complexity_score": { "type": "number", "minimum": 0 },
         "sub_model_ref": { "type": "string" },
         "component_ids": { "type": "array", "items": { "type": "string" } },

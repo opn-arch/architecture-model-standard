@@ -11,7 +11,7 @@ MODEL_PATH = Path(".architecture-model.yaml")
 # Behavior ID -> (source_file, function_name)
 # Verified against actual source files.
 BEHAVIOR_MAP = {
-    # F3 Core - Validator
+    # S3 Core - Validator
     "BEH-VALIDATE-IDS": ("src/architecture_model/core/validator.py", "_check_id_uniqueness"),
     "BEH-VALIDATE-REFS": ("src/architecture_model/core/validator.py", "_check_referential_integrity"),
     "BEH-VALIDATE-ORPHANS": ("src/architecture_model/core/validator.py", "_check_orphan_entities"),
@@ -23,34 +23,34 @@ BEHAVIOR_MAP = {
     "BEH-VALIDATE-PROFILE": ("src/architecture_model/core/validator.py", "_check_domain_profile"),
     "BEH-VALIDATE-IMPROVE": ("src/architecture_model/core/validator.py", "_check_improvement_opportunities"),
 
-    # F3 Core - Parser
+    # S3 Core - Parser
     "BEH-PARSE-LOAD": ("src/architecture_model/core/parser.py", "load_model"),
     "BEH-PARSE-SAVE": ("src/architecture_model/core/parser.py", "save_model"),
     "BEH-PARSE-DUMP": ("src/architecture_model/core/parser.py", "dump_model"),
 
-    # F3 Core - Slicer
-    "BEH-SLICE-FBLOCK": ("src/architecture_model/core/slicer.py", "slice_by_fblock"),
+    # S3 Core - Slicer
+    "BEH-SLICE-FBLOCK": ("src/architecture_model/core/slicer.py", "slice_by_source_block"),
     "BEH-SLICE-LAYER": ("src/architecture_model/core/slicer.py", "slice_by_layer"),
     "BEH-SLICE-STATUS": ("src/architecture_model/core/slicer.py", "slice_by_status"),
     "BEH-SLICE-ARTIFACT": ("src/architecture_model/core/slicer.py", "slice_for_artifact"),
-    "BEH-SLICE-COMPONENT": ("src/architecture_model/core/slicer.py", "slice_by_fblock"),  # no slice_by_component
+    "BEH-SLICE-COMPONENT": ("src/architecture_model/core/slicer.py", "slice_by_source_block"),  # no slice_by_component
 
-    # F3 Core - Differ
+    # S3 Core - Differ
     "BEH-DIFF-ENTITIES": ("src/architecture_model/core/differ.py", "_diff_entity_list"),
     "BEH-DIFF-RELS": ("src/architecture_model/core/differ.py", "_diff_relationships"),
 
-    # F3 Core - Merger
+    # S3 Core - Merger
     "BEH-MERGE-MANIFEST": ("src/architecture_model/core/merger.py", "merge_manifest"),
     "BEH-MERGE-ENRICH": ("src/architecture_model/core/merger.py", "enrich_from_manifest"),
     "BEH-MERGE-COMPACT": ("src/architecture_model/core/merger.py", "compact_for_generation"),
     "BEH-MERGE-COMPOSE": ("src/architecture_model/core/merger.py", "compose_enriched_model"),
 
-    # F3 Core - Decomposer
+    # S3 Core - Decomposer
     "BEH-DECOMPOSE-IDENTIFY": ("src/architecture_model/core/decomposer.py", "identify_systems"),
     "BEH-DECOMPOSE-COMPLEXITY": ("src/architecture_model/core/decomposer.py", "compute_complexity"),
     "BEH-DECOMPOSE-PARTITION": ("src/architecture_model/core/decomposer.py", "test_affinity_decompose"),
 
-    # F5 Manifest - Scanner
+    # S5 Manifest - Scanner
     "BEH-SCAN-PARSE": ("src/architecture_model/manifest/scanner.py", "scan_file"),
     "BEH-SCAN-FUNCTIONS": ("src/architecture_model/manifest/scanner.py", "_extract_public_functions"),
     "BEH-SCAN-CLASSES": ("src/architecture_model/manifest/scanner.py", "_extract_classes"),
@@ -58,46 +58,46 @@ BEHAVIOR_MAP = {
     "BEH-SCAN-CONSTANTS": ("src/architecture_model/manifest/scanner.py", "_extract_module_constants"),
     "BEH-SCAN-METRICS": ("src/architecture_model/manifest/scanner.py", "_file_line_count"),
 
-    # F5 Manifest - Generator
+    # S5 Manifest - Generator
     "BEH-MANIFEST-CONFIG": ("src/architecture_model/manifest/generator.py", "load_or_generate_manifest"),
     "BEH-MANIFEST-ASSEMBLE": ("src/architecture_model/manifest/generator.py", "generate_manifest"),
 
-    # F5 Manifest - Body Hints
+    # S5 Manifest - Body Hints
     "BEH-BODYHINT-CLASSIFY": ("src/architecture_model/manifest/body_hints.py", "classify_function"),
     "BEH-BODYHINT-SUMMARIZE": ("src/architecture_model/manifest/body_hints.py", "extract_body_hint"),
 
-    # F5 Manifest - Test Analyzer
+    # S5 Manifest - Test Analyzer
     "BEH-TEST-DISCOVER": ("src/architecture_model/manifest/test_analyzer.py", "_find_test_methods"),
     "BEH-TEST-ASSERTIONS": ("src/architecture_model/manifest/test_analyzer.py", "_extract_contracts_from_method"),
 
-    # F5 Manifest - Interfaces
+    # S5 Manifest - Interfaces
     "BEH-IFACE-RESOLVE": ("src/architecture_model/manifest/interfaces.py", "derive_interfaces"),
     "BEH-IFACE-DEDUP": ("src/architecture_model/manifest/interfaces.py", "_derive_interfaces"),
 
-    # F5 Manifest - Recursive
+    # S5 Manifest - Recursive
     "BEH-RECURSIVE-SCAN": ("src/architecture_model/manifest/recursive.py", "generate_recursive_manifests"),
     "BEH-RECURSIVE-DEPS": ("src/architecture_model/manifest/recursive.py", "compute_block_dependencies"),
 
-    # F6 Orchestration - Enrich
+    # S6 Orchestration - Enrich
     "BEH-ENRICH-SIGS": ("src/architecture_model/orchestration/enrich.py", "_enrich_signatures"),
     "BEH-ENRICH-CONSTS": ("src/architecture_model/orchestration/enrich.py", "_enrich_constants"),
     "BEH-ENRICH-TESTS": ("src/architecture_model/orchestration/enrich.py", "_enrich_test_contracts"),
 
-    # F6 Orchestration - Decompose
+    # S6 Orchestration - Decompose
     "BEH-ORCH-FIND-COMPS": ("src/architecture_model/orchestration/decompose.py", "_find_block_components"),
     "BEH-ORCH-FIND-PARENT": ("src/architecture_model/orchestration/decompose.py", "_find_parent_component"),
     "BEH-ORCH-TRACE": ("src/architecture_model/orchestration/decompose.py", "_trace_entities"),
     "BEH-ORCH-COLLECT-RELS": ("src/architecture_model/orchestration/decompose.py", "_collect_relationships"),
     "BEH-ORCH-BUILD": ("src/architecture_model/orchestration/decompose.py", "decompose_model"),
 
-    # F4 Extract (actual file: from_code.py)
+    # S4 Extract (actual file: from_code.py)
     "BEH-EXTRACT-CAPS": ("src/architecture_model/extract/from_code.py", "_derive_capabilities"),
     "BEH-EXTRACT-ACTORS": ("src/architecture_model/extract/from_code.py", "_derive_actors"),
     "BEH-EXTRACT-COMPS": ("src/architecture_model/extract/from_code.py", "_derive_components"),
     "BEH-EXTRACT-IFACES": ("src/architecture_model/extract/from_code.py", "_derive_interfaces"),
     "BEH-EXTRACT-RELS": ("src/architecture_model/extract/from_code.py", "_derive_relationships"),
 
-    # F1 CLI
+    # S1 CLI
     "BEH-CLI-SLICE": ("src/architecture_model/cli/main.py", "_cmd_slice"),
     "BEH-CLI-DIFF": ("src/architecture_model/cli/main.py", "_cmd_diff"),
     "BEH-CLI-STATS": ("src/architecture_model/cli/main.py", "_cmd_stats"),
@@ -105,10 +105,10 @@ BEHAVIOR_MAP = {
     "BEH-CLI-DECOMPOSE": ("src/architecture_model/cli/main.py", "_cmd_decompose"),
     "BEH-CLI-COVERAGE": ("src/architecture_model/cli/main.py", "_cmd_coverage"),
 
-    # F7 Profiles (actual file: schema.py)
+    # S7 Profiles (actual file: schema.py)
     "BEH-PROFILE-LOAD": ("src/architecture_model/profiles/schema.py", "load_profile"),
 
-    # F9 Utils (actual file: discovery.py)
+    # S9 Utils (actual file: discovery.py)
     "BEH-UTILS-DISCOVER": ("src/architecture_model/utils/discovery.py", "collect_py_files"),
     "BEH-UTILS-TESTS": ("src/architecture_model/utils/discovery.py", "discover_test_files"),
 }

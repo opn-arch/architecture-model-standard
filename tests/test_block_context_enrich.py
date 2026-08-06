@@ -34,10 +34,10 @@ def _make_model(components):
     return type("Model", (), {"entities": entities_obj, "meta": {}, "relationships": []})()
 
 
-def _make_component(id, name, f_block, files, pattern="", contract=""):
+def _make_component(id, name, source_block, files, pattern="", contract=""):
     return Component(
         id=id, name=name, status=Status.ACTIVE,
-        f_block=f_block, files=files, pattern=pattern, contract=contract,
+        source_block=source_block, files=files, pattern=pattern, contract=contract,
     )
 
 
@@ -61,14 +61,14 @@ class TestBlockPatternPropagation:
                       classes=[], exports=[], decorated_functions=[], imports_detailed=[],
                       module_constants={}, module_assignments={}),
         ]
-        rm = _make_recursive_manifest("F5", "Plugins", modules)
+        rm = _make_recursive_manifest("S5", "Plugins", modules)
 
-        comp1 = _make_component("C1", "EmailPlugin", "F5", ["plugins/email.py"])
-        comp2 = _make_component("C2", "ExportPlugin", "F5", ["plugins/export.py"])
-        comp3 = _make_component("C3", "CleanupPlugin", "F5", ["plugins/cleanup.py"])
+        comp1 = _make_component("C1", "EmailPlugin", "S5", ["plugins/email.py"])
+        comp2 = _make_component("C2", "ExportPlugin", "S5", ["plugins/export.py"])
+        comp3 = _make_component("C3", "CleanupPlugin", "S5", ["plugins/cleanup.py"])
         model = _make_model([comp1, comp2, comp3])
 
-        enrich_with_block_context(model, {"F5": rm})
+        enrich_with_block_context(model, {"S5": rm})
 
         assert comp1.pattern == "handler"
         assert comp2.pattern == "handler"
@@ -83,11 +83,11 @@ class TestBlockPatternPropagation:
                       exports=[], decorated_functions=[], imports_detailed=[],
                       module_constants={}, module_assignments={}),
         ]
-        rm = _make_recursive_manifest("F1", "Core", modules)
-        comp = _make_component("C1", "Bus", "F1", ["core/bus.py"], pattern="custom")
+        rm = _make_recursive_manifest("S1", "Core", modules)
+        comp = _make_component("C1", "Bus", "S1", ["core/bus.py"], pattern="custom")
         model = _make_model([comp])
 
-        enrich_with_block_context(model, {"F1": rm})
+        enrich_with_block_context(model, {"S1": rm})
         assert comp.pattern == "custom"
 
     def test_contract_inference_from_block_name(self):
@@ -98,9 +98,9 @@ class TestBlockPatternPropagation:
                       classes=[], exports=[], decorated_functions=[], imports_detailed=[],
                       module_constants={}, module_assignments={}),
         ]
-        rm = _make_recursive_manifest("F3", "Network", modules)
-        comp = _make_component("C1", "Protocol", "F3", ["net/proto.py"])
+        rm = _make_recursive_manifest("S3", "Network", modules)
+        comp = _make_component("C1", "Protocol", "S3", ["net/proto.py"])
         model = _make_model([comp])
 
-        enrich_with_block_context(model, {"F3": rm})
+        enrich_with_block_context(model, {"S3": rm})
         assert "Network" in comp.contract

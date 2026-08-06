@@ -34,7 +34,7 @@ def test_hierarchical_basic():
     root_comp = Component(id="COMP-1", name="Core", status="ACTIVE", files=["core/a.py", "core/b.py"])
     root_model = _make_model([root_comp])
 
-    # Sub-model for F1
+    # Sub-model for S1
     sub_comp = Component(id="SUB-1", name="CoreInternal", status="ACTIVE", files=["core/a.py", "core/b.py"])
     sub_model = _make_model([sub_comp])
 
@@ -48,17 +48,17 @@ def test_hierarchical_basic():
         generated_at="2026-01-01", project_root="/tmp", metrics={},
     )
     rm = RecursiveManifest(
-        block_id="F1", block_name="Core", parent_model="model.yaml",
+        block_id="S1", block_name="Core", parent_model="model.yaml",
         component_id="COMP-1", manifest=manifest,
     )
 
     result = compute_hierarchical_representativeness(
-        root_model, {"F1": sub_model}, {"F1": rm}
+        root_model, {"S1": sub_model}, {"S1": rm}
     )
     assert isinstance(result, HierarchicalRepresentativenessResult)
     assert result.root.file_coverage == 100.0
-    assert "F1" in result.blocks
-    assert result.blocks["F1"].file_coverage == 100.0
+    assert "S1" in result.blocks
+    assert result.blocks["S1"].file_coverage == 100.0
     assert result.overall > 0
 
 
@@ -73,9 +73,9 @@ def test_hierarchical_no_sub_models():
         generated_at="2026-01-01", project_root="/tmp", metrics={},
     )
     rm = RecursiveManifest(
-        block_id="F1", block_name="All", parent_model="model.yaml",
+        block_id="S1", block_name="All", parent_model="model.yaml",
         component_id="COMP-1", manifest=manifest,
     )
 
-    result = compute_hierarchical_representativeness(root_model, {}, {"F1": rm})
+    result = compute_hierarchical_representativeness(root_model, {}, {"S1": rm})
     assert result.overall == result.root.overall

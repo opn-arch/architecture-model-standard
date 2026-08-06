@@ -63,7 +63,7 @@ def _make_full_model() -> ArchitectureModel:
                 status=Status.ACTIVE,
                 description="Generate code from specs",
                 tags=["core"],
-                f_block="FB-CodeGen",
+                source_block="FB-CodeGen",
                 priority=Priority.HIGH,
                 requirements=["LLM access", "Template engine"],
             ),
@@ -132,7 +132,7 @@ def _make_full_model() -> ArchitectureModel:
                 description="Parses YAML into typed model",
                 tags=["core", "parser"],
                 layer="layer-1",
-                f_block="FB-CodeGen",
+                source_block="FB-CodeGen",
                 technology="Python",
                 files=["src/parser.py", "src/types.py"],
                 responsibilities=["Parse YAML", "Validate schema"],
@@ -386,7 +386,7 @@ class TestEntitySpecificFields:
         model = _make_full_model()
         result = model.to_dict()
         cap = result["entities"]["capabilities"][0]
-        assert cap["f_block"] == "FB-CodeGen"
+        assert cap["source_block"] == "FB-CodeGen"
         assert cap["priority"] == "high"
         assert cap["requirements"] == ["LLM access", "Template engine"]
 
@@ -435,7 +435,7 @@ class TestEntitySpecificFields:
         result = model.to_dict()
         comp = result["entities"]["components"][0]
         assert comp["layer"] == "layer-1"
-        assert comp["f_block"] == "FB-CodeGen"
+        assert comp["source_block"] == "FB-CodeGen"
         assert comp["technology"] == "Python"
         assert comp["files"] == ["src/parser.py", "src/types.py"]
         assert comp["responsibilities"] == ["Parse YAML", "Validate schema"]
@@ -547,7 +547,7 @@ class TestRoundTrip:
         orig = original.entities.components[0]
         new = rebuilt.entities.components[0]
         assert new.layer == orig.layer
-        assert new.f_block == orig.f_block
+        assert new.source_block == orig.source_block
         assert new.technology == orig.technology
         assert new.files == orig.files
         assert new.responsibilities == orig.responsibilities

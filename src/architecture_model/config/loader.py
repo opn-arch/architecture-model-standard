@@ -357,7 +357,7 @@ def _discover_functional_blocks(
     if source_root is None:
         # No clear package structure — try top-level dirs
         report.layout_detected = "fallback"
-        blocks = _fblocks_from_top_level_dirs(root)
+        blocks = _source_blocks_from_top_level_dirs(root)
         report.blocks_discovered = len(blocks)
         return blocks
 
@@ -371,7 +371,7 @@ def _discover_functional_blocks(
     rel_source = source_root.relative_to(root)
 
     for idx, subdir in enumerate(sorted(subdirs), start=1):
-        block_id = f"F{idx}"
+        block_id = f"S{idx}"
         rel_dir = str(subdir.relative_to(root))
 
         # Collect .py files in this subdir (non-recursive for files list)
@@ -506,7 +506,7 @@ def _get_package_description(package_dir: Path) -> str:
     return ""
 
 
-def _fblocks_from_top_level_dirs(root: Path) -> list[FunctionalBlockConfig]:
+def _source_blocks_from_top_level_dirs(root: Path) -> list[FunctionalBlockConfig]:
     """Fallback: create F-blocks from top-level directories with Python files.
 
     Used when no clear package structure (src/ or flat package) is found.
@@ -530,11 +530,11 @@ def _fblocks_from_top_level_dirs(root: Path) -> list[FunctionalBlockConfig]:
         description = _get_package_description(child) if (child / "__init__.py").exists() else ""
 
         # Auto-discover sub-blocks from sub-directories
-        sub_blocks = _discover_sub_blocks(child, f"F{idx}", root)
+        sub_blocks = _discover_sub_blocks(child, f"S{idx}", root)
 
         blocks.append(
             FunctionalBlockConfig(
-                id=f"F{idx}",
+                id=f"S{idx}",
                 name=dir_name,
                 dirs=[child.name],
                 files=py_files,

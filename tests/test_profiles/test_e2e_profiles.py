@@ -2,7 +2,7 @@ import yaml
 import pytest
 from architecture_model.core.parser import _parse_raw
 from architecture_model.core.validator import validate_model
-from architecture_model.core.slicer import slice_by_fblock
+from architecture_model.core.slicer import slice_by_source_block
 
 CONTROLS_MODEL = """
 meta:
@@ -16,10 +16,10 @@ entities:
       status: ACTIVE
       type: human
   capabilities:
-    - id: CAP-F1
+    - id: CAP-S1
       name: Temperature Monitoring
       status: ACTIVE
-      f_block: F1
+      source_block: S1
       priority: high
   layers:
     - id: field-layer
@@ -36,7 +36,7 @@ entities:
       status: ACTIVE
       kind: sensor
       layer: field-layer
-      f_block: F1
+      source_block: S1
       extensions:
         signal_type: analog
         sampling_rate_hz: 1000
@@ -45,11 +45,11 @@ entities:
       status: ACTIVE
       kind: controller
       layer: control-layer
-      f_block: F1
+      source_block: S1
 relationships:
   - type: realizes
     from: COMP-1
-    to: CAP-F1
+    to: CAP-S1
   - type: depends_on
     from: COMP-2
     to: COMP-1
@@ -71,7 +71,7 @@ def test_controls_model_validates():
 def test_controls_model_slices():
     raw = yaml.safe_load(CONTROLS_MODEL)
     model = _parse_raw(raw)
-    sliced = slice_by_fblock(model, "F1")
+    sliced = slice_by_source_block(model, "S1")
     assert len(sliced.entities.components) == 2
 
 MECHANICAL_MODEL = """
@@ -81,10 +81,10 @@ meta:
   domain_profile: mechanical
 entities:
   capabilities:
-    - id: CAP-F1
+    - id: CAP-S1
       name: 6-DOF Motion
       status: ACTIVE
-      f_block: F1
+      source_block: S1
       priority: high
   layers:
     - id: structure-layer
@@ -97,7 +97,7 @@ entities:
       status: ACTIVE
       kind: housing
       layer: structure-layer
-      f_block: F1
+      source_block: S1
       extensions:
         material: aluminum-6061
         mass_kg: 12.5
@@ -106,14 +106,14 @@ entities:
       status: ACTIVE
       kind: assembly
       layer: structure-layer
-      f_block: F1
+      source_block: S1
       extensions:
         material: steel-4140
         mass_kg: 8.3
 relationships:
   - type: realizes
     from: COMP-1
-    to: CAP-F1
+    to: CAP-S1
   - type: contains
     from: COMP-1
     to: COMP-2

@@ -12,7 +12,7 @@ entities:
     name: Model Extraction
     status: ACTIVE
     description: Extract architecture model directly from source code analysis
-    f_block: F4
+    source_block: S4
   behaviors:
   - id: BEH-EXTRACT
     name: Extract Model from Code
@@ -39,7 +39,7 @@ entities:
     name: Extract
     status: ACTIVE
     description: Model extraction from source code analysis
-    f_block: F4
+    source_block: S4
     files:
     - src/architecture_model/extract/from_code.py
     signatures:

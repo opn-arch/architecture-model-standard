@@ -12,7 +12,7 @@ entities:
     name: Configuration Management
     status: ACTIVE
     description: Auto-discovery config loading and project configuration schema
-    f_block: F2
+    source_block: S2
   behaviors:
   - id: BEH-INIT
     name: Initialize Project
@@ -43,7 +43,7 @@ entities:
     name: Config
     status: ACTIVE
     description: Self-bootstrapping configuration — auto-discovery, schema, loader
-    f_block: F2
+    source_block: S2
     files:
     - src/architecture_model/config/loader.py
     - src/architecture_model/config/schema.py
@@ -96,14 +96,14 @@ entities:
       decorators:
       - property
       body_hint: 'return {layer.id: layer.dirs for layer in self.layers if layer.dirs}'
-    - name: ProjectConfig.fblock_dir_map
+    - name: ProjectConfig.source_block_dir_map
       returns: dict[str, str]
       decorators:
       - property
       body_hint: "result: dict[str, str] = {}; for block in self.functional_blocks:\n    for d in block.dirs:\n        result[d]\
         \ = block.id\n    for f in block.files:\n        prefix = f.rsplit('.py', 1)[0] if f.endswith('.py') else f\n    \
         \    result[prefix] = block.id; return result"
-    - name: ProjectConfig.fblock_dict
+    - name: ProjectConfig.source_block_dict
       returns: dict[str, dict[str, Any]]
       decorators:
       - property

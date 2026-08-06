@@ -354,7 +354,7 @@ class TestFullRoundTripV11:
             meta=ModelMeta(schema_version="1.1", project="e-commerce", generated_at="2026-07-05T00:00:00Z"),
             entities=Entities(
                 actors=[Actor(id="customer", name="Customer", status=Status.ACTIVE, type=ActorType.HUMAN)],
-                capabilities=[Capability(id="cap-checkout", name="Checkout", status=Status.ACTIVE, f_block="F3")],
+                capabilities=[Capability(id="cap-checkout", name="Checkout", status=Status.ACTIVE, source_block="S3")],
                 behaviors=[
                     Behavior(
                         id="order-saga", name="Order Processing", status=Status.ACTIVE,

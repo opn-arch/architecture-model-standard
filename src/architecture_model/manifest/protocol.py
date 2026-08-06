@@ -7,7 +7,7 @@ They can be populated by:
 - Agent reading code (any language)
 - JSON ingestion via architect_ingest MCP tool
 
-The hierarchical pipeline (grouping → fblocks → representativeness → interface
+The hierarchical pipeline (grouping → source_blocks → representativeness → interface
 contracts) operates entirely on SourceGraph. Language-specific scanners produce
 SourceGraph as their output format.
 """

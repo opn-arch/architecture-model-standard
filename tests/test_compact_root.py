@@ -26,7 +26,7 @@ def _make_model():
         id="COMP-1",
         name="AuthService",
         status=Status.ACTIVE,
-        f_block="F1",
+        source_block="S1",
         layer="application",
         kind=ComponentKind.SERVICE,
         contract="handles auth",
@@ -47,7 +47,7 @@ def _make_model():
         id="COMP-2",
         name="Unrelated",
         status=Status.ACTIVE,
-        f_block="F2",
+        source_block="S2",
         files=["src/other.py"],
         responsibilities=["do stuff"],
         functions=["run"],
@@ -74,11 +74,11 @@ def _make_model():
 
 def test_keeps_identity_fields():
     model = _make_model()
-    compact_root_model(model, block_ids=["F1"])
+    compact_root_model(model, block_ids=["S1"])
     comp = model.entities.components[0]
     assert comp.id == "COMP-1"
     assert comp.name == "AuthService"
-    assert comp.f_block == "F1"
+    assert comp.source_block == "S1"
     assert comp.contract == "handles auth"
     assert comp.pattern == "hexagonal"
     assert comp.kind == ComponentKind.SERVICE
@@ -90,7 +90,7 @@ def test_keeps_identity_fields():
 
 def test_strips_implementation_fields():
     model = _make_model()
-    compact_root_model(model, block_ids=["F1"])
+    compact_root_model(model, block_ids=["S1"])
     comp = model.entities.components[0]
     assert comp.files == []
     assert comp.responsibilities == []
@@ -102,7 +102,7 @@ def test_strips_implementation_fields():
 
 def test_non_component_entities_untouched():
     model = _make_model()
-    compact_root_model(model, block_ids=["F1"])
+    compact_root_model(model, block_ids=["S1"])
     assert len(model.entities.capabilities) == 1
     assert model.entities.capabilities[0].name == "Authentication"
     assert len(model.entities.interfaces) == 1
@@ -113,7 +113,7 @@ def test_non_component_entities_untouched():
 
 def test_relationships_preserved():
     model = _make_model()
-    compact_root_model(model, block_ids=["F1"])
+    compact_root_model(model, block_ids=["S1"])
     assert len(model.relationships) == 2
     assert model.relationships[0].from_id == "COMP-1"
     assert model.relationships[0].to_id == "CAP-1"
@@ -125,7 +125,7 @@ def test_serialized_size_shrinks():
                             "responsibilities": model.entities.components[0].responsibilities,
                             "functions": model.entities.components[0].functions}))
     assert before > 0  # sanity
-    compact_root_model(model, block_ids=["F1"])
+    compact_root_model(model, block_ids=["S1"])
     comp = model.entities.components[0]
     after = len(yaml.dump({"files": comp.files,
                            "responsibilities": comp.responsibilities,
@@ -136,7 +136,7 @@ def test_serialized_size_shrinks():
 def test_only_target_blocks_compacted():
     """Components not in block_ids should be left alone."""
     model = _make_model()
-    compact_root_model(model, block_ids=["F1"])
+    compact_root_model(model, block_ids=["S1"])
     comp2 = model.entities.components[1]
     assert comp2.files == ["src/other.py"]
     assert comp2.responsibilities == ["do stuff"]

@@ -25,7 +25,7 @@ class TestSystemEntity:
     def test_system_has_required_fields(self):
         sys = System(
             id="sys-core", name="Core Engine", status=Status.ACTIVE,
-            layer="layer-core", f_block="F1",
+            layer="layer-core", source_block="S1",
             complexity_score=18.5,
             sub_model_ref="systems/core-engine.yaml",
             component_ids=["comp-core", "comp-parser"],
@@ -39,7 +39,7 @@ class TestSystemEntity:
     def test_system_defaults(self):
         sys = System(id="sys-x", name="X", status=Status.ACTIVE)
         assert sys.layer == ""
-        assert sys.f_block == ""
+        assert sys.source_block == ""
         assert sys.complexity_score == 0.0
         assert sys.sub_model_ref == ""
         assert sys.component_ids == []
@@ -67,7 +67,7 @@ entities:
     name: Command Engine
     status: ACTIVE
     layer: layer-core
-    f_block: F1
+    source_block: S1
     complexity_score: 18.5
     sub_model_ref: systems/command-engine.yaml
     component_ids: [comp-core, comp-parser]
@@ -81,7 +81,7 @@ relationships: []
         assert sys.name == "Command Engine"
         assert sys.status == Status.ACTIVE
         assert sys.layer == "layer-core"
-        assert sys.f_block == "F1"
+        assert sys.source_block == "S1"
         assert sys.complexity_score == 18.5
         assert sys.sub_model_ref == "systems/command-engine.yaml"
         assert sys.component_ids == ["comp-core", "comp-parser"]
@@ -107,7 +107,7 @@ relationships: []
         sys = System(
             id="sys-x", name="X System", status=Status.ACTIVE,
             layer="layer-api",
-            f_block="F2",
+            source_block="S2",
             sub_model_ref="systems/x.yaml",
             component_ids=["comp-a", "comp-b"],
             complexity_score=12.0,
@@ -124,7 +124,7 @@ relationships: []
         assert rs.id == "sys-x"
         assert rs.name == "X System"
         assert rs.layer == "layer-api"
-        assert rs.f_block == "F2"
+        assert rs.source_block == "S2"
         assert rs.sub_model_ref == "systems/x.yaml"
         assert rs.component_ids == ["comp-a", "comp-b"]
         assert rs.complexity_score == 12.0

@@ -25,17 +25,17 @@ def test_file_based_blocks_resolve_dependencies(tmp_path):
     config_yaml = tmp_path / ".architecture-model.yaml"
     config_yaml.write_text(
         "functional_blocks:\n"
-        "  F1:\n"
+        "  S1:\n"
         "    name: Core\n"
         "    dirs: []\n"
         "    files:\n"
         "      - myapp/core.py\n"
-        "  F2:\n"
+        "  S2:\n"
         "    name: Config\n"
         "    dirs: []\n"
         "    files:\n"
         "      - myapp/config.py\n"
-        "  F3:\n"
+        "  S3:\n"
         "    name: Helpers\n"
         "    dirs: []\n"
         "    files:\n"
@@ -46,6 +46,6 @@ def test_file_based_blocks_resolve_dependencies(tmp_path):
     # Pass config=None to test that it reconstructs from manifests
     deps = compute_block_dependencies(manifests, None)
 
-    assert "F1" in deps.get("F2", []), f"F2 should depend on F1, got: {deps}"
-    assert "F1" in deps.get("F3", []), f"F3 should depend on F1, got: {deps}"
-    assert "F2" in deps.get("F3", []), f"F3 should depend on F2, got: {deps}"
+    assert "S1" in deps.get("S2", []), f"S2 should depend on S1, got: {deps}"
+    assert "S1" in deps.get("S3", []), f"S3 should depend on S1, got: {deps}"
+    assert "S2" in deps.get("S3", []), f"S3 should depend on S2, got: {deps}"

@@ -384,7 +384,7 @@ def _split_to_target(
 def create_components_from_manifest(
     manifest: Manifest,
     *,
-    block_id: str = "F1",
+    block_id: str = "S1",
     target_groups: int | None = None,
 ) -> list[Component]:
     """Create architecture components from a manifest using smart grouping.
@@ -394,7 +394,7 @@ def create_components_from_manifest(
 
     Args:
         manifest: The manifest to create components from.
-        block_id: F-block ID to assign to all components.
+        block_id: S-block ID to assign to all components.
         target_groups: Desired number of components (None = auto).
 
     Returns:
@@ -413,7 +413,7 @@ def create_components_from_manifest(
             name=group.name,
             status="ACTIVE",
             files=group.modules,
-            f_block=block_id,
+            source_block=block_id,
         )
         components.append(comp)
 
@@ -421,29 +421,29 @@ def create_components_from_manifest(
 
 
 # ---------------------------------------------------------------------------
-# Auto F-block generation
+# Auto S-block generation
 # ---------------------------------------------------------------------------
 
 
-def auto_fblocks(groups: list[ModuleGroup], threshold: int = 3) -> dict:
-    """Generate F-block config from flat module groups.
+def auto_source_blocks(groups: list[ModuleGroup], threshold: int = 3) -> dict:
+    """Generate S-block config from flat module groups.
 
-    Groups with >= threshold files become individual F-blocks.
-    Smaller groups are merged into a 'Shared' F-block.
+    Groups with >= threshold files become individual S-blocks.
+    Smaller groups are merged into a 'Shared' S-block.
 
     Args:
         groups: Module groups from group_modules()
-        threshold: Minimum files to become a standalone F-block (default: 3)
+        threshold: Minimum files to become a standalone S-block (default: 3)
 
     Returns:
-        Dict of F-block definitions suitable for config:
+        Dict of S-block definitions suitable for config:
         {
-            "F1": {"name": "Auth", "dirs": ["src/auth"], "files": ["auth/login.py", ...]},
-            "F2": {"name": "API", "dirs": ["src/api"], "files": [...]},
-            "F0": {"name": "Shared", "dirs": [], "files": [...]},  # small groups merged
+            "S1": {"name": "Auth", "dirs": ["src/auth"], "files": ["auth/login.py", ...]},
+            "S2": {"name": "API", "dirs": ["src/api"], "files": [...]},
+            "S0": {"name": "Shared", "dirs": [], "files": [...]},  # small groups merged
         }
     """
-    fblocks: dict[str, dict] = {}
+    source_blocks: dict[str, dict] = {}
     shared_files: list[str] = []
     block_num = 1
 
@@ -466,7 +466,7 @@ def auto_fblocks(groups: list[ModuleGroup], threshold: int = 3) -> dict:
             else:
                 common_dir = ""
 
-            fblocks[f"F{block_num}"] = {
+            source_blocks[f"S{block_num}"] = {
                 "name": group.name,
                 "dirs": [common_dir] if common_dir else [],
                 "files": list(files),
@@ -475,27 +475,27 @@ def auto_fblocks(groups: list[ModuleGroup], threshold: int = 3) -> dict:
         else:
             shared_files.extend(files)
 
-    # Flat-repo fallback: if no F-blocks were created (all groups below threshold),
-    # promote each group to its own F-block instead of collapsing to F0
-    if not fblocks and len(groups) >= 2:
+    # Flat-repo fallback: if no S-blocks were created (all groups below threshold),
+    # promote each group to its own S-block instead of collapsing to F0
+    if not source_blocks and len(groups) >= 2:
         for i, g in enumerate(groups, 1):
             if g.modules:
-                fblocks[f"F{i}"] = {
+                source_blocks[f"S{i}"] = {
                     "name": g.name,
                     "dirs": [],
                     "files": list(g.modules),
                 }
-        return fblocks
+        return source_blocks
 
     # Merge small groups into Shared block
     if shared_files:
-        fblocks["F0"] = {
+        source_blocks["S0"] = {
             "name": "Shared",
             "dirs": [],
             "files": shared_files,
         }
 
-    return fblocks
+    return source_blocks
 
 
 # ---------------------------------------------------------------------------

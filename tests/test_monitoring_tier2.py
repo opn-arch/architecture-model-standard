@@ -27,7 +27,7 @@ def test_format_enrichment_prompt_emits_metrics():
     from architecture_model.orchestration.deep_decompose import DecomposeResult, SubComponent
 
     decomps = [DecomposeResult(
-        block_id="F1", block_name="Test",
+        block_id="S1", block_name="Test",
         sub_components=[SubComponent(id="C1", name="", files=["a.py"], classes=[], functions=[], line_count=10)],
         internal_relationships=[], depth=1,
     )]

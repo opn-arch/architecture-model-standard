@@ -256,8 +256,8 @@ def _detect_entity_changes(old_entity: Any, new_entity: Any) -> list[str]:
         changes.append("description changed")
 
     # Check type-specific fields
-    if hasattr(old_entity, "f_block") and old_entity.f_block != new_entity.f_block:
-        changes.append(f"f_block: {old_entity.f_block} -> {new_entity.f_block}")
+    if hasattr(old_entity, "source_block") and old_entity.source_block != new_entity.source_block:
+        changes.append(f"source_block: {old_entity.source_block} -> {new_entity.source_block}")
     if hasattr(old_entity, "layer") and old_entity.layer != new_entity.layer:
         changes.append(f"layer: {old_entity.layer} -> {new_entity.layer}")
     if hasattr(old_entity, "priority") and old_entity.priority != new_entity.priority:

@@ -64,7 +64,7 @@ def test_parser_accepts_unknown_kind():
           status: ACTIVE
           kind: sensor
           layer: field-layer
-          f_block: F1
+          source_block: S1
     relationships: []
     """)
     model = _parse_raw(raw)

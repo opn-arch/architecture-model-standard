@@ -38,7 +38,7 @@ class PipelineResult:
     deep_decompositions: dict[str, DecomposeResult] = field(default_factory=dict)
     written_paths: list[Path] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
-    fblock_config: dict = field(default_factory=dict)
+    source_block_config: dict = field(default_factory=dict)
 
 
 @monitored(
@@ -200,7 +200,7 @@ def run_pipeline(
             try:
                 from architecture_model.manifest.generator import generate_manifest
                 from architecture_model.manifest.grouping import (
-                    auto_fblocks, create_components_from_manifest, group_modules,
+                    auto_source_blocks, create_components_from_manifest, group_modules,
                 )
                 from architecture_model.core.parser import save_model
                 from architecture_model.core.types import ArchitectureModel, Entities
@@ -244,14 +244,14 @@ def run_pipeline(
                 try:
                     if not groups:
                         groups = group_modules(flat_manifest.modules, flat_manifest.interfaces)
-                    fblock_config = auto_fblocks(groups, threshold=3)
-                    if fblock_config:
-                        logger.info("  Generated %d F-blocks from module groups", len(fblock_config))
-                        result.fblock_config = fblock_config
+                    source_block_config = auto_source_blocks(groups, threshold=3)
+                    if source_block_config:
+                        logger.info("  Generated %d F-blocks from module groups", len(source_block_config))
+                        result.source_block_config = source_block_config
 
                         # Generate per-block recursive manifests using auto-F-blocks
                         block_manifests = generate_recursive_manifests(
-                            project_root, fblock_override=fblock_config
+                            project_root, source_block_override=source_block_config
                         )
                         result.manifests = block_manifests
                         paths = write_recursive_manifests(block_manifests, out)

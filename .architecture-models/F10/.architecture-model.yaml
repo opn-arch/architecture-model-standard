@@ -12,7 +12,7 @@ entities:
     name: Domain Profiles
     status: ACTIVE
     description: Cross-domain architecture modeling via domain profiles (software, controls, mechanical, electrical)
-    f_block: F7
+    source_block: S7
   interfaces:
   - id: IF-LOAD-PROFILE
     name: load_profile
@@ -24,7 +24,7 @@ entities:
     name: Profiles
     status: ACTIVE
     description: Domain profile loading — software, controls, mechanical, electrical (85 lines)
-    f_block: F7
+    source_block: S7
     files:
     - src/architecture_model/profiles/schema.py
     constants:

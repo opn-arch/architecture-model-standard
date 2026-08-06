@@ -38,9 +38,9 @@ def test_deep_decompose_produces_sub_components(tmp_path):
     """Deep decomposition breaks a large block into sub-components."""
     pkg = _create_block_with_modules(tmp_path, n_modules=20, n_groups=4)
     block_def = {"name": "MyBlock", "dirs": ["myapp"], "files": []}
-    manifest = generate_block_manifest(tmp_path, "F1", block_def)
+    manifest = generate_block_manifest(tmp_path, "S1", block_def)
 
-    result = deep_decompose_block(manifest, block_id="F1", block_name="MyBlock")
+    result = deep_decompose_block(manifest, block_id="S1", block_name="MyBlock")
 
     assert isinstance(result, DecomposeResult)
     assert len(result.sub_components) >= 2
@@ -62,9 +62,9 @@ def test_deep_decompose_skips_small_blocks(tmp_path):
         (pkg / f"mod{i}.py").write_text(f'"""M{i}."""\nclass C{i}: pass\n' + "\n" * 50)
 
     block_def = {"name": "Small", "dirs": ["small"], "files": []}
-    manifest = generate_block_manifest(tmp_path, "F1", block_def)
+    manifest = generate_block_manifest(tmp_path, "S1", block_def)
 
-    result = deep_decompose_block(manifest, block_id="F1", block_name="Small")
+    result = deep_decompose_block(manifest, block_id="S1", block_name="Small")
     assert result.sub_components == []
 
 
@@ -72,7 +72,7 @@ def test_deep_decompose_produces_relationships(tmp_path):
     """Sub-components have dependency relationships between them."""
     pkg = _create_block_with_modules(tmp_path, n_modules=20, n_groups=4)
     block_def = {"name": "MyBlock", "dirs": ["myapp"], "files": []}
-    manifest = generate_block_manifest(tmp_path, "F1", block_def)
+    manifest = generate_block_manifest(tmp_path, "S1", block_def)
 
-    result = deep_decompose_block(manifest, block_id="F1", block_name="MyBlock")
+    result = deep_decompose_block(manifest, block_id="S1", block_name="MyBlock")
     assert len(result.internal_relationships) > 0

@@ -46,7 +46,7 @@ def main():
     lines.append('| ID | Name | F-Block | Description |')
     lines.append('|----|------|---------|-------------|')
     for c in (e.capabilities or []):
-        lines.append(f'| {c.id} | {c.name} | {c.f_block} | {c.description} |')
+        lines.append(f'| {c.id} | {c.name} | {c.source_block} | {c.description} |')
     lines.append('')
 
     # Interfaces
@@ -84,7 +84,7 @@ def main():
         nc = len(c.constants) if c.constants else 0
         nt = len(c.test_contracts) if c.test_contracts else 0
         nf = len(c.files) if c.files else 0
-        fb = c.f_block or '-'
+        fb = c.source_block or '-'
         regen = 'YES' if nt > 0 and ns > 0 else 'NO'
         lines.append(f'| {c.id} | {c.name} | {fb} | {ns} | {nc} | {nt} | {nf} | {regen} |')
     lines.append('')
@@ -95,7 +95,7 @@ def main():
     for c in sorted(e.components, key=lambda x: x.id):
         lines.append(f'#### {c.id}: {c.name}')
         lines.append('')
-        lines.append(f'- **F-Block:** {c.f_block or "-"}')
+        lines.append(f'- **F-Block:** {c.source_block or "-"}')
         lines.append(f'- **Description:** {c.description or "-"}')
         if c.files:
             lines.append(f'- **Files:** {", ".join(c.files)}')
@@ -171,7 +171,7 @@ def main():
             lines.append('**Capabilities:**')
             lines.append('')
             for c in me.capabilities:
-                lines.append(f'- {c.id}: {c.name} (F-Block {c.f_block})')
+                lines.append(f'- {c.id}: {c.name} (F-Block {c.source_block})')
             lines.append('')
 
         if me.interfaces:

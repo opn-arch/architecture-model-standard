@@ -41,7 +41,7 @@ def _make_model():
             ],
             capabilities=[
                 Capability(
-                    id="CAP-1", name="Data Processing", status=Status.ACTIVE, f_block="F1"
+                    id="CAP-1", name="Data Processing", status=Status.ACTIVE, source_block="S1"
                 ),
             ],
             components=[
@@ -50,14 +50,14 @@ def _make_model():
                     name="Processor",
                     status=Status.ACTIVE,
                     kind=ComponentKind.SERVICE,
-                    f_block="F1",
+                    source_block="S1",
                 ),
                 Component(
                     id="COMP-2",
                     name="Gateway",
                     status=Status.ACTIVE,
                     kind=ComponentKind.SERVICE,
-                    f_block="F1",
+                    source_block="S1",
                 ),
             ],
             behaviors=[
@@ -157,9 +157,9 @@ class TestDependenciesDiagram:
         diagram = generate_dependencies_diagram(_make_model())
         assert "depends-on" in diagram
 
-    def test_fblock_grouping(self):
+    def test_source_block_grouping(self):
         diagram = generate_dependencies_diagram(_make_model())
-        assert "Data Processing" in diagram  # F1 capability name as label
+        assert "Data Processing" in diagram  # S1 capability name as label
 
 
 class TestGenerateAll:

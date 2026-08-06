@@ -41,7 +41,7 @@ def _make_meta() -> ModelMeta:
 def _make_model_with_component(comp: Component) -> ArchitectureModel:
     """Create a minimal valid model containing a single component."""
     cap = Capability(
-        id="CAP-1", name="TestCap", status=Status.ACTIVE, f_block="F1"
+        id="CAP-1", name="TestCap", status=Status.ACTIVE, source_block="S1"
     )
     return ArchitectureModel(
         meta=_make_meta(),

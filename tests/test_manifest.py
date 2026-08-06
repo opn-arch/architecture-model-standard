@@ -34,7 +34,7 @@ class TestFunctionalBlocks:
         return _get_functional_blocks(TEST_CONFIG_PATH.parent)
 
     def test_has_f1_through_f6(self, blocks: dict):
-        """Functional blocks contains F1 through F6."""
+        """Functional blocks contains S1 through S6."""
         for i in range(1, 7):
             assert f"F{i}" in blocks, f"Missing F{i}"
 
@@ -86,7 +86,7 @@ class TestGenerateManifest:
         assert isinstance(generated["metrics"], dict)
 
     def test_has_functional_blocks(self, generated: dict):
-        """Manifest has 'functional_blocks' with F1-F6."""
+        """Manifest has 'functional_blocks' with S1-S6."""
         assert "functional_blocks" in generated
         fb = generated["functional_blocks"]
         for i in range(1, 7):
@@ -170,7 +170,7 @@ class TestGetManifestSlice:
     def test_functional_slice_has_blocks(self, real_manifest: dict):
         """Functional architecture slice mentions F-blocks."""
         result = get_manifest_slice(real_manifest, "functional-architecture")
-        assert "F1" in result
+        assert "S1" in result
         assert "Functional Blocks" in result
 
     def test_logical_slice_has_layers(self, real_manifest: dict):

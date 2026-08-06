@@ -291,7 +291,7 @@ class Actor(BaseEntity):
 
 @dataclass
 class Capability(BaseEntity):
-    f_block: str = ""
+    source_block: str = ""
     priority: Priority = Priority.MEDIUM
     requirements: list[str] = field(default_factory=list)
 
@@ -434,7 +434,7 @@ class ComponentInterface:
 @dataclass
 class Component(BaseEntity):
     layer: str = ""
-    f_block: str = ""
+    source_block: str = ""
     technology: str = ""
     files: list[str] = field(default_factory=list)
     responsibilities: list[str] = field(default_factory=list)
@@ -457,7 +457,7 @@ class Component(BaseEntity):
 class System(BaseEntity):
     """A system-level entity that aggregates components into a logical subsystem."""
     layer: str = ""
-    f_block: str = ""
+    source_block: str = ""
     complexity_score: float = 0.0
     sub_model_ref: str = ""
     component_ids: list[str] = field(default_factory=list)
@@ -759,8 +759,8 @@ class ArchitectureModel:
     @classmethod
     def _dump_capability(cls, c: Capability) -> dict[str, Any]:
         d = cls._dump_base(c)
-        if c.f_block:
-            d["f_block"] = c.f_block
+        if c.source_block:
+            d["source_block"] = c.source_block
         if c.priority != Priority.MEDIUM:
             d["priority"] = c.priority.value
         if c.requirements:
@@ -843,8 +843,8 @@ class ArchitectureModel:
         d = cls._dump_base(c)
         if c.layer:
             d["layer"] = c.layer
-        if c.f_block:
-            d["f_block"] = c.f_block
+        if c.source_block:
+            d["source_block"] = c.source_block
         if c.technology:
             d["technology"] = c.technology
         if c.files:
@@ -908,8 +908,8 @@ class ArchitectureModel:
         d = cls._dump_base(s)
         if s.layer:
             d["layer"] = s.layer
-        if s.f_block:
-            d["f_block"] = s.f_block
+        if s.source_block:
+            d["source_block"] = s.source_block
         if s.complexity_score:
             d["complexity_score"] = s.complexity_score
         if s.sub_model_ref:

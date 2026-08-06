@@ -156,29 +156,29 @@ def generate_behaviors_diagram(model: "ArchitectureModel") -> str:
 
 
 def generate_dependencies_diagram(model: "ArchitectureModel") -> str:
-    """Inter-component dependency graph grouped by f_block.
+    """Inter-component dependency graph grouped by source_block.
 
-    Shows: components grouped by f_block in subgraphs, depends-on edges.
+    Shows: components grouped by source_block in subgraphs, depends-on edges.
     """
     lines = ["flowchart LR"]
 
-    # Group by f_block
-    fblock_groups: dict[str, list] = defaultdict(list)
+    # Group by source_block
+    source_block_groups: dict[str, list] = defaultdict(list)
     for comp in model.entities.components:
-        fb = getattr(comp, "f_block", None) or "ungrouped"
-        fblock_groups[fb].append(comp)
+        fb = getattr(comp, "source_block", None) or "ungrouped"
+        source_block_groups[fb].append(comp)
 
-    # Capability names for f_block labels
-    fblock_names: dict[str, str] = {}
+    # Capability names for source_block labels
+    source_block_names: dict[str, str] = {}
     for cap in model.entities.capabilities:
-        fb = getattr(cap, "f_block", None)
+        fb = getattr(cap, "source_block", None)
         if fb:
-            fblock_names[fb] = cap.name
+            source_block_names[fb] = cap.name
 
     # Emit subgraphs
-    for fb in sorted(fblock_groups):
-        comps = fblock_groups[fb]
-        label = fblock_names.get(fb, fb)
+    for fb in sorted(source_block_groups):
+        comps = source_block_groups[fb]
+        label = source_block_names.get(fb, fb)
         lines.append(f"    subgraph {_sid(fb)}[{_label(label)}]")
         for comp in comps:
             lines.append(f"        {_sid(comp.id)}[{_label(comp.name)}]")

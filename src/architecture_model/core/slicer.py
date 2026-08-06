@@ -32,9 +32,9 @@ from architecture_model.monitoring import monitored
 
 
 @monitored(module="core.slicer", outputs=lambda r: {"entities_retained": len(r.entities.components), "relationships_retained": len(r.relationships)})
-def slice_by_fblock(
+def slice_by_source_block(
     model: ArchitectureModel,
-    f_block: str,
+    source_block: str,
     include_relationships: bool = True,
     *,
     project_root: Union[Path, str, None] = None,
@@ -44,7 +44,7 @@ def slice_by_fblock(
 
     Args:
         model: Full architecture model.
-        f_block: F-block identifier (e.g., "F1", "F2").
+        source_block: F-block identifier (e.g., "S1", "S2").
         include_relationships: Whether to include relationships between sliced entities.
 
     Returns:
@@ -53,24 +53,24 @@ def slice_by_fblock(
     # Try loading sub-model if project_root is provided
     if project_root is not None:
         from .parser import load_block_model
-        sub_model = load_block_model(project_root, f_block)
+        sub_model = load_block_model(project_root, source_block)
         if sub_model is not None:
             return sub_model
 
     # Find capability for this f-block
-    cap_ids = {c.id for c in model.entities.capabilities if c.f_block == f_block}
+    cap_ids = {c.id for c in model.entities.capabilities if c.source_block == source_block}
 
     # Find behaviors tagged with this f-block
-    behaviors = [b for b in model.entities.behaviors if f_block in b.tags]
+    behaviors = [b for b in model.entities.behaviors if source_block in b.tags]
     behavior_ids = {b.id for b in behaviors}
 
     # Find components allocated to this f-block
-    components = [c for c in model.entities.components if c.f_block == f_block]
+    components = [c for c in model.entities.components if c.source_block == source_block]
     component_ids = {c.id for c in components}
 
     # Find interfaces where this f-block is provider or consumer
     interfaces = [
-        i for i in model.entities.interfaces if f_block in i.provider or f_block in i.consumer
+        i for i in model.entities.interfaces if source_block in i.provider or source_block in i.consumer
     ]
     interface_ids = {i.id for i in interfaces}
 
@@ -107,7 +107,7 @@ def slice_by_fblock(
                 relationships.append(deepcopy(rel))
 
     # Get capabilities for this f-block
-    capabilities = [c for c in model.entities.capabilities if c.f_block == f_block]
+    capabilities = [c for c in model.entities.capabilities if c.source_block == source_block]
 
     return ArchitectureModel(
         meta=ModelMeta(

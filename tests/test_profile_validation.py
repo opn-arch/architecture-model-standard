@@ -16,7 +16,7 @@ def test_profile_validation_catches_missing_required_field():
           status: ACTIVE
           kind: sensor
           layer: field-layer
-          f_block: F1
+          source_block: S1
     relationships: []
     """)
     model = _parse_raw(raw)
@@ -38,7 +38,7 @@ def test_profile_validation_passes_with_required_field():
           status: ACTIVE
           kind: sensor
           layer: field-layer
-          f_block: F1
+          source_block: S1
           extensions:
             signal_type: analog
     relationships: []

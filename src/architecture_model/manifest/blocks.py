@@ -36,7 +36,7 @@ def _get_functional_blocks(root: Optional[Path] = None) -> dict[str, dict[str, A
     if root is None:
         root = Path(".")
     config = get_config(root)
-    return config.fblock_dict
+    return config.source_block_dict
 
 
 # DEPRECATED: Backward-compatible module-level constant.
@@ -52,7 +52,7 @@ def _load_blocks_from_config() -> dict[str, dict[str, Any]]:
 
         config = get_config(Path("."))
         if config.functional_blocks:
-            return config.fblock_dict
+            return config.source_block_dict
     except Exception:
         pass
     # Fallback: return empty (callers should use _get_functional_blocks with root)

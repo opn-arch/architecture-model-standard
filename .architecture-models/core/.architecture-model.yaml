@@ -45,7 +45,7 @@ entities:
     status: ACTIVE
     description: Complete typed dataclass hierarchy for all 15 entity types, 17 relationship types, and the top-level ArchitectureModel
       container with serialization support.
-    f_block: F1
+    source_block: S1
     priority: critical
     requirements:
     - All entity types map 1:1 with JSON Schema in spec/schema.json
@@ -56,7 +56,7 @@ entities:
     status: ACTIVE
     description: Load YAML files into typed ArchitectureModel, validate against JSON Schema, serialize back to YAML/dict with
       round-trip fidelity.
-    f_block: F2
+    source_block: S2
     priority: critical
     requirements:
     - Parse all 15 entity types from raw dicts
@@ -68,7 +68,7 @@ entities:
     description: 10 validation checks producing a score 0-100 with categorized issues (ERROR/WARNING/INFO). Checks ID uniqueness,
       referential integrity, orphan detection, status consistency, capability realization, meta completeness, v1.1 semantics,
       regen readiness, domain profiles, and improvement opportunities.
-    f_block: F3
+    source_block: S3
     priority: critical
     requirements:
     - Score deduction: 10 per error, 2 per warning
@@ -80,7 +80,7 @@ entities:
     description: Extract model subsets by F-block, layer, status, or artifact type. 11 artifact-specific slicers (functional-architecture,
       logical-architecture, use-cases, icd, requirements-analysis, operations-manual, conops, testing, deployment-guide, data-dictionary,
       readme).
-    f_block: F4
+    source_block: S4
     priority: high
     requirements:
     - Sliced models are independent ArchitectureModel instances
@@ -91,10 +91,10 @@ entities:
     status: ACTIVE
     description: Compare two model versions producing structured diffs with entity changes (added/removed/modified) and relationship
       changes. Includes affected-artifact detection for staleness analysis.
-    f_block: F5
+    source_block: S5
     priority: high
     requirements:
-    - Field-level change detection (name, status, description, f_block, layer, priority)
+    - Field-level change detection (name, status, description, source_block, layer, priority)
     - Relationship comparison by (type, from, to) key
     - Human-readable diff report formatting
   - id: CAP-merging
@@ -102,7 +102,7 @@ entities:
     status: ACTIVE
     description: Merge manifest data into models (file provenance, layer directories, missing components), enrich with AST
       ground-truth (symbols, functions, imports), compact for LLM context, and compose fully-enriched models from source code.
-    f_block: F6
+    source_block: S6
     priority: high
     requirements:
     - Never overwrite architectural decisions (names, descriptions, relationships)
@@ -115,7 +115,7 @@ entities:
     description: Identify complex F-block groups as System entities via weighted complexity scoring, auto-assign F-blocks
       via dependency-graph clustering, decompose flat models into top-level + sub-model hierarchies, and perform test-affinity
       decomposition for subsystem identification.
-    f_block: F7
+    source_block: S7
     priority: high
     requirements:
     - System threshold is configurable (default 10.0)
@@ -127,7 +127,7 @@ entities:
     status: ACTIVE
     description: 'Compare model against manifest reality across 5 dimensions: component coverage, relationship accuracy, capability
       coverage, interface coverage, and staleness. Produces aggregate score with detailed per-check reports.'
-    f_block: F8
+    source_block: S8
     requirements:
     - Score 0-100 per check, overall is average
     - Reports missing and extra entities
@@ -156,11 +156,11 @@ entities:
     actor: ACT-mcp
     preconditions:
     - ArchitectureModel is loaded
-    - Slice criteria specified (f_block, layer, status, or artifact name)
+    - Slice criteria specified (source_block, layer, status, or artifact name)
     postconditions:
     - New ArchitectureModel containing only relevant entities and relationships
     steps:
-    - Identify relevant entities by criteria (f_block match, layer match, status filter, or artifact slicer)
+    - Identify relevant entities by criteria (source_block match, layer match, status filter, or artifact slicer)
     - Collect transitive references (actors from behaviors, data from components, etc.)
     - Filter relationships to those connecting relevant entities
     - Deep-copy to prevent source mutation
@@ -209,7 +209,7 @@ entities:
     - DecompositionResult with top-level model and sub-models
     - System entities created with sub_model_ref paths
     steps:
-    - identify_systems() groups by f_block, computes aggregate complexity
+    - identify_systems() groups by source_block, computes aggregate complexity
     - Groups above SYSTEM_THRESHOLD become SystemCandidates
     - decompose_model() partitions components and relationships
     - Inter-system relationships promoted to top-level with endpoint rewriting
@@ -227,7 +227,7 @@ entities:
     steps:
     - _check_component_coverage() matches model components to manifest modules
     - _check_relationship_accuracy() compares depends-on edges to import graph
-    - _check_capability_coverage() matches f_blocks between model and manifest
+    - _check_capability_coverage() matches source_blocks between model and manifest
     - _check_interface_coverage() checks EXPOSES relationships against module exports
     - _check_staleness() compares manifest hashes
   - id: BEH-compose-enriched
@@ -299,10 +299,10 @@ entities:
     description: 'validate_model(model: ArchitectureModel, strict: bool = False) -> ValidationResult'
     type: internal
     provider: COMP-validator
-  - id: IF-slice-fblock
-    name: slice_by_fblock
+  - id: IF-slice-source_block
+    name: slice_by_source_block
     status: ACTIVE
-    description: 'slice_by_fblock(model, f_block: str, include_relationships: bool = True) -> ArchitectureModel'
+    description: 'slice_by_source_block(model, source_block: str, include_relationships: bool = True) -> ArchitectureModel'
     type: internal
     provider: COMP-slicer
   - id: IF-slice-layer
@@ -365,10 +365,10 @@ entities:
     description: 'identify_systems(model, manifest: dict) -> list[SystemCandidate]'
     type: internal
     provider: COMP-decomposer
-  - id: IF-auto-assign-fblocks
-    name: auto_assign_f_blocks
+  - id: IF-auto-assign-source_blocks
+    name: auto_assign_source_blocks
     status: ACTIVE
-    description: 'auto_assign_f_blocks(model, max_cluster_size: int = 5) -> ArchitectureModel'
+    description: 'auto_assign_source_blocks(model, max_cluster_size: int = 5) -> ArchitectureModel'
     type: internal
     provider: COMP-decomposer
   - id: IF-decompose-model
@@ -447,7 +447,7 @@ entities:
       supporting dataclasses (Symbol, DataField, Constant, FunctionSignature, TestContract, ObservabilityContract, StateTransition,
       Compensation, Endpoint), Relationship, ModelMeta, Entities container, and the top-level ArchitectureModel with to_dict()/to_yaml()
       serialization.
-    f_block: F1
+    source_block: S1
     technology: Python
     files:
     - src/architecture_model/core/types.py
@@ -539,7 +539,7 @@ entities:
       contract_type: value_equality
     - test_file: test_types.py
       test_method: test_capability_fields
-      assertion: cap['f_block'] == 'FB-CodeGen'
+      assertion: cap['source_block'] == 'FB-CodeGen'
       contract_type: value_equality
     - test_file: test_types.py
       test_method: test_behavior_fields
@@ -618,7 +618,7 @@ entities:
     status: ACTIVE
     description: '767-line module for YAML model I/O. Public API: load_model(), validate_model_data(), dump_model(), save_model().
       Internal parsing functions for each entity type and serialization functions mirroring the type system''s structure.'
-    f_block: F2
+    source_block: S2
     technology: Python
     files:
     - src/architecture_model/core/parser.py
@@ -708,7 +708,7 @@ entities:
     status: ACTIVE
     description: 584-line module implementing 10 validation checks. Produces ValidationResult with score 0-100, categorized
       issues (ERROR/WARNING/INFO). Supports strict mode and domain profile validation.
-    f_block: F3
+    source_block: S3
     technology: Python
     files:
     - src/architecture_model/core/validator.py
@@ -813,7 +813,7 @@ entities:
     status: ACTIVE
     description: 526-line module with 4 public slicing functions and 11 artifact-specific internal slicers. Each produces
       a new ArchitectureModel with only relevant entities.
-    f_block: F4
+    source_block: S4
     technology: Python
     files:
     - src/architecture_model/core/slicer.py
@@ -824,22 +824,22 @@ entities:
     - Slice for artifact (11 artifact-specific subsets with relationship type filtering)
     kind: module
     signatures:
-    - name: slice_by_fblock
+    - name: slice_by_source_block
       params:
       - 'model: ArchitectureModel'
-      - 'f_block: str'
+      - 'source_block: str'
       - 'include_relationships: bool'
       returns: ArchitectureModel
-      body_hint: 'cap_ids = {c.id for c in model.entities.capabilities if c.f_block =...; behaviors = [b for b in model.entities.behaviors
-        if f_block in b.tags]; behavior_ids = {b.id for b in behaviors}; components = [c for c in model.entities.components
-        if c.f_block == f_b...; component_ids = {c.id for c in components}; interfaces = [i for i in model.entities.interfaces
-        if f_block in i.pro...; interface_ids = {i.id for i in interfaces}; relevant_ids = cap_ids | behavior_ids | component_ids
+      body_hint: 'cap_ids = {c.id for c in model.entities.capabilities if c.source_block =...; behaviors = [b for b in model.entities.behaviors
+        if source_block in b.tags]; behavior_ids = {b.id for b in behaviors}; components = [c for c in model.entities.components
+        if c.source_block == f_b...; component_ids = {c.id for c in components}; interfaces = [i for i in model.entities.interfaces
+        if source_block in i.pro...; interface_ids = {i.id for i in interfaces}; relevant_ids = cap_ids | behavior_ids | component_ids
         | interface_ids; data_entities = [d for d in model.entities.data if d.owner in component_ids]; data_ids = {d.id for
         d in data_entities}; events = [e for e in model.entities.events if e.source in componen...; event_ids = {e.id for
         e in events}; quality_attrs = [q for q in model.entities.quality_attributes if any((a i...; qa_ids = {q.id for q in
         quality_attrs}; relevant_ids = relevant_ids | data_ids | event_ids | qa_ids; actor_refs = set(); for beh in behaviors:
         ...; actors = [a for a in model.entities.actors if a.id in actor_refs]; relationships = []; if include_relationships:
-        ...; capabilities = [c for c in model.entities.capabilities if c.f_block == f...; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version,
+        ...; capabilities = [c for c in model.entities.capabilities if c.source_block == f...; return ArchitectureModel(meta=ModelMeta(schema_version=model.meta.schema_version,
         project=model.meta.project, system=model.meta.system, generated_at=model.meta.generated_at, source_artifacts=model.meta.source_artifacts),
         entities=Entities(actors=actors, capabilities=capabilities, behaviors=behaviors, interfaces=interfaces, constraints=[],
         layers=[], components=components, data=data_entities, events=events, quality_attributes=quality_attrs), relationships=relationships)'
@@ -884,15 +884,15 @@ entities:
         \ if slicer_fn:\n    return slicer_fn(model); return deepcopy(model)"
     test_contracts:
     - test_file: test_slicer.py
-      test_method: test_returns_only_fblock_capabilities
-      assertion: cap.f_block == 'F1'
+      test_method: test_returns_only_source_block_capabilities
+      assertion: cap.source_block == 'F1'
       contract_type: value_equality
     - test_file: test_slicer.py
-      test_method: test_returns_only_fblock_components
-      assertion: comp.f_block == 'F2'
+      test_method: test_returns_only_source_block_components
+      assertion: comp.source_block == 'F2'
       contract_type: value_equality
     - test_file: test_slicer.py
-      test_method: test_nonexistent_fblock_returns_empty
+      test_method: test_nonexistent_source_block_returns_empty
       assertion: len(sliced.entities.capabilities) == 0
       contract_type: value_equality
     - test_file: test_slicer.py
@@ -936,13 +936,13 @@ entities:
     status: ACTIVE
     description: 294-line module for structured model comparison. Produces ModelDiff with entity-level and relationship-level
       changes. Includes format_report() for human-readable output and affected_artifacts() for staleness detection.
-    f_block: F5
+    source_block: S5
     technology: Python
     files:
     - src/architecture_model/core/differ.py
     responsibilities:
     - Compare entity lists by ID (added, removed, modified)
-    - Detect field-level changes (name, status, description, f_block, layer, priority)
+    - Detect field-level changes (name, status, description, source_block, layer, priority)
     - Compare relationship sets by (type, from, to) key
     - Format human-readable diff reports
     - Determine which artifacts are affected by changes
@@ -1008,7 +1008,7 @@ entities:
     status: ACTIVE
     description: '778-line module with 3 major capabilities: manifest merging (merge_manifest), AST enrichment (enrich_from_manifest),
       and source-code composition (compose_enriched_model). Also includes compact_for_generation() for LLM context size reduction.'
-    f_block: F6
+    source_block: S6
     technology: Python
     files:
     - src/architecture_model/core/merger.py
@@ -1097,14 +1097,14 @@ entities:
     status: ACTIVE
     description: 659-line module for complexity scoring, system identification, F-block auto-assignment, model decomposition,
       and test-affinity decomposition.
-    f_block: F7
+    source_block: S7
     technology: Python
     files:
     - src/architecture_model/core/decomposer.py
     responsibilities:
     - Compute weighted complexity scores for components
     - Identify F-block groups exceeding system threshold
-    - Auto-assign f_blocks via dependency-graph clustering
+    - Auto-assign source_blocks via dependency-graph clustering
     - Decompose flat models into top-level + sub-model hierarchies
     - Perform test-affinity decomposition based on test file imports
     - Topological sorting of subsystems
@@ -1126,15 +1126,15 @@ entities:
       - 'model: ArchitectureModel'
       - 'manifest: dict'
       returns: list[SystemCandidate]
-      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; fblocks_meta
-        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (fblock_id, components) in
+      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; source_blocks_meta
+        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (source_block_id, components) in
         groups.items(): ...; return candidates'
-    - name: auto_assign_f_blocks
+    - name: auto_assign_source_blocks
       params:
       - 'model: ArchitectureModel'
       - 'max_cluster_size: int'
       returns: ArchitectureModel
-      body_hint: 'has_fblocks = any((c.f_block for c in model.entities.components)); if has_fblocks: ...; comps = model.entities.components;
+      body_hint: 'has_source_blocks = any((c.source_block for c in model.entities.components)); if has_source_blocks: ...; comps = model.entities.components;
         if len(comps) <= 1: ...; adj: dict[str, set[str]] = defaultdict(set); comp_ids = {c.id for c in comps}; for rel in
         model.relationships: ...; sorted_comps = sorted(comps, key=lambda c: len(adj.get(c.id, set())), re...; assigned: dict[str,
         str] = {}; cluster_id = 0; for comp in sorted_comps: ...; for comp in comps: ...; from copy import deepcopy; new_comps
@@ -1196,7 +1196,7 @@ entities:
       assertion: score == 0.0
       contract_type: value_equality
     - test_file: test_decomposer.py
-      test_method: test_identifies_complex_fblock_group
+      test_method: test_identifies_complex_source_block_group
       assertion: len(systems) == 1
       contract_type: value_equality
     - test_file: test_decomposer.py
@@ -1204,7 +1204,7 @@ entities:
       assertion: len(systems) == 0
       contract_type: value_equality
     - test_file: test_decomposer.py
-      test_method: test_components_without_fblock_not_grouped
+      test_method: test_components_without_source_block_not_grouped
       assertion: len(systems) == 0
       contract_type: value_equality
     - test_file: test_decomposer.py
@@ -1212,7 +1212,7 @@ entities:
       assertion: len(systems) == 2
       contract_type: value_equality
     - test_file: test_decomposer.py
-      test_method: test_uses_fblock_id_as_name_when_not_in_manifest
+      test_method: test_uses_source_block_id_as_name_when_not_in_manifest
       assertion: len(systems) == 1
       contract_type: value_equality
     - test_file: test_decomposer.py
@@ -1236,7 +1236,7 @@ entities:
     status: ACTIVE
     description: 268-line module comparing model against manifest across 5 dimensions. Produces CoverageResult with per-check
       scores and overall aggregate.
-    f_block: F8
+    source_block: S8
     technology: Python
     files:
     - src/architecture_model/core/coverage.py
@@ -1308,11 +1308,11 @@ entities:
       assertion: result.score == 100.0
       contract_type: value_equality
     - test_file: test_coverage.py
-      test_method: test_missing_fblock
+      test_method: test_missing_source_block
       assertion: result.score == 50.0
       contract_type: value_equality
     - test_file: test_coverage.py
-      test_method: test_extra_fblock
+      test_method: test_extra_source_block
       assertion: result.score == 100.0
       contract_type: value_equality
     - test_file: test_coverage.py
@@ -1388,7 +1388,7 @@ relationships:
   to: IF-validate-model
 - type: exposes
   from: COMP-slicer
-  to: IF-slice-fblock
+  to: IF-slice-source_block
 - type: exposes
   from: COMP-slicer
   to: IF-slice-layer
@@ -1421,7 +1421,7 @@ relationships:
   to: IF-identify-systems
 - type: exposes
   from: COMP-decomposer
-  to: IF-auto-assign-fblocks
+  to: IF-auto-assign-source_blocks
 - type: exposes
   from: COMP-decomposer
   to: IF-decompose-model
@@ -1487,10 +1487,10 @@ relationships:
   to: IF-validate-model
 - type: consumes
   from: ACT-mcp
-  to: IF-slice-fblock
+  to: IF-slice-source_block
 - type: consumes
   from: ACT-llm-context
-  to: IF-slice-fblock
+  to: IF-slice-source_block
 - type: consumes
   from: ACT-llm-context
   to: IF-slice-layer

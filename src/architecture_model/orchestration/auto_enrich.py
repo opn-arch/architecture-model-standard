@@ -389,7 +389,7 @@ def enrich_with_block_context(
     block_components: dict[str, list] = {}
     for comp in components:
         if isinstance(comp, Component):
-            bid = comp.f_block
+            bid = comp.source_block
             if bid:
                 block_components.setdefault(bid, []).append(comp)
 

@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from architecture_model.core.parser import _parse_raw, dump_model
 from architecture_model.core.merger import enrich_from_manifest, compact_for_generation
 from architecture_model.core.decomposer import (
-    auto_assign_f_blocks,
+    auto_assign_source_blocks,
     decompose_model,
     identify_systems,
     compute_complexity,
@@ -303,13 +303,13 @@ async def run_test(repo_name: str, timeout: int = 300):
         return None
 
     # 5. Build functional_blocks for decomposition
-    #    Auto-assign f_blocks if model doesn't have them (oracle-extracted models)
-    enriched_model = auto_assign_f_blocks(enriched_model)
-    fblocks = {}
+    #    Auto-assign source_blocks if model doesn't have them (oracle-extracted models)
+    enriched_model = auto_assign_source_blocks(enriched_model)
+    source_blocks = {}
     for comp in enriched_model.entities.components:
-        if comp.f_block and comp.f_block not in fblocks:
-            fblocks[comp.f_block] = {"name": comp.f_block}
-    manifest["functional_blocks"] = fblocks
+        if comp.source_block and comp.source_block not in source_blocks:
+            source_blocks[comp.source_block] = {"name": comp.source_block}
+    manifest["functional_blocks"] = source_blocks
 
     # 6. Decompose
     print("[5] Decomposing model (identify systems)...", end=" ")

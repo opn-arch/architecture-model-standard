@@ -186,27 +186,27 @@ class TestRelationshipAccuracy:
 class TestCapabilityCoverage:
     def test_all_covered(self):
         model = _make_model(capabilities=[
-            Capability(id="CAP1", name="Cap1", status=Status.ACTIVE, f_block="core"),
-            Capability(id="CAP2", name="Cap2", status=Status.ACTIVE, f_block="utils"),
+            Capability(id="CAP1", name="Cap1", status=Status.ACTIVE, source_block="core"),
+            Capability(id="CAP2", name="Cap2", status=Status.ACTIVE, source_block="utils"),
         ])
         manifest = {"functional_blocks": {"core": {}, "utils": {}}}
         result = _check_capability_coverage(model, manifest)
         assert result.score == 100.0
         assert result.matched == 2
 
-    def test_missing_fblock(self):
+    def test_missing_source_block(self):
         model = _make_model(capabilities=[
-            Capability(id="CAP1", name="Cap1", status=Status.ACTIVE, f_block="core"),
+            Capability(id="CAP1", name="Cap1", status=Status.ACTIVE, source_block="core"),
         ])
         manifest = {"functional_blocks": {"core": {}, "utils": {}}}
         result = _check_capability_coverage(model, manifest)
         assert result.score == 50.0
         assert "utils" in result.missing
 
-    def test_extra_fblock(self):
+    def test_extra_source_block(self):
         model = _make_model(capabilities=[
-            Capability(id="CAP1", name="Cap1", status=Status.ACTIVE, f_block="core"),
-            Capability(id="CAP2", name="Cap2", status=Status.ACTIVE, f_block="extra"),
+            Capability(id="CAP1", name="Cap1", status=Status.ACTIVE, source_block="core"),
+            Capability(id="CAP2", name="Cap2", status=Status.ACTIVE, source_block="extra"),
         ])
         manifest = {"functional_blocks": {"core": {}}}
         result = _check_capability_coverage(model, manifest)
@@ -297,7 +297,7 @@ class TestCoverageReport:
         h = hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()[:16]
         model = _make_model(
             components=[Component(id="C1", name="parser", status=Status.ACTIVE)],
-            capabilities=[Capability(id="CAP1", name="Cap", status=Status.ACTIVE, f_block="core")],
+            capabilities=[Capability(id="CAP1", name="Cap", status=Status.ACTIVE, source_block="core")],
             manifest_hash=h,
         )
         result = coverage_report(model, manifest)

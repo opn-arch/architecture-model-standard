@@ -31,17 +31,17 @@ def test_creates_components_from_grouped_modules():
     ]
     manifest = Manifest(modules=modules, interfaces=[], functional_blocks={}, generated_at="", project_root=".", metrics={})
     
-    components = create_components_from_manifest(manifest, block_id="F1")
+    components = create_components_from_manifest(manifest, block_id="S1")
     
     # Should have fewer components than modules (sub/ files grouped)
     assert len(components) < len(modules)
     
-    # Each component should have id, name, files, f_block
+    # Each component should have id, name, files, source_block
     for c in components:
         assert c.id.startswith("COMP-")
         assert c.name
         assert c.files
-        assert c.f_block == "F1"
+        assert c.source_block == "S1"
         assert c.status == "ACTIVE"
 
 
@@ -56,7 +56,7 @@ def test_component_files_cover_all_non_trivial():
     ]
     manifest = Manifest(modules=modules, interfaces=[], functional_blocks={}, generated_at="", project_root=".", metrics={})
     
-    components = create_components_from_manifest(manifest, block_id="F1")
+    components = create_components_from_manifest(manifest, block_id="S1")
     
     all_files = [f for c in components for f in c.files]
     assert "pkg/core.py" in all_files
@@ -71,6 +71,6 @@ def test_component_ids_unique():
     modules = [_mod(f"pkg/mod_{i}.py", functions=[_fn(f"f{i}")]) for i in range(5)]
     manifest = Manifest(modules=modules, interfaces=[], functional_blocks={}, generated_at="", project_root=".", metrics={})
     
-    components = create_components_from_manifest(manifest, block_id="F1")
+    components = create_components_from_manifest(manifest, block_id="S1")
     ids = [c.id for c in components]
     assert len(ids) == len(set(ids))
