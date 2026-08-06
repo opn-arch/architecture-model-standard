@@ -115,6 +115,7 @@ def validate_model(
     _check_regen_readiness(model, result)
     _check_domain_profile(model, result)
     _check_improvement_opportunities(model, result)
+    _check_requirements_verification(model, result)
 
     if strict:
         # Promote warnings to errors
@@ -595,4 +596,36 @@ def _check_improvement_opportunities(model: ArchitectureModel, result: Validatio
                 code="IMPROVEMENT_NO_OBSERVABILITY",
                 message=f"Component '{comp.name}' has signatures and test contracts but no observability contracts",
                 entity_id=comp.id,
+            ))
+
+
+def _check_requirements_verification(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Leaf constraints (no children) must have at least one 'verifies' edge pointing to them."""
+    from .types import RelationType as RT
+
+    constraint_ids = {c.id for c in model.entities.constraints}
+    if not constraint_ids:
+        return
+
+    # Parent constraints: those appearing as to_id in a derives-from relationship
+    parent_ids: set[str] = set()
+    # Constraints with a verifies edge pointing to them
+    verified_ids: set[str] = set()
+
+    for rel in model.relationships:
+        rel_type = rel.type.value if isinstance(rel.type, RT) else rel.type
+        if rel_type == "derives-from" and rel.to_id in constraint_ids:
+            parent_ids.add(rel.to_id)
+        if rel_type == "verifies" and rel.to_id in constraint_ids:
+            verified_ids.add(rel.to_id)
+
+    # Leaf constraints = not parents
+    leaf_ids = constraint_ids - parent_ids
+    for leaf_id in leaf_ids:
+        if leaf_id not in verified_ids:
+            result.issues.append(ValidationIssue(
+                severity=Severity.WARNING,
+                code="UNVERIFIED_CONSTRAINT",
+                message=f"Leaf constraint '{leaf_id}' has no 'verifies' relationship",
+                entity_id=leaf_id,
             ))

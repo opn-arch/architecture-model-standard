@@ -54,6 +54,9 @@ class RelationType(str, Enum):
     TRIGGERS = "triggers"
     # Requirements traceability
     SATISFIES = "satisfies"
+    # V&V traceability
+    DERIVES_FROM = "derives-from"  # Child requirement refines parent
+    VERIFIES = "verifies"  # Test evidence requirement is met
 
     @classmethod
     def parse(cls, value: str) -> RelationType | str:
