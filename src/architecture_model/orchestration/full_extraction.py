@@ -88,9 +88,16 @@ def _derive_component_dependencies(components, manifest):
         for f in (comp.files or []):
             file_to_comp[f] = comp.id
 
+    # Build dotted module path → file mapping from file paths
     name_to_file = {}
     for mod in manifest.modules:
-        name_to_file[mod.name] = mod.file
+        # Convert file path to dotted module name: "app/services/user_service.py" → "app.services.user_service"
+        dotted = mod.file.replace("/", ".").replace("\\", ".")
+        if dotted.endswith(".py"):
+            dotted = dotted[:-3]
+        if dotted.endswith(".__init__"):
+            dotted = dotted[:-9]
+        name_to_file[dotted] = mod.file
 
     edges = set()
     for mod in manifest.modules:
@@ -231,6 +238,10 @@ def full_extraction(repo_path: Path, target_systems: int = 0) -> ArchitectureMod
         relationships=list(model.relationships) + beh_rels
     )
     
+    # Step 6b: Derive component-to-component dependencies from imports
+    comp_rels = _derive_component_dependencies(components, manifest)
+    model = dc_replace(model, relationships=list(model.relationships) + comp_rels)
+
     # Step 7: Detect behavior triggers
     entry_map = build_behavior_entry_map(behaviors, call_graph)
     trigger_rels = detect_behavior_triggers(behaviors, call_graph, entry_map)
