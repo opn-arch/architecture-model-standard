@@ -317,6 +317,18 @@ class Compensation:
 
 
 @dataclass
+class Step:
+    """A structured step within a behavior sequence."""
+    order: int = 0
+    action: str = ""  # Human-readable description
+    component_ref: str = ""  # Component ID that performs this step
+    actor: str = ""  # Who initiates (system, user, external)
+    input: str = ""  # What goes in
+    output: str = ""  # What comes out
+    error_handling: str = ""  # What happens on failure
+
+
+@dataclass
 class Behavior(BaseEntity):
     trigger: str = ""
     actor: str = ""
@@ -328,6 +340,7 @@ class Behavior(BaseEntity):
     pattern: BehaviorPattern = BehaviorPattern.SEQUENTIAL
     states: list[StateTransition] = field(default_factory=list)
     compensations: list[Compensation] = field(default_factory=list)
+    structured_steps: list[Step] = field(default_factory=list)
 
 
 @dataclass

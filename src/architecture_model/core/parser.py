@@ -56,6 +56,7 @@ from .types import (
     ResourceKind,
     StateTransition,
     Status,
+    Step,
     Strength,
     Symbol,
     SymbolKind,
@@ -286,6 +287,18 @@ def _parse_behavior(d: dict) -> Behavior:
         pattern=pattern,
         states=states,
         compensations=compensations,
+        structured_steps=[
+            Step(
+                order=s.get("order", 0),
+                action=s.get("action", ""),
+                component_ref=s.get("component_ref", ""),
+                actor=s.get("actor", ""),
+                input=s.get("input", ""),
+                output=s.get("output", ""),
+                error_handling=s.get("error_handling", ""),
+            )
+            for s in d.get("structured_steps", [])
+        ],
     )
 
 
@@ -634,6 +647,19 @@ def _dump_behavior(b: Behavior) -> dict:
         d["compensations"] = [
             {"step": c.step, "compensate": c.compensate}
             for c in b.compensations
+        ]
+    if b.structured_steps:
+        d["structured_steps"] = [
+            {k: v for k, v in {
+                "order": s.order,
+                "action": s.action,
+                "component_ref": s.component_ref,
+                "actor": s.actor,
+                "input": s.input,
+                "output": s.output,
+                "error_handling": s.error_handling,
+            }.items() if v}
+            for s in b.structured_steps
         ]
     return d
 
