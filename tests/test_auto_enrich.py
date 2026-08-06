@@ -197,7 +197,7 @@ class TestBehaviorFiltering:
         """Service functions with trivial accessor names and 0-1 calls should not become behaviors."""
         trivial_getter = FunctionInfo(name="get_value", signature="() -> str", calls=[])
         trivial_fetch = FunctionInfo(name="fetch_one", signature="() -> str", calls=["db.get"])
-        significant = FunctionInfo(name="process_data", signature="() -> str", calls=["validate", "transform"])
+        significant = FunctionInfo(name="process_data", signature="() -> str", calls=["validate", "transform", "enrich", "store", "notify"])
         mod = _make_module(
             file="src/services/data_svc.py",
             name="data_svc",
@@ -228,10 +228,10 @@ class TestBehaviorFiltering:
     def test_crud_collapse(self):
         """CRUD functions for same resource are collapsed into single behavior."""
         funcs = [
-            FunctionInfo(name="create_user", signature="(data) -> User", calls=["validate", "db.insert"]),
-            FunctionInfo(name="get_user", signature="(id) -> User", calls=["db.get", "format"]),
-            FunctionInfo(name="update_user", signature="(id, data) -> User", calls=["validate", "db.update"]),
-            FunctionInfo(name="delete_user", signature="(id) -> None", calls=["db.delete", "cleanup"]),
+            FunctionInfo(name="create_user", signature="(data) -> User", calls=["validate", "db.insert", "index", "notify", "log"]),
+            FunctionInfo(name="get_user", signature="(id) -> User", calls=["db.get", "format", "cache", "validate", "log"]),
+            FunctionInfo(name="update_user", signature="(id, data) -> User", calls=["validate", "db.update", "index", "notify", "log"]),
+            FunctionInfo(name="delete_user", signature="(id) -> None", calls=["db.delete", "cleanup", "index", "notify", "log"]),
         ]
         mod = _make_module(
             file="src/services/user_svc.py",

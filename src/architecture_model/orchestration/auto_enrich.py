@@ -712,13 +712,13 @@ def create_behaviors_from_manifest(
             if fname.startswith("_"):
                 continue
 
-            # Skip trivial service functions
+            # Skip service functions unless they are orchestrators (5+ calls)
+            # Router endpoints are always meaningful; service functions are 
+            # mostly implementation details. Only keep service functions that
+            # orchestrate multiple other calls (pipelines, workflows).
             call_count = len(func.calls) if hasattr(func, 'calls') and func.calls else 0
-            if is_service and call_count < 2:
-                # Simple accessor patterns are always trivial with <2 calls
-                trivial_prefixes = ("get_", "set_", "is_", "has_", "fetch_")
-                if any(fname.startswith(p) for p in trivial_prefixes):
-                    continue
+            if is_service and call_count < 5:
+                continue
 
             # Determine trigger
             if is_router:

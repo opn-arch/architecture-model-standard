@@ -69,7 +69,7 @@ class TestCreateBehaviors:
         mods = [
             _make_mod(
                 "app/services/log_pipeline.py", "Pipeline",
-                [_make_func("process_log", ["classify", "extract_actions"])],
+                [_make_func("process_log", ["classify", "extract_actions", "normalize", "persist", "notify"])],
                 line_count=100,
             ),
         ]
@@ -82,7 +82,7 @@ class TestCreateBehaviors:
 
         assert len(behaviors) == 1
         assert behaviors[0].name == "process_log"
-        assert behaviors[0].steps == ["classify", "extract_actions"]
+        assert behaviors[0].steps == ["classify", "extract_actions", "normalize", "persist", "notify"]
 
     def test_maps_cross_component_relationships(self):
         mods = [
@@ -119,7 +119,7 @@ class TestCreateBehaviors:
         mods = [
             _make_mod("app/services/helper.py", "Helper", [
                 _make_func("_internal"),
-                _make_func("public_func"),
+                _make_func("public_func", ["step1", "step2", "step3", "step4", "step5"]),
             ]),
         ]
         model = _make_model([

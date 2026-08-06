@@ -327,25 +327,33 @@ def full_extraction_with_docs(
     except Exception as e:
         artifacts["errors"].append(f"manifest: {e}")
 
-    # Step 4: Generate docs
+    # Step 4: Compact model for storage (before docs — docs should use compact model)
+    compact, offloaded = compact_for_storage(model)
+    artifacts["compaction"] = {
+        "original_behaviors": len(model.entities.behaviors or []),
+        "compact_behaviors": len(compact.entities.behaviors or []),
+        "offloaded_components": len(offloaded),
+    }
+
+    # Step 5: Generate docs (from compact model — curated behaviors only)
     docs_dir = out / "docs"
     try:
         from architecture_model.docs.generator import generate_docs
-        doc_result = generate_docs(model, docs_dir, manifest=manifest)
+        doc_result = generate_docs(compact, docs_dir, manifest=manifest)
         artifacts["docs"] = {k: len(v) for k, v in doc_result.items()}
     except Exception as e:
         artifacts["errors"].append(f"docs: {e}")
 
-    # Step 5: Generate diagrams
+    # Step 6: Generate diagrams (from compact model)
     try:
         from architecture_model.docs.diagrams import generate_all_diagrams
         diag_dir = docs_dir / "diagrams"
-        diagram_paths = generate_all_diagrams(model, diag_dir)
+        diagram_paths = generate_all_diagrams(compact, diag_dir)
         artifacts["diagrams"] = len(diagram_paths)
     except Exception as e:
         artifacts["errors"].append(f"diagrams: {e}")
 
-    # Step 6: Generate behavior specs + index
+    # Step 7: Generate behavior specs + index (from full model — detailed specs)
     try:
         from architecture_model.manifest.call_graph import build_call_graph
         from architecture_model.orchestration.behavior_flows import (
@@ -390,14 +398,6 @@ def full_extraction_with_docs(
     except Exception as e:
         artifacts["errors"].append(f"behavior specs: {e}")
 
-    # Step 7: Compact model for storage
-    compact, offloaded = compact_for_storage(model)
-    artifacts["compaction"] = {
-        "original_behaviors": len(model.entities.behaviors or []),
-        "compact_behaviors": len(compact.entities.behaviors or []),
-        "offloaded_components": len(offloaded),
-    }
-
     # Step 8: Write per-component sub-models with full behaviors
     for comp_id, comp_behaviors in offloaded.items():
         comp_dir = out / comp_id
@@ -429,12 +429,11 @@ def full_extraction_with_docs(
         except Exception as e:
             artifacts["errors"].append(f"sub-model {comp_id}: {e}")
 
-    # Step 9: Save compact model as the main model
+    # Step 9: Save compact model (don't overwrite curated config)
+    compact_path = out / "compact-model.yaml"
     try:
-        save_model(compact, repo_path / ".architecture-model.yaml")
-        artifacts["compact_model_path"] = str(
-            repo_path / ".architecture-model.yaml"
-        )
+        save_model(compact, compact_path)
+        artifacts["compact_model_path"] = str(compact_path)
     except Exception as e:
         artifacts["errors"].append(f"compact model save: {e}")
 
