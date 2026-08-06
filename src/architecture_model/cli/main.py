@@ -96,6 +96,11 @@ def main(argv: list[str] | None = None) -> int:
     p_visualize.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_visualize.add_argument("-o", "--output", default="output/diagrams", help="Output directory (default: output/diagrams)")
 
+    # --- author ---
+    p_author = subparsers.add_parser("author", help="Generate model from requirements document")
+    p_author.add_argument("requirements", help="Path to requirements markdown file")
+    p_author.add_argument("-o", "--output", default=".architecture-model.yaml", help="Output YAML path")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -116,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         "decompose": _cmd_decompose,
         "visualize": _cmd_visualize,
         "docs": _cmd_docs,
+        "author": _cmd_author,
     }
     return handlers[args.command](args)
 
@@ -661,6 +667,29 @@ def _cmd_docs(args) -> int:
     for f in sorted(output_dir.rglob("*.md")):
         print(f"  {f.relative_to(output_dir)}")
 
+    return 0
+
+
+def _cmd_author(args) -> int:
+    from ..authoring.parser import parse_requirements_doc
+
+    req_path = Path(args.requirements)
+    if not req_path.exists():
+        print(f"ERROR: {req_path} does not exist")
+        return 1
+
+    text = req_path.read_text()
+    model = parse_requirements_doc(text)
+    yaml_str = model.to_yaml()
+
+    output_path = Path(args.output)
+    output_path.write_text(yaml_str)
+
+    print(f"Model written to {output_path}")
+    print(f"  Actors: {len(model.entities.actors)}")
+    print(f"  Capabilities: {len(model.entities.capabilities)}")
+    print(f"  Constraints: {len(model.entities.constraints)}")
+    print(f"  Relationships: {len(model.relationships)}")
     return 0
 
 
