@@ -84,3 +84,37 @@ class TestInferCapabilities:
         )
         result = infer_capabilities(model)
         assert any("Internal" in c.name for c in result.entities.capabilities)
+
+
+class TestCapabilitiesFromComponentBlocks:
+    def test_capabilities_from_component_blocks(self):
+        """When components have source_block, capabilities use component names."""
+        from architecture_model.core.types import Component
+        model = ArchitectureModel(
+            meta=ModelMeta(project="test", schema_version="1.3"),
+            entities=Entities(
+                components=[
+                    Component(id="COMP-1", name="Authentication", status="ACTIVE", source_block="F1"),
+                    Component(id="COMP-2", name="Billing", status="ACTIVE", source_block="F2"),
+                ],
+                behaviors=[
+                    Behavior(id="BEH-1", name="Login", status="ACTIVE", trigger="internal service call"),
+                    Behavior(id="BEH-2", name="Charge card", status="ACTIVE", trigger="internal service call"),
+                ],
+            ),
+            relationships=[
+                Relationship(type=RelationType.REALIZES, from_id="COMP-1", to_id="BEH-1"),
+                Relationship(type=RelationType.REALIZES, from_id="COMP-2", to_id="BEH-2"),
+            ],
+        )
+        result = infer_capabilities(model)
+        cap_names = [c.name for c in result.entities.capabilities]
+        assert "Authentication" in cap_names
+        assert "Billing" in cap_names
+
+    def test_name_from_prefix_handles_irregular_plurals(self):
+        """Singularization handles 'technologies', 'processes', 'status' correctly."""
+        from architecture_model.orchestration.capability_inference import _name_from_prefix
+        assert _name_from_prefix("technologies") == "Technology Management"
+        assert _name_from_prefix("processes") == "Process Management"
+        assert _name_from_prefix("status") == "Status Management"

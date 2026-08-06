@@ -15,30 +15,34 @@ def _extract_url_prefix(trigger: str) -> str | None:
     return match.group(1).lower() if match else None
 
 
+def _singularize(word: str) -> str:
+    """Best-effort singularization for URL prefixes.
+
+    Handles common English plural patterns without external libraries.
+    """
+    if not word.endswith("s") or len(word) <= 3:
+        return word
+    # Don't strip from words ending in ss, us, is, as (status, address, basis)
+    if word[-2] in ("s", "u", "i", "a"):
+        return word
+    # ies -> y (technologies -> technology)
+    if word.endswith("ies"):
+        return word[:-3] + "y"
+    # ses, xes, zes -> drop "es" (processes -> process)
+    if word.endswith(("ses", "xes", "zes")):
+        return word[:-2]
+    # default: drop trailing s
+    return word[:-1]
+
+
 def _name_from_prefix(prefix: str) -> str:
     """Convert URL prefix to capability name: 'users' -> 'User Management'."""
-    singular = prefix.rstrip("s") if prefix.endswith("s") and len(prefix) > 3 else prefix
+    singular = _singularize(prefix)
     return f"{singular.replace('_', ' ').replace('-', ' ').title()} Management"
 
 
-def infer_capabilities(model: ArchitectureModel) -> ArchitectureModel:
-    """Infer capabilities from behaviors, add to model with realizes relationships.
-
-    Clustering (priority order):
-    1. URL prefix from trigger (/users/*, /orders/*)
-    2. Actor (same actor -> same capability)
-    3. Ungrouped -> "Internal Operations"
-
-    Preserves existing capabilities. Returns new model with additions.
-    """
-    behaviors = model.entities.behaviors or []
-    if not behaviors:
-        return model
-
-    existing_caps = list(model.entities.capabilities or [])
-    existing_rels = list(model.relationships)
-
-    # Group by URL prefix first, then actor
+def _infer_caps_from_urls(behaviors, existing_caps, existing_rels):
+    """Original URL-based capability grouping."""
     prefix_groups: dict[str, list] = defaultdict(list)
     ungrouped = []
 
@@ -77,6 +81,72 @@ def infer_capabilities(model: ArchitectureModel) -> ArchitectureModel:
             new_rels.append(Relationship(
                 type=RelationType.REALIZES, from_id=beh.id, to_id=cap_id
             ))
+
+    return new_caps, new_rels
+
+
+def infer_capabilities(model: ArchitectureModel) -> ArchitectureModel:
+    """Infer capabilities from behaviors, add to model with realizes relationships.
+
+    Clustering (priority order):
+    1. URL prefix from trigger (/users/*, /orders/*)
+    2. Actor (same actor -> same capability)
+    3. Ungrouped -> "Internal Operations"
+
+    Preserves existing capabilities. Returns new model with additions.
+    """
+    behaviors = model.entities.behaviors or []
+    if not behaviors:
+        return model
+
+    existing_caps = list(model.entities.capabilities or [])
+    existing_rels = list(model.relationships)
+
+    # Check if components have source_block set (config-driven extraction)
+    components = model.entities.components or []
+    block_components = [c for c in components if c.source_block]
+
+    if block_components:
+        # Config-driven: derive capabilities from component names
+        # Build mapping: component_id -> list of behaviors via realizes relationships
+        comp_beh_map: dict[str, list] = defaultdict(list)
+        for rel in existing_rels:
+            if rel.type == RelationType.REALIZES:
+                # In auto-enrich, realizes goes from comp -> behavior
+                comp_beh_map[rel.from_id].append(rel.to_id)
+
+        beh_index = {b.id: b for b in behaviors}
+        assigned_beh_ids: set[str] = set()
+
+        new_caps = []
+        new_rels = []
+        cap_counter = len(existing_caps) + 1
+
+        for comp in block_components:
+            cap_id = f"CAP-{cap_counter}"
+            cap = Capability(id=cap_id, name=comp.name, status="ACTIVE")
+            new_caps.append(cap)
+            beh_ids = comp_beh_map.get(comp.id, [])
+            for beh_id in beh_ids:
+                if beh_id in beh_index:
+                    new_rels.append(Relationship(
+                        type=RelationType.REALIZES, from_id=beh_id, to_id=cap_id
+                    ))
+                    assigned_beh_ids.add(beh_id)
+            cap_counter += 1
+
+        # Remaining unassigned behaviors -> Internal Operations
+        unassigned = [b for b in behaviors if b.id not in assigned_beh_ids]
+        if unassigned:
+            cap_id = f"CAP-{cap_counter}"
+            new_caps.append(Capability(id=cap_id, name="Internal Operations", status="ACTIVE"))
+            for beh in unassigned:
+                new_rels.append(Relationship(
+                    type=RelationType.REALIZES, from_id=beh.id, to_id=cap_id
+                ))
+    else:
+        # URL-based: original grouping logic
+        new_caps, new_rels = _infer_caps_from_urls(behaviors, existing_caps, existing_rels)
 
     new_entities = Entities(
         components=model.entities.components,
