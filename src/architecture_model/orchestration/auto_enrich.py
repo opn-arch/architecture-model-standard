@@ -712,6 +712,14 @@ def create_behaviors_from_manifest(
             if fname.startswith("_"):
                 continue
 
+            # Skip trivial service functions
+            call_count = len(func.calls) if hasattr(func, 'calls') and func.calls else 0
+            if is_service and call_count < 2:
+                # Simple accessor patterns are always trivial with <2 calls
+                trivial_prefixes = ("get_", "set_", "is_", "has_", "fetch_")
+                if any(fname.startswith(p) for p in trivial_prefixes):
+                    continue
+
             # Determine trigger
             if is_router:
                 trigger = _infer_http_trigger(fname, mod.file)
@@ -751,6 +759,50 @@ def create_behaviors_from_manifest(
                 ))
 
             beh_id += 1
+
+    # CRUD collapse: merge create_X, get_X, update_X, delete_X into "X CRUD"
+    crud_prefixes = ("get_all_", "create_", "get_", "update_", "delete_", "add_", "remove_", "list_")
+    resource_map: dict[str, list[int]] = {}
+    for idx, beh in enumerate(behaviors):
+        for prefix in crud_prefixes:
+            if beh.name.startswith(prefix):
+                resource = beh.name[len(prefix):]
+                if resource.endswith("s") and len(resource) > 1:
+                    resource = resource[:-1]
+                resource_map.setdefault(resource, []).append(idx)
+                break
+
+    indices_to_remove: set[int] = set()
+    for resource, indices in resource_map.items():
+        if len(indices) >= 3:
+            indices_to_remove.update(indices)
+            all_steps = [behaviors[i].name for i in indices]
+            old_ids = {behaviors[i].id for i in indices}
+            resource_title = resource.replace("_", " ").title()
+            collapsed_beh = Behavior(
+                id=f"BEH-{beh_id}",
+                name=f"{resource_title} CRUD",
+                status=Status.ACTIVE,
+                source_file=behaviors[indices[0]].source_file,
+                trigger=behaviors[indices[0]].trigger,
+                steps=all_steps,
+            )
+            # Collect unique source components from old relationships
+            sources = {r.from_id for r in new_rels if r.to_id in old_ids}
+            # Remove old relationships, add new ones
+            new_rels = [r for r in new_rels if r.to_id not in old_ids]
+            for cid in sources:
+                new_rels.append(Relationship(
+                    type=RelationType.REALIZES,
+                    from_id=cid,
+                    to_id=collapsed_beh.id,
+                    description=f"{cid} participates in {collapsed_beh.name}",
+                ))
+            behaviors.append(collapsed_beh)
+            beh_id += 1
+
+    if indices_to_remove:
+        behaviors = [b for i, b in enumerate(behaviors) if i not in indices_to_remove]
 
     return behaviors, new_rels
 

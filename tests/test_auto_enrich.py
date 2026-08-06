@@ -16,6 +16,7 @@ from architecture_model.manifest.types import ClassInfo, FunctionInfo, ModuleInf
 from architecture_model.orchestration.auto_enrich import (
     _classify_pattern,
     _parse_signature,
+    create_behaviors_from_manifest,
     enrich_from_manifest,
 )
 
@@ -41,9 +42,9 @@ def _make_module(
     )
 
 
-def _make_manifest(modules: list[ModuleInfo]):
+def _make_manifest(modules: list[ModuleInfo], interfaces=None):
     """Create a minimal manifest-like object."""
-    return SimpleNamespace(modules=modules)
+    return SimpleNamespace(modules=modules, interfaces=interfaces or [])
 
 
 def _make_component(files, **kwargs) -> Component:
@@ -182,3 +183,67 @@ class TestMultiFile:
         assert len(comp.signatures) == 2
         names = {s.name for s in comp.signatures}
         assert names == {"func_a", "func_b"}
+
+
+class TestBehaviorFiltering:
+    """Tests for behavior significance filtering and CRUD collapse."""
+
+    def _make_behavior_model(self, comp_files):
+        """Create model with a component mapping to given files."""
+        comp = _make_component(files=comp_files)
+        return _make_model([comp])
+
+    def test_skips_trivial_service_functions(self):
+        """Service functions with trivial accessor names and 0-1 calls should not become behaviors."""
+        trivial_getter = FunctionInfo(name="get_value", signature="() -> str", calls=[])
+        trivial_fetch = FunctionInfo(name="fetch_one", signature="() -> str", calls=["db.get"])
+        significant = FunctionInfo(name="process_data", signature="() -> str", calls=["validate", "transform"])
+        mod = _make_module(
+            file="src/services/data_svc.py",
+            name="data_svc",
+            functions=[trivial_getter, trivial_fetch, significant],
+        )
+        model = self._make_behavior_model(["src/services/data_svc.py"])
+        manifest = _make_manifest([mod])
+        behaviors, rels = create_behaviors_from_manifest(model, manifest)
+        names = [b.name for b in behaviors]
+        assert "get_value" not in names
+        assert "fetch_one" not in names
+        assert "process_data" in names
+
+    def test_keeps_all_router_functions(self):
+        """Router functions are always kept (they're API endpoints)."""
+        trivial = FunctionInfo(name="health_check", signature="() -> str", calls=[])
+        mod = _make_module(
+            file="src/routers/health.py",
+            name="health",
+            functions=[trivial],
+        )
+        model = self._make_behavior_model(["src/routers/health.py"])
+        manifest = _make_manifest([mod])
+        behaviors, rels = create_behaviors_from_manifest(model, manifest)
+        names = [b.name for b in behaviors]
+        assert "health_check" in names
+
+    def test_crud_collapse(self):
+        """CRUD functions for same resource are collapsed into single behavior."""
+        funcs = [
+            FunctionInfo(name="create_user", signature="(data) -> User", calls=["validate", "db.insert"]),
+            FunctionInfo(name="get_user", signature="(id) -> User", calls=["db.get", "format"]),
+            FunctionInfo(name="update_user", signature="(id, data) -> User", calls=["validate", "db.update"]),
+            FunctionInfo(name="delete_user", signature="(id) -> None", calls=["db.delete", "cleanup"]),
+        ]
+        mod = _make_module(
+            file="src/services/user_svc.py",
+            name="user_svc",
+            functions=funcs,
+        )
+        model = self._make_behavior_model(["src/services/user_svc.py"])
+        manifest = _make_manifest([mod])
+        behaviors, rels = create_behaviors_from_manifest(model, manifest)
+        names = [b.name for b in behaviors]
+        # Should be collapsed into one "User CRUD" behavior
+        assert len(behaviors) == 1
+        assert behaviors[0].name == "User CRUD"
+        # Steps should list the operations
+        assert len(behaviors[0].steps) > 0
