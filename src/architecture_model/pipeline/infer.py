@@ -1,0 +1,302 @@
+"""Infer pipeline stage — derives capabilities, actors, and behaviors from Inventory.
+
+Capability-driven: clusters by purpose (routes, domain modules, test patterns),
+not by import structure. Import affinity is a secondary signal only.
+"""
+from __future__ import annotations
+
+import re
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+from .infer_types import (
+    InferenceResult,
+    InferredActor,
+    InferredBehavior,
+    InferredCapability,
+)
+from .observe_types import Inventory, ModuleRecord, RouteRecord
+from .protocol import (
+    Diagnostic,
+    Evidence,
+    PipelineContext,
+    QualityMetrics,
+    StageResult,
+    Uncertainty,
+)
+
+
+class InferStage:
+    """Infers capabilities, actors, and behaviors from observed Inventory."""
+
+    name: str = "infer"
+    requires: list[str] = ["observe"]
+
+    def run(self, ctx: PipelineContext) -> StageResult[InferenceResult]:
+        start = time.time()
+        diagnostics: list[Diagnostic] = []
+        uncertainties: list[Uncertainty] = []
+
+        # Get observe output
+        observe_result = ctx.get("observe")
+        if observe_result is None:
+            raise RuntimeError("infer requires observe to have run first")
+        inventory: Inventory = observe_result.output
+
+        capabilities: list[InferredCapability] = []
+        actors: list[InferredActor] = []
+        behaviors: list[InferredBehavior] = []
+
+        cap_counter = 0
+
+        # --- Strategy 1: Routes → capabilities grouped by URL prefix ---
+        if inventory.routes:
+            route_caps, route_actors = _infer_from_routes(inventory.routes)
+            for cap in route_caps:
+                cap_counter += 1
+                cap.id = f"CAP-{cap_counter}"
+                capabilities.append(cap)
+            actors.extend(route_actors)
+
+        # --- Strategy 2: Domain modules → capabilities ---
+        domain_caps = _infer_from_domain_modules(inventory.modules, capabilities)
+        for cap in domain_caps:
+            cap_counter += 1
+            cap.id = f"CAP-{cap_counter}"
+            capabilities.append(cap)
+
+        # --- Strategy 3: CLI/commands → capabilities ---
+        cli_caps = _infer_from_cli(inventory.modules)
+        for cap in cli_caps:
+            cap_counter += 1
+            cap.id = f"CAP-{cap_counter}"
+            capabilities.append(cap)
+
+        # --- Actors: infer from auth patterns, CLI entry points ---
+        if not actors:
+            actors = _infer_default_actors(inventory)
+
+        # --- Behaviors: from trigger chains (route → function → calls) ---
+        behaviors = _infer_behaviors(inventory, capabilities, actors)
+
+        # --- Uncertainties for ambiguous modules ---
+        for mod in inventory.modules:
+            if not _module_has_clear_purpose(mod, capabilities):
+                uncertainties.append(Uncertainty(
+                    category="ambiguous_module",
+                    description=f"{mod.path} has no clear capability affiliation",
+                    suggested_fallback="llm_analysis",
+                    priority="informational",
+                ))
+
+        result = InferenceResult(
+            capabilities=capabilities,
+            actors=actors,
+            behaviors=behaviors,
+        )
+
+        # Quality
+        total_modules = len(inventory.modules)
+        covered = sum(1 for m in inventory.modules if _module_has_clear_purpose(m, capabilities))
+        coverage = (covered / total_modules * 100) if total_modules > 0 else 100.0
+
+        quality = QualityMetrics(
+            score=int(coverage),
+            sub_scores={
+                "capability_coverage": coverage,
+                "actor_completeness": 100.0 if actors else 0.0,
+                "capability_count": float(len(capabilities)),
+            },
+            thresholds={"capability_coverage": 60.0},
+        )
+
+        duration_ms = int((time.time() - start) * 1000)
+
+        return StageResult(
+            output=result,
+            quality=quality,
+            diagnostics=diagnostics,
+            uncertainties=uncertainties,
+            input_hash=str(len(inventory.modules)),
+            duration_ms=duration_ms,
+            version="1.0",
+        )
+
+
+def _infer_from_routes(routes: list[RouteRecord]) -> tuple[list[InferredCapability], list[InferredActor]]:
+    """Group routes by URL prefix → one capability per prefix."""
+    prefix_groups: dict[str, list[RouteRecord]] = defaultdict(list)
+
+    for route in routes:
+        prefix = _extract_prefix(route.path)
+        prefix_groups[prefix].append(route)
+
+    capabilities = []
+    for prefix, group in prefix_groups.items():
+        name = _name_from_prefix(prefix)
+        cap = InferredCapability(
+            id="",  # assigned by caller
+            name=f"{name} Management",
+            description=f"CRUD operations for {name} ({len(group)} endpoints)",
+            evidence_source="routes",
+        )
+        capabilities.append(cap)
+
+    # If routes exist, infer API consumer actor
+    actors = []
+    if routes:
+        has_auth = any(r.is_authenticated for r in routes)
+        actors.append(InferredActor(
+            id="ACT-1",
+            name="API Consumer",
+            actor_type="system" if not has_auth else "human",
+            evidence_source="routes",
+        ))
+
+    return capabilities, actors
+
+
+def _extract_prefix(path: str) -> str:
+    """Extract first meaningful path segment: /users/{id} → users."""
+    parts = [p for p in path.strip("/").split("/") if p and not p.startswith("{")]
+    return parts[0] if parts else "root"
+
+
+def _name_from_prefix(prefix: str) -> str:
+    """Convert URL prefix to capability name."""
+    # Singularize simple cases
+    name = prefix.replace("-", " ").replace("_", " ").title()
+    if name.endswith("s") and len(name) > 3:
+        name = name[:-1]
+    return name
+
+
+def _infer_from_domain_modules(
+    modules: list[ModuleRecord], existing: list[InferredCapability]
+) -> list[InferredCapability]:
+    """Infer capabilities from domain-named modules not yet covered by routes."""
+    existing_names = {c.name.lower() for c in existing}
+    capabilities = []
+
+    # Look for modules with domain-rich classes/functions (not utils, not tests)
+    for mod in modules:
+        name = mod.path.stem
+        if name.startswith("test_") or name in ("__init__", "conftest", "setup"):
+            continue
+        if name in ("utils", "helpers", "common", "base", "constants", "types", "config"):
+            continue
+
+        # Module with multiple public functions/classes = potential capability
+        public_funcs = [f for f in mod.functions if not f.name.startswith("_")]
+        if len(public_funcs) >= 3 or len(mod.classes) >= 2:
+            cap_name = name.replace("_", " ").title()
+            if cap_name.lower() not in existing_names:
+                capabilities.append(InferredCapability(
+                    id="",
+                    name=cap_name,
+                    description=f"Domain logic in {mod.path}",
+                    evidence_source="domain_module",
+                ))
+                existing_names.add(cap_name.lower())
+
+    return capabilities
+
+
+def _infer_from_cli(modules: list[ModuleRecord]) -> list[InferredCapability]:
+    """Infer capabilities from CLI command modules."""
+    capabilities = []
+    for mod in modules:
+        # Check for click/typer/argparse patterns
+        has_cli = any(
+            "click" in imp or "typer" in imp or "argparse" in imp
+            for imp in mod.imports
+        )
+        if has_cli and mod.path.stem not in ("__init__",):
+            capabilities.append(InferredCapability(
+                id="",
+                name=f"CLI {mod.path.stem.replace('_', ' ').title()}",
+                description=f"CLI commands in {mod.path}",
+                evidence_source="cli_pattern",
+            ))
+    return capabilities
+
+
+def _infer_default_actors(inventory: Inventory) -> list[InferredActor]:
+    """Infer actors when no routes provide hints."""
+    actors = []
+    # Check for CLI entry points
+    has_cli = any(
+        any("click" in imp or "typer" in imp or "argparse" in imp for imp in m.imports)
+        for m in inventory.modules
+    )
+    if has_cli:
+        actors.append(InferredActor(
+            id="ACT-1", name="CLI User", actor_type="human", evidence_source="cli_pattern"
+        ))
+
+    # Check for scheduled/timer patterns
+    has_scheduler = any(
+        any("schedule" in imp or "celery" in imp or "cron" in imp for imp in m.imports)
+        for m in inventory.modules
+    )
+    if has_scheduler:
+        actors.append(InferredActor(
+            id=f"ACT-{len(actors) + 1}", name="Scheduler", actor_type="timer",
+            evidence_source="scheduler_pattern",
+        ))
+
+    if not actors:
+        actors.append(InferredActor(
+            id="ACT-1", name="User", actor_type="human", evidence_source="default"
+        ))
+
+    return actors
+
+
+def _infer_behaviors(
+    inventory: Inventory,
+    capabilities: list[InferredCapability],
+    actors: list[InferredActor],
+) -> list[InferredBehavior]:
+    """Infer behaviors from route handlers and function call chains."""
+    behaviors = []
+    beh_counter = 0
+
+    # One behavior per route
+    for route in inventory.routes:
+        beh_counter += 1
+        actor_id = actors[0].id if actors else ""
+        # Find matching capability
+        prefix = _extract_prefix(route.path)
+        cap_id = ""
+        for cap in capabilities:
+            if prefix.lower() in cap.name.lower():
+                cap_id = cap.id
+                break
+
+        behaviors.append(InferredBehavior(
+            id=f"BEH-{beh_counter}",
+            name=f"{route.method} {route.path}",
+            actor_id=actor_id,
+            capability_id=cap_id,
+            steps=[route.function_name],
+        ))
+
+    return behaviors
+
+
+def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapability]) -> bool:
+    """Check if a module has a clear affiliation to any capability."""
+    name = mod.path.stem
+    # Utility/infra modules are fine without capability
+    if name in ("__init__", "utils", "helpers", "common", "base", "constants", "types", "config", "conftest"):
+        return True
+    if name.startswith("test_"):
+        return True
+    # Has capability mentioning it
+    for cap in capabilities:
+        if name.lower() in cap.name.lower() or name.lower() in cap.description.lower():
+            return True
+    return False
