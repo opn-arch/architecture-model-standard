@@ -1,7 +1,8 @@
-"""Pipeline coordinator with DAG resolution."""
+"""Pipeline coordinator with DAG resolution and recursive decomposition."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from architecture_model.pipeline.protocol import PipelineContext, Stage, StageResult
@@ -79,9 +80,7 @@ class PipelineCoordinator:
 
     def run_all(self, ctx: PipelineContext) -> dict[str, StageResult]:
         """Run all stages in dep order. Detects circular deps."""
-        # Collect all stages
         all_names: set[str] = set(self._stages.keys())
-        # Check for cycles by collecting deps for all
         visiting: set[str] = set()
         visited: set[str] = set()
         for name in all_names:
@@ -112,8 +111,48 @@ class PipelineCoordinator:
         visited.add(name)
 
     def run_recursive(
-        self, ctx: PipelineContext, *, max_depth: int = 5, leaf_threshold: int = 5
+        self, ctx: PipelineContext, *, max_depth: int = 3, leaf_threshold: int = 5
     ) -> dict[str, Any]:
-        """Run all, then recurse into large components."""
+        """Run all stages, write artifacts, then recurse into large components.
+
+        For each component with more files than leaf_threshold, creates a
+        sub-context scoped to that component's files and re-runs the pipeline.
+        Artifacts are written at each level.
+        """
+        from .artifacts import write_artifacts
+        from .context_gen import write_context
+
         results = self.run_all(ctx)
-        return {"results": results, "depth": 0}
+
+        # Write artifacts at current level
+        write_artifacts(ctx)
+        write_context(ctx)
+
+        # Recurse into large components
+        subsystems: dict[str, dict[str, Any]] = {}
+        allocate_result = ctx.get("allocate")
+        if allocate_result and max_depth > 0:
+            from .allocate_types import AllocationResult
+            allocation: AllocationResult = allocate_result.output
+
+            for comp in allocation.components:
+                if len(comp.files) > leaf_threshold:
+                    # Create sub-context scoped to component files
+                    sub_dir = ctx.output_dir / "subsystems" / comp.id.lower()
+                    sub_ctx = PipelineContext(
+                        repo_path=ctx.repo_path,
+                        output_dir=sub_dir,
+                        scope=comp.id,
+                    )
+                    # Run recursively at reduced depth
+                    sub_result = self.run_recursive(
+                        sub_ctx, max_depth=max_depth - 1, leaf_threshold=leaf_threshold
+                    )
+                    subsystems[comp.id] = sub_result
+
+        return {
+            "results": results,
+            "depth": max_depth,
+            "subsystems": subsystems,
+            "artifacts_dir": str(ctx.output_dir),
+        }
