@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .allocate_types import AllocationResult, ComponentAllocation
+from .infer import _is_non_source_module
 from .infer_types import InferenceResult, InferredCapability
 from .observe_types import ImportEdge, Inventory, ModuleRecord
 from .protocol import (
@@ -49,11 +50,10 @@ class AllocateStage:
         inventory: Inventory = observe_result.output
         inference: InferenceResult = infer_result.output
 
-        # All source modules (exclude tests, __init__)
+        # All source modules (exclude tests, examples, benchmarks, etc.)
         source_modules = [
             m for m in inventory.modules
-            if not m.path.stem.startswith("test_")
-            and m.path.stem != "conftest"
+            if not _is_non_source_module(m)
         ]
 
         # Step 1: Seed components from capabilities

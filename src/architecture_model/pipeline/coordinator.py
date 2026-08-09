@@ -83,6 +83,16 @@ class PipelineCoordinator:
 
     def run_all(self, ctx: PipelineContext) -> dict[str, StageResult]:
         """Run all stages in dep order. Detects circular deps."""
+        # Inject learning data into context
+        if self._learning and not ctx.prior_corrections:
+            ctx.prior_corrections = self._learning.corrections_as_evidence()
+        if self._learning and not ctx.calibration:
+            # Load calibration for all modules
+            for stage_name in self._stages:
+                cal = self._learning.get_calibration(stage_name)
+                if cal:
+                    ctx.calibration[stage_name] = cal
+
         all_names: set[str] = set(self._stages.keys())
         visiting: set[str] = set()
         visited: set[str] = set()

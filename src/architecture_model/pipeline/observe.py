@@ -45,8 +45,12 @@ class ObserveStage:
 
         # Collect Python files
         if ctx.scope_files:
-            # Scoped mode: only scan the specified files
-            py_files = [f for f in ctx.scope_files if f.suffix == ".py" and f.exists()]
+            # Scoped mode: only scan the specified files (may be relative to repo_path)
+            py_files = []
+            for f in ctx.scope_files:
+                abs_f = f if f.is_absolute() else ctx.repo_path / f
+                if abs_f.suffix == ".py" and abs_f.exists():
+                    py_files.append(abs_f)
         else:
             py_files = list(ctx.repo_path.rglob("*.py"))
             py_files = [f for f in py_files if not _is_excluded(f, ctx.repo_path)]

@@ -167,7 +167,8 @@ def _extract_prefix(path: str) -> str:
 # Directories that contain non-source modules (tests, examples, docs, etc.)
 _NON_SOURCE_DIRS = frozenset({
     "tests", "test", "testing", "examples", "example", "demos", "demo",
-    "docs", "doc", "typing_tests", "benchmarks", "fixtures",
+    "docs", "doc", "typing_tests", "benchmarks", "fixtures", "tools",
+    "_unicode_data", "scripts", "contrib",
 })
 
 
@@ -210,7 +211,7 @@ def _infer_from_domain_modules(
         # Module with multiple public functions/classes = potential capability
         public_funcs = [f for f in mod.functions if not f.name.startswith("_")]
         if len(public_funcs) >= 3 or len(mod.classes) >= 2:
-            cap_name = name.replace("_", " ").title()
+            cap_name = name.lstrip("_").replace("_", " ").title()
             if cap_name.lower() not in existing_names:
                 capabilities.append(InferredCapability(
                     id="",
