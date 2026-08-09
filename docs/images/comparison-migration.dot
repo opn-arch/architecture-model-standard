@@ -1,0 +1,40 @@
+digraph migration {
+    rankdir=LR;
+    ranksep=1.0;
+    nodesep=0.4;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, height=0.4, width=2.5];
+    edge [fontsize=10, fontname="Helvetica", penwidth=1.5];
+    
+    // Source nodes (opencode-arch)
+    node [fillcolor="#FFCDD2"];
+    R1 [label="route_detector.py\n(353 lines)"];
+    R2 [label="constraint_detector.py\n(~150 lines)"];
+    R3 [label="from_artifacts.py\n(~307 lines)"];
+    R4 [label="table_parser.py\n(~100 lines)"];
+    R5 [label="formatter.py budget logic\n(~200 lines)"];
+    
+    // Target nodes (architecture-model-standard)
+    node [fillcolor="#C8E6C9"];
+    T1 [label="extract/route_detector.py"];
+    T2 [label="extract/constraint_detector.py"];
+    T3 [label="extract/from_artifacts.py"];
+    T4 [label="extract/table_parser.py"];
+    T5 [label="core/context.py"];
+    
+    // Delete node
+    node [fillcolor="#E1BEE7"];
+    D1 [label="DELETE: opencode-arch/\nextract/from_code.py\n(replace with import)"];
+    
+    // Edges
+    R1 -> T1 [label="move", color="#4CAF50"];
+    R2 -> T2 [label="move", color="#4CAF50"];
+    R3 -> T3 [label="move", color="#4CAF50"];
+    R4 -> T4 [label="move", color="#4CAF50"];
+    R5 -> T5 [label="move", color="#4CAF50"];
+    
+    // Labels
+    labelloc=t;
+    label="File Migration: opencode-arch -> architecture-model-standard (~1100 lines)";
+    fontsize=14;
+    fontname="Helvetica-Bold";
+}

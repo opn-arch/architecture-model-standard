@@ -126,24 +126,27 @@ def _seed_from_capabilities(
     """Create one component per capability, seed files by name matching.
 
     Each file is assigned to at most one component (first match wins).
+    Uses exact stem match only — no substring/path matching to prevent greedy allocation.
     """
     components = []
     assigned: set[Path] = set()
 
     for i, cap in enumerate(capabilities, 1):
-        # Match modules whose name relates to the capability
+        # Match modules whose stem exactly matches a capability word
         cap_words = set(cap.name.lower().replace(" management", "").replace("cli ", "").split())
+        # Also try underscore-joined variants (e.g. "Shell Completion" → "shell_completion")
+        cap_slug = "_".join(cap.name.lower().replace(" management", "").replace("cli ", "").split())
         matched_files = []
 
         for mod in modules:
             if mod.path in assigned:
                 continue
-            mod_name = mod.path.stem.lower()
-            # Direct name match
-            if any(w in mod_name for w in cap_words if len(w) > 2):
+            mod_stem = mod.path.stem.lower().lstrip("_")  # strip leading _ for _compat, _utils
+            # Exact stem match
+            if mod_stem == cap_slug or mod_stem in cap_words:
                 matched_files.append(mod.path)
-            # Path-based match (e.g., "api/users.py" for "User" capability)
-            elif any(w in str(mod.path).lower() for w in cap_words if len(w) > 2):
+            # Stem starts with cap word (e.g. "termui" matches "termui_impl" → "termui")
+            elif any(mod_stem == w or mod_stem.startswith(w + "_") for w in cap_words if len(w) > 3):
                 matched_files.append(mod.path)
 
         assigned.update(matched_files)
@@ -219,21 +222,24 @@ def _split_oversized(components: list[ComponentAllocation]) -> list[ComponentAll
 
 
 def _merge_undersized(components: list[ComponentAllocation]) -> list[ComponentAllocation]:
-    """Merge components with fewer than MIN_COMPONENT_FILES into nearest neighbor."""
+    """Merge components with no files into nearest neighbor.
+
+    Components with a capability_id are never merged (they're intentional).
+    Only truly empty components (0 files, no capability) get merged.
+    """
     if len(components) <= 1:
         return components
 
-    large = [c for c in components if len(c.files) >= MIN_COMPONENT_FILES]
-    small = [c for c in components if len(c.files) < MIN_COMPONENT_FILES]
+    # Keep all components that have files OR a backing capability
+    keep = [c for c in components if c.files or c.capability_id]
+    empty = [c for c in components if not c.files and not c.capability_id]
 
-    if not large:
-        return components  # All small, nothing to merge into
+    if empty and keep:
+        # Empty components with no capability — just drop them
+        pass
 
-    for s in small:
-        # Merge into the first large component (simplistic — could use affinity)
-        large[0].files.extend(s.files)
-
-    return large
+    # Remove empty components with no capability
+    return [c for c in components if c.files]
 
 
 def _compute_boundary_coherence(

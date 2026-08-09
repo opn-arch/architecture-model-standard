@@ -1,0 +1,50 @@
+digraph extraction_pipeline {
+    rankdir=TB;
+    ranksep=0.3;
+    nodesep=0.25;
+    node [shape=box, style="rounded,filled", fillcolor="#E8F4FD", fontname="Helvetica", fontsize=9, height=0.4];
+    edge [fontsize=8, fontname="Helvetica"];
+    
+    SRC [label="Source Code", shape=folder, fillcolor="#FCE4EC"];
+    S0 [label="Stage 0: Config Discovery"];
+    S1 [label="Stage 1: Manifest Generation"];
+    S2A [label="Stage 2A: Full Extraction (forward)"];
+    S2B [label="Stage 2B: Extract from Code (backward)"];
+    S3 [label="Stage 3: System Detection"];
+    S4 [label="Stage 4: Behavior Creation & Triggers"];
+    S5 [label="Stage 5: Use Case Inference"];
+    S6 [label="Stage 6: Behavior Decomposition"];
+    S7 [label="Stage 7: Capability Inference"];
+    S8 [label="Stage 8: Behavior Flow Analysis"];
+    S9 [label="Stage 9: Enrichment"];
+    S10 [label="Stage 10: Body Hints"];
+    S11 [label="Stage 11: Test Contracts"];
+    S12 [label="Stage 12: Pipeline"];
+    S13 [label="Stage 13: Relationship Tracing"];
+    S14 [label="Stage 14: Deep Decomposition"];
+    S15 [label="Stage 15: Compaction"];
+    OUT [label="Final Output\n.architecture-model.yaml + sub-models", shape=folder, fillcolor="#E8F5E9"];
+    
+    SRC -> S0 [label="files"];
+    S0 -> S1 [label="ProjectConfig"];
+    S1 -> S2A [label="Manifest"];
+    S1 -> S2B [label="Manifest"];
+    S2A -> S3;
+    S3 -> S4;
+    S4 -> S5 [label="triggers"];
+    S5 -> S6;
+    S6 -> S7;
+    S7 -> S8;
+    S8 -> S9;
+    S2B -> S9;
+    S9 -> S10;
+    S9 -> S11;
+    {S10 S11} -> S12;
+    S12 -> S13;
+    S13 -> S14;
+    S14 -> S15;
+    S15 -> OUT;
+    
+    {rank=same; S2A; S2B}
+    {rank=same; S10; S11}
+}

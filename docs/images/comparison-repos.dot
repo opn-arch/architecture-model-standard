@@ -1,0 +1,59 @@
+digraph repo_comparison {
+    rankdir=TB;
+    ranksep=0.5;
+    nodesep=0.35;
+    node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, height=0.45];
+    edge [fontsize=10, fontname="Helvetica"];
+    
+    subgraph cluster_ams {
+        label="architecture-model-standard (library)";
+        labeljust=l; fontsize=14; fontname="Helvetica-Bold";
+        style=filled; fillcolor="#E8F4FD"; color="#90CAF9";
+        
+        TYPES [label="core/types.py\n(16 entity types)", fillcolor="#BBDEFB"];
+        PARSER [label="core/parser.py", fillcolor="#BBDEFB"];
+        VALIDATOR [label="core/validator.py", fillcolor="#BBDEFB"];
+        SLICER [label="core/slicer.py", fillcolor="#BBDEFB"];
+        MANIFEST [label="manifest/generator.py", fillcolor="#BBDEFB"];
+        BODY [label="manifest/body_hints.py", fillcolor="#BBDEFB"];
+        TESTS [label="manifest/test_analyzer.py", fillcolor="#BBDEFB"];
+        CONFIG [label="config/loader.py", fillcolor="#BBDEFB"];
+        ENRICH [label="orchestration/enrich.py", fillcolor="#BBDEFB"];
+        DECOMPOSE [label="orchestration/decompose.py", fillcolor="#BBDEFB"];
+        PIPELINE [label="orchestration/pipeline.py", fillcolor="#BBDEFB"];
+        EXTRACT [label="extract/from_code.py", fillcolor="#FFCDD2"];
+    }
+    
+    subgraph cluster_oa {
+        label="opencode-arch (MCP wrapper)";
+        labeljust=l; fontsize=14; fontname="Helvetica-Bold";
+        style=filled; fillcolor="#FFF3E0"; color="#FFCC80";
+        
+        MCP [label="mcp/tools/ (20 tools)", fillcolor="#FFE0B2"];
+        TELEM [label="telemetry/", fillcolor="#FFE0B2"];
+        LEARN [label="learning/", fillcolor="#FFE0B2"];
+        CLIOA [label="cli/ (bench, regen)", fillcolor="#FFE0B2"];
+        FMT [label="context/formatter.py", fillcolor="#FFCDD2"];
+        EXTRACT2 [label="extract/from_code.py", fillcolor="#FFCDD2"];
+        ROUTE [label="route_detector.py", fillcolor="#FFF9C4"];
+        CONSTR [label="constraint_detector.py", fillcolor="#FFF9C4"];
+        ARTIF [label="from_artifacts.py", fillcolor="#FFF9C4"];
+    }
+    
+    MCP -> MANIFEST [label="calls", style=dashed];
+    MCP -> VALIDATOR [label="calls", style=dashed];
+    MCP -> SLICER [label="calls", style=dashed];
+    MCP -> ENRICH [label="calls", style=dashed];
+    
+    EXTRACT -> EXTRACT2 [label="DUPLICATE", color=red, fontcolor=red, style=bold, dir=both];
+    EXTRACT -> ROUTE [label="imports", color=orange, style=dashed];
+    EXTRACT -> CONSTR [label="imports", color=orange, style=dashed];
+    
+    subgraph cluster_legend {
+        label="Legend"; style=dashed; color=gray; fontsize=11;
+        node [height=0.3, fontsize=10];
+        L1 [label="Correctly placed", fillcolor="#BBDEFB"];
+        L2 [label="Duplicate", fillcolor="#FFCDD2"];
+        L3 [label="Should move to library", fillcolor="#FFF9C4"];
+    }
+}

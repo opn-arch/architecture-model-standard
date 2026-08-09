@@ -1,0 +1,383 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Export
+  system: Export
+  generated_at: '2026-08-06T21:52:00'
+  manifest_path: manifest.json
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-EXPORT
+entities:
+  capabilities:
+  - id: CAP-EXPORT
+    name: Flat-File Export
+    status: ACTIVE
+    description: Export model artifacts as flat files for cross-repo sharing
+    source_block: S7
+    priority: low
+  interfaces:
+  - id: IF-EXPORT
+    name: Export API
+    status: ACTIVE
+    description: build_flat_export(repo_path, prefix?) -> ExportResult
+    type: internal
+    provider: COMP-EXPORT
+  components:
+  - id: COMP-EXPORT
+    name: Export
+    status: ACTIVE
+    description: Flat-file export for cross-repo sharing and reference documentation
+    layer: LAYER-OUTPUT
+    source_block: S7
+    technology: python
+    files:
+    - src/architecture_model/export/flatfiles.py
+    - src/architecture_model/export/reference.py
+    responsibilities:
+    - Export model as flat files with category prefixes
+    - Generate reference documentation
+    kind: library
+    constants:
+    - name: _README
+      value: '# Architecture Model Export — Instructions for AI
+
+
+        ## What This Is
+
+
+        This archive contains architecture documentation for a repository, exported as flat files suitable for upload to Claude
+        Projects, ChatGPT, or similar AI assistants.
+
+
+        ## How to Use This
+
+
+        ### Quick Context Load
+
+
+        Read in this order:
+
+        1. `*--CONTEXT.md` — Project purpose, structure, decisions, current state
+
+        2. `*--model.yaml` — The architecture model (components, relationships, behaviors)
+
+        3. `*--docs.md` — Generated documentation (component specs, ICD, health, etc.)
+
+
+        ### Understanding Components
+
+
+        The model YAML defines components (COMP-1, COMP-2, etc.) with:
+
+        - `name` — human-readable component name
+
+        - `status` — ACTIVE, PLANNED, or DEPRECATED
+
+        - `files` — source files belonging to this component
+
+
+        Relationships show how components interact:
+
+        - `depends_on` — compile/import dependency
+
+        - `realizes` — component implements a capability/behavior
+
+        - `uses` — runtime call dependency
+
+
+        ### Understanding Behavior Flows
+
+
+        If behavior specs are present (`*--behavior-specs.md`):
+
+        - Each behavior spec shows which components participate
+
+        - Mermaid sequence diagrams show the call chain
+
+        - Data flow tables show inputs/outputs per step
+
+        - Error paths show what can throw
+
+
+        ### Sub-Models (Drill Down)
+
+
+        `*--submodels.yaml` contains sub-models separated by `---`:
+
+        - F-block decompositions (F1, F2, etc.)
+
+        - Named sub-systems (core, cli, config, etc.)
+
+
+        `*--behavior-submodels.yaml` contains per-behavior sub-models.
+
+        `*--component-models.yaml` contains per-component sub-models.
+
+
+        ### Manifests (Code Reality)
+
+
+        `*--manifests.md` contains markdown summaries of AST-scanned code facts:
+
+        - Every module, its functions, imports
+
+        - Use these to ground discussions in actual code structure
+
+
+        ### File Separator Convention
+
+
+        Within concatenated files, individual source files are delimited by:
+
+        ```
+
+        <!-- FILE: original/path/here -->
+
+        ```
+
+        and separated by `---` horizontal rules.
+
+
+        ## Schema Reference
+
+
+        See `SCHEMA.md` for the full entity type and relationship type reference.
+
+
+        ## Token Budget Tips
+
+
+        See `API.md` for token-saving strategies, tool signatures, and budget guidelines.
+
+        '
+    - name: _SCHEMA
+      value: "# Architecture Model Schema Reference (v1.3)\n\n## Entity Types\n\n### Component\n| Field | Type | Required\
+        \ | Description |\n|-------|------|----------|-------------|\n| id | str | yes | Unique ID (e.g., COMP-1) |\n| name\
+        \ | str | yes | Human-readable name |\n| status | enum | yes | ACTIVE, PLANNED, DEPRECATED |\n| description | str\
+        \ | no | What this component does |\n| tags | list[str] | no | Classification tags |\n| source_file | str | no | Primary\
+        \ source file |\n| confidence | float | no | 0.0-1.0, extraction certainty |\n| files | list[str] | no | Source files\
+        \ in this component |\n\n### Behavior\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n\
+        | id | str | yes | Unique ID (e.g., BEH-42) |\n| name | str | yes | Function/flow name |\n| status | enum | yes |\
+        \ ACTIVE, PLANNED, DEPRECATED |\n| trigger | str | no | What initiates this (e.g., \"POST /users\") |\n| actor | str\
+        \ | no | Who/what triggers it |\n| steps | list[str] | no | Ordered function calls in the flow |\n| preconditions\
+        \ | list[str] | no | Required state before execution |\n| postconditions | list[str] | no | State after successful\
+        \ execution |\n| frequency | str | no | How often triggered |\n| priority | enum | no | HIGH, MEDIUM, LOW |\n| pattern\
+        \ | enum | no | SEQUENTIAL, PARALLEL, SAGA, EVENT_DRIVEN |\n| source_file | str | no | File containing the entry point\
+        \ |\n\n### Capability\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| id\
+        \ | str | yes | Unique ID (e.g., CAP-F1) |\n| name | str | yes | What the system can do |\n| status | enum | yes |\
+        \ ACTIVE, PLANNED, DEPRECATED |\n\n### Interface\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n\
+        | id | str | yes | Unique ID (e.g., IF-1) |\n| name | str | yes | Interface name |\n| status | enum | yes | ACTIVE,\
+        \ PLANNED, DEPRECATED |\n| provider | str | no | Component ID that exposes this |\n| consumer | str | no | Component\
+        \ ID that consumes this |\n| protocol | str | no | HTTP, gRPC, internal, etc. |\n\n### Layer\n| Field | Type | Required\
+        \ | Description |\n|-------|------|----------|-------------|\n| id | str | yes | Unique ID (e.g., L-1) |\n| name |\
+        \ str | yes | Layer name |\n| status | enum | yes | ACTIVE, PLANNED, DEPRECATED |\n| order | int | no | Stack position\
+        \ (0 = bottom) |\n\n### Constraint\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n\
+        | id | str | yes | Unique ID (e.g., CON-1) |\n| name | str | yes | Rule name |\n| status | enum | yes | ACTIVE, PLANNED,\
+        \ DEPRECATED |\n| rule | str | no | The constraint rule |\n| rationale | str | no | Why this constraint exists |\n\
+        \n### Actor\n| Field | Type | Required | Description |\n|-------|------|----------|-------------|\n| id | str | yes\
+        \ | Unique ID (e.g., ACT-1) |\n| name | str | yes | Actor name |\n| status | enum | yes | ACTIVE, PLANNED, DEPRECATED\
+        \ |\n| type | str | no | human, system, external |\n\n## Relationship Types\n\n| Type | Meaning | Example |\n|------|---------|---------|\n\
+        | depends_on | Compile/import dependency | COMP-1 depends_on COMP-2 |\n| realizes | Implements a capability/behavior\
+        \ | COMP-1 realizes CAP-F1 |\n| uses | Runtime call dependency | COMP-1 uses COMP-3 |\n| contains | Parent-child containment\
+        \ | L-1 contains COMP-1 |\n| triggers | Initiates a behavior | ACT-1 triggers BEH-1 |\n| implements | Implements an\
+        \ interface | COMP-1 implements IF-1 |\n| exposes | Provides an interface | COMP-1 exposes IF-2 |\n| constrains |\
+        \ Applies a constraint | CON-1 constrains COMP-1 |\n\n## Validation Scoring (0-100)\n\n| Check | Weight | What it\
+        \ validates |\n|-------|--------|-------------------|\n| ID uniqueness | Critical | No duplicate entity IDs |\n| Referential\
+        \ integrity | Critical | All relationship endpoints exist |\n| Orphan detection | Warning | Entities with no relationships\
+        \ |\n| Meta completeness | Info | project name, schema_version present |\n| Capability realization | Warning | Every\
+        \ capability realized by >=1 component |\n\n**Score 100** = no critical/warning issues. **Score 80+** = acceptable.\n\
+        \n## Model File Structure\n\n```yaml\nmeta:\n  project: my-project\n  schema_version: '1.3'\nentities:\n  components:\
+        \ [...]\n  capabilities: [...]\n  behaviors: [...]\n  interfaces: [...]\n  layers: [...]\n  constraints: [...]\n \
+        \ actors: [...]\nrelationships:\n  - from: COMP-1\n    to: CAP-F1\n    type: realizes\n```\n"
+    - name: _API
+      value: "# MCP Tool API Reference\n\n## Tool Pipeline (typical extraction flow)\n\n```\n1. architect_scan     -> understand\
+        \ repo structure\n2. architect_group    -> get suggested component boundaries\n3. architect_slice    -> get compressed\
+        \ context for reasoning\n4. [agent produces YAML model]\n5. architect_validate -> check model quality (target: 80+)\n\
+        6. architect_extract  -> store model + auto-generate everything\n7. architect_check    -> verify representativeness\
+        \ vs code reality\n8. architect_export   -> export flat files for mobile AI use\n```\n\n## Tool Signatures & Returns\n\
+        \n### architect_scan(repo_path) -> dict\nAST-based reality manifest. Returns modules, functions, imports, metrics,\
+        \ suggested_components.\n\n### architect_slice(repo_path, focus=\"all\", budget=4000, detail=\"standard\") -> str\n\
+        Core token-arbitrage function. Compresses repo into dense context within budget.\n\n### architect_validate(model_yaml)\
+        \ -> dict\nReturns: score (0-100), issues, entity_count, relationship_count, is_valid.\n\n### architect_extract(repo_path,\
+        \ model_yaml, context_tokens=0) -> dict\nStores model + auto-runs: docs, decompose, behaviors, flow classification,\
+        \ noise reduction.\n\n### architect_group(repo_path, target_groups=0) -> dict\nReturns suggested component groupings\
+        \ from code structure.\n\n### architect_check(repo_path, model_yaml) -> dict\nReturns: file_coverage, relationship_accuracy,\
+        \ boundary_coherence, overall (all 0-100%).\n\n### architect_export(repo_path, output_format=\"zip\", output_path=\"\
+        \") -> dict\nExports flat files for mobile AI use. Returns: output_path, files, file_count, total_size.\n\n### architect_docs(repo_path,\
+        \ formats=\"all\") -> dict\nGenerates docs: component_spec, icd, dependency_matrix, health, drift, behaviors, index.\n\
+        \n### architect_decompose(repo_path) -> dict\nDecomposes model into F-block sub-models.\n\n## Token Arbitrage — How\
+        \ to Save Tokens\n\n### The Core Insight\n\nThe architecture model compresses a full repository (~500 files, ~50K\
+        \ lines) into:\n- **Model YAML**: ~200-400 lines covering ALL components and relationships\n- **Slice output**: ~430\
+        \ tokens of dense context (configurable via budget)\n- **Per-behavior sub-model**: ~20-50 lines for a specific flow\n\
+        \n### Token-Saving Strategies\n\n#### 1. Hierarchical Drill-Down (cheapest)\n```\nStart: model.yaml (~400 tokens)\n\
+        \  -> Identify relevant component\n  -> Load component sub-model (~50 tokens)\n  -> Load component manifest (~200\
+        \ tokens)\n  -> Only THEN read actual source files\n```\n**Cost: ~650 tokens instead of ~50,000 for reading all files**\n\
+        \n#### 2. Behavior-Scoped Context\n```\n1. Check behavior index for the relevant flow\n2. Load that behavior's sub-model\
+        \ (components involved)\n3. Load scoped manifest (only touched files)\n4. Read only those 3-5 files\n```\n**Cost:\
+        \ ~300 tokens + 5 file reads instead of blind exploration**\n\n#### 3. Slice with Focus\n```\narchitect_slice(repo,\
+        \ focus=\"COMP-3\", budget=2000)  # One component\narchitect_slice(repo, focus=\"F2\", budget=1000)       # One F-block\n\
+        architect_slice(repo, focus=\"icd\", budget=500)       # Just interfaces\n```\n\n#### 4. Manifest as Oracle\nManifest\
+        \ JSON has EVERY function signature, import, and call edge:\n```\nLoad manifests/COMP-X.json -> find function -> read\
+        \ .calls field\n-> Know dependencies without reading source\n```\n\n### Anti-Patterns (Token Waste)\n\n| Wasteful\
+        \ | Better |\n|----------|--------|\n| Read all source files | Read model.yaml |\n| Grep for function usages | Check\
+        \ manifest .calls field |\n| Read 20 files for a flow | Load behavior spec |\n| Generate manifest every time | Use\
+        \ cached manifests/*.json |\n| Load full model for one component | Use slice with focus |\n\n### Budget Guidelines\n\
+        \n| Task | Recommended Budget |\n|------|-------------------|\n| Quick overview | 500 tokens |\n| Feature planning\
+        \ | 2000 tokens |\n| Full extraction | 4000 tokens |\n| Single component | 1000 tokens |\n"
+    signatures:
+    - name: derive_prefix
+      params:
+      - 'repo_name: str'
+      returns: str
+      body_hint: 'aliases = {''architecture-model-standard'': ''model-std'', ''opencode-arch'': ''opencode'', ''logs_db'':
+        ''logs-db''}; return aliases.get(repo_name, repo_name.lower().replace(''_'', ''-''))'
+    - name: build_flat_export
+      params:
+      - 'repo_path: Path'
+      - 'prefix: str | None'
+      - 'include_manifests: bool'
+      - 'include_module_specs: bool'
+      returns: ExportResult
+      body_hint: 'repo_path = Path(repo_path); repo_name = repo_path.name; if prefix is None: ...; files: dict[str, str] =
+        {}; from architecture_model.export.reference import generate_...; files[''README.md''] = generate_readme(); files[''SCHEMA.md'']
+        = generate_schema_reference(); files[''API.md''] = generate_api_reference(); ctx = repo_path / ''CONTEXT.md''; if
+        ctx.exists(): ...; model_file = repo_path / ''.architecture-model.yaml''; if model_file.exists(): ...; content = concat_submodels(repo_path);
+        if content: ...; content = concat_behavior_submodels(repo_path); if content: ...; content = concat_component_models(repo_path);
+        if content: ...; content = concat_behavior_specs(repo_path); if content: ...; content = concat_docs(repo_path); if
+        content: ...; if include_manifests: ...; if include_module_specs: ...; content = concat_diagrams(repo_path); if content:
+        ...; content = concat_skills(repo_path); if content: ...; stats = _gather_stats(repo_path, files, prefix); files[''CUSTOM-INSTRUCTIONS.md'']
+        = generate_custom_instructions(repo_name, stats); total = sum((len(v.encode()) for v in files.values())); return ExportResult(files=files,
+        repo_name=repo_name, prefix=prefix, total_size_bytes=total)'
+    - name: concat_submodels
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: "models_dir = repo_path / '.architecture-models'; if not models_dir.exists():\n    return None; paths = [];\
+        \ for d in sorted(models_dir.iterdir()):\n    if d.is_dir() and d.name not in ('behaviors', 'images', 'functions'):\n\
+        \        model = d / '.architecture-model.yaml'\n        if not model.exists():\n            model = d / 'model.yaml'\n\
+        \        if model.exists():\n            paths.append(model); return _concat_yaml_files(paths) if paths else None"
+    - name: concat_behavior_submodels
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: "beh_dir = repo_path / '.architecture-models' / 'behaviors'; if not beh_dir.exists():\n    return None; paths\
+        \ = sorted(beh_dir.glob('*/model.yaml')); return _concat_yaml_files(paths) if paths else None"
+    - name: concat_component_models
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: "models_dir = repo_path / '.architecture-models'; if not models_dir.exists():\n    return None; paths = sorted(models_dir.glob('COMP-*/model.yaml'));\
+        \ return _concat_yaml_files(paths) if paths else None"
+    - name: concat_behavior_specs
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: "beh_doc_dir = repo_path / 'docs' / 'architecture' / 'behaviors'; if not beh_doc_dir.exists():\n    return\
+        \ None; paths = sorted(beh_doc_dir.glob('*.md')); return _concat_md_files(paths) if paths else None"
+    - name: concat_docs
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: "doc_dir = repo_path / 'docs' / 'architecture'; if not doc_dir.exists():\n    return None; paths = sorted(doc_dir.glob('*.md'));\
+        \ return _concat_md_files(paths) if paths else None"
+    - name: concat_module_specs
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: 'models_dir = repo_path / ''.architecture-models''; if not models_dir.exists(): ...; paths = sorted(models_dir.glob(''COMP-*/modules/*.yaml''));
+        if not paths: ...; parts = []; for p in paths: ...; return ''\n\n---\n\n''.join(parts)'
+    - name: concat_diagrams
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: 'models_dir = repo_path / ''.architecture-models''; if not models_dir.exists(): ...; paths = sorted(models_dir.glob(''**/*.mmd''));
+        if not paths: ...; parts = []; for p in paths: ...; return ''\n\n---\n\n''.join(parts)'
+    - name: concat_skills
+      params:
+      - 'repo_path: Path'
+      returns: str | None
+      body_hint: 'skills_dir = repo_path / ''skills''; if not skills_dir.exists(): ...; paths = sorted(skills_dir.glob(''**/*.md''));
+        if not paths: ...; parts = []; for p in paths: ...; return ''\n\n---\n\n''.join(parts)'
+    - name: manifests_to_markdown
+      params:
+      - 'manifest_dir: Path'
+      returns: str | None
+      body_hint: "if not manifest_dir.exists():\n    return None; parts = []; for jp in sorted(manifest_dir.glob('*.json')):\n\
+        \    try:\n        data = json.loads(jp.read_text())\n        block_id = jp.stem\n        modules = data.get('modules',\
+        \ [])\n        files_list = data.get('files', [])\n        if isinstance(modules, list) and modules and isinstance(modules[0],\
+        \ dict):\n            parts.append(f'## {block_id} ({len(modules)} modules)\\n')\n            for mod in modules[:50]:\n\
+        \                if not isinstance(mod, dict):\n                    continue\n                funcs = mod.get('functions',\
+        \ [])\n                if not isinstance(funcs, list):\n                    funcs = []\n                func_names\
+        \ = [f.get('name', '?') for f in funcs if isinstance(f, dict)]\n                imports = mod.get('imports', [])\n\
+        \                if not isinstance(imports, list):\n                    imports = []\n                parts.append(f\"\
+        ### {mod.get('file', '?')} ({len(funcs)} functions)\")\n                if func_names:\n                    parts.append(f\"\
+        Functions: {', '.join(func_names[:15])}\")\n                internal = [i for i in imports if isinstance(i, str) and\
+        \ (not i.startswith(('__', 'os', 'sys', 'json', 're', 'typing', 'pathlib', 'datetime', 'logging', 'collections', 'functools',\
+        \ 'dataclasses', 'abc', 'enum', 'io', 'time', 'copy', 'math', 'hashlib', 'base64', 'urllib', 'http', 'socket', 'threading',\
+        \ 'subprocess', 'shutil', 'tempfile', 'textwrap', 'difflib', 'html', 'pydantic', 'fastapi', 'sqlalchemy', 'starlette')))]\n\
+        \                if internal:\n                    parts.append(f\"Internal imports: {', '.join(internal[:10])}\"\
+        )\n                parts.append('')\n        elif isinstance(files_list, list) and files_list:\n            parts.append(f'##\
+        \ {block_id} ({len(files_list)} files)\\n')\n            for f in files_list[:30]:\n                if isinstance(f,\
+        \ str):\n                    parts.append(f'- {f}')\n                elif isinstance(f, dict):\n                 \
+        \   parts.append(f\"- {f.get('file', f.get('path', '?'))}\")\n            parts.append('')\n        else:\n      \
+        \      parts.append(f'## {block_id}\\n')\n            parts.append('')\n    except Exception:\n        continue; return\
+        \ '\\n'.join(parts) if parts else None"
+    - name: generate_readme
+      returns: str
+      body_hint: return _README
+    - name: generate_schema_reference
+      returns: str
+      body_hint: return _SCHEMA
+    - name: generate_api_reference
+      returns: str
+      body_hint: return _API
+    - name: generate_custom_instructions
+      params:
+      - 'repo_name: str'
+      - 'stats: dict'
+      returns: str
+      body_hint: 'components = stats.get(''components'', ''?''); behaviors = stats.get(''behaviors'', ''?''); relationships
+        = stats.get(''relationships'', ''?''); file_count = stats.get(''file_count'', ''?''); return f"""# Custom Instructions
+        for Claude\n\nPaste the following into your Claude Project''s "Set custom instructions" field:\n\n---\n\nYou have
+        access to architecture model artifacts for the **{repo_name}** repository. These artifacts compress the full codebase
+        into structured models that let you reason about system architecture without reading source code.\n\n## Repository
+        stats\n\n- Components: {components}\n- Behaviors: {behaviors}\n- Relationships: {relationships}\n- Export files: {file_count}\n\n##
+        How to navigate the artifacts\n\n1. **Start with CONTEXT.md** — gives purpose, structure, decisions, current state\n2.
+        **Read the model YAML** — components, relationships, and behaviors\n3. **Use behavior specs** — for cross-component
+        flow understanding (if present)\n4. **Reference manifests** — for ground-truth function signatures and call edges\n5.
+        **Check SCHEMA.md** — for valid entity types and relationship types\n6. **Check API.md** — for tool capabilities and
+        token-saving patterns\n\n## File naming convention\n\nFiles are named `{{prefix}}--{{category}}.{{ext}}` where prefix
+        identifies the repository.\n\n## Key concepts\n\n- **Token arbitrage**: Compress full repo into ~430 tokens of model
+        context\n- **Behavior flows**: Cross-component call chains traced from AST data\n- **Sub-models**: Scoped architecture
+        models for one component or behavior\n- **Manifests**: AST-scanned code facts (functions, imports, calls)\n\n## When
+        asked about architecture or planning\n\n- Reference the model YAML for component boundaries\n- Reference behavior
+        specs for understanding cross-cutting flows\n- Use manifests to ground claims in actual code structure\n- Use SCHEMA.md
+        to validate any model changes proposed\n- Use API.md token-saving strategies when suggesting efficient approaches\n\n##
+        When asked about next steps\n\nReference the "In Progress" section of the CONTEXT.md for current work and approved
+        plans.\n"""'
+    test_contracts:
+    - test_file: test_export.py
+      test_method: test_known_aliases
+      assertion: derive_prefix('architecture-model-standard') == 'model-std'
+      contract_type: value_equality
+    - test_file: test_export.py
+      test_method: test_unknown_repo
+      assertion: derive_prefix('my-cool-project') == 'my-cool-project'
+      contract_type: value_equality
+    - test_file: test_export.py
+      test_method: test_minimal_repo
+      assertion: result isinstance ExportResult
+      contract_type: type_check
+    - test_file: test_export.py
+      test_method: test_prefix_auto_derived
+      assertion: result.prefix == derive_prefix(tmp_path.name)
+      contract_type: value_equality
+relationships:
+- type: realizes
+  from: COMP-EXPORT
+  to: CAP-EXPORT
+- type: exposes
+  from: COMP-EXPORT
+  to: IF-EXPORT
+- type: depends-on
+  from: COMP-EXPORT
+  to: COMP-CORE

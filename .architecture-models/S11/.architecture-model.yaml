@@ -1,0 +1,119 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Persistence
+  system: Persistence
+  generated_at: '2026-08-06T21:52:00'
+  manifest_path: manifest.json
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-PERSISTENCE
+entities:
+  capabilities:
+  - id: CAP-PERSIST
+    name: Project Persistence
+    status: ACTIVE
+    description: Save/load project snapshots (model + manifest + telemetry) to .architecture/ directory
+    source_block: S11
+    priority: low
+  interfaces:
+  - id: IF-PERSIST
+    name: Persistence API
+    status: ACTIVE
+    description: save_project(root, model, manifest) -> Path
+    type: internal
+    provider: COMP-PERSISTENCE
+  components:
+  - id: COMP-PERSISTENCE
+    name: Persistence
+    status: ACTIVE
+    description: Project snapshot storage (.architecture/ directory)
+    layer: LAYER-INFRA
+    source_block: S11
+    technology: python json yaml
+    files:
+    - src/architecture_model/persistence/store.py
+    responsibilities:
+    - Save project snapshots (model + manifest + telemetry)
+    - Load previous snapshots for comparison
+    kind: library
+    signatures:
+    - name: save_project
+      params:
+      - 'root: Path'
+      - 'model: Any'
+      - 'manifest: Any'
+      - 'representativeness: Any | None'
+      - 'telemetry: dict | None'
+      returns: Path
+      body_hint: 'arch_dir = root / ''.architecture''; arch_dir.mkdir(parents=True, exist_ok=True); from architecture_model.core.parser
+        import save_model; model_path = root / ''.architecture-model.yaml''; save_model(model, model_path); logger.info(''Saved
+        model to %s'', model_path); manifest_path = arch_dir / ''manifest.json''; manifest_dict = manifest.to_dict() if hasattr(manifest,
+        ''to_dict'') else m...; manifest_path.write_text(json.dumps(manifest_dict, indent=2, default=str)); logger.info(''Saved
+        manifest to %s'', manifest_path); metrics: dict[str, Any] = {''generated_at'': datetime.now(t...; if representativeness
+        is not None: ...; if hasattr(manifest, ''metrics'') and manifest.metrics is not None: ...; if telemetry: ...; metrics_path
+        = arch_dir / ''metrics.json''; metrics_path.write_text(json.dumps(metrics, indent=2, default=str)); logger.info(''Saved
+        metrics to %s'', metrics_path); return arch_dir'
+    - name: save_block
+      params:
+      - 'root: Path'
+      - 'block_id: str'
+      - 'model: Any'
+      - 'manifest: Any'
+      - 'representativeness: Any | None'
+      returns: Path
+      body_hint: 'block_dir = root / ''.architecture'' / block_id; block_dir.mkdir(parents=True, exist_ok=True); from architecture_model.core.parser
+        import save_model; save_model(model, block_dir / ''.architecture-model.yaml''); manifest_dict = manifest.to_dict()
+        if hasattr(manifest, ''to_dict'') else m...; (block_dir / ''manifest.json'').write_text(json.dumps(manifest_dict,
+        indent=2, default=str)); if representativeness is not None: ...; return block_dir'
+    - name: load_project
+      params:
+      - 'root: Path'
+      returns: ProjectSnapshot
+      body_hint: 'snapshot = ProjectSnapshot(root=root); model_path = root / ''.architecture-model.yaml''; if model_path.exists():
+        ...; arch_dir = root / ''.architecture''; manifest_path = arch_dir / ''manifest.json''; if manifest_path.exists():
+        ...; metrics_path = arch_dir / ''metrics.json''; if metrics_path.exists(): ...; return snapshot'
+    test_contracts:
+    - test_file: test_persistence.py
+      test_method: test_creates_architecture_dir
+      assertion: result == tmp_path / '.architecture'
+      contract_type: value_equality
+    - test_file: test_persistence.py
+      test_method: test_saves_metrics_json
+      assertion: data['representativeness']['file_coverage'] == 1.0
+      contract_type: value_equality
+    - test_file: test_persistence.py
+      test_method: test_saves_telemetry
+      assertion: data['telemetry']['token_budget'] == 4000
+      contract_type: value_equality
+    - test_file: test_persistence.py
+      test_method: test_saves_manifest_metrics
+      assertion: data['manifest_metrics']['total_modules'] == 5
+      contract_type: value_equality
+    - test_file: test_persistence.py
+      test_method: test_creates_block_dir
+      assertion: result == tmp_path / '.architecture' / 'S1'
+      contract_type: value_equality
+    - test_file: test_persistence.py
+      test_method: test_saves_block_metrics
+      assertion: data['representativeness']['boundary_coherence'] == 0.95
+      contract_type: value_equality
+    - test_file: test_persistence.py
+      test_method: test_load_roundtrip
+      assertion: snapshot.metrics['representativeness']['overall'] == 0.98
+      contract_type: value_equality
+    - test_file: test_persistence.py
+      test_method: test_load_empty_dir
+      assertion: snapshot.manifest_dict == {}
+      contract_type: value_equality
+relationships:
+- type: realizes
+  from: COMP-PERSISTENCE
+  to: CAP-PERSIST
+- type: exposes
+  from: COMP-PERSISTENCE
+  to: IF-PERSIST
+- type: depends-on
+  from: COMP-PERSISTENCE
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-PERSISTENCE
+  to: COMP-MANIFEST

@@ -386,3 +386,32 @@ The `learning_curve` table in telemetry tracks improvement over successive repos
 | architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 509 passed |
 | opencode-arch | `../opencode-arch/` | MCP extension (token broker) + CLI + E2E benchmarks | 157 passed |
 | arch-agent | `../arch-agent/` | Training pipeline + surrogate | 574 passed |
+
+<!-- opencode-arch:start -->
+# Architecture (auto-managed by opencode-arch)
+
+**Model:** 9 components | 70 relationships
+**Score:** 69.4% (FC=38% RA=89% BC=50% BV=100%)
+**Codebase:** 88 modules | 208 import edges
+
+## Component Map
+
+## Architecture: 9 components
+- **Core** (COMP-CORE): src/architecture_model/core/coverage.py, src/architecture_model/core/decomposer.py, src/architecture_model/core/differ.py
+- **Manifest** (COMP-MANIFEST): src/architecture_model/manifest/blocks.py, src/architecture_model/manifest/body_hints.py, src/architecture_model/manifest/display.py
+- **Config** (COMP-CONFIG): src/architecture_model/config/loader.py, src/architecture_model/config/schema.py
+- **CLI** (COMP-CLI): src/architecture_model/cli/main.py, src/architecture_model/cli/visualize.py
+- **Orchestration** (COMP-ORCHESTRATION): src/architecture_model/orchestration/decompose.py, src/architecture_model/orchestration/enrich.py
+- **Extract** (COMP-EXTRACT): src/architecture_model/extract/from_code.py
+- **Utils** (COMP-UTILS): src/architecture_model/utils/discovery.py
+- **Profiles** (COMP-PROFILES): src/architecture_model/profiles/schema.py
+- **Spec** (COMP-SPEC): 
+
+## Development Guidelines
+
+- Use `architect_slice` for focused context on specific components
+- Use `architect_check` after significant changes to verify model accuracy
+- Use `architect_require` to capture functional requirements from discussion
+- Use `architect_feedback` to record corrections or rate tool quality
+- Components are auto-grouped by import affinity — respect boundaries
+<!-- opencode-arch:end -->

@@ -1,9 +1,21 @@
 {
-  "generated_at": "2026-08-03T01:26:05.432270+00:00",
-  "manifest_metrics": {
-    "total_python_files": 753
+  "generated_at": "2026-08-06T21:51:38.362100+00:00",
+  "representativeness": {
+    "file_coverage": 100.0,
+    "relationship_accuracy": 100.0,
+    "boundary_coherence": 61.99279711884754,
+    "behavioral_coverage": 100.0,
+    "overall": 90.49819927971188,
+    "uncovered_files": [],
+    "unverified_relationships": [],
+    "low_coherence_components": [
+      "Core",
+      "Manifest",
+      "Docs"
+    ],
+    "uncaptured_behaviors": []
   },
-  "telemetry": {
-    "context_tokens": 500
+  "manifest_metrics": {
+    "total_python_files": 800
   }
 }

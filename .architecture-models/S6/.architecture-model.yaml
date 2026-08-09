@@ -1,0 +1,264 @@
+meta:
+  schema_version: '2.0'
+  project: architecture-model-standard/Docs
+  system: Docs
+  generated_at: '2026-08-06T21:52:00'
+  manifest_path: manifest.json
+  parent_model: ../../.architecture-model.yaml
+  refines_component: COMP-DOCS
+entities:
+  capabilities:
+  - id: CAP-DOCS
+    name: Documentation Generation
+    status: ACTIVE
+    description: Generate architecture documentation site (component specs, ICDs, health reports, drift reports)
+    source_block: S6
+  interfaces:
+  - id: IF-DOCS
+    name: Docs Generator API
+    status: ACTIVE
+    description: generate_docs(model, output_dir, manifest?, previous_model?) -> docs site
+    type: internal
+    provider: COMP-DOCS
+  components:
+  - id: COMP-DOCS
+    name: Docs
+    status: ACTIVE
+    description: Architecture documentation site generator (component specs, ICDs, health reports, drift, dependency matrix)
+    layer: LAYER-OUTPUT
+    source_block: S6
+    technology: markdown mermaid
+    files:
+    - src/architecture_model/docs/generator.py
+    - src/architecture_model/docs/component_spec.py
+    - src/architecture_model/docs/dependency_matrix.py
+    - src/architecture_model/docs/icd.py
+    - src/architecture_model/docs/health.py
+    - src/architecture_model/docs/system_design.py
+    - src/architecture_model/docs/integration_flows.py
+    - src/architecture_model/docs/drift.py
+    - src/architecture_model/docs/index.py
+    - src/architecture_model/docs/behavior_spec.py
+    - src/architecture_model/docs/diagrams.py
+    responsibilities:
+    - Generate per-component specification docs
+    - Generate interface control documents
+    - Generate health and drift reports
+    - Generate dependency matrices
+    - Generate behavior specifications
+    kind: library
+    signatures:
+    - name: generate_docs
+      params:
+      - 'model: ''ArchitectureModel'''
+      - 'output_dir: Path | str'
+      - 'manifest: dict | None'
+      - 'previous_model: ''ArchitectureModel | None'''
+      returns: dict[str, list[Path]]
+      body_hint: 'output_dir = Path(output_dir); result: dict[str, list[Path]] = {}; comp_dir = output_dir / ''components'';
+        comp_dir.mkdir(parents=True, exist_ok=True); comp_paths: list[Path] = []; for comp in model.entities.components: ...;
+        result[''components''] = comp_paths; diagrams_dir = output_dir / ''diagrams''; diagrams_dir.mkdir(parents=True, exist_ok=True);
+        try/except: ...; dep_md = generate_dependency_matrix(model); dep_path = output_dir / ''dependency-matrix.md''; dep_path.write_text(dep_md);
+        result[''dependency_matrix''] = [dep_path]; icd_md = generate_icd(model); icd_path = output_dir / ''icd.md''; icd_path.write_text(icd_md);
+        result[''icd''] = [icd_path]; health_md = generate_health_report(model, manifest); health_path = output_dir / ''health.md'';
+        health_path.write_text(health_md); result[''health''] = [health_path]; sys_md = generate_system_design(model, manifest);
+        sys_path = output_dir / ''system-design.md''; sys_path.write_text(sys_md); result[''system_design''] = [sys_path];
+        flows_md = generate_integration_flows(model); flows_path = output_dir / ''integration-flows.md''; flows_path.write_text(flows_md);
+        result[''integration_flows''] = [flows_path]; if previous_model is not None: ...; index_md = generate_index(model,
+        result); readme_path = output_dir / ''README.md''; readme_path.write_text(index_md); result[''index''] = [readme_path];
+        return result'
+    - name: generate_component_spec
+      params:
+      - 'comp: ''Component'''
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines: list[str] = []; lines.append(f''# Component: {comp.name} ({comp.id})''); lines.append(''''); lines.append(f"**Status:**
+        {comp.status or ''—''}"); lines.append(f"**Description:** {comp.description or ''—''}"); lines.append(''''); lines.append(''##
+        Files''); lines.append(''''); if comp.files: ...; lines.append(''''); lines.append(''## Responsibilities''); lines.append('''');
+        if comp.responsibilities: ...; lines.append(''''); outgoing = [r for r in model.relationships if r.from_id == comp.id];
+        incoming = [r for r in model.relationships if r.to_id == comp.id]; lines.append(''## Relationships''); lines.append('''');
+        lines.append(''### Dependencies (outgoing)''); lines.append(''''); if outgoing: ...; lines.append(''''); lines.append(''###
+        Dependents (incoming)''); lines.append(''''); if incoming: ...; lines.append(''''); realized_behavior_ids = {r.to_id
+        for r in model.relationships if r.from_id == com...; behaviors = getattr(model.entities, ''behaviors'', []) or [];
+        realized = [b for b in behaviors if b.id in realized_behavior_ids]; lines.append(''## Behaviors Realized''); lines.append('''');
+        if realized: ...; lines.append(''''); if comp.signatures: ...; if comp.interfaces: ...; lines.append(''## Patterns'');
+        lines.append(''''); if comp.pattern: ...; lines.append(''''); confidence = None; if comp.confidence is not None: ...;
+        lines.append(''## Confidence''); lines.append(''''); if confidence is not None: ...; lines.append(''''); return ''\n''.join(lines)'
+    - name: generate_dependency_matrix
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines = [''# Dependency Matrix'', '''']; components = model.entities.components if hasattr(model.entities,
+        ''com...; if not components: ...; requires_from: dict[str, set[str]] = {}; for comp in components: ...; for rel in
+        model.relationships or []: ...; active_ids = set(); for (k, v) in requires_from.items(): ...; if not active_ids: ...;
+        active_comps = sorted([c for c in components if c.id in active_ids], key...; header = ''| | '' + '' | ''.join((f''**{c.name}**''
+        for c in active_comp...; sep = ''|---|'' + ''|''.join((''---'' for _ in active_comps)) + ''|''; lines.extend([header,
+        sep]); for row in active_comps: ...; lines.extend(['''', ''**Legend:** → = requires from column, ← = provides to column,
+        · = self'', '''']); return ''\n''.join(lines)'
+    - name: generate_icd
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines = [''# Interface Control Document'', '''']; lines.append(f''**Project:** {model.meta.project}'');
+        lines.append(''''); components = model.entities.components if hasattr(model.entities, ''com...; comp_map = {c.id:
+        c for c in components}; interfaces = []; for comp in components: ...; if not interfaces: ...; lines.append(f''**Total
+        Interfaces:** {len(interfaces)}''); lines.append(''''); by_provider: dict[str, list] = {}; for (provider, consumer,
+        syms, sigs) in interfaces: ...; for provider_id in sorted(by_provider.keys()): ...; return ''\n''.join(lines)'
+    - name: generate_health_report
+      params:
+      - 'model: ''ArchitectureModel'''
+      - 'manifest: ''Manifest | None'''
+      - 'root: ''Path | None'''
+      returns: str
+      body_hint: 'lines = [''# Architecture Health Report'', '''']; lines.append(f''**Project:** {model.meta.project}'');
+        lines.append(''''); components = model.entities.components if hasattr(model.entities, ''com...; if not components:
+        ...; if root is not None: ...; return ''\n''.join(lines); avg_conf = sum((c.confidence or 0 for c in components))
+        / len(compon...; lines.append(''## Summary''); lines.append(''''); lines.append(''| Metric | Value |''); lines.append(''|--------|-------|'');
+        lines.append(f''| Components | {len(components)} |''); lines.append(f''| Avg Confidence | {avg_conf:.0%} |''); lines.append(f''|
+        With Signatures | {sum((1 for c in components if c.signatures))}/{len(components)} |''); lines.append(f''| With Symbols
+        | {sum((1 for c in components if c.symbols))}/{len(components)} |''); lines.append(f''| With Test Contracts | {sum((1
+        for c in components if c.test_contracts))}/{len(components)} |''); lines.append(f''| With Pattern | {sum((1 for c
+        in components if c.pattern))}/{len(components)} |''); lines.append(f''| With Interfaces | {sum((1 for c in components
+        if c.interfaces))}/{len(components)} |''); lines.append(''''); buckets = {''≥90%'': 0, ''70-89%'': 0, ''50-69%'':
+        0, ''30-49%'': 0, ''<30%''...; for c in components: ...; lines.append(''## Confidence Distribution''); lines.append('''');
+        lines.append(''| Bucket | Count | Bar |''); lines.append(''|--------|-------|-----|''); for (bucket, count) in buckets.items():
+        ...; lines.append(''''); lines.append(''## Per-Component Metrics''); lines.append(''''); lines.append(''| Component
+        | Confidence | Sigs | Symbols | Tests | Pattern | Files |''); lines.append(''|-----------|-----------|------|---------|-------|---------|-------|'');
+        for c in sorted(components, key=lambda x: -(x.confidence or 0)): ...; lines.append(''''); low_conf = [c for c in components
+        if (c.confidence or 0) < 0.5]; if low_conf: ...; return ''\n''.join(lines)'
+    - name: generate_system_design
+      params:
+      - 'model: ''ArchitectureModel'''
+      - manifest
+      returns: str
+      body_hint: 'lines: list[str] = []; lines.append(f''# System Design: {model.meta.project}''); lines.append(''''); lines.append(''##
+        Architecture Overview''); lines.append(''''); desc = getattr(model.meta, ''description'', None); lines.append(desc
+        if desc else ''—''); lines.append(f''Schema version: {model.meta.schema_version}''); lines.append(''''); components
+        = getattr(model.entities, ''components'', []) or []; lines.append(''## Component Inventory''); lines.append('''');
+        if components: ...; lines.append(''''); layers = getattr(model.entities, ''layers'', []) or []; if layers: ...; behaviors
+        = getattr(model.entities, ''behaviors'', []) or []; if behaviors: ...; lines.append(''## Relationship Summary'');
+        lines.append(''''); if model.relationships: ...; lines.append(''''); deps = [r for r in model.relationships if _rel_type_str(r.type)
+        ...; if deps: ...; return ''\n''.join(lines)'
+    - name: generate_integration_flows
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines: list[str] = []; lines.append(f''# Integration Flows: {model.meta.project}''); lines.append('''');
+        components = getattr(model.entities, ''components'', []) or []; comp_map = {c.id: c for c in components}; comp_ids
+        = set(comp_map.keys()); cross = [r for r in model.relationships if r.from_id in comp_ids ...; if not cross: ...; lines.append(''```mermaid'');
+        lines.append(''flowchart TD''); for r in cross: ...; lines.append(''```''); lines.append(''''); for r in cross: ...;
+        return ''\n''.join(lines)'
+    - name: generate_drift_report
+      params:
+      - 'old_model: ''ArchitectureModel'''
+      - 'new_model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'from architecture_model.core.differ import diff_models; diff = diff_models(old_model, new_model); lines
+        = [''# Architecture Drift Report'', '''']; if not diff.has_changes: ...; lines.append(''## Summary''); lines.append('''');
+        lines.append(''| Change Type | Count |''); lines.append(''|-------------|-------|''); lines.append(f''| Added | {diff.added_count}
+        |''); lines.append(f''| Removed | {diff.removed_count} |''); lines.append(f''| Modified | {diff.modified_count} |'');
+        lines.append(''''); if diff.entity_changes: ...; if diff.relationship_changes: ...; affected = diff.affected_artifacts();
+        if affected: ...; return ''\n''.join(lines)'
+    - name: generate_index
+      params:
+      - 'model: ''ArchitectureModel'''
+      - 'doc_paths: dict[str, list[Path]]'
+      returns: str
+      body_hint: 'lines = [f''# {model.meta.project} — Architecture Documentation'', '''']; components = model.entities.components
+        if hasattr(model.entities, ''com...; lines.append(f''**Schema Version:** {model.meta.schema_version}''); lines.append(f''**Components:**
+        {len(components)}''); avg_conf = sum((c.confidence or 0 for c in components)) / max(len(co...; lines.append(f''**Avg
+        Confidence:** {avg_conf:.0%}''); lines.append(''''); lines.append(''---''); lines.append(''''); if doc_paths.get(''diagrams''):
+        ...; if doc_paths.get(''components''): ...; other = [(''dependency_matrix'', ''Dependency Matrix'', ''dependency-m...;
+        lines.append(''## Reference Documents''); lines.append(''''); for (key, title, filename) in other: ...; lines.append('''');
+        lines.append(''---''); lines.append(''*Generated deterministically from architecture model.*''); lines.append('''');
+        return ''\n''.join(lines)'
+    - name: generate_behavior_spec
+      params:
+      - 'behavior: Behavior'
+      - 'flow_trace: FlowTrace'
+      - 'scoped_manifest: Manifest'
+      - 'file_to_comp: dict[str, str]'
+      returns: str
+      body_hint: 'lines: list[str] = []; lines.append(f''# {behavior.name}''); lines.append(''''); lines.append(f''**Trigger:**
+        {behavior.trigger}''); lines.append(f"**Actor:** {behavior.actor or ''System''}"); lines.append(f"**Components:**
+        {'', ''.join(flow_trace.components_crossed)}"); lines.append(''''); lines.append(''## Sequence Diagram''); lines.append('''');
+        lines.append(''```mermaid''); lines.append(''sequenceDiagram''); seen_comps: list[str] = []; for comp in flow_trace.components_crossed:
+        ...; prev_comp = None; for (module_file, func_name) in flow_trace.steps: ...; lines.append(''```''); lines.append('''');
+        lines.append(''## Preconditions''); if behavior.preconditions: ...; lines.append(''''); lines.append(''## Postconditions'');
+        if behavior.postconditions: ...; lines.append(''''); lines.append(''## Data Flow''); lines.append(''''); lines.append(''|
+        Step | Function | Input | Output |''); lines.append(''|------|----------|-------|--------|''); for (i, (module_file,
+        func_name)) in enumerate(flow_trace.steps, 1): ...; lines.append(''''); lines.append(''## Error Paths''); has_errors
+        = False; for (module_file, func_name) in flow_trace.steps: ...; if not has_errors: ...; lines.append(''''); lines.append(''##
+        Files Touched''); seen_files: set[str] = set(); for (module_file, _) in flow_trace.steps: ...; lines.append('''');
+        return ''\n''.join(lines)'
+    - name: generate_behavior_index
+      params:
+      - 'classification: BehaviorClassification'
+      - 'crud_summaries: dict[str, CrudSummary]'
+      returns: str
+      body_hint: 'lines: list[str] = []; lines.append(''# Behavior Flows''); lines.append(''''); count = len(classification.cross_component);
+        lines.append(f''## Cross-Component Flows ({count})''); lines.append(''''); lines.append(''| Behavior | Trigger | Components
+        | Steps |''); lines.append(''|----------|---------|------------|-------|''); for (beh, trace) in classification.cross_component:
+        ...; lines.append(''''); if classification.crud_groups: ...; return ''\n''.join(lines)'
+    - name: generate_component_diagram
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: "lines = ['# Component Diagram', '', '```mermaid', 'graph TD']; for comp in model.entities.components:\n\
+        \    lines.append(f'    {comp.id}[{comp.name}]'); for rel in model.relationships:\n    rt = _rel_type_str(rel.type)\n\
+        \    if rt in ('depends-on', 'uses'):\n        lines.append(f'    {rel.from_id} -->|{rt}| {rel.to_id}'); lines.append('```');\
+        \ return '\\n'.join(lines) + '\\n'"
+    - name: generate_use_case_diagram
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'use_cases = [b for b in model.entities.behaviors if b.id.startswith(''...; if not use_cases: ...; beh_map:
+        dict[str, str] = {}; for beh in model.entities.behaviors: ...; comp_for_beh: dict[str, str] = {}; comp_name_map: dict[str,
+        str] = {c.id: c.name for c in mo...; for rel in model.relationships: ...; sections: list[str] = [''# Use Case Diagrams''];
+        for uc in use_cases: ...; return ''\n''.join(sections) + ''\n'''
+    - name: generate_system_boundary_diagram
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'comp_name_map = {c.id: c.name for c in model.entities.components}; lines = [''# System Boundary Diagram'',
+        '''', ''```mermaid'', ''graph TD'']; systems = getattr(model.entities, ''systems'', []) or []; assigned: set[str]
+        = set(); for sys in systems: ...; for comp in model.entities.components: ...; for rel in model.relationships: ...;
+        lines.append(''```''); return ''\n''.join(lines) + ''\n'''
+    - name: generate_all_diagrams
+      params:
+      - 'model: ''ArchitectureModel'''
+      - 'output_dir: Path'
+      returns: list[Path]
+      body_hint: 'output_dir = Path(output_dir); output_dir.mkdir(parents=True, exist_ok=True); paths: list[Path] = []; generators
+        = [(''component-diagram.md'', generate_component_diagram), (''...; for (filename, gen_fn) in generators: ...; return
+        paths'
+    test_contracts:
+    - test_file: test_generator_typed.py
+      test_method: test_generate_manifest_returns_manifest
+      assertion: result isinstance Manifest
+      contract_type: type_check
+    - test_file: test_generator_typed.py
+      test_method: test_generate_manifest_to_dict_backward_compat
+      assertion: d['metrics'] isinstance dict
+      contract_type: type_check
+    - test_file: test_generator_typed.py
+      test_method: test_scan_report_tracks_counts
+      assertion: report.files_succeeded == report.files_attempted
+      contract_type: value_equality
+    - test_file: test_generator_typed.py
+      test_method: test_load_or_generate_returns_dict
+      assertion: result isinstance dict
+      contract_type: type_check
+relationships:
+- type: realizes
+  from: COMP-DOCS
+  to: CAP-DOCS
+- type: exposes
+  from: COMP-DOCS
+  to: IF-DOCS
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-DOCS
+- type: depends-on
+  from: COMP-DOCS
+  to: COMP-CORE

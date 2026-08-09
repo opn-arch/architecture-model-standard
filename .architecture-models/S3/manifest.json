@@ -1,0 +1,971 @@
+{
+  "block_id": "S3",
+  "block_name": "Docs",
+  "parent_model": ".architecture-model.yaml",
+  "component_id": "COMP-DOCS",
+  "manifest": {
+    "generated_at": "2026-08-06T21:51:38.152227+00:00",
+    "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+    "metrics": {
+      "py_files": 12,
+      "total_lines": 1052,
+      "functions": 15,
+      "classes": 0,
+      "constants": 0
+    },
+    "functional_blocks": {},
+    "modules": [
+      {
+        "file": "src/architecture_model/docs/__init__.py",
+        "name": "Architecture documentation generator",
+        "docstring": "Architecture documentation generator.",
+        "functions": [],
+        "imports": [
+          "architecture_model.docs.generator"
+        ],
+        "line_count": 5,
+        "status": "dormant",
+        "classes": [],
+        "exports": [
+          "generate_docs"
+        ],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "architecture_model.docs.generator",
+            "symbols": [
+              "generate_docs"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/behavior_spec.py",
+        "name": "Behavior spec document generator \u2014 Mermaid sequence diagrams and index",
+        "docstring": "Behavior spec document generator \u2014 Mermaid sequence diagrams and index.",
+        "functions": [
+          {
+            "name": "generate_behavior_spec",
+            "signature": "generate_behavior_spec(behavior: Behavior, flow_trace: FlowTrace, scoped_manifest: Manifest, file_to_comp: dict[str, str]) -> str",
+            "calls": [
+              "append",
+              "enumerate",
+              "set",
+              "join",
+              "get",
+              "_lookup_function",
+              "add"
+            ],
+            "docstring": "Generate a markdown spec for a single cross-component behavior."
+          },
+          {
+            "name": "generate_behavior_index",
+            "signature": "generate_behavior_index(classification: BehaviorClassification, crud_summaries: dict[str, CrudSummary]) -> str",
+            "calls": [
+              "append",
+              "len",
+              "join",
+              "items",
+              "get"
+            ],
+            "docstring": "Generate a markdown index of all behaviors."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "architecture_model.core.types",
+          "architecture_model.manifest.call_graph",
+          "architecture_model.manifest.types",
+          "architecture_model.orchestration.behavior_flows"
+        ],
+        "line_count": 162,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "Behavior"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.call_graph",
+            "symbols": [
+              "FlowTrace"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.types",
+            "symbols": [
+              "FunctionInfo",
+              "Manifest"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.orchestration.behavior_flows",
+            "symbols": [
+              "BehaviorClassification",
+              "CrudSummary"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/component_spec.py",
+        "name": "Component Spec",
+        "docstring": "Per-component spec sheet generator.",
+        "functions": [
+          {
+            "name": "generate_component_spec",
+            "signature": "generate_component_spec(comp: 'Component', model: 'ArchitectureModel') -> str",
+            "calls": [
+              "append",
+              "join",
+              "getattr",
+              "_resolve_name",
+              "get",
+              "isinstance",
+              "str",
+              "_rel_type_str"
+            ],
+            "docstring": "Generate a rich markdown spec sheet for a single component."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "typing",
+          "architecture_model.core.types"
+        ],
+        "line_count": 160,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel",
+              "Component"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/dependency_matrix.py",
+        "name": "Generate NxN component dependency matrix",
+        "docstring": "Generate NxN component dependency matrix.",
+        "functions": [
+          {
+            "name": "generate_dependency_matrix",
+            "signature": "generate_dependency_matrix(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "set",
+              "items",
+              "sorted",
+              "extend",
+              "join",
+              "hasattr",
+              "append",
+              "add",
+              "update",
+              "str",
+              "get",
+              "lower",
+              "setdefault"
+            ],
+            "docstring": "Generate an NxN dependency matrix as markdown."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "typing",
+          "architecture_model.core.types"
+        ],
+        "line_count": 65,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/diagrams.py",
+        "name": "Mermaid diagram generators for architecture models",
+        "docstring": "Mermaid diagram generators for architecture models.",
+        "functions": [
+          {
+            "name": "generate_component_diagram",
+            "signature": "generate_component_diagram(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "append",
+              "_rel_type_str",
+              "join"
+            ],
+            "docstring": "Generate a Mermaid graph TD showing components and their relationships."
+          },
+          {
+            "name": "generate_use_case_diagram",
+            "signature": "generate_use_case_diagram(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "_rel_type_str",
+              "append",
+              "join",
+              "startswith",
+              "get"
+            ],
+            "docstring": "Generate Mermaid sequence diagrams for use-case behaviors."
+          },
+          {
+            "name": "generate_system_boundary_diagram",
+            "signature": "generate_system_boundary_diagram(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "set",
+              "append",
+              "getattr",
+              "_rel_type_str",
+              "join",
+              "get",
+              "add"
+            ],
+            "docstring": "Generate a Mermaid graph TD with subgraph per system."
+          },
+          {
+            "name": "generate_all_diagrams",
+            "signature": "generate_all_diagrams(model: 'ArchitectureModel', output_dir: Path) -> list[Path]",
+            "calls": [
+              "Path",
+              "mkdir",
+              "gen_fn",
+              "write_text",
+              "append"
+            ],
+            "docstring": "Generate all diagrams, write to output_dir, return list of paths."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "pathlib",
+          "typing",
+          "architecture_model.core.types"
+        ],
+        "line_count": 137,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/drift.py",
+        "name": "Generate drift/change report between model versions",
+        "docstring": "Generate drift/change report between model versions.",
+        "functions": [
+          {
+            "name": "generate_drift_report",
+            "signature": "generate_drift_report(old_model: 'ArchitectureModel', new_model: 'ArchitectureModel') -> str",
+            "calls": [
+              "diff_models",
+              "append",
+              "affected_artifacts",
+              "join",
+              "sorted"
+            ],
+            "docstring": "Generate change report comparing two model versions."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "typing",
+          "architecture_model.core.types",
+          "architecture_model.core.differ"
+        ],
+        "line_count": 55,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.differ",
+            "symbols": [
+              "diff_models"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/generator.py",
+        "name": "Documentation generator orchestrator",
+        "docstring": "Documentation generator orchestrator.",
+        "functions": [
+          {
+            "name": "generate_docs",
+            "signature": "generate_docs(model: 'ArchitectureModel', output_dir: Path | str, manifest: dict | None, previous_model: 'ArchitectureModel | None') -> dict[str, list[Path]]",
+            "calls": [
+              "Path",
+              "mkdir",
+              "generate_dependency_matrix",
+              "write_text",
+              "generate_icd",
+              "generate_health_report",
+              "generate_system_design",
+              "generate_integration_flows",
+              "generate_index",
+              "generate_component_spec",
+              "append",
+              "generate_all_diagrams",
+              "generate_drift_report"
+            ],
+            "docstring": "Generate architecture documentation.\n\nReturns dict of category -> list of generated file paths."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "pathlib",
+          "typing",
+          "architecture_model.docs.component_spec",
+          "architecture_model.docs.dependency_matrix",
+          "architecture_model.docs.icd",
+          "architecture_model.docs.health",
+          "architecture_model.docs.system_design",
+          "architecture_model.docs.integration_flows",
+          "architecture_model.docs.drift",
+          "architecture_model.docs.index",
+          "architecture_model.core.types",
+          "architecture_model.docs.diagrams"
+        ],
+        "line_count": 99,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.component_spec",
+            "symbols": [
+              "generate_component_spec"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.dependency_matrix",
+            "symbols": [
+              "generate_dependency_matrix"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.icd",
+            "symbols": [
+              "generate_icd"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.health",
+            "symbols": [
+              "generate_health_report"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.system_design",
+            "symbols": [
+              "generate_system_design"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.integration_flows",
+            "symbols": [
+              "generate_integration_flows"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.drift",
+            "symbols": [
+              "generate_drift_report"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.index",
+            "symbols": [
+              "generate_index"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.docs.diagrams",
+            "symbols": [
+              "generate_all_diagrams"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/health.py",
+        "name": "Generate health metrics report",
+        "docstring": "Generate health metrics report.",
+        "functions": [
+          {
+            "name": "generate_health_report",
+            "signature": "generate_health_report(model: 'ArchitectureModel', manifest: 'Manifest | None', root: 'Path | None') -> str",
+            "calls": [
+              "append",
+              "join",
+              "items",
+              "sorted",
+              "hasattr",
+              "compute_compression_stats",
+              "sum",
+              "len"
+            ],
+            "docstring": "Generate architecture health metrics."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "pathlib",
+          "typing",
+          "architecture_model.core.types",
+          "architecture_model.manifest.types",
+          "core.compression"
+        ],
+        "line_count": 101,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.types",
+            "symbols": [
+              "Manifest"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "core.compression",
+            "symbols": [
+              "compute_compression_stats"
+            ],
+            "is_relative": true
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/icd.py",
+        "name": "Generate Interface Control Document",
+        "docstring": "Generate Interface Control Document.",
+        "functions": [
+          {
+            "name": "generate_icd",
+            "signature": "generate_icd(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "append",
+              "sorted",
+              "join",
+              "hasattr",
+              "keys",
+              "get",
+              "len",
+              "setdefault",
+              "getattr"
+            ],
+            "docstring": "Generate ICD documenting inter-component interfaces."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "typing",
+          "architecture_model.core.types"
+        ],
+        "line_count": 61,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/index.py",
+        "name": "Generate index/README for documentation",
+        "docstring": "Generate index/README for documentation.",
+        "functions": [
+          {
+            "name": "generate_index",
+            "signature": "generate_index(model: 'ArchitectureModel', doc_paths: dict[str, list[Path]]) -> str",
+            "calls": [
+              "append",
+              "get",
+              "join",
+              "hasattr",
+              "sum",
+              "max",
+              "sorted",
+              "len"
+            ],
+            "docstring": "Generate README.md index linking to all docs."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "pathlib",
+          "typing",
+          "architecture_model.core.types"
+        ],
+        "line_count": 54,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/integration_flows.py",
+        "name": "Integration flow generator",
+        "docstring": "Integration flow generator.",
+        "functions": [
+          {
+            "name": "generate_integration_flows",
+            "signature": "generate_integration_flows(model: 'ArchitectureModel') -> str",
+            "calls": [
+              "append",
+              "set",
+              "join",
+              "getattr",
+              "keys",
+              "_rel_type_str"
+            ],
+            "docstring": "Generate integration flow documentation for cross-component relationships."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "typing",
+          "architecture_model.core.types"
+        ],
+        "line_count": 57,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/docs/system_design.py",
+        "name": "System design document generator",
+        "docstring": "System design document generator.",
+        "functions": [
+          {
+            "name": "generate_system_design",
+            "signature": "generate_system_design(model: 'ArchitectureModel', manifest) -> str",
+            "calls": [
+              "append",
+              "getattr",
+              "join",
+              "Counter",
+              "sorted",
+              "sum",
+              "items",
+              "len",
+              "_rel_type_str"
+            ],
+            "docstring": "Generate a system design document from an architecture model."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "collections",
+          "typing",
+          "architecture_model.core.types"
+        ],
+        "line_count": 96,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "collections",
+            "symbols": [
+              "Counter"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "TYPE_CHECKING"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      }
+    ],
+    "interfaces": [
+      {
+        "source": "src/architecture_model/docs/__init__.py",
+        "target": "src/architecture_model/docs/generator.py",
+        "import_path": "architecture_model.docs.generator"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/component_spec.py",
+        "import_path": "architecture_model.docs.component_spec"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/dependency_matrix.py",
+        "import_path": "architecture_model.docs.dependency_matrix"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/icd.py",
+        "import_path": "architecture_model.docs.icd"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/health.py",
+        "import_path": "architecture_model.docs.health"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/system_design.py",
+        "import_path": "architecture_model.docs.system_design"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/integration_flows.py",
+        "import_path": "architecture_model.docs.integration_flows"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/drift.py",
+        "import_path": "architecture_model.docs.drift"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/index.py",
+        "import_path": "architecture_model.docs.index"
+      },
+      {
+        "source": "src/architecture_model/docs/generator.py",
+        "target": "src/architecture_model/docs/diagrams.py",
+        "import_path": "architecture_model.docs.diagrams"
+      }
+    ]
+  },
+  "children": {},
+  "block_dependencies": [
+    "S10",
+    "S4",
+    "S6",
+    "S9"
+  ],
+  "intra_chains": [
+    {
+      "trigger": "Diagrams.generate_docs",
+      "steps": [
+        "?.Path",
+        "?.comp_dir.mkdir",
+        "Diagrams.generate_component_spec",
+        "?.path.write_text",
+        "?.comp_paths.append",
+        "?.diagrams_dir.mkdir",
+        "Diagrams.generate_all_diagrams",
+        "Diagrams.generate_dependency_matrix",
+        "?.dep_path.write_text",
+        "Diagrams.generate_icd",
+        "?.icd_path.write_text",
+        "Diagrams.generate_health_report",
+        "?.health_path.write_text",
+        "SystemDesign.generate_system_design",
+        "?.sys_path.write_text",
+        "Diagrams.generate_integration_flows",
+        "?.flows_path.write_text",
+        "Diagrams.generate_drift_report",
+        "?.drift_path.write_text",
+        "Diagrams.generate_index",
+        "?.readme_path.write_text"
+      ],
+      "components_involved": [
+        "Diagrams",
+        "SystemDesign"
+      ]
+    }
+  ]
+}

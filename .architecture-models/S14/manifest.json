@@ -1,0 +1,124 @@
+{
+  "block_id": "S14",
+  "block_name": "Utils",
+  "parent_model": ".architecture-model.yaml",
+  "component_id": "COMP-UTILS",
+  "manifest": {
+    "generated_at": "2026-08-06T21:51:35.838755+00:00",
+    "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+    "metrics": {
+      "py_files": 2,
+      "total_lines": 73,
+      "functions": 4,
+      "classes": 0,
+      "constants": 0
+    },
+    "functional_blocks": {},
+    "modules": [
+      {
+        "file": "src/architecture_model/utils/__init__.py",
+        "name": "Shared utilities for architecture",
+        "docstring": "Shared utilities for architecture-model-standard.",
+        "functions": [],
+        "imports": [],
+        "line_count": 1,
+        "status": "dormant",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/utils/discovery.py",
+        "name": "Shared file discovery and exclusion logic",
+        "docstring": "Shared file discovery and exclusion logic.\n\nConsolidates duplicated file-discovery patterns from manifest/scanner,\nconfig/loader, core/merger, and core/decomposer.",
+        "functions": [
+          {
+            "name": "is_excluded_dir",
+            "signature": "is_excluded_dir(path: Path) -> bool",
+            "calls": [
+              "startswith"
+            ],
+            "docstring": "Check if a directory path should be excluded from scanning."
+          },
+          {
+            "name": "collect_py_files",
+            "signature": "collect_py_files(directory: Path, recursive: bool, exclude_init: bool) -> list[Path]",
+            "calls": [
+              "sorted",
+              "debug",
+              "is_dir",
+              "len",
+              "glob_fn",
+              "any"
+            ],
+            "docstring": "Collect Python files from a directory."
+          },
+          {
+            "name": "discover_source_files",
+            "signature": "discover_source_files(project_root: Path) -> list[Path]",
+            "calls": [
+              "collect_py_files",
+              "info",
+              "len",
+              "_is_test_file"
+            ],
+            "docstring": "Discover all source (non-test) Python files in a project."
+          },
+          {
+            "name": "discover_test_files",
+            "signature": "discover_test_files(project_root: Path) -> list[Path]",
+            "calls": [
+              "collect_py_files",
+              "info",
+              "len",
+              "_is_test_file"
+            ],
+            "docstring": "Discover all test Python files in a project."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "logging",
+          "pathlib"
+        ],
+        "line_count": 72,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "logging",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {
+          "logger": "logging.getLogger(__name__)"
+        }
+      }
+    ],
+    "interfaces": []
+  },
+  "children": {},
+  "block_dependencies": [],
+  "intra_chains": []
+}

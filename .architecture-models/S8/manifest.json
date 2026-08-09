@@ -1,0 +1,204 @@
+{
+  "block_id": "S8",
+  "block_name": "Extract",
+  "parent_model": ".architecture-model.yaml",
+  "component_id": "COMP-EXTRACT",
+  "manifest": {
+    "generated_at": "2026-08-06T21:51:35.696949+00:00",
+    "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+    "metrics": {
+      "py_files": 1,
+      "total_lines": 652,
+      "functions": 1,
+      "classes": 0,
+      "constants": 0
+    },
+    "functional_blocks": {},
+    "modules": [
+      {
+        "file": "src/architecture_model/extract/from_code.py",
+        "name": "Extract an ArchitectureModel directly from source code analysis",
+        "docstring": "Extract an ArchitectureModel directly from source code analysis.\n\nThis is the \"backward pass\" \u2014 code \u2192 model \u2014 bypassing the stage2 markdown\nartifact requirement. Derives entities and relationships from AST analysis,\nimport graphs, and project configuration files.",
+        "functions": [
+          {
+            "name": "extract_from_code",
+            "signature": "extract_from_code(project_root: str | Path, config: ProjectConfig | None, manifest: dict | None) -> ArchitectureModel",
+            "calls": [
+              "monitored",
+              "resolve",
+              "_derive_capabilities",
+              "detect_routes",
+              "_derive_actors",
+              "_derive_route_behaviors",
+              "_detect_service_behaviors",
+              "_derive_components",
+              "_derive_interfaces",
+              "_derive_layers",
+              "detect_constraints",
+              "Entities",
+              "_derive_relationships",
+              "ModelMeta",
+              "ArchitectureModel",
+              "get_config",
+              "to_dict",
+              "_get_web_layer_dirs",
+              "Path",
+              "strftime",
+              "generate_manifest",
+              "len",
+              "now"
+            ],
+            "docstring": "Extract an architecture model directly from source code analysis.\n\nThis bypasses the stage2 markdown artifact requirement by deriving\nentities and relationships from AST analysis, import graphs, and\nproject configuration files.\n\nArgs:\n    project_root: Root directory of the project to analyze.\n    config: Optional pre-loaded ProjectConfig. If None, auto-discovered.\n    manifest: Optional pre-generated manifest dict. If None, generated fresh.\n\nReturns:\n    Complete ArchitectureModel derived from code analysis."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "ast",
+          "re",
+          "datetime",
+          "pathlib",
+          "typing",
+          "config.loader",
+          "config.schema",
+          "core.types",
+          "constraint_detector",
+          "route_detector",
+          "architecture_model.monitoring",
+          "manifest"
+        ],
+        "line_count": 652,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [
+          {
+            "name": "extract_from_code",
+            "decorators": [
+              "monitored"
+            ],
+            "is_method": false,
+            "class_name": null
+          }
+        ],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "ast",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "datetime",
+            "symbols": [
+              "datetime",
+              "timezone"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "config.loader",
+            "symbols": [
+              "get_config"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "config.schema",
+            "symbols": [
+              "ProjectConfig"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "core.types",
+            "symbols": [
+              "Actor",
+              "ActorType",
+              "ArchitectureModel",
+              "Behavior",
+              "Capability",
+              "Component",
+              "Constraint",
+              "ConstraintType",
+              "Entities",
+              "Interface",
+              "InterfaceType",
+              "Layer",
+              "ModelMeta",
+              "Priority",
+              "Relationship",
+              "RelationType",
+              "Status",
+              "Strength"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "constraint_detector",
+            "symbols": [
+              "detect_constraints"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "route_detector",
+            "symbols": [
+              "RouteInfo",
+              "detect_routes"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "architecture_model.monitoring",
+            "symbols": [
+              "monitored"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "manifest",
+            "symbols": [
+              "generate_manifest"
+            ],
+            "is_relative": true
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      }
+    ],
+    "interfaces": []
+  },
+  "children": {},
+  "block_dependencies": [
+    "S3",
+    "S4",
+    "S9"
+  ],
+  "intra_chains": []
+}

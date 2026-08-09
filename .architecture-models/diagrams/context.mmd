@@ -1,31 +1,46 @@
 flowchart TB
     subgraph system["architecture-model-standard"]
-        IF_GENERATE_MANIFEST{{generate_manifest}}
-        IF_LOAD_MODEL{{load_model}}
-        IF_VALIDATE_MODEL{{validate_model}}
-        IF_SLICE_FBLOCK{{slice_by_fblock}}
-        IF_FORMAT_CONTEXT{{format_model_context}}
-        IF_EXTRACT_FROM_CODE{{extract_from_code}}
-        IF_LOAD_PROFILE{{load_profile}}
-        IF_DISCOVER_FILES{{discover_source_files}}
-        IF_CLI_MAIN{{CLI Entry Point}}
+        IF_PARSE{{Model Parser API}}
+        IF_VALIDATE{{Validation API}}
+        IF_SLICE{{Slicer API}}
+        IF_MANIFEST{{Manifest Generator API}}
+        IF_CONFIG{{Config Loader API}}
+        IF_PIPELINE{{Pipeline API}}
+        IF_ENRICH{{Enrichment API}}
+        IF_DECOMPOSE{{Decomposition API}}
+        IF_EXTRACT{{Extract API}}
+        IF_GATE{{Development Gate API}}
+        IF_DOCS{{Docs Generator API}}
+        IF_EXPORT{{Export API}}
+        IF_CLI{{CLI Interface}}
+        IF_LLM_CONTEXT{{LLM Context API}}
+        IF_PERSIST{{Persistence API}}
     end
-    ACT_DEV[/Developer\]
+    ACT_CLI[/CLI User\]
     ACT_LLM[LLM Agent]
-    ACT_MCP["opencode-arch MCP Server"]
-    ACT_DEV -->|consumes| IF_CLI_MAIN
-    ACT_MCP -->|consumes| IF_GENERATE_MANIFEST
-    ACT_MCP -->|consumes| IF_LOAD_MODEL
-    ACT_MCP -->|consumes| IF_VALIDATE_MODEL
-    ACT_MCP -->|consumes| IF_SLICE_FBLOCK
-    ACT_MCP -->|consumes| IF_FORMAT_CONTEXT
-    ACT_MCP -->|consumes| IF_EXTRACT_FROM_CODE
-    COMP_CORE -.->|exposes| IF_LOAD_MODEL
-    COMP_CORE -.->|exposes| IF_VALIDATE_MODEL
-    COMP_CORE -.->|exposes| IF_SLICE_FBLOCK
-    COMP_CORE -.->|exposes| IF_FORMAT_CONTEXT
-    COMP_MANIFEST -.->|exposes| IF_GENERATE_MANIFEST
-    COMP_EXTRACT -.->|exposes| IF_EXTRACT_FROM_CODE
-    COMP_PROFILES -.->|exposes| IF_LOAD_PROFILE
-    COMP_UTILS -.->|exposes| IF_DISCOVER_FILES
-    COMP_CLI -.->|exposes| IF_CLI_MAIN
+    ACT_MCP[MCP Server]
+    ACT_CI[CI/CD Pipeline]
+    COMP_CORE -.->|exposes| IF_PARSE
+    COMP_CORE -.->|exposes| IF_VALIDATE
+    COMP_CORE -.->|exposes| IF_SLICE
+    COMP_CORE -.->|exposes| IF_LLM_CONTEXT
+    COMP_MANIFEST -.->|exposes| IF_MANIFEST
+    COMP_CONFIG -.->|exposes| IF_CONFIG
+    COMP_ORCHESTRATION -.->|exposes| IF_PIPELINE
+    COMP_ORCHESTRATION -.->|exposes| IF_ENRICH
+    COMP_ORCHESTRATION -.->|exposes| IF_DECOMPOSE
+    COMP_EXTRACT -.->|exposes| IF_EXTRACT
+    COMP_AUTHORING -.->|exposes| IF_GATE
+    COMP_DOCS -.->|exposes| IF_DOCS
+    COMP_EXPORT -.->|exposes| IF_EXPORT
+    COMP_CLI -.->|exposes| IF_CLI
+    COMP_PERSISTENCE -.->|exposes| IF_PERSIST
+    ACT_CLI -->|consumes| IF_CLI
+    ACT_LLM -->|consumes| IF_LLM_CONTEXT
+    ACT_LLM -->|consumes| IF_SLICE
+    ACT_MCP -->|consumes| IF_MANIFEST
+    ACT_MCP -->|consumes| IF_VALIDATE
+    ACT_MCP -->|consumes| IF_SLICE
+    ACT_MCP -->|consumes| IF_EXTRACT
+    ACT_CI -->|consumes| IF_GATE
+    ACT_CI -->|consumes| IF_VALIDATE

@@ -164,6 +164,25 @@ def _extract_prefix(path: str) -> str:
     return parts[0] if parts else "root"
 
 
+# Directories that contain non-source modules (tests, examples, docs, etc.)
+_NON_SOURCE_DIRS = frozenset({
+    "tests", "test", "testing", "examples", "example", "demos", "demo",
+    "docs", "doc", "typing_tests", "benchmarks", "fixtures",
+})
+
+
+def _is_non_source_module(mod: ModuleRecord) -> bool:
+    """Check if a module is in a non-source directory (tests, examples, etc.)."""
+    name = mod.path.stem
+    if name.startswith("test_") or name.endswith("_test"):
+        return True
+    if name in ("__init__", "conftest", "setup"):
+        return True
+    # Check if any parent directory is non-source
+    parts = set(mod.path.parts[:-1])  # all dirs except filename
+    return bool(parts & _NON_SOURCE_DIRS)
+
+
 def _name_from_prefix(prefix: str) -> str:
     """Convert URL prefix to capability name."""
     # Singularize simple cases
@@ -182,9 +201,9 @@ def _infer_from_domain_modules(
 
     # Look for modules with domain-rich classes/functions (not utils, not tests)
     for mod in modules:
-        name = mod.path.stem
-        if name.startswith("test_") or name.endswith("_test") or name in ("__init__", "conftest", "setup"):
+        if _is_non_source_module(mod):
             continue
+        name = mod.path.stem
         if name in ("utils", "helpers", "common", "base", "constants", "types", "config"):
             continue
 
@@ -208,6 +227,8 @@ def _infer_from_cli(modules: list[ModuleRecord]) -> list[InferredCapability]:
     """Infer capabilities from CLI command modules."""
     capabilities = []
     for mod in modules:
+        if _is_non_source_module(mod):
+            continue
         # Check for click/typer/argparse patterns
         has_cli = any(
             "click" in imp or "typer" in imp or "argparse" in imp
@@ -226,10 +247,12 @@ def _infer_from_cli(modules: list[ModuleRecord]) -> list[InferredCapability]:
 def _infer_default_actors(inventory: Inventory) -> list[InferredActor]:
     """Infer actors when no routes provide hints."""
     actors = []
+    source_modules = [m for m in inventory.modules if not _is_non_source_module(m)]
+
     # Check for CLI entry points
     has_cli = any(
         any("click" in imp or "typer" in imp or "argparse" in imp for imp in m.imports)
-        for m in inventory.modules
+        for m in source_modules
     )
     if has_cli:
         actors.append(InferredActor(
@@ -239,7 +262,7 @@ def _infer_default_actors(inventory: Inventory) -> list[InferredActor]:
     # Check for scheduled/timer patterns
     has_scheduler = any(
         any("schedule" in imp or "celery" in imp or "cron" in imp for imp in m.imports)
-        for m in inventory.modules
+        for m in source_modules
     )
     if has_scheduler:
         actors.append(InferredActor(
@@ -289,11 +312,12 @@ def _infer_behaviors(
 
 def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapability]) -> bool:
     """Check if a module has a clear affiliation to any capability."""
+    # Non-source modules are always "clear" (they don't need capabilities)
+    if _is_non_source_module(mod):
+        return True
     name = mod.path.stem
     # Utility/infra modules are fine without capability
     if name in ("__init__", "utils", "helpers", "common", "base", "constants", "types", "config", "conftest"):
-        return True
-    if name.startswith("test_") or name.endswith("_test"):
         return True
     # Has capability mentioning it
     for cap in capabilities:
