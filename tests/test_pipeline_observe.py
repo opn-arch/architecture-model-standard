@@ -79,3 +79,21 @@ mod = importlib.import_module(name)
         stage = ObserveStage()
         assert stage.name == "observe"
         assert stage.requires == []
+
+    def test_observe_scoped_only_processes_scoped_files(self, tmp_path):
+        """When scope_files is set, observe only scans those files."""
+        (tmp_path / "included.py").write_text("def included(): pass")
+        (tmp_path / "excluded.py").write_text("def excluded(): pass")
+
+        ctx = PipelineContext(
+            repo_path=tmp_path,
+            output_dir=tmp_path / ".arch",
+            scope_files=[tmp_path / "included.py"],
+        )
+        stage = ObserveStage()
+        result = stage.run(ctx)
+
+        paths = [str(m.path) for m in result.output.modules]
+        assert any("included" in p for p in paths)
+        assert not any("excluded" in p for p in paths)
+        assert len(result.output.modules) == 1

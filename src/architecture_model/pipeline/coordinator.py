@@ -169,6 +169,7 @@ class PipelineCoordinator:
                         repo_path=ctx.repo_path,
                         output_dir=sub_dir,
                         scope=comp.id,
+                        scope_files=comp.files,
                     )
                     # Run recursively at reduced depth
                     sub_result = self.run_recursive(

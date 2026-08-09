@@ -121,6 +121,7 @@ class PipelineContext:
     output_dir: Path
     domain: str = "software"
     scope: str = ""
+    scope_files: list[Path] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
     cache: dict[str, StageResult] = field(default_factory=dict)
     prior_corrections: list[Evidence] = field(default_factory=list)

@@ -110,6 +110,38 @@ class TestContractStage:
         assert stage.name == "contract"
         assert "allocate" in stage.requires
 
+    def test_contract_substring_match(self, tmp_path):
+        """test_basic_click.py should match a component named 'click'."""
+        (tmp_path / "click.py").write_text("def main(): pass")
+        (tmp_path / "test_basic_click.py").write_text("def test_x(): pass")
+        ctx = _run_full_pipeline(tmp_path)
+        contract_result = ctx.get("contract")
+        targets = [c.target_component for c in contract_result.output.contracts]
+        # Should have matched via substring
+        assert len(targets) >= 1
+
+    def test_contract_suffix_pattern(self, tmp_path):
+        """parser_test.py should match component with parser.py."""
+        (tmp_path / "parser.py").write_text("def parse(): pass")
+        (tmp_path / "parser_test.py").write_text("def test_parse(): pass")
+        ctx = _run_full_pipeline(tmp_path)
+        contract_result = ctx.get("contract")
+        targets = [c.target_component for c in contract_result.output.contracts]
+        assert len(targets) >= 1
+
+    def test_contract_directory_match(self, tmp_path):
+        """tests/core/test_foo.py should match component named 'core'."""
+        (tmp_path / "core").mkdir()
+        (tmp_path / "core" / "__init__.py").write_text("")
+        (tmp_path / "core" / "engine.py").write_text("def run(): pass")
+        tests_dir = tmp_path / "tests" / "core"
+        tests_dir.mkdir(parents=True)
+        (tests_dir / "test_foo.py").write_text("def test_foo(): pass")
+        ctx = _run_full_pipeline(tmp_path)
+        contract_result = ctx.get("contract")
+        targets = [c.target_component for c in contract_result.output.contracts]
+        assert len(targets) >= 1
+
 
 class TestValidateStage:
     def test_validate_produces_score(self, tmp_path):

@@ -44,8 +44,12 @@ class ObserveStage:
         uncertainties: list[Uncertainty] = []
 
         # Collect Python files
-        py_files = list(ctx.repo_path.rglob("*.py"))
-        py_files = [f for f in py_files if not _is_excluded(f, ctx.repo_path)]
+        if ctx.scope_files:
+            # Scoped mode: only scan the specified files
+            py_files = [f for f in ctx.scope_files if f.suffix == ".py" and f.exists()]
+        else:
+            py_files = list(ctx.repo_path.rglob("*.py"))
+            py_files = [f for f in py_files if not _is_excluded(f, ctx.repo_path)]
 
         modules: list[ModuleRecord] = []
         edges: list[ImportEdge] = []
