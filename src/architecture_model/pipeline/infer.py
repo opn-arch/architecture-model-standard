@@ -183,7 +183,7 @@ def _infer_from_domain_modules(
     # Look for modules with domain-rich classes/functions (not utils, not tests)
     for mod in modules:
         name = mod.path.stem
-        if name.startswith("test_") or name in ("__init__", "conftest", "setup"):
+        if name.startswith("test_") or name.endswith("_test") or name in ("__init__", "conftest", "setup"):
             continue
         if name in ("utils", "helpers", "common", "base", "constants", "types", "config"):
             continue
@@ -293,7 +293,7 @@ def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapa
     # Utility/infra modules are fine without capability
     if name in ("__init__", "utils", "helpers", "common", "base", "constants", "types", "config", "conftest"):
         return True
-    if name.startswith("test_"):
+    if name.startswith("test_") or name.endswith("_test"):
         return True
     # Has capability mentioning it
     for cap in capabilities:

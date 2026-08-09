@@ -123,8 +123,12 @@ class AllocateStage:
 def _seed_from_capabilities(
     capabilities: list[InferredCapability], modules: list[ModuleRecord]
 ) -> list[ComponentAllocation]:
-    """Create one component per capability, seed files by name matching."""
+    """Create one component per capability, seed files by name matching.
+
+    Each file is assigned to at most one component (first match wins).
+    """
     components = []
+    assigned: set[Path] = set()
 
     for i, cap in enumerate(capabilities, 1):
         # Match modules whose name relates to the capability
@@ -132,6 +136,8 @@ def _seed_from_capabilities(
         matched_files = []
 
         for mod in modules:
+            if mod.path in assigned:
+                continue
             mod_name = mod.path.stem.lower()
             # Direct name match
             if any(w in mod_name for w in cap_words if len(w) > 2):
@@ -140,6 +146,7 @@ def _seed_from_capabilities(
             elif any(w in str(mod.path).lower() for w in cap_words if len(w) > 2):
                 matched_files.append(mod.path)
 
+        assigned.update(matched_files)
         comp = ComponentAllocation(
             id=f"COMP-{i}",
             name=cap.name.replace(" Management", ""),
