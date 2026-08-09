@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from architecture_model.pipeline.learning import LearningStore
 from architecture_model.pipeline.protocol import PipelineContext, Stage, StageResult
 
 
 class PipelineCoordinator:
     """Resolves stage dependencies and runs minimum stages needed to reach a target."""
 
-    def __init__(self, stages: dict[str, Stage]) -> None:
+    def __init__(self, stages: dict[str, Stage], learning_store: LearningStore | None = None) -> None:
         self._stages = stages
+        self._learning = learning_store
 
     def resolve_order(self, target: str) -> list[str]:
         """Topological sort of deps needed to reach target."""
@@ -96,7 +99,30 @@ class PipelineCoordinator:
             result = stage.run(ctx)
             ctx.cache[name] = result
             results[name] = result
+
+        # Record quality history
+        self._record_quality(results)
+
         return results
+
+    def _record_quality(self, results: dict[str, StageResult]) -> None:
+        """Record stage quality scores to learning store."""
+        if not self._learning:
+            return
+        scores = {name: float(r.quality.score) for name, r in results.items()}
+        self._learning.record_run(datetime.now().isoformat()[:10], scores)
+
+    def get_prior_evidence(self) -> list:
+        """Get corrections from learning store as prior evidence for stages."""
+        if not self._learning:
+            return []
+        return self._learning.corrections_as_evidence()
+
+    def get_calibration(self, module: str) -> dict[str, float]:
+        """Get calibration overrides for a module."""
+        if not self._learning:
+            return {}
+        return self._learning.get_calibration(module)
 
     def _check_cycle(self, name: str, visiting: set[str], visited: set[str]) -> None:
         if name in visited:

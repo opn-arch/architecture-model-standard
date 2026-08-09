@@ -101,6 +101,14 @@ def main(argv: list[str] | None = None) -> int:
     p_author.add_argument("requirements", help="Path to requirements markdown file")
     p_author.add_argument("-o", "--output", default=".architecture-model.yaml", help="Output YAML path")
 
+    # --- pipeline ---
+    p_pipeline = subparsers.add_parser("pipeline", help="Run modular extraction pipeline")
+    p_pipeline.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
+    p_pipeline.add_argument("--stage", help="Run up to this stage (default: all)")
+    p_pipeline.add_argument("--recursive", action="store_true", help="Recurse into large components")
+    p_pipeline.add_argument("--max-depth", type=int, default=3, help="Max recursion depth")
+    p_pipeline.add_argument("-o", "--output", help="Output directory (default: .architecture/)")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -122,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
         "visualize": _cmd_visualize,
         "docs": _cmd_docs,
         "author": _cmd_author,
+        "pipeline": _cmd_pipeline,
     }
     return handlers[args.command](args)
 
@@ -690,6 +699,71 @@ def _cmd_author(args) -> int:
     print(f"  Capabilities: {len(model.entities.capabilities)}")
     print(f"  Constraints: {len(model.entities.constraints)}")
     print(f"  Relationships: {len(model.relationships)}")
+    return 0
+
+
+def _cmd_pipeline(args) -> int:
+    """Run the modular extraction pipeline."""
+    from ..pipeline.observe import ObserveStage
+    from ..pipeline.infer import InferStage
+    from ..pipeline.allocate import AllocateStage
+    from ..pipeline.relate import RelateStage
+    from ..pipeline.specify import SpecifyStage
+    from ..pipeline.contract import ContractStage
+    from ..pipeline.validate import ValidateStage
+    from ..pipeline.coordinator import PipelineCoordinator
+    from ..pipeline.learning import LearningStore
+    from ..pipeline.protocol import PipelineContext
+    from ..pipeline.artifacts import write_artifacts
+    from ..pipeline.context_gen import write_context
+
+    root = Path(args.path).resolve()
+    if not root.is_dir():
+        print(f"ERROR: {root} is not a directory")
+        return 1
+
+    output_dir = Path(args.output).resolve() if args.output else root / ".architecture"
+    learning_path = output_dir / "learning"
+
+    stages = {
+        "observe": ObserveStage(),
+        "infer": InferStage(),
+        "allocate": AllocateStage(),
+        "relate": RelateStage(),
+        "specify": SpecifyStage(),
+        "contract": ContractStage(),
+        "validate": ValidateStage(),
+    }
+
+    store = LearningStore(learning_path)
+    coord = PipelineCoordinator(stages, learning_store=store)
+    ctx = PipelineContext(repo_path=root, output_dir=output_dir)
+
+    if args.stage:
+        print(f"Running pipeline to stage: {args.stage}")
+        results = coord.run_to(args.stage, ctx)
+    elif args.recursive:
+        print(f"Running recursive pipeline (max_depth={args.max_depth})")
+        result = coord.run_recursive(ctx, max_depth=args.max_depth)
+        results = result["results"]
+    else:
+        print("Running full pipeline")
+        results = coord.run_all(ctx)
+
+    # Write artifacts
+    write_artifacts(ctx)
+    write_context(ctx)
+
+    # Print summary
+    print(f"\nResults ({len(results)} stages):")
+    for name, result in results.items():
+        score = result.quality.score
+        uncertainties = len(result.uncertainties)
+        duration = result.duration_ms
+        status = "PASS" if score >= 50 else "WARN"
+        print(f"  {name:12s} score={score:3d}  uncertainties={uncertainties}  {duration}ms  [{status}]")
+
+    print(f"\nArtifacts written to: {output_dir}")
     return 0
 
 
