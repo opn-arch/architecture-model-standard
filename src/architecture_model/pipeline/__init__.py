@@ -1,5 +1,6 @@
 """Modular extraction pipeline for architecture models."""
 
+from architecture_model.pipeline.coordinator import PipelineCoordinator
 from architecture_model.pipeline.protocol import (
     Claim,
     Diagnostic,
@@ -14,6 +15,7 @@ from architecture_model.pipeline.protocol import (
 
 __all__ = [
     "Claim",
+    "PipelineCoordinator",
     "Diagnostic",
     "Evidence",
     "PipelineContext",
