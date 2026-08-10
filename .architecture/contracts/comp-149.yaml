@@ -1,0 +1,6 @@
+component: COMP-149
+contracts:
+- test_file: tests/test_validator.py
+  assertions: 0
+- test_file: tests/test_core/test_validator_regen.py
+  assertions: 0

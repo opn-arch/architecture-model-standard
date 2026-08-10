@@ -1,0 +1,30 @@
+component: COMP-137-6
+contracts:
+- test_file: tests/test_pipeline_infer.py
+  assertions: 0
+- test_file: tests/test_naming_context.py
+  assertions: 0
+- test_file: tests/test_pipeline_observe.py
+  assertions: 0
+- test_file: tests/test_full_extraction.py
+  assertions: 0
+- test_file: tests/test_compaction.py
+  assertions: 0
+- test_file: tests/test_pipeline_test_contracts.py
+  assertions: 0
+- test_file: tests/test_enrichment_context.py
+  assertions: 0
+- test_file: tests/test_pipeline_stages.py
+  assertions: 0
+- test_file: tests/test_pipeline_compact.py
+  assertions: 0
+- test_file: tests/test_capability_inference.py
+  assertions: 0
+- test_file: tests/test_pipeline_allocate.py
+  assertions: 0
+- test_file: tests/test_pipeline.py
+  assertions: 0
+- test_file: tests/test_trigger_detection.py
+  assertions: 0
+- test_file: tests/test_use_case_inference.py
+  assertions: 0

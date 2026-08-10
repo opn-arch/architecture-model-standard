@@ -1,0 +1,330 @@
+components:
+- id: COMP-74
+  name: Schema
+  capability_id: CAP-74
+  layer: data
+  files:
+  - src/architecture_model/config/schema.py
+  - src/architecture_model/profiles/schema.py
+  - src/architecture_model/extract/from_code.py
+- id: COMP-105
+  name: Route
+  capability_id: CAP-105
+  layer: web
+  files:
+  - src/architecture_model/extract/route_detector.py
+- id: COMP-122
+  name: Vector Store
+  capability_id: CAP-122
+  layer: data
+  files:
+  - src/architecture_model/persistence/store.py
+- id: COMP-137-1
+  name: Monitoring (architecture_model)
+  capability_id: CAP-137
+  layer: data
+  files:
+  - src/architecture_model/monitoring.py
+  - src/architecture_model/monitoring_checks.py
+- id: COMP-137-2
+  name: Monitoring (pipeline)
+  capability_id: CAP-137
+  layer: data
+  files:
+  - src/architecture_model/pipeline/coordinator.py
+- id: COMP-137-3
+  name: Monitoring (core)
+  capability_id: CAP-137
+  layer: data
+  files:
+  - src/architecture_model/core/cluster.py
+- id: COMP-137-4
+  name: Monitoring (manifest)
+  capability_id: CAP-137
+  layer: data
+  files:
+  - src/architecture_model/manifest/interfaces.py
+  - src/architecture_model/manifest/metrics.py
+  - src/architecture_model/manifest/scanner.py
+  - src/architecture_model/manifest/slicers.py
+  - src/architecture_model/manifest/multi_scanner.py
+  - src/architecture_model/manifest/scan_cache.py
+  - src/architecture_model/manifest/kt_scanner.py
+  - src/architecture_model/manifest/generator.py
+  - src/architecture_model/manifest/blocks.py
+- id: COMP-137-5
+  name: Monitoring (authoring)
+  capability_id: CAP-137
+  layer: data
+  files:
+  - src/architecture_model/authoring/gate.py
+- id: COMP-137-6
+  name: Monitoring (orchestration)
+  capability_id: CAP-137
+  layer: data
+  files:
+  - src/architecture_model/orchestration/use_case_inference.py
+  - src/architecture_model/orchestration/capability_inference.py
+  - src/architecture_model/orchestration/enrichment_context.py
+  - src/architecture_model/orchestration/trigger_detection.py
+  - src/architecture_model/orchestration/pipeline.py
+  - src/architecture_model/orchestration/compaction.py
+  - src/architecture_model/orchestration/full_extraction.py
+  - src/architecture_model/orchestration/naming_context.py
+- id: COMP-137-7
+  name: Monitoring (extract)
+  capability_id: CAP-137
+  layer: data
+  files:
+  - src/architecture_model/extract/from_artifacts.py
+  - src/architecture_model/extract/constraint_detector.py
+- id: COMP-139
+  name: Observe Types
+  capability_id: CAP-139
+  layer: data
+  files:
+  - src/architecture_model/pipeline/observe_types.py
+  - src/architecture_model/pipeline/observe.py
+  - src/architecture_model/core/types.py
+  - src/architecture_model/manifest/types.py
+  - src/architecture_model/pipeline/context_gen.py
+  - src/architecture_model/pipeline/artifacts.py
+- id: COMP-140
+  name: Contract Types
+  capability_id: CAP-140
+  layer: data
+  files:
+  - src/architecture_model/pipeline/contract_types.py
+  - src/architecture_model/pipeline/contract.py
+- id: COMP-141
+  name: Allocate Types
+  capability_id: CAP-141
+  layer: data
+  files:
+  - src/architecture_model/pipeline/allocate_types.py
+  - src/architecture_model/pipeline/allocate.py
+- id: COMP-142
+  name: Validate Types
+  capability_id: CAP-142
+  layer: data
+  files:
+  - src/architecture_model/pipeline/validate_types.py
+  - src/architecture_model/pipeline/validate.py
+- id: COMP-143
+  name: Regen Score
+  capability_id: CAP-143
+  layer: data
+  files:
+  - src/architecture_model/pipeline/regen_score.py
+  - src/architecture_model/core/regen_readiness.py
+- id: COMP-144
+  name: Protocol
+  capability_id: CAP-144
+  layer: data
+  files:
+  - src/architecture_model/pipeline/protocol.py
+  - src/architecture_model/manifest/protocol.py
+- id: COMP-145
+  name: Specify Types
+  capability_id: CAP-145
+  layer: data
+  files:
+  - src/architecture_model/pipeline/specify_types.py
+  - src/architecture_model/pipeline/specify.py
+- id: COMP-146
+  name: Relate Types
+  capability_id: CAP-146
+  layer: data
+  files:
+  - src/architecture_model/pipeline/relate_types.py
+  - src/architecture_model/pipeline/relate.py
+- id: COMP-147
+  name: Learning
+  capability_id: CAP-147
+  layer: data
+  files:
+  - src/architecture_model/pipeline/learning.py
+- id: COMP-148
+  name: Infer Types
+  capability_id: CAP-148
+  layer: data
+  files:
+  - src/architecture_model/pipeline/infer.py
+  - src/architecture_model/pipeline/infer_types.py
+- id: COMP-149
+  name: Validator
+  capability_id: CAP-149
+  layer: data
+  files:
+  - src/architecture_model/core/validator.py
+- id: COMP-151
+  name: Confidence
+  capability_id: CAP-151
+  layer: data
+  files:
+  - src/architecture_model/core/confidence.py
+- id: COMP-152
+  name: Representativeness
+  capability_id: CAP-152
+  layer: data
+  files:
+  - src/architecture_model/core/representativeness.py
+- id: COMP-153
+  name: Differ
+  capability_id: CAP-153
+  layer: data
+  files:
+  - src/architecture_model/core/differ.py
+- id: COMP-154
+  name: Coverage
+  capability_id: CAP-154
+  layer: data
+  files:
+  - src/architecture_model/core/coverage.py
+- id: COMP-155
+  name: Visualize
+  capability_id: CAP-155
+  layer: data
+  files:
+  - src/architecture_model/core/visualize.py
+  - src/architecture_model/cli/visualize.py
+- id: COMP-156
+  name: Parser
+  capability_id: CAP-156
+  layer: data
+  files:
+  - src/architecture_model/core/parser.py
+  - src/architecture_model/authoring/parser.py
+- id: COMP-157
+  name: Corrections
+  capability_id: CAP-157
+  layer: data
+  files:
+  - src/architecture_model/pipeline/corrections.py
+  - src/architecture_model/core/corrections.py
+- id: COMP-158
+  name: Decomposer
+  capability_id: CAP-158
+  layer: data
+  files:
+  - src/architecture_model/core/decomposer.py
+- id: COMP-159
+  name: Slicer
+  capability_id: CAP-159
+  layer: data
+  files:
+  - src/architecture_model/core/slicer.py
+- id: COMP-160
+  name: Source Block Quality
+  capability_id: CAP-160
+  layer: data
+  files:
+  - src/architecture_model/core/source_block_assign.py
+  - src/architecture_model/core/source_block_quality.py
+- id: COMP-161
+  name: Merger
+  capability_id: CAP-161
+  layer: data
+  files:
+  - src/architecture_model/core/merger.py
+- id: COMP-162
+  name: Loader
+  capability_id: CAP-162
+  layer: data
+  files:
+  - src/architecture_model/config/loader.py
+- id: COMP-164
+  name: Behavior
+  capability_id: CAP-164
+  layer: data
+  files:
+  - src/architecture_model/manifest/behavior.py
+  - src/architecture_model/orchestration/behavior_flows.py
+  - src/architecture_model/orchestration/behavior_decompose.py
+- id: COMP-165
+  name: Grouping
+  capability_id: CAP-165
+  layer: data
+  files:
+  - src/architecture_model/manifest/grouping.py
+- id: COMP-166
+  name: Recursive
+  capability_id: CAP-166
+  layer: data
+  files:
+  - src/architecture_model/manifest/recursive.py
+- id: COMP-167
+  name: Call Graph
+  capability_id: CAP-167
+  layer: data
+  files:
+  - src/architecture_model/manifest/call_graph.py
+- id: COMP-168
+  name: Body Hints
+  capability_id: CAP-168
+  layer: data
+  files:
+  - src/architecture_model/manifest/body_hints.py
+- id: COMP-169
+  name: Discovery
+  capability_id: CAP-169
+  layer: data
+  files:
+  - src/architecture_model/utils/discovery.py
+- id: COMP-171
+  name: Auto Enrich
+  capability_id: CAP-171
+  layer: data
+  files:
+  - src/architecture_model/orchestration/auto_enrich.py
+  - src/architecture_model/orchestration/enrich.py
+- id: COMP-172
+  name: Decompose
+  capability_id: CAP-172
+  layer: data
+  files:
+  - src/architecture_model/orchestration/decompose.py
+- id: COMP-173
+  name: Deep Decompose
+  capability_id: CAP-173
+  layer: data
+  files:
+  - src/architecture_model/orchestration/deep_decompose.py
+- id: COMP-175
+  name: Table Parser
+  capability_id: CAP-175
+  layer: data
+  files:
+  - src/architecture_model/extract/table_parser.py
+- id: COMP-176
+  name: Flatfiles
+  capability_id: CAP-176
+  layer: data
+  files:
+  - src/architecture_model/export/flatfiles.py
+- id: COMP-177
+  name: Reference
+  capability_id: CAP-177
+  layer: data
+  files:
+  - src/architecture_model/export/reference.py
+- id: COMP-178
+  name: CLI Main
+  capability_id: CAP-178
+  layer: data
+  files:
+  - src/architecture_model/__main__.py
+  - src/architecture_model/cli/main.py
+- id: COMP-179
+  name: Infrastructure
+  capability_id: ''
+  layer: infra
+  files:
+  - src/architecture_model/patterns.py
+  - src/architecture_model/core/compression.py
+  - src/architecture_model/manifest/chains.py
+  - src/architecture_model/manifest/display.py
+  - src/architecture_model/manifest/ts_scanner.py
+metrics:
+  file_coverage: 100.0
+  boundary_coherence: 100.0

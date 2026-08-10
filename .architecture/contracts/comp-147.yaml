@@ -1,0 +1,8 @@
+component: COMP-147
+contracts:
+- test_file: tests/test_pipeline_learning_integration.py
+  assertions: 0
+- test_file: tests/test_pipeline_learning.py
+  assertions: 0
+- test_file: scripts/test_oracle_learning.py
+  assertions: 0

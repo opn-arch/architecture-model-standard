@@ -1,0 +1,14 @@
+[
+  {
+    "date": "2026-08-10",
+    "scores": {
+      "observe": 100.0,
+      "infer": 88.0,
+      "allocate": 100.0,
+      "contract": 76.0,
+      "relate": 100.0,
+      "specify": 50.0,
+      "validate": 0.0
+    }
+  }
+]

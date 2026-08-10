@@ -1,0 +1,4 @@
+component: COMP-168
+contracts:
+- test_file: tests/test_body_hints.py
+  assertions: 0

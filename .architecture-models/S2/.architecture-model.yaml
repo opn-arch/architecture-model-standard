@@ -2,102 +2,28 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Cli
   system: Cli
-  generated_at: '2026-08-06T21:52:00'
+  generated_at: '2026-08-10T21:46:22.714335+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-CLI
 entities:
-  behaviors:
-  - id: BEH-INIT
-    name: Project Initialization
-    status: ACTIVE
-    description: Auto-generate architecture model from directory structure
-    trigger: architecture-model init <path>
-    actor: ACT-CLI
-    steps:
-    - Scan directory structure
-    - Discover source layout (src/flat/lib)
-    - Create FunctionalBlockConfig per subpackage
-    - Write .architecture-model.yaml
-    - Optionally run pipeline + docs
-  - id: BEH-VALIDATE
-    name: Model Validation
-    status: ACTIVE
-    description: Check model structural correctness and report score
-    trigger: architecture-model validate <model>
-    actor: ACT-CLI
-    steps:
-    - Load model from YAML
-    - Check referential integrity
-    - Check ID uniqueness
-    - Check status consistency
-    - Check completeness
-    - Compute score 0-100
-    - Report issues by severity
-  - id: BEH-MANIFEST
-    name: Manifest Generation
-    status: ACTIVE
-    description: AST-scan source code to produce ground-truth inventory
-    trigger: architecture-model manifest <path>
-    actor: ACT-CLI
-    steps:
-    - Load config via get_config()
-    - Collect Python files
-    - AST-scan each file (with ScanCache)
-    - Process functional blocks
-    - Derive interfaces from imports
-    - Compute project metrics
-    - Return typed Manifest
-    pattern: pipeline
-  - id: BEH-ENRICH
-    name: Model Enrichment
-    status: ACTIVE
-    description: Populate model components with AST-level detail from manifest
-    trigger: architecture-model enrich <model>
-    actor: ACT-CLI
-    steps:
-    - Load model and manifest
-    - 'For each ACTIVE component with files:'
-    - Extract function signatures with body_hints
-    - Extract module-level constants
-    - Discover and analyze test files
-    - Attach signatures/constants/test_contracts to component
-  - id: BEH-DECOMPOSE
-    name: Model Decomposition
-    status: ACTIVE
-    description: Split parent model into per-subsystem self-contained sub-models
-    trigger: architecture-model decompose <model>
-    actor: ACT-CLI
-    steps:
-    - Generate recursive manifests per F-block
-    - Trace relationships from block components outward
-    - Copy related capabilities, interfaces, behaviors, constraints
-    - Write sub-models to .architecture-models/<block>/
   interfaces:
   - id: IF-CLI
     name: CLI Interface
     status: ACTIVE
-    description: '13 commands: init, validate, slice, diff, stats, impact, manifest, enrich, decompose, coverage, docs, visualize,
-      author'
-    type: external
-    provider: COMP-CLI
+    description: architecture-model command with subcommands (init, validate, slice, enrich, etc.)
+    type: cli
   components:
   - id: COMP-CLI
     name: CLI
     status: ACTIVE
-    description: Command-line interface with 13 commands (init, validate, slice, diff, stats, impact, manifest, enrich, decompose,
-      coverage, docs, visualize, author)
-    layer: LAYER-INTERFACE
-    source_block: S2
-    technology: argparse
+    description: 'Command-line interface: argparse setup, command handlers, visualization'
+    layer: LYR-CLI
     files:
+    - src/architecture_model/cli/__init__.py
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
-    responsibilities:
-    - Expose all capabilities as CLI commands
-    - Parse arguments and dispatch to core/orchestration
-    - Format output for terminal display
-    kind: cli
+    kind: application
     signatures:
     - name: main
       params:
@@ -136,47 +62,36 @@ entities:
         cwd)''); p_visualize.add_argument(''-o'', ''--output'', default=''output/diagrams'', help=''Output directory (default:
         output/diagrams)''); p_author = subparsers.add_parser(''author'', help=''Generate model from...; p_author.add_argument(''requirements'',
         help=''Path to requirements markdown file''); p_author.add_argument(''-o'', ''--output'', default=''.architecture-model.yaml'',
-        help=''Output YAML path''); args = parser.parse_args(argv); if not args.command: ...; handlers = {''init'': _cmd_init,
-        ''validate'': _cmd_validate, ''slice'': _...; return handlers[args.command](args)'
+        help=''Output YAML path''); p_regen = subparsers.add_parser(''regen-score'', help=''Show regen rea...; p_regen.add_argument(''path'',
+        nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_regen.add_argument(''--component'',
+        help=''Show detail for a specific component ID''); p_regen.add_argument(''--verbose'', action=''store_true'', help=''Show
+        per-function readiness''); p_pipeline = subparsers.add_parser(''pipeline'', help=''Run modular extra...; p_pipeline.add_argument(''path'',
+        nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_pipeline.add_argument(''--stage'',
+        help=''Run up to this stage (default: all)''); p_pipeline.add_argument(''--recursive'', action=''store_true'', help=''Recurse
+        into large components''); p_pipeline.add_argument(''--max-depth'', type=int, default=3, help=''Max recursion depth'');
+        p_pipeline.add_argument(''-o'', ''--output'', help=''Output directory (default: .architecture/)''); args = parser.parse_args(argv);
+        if not args.command: ...; handlers = {''init'': _cmd_init, ''validate'': _cmd_validate, ''slice'': _...; return handlers[args.command](args)'
     test_contracts:
     - test_file: test_visualize.py
       test_method: test_writes_all_files
       assertion: len(paths) == 4
       contract_type: value_equality
 relationships:
-- type: exposes
-  from: COMP-CLI
-  to: IF-CLI
 - type: depends-on
   from: COMP-CLI
   to: COMP-CORE
 - type: depends-on
   from: COMP-CLI
-  to: COMP-CONFIG
+  to: COMP-ORCHESTRATION
+- type: depends-on
+  from: COMP-CLI
+  to: COMP-PIPELINE
 - type: depends-on
   from: COMP-CLI
   to: COMP-MANIFEST
 - type: depends-on
   from: COMP-CLI
-  to: COMP-ORCHESTRATION
-- type: depends-on
+  to: COMP-CONFIG
+- type: exposes
   from: COMP-CLI
-  to: COMP-DOCS
-- type: depends-on
-  from: COMP-CLI
-  to: COMP-AUTHORING
-- type: traces-to
-  from: COMP-CLI
-  to: BEH-INIT
-- type: traces-to
-  from: COMP-CLI
-  to: BEH-VALIDATE
-- type: traces-to
-  from: COMP-CLI
-  to: BEH-MANIFEST
-- type: traces-to
-  from: COMP-CLI
-  to: BEH-ENRICH
-- type: traces-to
-  from: COMP-CLI
-  to: BEH-DECOMPOSE
+  to: IF-CLI

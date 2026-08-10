@@ -2,7 +2,7 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Core
   system: Core
-  generated_at: '2026-08-06T21:52:00'
+  generated_at: '2026-08-10T21:46:22.714335+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-CORE
@@ -11,117 +11,46 @@ entities:
   - id: CAP-PARSE
     name: Model Parsing
     status: ACTIVE
-    description: Parse YAML architecture models into typed ArchitectureModel instances
-    source_block: S4
-    priority: high
+    description: Parse YAML into typed ArchitectureModel, serialize back to YAML
   - id: CAP-VALIDATE
     name: Model Validation
     status: ACTIVE
-    description: Validate structural correctness, referential integrity, regen-readiness (score 0-100)
-    source_block: S4
-    priority: high
+    description: Check model structural correctness (ID uniqueness, referential integrity, orphan detection)
   - id: CAP-SLICE
     name: Model Slicing
     status: ACTIVE
-    description: Extract model subsets by F-block, layer, artifact, or status
-    source_block: S4
-    priority: high
+    description: Extract subsets by F-block, layer, status, or artifact type
   - id: CAP-DIFF
     name: Model Diffing
     status: ACTIVE
-    description: Compare two model versions and report structural changes
-    source_block: S4
-  - id: CAP-CONTEXT
-    name: LLM Context Formatting
-    status: ACTIVE
-    description: Compress model into token-efficient format for LLM consumption (2.8x-86x compression)
-    source_block: S4
-    priority: high
-  - id: CAP-VISUALIZE
-    name: Diagram Generation
-    status: ACTIVE
-    description: Generate Mermaid diagrams (context, components, behaviors, dependencies)
-    source_block: S4
+    description: Compare two model versions, produce structured change report
   - id: CAP-COVERAGE
     name: Coverage Analysis
     status: ACTIVE
-    description: Analyze model coverage against code reality (files claimed vs existing)
-    source_block: S4
-  - id: CAP-IMPACT
-    name: Impact Analysis
-    status: ACTIVE
-    description: Trace change impact through relationship graph for a given entity
-    source_block: S4
-  behaviors:
-  - id: BEH-LLM-QUERY
-    name: LLM Model Query
-    status: ACTIVE
-    description: LLM agent loads compressed model context and queries architecture
-    trigger: LOAD/QUERY/IMPACT verb from LLM agent
-    actor: ACT-LLM
-    steps:
-    - Format model context with token budget
-    - Slice to relevant subset if needed
-    - Return compressed representation
-    - Agent queries structural questions
+    description: Compare model against code reality, compute file/relationship/boundary coverage
   interfaces:
-  - id: IF-PARSE
-    name: Model Parser API
+  - id: IF-PYTHON-API
+    name: Python API
     status: ACTIVE
-    description: load_model(path) -> ArchitectureModel, save_model(model, path), _parse_raw(raw) -> ArchitectureModel
-    type: internal
-    provider: COMP-CORE
-  - id: IF-VALIDATE
-    name: Validation API
+    description: Public Python APIs (generate_manifest, load_model, validate_model, format_model_context)
+    type: library
+  - id: IF-YAML-SCHEMA
+    name: YAML Model Schema
     status: ACTIVE
-    description: validate_model(model) -> ValidationResult with score 0-100 and issues list
-    type: internal
-    provider: COMP-CORE
-  - id: IF-SLICE
-    name: Slicer API
-    status: ACTIVE
-    description: slice_by_fblock(model, fblock_id), slice_by_layer(model, layer_id) -> ArchitectureModel
-    type: internal
-    provider: COMP-CORE
-  - id: IF-LLM-CONTEXT
-    name: LLM Context API
-    status: ACTIVE
-    description: format_model_context(model, max_tokens, detail_level), format_fblock_context(model, f_block, max_tokens)
-    type: internal
-    provider: COMP-CORE
+    description: The .architecture-model.yaml file format (7 entity types, 17 relationship types)
+    type: file
   constraints:
-  - id: CON-SCHEMA
-    name: Schema Version
+  - id: CON-NO-LLM
+    name: No LLM in Core
     status: ACTIVE
-    description: Models must declare schema_version 2.0 in meta section
+    description: Core package must be purely deterministic — no LLM calls, no network I/O
     type: technology
-    threshold: '2.0'
-  - id: CON-INTEGRITY
-    name: Referential Integrity
-    status: ACTIVE
-    description: All relationship from/to IDs must reference existing entities
-    type: reliability
-    rationale: Broken references make model unusable for impact analysis
-  - id: CON-UNIQUENESS
-    name: ID Uniqueness
-    status: ACTIVE
-    description: Entity IDs must be unique across all entity types
-    type: reliability
-    rationale: Duplicate IDs cause ambiguous references
-  - id: CON-SCORE
-    name: Validation Score Threshold
-    status: ACTIVE
-    description: Production models should achieve validation score >= 90/100
-    type: reliability
-    threshold: '90'
   components:
   - id: COMP-CORE
     name: Core
     status: ACTIVE
-    description: Type system, parsing, validation, slicing, diffing, merging, visualization, compression
-    layer: LAYER-DOMAIN
-    source_block: S4
-    technology: python
+    description: Domain model types, parser, validator, slicer, differ, merger, coverage, confidence
+    layer: LYR-CORE
     files:
     - src/architecture_model/core/types.py
     - src/architecture_model/core/parser.py
@@ -129,26 +58,18 @@ entities:
     - src/architecture_model/core/slicer.py
     - src/architecture_model/core/differ.py
     - src/architecture_model/core/merger.py
-    - src/architecture_model/core/decomposer.py
     - src/architecture_model/core/coverage.py
-    - src/architecture_model/core/visualize.py
-    - src/architecture_model/core/compression.py
     - src/architecture_model/core/confidence.py
+    - src/architecture_model/core/compression.py
     - src/architecture_model/core/corrections.py
     - src/architecture_model/core/cluster.py
+    - src/architecture_model/core/decomposer.py
+    - src/architecture_model/core/representativeness.py
+    - src/architecture_model/core/regen_readiness.py
     - src/architecture_model/core/source_block_assign.py
     - src/architecture_model/core/source_block_quality.py
     - src/architecture_model/core/test_affinity.py
-    - src/architecture_model/core/representativeness.py
-    responsibilities:
-    - Define all entity/relationship types
-    - Parse/serialize YAML models
-    - Validate structural correctness
-    - Slice models by criteria
-    - Diff model versions
-    - Merge models
-    - Generate Mermaid diagrams
-    - Token compression for LLM context
+    - src/architecture_model/core/visualize.py
     kind: library
     constants:
     - name: Status.ACTIVE
@@ -389,13 +310,11 @@ entities:
       value: '12000'
     - name: _EXCLUDED_FILES
       value: frozenset({'setup.py', 'conftest.py'})
-    - name: SYSTEM_THRESHOLD
-      value: '10.0'
     - name: SOURCE_EXTENSIONS
-      value: '{''*.jsx'', ''*.js'', ''*.kt'', ''*.swift'', ''*.java'', ''*.rs'', ''*.tsx'', ''*.go'', ''*.py'', ''*.ts''}'
+      value: '{''*.go'', ''*.rs'', ''*.ts'', ''*.js'', ''*.kt'', ''*.java'', ''*.jsx'', ''*.swift'', ''*.py'', ''*.tsx''}'
     - name: EXCLUDE_DIRS
-      value: '{''vendored'', ''_vendor'', ''node_modules'', ''__pycache__'', ''build'', ''.git'', ''dist'', ''.venv'', ''venv'',
-        ''vendor''}'
+      value: '{''dist'', ''build'', ''vendor'', ''venv'', ''vendored'', ''node_modules'', ''_vendor'', ''.venv'', ''__pycache__'',
+        ''.git''}'
     - name: CHARS_PER_TOKEN
       value: '4'
     - name: CORRECTION_TYPES
@@ -403,6 +322,8 @@ entities:
         ''rename'', ''reclassify'']'
     - name: _CORRECTIONS_FILE
       value: .architecture/corrections.yaml
+    - name: SYSTEM_THRESHOLD
+      value: '10.0'
     signatures:
     - name: RelationType.parse
       params:
@@ -767,46 +688,6 @@ entities:
         source_stems, project_r...; components: list[Component] = []; for src_file in source_files: ...; project_name = project_root.name;
         meta = ModelMeta(schema_version=''1.4'', project=project_name); entities = Entities(components=components); return
         ArchitectureModel(meta=meta, entities=entities, relationships=[])'
-    - name: compute_complexity
-      params:
-      - 'comp: Component'
-      - 'model: ArchitectureModel'
-      returns: float
-      body_hint: symbol_weight = len(comp.symbols) * 2.0; member_weight = sum((len(s.members) for s in comp.symbols)) * 0.3;
-        function_weight = len(comp.functions) * 0.5; deps = sum((1 for r in model.relationships if r.type == Relation...;
-        dep_weight = deps * 1.5; return symbol_weight + member_weight + function_weight + dep_weight
-    - name: identify_systems
-      params:
-      - 'model: ArchitectureModel'
-      - 'manifest: dict'
-      returns: list[SystemCandidate]
-      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; source_blocks_meta
-        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (source_block_id, components)
-        in groups.items(): ...; return candidates'
-    - name: decompose_model
-      params:
-      - 'model: ArchitectureModel'
-      - 'manifest: dict'
-      - 'output_dir: str'
-      returns: DecompositionResult
-      body_hint: 'candidates = identify_systems(model, manifest); if not candidates: ...; comp_to_system: dict[str, str] =
-        {}; system_ids: dict[str, SystemCandidate] = {}; for candidate in candidates: ...; promoted_comp_ids = set(comp_to_system.keys());
-        top_level_components = [c for c in model.entities.components if c.id not in prom...; sub_models: dict[str, ArchitectureModel]
-        = {}; systems: list[System] = []; for (sys_id, candidate) in system_ids.items(): ...; top_level_rels: list[Relationship]
-        = []; promoted_rel_keys: set[tuple[RelationType, str, str]] = s...; for rel in model.relationships: ...; top_level_entities
-        = Entities(actors=model.entities.actors, capabilities=model...; top_level_model = ArchitectureModel(meta=model.meta,
-        entities=top_level_ent...; return DecompositionResult(top_level=top_level_model, sub_models=sub_models)'
-    - name: detect_systems
-      params:
-      - 'model: ArchitectureModel'
-      - manifest
-      - 'target_systems: int'
-      returns: list[SystemScore]
-      body_hint: 'components = model.entities.components; if not components: ...; n = len(components); if n == 1: ...; file_to_module
-        = {}; for mod in manifest.modules: ...; comp_data = {}; for comp in components: ...; if target_systems <= 0: ...;
-        target_systems = min(target_systems, n); clusters: list[list[str]] = [[comp.id] for comp in compon...; while len(clusters)
-        > target_systems: ...; comp_id_to_name = {c.id: c.name for c in components}; all_comp_ids = set((c.id for c in components));
-        results = []; for cluster in clusters: ...; return results'
     - name: CoverageResult.summary
       returns: str
       body_hint: "lines = ['Model Coverage Report', '=' * 40]; for c in self.checks:\n    status = '✓' if c.score == 100 else\
@@ -826,63 +707,6 @@ entities:
         \ rel_check, _check_capability_coverage(model, manifest), _check_interface_coverage(model, manifest), _check_staleness(model,\
         \ manifest), _check_source_block_quality(model), _check_requirement_traceability(model)]; overall = sum((c.score for\
         \ c in checks)) / len(checks) if checks else 0.0; return CoverageResult(checks=checks, overall_score=overall)"
-    - name: generate_context_diagram
-      params:
-      - 'model: ''ArchitectureModel'''
-      returns: str
-      body_hint: 'lines = [''flowchart TB'']; project = getattr(model.meta, ''project'', ''System''); lines.append(f''    subgraph
-        system[{_label(project)}]''); for ifc in model.entities.interfaces: ...; if not model.entities.interfaces: ...; lines.append(''    end'');
-        for actor in model.entities.actors: ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
-    - name: generate_components_diagram
-      params:
-      - 'model: ''ArchitectureModel'''
-      returns: str
-      body_hint: 'lines = [''flowchart TB'']; layer_ids = {l.id for l in model.entities.layers}; comp_ids = {c.id for c in
-        model.entities.components}; layer_members: dict[str, list[str]] = defaultdict(list); for rel in model.relationships:
-        ...; assigned = {cid for members in layer_members.values() for cid in mem...; unassigned = [c for c in model.entities.components
-        if c.id not in assi...; layer_map = {l.id: l for l in model.entities.layers}; for lid in sorted(layer_members): ...;
-        if unassigned: ...; for cap in model.entities.capabilities: ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
-    - name: generate_behaviors_diagram
-      params:
-      - 'model: ''ArchitectureModel'''
-      returns: str
-      body_hint: 'lines = [''flowchart LR'']; beh_ids = {b.id for b in model.entities.behaviors}; for beh in model.entities.behaviors:
-        ...; for rel in model.relationships: ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
-    - name: generate_dependencies_diagram
-      params:
-      - 'model: ''ArchitectureModel'''
-      returns: str
-      body_hint: 'lines = [''flowchart LR'']; source_block_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
-        ...; source_block_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(source_block_groups):
-        ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
-    - name: generate_all_diagrams
-      params:
-      - 'model: ''ArchitectureModel'''
-      - 'output_dir: Path'
-      returns: dict[str, Path]
-      body_hint: "output_dir.mkdir(parents=True, exist_ok=True); generators = {'context': generate_context_diagram, 'components':\
-        \ generate_components_diagram, 'behaviors': generate_behaviors_diagram, 'dependencies': generate_dependencies_diagram};\
-        \ paths = {}; for name, gen_fn in generators.items():\n    content = gen_fn(model)\n    path = output_dir / f'{name}.mmd'\n\
-        \    path.write_text(content + '\\n')\n    paths[name] = path; return paths"
-    - name: compute_compression_stats
-      params:
-      - 'root: Path'
-      returns: dict
-      body_hint: 'source_bytes = _sum_source_size(root); model_bytes = _sum_model_size(root); source_tokens = source_bytes
-        // CHARS_PER_TOKEN; model_tokens = model_bytes // CHARS_PER_TOKEN; tokens_saved = max(0, source_tokens - model_tokens);
-        if model_bytes > 0: ...; return {''source_bytes'': source_bytes, ''model_bytes'': model_bytes, ''compression_ratio'':
-        compression_ratio, ''source_tokens'': source_tokens, ''model_tokens'': model_tokens, ''tokens_saved'': tokens_saved}'
-    - name: format_compression_summary
-      params:
-      - 'stats: dict'
-      returns: str
-      body_hint: "if stats['compression_ratio'] == 0.0:\n    return \"No model found — run 'architecture-model init .' to\
-        \ generate.\"; lines = ['--- Token Savings ---', f\"  Source code: ~{stats['source_tokens']:,} tokens ({stats['source_bytes']:,}\
-        \ bytes)\", f\"  Model:       ~{stats['model_tokens']:,} tokens ({stats['model_bytes']:,} bytes)\", f\"  Compression:\
-        \ {stats['compression_ratio']}x ({stats['tokens_saved']:,} tokens saved)\"]; ratio = stats['compression_ratio']; if\
-        \ ratio >= 50:\n    lines.append(f'  Note: High compression ({ratio}x). Consider per-block slicing for accuracy.')\n\
-        elif ratio >= 10:\n    lines.append(f'  Quality: Good compression range for accurate architecture reasoning.'); return\
-        \ '\\n'.join(lines)"
     - name: compute_component_confidence
       params:
       - 'comp: Component'
@@ -944,6 +768,25 @@ entities:
         in sig.split(''->'')[0] if sig else False; if has_return_type and has_typed_params: ...; if func_info.docstring: ...;
         if func_info.calls: ...; if func_info.raises: ...; inner = sig.split(''('')[1].split('')'')[0].strip() if ''('' in
         sig els...; if inner and inner != ''self'': ...; return min(score, 1.0)'
+    - name: compute_compression_stats
+      params:
+      - 'root: Path'
+      returns: dict
+      body_hint: 'source_bytes = _sum_source_size(root); model_bytes = _sum_model_size(root); source_tokens = source_bytes
+        // CHARS_PER_TOKEN; model_tokens = model_bytes // CHARS_PER_TOKEN; tokens_saved = max(0, source_tokens - model_tokens);
+        if model_bytes > 0: ...; return {''source_bytes'': source_bytes, ''model_bytes'': model_bytes, ''compression_ratio'':
+        compression_ratio, ''source_tokens'': source_tokens, ''model_tokens'': model_tokens, ''tokens_saved'': tokens_saved}'
+    - name: format_compression_summary
+      params:
+      - 'stats: dict'
+      returns: str
+      body_hint: "if stats['compression_ratio'] == 0.0:\n    return \"No model found — run 'architecture-model init .' to\
+        \ generate.\"; lines = ['--- Token Savings ---', f\"  Source code: ~{stats['source_tokens']:,} tokens ({stats['source_bytes']:,}\
+        \ bytes)\", f\"  Model:       ~{stats['model_tokens']:,} tokens ({stats['model_bytes']:,} bytes)\", f\"  Compression:\
+        \ {stats['compression_ratio']}x ({stats['tokens_saved']:,} tokens saved)\"]; ratio = stats['compression_ratio']; if\
+        \ ratio >= 50:\n    lines.append(f'  Note: High compression ({ratio}x). Consider per-block slicing for accuracy.')\n\
+        elif ratio >= 10:\n    lines.append(f'  Quality: Good compression range for accurate architecture reasoning.'); return\
+        \ '\\n'.join(lines)"
     - name: load_corrections
       params:
       - 'repo_path: Path'
@@ -996,6 +839,114 @@ entities:
         = defaultdict(set); module_set = set(modules); for (src, tgt) in edges: ...; sorted_modules = sorted(modules, key=lambda
         m: len(adj.get(m, set())), rev...; assigned: dict[str, int] = {}; clusters: list[list[str]] = []; for mod in sorted_modules:
         ...; for mod in modules: ...; merged_clusters: list[list[str]] = []; for cluster in clusters: ...; return merged_clusters'
+    - name: compute_complexity
+      params:
+      - 'comp: Component'
+      - 'model: ArchitectureModel'
+      returns: float
+      body_hint: symbol_weight = len(comp.symbols) * 2.0; member_weight = sum((len(s.members) for s in comp.symbols)) * 0.3;
+        function_weight = len(comp.functions) * 0.5; deps = sum((1 for r in model.relationships if r.type == Relation...;
+        dep_weight = deps * 1.5; return symbol_weight + member_weight + function_weight + dep_weight
+    - name: identify_systems
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      returns: list[SystemCandidate]
+      body_hint: 'groups: dict[str, list[Component]] = defaultdict(list); for comp in model.entities.components: ...; source_blocks_meta
+        = manifest.get(''functional_blocks'', {}); candidates: list[SystemCandidate] = []; for (source_block_id, components)
+        in groups.items(): ...; return candidates'
+    - name: decompose_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'manifest: dict'
+      - 'output_dir: str'
+      returns: DecompositionResult
+      body_hint: 'candidates = identify_systems(model, manifest); if not candidates: ...; comp_to_system: dict[str, str] =
+        {}; system_ids: dict[str, SystemCandidate] = {}; for candidate in candidates: ...; promoted_comp_ids = set(comp_to_system.keys());
+        top_level_components = [c for c in model.entities.components if c.id not in prom...; sub_models: dict[str, ArchitectureModel]
+        = {}; systems: list[System] = []; for (sys_id, candidate) in system_ids.items(): ...; top_level_rels: list[Relationship]
+        = []; promoted_rel_keys: set[tuple[RelationType, str, str]] = s...; for rel in model.relationships: ...; top_level_entities
+        = Entities(actors=model.entities.actors, capabilities=model...; top_level_model = ArchitectureModel(meta=model.meta,
+        entities=top_level_ent...; return DecompositionResult(top_level=top_level_model, sub_models=sub_models)'
+    - name: detect_systems
+      params:
+      - 'model: ArchitectureModel'
+      - manifest
+      - 'target_systems: int'
+      returns: list[SystemScore]
+      body_hint: 'components = model.entities.components; if not components: ...; n = len(components); if n == 1: ...; file_to_module
+        = {}; for mod in manifest.modules: ...; comp_data = {}; for comp in components: ...; if target_systems <= 0: ...;
+        target_systems = min(target_systems, n); clusters: list[list[str]] = [[comp.id] for comp in compon...; while len(clusters)
+        > target_systems: ...; comp_id_to_name = {c.id: c.name for c in components}; all_comp_ids = set((c.id for c in components));
+        results = []; for cluster in clusters: ...; return results'
+    - name: RepresentativenessResult.to_dict
+      returns: dict
+      body_hint: 'return {''file_coverage'': self.file_coverage, ''relationship_accuracy'': self.relationship_accuracy, ''boundary_coherence'':
+        self.boundary_coherence, ''behavioral_coverage'': self.behavioral_coverage, ''overall'': self.overall, ''uncovered_files'':
+        self.uncovered_files, ''unverified_relationships'': self.unverified_relationships, ''low_coherence_components'': self.low_coherence_components,
+        ''uncaptured_behaviors'': self.uncaptured_behaviors}'
+    - name: compute_representativeness
+      params:
+      - 'model: ArchitectureModel'
+      - 'modules: list[ModuleInfo]'
+      - 'interfaces: list[InterfaceEdge]'
+      returns: RepresentativenessResult
+      decorators:
+      - 'monitored(module=''core.representativeness'', quality=lambda r: {''overall'': r.overall})'
+      body_hint: 'result = RepresentativenessResult(); components = model.entities.components if model.entities and model.ent...;
+        non_trivial = [m for m in modules if not _is_trivial(m)]; if not non_trivial: ...; relationships = model.relationships
+        or []; comp_map = {c.id: c for c in components}; verifiable = []; for r in relationships: ...; if not verifiable:
+        ...; if not components: ...; _BUILTINS = frozenset({''print'', ''len'', ''str'', ''int'', ''float'', ''bool'',...;
+        complex_funcs = []; for m in modules: ...; if complex_funcs: ...; result.overall = (result.file_coverage + result.relationship_accuracy
+        + re...; return result'
+    - name: HierarchicalRepresentativenessResult.to_dict
+      returns: dict
+      body_hint: 'return {''root'': self.root.to_dict(), ''blocks'': {k: v.to_dict() for k, v in self.blocks.items()}, ''overall'':
+        self.overall}'
+    - name: compute_hierarchical_representativeness
+      params:
+      - 'root_model: ArchitectureModel'
+      - 'sub_models: dict[str, ArchitectureModel]'
+      - 'recursive_manifests: dict[str, ''RecursiveManifest'']'
+      returns: HierarchicalRepresentativenessResult
+      body_hint: 'from architecture_model.manifest.types import RecursiveMa...; result = HierarchicalRepresentativenessResult();
+        all_modules = []; all_interfaces = []; for rm in recursive_manifests.values(): ...; result.root = compute_representativeness(root_model,
+        all_modules, all_i...; block_scores: list[float] = []; for (block_id, rm) in recursive_manifests.items(): ...; if
+        block_scores: ...; return result'
+    - name: compute_function_readiness
+      params:
+      - 'sig: FunctionSignature'
+      - 'test_contracts: list[TestContract]'
+      returns: FunctionReadiness
+      body_hint: 'quality = _classify_hint(sig); has_hint = bool(sig.body_hint); called_in_tests = _count_test_references(sig.name,
+        test_contracts); if not has_hint: ...; score += min(20, called_in_tests * 7); score = min(100.0, score); blockers:
+        list[str] = []; if called_in_tests >= 3 and (not has_hint): ...; return FunctionReadiness(name=sig.name, score=score,
+        has_body_hint=has_hint, body_hint_quality=quality, called_in_tests=called_in_tests, blockers=blockers)'
+    - name: compute_component_readiness
+      params:
+      - 'component: Component'
+      returns: ComponentReadiness
+      body_hint: 'sigs = component.signatures; test_contracts = component.test_contracts; constants = component.constants;
+        if sigs: ...; sigs_with_hints = [s for s in sigs if s.body_hint]; if sigs_with_hints: ...; test_contract_count = len(test_contracts);
+        const_names = {c.name for c in constants}; referenced_consts: set[str] = set(); for tc in test_contracts: ...; if
+        referenced_consts: ...; test_func_refs: set[str] = set(); for tc in test_contracts: ...; sig_names = {s.name for s
+        in sigs}; matched = test_func_refs & sig_names; if test_func_refs: ...; requires_interfaces = [i for i in component.interfaces
+        if i.kind == ''requires'']; if requires_interfaces: ...; func_readiness = [compute_function_readiness(s, test_contracts)
+        for s in s...; score = body_hint_coverage * 25 + body_hint_trivial_ratio * 15 + ...; blockers: list[str] = []; for
+        fr in func_readiness: ...; return ComponentReadiness(id=component.id, name=component.name, score=score, functions=func_readiness,
+        body_hint_coverage=body_hint_coverage, body_hint_trivial_ratio=body_hint_trivial_ratio, test_contract_count=test_contract_count,
+        constant_coverage=constant_coverage, signature_coverage=signature_coverage, dep_stub_coverage=dep_stub_coverage, blockers=blockers)'
+    - name: compute_regen_readiness
+      params:
+      - 'model: ArchitectureModel'
+      returns: RegenReadiness
+      body_hint: 'components = model.entities.components if model.entities else []; comp_results: list[ComponentReadiness]
+        = []; for comp in components: ...; total_weight = 0; weighted_sum = 0.0; for (comp, cr) in zip(components, comp_results):
+        ...; overall = weighted_sum / total_weight if total_weight else 0.0; if overall >= 90: ...; blockers: list[str] =
+        []; for cr in comp_results: ...; critical_blockers = [b for cr in comp_results for b in cr.blockers if ''critic...;
+        low_const = [cr for cr in comp_results if cr.constant_coverage < 0.5]; if all((cr.score >= 90 for cr in comp_results))
+        and comp_results: ...; return RegenReadiness(overall=overall, grade=grade, components=comp_results, blockers=blockers,
+        recommendation=recommendation)'
     - name: auto_assign_source_blocks
       params:
       - 'model: ArchitectureModel'
@@ -1065,40 +1016,44 @@ entities:
         for n in all_names if in_degree[n] == 0]); sorted_names: list[str] = []; while queue: ...; remaining = sorted(all_names
         - set(sorted_names)); sorted_names.extend(remaining); result: list[Subsystem] = []; for sub_name in sorted_names:
         ...; return result'
-    - name: RepresentativenessResult.to_dict
-      returns: dict
-      body_hint: 'return {''file_coverage'': self.file_coverage, ''relationship_accuracy'': self.relationship_accuracy, ''boundary_coherence'':
-        self.boundary_coherence, ''behavioral_coverage'': self.behavioral_coverage, ''overall'': self.overall, ''uncovered_files'':
-        self.uncovered_files, ''unverified_relationships'': self.unverified_relationships, ''low_coherence_components'': self.low_coherence_components,
-        ''uncaptured_behaviors'': self.uncaptured_behaviors}'
-    - name: compute_representativeness
+    - name: generate_context_diagram
       params:
-      - 'model: ArchitectureModel'
-      - 'modules: list[ModuleInfo]'
-      - 'interfaces: list[InterfaceEdge]'
-      returns: RepresentativenessResult
-      decorators:
-      - 'monitored(module=''core.representativeness'', quality=lambda r: {''overall'': r.overall})'
-      body_hint: 'result = RepresentativenessResult(); components = model.entities.components if model.entities and model.ent...;
-        non_trivial = [m for m in modules if not _is_trivial(m)]; if not non_trivial: ...; relationships = model.relationships
-        or []; comp_map = {c.id: c for c in components}; verifiable = []; for r in relationships: ...; if not verifiable:
-        ...; if not components: ...; _BUILTINS = frozenset({''print'', ''len'', ''str'', ''int'', ''float'', ''bool'',...;
-        complex_funcs = []; for m in modules: ...; if complex_funcs: ...; result.overall = (result.file_coverage + result.relationship_accuracy
-        + re...; return result'
-    - name: HierarchicalRepresentativenessResult.to_dict
-      returns: dict
-      body_hint: 'return {''root'': self.root.to_dict(), ''blocks'': {k: v.to_dict() for k, v in self.blocks.items()}, ''overall'':
-        self.overall}'
-    - name: compute_hierarchical_representativeness
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines = [''flowchart TB'']; project = getattr(model.meta, ''project'', ''System''); lines.append(f''    subgraph
+        system[{_label(project)}]''); for ifc in model.entities.interfaces: ...; if not model.entities.interfaces: ...; lines.append(''    end'');
+        for actor in model.entities.actors: ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
+    - name: generate_components_diagram
       params:
-      - 'root_model: ArchitectureModel'
-      - 'sub_models: dict[str, ArchitectureModel]'
-      - 'recursive_manifests: dict[str, ''RecursiveManifest'']'
-      returns: HierarchicalRepresentativenessResult
-      body_hint: 'from architecture_model.manifest.types import RecursiveMa...; result = HierarchicalRepresentativenessResult();
-        all_modules = []; all_interfaces = []; for rm in recursive_manifests.values(): ...; result.root = compute_representativeness(root_model,
-        all_modules, all_i...; block_scores: list[float] = []; for (block_id, rm) in recursive_manifests.items(): ...; if
-        block_scores: ...; return result'
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines = [''flowchart TB'']; layer_ids = {l.id for l in model.entities.layers}; comp_ids = {c.id for c in
+        model.entities.components}; layer_members: dict[str, list[str]] = defaultdict(list); for rel in model.relationships:
+        ...; assigned = {cid for members in layer_members.values() for cid in mem...; unassigned = [c for c in model.entities.components
+        if c.id not in assi...; layer_map = {l.id: l for l in model.entities.layers}; for lid in sorted(layer_members): ...;
+        if unassigned: ...; for cap in model.entities.capabilities: ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
+    - name: generate_behaviors_diagram
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines = [''flowchart LR'']; beh_ids = {b.id for b in model.entities.behaviors}; for beh in model.entities.behaviors:
+        ...; for rel in model.relationships: ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
+    - name: generate_dependencies_diagram
+      params:
+      - 'model: ''ArchitectureModel'''
+      returns: str
+      body_hint: 'lines = [''flowchart LR'']; source_block_groups: dict[str, list] = defaultdict(list); for comp in model.entities.components:
+        ...; source_block_names: dict[str, str] = {}; for cap in model.entities.capabilities: ...; for fb in sorted(source_block_groups):
+        ...; for rel in model.relationships: ...; return ''\n''.join(lines)'
+    - name: generate_all_diagrams
+      params:
+      - 'model: ''ArchitectureModel'''
+      - 'output_dir: Path'
+      returns: dict[str, Path]
+      body_hint: "output_dir.mkdir(parents=True, exist_ok=True); generators = {'context': generate_context_diagram, 'components':\
+        \ generate_components_diagram, 'behaviors': generate_behaviors_diagram, 'dependencies': generate_dependencies_diagram};\
+        \ paths = {}; for name, gen_fn in generators.items():\n    content = gen_fn(model)\n    path = output_dir / f'{name}.mmd'\n\
+        \    path.write_text(content + '\\n')\n    paths[name] = path; return paths"
     test_contracts:
     - test_file: test_types.py
       test_method: test_returns_dict
@@ -1352,66 +1307,6 @@ entities:
       test_method: test_missing_manifest_returns_unchanged
       assertion: model_copy.meta.manifest_hash == original_hash
       contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_empty_component_is_zero
-      assertion: compute_complexity(comp, model) == 0.0
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_symbols_contribute
-      assertion: score == pytest.approx(4.9)
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_functions_contribute
-      assertion: score == pytest.approx(2.0)
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_deps_contribute
-      assertion: score == pytest.approx(3.0)
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_complex_component_above_threshold
-      assertion: score == pytest.approx(36.0)
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_non_depends_on_rels_ignored
-      assertion: score == 0.0
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_identifies_complex_source_block_group
-      assertion: len(systems) == 1
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_simple_model_no_systems
-      assertion: len(systems) == 0
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_components_without_source_block_not_grouped
-      assertion: len(systems) == 0
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_multiple_systems_identified
-      assertion: len(systems) == 2
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_uses_source_block_id_as_name_when_not_in_manifest
-      assertion: len(systems) == 1
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_decompose_creates_system
-      assertion: result isinstance DecompositionResult
-      contract_type: type_check
-    - test_file: test_decomposer.py
-      test_method: test_inter_system_rels_deduplicated
-      assertion: len(deps_to_simple) == 1
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_sub_model_meta_has_system_name
-      assertion: sub.meta.system == 'Core Engine'
-      contract_type: value_equality
-    - test_file: test_decomposer.py
-      test_method: test_no_systems_returns_unchanged
-      assertion: len(result.top_level.entities.systems) == 0
-      contract_type: value_equality
     - test_file: test_coverage.py
       test_method: test_coverage_check_defaults
       assertion: c.missing == []
@@ -1492,10 +1387,6 @@ entities:
       test_method: test_full_report
       assertion: len(result.checks) == 7
       contract_type: value_equality
-    - test_file: test_visualize.py
-      test_method: test_writes_all_files
-      assertion: len(paths) == 4
-      contract_type: value_equality
     - test_file: test_corrections.py
       test_method: test_load_empty
       assertion: load_corrections(tmp_path) == []
@@ -1523,6 +1414,150 @@ entities:
     - test_file: test_cluster.py
       test_method: test_clusters_connected_modules_together
       assertion: len(groups) == 2
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_empty_component_is_zero
+      assertion: compute_complexity(comp, model) == 0.0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_symbols_contribute
+      assertion: score == pytest.approx(4.9)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_functions_contribute
+      assertion: score == pytest.approx(2.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_deps_contribute
+      assertion: score == pytest.approx(3.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_complex_component_above_threshold
+      assertion: score == pytest.approx(36.0)
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_non_depends_on_rels_ignored
+      assertion: score == 0.0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_identifies_complex_source_block_group
+      assertion: len(systems) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_simple_model_no_systems
+      assertion: len(systems) == 0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_components_without_source_block_not_grouped
+      assertion: len(systems) == 0
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_multiple_systems_identified
+      assertion: len(systems) == 2
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_uses_source_block_id_as_name_when_not_in_manifest
+      assertion: len(systems) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_decompose_creates_system
+      assertion: result isinstance DecompositionResult
+      contract_type: type_check
+    - test_file: test_decomposer.py
+      test_method: test_inter_system_rels_deduplicated
+      assertion: len(deps_to_simple) == 1
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_sub_model_meta_has_system_name
+      assertion: sub.meta.system == 'Core Engine'
+      contract_type: value_equality
+    - test_file: test_decomposer.py
+      test_method: test_no_systems_returns_unchanged
+      assertion: len(result.top_level.entities.systems) == 0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_perfect_file_coverage
+      assertion: r.file_coverage == 100.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_partial_file_coverage
+      assertion: r.file_coverage == 50.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_trivial_files_excluded
+      assertion: r.file_coverage == 100.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_empty_model_zero_coverage
+      assertion: r.file_coverage == 0.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_all_relationships_verified
+      assertion: r.relationship_accuracy == 100.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_unverified_relationship
+      assertion: r.relationship_accuracy == 0.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_no_relationships_is_100
+      assertion: r.relationship_accuracy == 100.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_perfect_coherence_single_file
+      assertion: r.boundary_coherence == 100.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_low_coherence_wrong_grouping
+      assertion: r.boundary_coherence == 0.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_perfect_model_100
+      assertion: r.overall == 100.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_representativeness_result_to_dict
+      assertion: d['file_coverage'] == 80.0
+      contract_type: value_equality
+    - test_file: test_representativeness.py
+      test_method: test_hierarchical_result_to_dict
+      assertion: d['overall'] == 82.5
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_function_readiness_no_hint
+      assertion: result.score == 20.0
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_function_readiness_trivial
+      assertion: result.body_hint_quality == 'trivial'
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_function_readiness_complex
+      assertion: result.body_hint_quality == 'complex'
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_function_readiness_short
+      assertion: result.score == 65.0
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_function_readiness_blocker
+      assertion: len(result.blockers) == 1
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_component_readiness_empty
+      assertion: result.score == 40.0
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_constant_coverage_calculation
+      assertion: result.constant_coverage == 1.0
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_system_readiness_empty
+      assertion: result.overall == 0.0
+      contract_type: value_equality
+    - test_file: test_regen_readiness.py
+      test_method: test_system_readiness_recommendation_ready
+      assertion: result.recommendation == 'Ready for regeneration'
       contract_type: value_equality
     - test_file: test_source_block_assign.py
       test_method: test_deterministic_tiebreak_alphabetical
@@ -1576,53 +1611,9 @@ entities:
       test_method: test_colorama_subsystem_count
       assertion: len(result) == 5
       contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_perfect_file_coverage
-      assertion: r.file_coverage == 100.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_partial_file_coverage
-      assertion: r.file_coverage == 50.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_trivial_files_excluded
-      assertion: r.file_coverage == 100.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_empty_model_zero_coverage
-      assertion: r.file_coverage == 0.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_all_relationships_verified
-      assertion: r.relationship_accuracy == 100.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_unverified_relationship
-      assertion: r.relationship_accuracy == 0.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_no_relationships_is_100
-      assertion: r.relationship_accuracy == 100.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_perfect_coherence_single_file
-      assertion: r.boundary_coherence == 100.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_low_coherence_wrong_grouping
-      assertion: r.boundary_coherence == 0.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_perfect_model_100
-      assertion: r.overall == 100.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_representativeness_result_to_dict
-      assertion: d['file_coverage'] == 80.0
-      contract_type: value_equality
-    - test_file: test_representativeness.py
-      test_method: test_hierarchical_result_to_dict
-      assertion: d['overall'] == 82.5
+    - test_file: test_visualize.py
+      test_method: test_writes_all_files
+      assertion: len(paths) == 4
       contract_type: value_equality
 relationships:
 - type: realizes
@@ -1639,28 +1630,7 @@ relationships:
   to: CAP-DIFF
 - type: realizes
   from: COMP-CORE
-  to: CAP-CONTEXT
-- type: realizes
-  from: COMP-CORE
-  to: CAP-VISUALIZE
-- type: realizes
-  from: COMP-CORE
   to: CAP-COVERAGE
-- type: realizes
-  from: COMP-CORE
-  to: CAP-IMPACT
-- type: exposes
-  from: COMP-CORE
-  to: IF-PARSE
-- type: exposes
-  from: COMP-CORE
-  to: IF-VALIDATE
-- type: exposes
-  from: COMP-CORE
-  to: IF-SLICE
-- type: exposes
-  from: COMP-CORE
-  to: IF-LLM-CONTEXT
 - type: depends-on
   from: COMP-CLI
   to: COMP-CORE
@@ -1668,10 +1638,10 @@ relationships:
   from: COMP-ORCHESTRATION
   to: COMP-CORE
 - type: depends-on
-  from: COMP-EXTRACT
+  from: COMP-PIPELINE
   to: COMP-CORE
 - type: depends-on
-  from: COMP-AUTHORING
+  from: COMP-EXTRACT
   to: COMP-CORE
 - type: depends-on
   from: COMP-DOCS
@@ -1680,35 +1650,20 @@ relationships:
   from: COMP-EXPORT
   to: COMP-CORE
 - type: depends-on
-  from: COMP-PERSISTENCE
+  from: COMP-INTEGRATIONS
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-AUTHORING
   to: COMP-CORE
 - type: depends-on
   from: COMP-CORE
-  to: COMP-PROFILES
+  to: COMP-CONFIG
+- type: exposes
+  from: COMP-CORE
+  to: IF-PYTHON-API
+- type: exposes
+  from: COMP-CORE
+  to: IF-YAML-SCHEMA
 - type: constrained-by
   from: COMP-CORE
-  to: CON-SCHEMA
-- type: constrained-by
-  from: COMP-CORE
-  to: CON-INTEGRITY
-- type: constrained-by
-  from: COMP-CORE
-  to: CON-UNIQUENESS
-- type: constrained-by
-  from: COMP-CORE
-  to: CON-SCORE
-- type: traces-to
-  from: COMP-CORE
-  to: BEH-LLM-QUERY
-- type: verifies
-  from: COMP-CORE
-  to: CON-INTEGRITY
-- type: verifies
-  from: COMP-CORE
-  to: CON-UNIQUENESS
-- type: verifies
-  from: COMP-CORE
-  to: CON-SCHEMA
-- type: verifies
-  from: COMP-CORE
-  to: CON-SCORE
+  to: CON-NO-LLM

@@ -2,38 +2,20 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Persistence
   system: Persistence
-  generated_at: '2026-08-06T21:52:00'
+  generated_at: '2026-08-10T21:46:22.714335+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-PERSISTENCE
 entities:
-  capabilities:
-  - id: CAP-PERSIST
-    name: Project Persistence
-    status: ACTIVE
-    description: Save/load project snapshots (model + manifest + telemetry) to .architecture/ directory
-    source_block: S11
-    priority: low
-  interfaces:
-  - id: IF-PERSIST
-    name: Persistence API
-    status: ACTIVE
-    description: save_project(root, model, manifest) -> Path
-    type: internal
-    provider: COMP-PERSISTENCE
   components:
   - id: COMP-PERSISTENCE
     name: Persistence
     status: ACTIVE
-    description: Project snapshot storage (.architecture/ directory)
-    layer: LAYER-INFRA
-    source_block: S11
-    technology: python json yaml
+    description: Vector store for architecture model storage
+    layer: LYR-INFRA
     files:
+    - src/architecture_model/persistence/__init__.py
     - src/architecture_model/persistence/store.py
-    responsibilities:
-    - Save project snapshots (model + manifest + telemetry)
-    - Load previous snapshots for comparison
     kind: library
     signatures:
     - name: save_project
@@ -104,16 +86,4 @@ entities:
       test_method: test_load_empty_dir
       assertion: snapshot.manifest_dict == {}
       contract_type: value_equality
-relationships:
-- type: realizes
-  from: COMP-PERSISTENCE
-  to: CAP-PERSIST
-- type: exposes
-  from: COMP-PERSISTENCE
-  to: IF-PERSIST
-- type: depends-on
-  from: COMP-PERSISTENCE
-  to: COMP-CORE
-- type: depends-on
-  from: COMP-PERSISTENCE
-  to: COMP-MANIFEST
+relationships: []

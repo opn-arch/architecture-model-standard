@@ -1,0 +1,6 @@
+component: COMP-137-7
+contracts:
+- test_file: tests/test_from_artifacts.py
+  assertions: 0
+- test_file: tests/test_constraint_detector.py
+  assertions: 0

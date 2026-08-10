@@ -1,0 +1,9 @@
+component: COMP-145
+interfaces:
+- id: IF-10
+  name: COMP-145 Library API
+  type: library
+  methods:
+  - 'InterfaceSpec: class InterfaceSpec'
+  - 'SpecifyResult: class SpecifyResult'
+  - 'SpecifyStage: class SpecifyStage'

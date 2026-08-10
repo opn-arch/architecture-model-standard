@@ -1,0 +1,3596 @@
+capabilities:
+- id: CAP-1
+  name: Root Management
+  description: CRUD operations for Root (16 endpoints)
+  evidence: routes
+- id: CAP-2
+  name: .Well Known Management
+  description: CRUD operations for .Well Known (8 endpoints)
+  evidence: routes
+- id: CAP-3
+  name: V1 Management
+  description: CRUD operations for V1 (130 endpoints)
+  evidence: routes
+- id: CAP-4
+  name: Authorize Management
+  description: CRUD operations for Authorize (2 endpoints)
+  evidence: routes
+- id: CAP-5
+  name: Token Management
+  description: CRUD operations for Token (2 endpoints)
+  evidence: routes
+- id: CAP-6
+  name: Callback Management
+  description: CRUD operations for Callback (1 endpoints)
+  evidence: routes
+- id: CAP-7
+  name: Register Management
+  description: CRUD operations for Register (2 endpoints)
+  evidence: routes
+- id: CAP-8
+  name: Tool Management
+  description: CRUD operations for Tool (3 endpoints)
+  evidence: routes
+- id: CAP-9
+  name: Test Management
+  description: CRUD operations for Test (3 endpoints)
+  evidence: routes
+- id: CAP-10
+  name: Enabled Management
+  description: CRUD operations for Enabled (1 endpoints)
+  evidence: routes
+- id: CAP-11
+  name: A2A Management
+  description: CRUD operations for A2A (4 endpoints)
+  evidence: routes
+- id: CAP-12
+  name: Agent Management
+  description: CRUD operations for Agent (1 endpoints)
+  evidence: routes
+- id: CAP-13
+  name: Global Management
+  description: CRUD operations for Global (18 endpoints)
+  evidence: routes
+- id: CAP-14
+  name: Claude Code Management
+  description: CRUD operations for Claude Code (7 endpoints)
+  evidence: routes
+- id: CAP-15
+  name: Api Management
+  description: CRUD operations for Api (1 endpoints)
+  evidence: routes
+- id: CAP-16
+  name: Batche Management
+  description: CRUD operations for Batche (4 endpoints)
+  evidence: routes
+- id: CAP-17
+  name: Ping Management
+  description: CRUD operations for Ping (1 endpoints)
+  evidence: routes
+- id: CAP-18
+  name: Delete Management
+  description: CRUD operations for Delete (2 endpoints)
+  evidence: routes
+- id: CAP-19
+  name: Redi Management
+  description: CRUD operations for Redi (1 endpoints)
+  evidence: routes
+- id: CAP-20
+  name: Flushall Management
+  description: CRUD operations for Flushall (1 endpoints)
+  evidence: routes
+- id: CAP-21
+  name: Debug Management
+  description: CRUD operations for Debug (4 endpoints)
+  evidence: routes
+- id: CAP-22
+  name: Memory Usage In Mem Cache Management
+  description: CRUD operations for Memory Usage In Mem Cache (1 endpoints)
+  evidence: routes
+- id: CAP-23
+  name: Memory Usage In Mem Cache Item Management
+  description: CRUD operations for Memory Usage In Mem Cache Item (1 endpoints)
+  evidence: routes
+- id: CAP-24
+  name: Otel Span Management
+  description: CRUD operations for Otel Span (1 endpoints)
+  evidence: routes
+- id: CAP-25
+  name: Memory Usage Management
+  description: CRUD operations for Memory Usage (1 endpoints)
+  evidence: routes
+- id: CAP-26
+  name: Config Management
+  description: CRUD operations for Config (17 endpoints)
+  evidence: routes
+- id: CAP-27
+  name: Container Management
+  description: CRUD operations for Container (4 endpoints)
+  evidence: routes
+- id: CAP-28
+  name: Credential Management
+  description: CRUD operations for Credential (6 endpoints)
+  evidence: routes
+- id: CAP-29
+  name: Litellm Management
+  description: CRUD operations for Litellm (1 endpoints)
+  evidence: routes
+- id: CAP-30
+  name: Fine Tuning Management
+  description: CRUD operations for Fine Tuning (4 endpoints)
+  evidence: routes
+- id: CAP-31
+  name: V1Beta Management
+  description: CRUD operations for V1Beta (7 endpoints)
+  evidence: routes
+- id: CAP-32
+  name: Model Management
+  description: CRUD operations for Model (5 endpoints)
+  evidence: routes
+- id: CAP-33
+  name: Interaction Management
+  description: CRUD operations for Interaction (4 endpoints)
+  evidence: routes
+- id: CAP-34
+  name: Guardrail Management
+  description: CRUD operations for Guardrail (22 endpoints)
+  evidence: routes
+- id: CAP-35
+  name: V2 Management
+  description: CRUD operations for V2 (7 endpoints)
+  evidence: routes
+- id: CAP-36
+  name: Apply Guardrail Management
+  description: CRUD operations for Apply Guardrail (1 endpoints)
+  evidence: routes
+- id: CAP-37
+  name: Policie Management
+  description: CRUD operations for Policie (19 endpoints)
+  evidence: routes
+- id: CAP-38
+  name: Health Management
+  description: CRUD operations for Health (16 endpoints)
+  evidence: routes
+- id: CAP-39
+  name: Setting Management
+  description: CRUD operations for Setting (1 endpoints)
+  evidence: routes
+- id: CAP-40
+  name: Active Management
+  description: CRUD operations for Active (1 endpoints)
+  evidence: routes
+- id: CAP-41
+  name: Image Management
+  description: CRUD operations for Image (2 endpoints)
+  evidence: routes
+- id: CAP-42
+  name: Openai Management
+  description: CRUD operations for Openai (13 endpoints)
+  evidence: routes
+- id: CAP-43
+  name: Budget Management
+  description: CRUD operations for Budget (6 endpoints)
+  evidence: routes
+- id: CAP-44
+  name: Cache Management
+  description: CRUD operations for Cache (3 endpoints)
+  evidence: routes
+- id: CAP-45
+  name: Callback Management
+  description: CRUD operations for Callback (2 endpoints)
+  evidence: routes
+- id: CAP-46
+  name: Compliance Management
+  description: CRUD operations for Compliance (2 endpoints)
+  evidence: routes
+- id: CAP-47
+  name: Config Override Management
+  description: CRUD operations for Config Override (4 endpoints)
+  evidence: routes
+- id: CAP-48
+  name: Cost Management
+  description: CRUD operations for Cost (1 endpoints)
+  evidence: routes
+- id: CAP-49
+  name: End User Management
+  description: CRUD operations for End User (8 endpoints)
+  evidence: routes
+- id: CAP-50
+  name: Customer Management
+  description: CRUD operations for Customer (8 endpoints)
+  evidence: routes
+- id: CAP-51
+  name: Fallback Management
+  description: CRUD operations for Fallback (4 endpoints)
+  evidence: routes
+- id: CAP-52
+  name: User Management
+  description: CRUD operations for User (10 endpoints)
+  evidence: routes
+- id: CAP-53
+  name: Jwt Management
+  description: CRUD operations for Jwt (5 endpoints)
+  evidence: routes
+- id: CAP-54
+  name: Key Management
+  description: CRUD operations for Key (14 endpoints)
+  evidence: routes
+- id: CAP-55
+  name: Access Group Management
+  description: CRUD operations for Access Group (1 endpoints)
+  evidence: routes
+- id: CAP-56
+  name: Network Management
+  description: CRUD operations for Network (1 endpoints)
+  evidence: routes
+- id: CAP-57
+  name: Registry.Json Management
+  description: CRUD operations for Registry.Json (1 endpoints)
+  evidence: routes
+- id: CAP-58
+  name: Server Management
+  description: CRUD operations for Server (19 endpoints)
+  evidence: routes
+- id: CAP-59
+  name: User Credential Management
+  description: CRUD operations for User Credential (1 endpoints)
+  evidence: routes
+- id: CAP-60
+  name: Make Public Management
+  description: CRUD operations for Make Public (1 endpoints)
+  evidence: routes
+- id: CAP-61
+  name: Discover Management
+  description: CRUD operations for Discover (1 endpoints)
+  evidence: routes
+- id: CAP-62
+  name: Openapi Registry Management
+  description: CRUD operations for Openapi Registry (1 endpoints)
+  evidence: routes
+- id: CAP-63
+  name: Toolset Management
+  description: CRUD operations for Toolset (5 endpoints)
+  evidence: routes
+- id: CAP-64
+  name: Access Group Management
+  description: CRUD operations for Access Group (5 endpoints)
+  evidence: routes
+- id: CAP-65
+  name: Model Management
+  description: CRUD operations for Model (11 endpoints)
+  evidence: routes
+- id: CAP-66
+  name: Model Group Management
+  description: CRUD operations for Model Group (2 endpoints)
+  evidence: routes
+- id: CAP-67
+  name: Model Hub Management
+  description: CRUD operations for Model Hub (1 endpoints)
+  evidence: routes
+- id: CAP-68
+  name: Organization Management
+  description: CRUD operations for Organization (10 endpoints)
+  evidence: routes
+- id: CAP-69
+  name: Util Management
+  description: CRUD operations for Util (5 endpoints)
+  evidence: routes
+- id: CAP-70
+  name: Policy Management
+  description: CRUD operations for Policy (9 endpoints)
+  evidence: routes
+- id: CAP-71
+  name: Project Management
+  description: CRUD operations for Project (5 endpoints)
+  evidence: routes
+- id: CAP-72
+  name: Router Management
+  description: CRUD operations for Router (2 endpoints)
+  evidence: routes
+- id: CAP-73
+  name: Resourcetype Management
+  description: CRUD operations for Resourcetype (2 endpoints)
+  evidence: routes
+- id: CAP-74
+  name: Schema Management
+  description: CRUD operations for Schema (2 endpoints)
+  evidence: routes
+- id: CAP-75
+  name: Serviceproviderconfig Management
+  description: CRUD operations for Serviceproviderconfig (1 endpoints)
+  evidence: routes
+- id: CAP-76
+  name: User Management
+  description: CRUD operations for User (6 endpoints)
+  evidence: routes
+- id: CAP-77
+  name: Group Management
+  description: CRUD operations for Group (6 endpoints)
+  evidence: routes
+- id: CAP-78
+  name: Tag Management
+  description: CRUD operations for Tag (12 endpoints)
+  evidence: routes
+- id: CAP-79
+  name: Team Management
+  description: CRUD operations for Team (22 endpoints)
+  evidence: routes
+- id: CAP-80
+  name: Sso Management
+  description: CRUD operations for Sso (7 endpoints)
+  evidence: routes
+- id: CAP-81
+  name: Usage Management
+  description: CRUD operations for Usage (1 endpoints)
+  evidence: routes
+- id: CAP-82
+  name: Ocr Management
+  description: CRUD operations for Ocr (1 endpoints)
+  evidence: routes
+- id: CAP-83
+  name: File Management
+  description: CRUD operations for File (5 endpoints)
+  evidence: routes
+- id: CAP-84
+  name: Prompt Management
+  description: CRUD operations for Prompt (9 endpoints)
+  evidence: routes
+- id: CAP-85
+  name: Chat Management
+  description: CRUD operations for Chat (2 endpoints)
+  evidence: routes
+- id: CAP-86
+  name: Engine Management
+  description: CRUD operations for Engine (3 endpoints)
+  evidence: routes
+- id: CAP-87
+  name: Completion Management
+  description: CRUD operations for Completion (1 endpoints)
+  evidence: routes
+- id: CAP-88
+  name: Embedding Management
+  description: CRUD operations for Embedding (1 endpoints)
+  evidence: routes
+- id: CAP-89
+  name: Moderation Management
+  description: CRUD operations for Moderation (1 endpoints)
+  evidence: routes
+- id: CAP-90
+  name: Audio Management
+  description: CRUD operations for Audio (2 endpoints)
+  evidence: routes
+- id: CAP-91
+  name: Assistant Management
+  description: CRUD operations for Assistant (3 endpoints)
+  evidence: routes
+- id: CAP-92
+  name: Thread Management
+  description: CRUD operations for Thread (5 endpoints)
+  evidence: routes
+- id: CAP-93
+  name: Alerting Management
+  description: CRUD operations for Alerting (1 endpoints)
+  evidence: routes
+- id: CAP-94
+  name: Queue Management
+  description: CRUD operations for Queue (1 endpoints)
+  evidence: routes
+- id: CAP-95
+  name: Login Management
+  description: CRUD operations for Login (1 endpoints)
+  evidence: routes
+- id: CAP-96
+  name: V3 Management
+  description: CRUD operations for V3 (2 endpoints)
+  evidence: routes
+- id: CAP-97
+  name: Onboarding Management
+  description: CRUD operations for Onboarding (2 endpoints)
+  evidence: routes
+- id: CAP-98
+  name: Get Logo Url Management
+  description: CRUD operations for Get Logo Url (1 endpoints)
+  evidence: routes
+- id: CAP-99
+  name: Get Image Management
+  description: CRUD operations for Get Image (1 endpoints)
+  evidence: routes
+- id: CAP-100
+  name: Get Favicon Management
+  description: CRUD operations for Get Favicon (1 endpoints)
+  evidence: routes
+- id: CAP-101
+  name: Invitation Management
+  description: CRUD operations for Invitation (4 endpoints)
+  evidence: routes
+- id: CAP-102
+  name: Get Management
+  description: CRUD operations for Get (8 endpoints)
+  evidence: routes
+- id: CAP-103
+  name: Reload Management
+  description: CRUD operations for Reload (2 endpoints)
+  evidence: routes
+- id: CAP-104
+  name: Schedule Management
+  description: CRUD operations for Schedule (6 endpoints)
+  evidence: routes
+- id: CAP-105
+  name: Route Management
+  description: CRUD operations for Route (1 endpoints)
+  evidence: routes
+- id: CAP-106
+  name: Public Management
+  description: CRUD operations for Public (10 endpoints)
+  evidence: routes
+- id: CAP-107
+  name: Rag Management
+  description: CRUD operations for Rag (2 endpoints)
+  evidence: routes
+- id: CAP-108
+  name: Realtime Management
+  description: CRUD operations for Realtime (2 endpoints)
+  evidence: routes
+- id: CAP-109
+  name: Rerank Management
+  description: CRUD operations for Rerank (1 endpoints)
+  evidence: routes
+- id: CAP-110
+  name: Response Management
+  description: CRUD operations for Response (6 endpoints)
+  evidence: routes
+- id: CAP-111
+  name: Cursor Management
+  description: CRUD operations for Cursor (1 endpoints)
+  evidence: routes
+- id: CAP-112
+  name: Search Management
+  description: CRUD operations for Search (3 endpoints)
+  evidence: routes
+- id: CAP-113
+  name: Search Tool Management
+  description: CRUD operations for Search Tool (7 endpoints)
+  evidence: routes
+- id: CAP-114
+  name: Cloudzero Management
+  description: CRUD operations for Cloudzero (6 endpoints)
+  evidence: routes
+- id: CAP-115
+  name: Spend Management
+  description: CRUD operations for Spend (9 endpoints)
+  evidence: routes
+- id: CAP-116
+  name: Provider Management
+  description: CRUD operations for Provider (1 endpoints)
+  evidence: routes
+- id: CAP-117
+  name: Vantage Management
+  description: CRUD operations for Vantage (6 endpoints)
+  evidence: routes
+- id: CAP-118
+  name: Add Management
+  description: CRUD operations for Add (1 endpoints)
+  evidence: routes
+- id: CAP-119
+  name: Update Management
+  description: CRUD operations for Update (6 endpoints)
+  evidence: routes
+- id: CAP-120
+  name: In Product Nudge Management
+  description: CRUD operations for In Product Nudge (1 endpoints)
+  evidence: routes
+- id: CAP-121
+  name: Upload Management
+  description: CRUD operations for Upload (1 endpoints)
+  evidence: routes
+- id: CAP-122
+  name: Vector Store Management
+  description: CRUD operations for Vector Store (12 endpoints)
+  evidence: routes
+- id: CAP-123
+  name: Vector Store Management
+  description: CRUD operations for Vector Store (5 endpoints)
+  evidence: routes
+- id: CAP-124
+  name: Video Management
+  description: CRUD operations for Video (9 endpoints)
+  evidence: routes
+- id: CAP-125
+  name: Platform.Python Version Management
+  description: CRUD operations for Platform.Python Version (1 endpoints)
+  evidence: routes
+- id: CAP-126
+  name: Distutils.Command.Bdist Rpm.Bdist Rpm Management
+  description: CRUD operations for Distutils.Command.Bdist Rpm.Bdist Rpm (1 endpoints)
+  evidence: routes
+- id: CAP-127
+  name: Setuptools.Command.Build Clib.Newer Pairwise Group Management
+  description: CRUD operations for Setuptools.Command.Build Clib.Newer Pairwise Group
+    (2 endpoints)
+  evidence: routes
+- id: CAP-128
+  name: Load Model Management
+  description: CRUD operations for Load Model (1 endpoints)
+  evidence: routes
+- id: CAP-129
+  name: Reset Management
+  description: CRUD operations for Reset (1 endpoints)
+  evidence: routes
+- id: CAP-130
+  name: Get World Size Management
+  description: CRUD operations for Get World Size (1 endpoints)
+  evidence: routes
+- id: CAP-131
+  name: Generate Management
+  description: CRUD operations for Generate (1 endpoints)
+  evidence: routes
+- id: CAP-132
+  name: Get Sequence Logprob Management
+  description: CRUD operations for Get Sequence Logprob (1 endpoints)
+  evidence: routes
+- id: CAP-133
+  name: Init Communicator Management
+  description: CRUD operations for Init Communicator (1 endpoints)
+  evidence: routes
+- id: CAP-134
+  name: Update Named Param Management
+  description: CRUD operations for Update Named Param (1 endpoints)
+  evidence: routes
+- id: CAP-135
+  name: Reset Prefix Cache Management
+  description: CRUD operations for Reset Prefix Cache (1 endpoints)
+  evidence: routes
+- id: CAP-136
+  name: Close Communicator Management
+  description: CRUD operations for Close Communicator (1 endpoints)
+  evidence: routes
+- id: CAP-137
+  name: Monitoring
+  description: Domain logic in src/architecture_model/monitoring.py
+  evidence: domain_module
+- id: CAP-138
+  name: Monitoring Checks
+  description: Domain logic in src/architecture_model/monitoring_checks.py
+  evidence: domain_module
+- id: CAP-139
+  name: Observe Types
+  description: Domain logic in src/architecture_model/pipeline/observe_types.py
+  evidence: domain_module
+- id: CAP-140
+  name: Contract Types
+  description: Domain logic in src/architecture_model/pipeline/contract_types.py
+  evidence: domain_module
+- id: CAP-141
+  name: Allocate Types
+  description: Domain logic in src/architecture_model/pipeline/allocate_types.py
+  evidence: domain_module
+- id: CAP-142
+  name: Validate Types
+  description: Domain logic in src/architecture_model/pipeline/validate_types.py
+  evidence: domain_module
+- id: CAP-143
+  name: Regen Score
+  description: Domain logic in src/architecture_model/pipeline/regen_score.py
+  evidence: domain_module
+- id: CAP-144
+  name: Protocol
+  description: Domain logic in src/architecture_model/pipeline/protocol.py
+  evidence: domain_module
+- id: CAP-145
+  name: Specify Types
+  description: Domain logic in src/architecture_model/pipeline/specify_types.py
+  evidence: domain_module
+- id: CAP-146
+  name: Relate Types
+  description: Domain logic in src/architecture_model/pipeline/relate_types.py
+  evidence: domain_module
+- id: CAP-147
+  name: Learning
+  description: Domain logic in src/architecture_model/pipeline/learning.py
+  evidence: domain_module
+- id: CAP-148
+  name: Infer Types
+  description: Domain logic in src/architecture_model/pipeline/infer_types.py
+  evidence: domain_module
+- id: CAP-149
+  name: Validator
+  description: Domain logic in src/architecture_model/core/validator.py
+  evidence: domain_module
+- id: CAP-150
+  name: Regen Readiness
+  description: Domain logic in src/architecture_model/core/regen_readiness.py
+  evidence: domain_module
+- id: CAP-151
+  name: Confidence
+  description: Domain logic in src/architecture_model/core/confidence.py
+  evidence: domain_module
+- id: CAP-152
+  name: Representativeness
+  description: Domain logic in src/architecture_model/core/representativeness.py
+  evidence: domain_module
+- id: CAP-153
+  name: Differ
+  description: Domain logic in src/architecture_model/core/differ.py
+  evidence: domain_module
+- id: CAP-154
+  name: Coverage
+  description: Domain logic in src/architecture_model/core/coverage.py
+  evidence: domain_module
+- id: CAP-155
+  name: Visualize
+  description: Domain logic in src/architecture_model/core/visualize.py
+  evidence: domain_module
+- id: CAP-156
+  name: Parser
+  description: Domain logic in src/architecture_model/core/parser.py
+  evidence: domain_module
+- id: CAP-157
+  name: Corrections
+  description: Domain logic in src/architecture_model/core/corrections.py
+  evidence: domain_module
+- id: CAP-158
+  name: Decomposer
+  description: Domain logic in src/architecture_model/core/decomposer.py
+  evidence: domain_module
+- id: CAP-159
+  name: Slicer
+  description: Domain logic in src/architecture_model/core/slicer.py
+  evidence: domain_module
+- id: CAP-160
+  name: Source Block Quality
+  description: Domain logic in src/architecture_model/core/source_block_quality.py
+  evidence: domain_module
+- id: CAP-161
+  name: Merger
+  description: Domain logic in src/architecture_model/core/merger.py
+  evidence: domain_module
+- id: CAP-162
+  name: Loader
+  description: Domain logic in src/architecture_model/config/loader.py
+  evidence: domain_module
+- id: CAP-163
+  name: Schema
+  description: Domain logic in src/architecture_model/config/schema.py
+  evidence: domain_module
+- id: CAP-164
+  name: Behavior
+  description: Domain logic in src/architecture_model/manifest/behavior.py
+  evidence: domain_module
+- id: CAP-165
+  name: Grouping
+  description: Domain logic in src/architecture_model/manifest/grouping.py
+  evidence: domain_module
+- id: CAP-166
+  name: Recursive
+  description: Domain logic in src/architecture_model/manifest/recursive.py
+  evidence: domain_module
+- id: CAP-167
+  name: Call Graph
+  description: Domain logic in src/architecture_model/manifest/call_graph.py
+  evidence: domain_module
+- id: CAP-168
+  name: Body Hints
+  description: Domain logic in src/architecture_model/manifest/body_hints.py
+  evidence: domain_module
+- id: CAP-169
+  name: Discovery
+  description: Domain logic in src/architecture_model/utils/discovery.py
+  evidence: domain_module
+- id: CAP-170
+  name: Store
+  description: Domain logic in src/architecture_model/persistence/store.py
+  evidence: domain_module
+- id: CAP-171
+  name: Auto Enrich
+  description: Domain logic in src/architecture_model/orchestration/auto_enrich.py
+  evidence: domain_module
+- id: CAP-172
+  name: Decompose
+  description: Domain logic in src/architecture_model/orchestration/decompose.py
+  evidence: domain_module
+- id: CAP-173
+  name: Deep Decompose
+  description: Domain logic in src/architecture_model/orchestration/deep_decompose.py
+  evidence: domain_module
+- id: CAP-174
+  name: Behavior Flows
+  description: Domain logic in src/architecture_model/orchestration/behavior_flows.py
+  evidence: domain_module
+- id: CAP-175
+  name: Table Parser
+  description: Domain logic in src/architecture_model/extract/table_parser.py
+  evidence: domain_module
+- id: CAP-176
+  name: Flatfiles
+  description: Domain logic in src/architecture_model/export/flatfiles.py
+  evidence: domain_module
+- id: CAP-177
+  name: Reference
+  description: Domain logic in src/architecture_model/export/reference.py
+  evidence: domain_module
+- id: CAP-178
+  name: CLI Main
+  description: CLI commands in src/architecture_model/cli/main.py
+  evidence: cli_pattern
+actors:
+- id: ACT-1
+  name: API Consumer
+  type: human
+  evidence: routes
+behaviors:
+- id: BEH-1
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-2
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-3
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-4
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-5
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-6
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-7
+  name: GET /.well-known/oauth-authorization-server
+  actor: ACT-1
+  capability: ''
+- id: BEH-8
+  name: GET /.well-known/oauth-protected-resource
+  actor: ACT-1
+  capability: ''
+- id: BEH-9
+  name: GET /v1/mcp/oauth/authorize
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-10
+  name: POST /v1/mcp/oauth/authorize
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-11
+  name: POST /v1/mcp/oauth/token
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-12
+  name: GET /{mcp_server_name}/authorize
+  actor: ACT-1
+  capability: CAP-4
+- id: BEH-13
+  name: GET /authorize
+  actor: ACT-1
+  capability: CAP-4
+- id: BEH-14
+  name: POST /{mcp_server_name}/token
+  actor: ACT-1
+  capability: CAP-5
+- id: BEH-15
+  name: POST /token
+  actor: ACT-1
+  capability: CAP-5
+- id: BEH-16
+  name: GET /callback
+  actor: ACT-1
+  capability: CAP-6
+- id: BEH-17
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-18
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-19
+  name: GET /.well-known/oauth-protected-resource
+  actor: ACT-1
+  capability: ''
+- id: BEH-20
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-21
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-22
+  name: GET /.well-known/oauth-authorization-server
+  actor: ACT-1
+  capability: ''
+- id: BEH-23
+  name: GET /.well-known/openid-configuration
+  actor: ACT-1
+  capability: ''
+- id: BEH-24
+  name: GET /.well-known/jwks.json
+  actor: ACT-1
+  capability: ''
+- id: BEH-25
+  name: GET /.well-known/oauth-authorization-server/{mcp_server_name}/mcp
+  actor: ACT-1
+  capability: ''
+- id: BEH-26
+  name: POST /{mcp_server_name}/register
+  actor: ACT-1
+  capability: CAP-7
+- id: BEH-27
+  name: POST /register
+  actor: ACT-1
+  capability: CAP-7
+- id: BEH-28
+  name: GET /tools/list
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-29
+  name: POST /tools/call
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-30
+  name: POST /test/connection
+  actor: ACT-1
+  capability: CAP-9
+- id: BEH-31
+  name: POST /test/tools/list
+  actor: ACT-1
+  capability: CAP-9
+- id: BEH-32
+  name: GET /enabled
+  actor: ACT-1
+  capability: CAP-10
+- id: BEH-33
+  name: GET /a2a/{agent_id}/.well-known/agent-card.json
+  actor: ACT-1
+  capability: CAP-11
+- id: BEH-34
+  name: GET /a2a/{agent_id}/.well-known/agent.json
+  actor: ACT-1
+  capability: CAP-11
+- id: BEH-35
+  name: POST /a2a/{agent_id}
+  actor: ACT-1
+  capability: CAP-11
+- id: BEH-36
+  name: POST /a2a/{agent_id}/message/send
+  actor: ACT-1
+  capability: CAP-11
+- id: BEH-37
+  name: POST /v1/a2a/{agent_id}/message/send
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-38
+  name: GET /v1/agents
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-39
+  name: POST /v1/agents
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-40
+  name: GET /v1/agents/{agent_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-41
+  name: PUT /v1/agents/{agent_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-42
+  name: PATCH /v1/agents/{agent_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-43
+  name: DELETE /v1/agents/{agent_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-44
+  name: POST /v1/agents/{agent_id}/make_public
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-45
+  name: POST /v1/agents/make_public
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-46
+  name: GET /agent/daily/activity
+  actor: ACT-1
+  capability: CAP-12
+- id: BEH-47
+  name: GET /global/activity/cache_hits
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-48
+  name: GET /claude-code/marketplace.json
+  actor: ACT-1
+  capability: ''
+- id: BEH-49
+  name: POST /claude-code/plugins
+  actor: ACT-1
+  capability: ''
+- id: BEH-50
+  name: GET /claude-code/plugins
+  actor: ACT-1
+  capability: ''
+- id: BEH-51
+  name: GET /claude-code/plugins/{plugin_name}
+  actor: ACT-1
+  capability: ''
+- id: BEH-52
+  name: POST /claude-code/plugins/{plugin_name}/enable
+  actor: ACT-1
+  capability: ''
+- id: BEH-53
+  name: POST /claude-code/plugins/{plugin_name}/disable
+  actor: ACT-1
+  capability: ''
+- id: BEH-54
+  name: DELETE /claude-code/plugins/{plugin_name}
+  actor: ACT-1
+  capability: ''
+- id: BEH-55
+  name: POST /v1/messages
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-56
+  name: POST /v1/messages/count_tokens
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-57
+  name: POST /api/event_logging/batch
+  actor: ACT-1
+  capability: CAP-15
+- id: BEH-58
+  name: POST /v1/skills
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-59
+  name: GET /v1/skills
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-60
+  name: GET /v1/skills/{skill_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-61
+  name: DELETE /v1/skills/{skill_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-62
+  name: POST /{provider}/v1/batches
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-63
+  name: POST /v1/batches
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-64
+  name: POST /batches
+  actor: ACT-1
+  capability: ''
+- id: BEH-65
+  name: GET /{provider}/v1/batches/{batch_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-66
+  name: GET /v1/batches/{batch_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-67
+  name: GET /batches/{batch_id:path}
+  actor: ACT-1
+  capability: ''
+- id: BEH-68
+  name: GET /{provider}/v1/batches
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-69
+  name: GET /v1/batches
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-70
+  name: GET /batches
+  actor: ACT-1
+  capability: ''
+- id: BEH-71
+  name: POST /{provider}/v1/batches/{batch_id:path}/cancel
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-72
+  name: POST /v1/batches/{batch_id:path}/cancel
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-73
+  name: POST /batches/{batch_id:path}/cancel
+  actor: ACT-1
+  capability: ''
+- id: BEH-74
+  name: GET /ping
+  actor: ACT-1
+  capability: CAP-17
+- id: BEH-75
+  name: POST /delete
+  actor: ACT-1
+  capability: CAP-18
+- id: BEH-76
+  name: GET /redis/info
+  actor: ACT-1
+  capability: ''
+- id: BEH-77
+  name: POST /flushall
+  actor: ACT-1
+  capability: CAP-20
+- id: BEH-78
+  name: GET /debug/asyncio-tasks
+  actor: ACT-1
+  capability: CAP-21
+- id: BEH-79
+  name: GET /memory-usage-in-mem-cache
+  actor: ACT-1
+  capability: ''
+- id: BEH-80
+  name: GET /memory-usage-in-mem-cache-items
+  actor: ACT-1
+  capability: ''
+- id: BEH-81
+  name: GET /debug/memory/summary
+  actor: ACT-1
+  capability: CAP-21
+- id: BEH-82
+  name: GET /debug/memory/details
+  actor: ACT-1
+  capability: CAP-21
+- id: BEH-83
+  name: POST /debug/memory/gc/configure
+  actor: ACT-1
+  capability: CAP-21
+- id: BEH-84
+  name: GET /otel-spans
+  actor: ACT-1
+  capability: ''
+- id: BEH-85
+  name: GET /memory-usage
+  actor: ACT-1
+  capability: ''
+- id: BEH-86
+  name: GET /config/pass_through_endpoints/settings
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-87
+  name: POST /v1/containers
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-88
+  name: POST /containers
+  actor: ACT-1
+  capability: ''
+- id: BEH-89
+  name: GET /v1/containers
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-90
+  name: GET /containers
+  actor: ACT-1
+  capability: ''
+- id: BEH-91
+  name: GET /v1/containers/{container_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-92
+  name: GET /containers/{container_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-93
+  name: DELETE /v1/containers/{container_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-94
+  name: DELETE /containers/{container_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-95
+  name: POST /credentials
+  actor: ACT-1
+  capability: ''
+- id: BEH-96
+  name: GET /credentials
+  actor: ACT-1
+  capability: ''
+- id: BEH-97
+  name: GET /credentials/by_name/{credential_name:path}
+  actor: ACT-1
+  capability: ''
+- id: BEH-98
+  name: GET /credentials/by_model/{model_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-99
+  name: DELETE /credentials/{credential_name:path}
+  actor: ACT-1
+  capability: ''
+- id: BEH-100
+  name: PATCH /credentials/{credential_name:path}
+  actor: ACT-1
+  capability: ''
+- id: BEH-101
+  name: GET /.well-known/litellm-ui-config
+  actor: ACT-1
+  capability: ''
+- id: BEH-102
+  name: GET /litellm/.well-known/litellm-ui-config
+  actor: ACT-1
+  capability: CAP-29
+- id: BEH-103
+  name: POST /v1/fine_tuning/jobs
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-104
+  name: POST /fine_tuning/jobs
+  actor: ACT-1
+  capability: ''
+- id: BEH-105
+  name: GET /v1/fine_tuning/jobs/{fine_tuning_job_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-106
+  name: GET /fine_tuning/jobs/{fine_tuning_job_id:path}
+  actor: ACT-1
+  capability: ''
+- id: BEH-107
+  name: GET /v1/fine_tuning/jobs
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-108
+  name: GET /fine_tuning/jobs
+  actor: ACT-1
+  capability: ''
+- id: BEH-109
+  name: POST /v1/fine_tuning/jobs/{fine_tuning_job_id:path}/cancel
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-110
+  name: POST /fine_tuning/jobs/{fine_tuning_job_id:path}/cancel
+  actor: ACT-1
+  capability: ''
+- id: BEH-111
+  name: POST /v1beta/models/{model_name:path}:generateContent
+  actor: ACT-1
+  capability: CAP-31
+- id: BEH-112
+  name: POST /models/{model_name:path}:generateContent
+  actor: ACT-1
+  capability: ''
+- id: BEH-113
+  name: POST /v1beta/models/{model_name:path}:streamGenerateContent
+  actor: ACT-1
+  capability: CAP-31
+- id: BEH-114
+  name: POST /models/{model_name:path}:streamGenerateContent
+  actor: ACT-1
+  capability: ''
+- id: BEH-115
+  name: POST /v1beta/models/{model_name:path}:countTokens
+  actor: ACT-1
+  capability: CAP-31
+- id: BEH-116
+  name: POST /models/{model_name:path}:countTokens
+  actor: ACT-1
+  capability: ''
+- id: BEH-117
+  name: POST /v1beta/interactions
+  actor: ACT-1
+  capability: CAP-31
+- id: BEH-118
+  name: POST /interactions
+  actor: ACT-1
+  capability: ''
+- id: BEH-119
+  name: GET /v1beta/interactions/{interaction_id}
+  actor: ACT-1
+  capability: CAP-31
+- id: BEH-120
+  name: GET /interactions/{interaction_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-121
+  name: DELETE /v1beta/interactions/{interaction_id}
+  actor: ACT-1
+  capability: CAP-31
+- id: BEH-122
+  name: DELETE /interactions/{interaction_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-123
+  name: POST /v1beta/interactions/{interaction_id}/cancel
+  actor: ACT-1
+  capability: CAP-31
+- id: BEH-124
+  name: POST /interactions/{interaction_id}/cancel
+  actor: ACT-1
+  capability: ''
+- id: BEH-125
+  name: GET /guardrails/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-126
+  name: GET /v2/guardrails/list
+  actor: ACT-1
+  capability: CAP-35
+- id: BEH-127
+  name: POST /guardrails
+  actor: ACT-1
+  capability: ''
+- id: BEH-128
+  name: PUT /guardrails/{guardrail_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-129
+  name: DELETE /guardrails/{guardrail_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-130
+  name: POST /guardrails/register
+  actor: ACT-1
+  capability: ''
+- id: BEH-131
+  name: GET /guardrails/submissions
+  actor: ACT-1
+  capability: ''
+- id: BEH-132
+  name: GET /guardrails/submissions/{guardrail_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-133
+  name: POST /guardrails/submissions/{guardrail_id}/approve
+  actor: ACT-1
+  capability: ''
+- id: BEH-134
+  name: POST /guardrails/submissions/{guardrail_id}/reject
+  actor: ACT-1
+  capability: ''
+- id: BEH-135
+  name: PATCH /guardrails/{guardrail_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-136
+  name: GET /guardrails/{guardrail_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-137
+  name: GET /guardrails/{guardrail_id}/info
+  actor: ACT-1
+  capability: ''
+- id: BEH-138
+  name: GET /guardrails/ui/add_guardrail_settings
+  actor: ACT-1
+  capability: ''
+- id: BEH-139
+  name: GET /guardrails/ui/category_yaml/{category_name}
+  actor: ACT-1
+  capability: ''
+- id: BEH-140
+  name: GET /guardrails/ui/major_airlines
+  actor: ACT-1
+  capability: ''
+- id: BEH-141
+  name: POST /guardrails/validate_blocked_words_file
+  actor: ACT-1
+  capability: ''
+- id: BEH-142
+  name: GET /guardrails/ui/provider_specific_params
+  actor: ACT-1
+  capability: ''
+- id: BEH-143
+  name: POST /guardrails/test_custom_code
+  actor: ACT-1
+  capability: ''
+- id: BEH-144
+  name: POST /guardrails/apply_guardrail
+  actor: ACT-1
+  capability: ''
+- id: BEH-145
+  name: POST /apply_guardrail
+  actor: ACT-1
+  capability: ''
+- id: BEH-146
+  name: GET /guardrails/usage/overview
+  actor: ACT-1
+  capability: ''
+- id: BEH-147
+  name: GET /guardrails/usage/detail/{guardrail_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-148
+  name: GET /guardrails/usage/logs
+  actor: ACT-1
+  capability: ''
+- id: BEH-149
+  name: GET /policies/usage/overview
+  actor: ACT-1
+  capability: ''
+- id: BEH-150
+  name: GET /test
+  actor: ACT-1
+  capability: CAP-9
+- id: BEH-151
+  name: GET /health/services
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-152
+  name: GET /health
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-153
+  name: GET /health/history
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-154
+  name: GET /health/latest
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-155
+  name: GET /health/shared-status
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-156
+  name: GET /health/license
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-157
+  name: GET /settings
+  actor: ACT-1
+  capability: ''
+- id: BEH-158
+  name: GET /active/callbacks
+  actor: ACT-1
+  capability: CAP-40
+- id: BEH-159
+  name: GET /health/readiness
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-160
+  name: GET /health/backlog
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-161
+  name: GET /health/liveliness
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-162
+  name: GET /health/liveness
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-163
+  name: OPTIONS /health/readiness
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-164
+  name: OPTIONS /health/liveliness
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-165
+  name: OPTIONS /health/liveness
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-166
+  name: POST /health/test_connection
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-167
+  name: POST /v1/images/generations
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-168
+  name: POST /images/generations
+  actor: ACT-1
+  capability: ''
+- id: BEH-169
+  name: POST /openai/deployments/{model:path}/images/generations
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-170
+  name: POST /v1/images/edits
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-171
+  name: POST /images/edits
+  actor: ACT-1
+  capability: ''
+- id: BEH-172
+  name: POST /openai/deployments/{model:path}/images/edits
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-173
+  name: POST /v1/access_group
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-174
+  name: GET /v1/access_group
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-175
+  name: GET /v1/access_group/{access_group_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-176
+  name: PUT /v1/access_group/{access_group_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-177
+  name: DELETE /v1/access_group/{access_group_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-178
+  name: POST /budget/new
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-179
+  name: POST /budget/update
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-180
+  name: POST /budget/info
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-181
+  name: GET /budget/settings
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-182
+  name: GET /budget/list
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-183
+  name: POST /budget/delete
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-184
+  name: GET /cache/settings
+  actor: ACT-1
+  capability: CAP-22
+- id: BEH-185
+  name: POST /cache/settings/test
+  actor: ACT-1
+  capability: CAP-22
+- id: BEH-186
+  name: POST /cache/settings
+  actor: ACT-1
+  capability: CAP-22
+- id: BEH-187
+  name: GET /callbacks/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-188
+  name: GET /callbacks/configs
+  actor: ACT-1
+  capability: ''
+- id: BEH-189
+  name: POST /compliance/eu-ai-act
+  actor: ACT-1
+  capability: CAP-46
+- id: BEH-190
+  name: POST /compliance/gdpr
+  actor: ACT-1
+  capability: CAP-46
+- id: BEH-191
+  name: POST /config_overrides/hashicorp_vault
+  actor: ACT-1
+  capability: ''
+- id: BEH-192
+  name: GET /config_overrides/hashicorp_vault
+  actor: ACT-1
+  capability: ''
+- id: BEH-193
+  name: DELETE /config_overrides/hashicorp_vault
+  actor: ACT-1
+  capability: ''
+- id: BEH-194
+  name: POST /config_overrides/hashicorp_vault/test_connection
+  actor: ACT-1
+  capability: ''
+- id: BEH-195
+  name: GET /config/cost_discount_config
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-196
+  name: PATCH /config/cost_discount_config
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-197
+  name: GET /config/cost_margin_config
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-198
+  name: PATCH /config/cost_margin_config
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-199
+  name: POST /cost/estimate
+  actor: ACT-1
+  capability: CAP-48
+- id: BEH-200
+  name: POST /end_user/block
+  actor: ACT-1
+  capability: ''
+- id: BEH-201
+  name: POST /customer/block
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-202
+  name: POST /end_user/unblock
+  actor: ACT-1
+  capability: ''
+- id: BEH-203
+  name: POST /customer/unblock
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-204
+  name: POST /end_user/new
+  actor: ACT-1
+  capability: ''
+- id: BEH-205
+  name: POST /customer/new
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-206
+  name: GET /customer/info
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-207
+  name: GET /end_user/info
+  actor: ACT-1
+  capability: ''
+- id: BEH-208
+  name: POST /customer/update
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-209
+  name: POST /end_user/update
+  actor: ACT-1
+  capability: ''
+- id: BEH-210
+  name: POST /customer/delete
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-211
+  name: POST /end_user/delete
+  actor: ACT-1
+  capability: ''
+- id: BEH-212
+  name: GET /customer/list
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-213
+  name: GET /end_user/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-214
+  name: GET /customer/daily/activity
+  actor: ACT-1
+  capability: CAP-50
+- id: BEH-215
+  name: GET /end_user/daily/activity
+  actor: ACT-1
+  capability: ''
+- id: BEH-216
+  name: POST /fallback
+  actor: ACT-1
+  capability: CAP-51
+- id: BEH-217
+  name: GET /fallback/{model}
+  actor: ACT-1
+  capability: CAP-51
+- id: BEH-218
+  name: DELETE /fallback/{model}
+  actor: ACT-1
+  capability: CAP-51
+- id: BEH-219
+  name: POST /user/new
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-220
+  name: GET /user/available_roles
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-221
+  name: GET /user/info
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-222
+  name: GET /v2/user/info
+  actor: ACT-1
+  capability: CAP-35
+- id: BEH-223
+  name: POST /user/update
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-224
+  name: POST /user/bulk_update
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-225
+  name: GET /user/list
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-226
+  name: POST /user/delete
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-227
+  name: GET /user/filter/ui
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-228
+  name: GET /user/daily/activity
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-229
+  name: GET /user/daily/activity/aggregated
+  actor: ACT-1
+  capability: CAP-49
+- id: BEH-230
+  name: POST /jwt/key/mapping/new
+  actor: ACT-1
+  capability: CAP-53
+- id: BEH-231
+  name: POST /jwt/key/mapping/update
+  actor: ACT-1
+  capability: CAP-53
+- id: BEH-232
+  name: POST /jwt/key/mapping/delete
+  actor: ACT-1
+  capability: CAP-53
+- id: BEH-233
+  name: GET /jwt/key/mapping/list
+  actor: ACT-1
+  capability: CAP-53
+- id: BEH-234
+  name: GET /jwt/key/mapping/info
+  actor: ACT-1
+  capability: CAP-53
+- id: BEH-235
+  name: POST /key/generate
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-236
+  name: POST /key/service-account/generate
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-237
+  name: POST /key/update
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-238
+  name: POST /key/bulk_update
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-239
+  name: POST /key/delete
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-240
+  name: POST /v2/key/info
+  actor: ACT-1
+  capability: CAP-35
+- id: BEH-241
+  name: GET /key/info
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-242
+  name: POST /key/{key:path}/regenerate
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-243
+  name: POST /key/regenerate
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-244
+  name: POST /key/{key:path}/reset_spend
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-245
+  name: GET /key/list
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-246
+  name: GET /key/aliases
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-247
+  name: POST /key/block
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-248
+  name: POST /key/unblock
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-249
+  name: POST /key/health
+  actor: ACT-1
+  capability: CAP-54
+- id: BEH-250
+  name: GET /tools
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-251
+  name: GET /access_groups
+  actor: ACT-1
+  capability: ''
+- id: BEH-252
+  name: GET /network/client-ip
+  actor: ACT-1
+  capability: CAP-56
+- id: BEH-253
+  name: GET /registry.json
+  actor: ACT-1
+  capability: CAP-57
+- id: BEH-254
+  name: GET /server
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-255
+  name: GET /server/health
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-256
+  name: POST /server/register
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-257
+  name: GET /server/submissions
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-258
+  name: PUT /server/{server_id}/approve
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-259
+  name: PUT /server/{server_id}/reject
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-260
+  name: GET /server/{server_id}
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-261
+  name: POST /server
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-262
+  name: POST /server/oauth/session
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-263
+  name: GET /server/oauth/{server_id}/authorize
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-264
+  name: POST /server/oauth/{server_id}/token
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-265
+  name: POST /server/oauth/{server_id}/register
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-266
+  name: DELETE /server/{server_id}
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-267
+  name: POST /server/{server_id}/user-credential
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-268
+  name: DELETE /server/{server_id}/user-credential
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-269
+  name: POST /server/{server_id}/oauth-user-credential
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-270
+  name: DELETE /server/{server_id}/oauth-user-credential
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-271
+  name: GET /server/{server_id}/oauth-user-credential/status
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-272
+  name: GET /user-credentials
+  actor: ACT-1
+  capability: ''
+- id: BEH-273
+  name: PUT /server
+  actor: ACT-1
+  capability: CAP-58
+- id: BEH-274
+  name: POST /make_public
+  actor: ACT-1
+  capability: ''
+- id: BEH-275
+  name: GET /discover
+  actor: ACT-1
+  capability: CAP-61
+- id: BEH-276
+  name: GET /openapi-registry
+  actor: ACT-1
+  capability: ''
+- id: BEH-277
+  name: POST /toolset
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-278
+  name: GET /toolset
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-279
+  name: GET /toolset/{toolset_id}
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-280
+  name: PUT /toolset
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-281
+  name: DELETE /toolset/{toolset_id}
+  actor: ACT-1
+  capability: CAP-63
+- id: BEH-282
+  name: POST /access_group/new
+  actor: ACT-1
+  capability: ''
+- id: BEH-283
+  name: GET /access_group/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-284
+  name: GET /access_group/{access_group}/info
+  actor: ACT-1
+  capability: ''
+- id: BEH-285
+  name: PUT /access_group/{access_group}/update
+  actor: ACT-1
+  capability: ''
+- id: BEH-286
+  name: DELETE /access_group/{access_group}/delete
+  actor: ACT-1
+  capability: ''
+- id: BEH-287
+  name: PATCH /model/{model_id}/update
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-288
+  name: POST /model/delete
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-289
+  name: POST /model/new
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-290
+  name: POST /model/update
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-291
+  name: POST /model_group/make_public
+  actor: ACT-1
+  capability: ''
+- id: BEH-292
+  name: POST /model_hub/update_useful_links
+  actor: ACT-1
+  capability: ''
+- id: BEH-293
+  name: POST /organization/new
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-294
+  name: GET /organization/daily/activity
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-295
+  name: PATCH /organization/update
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-296
+  name: DELETE /organization/delete
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-297
+  name: GET /organization/list
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-298
+  name: GET /organization/info
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-299
+  name: POST /organization/info
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-300
+  name: POST /organization/member_add
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-301
+  name: PATCH /organization/member_update
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-302
+  name: DELETE /organization/member_delete
+  actor: ACT-1
+  capability: CAP-68
+- id: BEH-303
+  name: POST /utils/test_policies_and_guardrails
+  actor: ACT-1
+  capability: CAP-126
+- id: BEH-304
+  name: POST /policy/validate
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-305
+  name: GET /policy/list
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-306
+  name: GET /policy/info/{policy_name}
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-307
+  name: POST /policy/test
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-308
+  name: GET /policy/templates
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-309
+  name: POST /policy/templates/enrich
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-310
+  name: POST /policy/templates/enrich/stream
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-311
+  name: POST /policy/templates/suggest
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-312
+  name: POST /policy/templates/test
+  actor: ACT-1
+  capability: CAP-70
+- id: BEH-313
+  name: POST /project/new
+  actor: ACT-1
+  capability: CAP-71
+- id: BEH-314
+  name: POST /project/update
+  actor: ACT-1
+  capability: CAP-71
+- id: BEH-315
+  name: DELETE /project/delete
+  actor: ACT-1
+  capability: CAP-71
+- id: BEH-316
+  name: GET /project/info
+  actor: ACT-1
+  capability: CAP-71
+- id: BEH-317
+  name: GET /project/list
+  actor: ACT-1
+  capability: CAP-71
+- id: BEH-318
+  name: GET /router/settings
+  actor: ACT-1
+  capability: CAP-72
+- id: BEH-319
+  name: GET /router/fields
+  actor: ACT-1
+  capability: CAP-72
+- id: BEH-320
+  name: 'GET '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-321
+  name: GET /
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-322
+  name: GET /ResourceTypes
+  actor: ACT-1
+  capability: ''
+- id: BEH-323
+  name: GET /ResourceTypes/{resource_type_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-324
+  name: GET /Schemas
+  actor: ACT-1
+  capability: ''
+- id: BEH-325
+  name: GET /Schemas/{schema_id:path}
+  actor: ACT-1
+  capability: ''
+- id: BEH-326
+  name: GET /ServiceProviderConfig
+  actor: ACT-1
+  capability: CAP-75
+- id: BEH-327
+  name: GET /Users
+  actor: ACT-1
+  capability: ''
+- id: BEH-328
+  name: GET /Users/{user_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-329
+  name: POST /Users
+  actor: ACT-1
+  capability: ''
+- id: BEH-330
+  name: PUT /Users/{user_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-331
+  name: DELETE /Users/{user_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-332
+  name: PATCH /Users/{user_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-333
+  name: GET /Groups
+  actor: ACT-1
+  capability: ''
+- id: BEH-334
+  name: GET /Groups/{group_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-335
+  name: POST /Groups
+  actor: ACT-1
+  capability: ''
+- id: BEH-336
+  name: PUT /Groups/{group_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-337
+  name: DELETE /Groups/{group_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-338
+  name: PATCH /Groups/{group_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-339
+  name: POST /tag/new
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-340
+  name: POST /tag/update
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-341
+  name: POST /tag/info
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-342
+  name: GET /tag/list
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-343
+  name: POST /tag/delete
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-344
+  name: GET /tag/daily/activity
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-345
+  name: POST /team/{team_id:path}/callback
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-346
+  name: POST /team/{team_id}/disable_logging
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-347
+  name: GET /team/{team_id:path}/callback
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-348
+  name: POST /team/new
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-349
+  name: POST /team/update
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-350
+  name: POST /team/member_add
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-351
+  name: POST /team/member_delete
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-352
+  name: POST /team/member_update
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-353
+  name: POST /team/bulk_member_add
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-354
+  name: POST /team/delete
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-355
+  name: GET /team/info
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-356
+  name: POST /team/block
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-357
+  name: POST /team/unblock
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-358
+  name: GET /team/available
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-359
+  name: GET /v2/team/list
+  actor: ACT-1
+  capability: CAP-35
+- id: BEH-360
+  name: GET /team/list
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-361
+  name: GET /team/filter/ui
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-362
+  name: POST /team/model/add
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-363
+  name: POST /team/model/delete
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-364
+  name: GET /team/permissions_list
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-365
+  name: POST /team/permissions_update
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-366
+  name: POST /team/permissions_bulk_update
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-367
+  name: GET /team/daily/activity
+  actor: ACT-1
+  capability: CAP-79
+- id: BEH-368
+  name: GET /v1/tool/policy/options
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-369
+  name: GET /v1/tool/list
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-370
+  name: GET /v1/tool/{tool_name:path}/detail
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-371
+  name: GET /v1/tool/{tool_name:path}/logs
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-372
+  name: GET /v1/tool/{tool_name:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-373
+  name: POST /v1/tool/policy
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-374
+  name: DELETE /v1/tool/{tool_name:path}/overrides
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-375
+  name: GET /sso/key/generate
+  actor: ACT-1
+  capability: CAP-80
+- id: BEH-376
+  name: GET /sso/callback
+  actor: ACT-1
+  capability: CAP-80
+- id: BEH-377
+  name: GET /sso/cli/poll/{key_id}
+  actor: ACT-1
+  capability: CAP-80
+- id: BEH-378
+  name: GET /sso/get/ui_settings
+  actor: ACT-1
+  capability: CAP-80
+- id: BEH-379
+  name: GET /sso/readiness
+  actor: ACT-1
+  capability: CAP-80
+- id: BEH-380
+  name: GET /sso/debug/login
+  actor: ACT-1
+  capability: CAP-80
+- id: BEH-381
+  name: GET /sso/debug/callback
+  actor: ACT-1
+  capability: CAP-80
+- id: BEH-382
+  name: POST /usage/ai/chat
+  actor: ACT-1
+  capability: CAP-22
+- id: BEH-383
+  name: GET /tag/distinct
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-384
+  name: GET /tag/dau
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-385
+  name: GET /tag/wau
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-386
+  name: GET /tag/mau
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-387
+  name: GET /tag/summary
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-388
+  name: GET /tag/user-agent/per-user-analytics
+  actor: ACT-1
+  capability: CAP-78
+- id: BEH-389
+  name: POST /v1/ocr
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-390
+  name: POST /ocr
+  actor: ACT-1
+  capability: CAP-82
+- id: BEH-391
+  name: POST /v1/evals
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-392
+  name: GET /v1/evals
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-393
+  name: GET /v1/evals/{eval_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-394
+  name: POST /v1/evals/{eval_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-395
+  name: DELETE /v1/evals/{eval_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-396
+  name: POST /v1/evals/{eval_id}/cancel
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-397
+  name: POST /v1/evals/{eval_id}/runs
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-398
+  name: GET /v1/evals/{eval_id}/runs
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-399
+  name: GET /v1/evals/{eval_id}/runs/{run_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-400
+  name: POST /v1/evals/{eval_id}/runs/{run_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-401
+  name: DELETE /v1/evals/{eval_id}/runs/{run_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-402
+  name: POST /{provider}/v1/files
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-403
+  name: POST /v1/files
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-404
+  name: POST /files
+  actor: ACT-1
+  capability: CAP-176
+- id: BEH-405
+  name: GET /{provider}/v1/files/{file_id:path}/content
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-406
+  name: GET /v1/files/{file_id:path}/content
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-407
+  name: GET /files/{file_id:path}/content
+  actor: ACT-1
+  capability: CAP-176
+- id: BEH-408
+  name: GET /{provider}/v1/files/{file_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-409
+  name: GET /v1/files/{file_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-410
+  name: GET /files/{file_id:path}
+  actor: ACT-1
+  capability: CAP-176
+- id: BEH-411
+  name: DELETE /{provider}/v1/files/{file_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-412
+  name: DELETE /v1/files/{file_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-413
+  name: DELETE /files/{file_id:path}
+  actor: ACT-1
+  capability: CAP-176
+- id: BEH-414
+  name: GET /{provider}/v1/files
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-415
+  name: GET /v1/files
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-416
+  name: GET /files
+  actor: ACT-1
+  capability: CAP-176
+- id: BEH-417
+  name: GET /config/pass_through_endpoint
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-418
+  name: GET /config/pass_through_endpoint/team/{team_id}
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-419
+  name: POST /config/pass_through_endpoint/{endpoint_id}
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-420
+  name: POST /config/pass_through_endpoint
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-421
+  name: DELETE /config/pass_through_endpoint
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-422
+  name: GET /policies/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-423
+  name: POST /policies
+  actor: ACT-1
+  capability: ''
+- id: BEH-424
+  name: GET /policies/name/{policy_name}/versions
+  actor: ACT-1
+  capability: ''
+- id: BEH-425
+  name: POST /policies/name/{policy_name}/versions
+  actor: ACT-1
+  capability: ''
+- id: BEH-426
+  name: PUT /policies/{policy_id}/status
+  actor: ACT-1
+  capability: ''
+- id: BEH-427
+  name: GET /policies/compare
+  actor: ACT-1
+  capability: ''
+- id: BEH-428
+  name: DELETE /policies/name/{policy_name}/all-versions
+  actor: ACT-1
+  capability: ''
+- id: BEH-429
+  name: GET /policies/{policy_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-430
+  name: PUT /policies/{policy_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-431
+  name: DELETE /policies/{policy_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-432
+  name: GET /policies/{policy_id}/resolved-guardrails
+  actor: ACT-1
+  capability: ''
+- id: BEH-433
+  name: POST /policies/test-pipeline
+  actor: ACT-1
+  capability: ''
+- id: BEH-434
+  name: GET /policies/attachments/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-435
+  name: POST /policies/attachments
+  actor: ACT-1
+  capability: ''
+- id: BEH-436
+  name: GET /policies/attachments/{attachment_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-437
+  name: DELETE /policies/attachments/{attachment_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-438
+  name: POST /policies/resolve
+  actor: ACT-1
+  capability: ''
+- id: BEH-439
+  name: POST /policies/attachments/estimate-impact
+  actor: ACT-1
+  capability: ''
+- id: BEH-440
+  name: GET /prompts/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-441
+  name: GET /prompts/{prompt_id}/versions
+  actor: ACT-1
+  capability: ''
+- id: BEH-442
+  name: GET /prompts/{prompt_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-443
+  name: GET /prompts/{prompt_id}/info
+  actor: ACT-1
+  capability: ''
+- id: BEH-444
+  name: POST /prompts
+  actor: ACT-1
+  capability: ''
+- id: BEH-445
+  name: PUT /prompts/{prompt_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-446
+  name: DELETE /prompts/{prompt_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-447
+  name: PATCH /prompts/{prompt_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-448
+  name: POST /prompts/test
+  actor: ACT-1
+  capability: ''
+- id: BEH-449
+  name: POST /utils/dotprompt_json_converter
+  actor: ACT-1
+  capability: CAP-126
+- id: BEH-450
+  name: GET /v1/models
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-451
+  name: GET /models
+  actor: ACT-1
+  capability: ''
+- id: BEH-452
+  name: GET /v1/models/{model_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-453
+  name: GET /models/{model_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-454
+  name: POST /v1/chat/completions
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-455
+  name: POST /chat/completions
+  actor: ACT-1
+  capability: CAP-85
+- id: BEH-456
+  name: POST /engines/{model:path}/chat/completions
+  actor: ACT-1
+  capability: ''
+- id: BEH-457
+  name: POST /openai/deployments/{model:path}/chat/completions
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-458
+  name: POST /v1/completions
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-459
+  name: POST /completions
+  actor: ACT-1
+  capability: ''
+- id: BEH-460
+  name: POST /engines/{model:path}/completions
+  actor: ACT-1
+  capability: ''
+- id: BEH-461
+  name: POST /openai/deployments/{model:path}/completions
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-462
+  name: POST /v1/embeddings
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-463
+  name: POST /embeddings
+  actor: ACT-1
+  capability: ''
+- id: BEH-464
+  name: POST /engines/{model:path}/embeddings
+  actor: ACT-1
+  capability: ''
+- id: BEH-465
+  name: POST /openai/deployments/{model:path}/embeddings
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-466
+  name: POST /v1/moderations
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-467
+  name: POST /moderations
+  actor: ACT-1
+  capability: ''
+- id: BEH-468
+  name: POST /v1/audio/speech
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-469
+  name: POST /audio/speech
+  actor: ACT-1
+  capability: CAP-90
+- id: BEH-470
+  name: POST /v1/audio/transcriptions
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-471
+  name: POST /audio/transcriptions
+  actor: ACT-1
+  capability: CAP-90
+- id: BEH-472
+  name: GET /v1/assistants
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-473
+  name: GET /assistants
+  actor: ACT-1
+  capability: ''
+- id: BEH-474
+  name: POST /v1/assistants
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-475
+  name: POST /assistants
+  actor: ACT-1
+  capability: ''
+- id: BEH-476
+  name: DELETE /v1/assistants/{assistant_id:path}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-477
+  name: DELETE /assistants/{assistant_id:path}
+  actor: ACT-1
+  capability: ''
+- id: BEH-478
+  name: POST /v1/threads
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-479
+  name: POST /threads
+  actor: ACT-1
+  capability: ''
+- id: BEH-480
+  name: GET /v1/threads/{thread_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-481
+  name: GET /threads/{thread_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-482
+  name: POST /v1/threads/{thread_id}/messages
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-483
+  name: POST /threads/{thread_id}/messages
+  actor: ACT-1
+  capability: ''
+- id: BEH-484
+  name: GET /v1/threads/{thread_id}/messages
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-485
+  name: GET /threads/{thread_id}/messages
+  actor: ACT-1
+  capability: ''
+- id: BEH-486
+  name: POST /v1/threads/{thread_id}/runs
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-487
+  name: POST /threads/{thread_id}/runs
+  actor: ACT-1
+  capability: ''
+- id: BEH-488
+  name: POST /utils/token_counter
+  actor: ACT-1
+  capability: CAP-126
+- id: BEH-489
+  name: GET /utils/supported_openai_params
+  actor: ACT-1
+  capability: CAP-126
+- id: BEH-490
+  name: POST /utils/transform_request
+  actor: ACT-1
+  capability: CAP-126
+- id: BEH-491
+  name: GET /v2/model/info
+  actor: ACT-1
+  capability: CAP-35
+- id: BEH-492
+  name: GET /model/streaming_metrics
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-493
+  name: GET /model/metrics
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-494
+  name: GET /model/metrics/slow_responses
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-495
+  name: GET /model/metrics/exceptions
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-496
+  name: GET /model/info
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-497
+  name: GET /v1/model/info
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-498
+  name: GET /model_group/info
+  actor: ACT-1
+  capability: ''
+- id: BEH-499
+  name: GET /model/settings
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-500
+  name: GET /alerting/settings
+  actor: ACT-1
+  capability: CAP-93
+- id: BEH-501
+  name: POST /queue/chat/completions
+  actor: ACT-1
+  capability: CAP-94
+- id: BEH-502
+  name: GET /fallback/login
+  actor: ACT-1
+  capability: CAP-51
+- id: BEH-503
+  name: POST /login
+  actor: ACT-1
+  capability: CAP-95
+- id: BEH-504
+  name: POST /v2/login
+  actor: ACT-1
+  capability: CAP-35
+- id: BEH-505
+  name: POST /v3/login
+  actor: ACT-1
+  capability: CAP-96
+- id: BEH-506
+  name: POST /v3/login/exchange
+  actor: ACT-1
+  capability: CAP-96
+- id: BEH-507
+  name: GET /onboarding/get_token
+  actor: ACT-1
+  capability: CAP-97
+- id: BEH-508
+  name: POST /onboarding/claim_token
+  actor: ACT-1
+  capability: CAP-97
+- id: BEH-509
+  name: GET /get_logo_url
+  actor: ACT-1
+  capability: ''
+- id: BEH-510
+  name: GET /get_image
+  actor: ACT-1
+  capability: ''
+- id: BEH-511
+  name: GET /get_favicon
+  actor: ACT-1
+  capability: ''
+- id: BEH-512
+  name: POST /invitation/new
+  actor: ACT-1
+  capability: CAP-101
+- id: BEH-513
+  name: GET /invitation/info
+  actor: ACT-1
+  capability: CAP-101
+- id: BEH-514
+  name: POST /invitation/update
+  actor: ACT-1
+  capability: CAP-101
+- id: BEH-515
+  name: POST /invitation/delete
+  actor: ACT-1
+  capability: CAP-101
+- id: BEH-516
+  name: POST /config/update
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-517
+  name: POST /config/field/update
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-518
+  name: GET /config/field/info
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-519
+  name: GET /config/list
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-520
+  name: POST /config/field/delete
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-521
+  name: POST /config/callback/delete
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-522
+  name: GET /get/config/callbacks
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-523
+  name: GET /config/yaml
+  actor: ACT-1
+  capability: CAP-26
+- id: BEH-524
+  name: POST /reload/model_cost_map
+  actor: ACT-1
+  capability: CAP-103
+- id: BEH-525
+  name: POST /schedule/model_cost_map_reload
+  actor: ACT-1
+  capability: CAP-104
+- id: BEH-526
+  name: DELETE /schedule/model_cost_map_reload
+  actor: ACT-1
+  capability: CAP-104
+- id: BEH-527
+  name: GET /schedule/model_cost_map_reload/status
+  actor: ACT-1
+  capability: CAP-104
+- id: BEH-528
+  name: GET /model/cost_map/source
+  actor: ACT-1
+  capability: CAP-32
+- id: BEH-529
+  name: POST /reload/anthropic_beta_headers
+  actor: ACT-1
+  capability: CAP-103
+- id: BEH-530
+  name: POST /schedule/anthropic_beta_headers_reload
+  actor: ACT-1
+  capability: CAP-104
+- id: BEH-531
+  name: DELETE /schedule/anthropic_beta_headers_reload
+  actor: ACT-1
+  capability: CAP-104
+- id: BEH-532
+  name: GET /schedule/anthropic_beta_headers_reload/status
+  actor: ACT-1
+  capability: CAP-104
+- id: BEH-533
+  name: GET /
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-534
+  name: GET /routes
+  actor: ACT-1
+  capability: ''
+- id: BEH-535
+  name: GET /
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-536
+  name: GET /public/model_hub
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-537
+  name: GET /public/agent_hub
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-538
+  name: GET /public/mcp_hub
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-539
+  name: GET /public/model_hub/info
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-540
+  name: GET /public/providers
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-541
+  name: GET /public/providers/fields
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-542
+  name: GET /public/litellm_model_cost_map
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-543
+  name: GET /public/litellm_blog_posts
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-544
+  name: GET /public/endpoints
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-545
+  name: GET /public/agents/fields
+  actor: ACT-1
+  capability: CAP-60
+- id: BEH-546
+  name: POST /v1/rag/ingest
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-547
+  name: POST /rag/ingest
+  actor: ACT-1
+  capability: CAP-107
+- id: BEH-548
+  name: POST /v1/rag/query
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-549
+  name: POST /rag/query
+  actor: ACT-1
+  capability: CAP-107
+- id: BEH-550
+  name: POST /v1/realtime/client_secrets
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-551
+  name: POST /realtime/client_secrets
+  actor: ACT-1
+  capability: CAP-108
+- id: BEH-552
+  name: POST /openai/v1/realtime/client_secrets
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-553
+  name: POST /v1/realtime/calls
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-554
+  name: POST /realtime/calls
+  actor: ACT-1
+  capability: CAP-108
+- id: BEH-555
+  name: POST /openai/v1/realtime/calls
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-556
+  name: POST /v2/rerank
+  actor: ACT-1
+  capability: CAP-35
+- id: BEH-557
+  name: POST /v1/rerank
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-558
+  name: POST /rerank
+  actor: ACT-1
+  capability: CAP-109
+- id: BEH-559
+  name: POST /v1/responses
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-560
+  name: POST /responses
+  actor: ACT-1
+  capability: ''
+- id: BEH-561
+  name: POST /openai/v1/responses
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-562
+  name: POST /cursor/chat/completions
+  actor: ACT-1
+  capability: CAP-111
+- id: BEH-563
+  name: GET /v1/responses/{response_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-564
+  name: GET /responses/{response_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-565
+  name: GET /openai/v1/responses/{response_id}
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-566
+  name: DELETE /v1/responses/{response_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-567
+  name: DELETE /responses/{response_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-568
+  name: DELETE /openai/v1/responses/{response_id}
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-569
+  name: GET /v1/responses/{response_id}/input_items
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-570
+  name: GET /responses/{response_id}/input_items
+  actor: ACT-1
+  capability: ''
+- id: BEH-571
+  name: GET /openai/v1/responses/{response_id}/input_items
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-572
+  name: POST /v1/responses/compact
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-573
+  name: POST /responses/compact
+  actor: ACT-1
+  capability: ''
+- id: BEH-574
+  name: POST /openai/v1/responses/compact
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-575
+  name: POST /v1/responses/{response_id}/cancel
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-576
+  name: POST /responses/{response_id}/cancel
+  actor: ACT-1
+  capability: ''
+- id: BEH-577
+  name: POST /openai/v1/responses/{response_id}/cancel
+  actor: ACT-1
+  capability: CAP-42
+- id: BEH-578
+  name: POST /v1/search/{search_tool_name}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-579
+  name: POST /search/{search_tool_name}
+  actor: ACT-1
+  capability: CAP-112
+- id: BEH-580
+  name: POST /v1/search
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-581
+  name: POST /search
+  actor: ACT-1
+  capability: CAP-112
+- id: BEH-582
+  name: GET /v1/search/tools
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-583
+  name: GET /search/tools
+  actor: ACT-1
+  capability: CAP-112
+- id: BEH-584
+  name: GET /search_tools/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-585
+  name: POST /search_tools
+  actor: ACT-1
+  capability: ''
+- id: BEH-586
+  name: PUT /search_tools/{search_tool_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-587
+  name: DELETE /search_tools/{search_tool_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-588
+  name: GET /search_tools/{search_tool_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-589
+  name: POST /search_tools/test_connection
+  actor: ACT-1
+  capability: ''
+- id: BEH-590
+  name: GET /search_tools/ui/available_providers
+  actor: ACT-1
+  capability: ''
+- id: BEH-591
+  name: GET /cloudzero/settings
+  actor: ACT-1
+  capability: CAP-114
+- id: BEH-592
+  name: PUT /cloudzero/settings
+  actor: ACT-1
+  capability: CAP-114
+- id: BEH-593
+  name: POST /cloudzero/init
+  actor: ACT-1
+  capability: CAP-114
+- id: BEH-594
+  name: POST /cloudzero/dry-run
+  actor: ACT-1
+  capability: CAP-114
+- id: BEH-595
+  name: POST /cloudzero/export
+  actor: ACT-1
+  capability: CAP-114
+- id: BEH-596
+  name: DELETE /cloudzero/delete
+  actor: ACT-1
+  capability: CAP-114
+- id: BEH-597
+  name: GET /spend/keys
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-598
+  name: GET /spend/users
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-599
+  name: GET /spend/tags
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-600
+  name: GET /global/activity
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-601
+  name: GET /global/activity/model
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-602
+  name: GET /global/activity/exceptions/deployment
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-603
+  name: GET /global/activity/exceptions
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-604
+  name: GET /global/spend/provider
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-605
+  name: GET /global/spend/report
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-606
+  name: GET /global/spend/all_tag_names
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-607
+  name: GET /global/spend/tags
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-608
+  name: POST /spend/calculate
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-609
+  name: GET /spend/logs/v2
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-610
+  name: GET /spend/logs/ui
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-611
+  name: GET /spend/logs/ui/{request_id}
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-612
+  name: GET /spend/logs
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-613
+  name: POST /global/spend/reset
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-614
+  name: POST /global/spend/refresh
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-615
+  name: GET /global/spend/logs
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-616
+  name: GET /global/spend
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-617
+  name: GET /global/spend/keys
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-618
+  name: GET /global/spend/teams
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-619
+  name: GET /global/all_end_users
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-620
+  name: POST /global/spend/end_users
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-621
+  name: GET /global/spend/models
+  actor: ACT-1
+  capability: CAP-13
+- id: BEH-622
+  name: GET /provider/budgets
+  actor: ACT-1
+  capability: CAP-75
+- id: BEH-623
+  name: GET /spend/logs/session/ui
+  actor: ACT-1
+  capability: CAP-115
+- id: BEH-624
+  name: GET /vantage/settings
+  actor: ACT-1
+  capability: CAP-117
+- id: BEH-625
+  name: PUT /vantage/settings
+  actor: ACT-1
+  capability: CAP-117
+- id: BEH-626
+  name: POST /vantage/init
+  actor: ACT-1
+  capability: CAP-117
+- id: BEH-627
+  name: POST /vantage/dry-run
+  actor: ACT-1
+  capability: CAP-117
+- id: BEH-628
+  name: POST /vantage/export
+  actor: ACT-1
+  capability: CAP-117
+- id: BEH-629
+  name: DELETE /vantage/delete
+  actor: ACT-1
+  capability: CAP-117
+- id: BEH-630
+  name: GET /get/allowed_ips
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-631
+  name: POST /add/allowed_ip
+  actor: ACT-1
+  capability: CAP-118
+- id: BEH-632
+  name: POST /delete/allowed_ip
+  actor: ACT-1
+  capability: CAP-18
+- id: BEH-633
+  name: GET /get/internal_user_settings
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-634
+  name: GET /get/default_team_settings
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-635
+  name: PATCH /update/internal_user_settings
+  actor: ACT-1
+  capability: CAP-119
+- id: BEH-636
+  name: PATCH /update/default_team_settings
+  actor: ACT-1
+  capability: CAP-119
+- id: BEH-637
+  name: GET /get/sso_settings
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-638
+  name: PATCH /update/sso_settings
+  actor: ACT-1
+  capability: CAP-119
+- id: BEH-639
+  name: GET /get/ui_theme_settings
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-640
+  name: PATCH /update/ui_theme_settings
+  actor: ACT-1
+  capability: CAP-119
+- id: BEH-641
+  name: GET /get/mcp_semantic_filter_settings
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-642
+  name: PATCH /update/mcp_semantic_filter_settings
+  actor: ACT-1
+  capability: CAP-119
+- id: BEH-643
+  name: GET /in_product_nudges
+  actor: ACT-1
+  capability: ''
+- id: BEH-644
+  name: GET /get/ui_settings
+  actor: ACT-1
+  capability: CAP-43
+- id: BEH-645
+  name: PATCH /update/ui_settings
+  actor: ACT-1
+  capability: CAP-119
+- id: BEH-646
+  name: POST /upload/logo
+  actor: ACT-1
+  capability: CAP-121
+- id: BEH-647
+  name: POST /v1/vector_stores/{vector_store_id:path}/search
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-648
+  name: POST /vector_stores/{vector_store_id:path}/search
+  actor: ACT-1
+  capability: ''
+- id: BEH-649
+  name: POST /v1/vector_stores
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-650
+  name: POST /vector_stores
+  actor: ACT-1
+  capability: ''
+- id: BEH-651
+  name: GET /v1/vector_stores/{vector_store_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-652
+  name: GET /vector_stores/{vector_store_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-653
+  name: GET /v1/vector_stores
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-654
+  name: GET /vector_stores
+  actor: ACT-1
+  capability: ''
+- id: BEH-655
+  name: POST /v1/vector_stores/{vector_store_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-656
+  name: POST /vector_stores/{vector_store_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-657
+  name: DELETE /v1/vector_stores/{vector_store_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-658
+  name: DELETE /vector_stores/{vector_store_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-659
+  name: POST /v1/indexes
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-660
+  name: POST /vector_store/new
+  actor: ACT-1
+  capability: ''
+- id: BEH-661
+  name: GET /vector_store/list
+  actor: ACT-1
+  capability: ''
+- id: BEH-662
+  name: GET /v1/vector_store/list
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-663
+  name: POST /vector_store/delete
+  actor: ACT-1
+  capability: ''
+- id: BEH-664
+  name: POST /vector_store/info
+  actor: ACT-1
+  capability: ''
+- id: BEH-665
+  name: POST /vector_store/update
+  actor: ACT-1
+  capability: ''
+- id: BEH-666
+  name: POST /v1/vector_stores/{vector_store_id}/files
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-667
+  name: POST /vector_stores/{vector_store_id}/files
+  actor: ACT-1
+  capability: ''
+- id: BEH-668
+  name: GET /v1/vector_stores/{vector_store_id}/files
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-669
+  name: GET /vector_stores/{vector_store_id}/files
+  actor: ACT-1
+  capability: ''
+- id: BEH-670
+  name: GET /v1/vector_stores/{vector_store_id}/files/{file_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-671
+  name: GET /vector_stores/{vector_store_id}/files/{file_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-672
+  name: GET /v1/vector_stores/{vector_store_id}/files/{file_id}/content
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-673
+  name: GET /vector_stores/{vector_store_id}/files/{file_id}/content
+  actor: ACT-1
+  capability: ''
+- id: BEH-674
+  name: POST /v1/vector_stores/{vector_store_id}/files/{file_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-675
+  name: POST /vector_stores/{vector_store_id}/files/{file_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-676
+  name: DELETE /v1/vector_stores/{vector_store_id}/files/{file_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-677
+  name: DELETE /vector_stores/{vector_store_id}/files/{file_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-678
+  name: POST /v1/videos
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-679
+  name: POST /videos
+  actor: ACT-1
+  capability: ''
+- id: BEH-680
+  name: GET /v1/videos
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-681
+  name: GET /videos
+  actor: ACT-1
+  capability: ''
+- id: BEH-682
+  name: GET /v1/videos/{video_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-683
+  name: GET /videos/{video_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-684
+  name: GET /v1/videos/{video_id}/content
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-685
+  name: GET /videos/{video_id}/content
+  actor: ACT-1
+  capability: ''
+- id: BEH-686
+  name: POST /v1/videos/{video_id}/remix
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-687
+  name: POST /videos/{video_id}/remix
+  actor: ACT-1
+  capability: ''
+- id: BEH-688
+  name: POST /v1/videos/characters
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-689
+  name: POST /videos/characters
+  actor: ACT-1
+  capability: ''
+- id: BEH-690
+  name: GET /v1/videos/characters/{character_id}
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-691
+  name: GET /videos/characters/{character_id}
+  actor: ACT-1
+  capability: ''
+- id: BEH-692
+  name: POST /v1/videos/edits
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-693
+  name: POST /videos/edits
+  actor: ACT-1
+  capability: ''
+- id: BEH-694
+  name: POST /v1/videos/extensions
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-695
+  name: POST /videos/extensions
+  actor: ACT-1
+  capability: ''
+- id: BEH-696
+  name: PATCH platform.python_version
+  actor: ACT-1
+  capability: ''
+- id: BEH-697
+  name: PATCH distutils.command.bdist_rpm.bdist_rpm
+  actor: ACT-1
+  capability: ''
+- id: BEH-698
+  name: PATCH setuptools.command.build_clib.newer_pairwise_group
+  actor: ACT-1
+  capability: ''
+- id: BEH-699
+  name: PATCH setuptools.command.build_clib.newer_pairwise_group
+  actor: ACT-1
+  capability: ''
+- id: BEH-700
+  name: 'PATCH '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-701
+  name: 'PATCH '
+  actor: ACT-1
+  capability: CAP-1
+- id: BEH-702
+  name: POST /v1/chat/completions
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-703
+  name: POST /v1/completions
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-704
+  name: POST /v1/responses
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-705
+  name: POST /v1/audio/transcriptions
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-706
+  name: POST /load_model
+  actor: ACT-1
+  capability: ''
+- id: BEH-707
+  name: POST /reset
+  actor: ACT-1
+  capability: CAP-129
+- id: BEH-708
+  name: GET /v1/models
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-709
+  name: OPTIONS /v1/models
+  actor: ACT-1
+  capability: CAP-3
+- id: BEH-710
+  name: GET /health
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-711
+  name: GET /health/
+  actor: ACT-1
+  capability: CAP-38
+- id: BEH-712
+  name: GET /get_world_size/
+  actor: ACT-1
+  capability: ''
+- id: BEH-713
+  name: POST /generate/
+  actor: ACT-1
+  capability: CAP-131
+- id: BEH-714
+  name: POST /get_sequence_logprobs/
+  actor: ACT-1
+  capability: ''
+- id: BEH-715
+  name: POST /chat/
+  actor: ACT-1
+  capability: CAP-85
+- id: BEH-716
+  name: POST /init_communicator/
+  actor: ACT-1
+  capability: ''
+- id: BEH-717
+  name: POST /update_named_param/
+  actor: ACT-1
+  capability: ''
+- id: BEH-718
+  name: POST /reset_prefix_cache/
+  actor: ACT-1
+  capability: ''
+- id: BEH-719
+  name: POST /close_communicator/
+  actor: ACT-1
+  capability: ''

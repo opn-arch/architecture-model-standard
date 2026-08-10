@@ -1,0 +1,9 @@
+component: COMP-140
+interfaces:
+- id: IF-9
+  name: COMP-140 Library API
+  type: library
+  methods:
+  - 'ContractResult: class ContractResult'
+  - 'ContractStage: class ContractStage'
+  - 'TestContract: class TestContract'

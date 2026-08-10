@@ -1,0 +1,11 @@
+component: COMP-148
+interfaces:
+- id: IF-3
+  name: COMP-148 Library API
+  type: library
+  methods:
+  - 'InferStage: class InferStage'
+  - 'InferenceResult: class InferenceResult'
+  - 'InferredActor: class InferredActor'
+  - 'InferredBehavior: class InferredBehavior'
+  - 'InferredCapability: class InferredCapability'

@@ -1,0 +1,12 @@
+component: COMP-175
+interfaces:
+- id: IF-13
+  name: COMP-175 Library API
+  type: library
+  methods:
+  - 'extract_list_items: def extract_list_items(text: str) -> list[str]'
+  - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str,
+    str]'
+  - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern:
+    str) -> list[dict[str, str]]'
+  - 'parse_tables: def parse_tables(markdown: str) -> list[list[dict[str, str]]]'

@@ -1,0 +1,4 @@
+component: COMP-105
+contracts:
+- test_file: tests/test_route_detector.py
+  assertions: 0

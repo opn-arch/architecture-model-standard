@@ -1,0 +1,4 @@
+component: COMP-167
+contracts:
+- test_file: tests/test_call_graph.py
+  assertions: 0

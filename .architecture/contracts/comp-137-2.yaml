@@ -1,0 +1,4 @@
+component: COMP-137-2
+contracts:
+- test_file: tests/test_pipeline_coordinator.py
+  assertions: 0

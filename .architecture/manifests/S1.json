@@ -1,0 +1,205 @@
+{
+  "generated_at": "2026-08-10T21:46:34.886393+00:00",
+  "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+  "metrics": {
+    "py_files": 3,
+    "total_lines": 347,
+    "functions": 2,
+    "classes": 1,
+    "constants": 0
+  },
+  "functional_blocks": {},
+  "modules": [
+    {
+      "file": "src/architecture_model/authoring/__init__.py",
+      "name": "Forward",
+      "docstring": "Forward-authoring: parse requirements documents into architecture models.",
+      "functions": [],
+      "imports": [
+        "architecture_model.authoring.parser",
+        "architecture_model.authoring.gate"
+      ],
+      "line_count": 6,
+      "status": "dormant",
+      "classes": [],
+      "exports": [
+        "parse_requirements_doc",
+        "check_development_gate",
+        "GateResult"
+      ],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "architecture_model.authoring.parser",
+          "symbols": [
+            "parse_requirements_doc"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.authoring.gate",
+          "symbols": [
+            "check_development_gate",
+            "GateResult"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/authoring/gate.py",
+      "name": "Gate",
+      "docstring": "Development gate: check if code reality tracks toward authored architecture intent.",
+      "functions": [
+        {
+          "name": "check_development_gate",
+          "signature": "check_development_gate(model: ArchitectureModel, manifest: Manifest, phase: str | None) -> GateResult",
+          "calls": [
+            "set",
+            "GateResult",
+            "update",
+            "add",
+            "append",
+            "len"
+          ],
+          "docstring": "Check if code reality is tracking toward authored architecture intent.\n\nArgs:\n    model: The architecture model to check.\n    manifest: The reality manifest from code scanning.\n    phase: Override lifecycle phase (\"concept\" or \"production\").\n           If None, defaults to \"production\"."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "architecture_model.core.types",
+        "architecture_model.manifest.types"
+      ],
+      "line_count": 93,
+      "status": "active",
+      "classes": [
+        {
+          "name": "GateResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ArchitectureModel",
+            "RelationType"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.manifest.types",
+          "symbols": [
+            "Manifest"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/authoring/parser.py",
+      "name": "Parse markdown requirements documents into ArchitectureModel instances",
+      "docstring": "Parse markdown requirements documents into ArchitectureModel instances.",
+      "functions": [
+        {
+          "name": "parse_requirements_doc",
+          "signature": "parse_requirements_doc(text: str) -> ArchitectureModel",
+          "calls": [
+            "_split_sections",
+            "ArchitectureModel",
+            "_parse_actors",
+            "_parse_capabilities",
+            "extend",
+            "_parse_constraints",
+            "ModelMeta",
+            "Entities"
+          ],
+          "docstring": "Parse a markdown requirements document into an ArchitectureModel.\n\nSupported sections: # Actors, # Capabilities, # Constraints (case-insensitive)."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "architecture_model.core.types"
+      ],
+      "line_count": 248,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "re",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "Actor",
+            "ActorType",
+            "ArchitectureModel",
+            "Capability",
+            "Constraint",
+            "ConstraintType",
+            "Entities",
+            "ModelMeta",
+            "Relationship",
+            "RelationType",
+            "Status"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    }
+  ],
+  "interfaces": [
+    {
+      "source": "src/architecture_model/authoring/__init__.py",
+      "target": "src/architecture_model/authoring/parser.py",
+      "import_path": "architecture_model.authoring.parser"
+    },
+    {
+      "source": "src/architecture_model/authoring/__init__.py",
+      "target": "src/architecture_model/authoring/gate.py",
+      "import_path": "architecture_model.authoring.gate"
+    }
+  ]
+}

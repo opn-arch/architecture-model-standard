@@ -1,0 +1,554 @@
+{
+  "generated_at": "2026-08-10T21:46:34.898291+00:00",
+  "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+  "metrics": {
+    "py_files": 3,
+    "total_lines": 880,
+    "functions": 1,
+    "classes": 0,
+    "constants": 0
+  },
+  "functional_blocks": {},
+  "modules": [
+    {
+      "file": "src/architecture_model/cli/__init__.py",
+      "name": " Init  ",
+      "docstring": null,
+      "functions": [],
+      "imports": [],
+      "line_count": 0,
+      "status": "dormant",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/cli/main.py",
+      "name": "CLI for the Architecture Model Standard",
+      "docstring": "CLI for the Architecture Model Standard.\n\nUsage:\n    architecture-model validate <model.yaml> [--strict]\n    architecture-model slice <model.yaml> --source_block F3\n    architecture-model slice <model.yaml> --artifact use-cases\n    architecture-model diff <old.yaml> <new.yaml>\n    architecture-model stats <model.yaml>\n    architecture-model init <path>\n    architecture-model manifest <path>",
+      "functions": [
+        {
+          "name": "main",
+          "signature": "main(argv: list[str] | None) -> int",
+          "calls": [
+            "ArgumentParser",
+            "add_subparsers",
+            "add_parser",
+            "add_argument",
+            "parse_args",
+            "print_help"
+          ]
+        }
+      ],
+      "imports": [
+        "__future__",
+        "argparse",
+        "sys",
+        "pathlib",
+        "config.loader",
+        "core.parser",
+        "core.validator",
+        "core.parser",
+        "core.slicer",
+        "core.types",
+        "core.parser",
+        "core.differ",
+        "core.parser",
+        "core.validator",
+        "collections",
+        "core.types",
+        "core.types",
+        "core.parser",
+        "manifest",
+        "config.loader",
+        "json",
+        "core.parser",
+        "orchestration.enrich",
+        "orchestration.decompose",
+        "json",
+        "core.coverage",
+        "core.parser",
+        "yaml",
+        "core.parser",
+        "visualize",
+        "core.parser",
+        "docs",
+        "authoring.parser",
+        "core.parser",
+        "core.regen_readiness",
+        "pipeline.observe",
+        "pipeline.infer",
+        "pipeline.allocate",
+        "pipeline.relate",
+        "pipeline.specify",
+        "pipeline.contract",
+        "pipeline.validate",
+        "pipeline.coordinator",
+        "pipeline.learning",
+        "pipeline.protocol",
+        "pipeline.artifacts",
+        "pipeline.context_gen",
+        "orchestration.pipeline",
+        "core.parser",
+        "docs",
+        "core.compression",
+        "core.compression",
+        "manifest.recursive",
+        "config.loader",
+        "manifest.generator",
+        "collections",
+        "manifest"
+      ],
+      "line_count": 860,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "argparse",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "sys",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "config.loader",
+          "symbols": [
+            "discover_config",
+            "write_config",
+            "CONFIG_FILENAME"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.validator",
+          "symbols": [
+            "validate_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model",
+            "save_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.slicer",
+          "symbols": [
+            "slice_by_source_block",
+            "slice_by_layer",
+            "slice_by_status",
+            "slice_for_artifact"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.types",
+          "symbols": [
+            "Status"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.differ",
+          "symbols": [
+            "diff_models"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.validator",
+          "symbols": [
+            "validate_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "Counter"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "core.types",
+          "symbols": [
+            "Status"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.types",
+          "symbols": [
+            "RelationType"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "manifest",
+          "symbols": [
+            "generate_manifest"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "config.loader",
+          "symbols": [
+            "get_config"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "json",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model",
+            "save_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "orchestration.enrich",
+          "symbols": [
+            "enrich_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "orchestration.decompose",
+          "symbols": [
+            "decompose_model",
+            "write_sub_models"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "json",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "core.coverage",
+          "symbols": [
+            "coverage_report"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "yaml",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "visualize",
+          "symbols": [
+            "generate_overview_diagram",
+            "generate_block_diagram",
+            "generate_dependency_diagram"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "docs",
+          "symbols": [
+            "generate_docs"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "authoring.parser",
+          "symbols": [
+            "parse_requirements_doc"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.regen_readiness",
+          "symbols": [
+            "compute_regen_readiness"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.observe",
+          "symbols": [
+            "ObserveStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.infer",
+          "symbols": [
+            "InferStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.allocate",
+          "symbols": [
+            "AllocateStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.relate",
+          "symbols": [
+            "RelateStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.specify",
+          "symbols": [
+            "SpecifyStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.contract",
+          "symbols": [
+            "ContractStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.validate",
+          "symbols": [
+            "ValidateStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.coordinator",
+          "symbols": [
+            "PipelineCoordinator"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.learning",
+          "symbols": [
+            "LearningStore"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.protocol",
+          "symbols": [
+            "PipelineContext"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.artifacts",
+          "symbols": [
+            "write_artifacts"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.context_gen",
+          "symbols": [
+            "write_context"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "orchestration.pipeline",
+          "symbols": [
+            "run_pipeline"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "docs",
+          "symbols": [
+            "generate_docs"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.compression",
+          "symbols": [
+            "compute_compression_stats",
+            "format_compression_summary"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.compression",
+          "symbols": [
+            "compute_compression_stats",
+            "format_compression_summary"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "manifest.recursive",
+          "symbols": [
+            "generate_recursive_manifests",
+            "write_recursive_manifests"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "config.loader",
+          "symbols": [
+            "get_config"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "manifest.generator",
+          "symbols": [
+            "generate_manifest"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "defaultdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "manifest",
+          "symbols": [
+            "generate_manifest"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/cli/visualize.py",
+      "name": "CLI visualization \u2014 delegates to core",
+      "docstring": "CLI visualization \u2014 delegates to core.visualize.\n\nAlso re-exports legacy functions for backward compatibility.",
+      "functions": [],
+      "imports": [
+        "core.visualize"
+      ],
+      "line_count": 20,
+      "status": "dormant",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "core.visualize",
+          "symbols": [
+            "generate_all_diagrams",
+            "generate_behaviors_diagram",
+            "generate_components_diagram",
+            "generate_context_diagram",
+            "generate_dependencies_diagram"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    }
+  ],
+  "interfaces": [
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/cli/visualize.py",
+      "import_path": "visualize"
+    }
+  ]
+}

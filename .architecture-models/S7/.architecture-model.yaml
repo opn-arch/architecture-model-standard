@@ -2,39 +2,26 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Export
   system: Export
-  generated_at: '2026-08-06T21:52:00'
+  generated_at: '2026-08-10T21:46:22.714335+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-EXPORT
 entities:
   capabilities:
   - id: CAP-EXPORT
-    name: Flat-File Export
+    name: Flat File Export
     status: ACTIVE
-    description: Export model artifacts as flat files for cross-repo sharing
-    source_block: S7
-    priority: low
-  interfaces:
-  - id: IF-EXPORT
-    name: Export API
-    status: ACTIVE
-    description: build_flat_export(repo_path, prefix?) -> ExportResult
-    type: internal
-    provider: COMP-EXPORT
+    description: Export architecture artifacts as flat files for mobile AI consumption
   components:
   - id: COMP-EXPORT
     name: Export
     status: ACTIVE
-    description: Flat-file export for cross-repo sharing and reference documentation
-    layer: LAYER-OUTPUT
-    source_block: S7
-    technology: python
+    description: 'Flat file export for mobile AI: concat sub-models, docs, diagrams, skills'
+    layer: LYR-INFRA
     files:
+    - src/architecture_model/export/__init__.py
     - src/architecture_model/export/flatfiles.py
     - src/architecture_model/export/reference.py
-    responsibilities:
-    - Export model as flat files with category prefixes
-    - Generate reference documentation
     kind: library
     constants:
     - name: _README
@@ -375,9 +362,6 @@ relationships:
 - type: realizes
   from: COMP-EXPORT
   to: CAP-EXPORT
-- type: exposes
-  from: COMP-EXPORT
-  to: IF-EXPORT
 - type: depends-on
   from: COMP-EXPORT
   to: COMP-CORE

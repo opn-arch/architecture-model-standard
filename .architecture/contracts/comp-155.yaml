@@ -1,0 +1,4 @@
+component: COMP-155
+contracts:
+- test_file: tests/test_visualize.py
+  assertions: 0

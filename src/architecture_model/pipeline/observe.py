@@ -68,9 +68,9 @@ class ObserveStage:
             except SyntaxError as e:
                 parse_failures += 1
                 diagnostics.append(Diagnostic(
-                    level="warning",
+                    severity="warning",
+                    code="parse-failed",
                     message=f"Parse failed: {py_file.relative_to(ctx.repo_path)}: {e}",
-                    source="observe",
                 ))
 
         # Routes
@@ -132,8 +132,15 @@ def _is_excluded(path: Path, root: Path) -> bool:
     """Exclude common non-source directories."""
     rel = path.relative_to(root)
     parts = rel.parts
-    excluded = {".git", "__pycache__", ".venv", "venv", "node_modules", ".tox", "dist", "build", ".eggs"}
-    return bool(excluded.intersection(parts))
+    excluded = {".git", "__pycache__", "node_modules", ".tox", "dist", "build", ".eggs",
+                "results", ".architecture-archive"}
+    if excluded.intersection(parts):
+        return True
+    # Exclude any venv-like directories (venv, .venv, .venv-1, etc.)
+    for part in parts:
+        if part == "venv" or part.startswith(".venv"):
+            return True
+    return False
 
 
 def _scan_module(

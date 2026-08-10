@@ -1,0 +1,20 @@
+component: COMP-164
+contracts:
+- test_file: tests/test_behavior_flows.py
+  assertions: 0
+- test_file: tests/test_behavior_spec.py
+  assertions: 0
+- test_file: tests/test_behavioral_e2e.py
+  assertions: 0
+- test_file: tests/test_behavior_decompose.py
+  assertions: 0
+- test_file: tests/test_behavior_extraction.py
+  assertions: 0
+- test_file: tests/test_behavioral_fields.py
+  assertions: 0
+- test_file: tests/test_scanner_behavioral.py
+  assertions: 0
+- test_file: tests/test_auto_behaviors.py
+  assertions: 0
+- test_file: tests/test_auto_enrich_behaviors.py
+  assertions: 0

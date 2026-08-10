@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-06T21:51:37",
+  "generated_at": "2026-08-10T21:46:24",
   "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
   "metrics": {
-    "total_python_files": 800
+    "total_python_files": 843
   },
   "functional_blocks": {
     "S1": {
@@ -86,7 +86,7 @@
             "int"
           ],
           "status": "active",
-          "line_count": 697
+          "line_count": 860
         },
         {
           "id": "S2.3",
@@ -381,6 +381,29 @@
         },
         {
           "id": "S4.11",
+          "name": "Regen readiness static metric module",
+          "file": "src/architecture_model/core/regen_readiness.py",
+          "functions": [
+            "compute_function_readiness(sig: FunctionSignature, test_contracts: list[TestContract]) -> FunctionReadiness",
+            "compute_component_readiness(component: Component) -> ComponentReadiness",
+            "compute_regen_readiness(model: ArchitectureModel) -> RegenReadiness"
+          ],
+          "inputs": [
+            "sig: FunctionSignature",
+            "test_contracts: list[TestContract]",
+            "component: Component",
+            "model: ArchitectureModel"
+          ],
+          "outputs": [
+            "ComponentReadiness",
+            "FunctionReadiness",
+            "RegenReadiness"
+          ],
+          "status": "active",
+          "line_count": 277
+        },
+        {
+          "id": "S4.12",
           "name": "Representativeness",
           "file": "src/architecture_model/core/representativeness.py",
           "functions": [
@@ -403,7 +426,7 @@
           "line_count": 299
         },
         {
-          "id": "S4.12",
+          "id": "S4.13",
           "name": "Slicer: Extract subsets of the architecture model",
           "file": "src/architecture_model/core/slicer.py",
           "functions": [
@@ -427,7 +450,7 @@
           "line_count": 542
         },
         {
-          "id": "S4.13",
+          "id": "S4.14",
           "name": "Automatic F",
           "file": "src/architecture_model/core/source_block_assign.py",
           "functions": [
@@ -444,7 +467,7 @@
           "line_count": 110
         },
         {
-          "id": "S4.14",
+          "id": "S4.15",
           "name": "Source Block Quality",
           "file": "src/architecture_model/core/source_block_quality.py",
           "functions": [
@@ -472,7 +495,7 @@
           "line_count": 353
         },
         {
-          "id": "S4.15",
+          "id": "S4.16",
           "name": "Test",
           "file": "src/architecture_model/core/test_affinity.py",
           "functions": [
@@ -488,7 +511,7 @@
           "line_count": 304
         },
         {
-          "id": "S4.16",
+          "id": "S4.17",
           "name": "Typed dataclasses for all Architecture Model entity types and relationships",
           "file": "src/architecture_model/core/types.py",
           "functions": [],
@@ -498,7 +521,7 @@
           "line_count": 1035
         },
         {
-          "id": "S4.17",
+          "id": "S4.18",
           "name": "Validator: Check architecture model invariants",
           "file": "src/architecture_model/core/validator.py",
           "functions": [
@@ -515,7 +538,7 @@
           "line_count": 639
         },
         {
-          "id": "S4.18",
+          "id": "S4.19",
           "name": "Generate Mermaid diagrams from architecture models",
           "file": "src/architecture_model/core/visualize.py",
           "functions": [
@@ -856,6 +879,41 @@
       "sub_functions": [
         {
           "id": "S8.1",
+          "name": "Constraint Detector",
+          "file": "src/architecture_model/extract/constraint_detector.py",
+          "functions": [
+            "detect_constraints(project_root: Path) -> list[Constraint]"
+          ],
+          "inputs": [
+            "project_root: Path"
+          ],
+          "outputs": [
+            "list[Constraint]"
+          ],
+          "status": "active",
+          "line_count": 398
+        },
+        {
+          "id": "S8.2",
+          "name": "Extract Architecture Model from Tier 1 markdown artifacts",
+          "file": "src/architecture_model/extract/from_artifacts.py",
+          "functions": [
+            "extract_from_artifacts(artifact_dir: str | Path, project: str, system: str) -> ArchitectureModel",
+            "main()"
+          ],
+          "inputs": [
+            "artifact_dir: str | Path",
+            "project: str",
+            "system: str"
+          ],
+          "outputs": [
+            "ArchitectureModel"
+          ],
+          "status": "active",
+          "line_count": 837
+        },
+        {
+          "id": "S8.3",
           "name": "Extract an ArchitectureModel directly from source code analysis",
           "file": "src/architecture_model/extract/from_code.py",
           "functions": [
@@ -871,6 +929,50 @@
           ],
           "status": "active",
           "line_count": 652
+        },
+        {
+          "id": "S8.4",
+          "name": "Route Detector",
+          "file": "src/architecture_model/extract/route_detector.py",
+          "functions": [
+            "detect_routes(project_root: Path, web_layer_dirs: list[str] | None) -> list[RouteInfo]"
+          ],
+          "inputs": [
+            "project_root: Path",
+            "web_layer_dirs: list[str] | None"
+          ],
+          "outputs": [
+            "list[RouteInfo]"
+          ],
+          "status": "active",
+          "line_count": 400
+        },
+        {
+          "id": "S8.5",
+          "name": "Markdown table parser \u2014 extracts structured data from pipe",
+          "file": "src/architecture_model/extract/table_parser.py",
+          "functions": [
+            "parse_tables(markdown: str) -> list[list[dict[str, str]]]",
+            "find_table_after_heading(markdown: str, heading_pattern: str) -> list[dict[str, str]]",
+            "extract_sections(markdown: str, level: int) -> dict[str, str]",
+            "extract_list_items(text: str) -> list[str]"
+          ],
+          "inputs": [
+            "markdown: str",
+            "markdown: str",
+            "heading_pattern: str",
+            "markdown: str",
+            "level: int",
+            "text: str"
+          ],
+          "outputs": [
+            "dict[str, str]",
+            "list[dict[str, str]]",
+            "list[list[dict[str, str]]]",
+            "list[str]"
+          ],
+          "status": "active",
+          "line_count": 177
         }
       ],
       "sub_blocks": []
@@ -1613,12 +1715,262 @@
       "sub_blocks": []
     },
     "S12": {
+      "name": "Pipeline",
+      "status": "active",
+      "description_source": "Modular extraction pipeline for architecture models.",
+      "sub_functions": [
+        {
+          "id": "S12.1",
+          "name": "Modular extraction pipeline for architecture models",
+          "file": "src/architecture_model/pipeline/__init__.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 39
+        },
+        {
+          "id": "S12.2",
+          "name": "Allocate pipeline stage \u2014 assigns files to components seeded by capabilities",
+          "file": "src/architecture_model/pipeline/allocate.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 376
+        },
+        {
+          "id": "S12.3",
+          "name": "Output types for the allocate pipeline stage",
+          "file": "src/architecture_model/pipeline/allocate_types.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 24
+        },
+        {
+          "id": "S12.4",
+          "name": "Artifact writer \u2014 produces uniform file structure from pipeline results",
+          "file": "src/architecture_model/pipeline/artifacts.py",
+          "functions": [
+            "write_artifacts(ctx: PipelineContext) -> Path"
+          ],
+          "inputs": [
+            "ctx: PipelineContext"
+          ],
+          "outputs": [
+            "Path"
+          ],
+          "status": "active",
+          "line_count": 233
+        },
+        {
+          "id": "S12.5",
+          "name": "Context generator \u2014 produces LLM",
+          "file": "src/architecture_model/pipeline/context_gen.py",
+          "functions": [
+            "generate_context(ctx: PipelineContext) -> str",
+            "write_context(ctx: PipelineContext) -> Path"
+          ],
+          "inputs": [
+            "ctx: PipelineContext",
+            "ctx: PipelineContext"
+          ],
+          "outputs": [
+            "Path",
+            "str"
+          ],
+          "status": "active",
+          "line_count": 99
+        },
+        {
+          "id": "S12.6",
+          "name": "Contract pipeline stage \u2014 maps test files to components as behavioral contracts",
+          "file": "src/architecture_model/pipeline/contract.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 170
+        },
+        {
+          "id": "S12.7",
+          "name": "Output types for the contract pipeline stage",
+          "file": "src/architecture_model/pipeline/contract_types.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 20
+        },
+        {
+          "id": "S12.8",
+          "name": "Pipeline coordinator with DAG resolution and recursive decomposition",
+          "file": "src/architecture_model/pipeline/coordinator.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 197
+        },
+        {
+          "id": "S12.9",
+          "name": "Correction consumption helpers for pipeline stages",
+          "file": "src/architecture_model/pipeline/corrections.py",
+          "functions": [
+            "get_corrections_for_stage(ctx: PipelineContext, stage_name: str) -> list[Correction]"
+          ],
+          "inputs": [
+            "ctx: PipelineContext",
+            "stage_name: str"
+          ],
+          "outputs": [
+            "list[Correction]"
+          ],
+          "status": "dormant",
+          "line_count": 24
+        },
+        {
+          "id": "S12.10",
+          "name": "Infer",
+          "file": "src/architecture_model/pipeline/infer.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 355
+        },
+        {
+          "id": "S12.11",
+          "name": "Output types for the infer pipeline stage",
+          "file": "src/architecture_model/pipeline/infer_types.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 42
+        },
+        {
+          "id": "S12.12",
+          "name": "Project",
+          "file": "src/architecture_model/pipeline/learning.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 179
+        },
+        {
+          "id": "S12.13",
+          "name": "Observe pipeline stage \u2014 produces a factual Inventory from source code",
+          "file": "src/architecture_model/pipeline/observe.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 409
+        },
+        {
+          "id": "S12.14",
+          "name": "Output types for the observe pipeline stage",
+          "file": "src/architecture_model/pipeline/observe_types.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 101
+        },
+        {
+          "id": "S12.15",
+          "name": "Protocol types for the modular extraction pipeline",
+          "file": "src/architecture_model/pipeline/protocol.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 150
+        },
+        {
+          "id": "S12.16",
+          "name": "Regen Score",
+          "file": "src/architecture_model/pipeline/regen_score.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 84
+        },
+        {
+          "id": "S12.17",
+          "name": "Relate pipeline stage \u2014 derives relationships between architecture entities",
+          "file": "src/architecture_model/pipeline/relate.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 135
+        },
+        {
+          "id": "S12.18",
+          "name": "Output types for the relate pipeline stage",
+          "file": "src/architecture_model/pipeline/relate_types.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 20
+        },
+        {
+          "id": "S12.19",
+          "name": "Specify",
+          "file": "src/architecture_model/pipeline/specify.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 193
+        },
+        {
+          "id": "S12.20",
+          "name": "Output types for the specify pipeline stage",
+          "file": "src/architecture_model/pipeline/specify_types.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 21
+        },
+        {
+          "id": "S12.21",
+          "name": "Validate pipeline stage \u2014 checks structural correctness of extracted model",
+          "file": "src/architecture_model/pipeline/validate.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "active",
+          "line_count": 114
+        },
+        {
+          "id": "S12.22",
+          "name": "Output types for the validate pipeline stage",
+          "file": "src/architecture_model/pipeline/validate_types.py",
+          "functions": [],
+          "inputs": [],
+          "outputs": [],
+          "status": "dormant",
+          "line_count": 21
+        }
+      ],
+      "sub_blocks": []
+    },
+    "S13": {
       "name": "Profiles",
       "status": "active",
       "description_source": "Domain profiles for cross-domain architecture modeling.",
       "sub_functions": [
         {
-          "id": "S12.1",
+          "id": "S13.1",
           "name": "Domain profiles for cross",
           "file": "src/architecture_model/profiles/__init__.py",
           "functions": [],
@@ -1628,7 +1980,7 @@
           "line_count": 1
         },
         {
-          "id": "S12.2",
+          "id": "S13.2",
           "name": " Init  ",
           "file": "src/architecture_model/profiles/builtins/__init__.py",
           "functions": [],
@@ -1638,7 +1990,7 @@
           "line_count": 0
         },
         {
-          "id": "S12.3",
+          "id": "S13.3",
           "name": "Domain profile schema and loading logic",
           "file": "src/architecture_model/profiles/schema.py",
           "functions": [
@@ -1656,13 +2008,13 @@
       ],
       "sub_blocks": [
         {
-          "id": "S12.A",
+          "id": "S13.A",
           "name": "Builtins",
           "description": "",
           "status": "dormant",
           "sub_functions": [
             {
-              "id": "S12.2",
+              "id": "S13.2",
               "name": " Init  ",
               "file": "src/architecture_model/profiles/builtins/__init__.py",
               "functions": [],
@@ -1675,13 +2027,13 @@
           "sub_blocks": []
         },
         {
-          "id": "S12.misc",
+          "id": "S13.misc",
           "name": "Ungrouped",
           "description": "",
           "status": "active",
           "sub_functions": [
             {
-              "id": "S12.1",
+              "id": "S13.1",
               "name": "Domain profiles for cross",
               "file": "src/architecture_model/profiles/__init__.py",
               "functions": [],
@@ -1691,7 +2043,7 @@
               "line_count": 1
             },
             {
-              "id": "S12.3",
+              "id": "S13.3",
               "name": "Domain profile schema and loading logic",
               "file": "src/architecture_model/profiles/schema.py",
               "functions": [
@@ -1711,13 +2063,13 @@
         }
       ]
     },
-    "S13": {
+    "S14": {
       "name": "Spec",
       "status": "dormant",
       "description_source": "auto-discovered from src/architecture_model/spec/",
       "sub_functions": [
         {
-          "id": "S13.1",
+          "id": "S14.1",
           "name": " Init  ",
           "file": "src/architecture_model/spec/__init__.py",
           "functions": [],
@@ -1729,13 +2081,13 @@
       ],
       "sub_blocks": []
     },
-    "S14": {
+    "S15": {
       "name": "Utils",
       "status": "active",
       "description_source": "Shared utilities for architecture-model-standard.",
       "sub_functions": [
         {
-          "id": "S14.1",
+          "id": "S15.1",
           "name": "Shared utilities for architecture",
           "file": "src/architecture_model/utils/__init__.py",
           "functions": [],
@@ -1745,7 +2097,7 @@
           "line_count": 1
         },
         {
-          "id": "S14.2",
+          "id": "S15.2",
           "name": "Shared file discovery and exclusion logic",
           "file": "src/architecture_model/utils/discovery.py",
           "functions": [
@@ -2020,6 +2372,20 @@
         "core.parser",
         "docs",
         "authoring.parser",
+        "core.parser",
+        "core.regen_readiness",
+        "pipeline.observe",
+        "pipeline.infer",
+        "pipeline.allocate",
+        "pipeline.relate",
+        "pipeline.specify",
+        "pipeline.contract",
+        "pipeline.validate",
+        "pipeline.coordinator",
+        "pipeline.learning",
+        "pipeline.protocol",
+        "pipeline.artifacts",
+        "pipeline.context_gen",
         "orchestration.pipeline",
         "core.parser",
         "docs",
@@ -2031,7 +2397,7 @@
         "collections",
         "manifest"
       ],
-      "line_count": 697,
+      "line_count": 860,
       "status": "active",
       "classes": [],
       "exports": [],
@@ -2265,6 +2631,104 @@
           "module": "authoring.parser",
           "symbols": [
             "parse_requirements_doc"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "core.regen_readiness",
+          "symbols": [
+            "compute_regen_readiness"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.observe",
+          "symbols": [
+            "ObserveStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.infer",
+          "symbols": [
+            "InferStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.allocate",
+          "symbols": [
+            "AllocateStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.relate",
+          "symbols": [
+            "RelateStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.specify",
+          "symbols": [
+            "SpecifyStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.contract",
+          "symbols": [
+            "ContractStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.validate",
+          "symbols": [
+            "ValidateStage"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.coordinator",
+          "symbols": [
+            "PipelineCoordinator"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.learning",
+          "symbols": [
+            "LearningStore"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.protocol",
+          "symbols": [
+            "PipelineContext"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.artifacts",
+          "symbols": [
+            "write_artifacts"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "pipeline.context_gen",
+          "symbols": [
+            "write_context"
           ],
           "is_relative": true
         },
@@ -4053,6 +4517,143 @@
           "module": "architecture_model.core.confidence",
           "symbols": [
             "compute_model_confidence"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/core/regen_readiness.py",
+      "name": "Regen readiness static metric module",
+      "docstring": "Regen readiness static metric module.\n\nComputes how ready an enriched architecture model is for blind regeneration\nby analyzing body_hint coverage, test contracts, constants, and signatures.",
+      "functions": [
+        {
+          "name": "compute_function_readiness",
+          "signature": "compute_function_readiness(sig: FunctionSignature, test_contracts: list[TestContract]) -> FunctionReadiness",
+          "calls": [
+            "_classify_hint",
+            "bool",
+            "_count_test_references",
+            "min",
+            "FunctionReadiness",
+            "append"
+          ],
+          "docstring": "Compute readiness for a single function."
+        },
+        {
+          "name": "compute_component_readiness",
+          "signature": "compute_component_readiness(component: Component) -> ComponentReadiness",
+          "calls": [
+            "len",
+            "set",
+            "ComponentReadiness",
+            "sum",
+            "findall",
+            "update",
+            "compute_function_readiness",
+            "extend",
+            "max",
+            "add",
+            "_is_trivial_hint",
+            "min"
+          ],
+          "docstring": "Compute readiness for a single component."
+        },
+        {
+          "name": "compute_regen_readiness",
+          "signature": "compute_regen_readiness(model: ArchitectureModel) -> RegenReadiness",
+          "calls": [
+            "zip",
+            "RegenReadiness",
+            "compute_component_readiness",
+            "append",
+            "max",
+            "all",
+            "len"
+          ],
+          "docstring": "Compute full system regen readiness from enriched model."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "dataclasses",
+        "typing",
+        "architecture_model.core.types"
+      ],
+      "line_count": 277,
+      "status": "active",
+      "classes": [
+        {
+          "name": "FunctionReadiness",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ComponentReadiness",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "RegenReadiness",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "re",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "TYPE_CHECKING"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "ArchitectureModel",
+            "Component",
+            "FunctionSignature",
+            "TestContract"
           ],
           "is_relative": false
         }
@@ -7006,6 +7607,229 @@
       "module_assignments": {}
     },
     {
+      "file": "src/architecture_model/extract/constraint_detector.py",
+      "name": "Constraint Detector",
+      "docstring": "Parse project configuration files to derive technical and organizational constraints.\n\nScans pyproject.toml, Dockerfile, .env templates, CI config, and setup.cfg to\nautomatically detect constraints such as Python version requirements, framework\nchoices, runtime images, exposed ports, and CI/CD platform.",
+      "functions": [
+        {
+          "name": "detect_constraints",
+          "signature": "detect_constraints(project_root: Path) -> list[Constraint]",
+          "calls": [
+            "_parse_pyproject",
+            "_parse_dockerfile",
+            "_parse_env_template",
+            "_parse_ci_config",
+            "_parse_setup_cfg"
+          ],
+          "docstring": "Scan project configuration files for derivable constraints.\n\nArgs:\n    project_root: Root directory of the project.\n\nReturns:\n    List of Constraint entities derived from config files."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "tomllib",
+        "pathlib",
+        "architecture_model.core.types"
+      ],
+      "line_count": 398,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "re",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "tomllib",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "Constraint",
+            "ConstraintType",
+            "Status"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/extract/from_artifacts.py",
+      "name": "Extract Architecture Model from Tier 1 markdown artifacts",
+      "docstring": "Extract Architecture Model from Tier 1 markdown artifacts.\n\nParses the 5 Tier 1 artifacts:\n  - functional-architecture.md \u2192 capabilities (F-blocks), actor hints\n  - use-cases.md \u2192 actors, behaviors (UCs), relationships\n  - logical-architecture.md \u2192 layers, components\n  - requirements-analysis.md \u2192 constraints\n  - icd.md \u2192 interfaces\n\nProduces an ArchitectureModel instance (and optionally writes YAML).",
+      "functions": [
+        {
+          "name": "extract_from_artifacts",
+          "signature": "extract_from_artifacts(artifact_dir: str | Path, project: str, system: str) -> ArchitectureModel",
+          "calls": [
+            "Path",
+            "_extract_actors",
+            "_extract_capabilities",
+            "_extract_behaviors",
+            "_extract_interfaces",
+            "_extract_constraints",
+            "_extract_layers",
+            "_extract_components",
+            "extend",
+            "_extract_interface_relationships",
+            "set",
+            "update",
+            "ModelMeta",
+            "ArchitectureModel",
+            "exists",
+            "_extract_uc_relationships",
+            "_extract_layer_relationships",
+            "_extract_capability_relationships",
+            "_extract_component_capability_relationships",
+            "_guess_project",
+            "read_text",
+            "append",
+            "add",
+            "items",
+            "isoformat",
+            "Entities",
+            "now"
+          ],
+          "docstring": "Extract a complete architecture model from Tier 1 artifact markdown files.\n\nArgs:\n    artifact_dir: Directory containing the stage2 artifact markdown files.\n    project: Project name (used in meta).\n    system: System identifier.\n\nReturns:\n    Populated ArchitectureModel."
+        },
+        {
+          "name": "main",
+          "signature": "main()",
+          "calls": [
+            "ArgumentParser",
+            "add_argument",
+            "parse_args",
+            "Path",
+            "print",
+            "extract_from_artifacts",
+            "save_model",
+            "len"
+          ],
+          "docstring": "CLI: extract architecture model from artifacts."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "datetime",
+        "pathlib",
+        "typing",
+        "architecture_model.core.types",
+        "architecture_model.core.parser",
+        "table_parser",
+        "argparse"
+      ],
+      "line_count": 837,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "re",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "datetime",
+          "symbols": [
+            "datetime",
+            "timezone"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Optional"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.types",
+          "symbols": [
+            "Actor",
+            "ActorType",
+            "ArchitectureModel",
+            "Behavior",
+            "Capability",
+            "Component",
+            "Constraint",
+            "ConstraintType",
+            "Entities",
+            "Interface",
+            "InterfaceType",
+            "Layer",
+            "ModelMeta",
+            "Priority",
+            "Relationship",
+            "RelationType",
+            "Status",
+            "Strength"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "save_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "table_parser",
+          "symbols": [
+            "extract_sections",
+            "find_table_after_heading",
+            "parse_tables"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "argparse",
+          "symbols": [],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
       "file": "src/architecture_model/extract/from_code.py",
       "name": "Extract an ArchitectureModel directly from source code analysis",
       "docstring": "Extract an ArchitectureModel directly from source code analysis.\n\nThis is the \"backward pass\" \u2014 code \u2192 model \u2014 bypassing the stage2 markdown\nartifact requirement. Derives entities and relationships from AST analysis,\nimport graphs, and project configuration files.",
@@ -7176,6 +8000,186 @@
             "generate_manifest"
           ],
           "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/extract/route_detector.py",
+      "name": "Route Detector",
+      "docstring": "AST-based route handler detection for Python web frameworks.\n\nScans Python source files and extracts decorated route handlers for\nFastAPI, Flask, and Django projects.",
+      "functions": [
+        {
+          "name": "detect_routes",
+          "signature": "detect_routes(project_root: Path, web_layer_dirs: list[str] | None) -> list[RouteInfo]",
+          "calls": [
+            "Path",
+            "_collect_python_files",
+            "_parse_file",
+            "str",
+            "extend",
+            "relative_to",
+            "_extract_fastapi_routes",
+            "_extract_flask_routes",
+            "_extract_django_routes"
+          ],
+          "docstring": "Scan Python files for route handler declarations.\n\nArgs:\n    project_root: Root directory of the project.\n    web_layer_dirs: Optional list of directories to restrict scanning\n                   (e.g., [\"app/api\"]). If None, scans all .py files.\n\nReturns:\n    List of RouteInfo for each detected route handler."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "ast",
+        "sys",
+        "dataclasses",
+        "pathlib"
+      ],
+      "line_count": 400,
+      "status": "active",
+      "classes": [
+        {
+          "name": "RouteInfo",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "ast",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "sys",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/extract/table_parser.py",
+      "name": "Markdown table parser \u2014 extracts structured data from pipe",
+      "docstring": "Markdown table parser \u2014 extracts structured data from pipe-delimited tables.\n\nUsed by the artifact extractors to pull entity data from Tier 1 markdown docs.",
+      "functions": [
+        {
+          "name": "parse_tables",
+          "signature": "parse_tables(markdown: str) -> list[list[dict[str, str]]]",
+          "calls": [
+            "split",
+            "len",
+            "strip",
+            "match",
+            "_parse_row",
+            "append",
+            "enumerate",
+            "_normalize_header"
+          ],
+          "docstring": "Parse all markdown tables in the text.\n\nReturns a list of tables, where each table is a list of row-dicts\nkeyed by normalized header names."
+        },
+        {
+          "name": "find_table_after_heading",
+          "signature": "find_table_after_heading(markdown: str, heading_pattern: str) -> list[dict[str, str]]",
+          "calls": [
+            "split",
+            "compile",
+            "len",
+            "strip",
+            "startswith",
+            "sub",
+            "search",
+            "match",
+            "_parse_row",
+            "enumerate",
+            "append",
+            "_normalize_header"
+          ],
+          "docstring": "Find the first table that appears after a heading matching the pattern.\n\nArgs:\n    markdown: Full markdown text\n    heading_pattern: Regex pattern to match against heading text (case-insensitive)\n\nReturns:\n    List of row dicts, or empty list if no matching table found."
+        },
+        {
+          "name": "extract_sections",
+          "signature": "extract_sections(markdown: str, level: int) -> dict[str, str]",
+          "calls": [
+            "split",
+            "strip",
+            "startswith",
+            "sub",
+            "append",
+            "join"
+          ],
+          "docstring": "Split markdown into sections by heading level.\n\nReturns dict mapping heading text -> section content (including sub-headings)."
+        },
+        {
+          "name": "extract_list_items",
+          "signature": "extract_list_items(text: str) -> list[str]",
+          "calls": [
+            "split",
+            "strip",
+            "match",
+            "append",
+            "group"
+          ],
+          "docstring": "Extract bullet/numbered list items from text."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "re",
+        "typing"
+      ],
+      "line_count": 177,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "re",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
         }
       ],
       "module_constants": {},
@@ -12107,6 +13111,2124 @@
       }
     },
     {
+      "file": "src/architecture_model/pipeline/__init__.py",
+      "name": "Modular extraction pipeline for architecture models",
+      "docstring": "Modular extraction pipeline for architecture models.",
+      "functions": [],
+      "imports": [
+        "architecture_model.pipeline.coordinator",
+        "architecture_model.pipeline.learning",
+        "architecture_model.pipeline.protocol"
+      ],
+      "line_count": 39,
+      "status": "dormant",
+      "classes": [],
+      "exports": [
+        "Calibration",
+        "Claim",
+        "Correction",
+        "Diagnostic",
+        "Evidence",
+        "LearningStore",
+        "PipelineCoordinator",
+        "PipelineContext",
+        "QualityMetrics",
+        "QualityTrend",
+        "ResolutionOutcome",
+        "SOURCE_WEIGHTS",
+        "Stage",
+        "StageResult",
+        "Uncertainty"
+      ],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "architecture_model.pipeline.coordinator",
+          "symbols": [
+            "PipelineCoordinator"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.pipeline.learning",
+          "symbols": [
+            "Calibration",
+            "Correction",
+            "LearningStore",
+            "QualityTrend",
+            "ResolutionOutcome"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.pipeline.protocol",
+          "symbols": [
+            "Claim",
+            "Diagnostic",
+            "Evidence",
+            "PipelineContext",
+            "QualityMetrics",
+            "SOURCE_WEIGHTS",
+            "Stage",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/allocate.py",
+      "name": "Allocate pipeline stage \u2014 assigns files to components seeded by capabilities",
+      "docstring": "Allocate pipeline stage \u2014 assigns files to components seeded by capabilities.\n\nStrategy:\n1. Seed: one component per capability (files matched by name/content)\n2. Assign: remaining files by import affinity to seeded components\n3. Split: oversized components (>15 files) by sub-clustering\n4. Merge: undersized components (<2 files) into nearest neighbor",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "time",
+        "collections",
+        "pathlib",
+        "typing",
+        "allocate_types",
+        "infer",
+        "infer_types",
+        "observe_types",
+        "protocol",
+        "corrections"
+      ],
+      "line_count": 376,
+      "status": "active",
+      "classes": [
+        {
+          "name": "AllocateStage",
+          "bases": [],
+          "methods": [
+            "run"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "defaultdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult",
+            "ComponentAllocation"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "infer",
+          "symbols": [
+            "_is_non_source_module"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "infer_types",
+          "symbols": [
+            "InferenceResult",
+            "InferredCapability"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "ImportEdge",
+            "Inventory",
+            "ModuleRecord"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "corrections",
+          "symbols": [
+            "get_corrections_for_stage"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {
+        "MAX_COMPONENT_FILES": "15",
+        "MIN_COMPONENT_FILES": "2"
+      },
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/allocate_types.py",
+      "name": "Output types for the allocate pipeline stage",
+      "docstring": "Output types for the allocate pipeline stage.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "pathlib"
+      ],
+      "line_count": 24,
+      "status": "dormant",
+      "classes": [
+        {
+          "name": "ComponentAllocation",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "AllocationResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/artifacts.py",
+      "name": "Artifact writer \u2014 produces uniform file structure from pipeline results",
+      "docstring": "Artifact writer \u2014 produces uniform file structure from pipeline results.\n\nWrites:\n  .architecture/\n  \u251c\u2500\u2500 inventory.json       (observe output)\n  \u251c\u2500\u2500 functional.yaml      (capabilities, actors, behaviors)\n  \u251c\u2500\u2500 structure.yaml       (components, layers, allocation)\n  \u251c\u2500\u2500 relationships.yaml   (all derived relationships)\n  \u251c\u2500\u2500 validation.json      (validation score + issues)\n  \u251c\u2500\u2500 context.md           (LLM-readable summary)\n  \u251c\u2500\u2500 specs/{comp}.yaml    (interface specs per component)\n  \u2514\u2500\u2500 contracts/{comp}.yaml (test contracts per component)",
+      "functions": [
+        {
+          "name": "write_artifacts",
+          "signature": "write_artifacts(ctx: PipelineContext) -> Path",
+          "calls": [
+            "mkdir",
+            "get",
+            "_write_inventory",
+            "_write_functional",
+            "_write_structure",
+            "_write_relationships",
+            "_write_validation",
+            "_write_specs",
+            "_write_contracts"
+          ],
+          "docstring": "Write all pipeline artifacts to output_dir.\n\nReturns the output directory path."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "json",
+        "dataclasses",
+        "pathlib",
+        "typing",
+        "allocate_types",
+        "contract_types",
+        "infer_types",
+        "observe_types",
+        "protocol",
+        "relate_types",
+        "specify_types",
+        "validate_types",
+        "yaml",
+        "collections",
+        "collections",
+        "yaml"
+      ],
+      "line_count": 233,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "json",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "asdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "contract_types",
+          "symbols": [
+            "ContractResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "infer_types",
+          "symbols": [
+            "InferenceResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "Inventory"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "PipelineContext",
+            "StageResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "relate_types",
+          "symbols": [
+            "RelateResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "specify_types",
+          "symbols": [
+            "SpecifyResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "validate_types",
+          "symbols": [
+            "ValidateResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "yaml",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "defaultdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "defaultdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "yaml",
+          "symbols": [],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/context_gen.py",
+      "name": "Context generator \u2014 produces LLM",
+      "docstring": "Context generator \u2014 produces LLM-readable summary from pipeline results.\n\nGenerates a concise markdown document summarizing the architecture for\nuse as LLM context (token-efficient representation).",
+      "functions": [
+        {
+          "name": "generate_context",
+          "signature": "generate_context(ctx: PipelineContext) -> str",
+          "calls": [
+            "get",
+            "append",
+            "join",
+            "sorted",
+            "items",
+            "len",
+            "str"
+          ],
+          "docstring": "Generate context.md content from pipeline results."
+        },
+        {
+          "name": "write_context",
+          "signature": "write_context(ctx: PipelineContext) -> Path",
+          "calls": [
+            "generate_context",
+            "mkdir",
+            "write_text"
+          ],
+          "docstring": "Write context.md to the output directory."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "pathlib",
+        "allocate_types",
+        "infer_types",
+        "observe_types",
+        "protocol",
+        "relate_types",
+        "validate_types"
+      ],
+      "line_count": 99,
+      "status": "active",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "infer_types",
+          "symbols": [
+            "InferenceResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "Inventory"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "PipelineContext"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "relate_types",
+          "symbols": [
+            "RelateResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "validate_types",
+          "symbols": [
+            "ValidateResult"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/contract.py",
+      "name": "Contract pipeline stage \u2014 maps test files to components as behavioral contracts",
+      "docstring": "Contract pipeline stage \u2014 maps test files to components as behavioral contracts.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "time",
+        "pathlib",
+        "allocate_types",
+        "contract_types",
+        "observe_types",
+        "protocol"
+      ],
+      "line_count": 170,
+      "status": "active",
+      "classes": [
+        {
+          "name": "ContractStage",
+          "bases": [],
+          "methods": [
+            "run"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "contract_types",
+          "symbols": [
+            "ContractResult",
+            "TestContract"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "Inventory"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/contract_types.py",
+      "name": "Output types for the contract pipeline stage",
+      "docstring": "Output types for the contract pipeline stage.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses"
+      ],
+      "line_count": 20,
+      "status": "dormant",
+      "classes": [
+        {
+          "name": "TestContract",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ContractResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/coordinator.py",
+      "name": "Pipeline coordinator with DAG resolution and recursive decomposition",
+      "docstring": "Pipeline coordinator with DAG resolution and recursive decomposition.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "datetime",
+        "pathlib",
+        "typing",
+        "architecture_model.pipeline.learning",
+        "architecture_model.pipeline.protocol",
+        "artifacts",
+        "context_gen",
+        "allocate_types"
+      ],
+      "line_count": 197,
+      "status": "active",
+      "classes": [
+        {
+          "name": "PipelineCoordinator",
+          "bases": [],
+          "methods": [
+            "__init__",
+            "resolve_order",
+            "run_to",
+            "run_stage",
+            "run_all",
+            "get_prior_evidence",
+            "get_calibration",
+            "run_recursive"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "datetime",
+          "symbols": [
+            "datetime"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.pipeline.learning",
+          "symbols": [
+            "LearningStore"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.pipeline.protocol",
+          "symbols": [
+            "PipelineContext",
+            "Stage",
+            "StageResult"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "artifacts",
+          "symbols": [
+            "write_artifacts"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "context_gen",
+          "symbols": [
+            "write_context"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/corrections.py",
+      "name": "Correction consumption helpers for pipeline stages",
+      "docstring": "Correction consumption helpers for pipeline stages.\n\nLoads structured Correction objects from the LearningStore and filters\nthem by stage/module name for post-processing stage outputs.",
+      "functions": [
+        {
+          "name": "get_corrections_for_stage",
+          "signature": "get_corrections_for_stage(ctx: PipelineContext, stage_name: str) -> list[Correction]",
+          "calls": [
+            "get_corrections"
+          ],
+          "docstring": "Return corrections applicable to *stage_name* from the LearningStore.\n\nFalls back to an empty list when no store is attached."
+        }
+      ],
+      "imports": [
+        "__future__",
+        "typing",
+        "learning",
+        "protocol"
+      ],
+      "line_count": 24,
+      "status": "dormant",
+      "classes": [],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "TYPE_CHECKING"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "learning",
+          "symbols": [
+            "Correction",
+            "LearningStore"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "PipelineContext"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/infer.py",
+      "name": "Infer",
+      "docstring": "Infer pipeline stage \u2014 derives capabilities, actors, and behaviors from Inventory.\n\nCapability-driven: clusters by purpose (routes, domain modules, test patterns),\nnot by import structure. Import affinity is a secondary signal only.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "re",
+        "time",
+        "collections",
+        "pathlib",
+        "typing",
+        "infer_types",
+        "observe_types",
+        "protocol",
+        "corrections"
+      ],
+      "line_count": 355,
+      "status": "active",
+      "classes": [
+        {
+          "name": "InferStage",
+          "bases": [],
+          "methods": [
+            "run"
+          ],
+          "is_abstract": true,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "re",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "defaultdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "infer_types",
+          "symbols": [
+            "InferenceResult",
+            "InferredActor",
+            "InferredBehavior",
+            "InferredCapability"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "Inventory",
+            "ModuleRecord",
+            "RouteRecord"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "Evidence",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "corrections",
+          "symbols": [
+            "get_corrections_for_stage"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/infer_types.py",
+      "name": "Output types for the infer pipeline stage",
+      "docstring": "Output types for the infer pipeline stage.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses"
+      ],
+      "line_count": 42,
+      "status": "dormant",
+      "classes": [
+        {
+          "name": "InferredCapability",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "InferredActor",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "InferredBehavior",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "InferenceResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/learning.py",
+      "name": "Project",
+      "docstring": "Project-local learning persistence.\n\nStores corrections, resolution outcomes, calibration overrides,\nand quality history for cross-session learning (Loop 2).",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "pathlib",
+        "typing",
+        "json",
+        "protocol"
+      ],
+      "line_count": 179,
+      "status": "active",
+      "classes": [
+        {
+          "name": "Correction",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ResolutionOutcome",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "Calibration",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "QualityTrend",
+          "bases": [],
+          "methods": [
+            "direction"
+          ],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "LearningStore",
+          "bases": [],
+          "methods": [
+            "__init__",
+            "add_correction",
+            "get_corrections",
+            "corrections_as_evidence",
+            "set_calibration",
+            "get_calibration",
+            "record_run",
+            "get_trend",
+            "add_resolution",
+            "get_resolutions"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field",
+            "asdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "json",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Evidence",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/observe.py",
+      "name": "Observe pipeline stage \u2014 produces a factual Inventory from source code",
+      "docstring": "Observe pipeline stage \u2014 produces a factual Inventory from source code.\n\nWraps existing manifest generation, route detection, and constraint detection\ninto the unified Stage protocol. Zero inference \u2014 only observable facts.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "ast",
+        "time",
+        "pathlib",
+        "typing",
+        "observe_types",
+        "protocol",
+        "architecture_model.extract.route_detector",
+        "architecture_model.extract.constraint_detector"
+      ],
+      "line_count": 409,
+      "status": "active",
+      "classes": [
+        {
+          "name": "ObserveStage",
+          "bases": [],
+          "methods": [
+            "run"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "ast",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "ClassRecord",
+            "ConstantRecord",
+            "ConstraintRecord",
+            "DocRecord",
+            "FunctionRecord",
+            "ImportEdge",
+            "Inventory",
+            "ModuleRecord",
+            "RouteRecord",
+            "TestFileRecord"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "Evidence",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "architecture_model.extract.route_detector",
+          "symbols": [
+            "detect_routes",
+            "RouteInfo"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.extract.constraint_detector",
+          "symbols": [
+            "detect_constraints"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/observe_types.py",
+      "name": "Output types for the observe pipeline stage",
+      "docstring": "Output types for the observe pipeline stage.\n\nThese types represent the raw factual inventory of a codebase \u2014\nzero inference, pure observation from AST scanning and config parsing.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "pathlib"
+      ],
+      "line_count": 101,
+      "status": "active",
+      "classes": [
+        {
+          "name": "FunctionRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ClassRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ConstantRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ImportEdge",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "RouteRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ConstraintRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "TestFileRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "DocRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ModuleRecord",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "Inventory",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/protocol.py",
+      "name": "Protocol types for the modular extraction pipeline",
+      "docstring": "Protocol types for the modular extraction pipeline.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses",
+        "pathlib",
+        "typing",
+        "learning"
+      ],
+      "line_count": 150,
+      "status": "active",
+      "classes": [
+        {
+          "name": "Evidence",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "Claim",
+          "bases": [
+            "Generic[T]"
+          ],
+          "methods": [
+            "confidence"
+          ],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "Uncertainty",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "Diagnostic",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "QualityMetrics",
+          "bases": [],
+          "methods": [
+            "passes"
+          ],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "StageResult",
+          "bases": [
+            "Generic[T]"
+          ],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "PipelineContext",
+          "bases": [],
+          "methods": [
+            "has",
+            "get"
+          ],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "Stage",
+          "bases": [
+            "Protocol[T]"
+          ],
+          "methods": [
+            "run",
+            "can_run",
+            "output_path"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "TYPE_CHECKING",
+            "Any",
+            "Generic",
+            "Protocol",
+            "TypeVar"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "learning",
+          "symbols": [
+            "LearningStore"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/regen_score.py",
+      "name": "Regen Score",
+      "docstring": "Regen Score pipeline stage \u2014 computes regeneration readiness from enriched model.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "time",
+        "dataclasses",
+        "pathlib",
+        "protocol",
+        "architecture_model.core.parser",
+        "architecture_model.core.regen_readiness"
+      ],
+      "line_count": 84,
+      "status": "active",
+      "classes": [
+        {
+          "name": "RegenScoreResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "RegenScoreStage",
+          "bases": [],
+          "methods": [
+            "run",
+            "can_run",
+            "output_path"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "architecture_model.core.parser",
+          "symbols": [
+            "load_model"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "architecture_model.core.regen_readiness",
+          "symbols": [
+            "compute_regen_readiness"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/relate.py",
+      "name": "Relate pipeline stage \u2014 derives relationships between architecture entities",
+      "docstring": "Relate pipeline stage \u2014 derives relationships between architecture entities.\n\nProduces relationships: realizes (component\u2192capability), depends-on (component\u2192component),\ncontains (layer\u2192component), exposes (component\u2192interface from routes).",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "time",
+        "collections",
+        "pathlib",
+        "allocate_types",
+        "infer_types",
+        "observe_types",
+        "protocol",
+        "relate_types"
+      ],
+      "line_count": 135,
+      "status": "active",
+      "classes": [
+        {
+          "name": "RelateStage",
+          "bases": [],
+          "methods": [
+            "run"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "defaultdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult",
+            "ComponentAllocation"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "infer_types",
+          "symbols": [
+            "InferenceResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "Inventory"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "relate_types",
+          "symbols": [
+            "DerivedRelationship",
+            "RelateResult"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/relate_types.py",
+      "name": "Output types for the relate pipeline stage",
+      "docstring": "Output types for the relate pipeline stage.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses"
+      ],
+      "line_count": 20,
+      "status": "dormant",
+      "classes": [
+        {
+          "name": "DerivedRelationship",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "RelateResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/specify.py",
+      "name": "Specify",
+      "docstring": "Specify pipeline stage \u2014 derives interface specifications from routes and exports.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "time",
+        "collections",
+        "pathlib",
+        "allocate_types",
+        "observe_types",
+        "protocol",
+        "specify_types"
+      ],
+      "line_count": 193,
+      "status": "active",
+      "classes": [
+        {
+          "name": "SpecifyStage",
+          "bases": [],
+          "methods": [
+            "run"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "collections",
+          "symbols": [
+            "defaultdict"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "observe_types",
+          "symbols": [
+            "Inventory",
+            "RouteRecord"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "specify_types",
+          "symbols": [
+            "InterfaceSpec",
+            "SpecifyResult"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/specify_types.py",
+      "name": "Output types for the specify pipeline stage",
+      "docstring": "Output types for the specify pipeline stage.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses"
+      ],
+      "line_count": 21,
+      "status": "dormant",
+      "classes": [
+        {
+          "name": "InterfaceSpec",
+          "bases": [],
+          "methods": [],
+          "is_abstract": true,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "SpecifyResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/validate.py",
+      "name": "Validate pipeline stage \u2014 checks structural correctness of extracted model",
+      "docstring": "Validate pipeline stage \u2014 checks structural correctness of extracted model.\n\nRuns checks: orphan components, unrealized capabilities, missing relationships,\nfile coverage, naming conventions.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "time",
+        "allocate_types",
+        "infer_types",
+        "protocol",
+        "relate_types",
+        "validate_types"
+      ],
+      "line_count": 114,
+      "status": "active",
+      "classes": [
+        {
+          "name": "ValidateStage",
+          "bases": [],
+          "methods": [
+            "run"
+          ],
+          "is_abstract": false,
+          "decorators": [],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "time",
+          "symbols": [],
+          "is_relative": false
+        },
+        {
+          "module": "allocate_types",
+          "symbols": [
+            "AllocationResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "infer_types",
+          "symbols": [
+            "InferenceResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "protocol",
+          "symbols": [
+            "Diagnostic",
+            "PipelineContext",
+            "QualityMetrics",
+            "StageResult",
+            "Uncertainty"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "relate_types",
+          "symbols": [
+            "RelateResult"
+          ],
+          "is_relative": true
+        },
+        {
+          "module": "validate_types",
+          "symbols": [
+            "ValidateResult",
+            "ValidationIssue"
+          ],
+          "is_relative": true
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
+      "file": "src/architecture_model/pipeline/validate_types.py",
+      "name": "Output types for the validate pipeline stage",
+      "docstring": "Output types for the validate pipeline stage.",
+      "functions": [],
+      "imports": [
+        "__future__",
+        "dataclasses"
+      ],
+      "line_count": 21,
+      "status": "dormant",
+      "classes": [
+        {
+          "name": "ValidationIssue",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        },
+        {
+          "name": "ValidateResult",
+          "bases": [],
+          "methods": [],
+          "is_abstract": false,
+          "decorators": [
+            "dataclass"
+          ],
+          "attributes": {}
+        }
+      ],
+      "exports": [],
+      "decorated_functions": [],
+      "imports_detailed": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ],
+          "is_relative": false
+        },
+        {
+          "module": "dataclasses",
+          "symbols": [
+            "dataclass",
+            "field"
+          ],
+          "is_relative": false
+        }
+      ],
+      "module_constants": {},
+      "module_assignments": {}
+    },
+    {
       "file": "src/architecture_model/profiles/__init__.py",
       "name": "Domain profiles for cross",
       "docstring": "Domain profiles for cross-domain architecture modeling.",
@@ -12470,6 +15592,71 @@
     },
     {
       "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/core/regen_readiness.py",
+      "import_path": "core.regen_readiness"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/observe.py",
+      "import_path": "pipeline.observe"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/infer.py",
+      "import_path": "pipeline.infer"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/allocate.py",
+      "import_path": "pipeline.allocate"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/relate.py",
+      "import_path": "pipeline.relate"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/specify.py",
+      "import_path": "pipeline.specify"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/contract.py",
+      "import_path": "pipeline.contract"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/validate.py",
+      "import_path": "pipeline.validate"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/coordinator.py",
+      "import_path": "pipeline.coordinator"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/learning.py",
+      "import_path": "pipeline.learning"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "pipeline.protocol"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/artifacts.py",
+      "import_path": "pipeline.artifacts"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
+      "target": "src/architecture_model/pipeline/context_gen.py",
+      "import_path": "pipeline.context_gen"
+    },
+    {
+      "source": "src/architecture_model/cli/main.py",
       "target": "src/architecture_model/orchestration/pipeline.py",
       "import_path": "orchestration.pipeline"
     },
@@ -12592,6 +15779,11 @@
       "source": "src/architecture_model/core/parser.py",
       "target": "src/architecture_model/core/confidence.py",
       "import_path": "architecture_model.core.confidence"
+    },
+    {
+      "source": "src/architecture_model/core/regen_readiness.py",
+      "target": "src/architecture_model/core/types.py",
+      "import_path": "architecture_model.core.types"
     },
     {
       "source": "src/architecture_model/core/representativeness.py",
@@ -12804,6 +15996,26 @@
       "import_path": "architecture_model.export.reference"
     },
     {
+      "source": "src/architecture_model/extract/constraint_detector.py",
+      "target": "src/architecture_model/core/types.py",
+      "import_path": "architecture_model.core.types"
+    },
+    {
+      "source": "src/architecture_model/extract/from_artifacts.py",
+      "target": "src/architecture_model/core/types.py",
+      "import_path": "architecture_model.core.types"
+    },
+    {
+      "source": "src/architecture_model/extract/from_artifacts.py",
+      "target": "src/architecture_model/core/parser.py",
+      "import_path": "architecture_model.core.parser"
+    },
+    {
+      "source": "src/architecture_model/extract/from_artifacts.py",
+      "target": "src/architecture_model/extract/table_parser.py",
+      "import_path": "table_parser"
+    },
+    {
       "source": "src/architecture_model/extract/from_code.py",
       "target": "src/architecture_model/config/loader.py",
       "import_path": "config.loader"
@@ -12817,6 +16029,16 @@
       "source": "src/architecture_model/extract/from_code.py",
       "target": "src/architecture_model/core/types.py",
       "import_path": "core.types"
+    },
+    {
+      "source": "src/architecture_model/extract/from_code.py",
+      "target": "src/architecture_model/extract/constraint_detector.py",
+      "import_path": "constraint_detector"
+    },
+    {
+      "source": "src/architecture_model/extract/from_code.py",
+      "target": "src/architecture_model/extract/route_detector.py",
+      "import_path": "route_detector"
     },
     {
       "source": "src/architecture_model/extract/from_code.py",
@@ -13417,6 +16639,311 @@
       "source": "src/architecture_model/persistence/store.py",
       "target": "src/architecture_model/core/parser.py",
       "import_path": "architecture_model.core.parser"
+    },
+    {
+      "source": "src/architecture_model/pipeline/__init__.py",
+      "target": "src/architecture_model/pipeline/coordinator.py",
+      "import_path": "architecture_model.pipeline.coordinator"
+    },
+    {
+      "source": "src/architecture_model/pipeline/__init__.py",
+      "target": "src/architecture_model/pipeline/learning.py",
+      "import_path": "architecture_model.pipeline.learning"
+    },
+    {
+      "source": "src/architecture_model/pipeline/__init__.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "architecture_model.pipeline.protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/allocate.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/allocate.py",
+      "target": "src/architecture_model/pipeline/infer.py",
+      "import_path": "infer"
+    },
+    {
+      "source": "src/architecture_model/pipeline/allocate.py",
+      "target": "src/architecture_model/pipeline/infer_types.py",
+      "import_path": "infer_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/allocate.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/allocate.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/allocate.py",
+      "target": "src/architecture_model/pipeline/corrections.py",
+      "import_path": "corrections"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/contract_types.py",
+      "import_path": "contract_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/infer_types.py",
+      "import_path": "infer_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/relate_types.py",
+      "import_path": "relate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/specify_types.py",
+      "import_path": "specify_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/artifacts.py",
+      "target": "src/architecture_model/pipeline/validate_types.py",
+      "import_path": "validate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/context_gen.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/context_gen.py",
+      "target": "src/architecture_model/pipeline/infer_types.py",
+      "import_path": "infer_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/context_gen.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/context_gen.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/context_gen.py",
+      "target": "src/architecture_model/pipeline/relate_types.py",
+      "import_path": "relate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/context_gen.py",
+      "target": "src/architecture_model/pipeline/validate_types.py",
+      "import_path": "validate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/contract.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/contract.py",
+      "target": "src/architecture_model/pipeline/contract_types.py",
+      "import_path": "contract_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/contract.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/contract.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/coordinator.py",
+      "target": "src/architecture_model/pipeline/learning.py",
+      "import_path": "architecture_model.pipeline.learning"
+    },
+    {
+      "source": "src/architecture_model/pipeline/coordinator.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "architecture_model.pipeline.protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/coordinator.py",
+      "target": "src/architecture_model/pipeline/artifacts.py",
+      "import_path": "artifacts"
+    },
+    {
+      "source": "src/architecture_model/pipeline/coordinator.py",
+      "target": "src/architecture_model/pipeline/context_gen.py",
+      "import_path": "context_gen"
+    },
+    {
+      "source": "src/architecture_model/pipeline/coordinator.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/corrections.py",
+      "target": "src/architecture_model/pipeline/learning.py",
+      "import_path": "learning"
+    },
+    {
+      "source": "src/architecture_model/pipeline/corrections.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/infer.py",
+      "target": "src/architecture_model/pipeline/infer_types.py",
+      "import_path": "infer_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/infer.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/infer.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/infer.py",
+      "target": "src/architecture_model/pipeline/corrections.py",
+      "import_path": "corrections"
+    },
+    {
+      "source": "src/architecture_model/pipeline/learning.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/observe.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/observe.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/observe.py",
+      "target": "src/architecture_model/extract/route_detector.py",
+      "import_path": "architecture_model.extract.route_detector"
+    },
+    {
+      "source": "src/architecture_model/pipeline/observe.py",
+      "target": "src/architecture_model/extract/constraint_detector.py",
+      "import_path": "architecture_model.extract.constraint_detector"
+    },
+    {
+      "source": "src/architecture_model/pipeline/protocol.py",
+      "target": "src/architecture_model/pipeline/learning.py",
+      "import_path": "learning"
+    },
+    {
+      "source": "src/architecture_model/pipeline/regen_score.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/regen_score.py",
+      "target": "src/architecture_model/core/parser.py",
+      "import_path": "architecture_model.core.parser"
+    },
+    {
+      "source": "src/architecture_model/pipeline/regen_score.py",
+      "target": "src/architecture_model/core/regen_readiness.py",
+      "import_path": "architecture_model.core.regen_readiness"
+    },
+    {
+      "source": "src/architecture_model/pipeline/relate.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/relate.py",
+      "target": "src/architecture_model/pipeline/infer_types.py",
+      "import_path": "infer_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/relate.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/relate.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/relate.py",
+      "target": "src/architecture_model/pipeline/relate_types.py",
+      "import_path": "relate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/specify.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/specify.py",
+      "target": "src/architecture_model/pipeline/observe_types.py",
+      "import_path": "observe_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/specify.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/specify.py",
+      "target": "src/architecture_model/pipeline/specify_types.py",
+      "import_path": "specify_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/validate.py",
+      "target": "src/architecture_model/pipeline/allocate_types.py",
+      "import_path": "allocate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/validate.py",
+      "target": "src/architecture_model/pipeline/infer_types.py",
+      "import_path": "infer_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/validate.py",
+      "target": "src/architecture_model/pipeline/protocol.py",
+      "import_path": "protocol"
+    },
+    {
+      "source": "src/architecture_model/pipeline/validate.py",
+      "target": "src/architecture_model/pipeline/relate_types.py",
+      "import_path": "relate_types"
+    },
+    {
+      "source": "src/architecture_model/pipeline/validate.py",
+      "target": "src/architecture_model/pipeline/validate_types.py",
+      "import_path": "validate_types"
     }
   ]
 }

@@ -1,0 +1,18 @@
+component: COMP-144
+interfaces:
+- id: IF-2
+  name: COMP-144 Library API
+  type: library
+  methods:
+  - 'Claim: class Claim'
+  - 'DependencyEdge: class DependencyEdge'
+  - 'Diagnostic: class Diagnostic'
+  - 'Evidence: class Evidence'
+  - 'ExportedSymbol: class ExportedSymbol'
+  - 'PipelineContext: class PipelineContext'
+  - 'QualityMetrics: class QualityMetrics'
+  - 'SourceGraph: class SourceGraph'
+  - 'SourceUnit: class SourceUnit'
+  - 'Stage: class Stage'
+  - 'StageResult: class StageResult'
+  - 'Uncertainty: class Uncertainty'

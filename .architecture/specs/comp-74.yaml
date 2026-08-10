@@ -1,0 +1,22 @@
+component: COMP-74
+interfaces:
+- id: IF-11
+  name: COMP-74 Library API
+  type: library
+  methods:
+  - 'ConditionalRule: class ConditionalRule'
+  - 'DiscoveryCandidate: class DiscoveryCandidate'
+  - 'DiscoveryReport: class DiscoveryReport'
+  - 'DomainProfile: class DomainProfile'
+  - 'EntityExtension: class EntityExtension'
+  - 'EnumExtension: class EnumExtension'
+  - 'FunctionalBlockConfig: class FunctionalBlockConfig'
+  - 'LayerConfig: class LayerConfig'
+  - 'MetricConfig: class MetricConfig'
+  - 'OutputConfig: class OutputConfig'
+  - 'ProjectConfig: class ProjectConfig'
+  - 'ResolvedOutputConfig: class ResolvedOutputConfig'
+  - 'SubBlockConfig: class SubBlockConfig'
+  - 'extract_from_code: def extract_from_code(project_root: str | Path, config: ProjectConfig
+    | None=None, manifest: dict | None=None) -> ArchitectureModel'
+  - 'load_profile: def load_profile(name_or_path: str) -> DomainProfile'

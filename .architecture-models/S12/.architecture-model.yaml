@@ -1,62 +1,485 @@
 meta:
   schema_version: '2.0'
-  project: architecture-model-standard/Profiles
-  system: Profiles
-  generated_at: '2026-08-06T21:52:00'
+  project: architecture-model-standard/Pipeline
+  system: Pipeline
+  generated_at: '2026-08-10T21:46:22.714335+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
-  refines_component: COMP-PROFILES
+  refines_component: COMP-PIPELINE
 entities:
   capabilities:
-  - id: CAP-PROFILE
-    name: Domain Profile System
+  - id: CAP-PIPELINE
+    name: Modular Extraction Pipeline
     status: ACTIVE
-    description: Support cross-domain modeling via pluggable profiles (software, controls, mechanical, electrical)
-    source_block: S12
+    description: 7-stage deterministic pipeline (observe, infer, allocate, relate, specify, contract, validate)
+  - id: CAP-REGEN
+    name: Regen Readiness Scoring
+    status: ACTIVE
+    description: Predict regeneration success from enriched model data
+  interfaces:
+  - id: IF-PIPELINE-ARTIFACTS
+    name: Pipeline Artifacts
+    status: ACTIVE
+    description: Tier-1 artifacts (inventory.json, structure.yaml, functional.yaml, relationships.yaml)
+    type: file
+  constraints:
+  - id: CON-NO-LLM
+    name: No LLM in Core
+    status: ACTIVE
+    description: Core package must be purely deterministic — no LLM calls, no network I/O
+    type: technology
+  - id: CON-PERF
+    name: Pipeline Performance
+    status: ACTIVE
+    description: Full pipeline must complete in <5s for repos under 100 files (excluding route detection)
+    type: technology
   components:
-  - id: COMP-PROFILES
-    name: Profiles
+  - id: COMP-PIPELINE
+    name: Pipeline
     status: ACTIVE
-    description: Domain profile system extending base schema for controls, mechanical, electrical domains
-    layer: LAYER-DOMAIN
-    source_block: S12
-    technology: python yaml json-schema
+    description: 7-stage modular extraction pipeline with DAG coordinator and learning store
+    layer: LYR-PIPELINE
     files:
-    - src/architecture_model/profiles/schema.py
-    responsibilities:
-    - Define DomainProfile schema
-    - Extend enums and entity properties per domain
-    - Apply conditional validation rules
+    - src/architecture_model/pipeline/__init__.py
+    - src/architecture_model/pipeline/protocol.py
+    - src/architecture_model/pipeline/coordinator.py
+    - src/architecture_model/pipeline/observe.py
+    - src/architecture_model/pipeline/observe_types.py
+    - src/architecture_model/pipeline/infer.py
+    - src/architecture_model/pipeline/infer_types.py
+    - src/architecture_model/pipeline/allocate.py
+    - src/architecture_model/pipeline/allocate_types.py
+    - src/architecture_model/pipeline/relate.py
+    - src/architecture_model/pipeline/relate_types.py
+    - src/architecture_model/pipeline/specify.py
+    - src/architecture_model/pipeline/specify_types.py
+    - src/architecture_model/pipeline/contract.py
+    - src/architecture_model/pipeline/contract_types.py
+    - src/architecture_model/pipeline/validate.py
+    - src/architecture_model/pipeline/validate_types.py
+    - src/architecture_model/pipeline/learning.py
+    - src/architecture_model/pipeline/artifacts.py
+    - src/architecture_model/pipeline/context_gen.py
+    - src/architecture_model/pipeline/corrections.py
+    - src/architecture_model/pipeline/regen_score.py
     kind: library
     constants:
-    - name: PROFILES_DIR
-      value: Path(__file__).parent / 'builtins'
+    - name: T
+      value: TypeVar('T')
+    - name: _NON_SOURCE_DIRS
+      value: frozenset({'tests', 'test', 'testing', 'examples', 'example', 'demos', 'demo', 'docs', 'doc', 'typing_tests',
+        'benchmarks', 'fixtures', 'tools', '_unicode_data', 'scripts', 'contrib'})
+    - name: MAX_COMPONENT_FILES
+      value: '15'
+    - name: MIN_COMPONENT_FILES
+      value: '2'
+    - name: _SCOPED_FILE_LIMIT
+      value: '15'
     signatures:
-    - name: DomainProfile.from_dict
-      params:
-      - 'data: dict[str, Any]'
-      returns: DomainProfile
+    - name: Claim.confidence
+      returns: float
       decorators:
-      - classmethod
-      body_hint: return cls(domain=data['domain'], extends_schema=data.get('extends_schema', '1.4'), enum_extensions=[EnumExtension(**e)
-        for e in data.get('enum_extensions', [])], entity_extensions=[EntityExtension(**e) for e in data.get('entity_extensions',
-        [])], validation_rules=[ConditionalRule(**r) for r in data.get('validation_rules', [])])
-    - name: DomainProfile.get_extended_values
+      - property
+      body_hint: "if not self.evidence:\n    return 0.0; total = sum((e.confidence * SOURCE_WEIGHTS.get(e.source, 0.5) for\
+        \ e in self.evidence)); result = total / len(self.evidence); return min(result, 1.0)"
+    - name: QualityMetrics.passes
+      returns: bool
+      decorators:
+      - property
+      body_hint: return all((self.sub_scores.get(k, 0.0) >= v for k, v in self.thresholds.items()))
+    - name: PipelineContext.has
       params:
-      - 'enum_name: str'
+      - 'stage_name: str'
+      returns: bool
+      body_hint: return stage_name in self.cache
+    - name: PipelineContext.get
+      params:
+      - 'stage_name: str'
+      returns: StageResult | None
+      body_hint: return self.cache.get(stage_name)
+    - name: Stage.run
+      params:
+      - 'context: PipelineContext'
+      returns: StageResult[T]
+      body_hint: '...'
+    - name: Stage.can_run
+      params:
+      - 'context: PipelineContext'
+      returns: bool
+      body_hint: '...'
+    - name: Stage.output_path
+      params:
+      - 'context: PipelineContext'
+      returns: Path
+      body_hint: '...'
+    - name: PipelineCoordinator.__init__
+      params:
+      - 'stages: dict[str, Stage]'
+      - 'learning_store: LearningStore | None'
+      returns: None
+      body_hint: self._stages = stages; self._learning = learning_store
+    - name: PipelineCoordinator.resolve_order
+      params:
+      - 'target: str'
       returns: list[str]
-      body_hint: "for ext in self.enum_extensions:\n    if ext.enum_name == enum_name:\n        return ext.values; return\
-        \ []"
-    - name: load_profile
+      body_hint: "if target not in self._stages:\n    raise KeyError(f'Unknown stage: {target}'); needed: set[str] = set();\
+        \ self._collect_deps(target, needed, set()); return self._topo_sort(needed)"
+    - name: PipelineCoordinator.run_to
       params:
-      - 'name_or_path: str'
-      returns: DomainProfile
-      body_hint: 'if name_or_path in BUILTIN_PROFILES: ...; if not path.exists(): ...; data = yaml.safe_load(path.read_text(encoding=''utf-8''));
-        profile = DomainProfile.from_dict(data); logger.info(''Loaded domain profile: %s'', profile.domain); return profile'
+      - 'target: str'
+      - 'ctx: PipelineContext'
+      returns: dict[str, StageResult]
+      body_hint: "order = self.resolve_order(target); results: dict[str, StageResult] = {}; for name in order:\n    if ctx.has(name):\n\
+        \        results[name] = ctx.cache[name]\n        continue\n    stage = self._stages[name]\n    result = stage.run(ctx)\n\
+        \    ctx.cache[name] = result\n    results[name] = result; return results"
+    - name: PipelineCoordinator.run_stage
+      params:
+      - 'stage_name: str'
+      - 'ctx: PipelineContext'
+      returns: StageResult
+      body_hint: results = self.run_to(stage_name, ctx); return results[stage_name]
+    - name: PipelineCoordinator.run_all
+      params:
+      - 'ctx: PipelineContext'
+      returns: dict[str, StageResult]
+      body_hint: 'if self._learning and (not ctx.prior_corrections): ...; if self._learning and (not ctx.learning_store):
+        ...; if self._learning and (not ctx.calibration): ...; all_names: set[str] = set(self._stages.keys()); visiting: set[str]
+        = set(); visited: set[str] = set(); for name in all_names: ...; order = self._topo_sort(all_names); results: dict[str,
+        StageResult] = {}; for name in order: ...; self._record_quality(results); return results'
+    - name: PipelineCoordinator.get_prior_evidence
+      returns: list
+      body_hint: "if not self._learning:\n    return []; return self._learning.corrections_as_evidence()"
+    - name: PipelineCoordinator.get_calibration
+      params:
+      - 'module: str'
+      returns: dict[str, float]
+      body_hint: "if not self._learning:\n    return {}; return self._learning.get_calibration(module)"
+    - name: PipelineCoordinator.run_recursive
+      params:
+      - 'ctx: PipelineContext'
+      - 'max_depth: int'
+      - 'leaf_threshold: int'
+      returns: dict[str, Any]
+      body_hint: 'from .artifacts import write_artifacts; from .context_gen import write_context; results = self.run_all(ctx);
+        write_artifacts(ctx); write_context(ctx); subsystems: dict[str, dict[str, Any]] = {}; allocate_result = ctx.get(''allocate'');
+        if allocate_result and max_depth > 0: ...; return {''results'': results, ''depth'': max_depth, ''subsystems'': subsystems,
+        ''artifacts_dir'': str(ctx.output_dir)}'
+    - name: ObserveStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[Inventory]
+      body_hint: 'start = time.time(); diagnostics: list[Diagnostic] = []; uncertainties: list[Uncertainty] = []; if ctx.scope_files:
+        ...; modules: list[ModuleRecord] = []; edges: list[ImportEdge] = []; parse_failures = 0; for py_file in py_files:
+        ...; routes = _detect_routes(ctx.repo_path); constraints = _detect_constraints(ctx.repo_path); test_files = _find_test_files(py_files,
+        ctx.repo_path); docs = _find_docs(ctx.repo_path); inventory = Inventory(modules=modules, edges=edges, routes=routes,
+        co...; total_files = len(py_files); parsed = total_files - parse_failures; parse_rate = parsed / total_files * 100
+        if total_files > 0 else 100.0; total_symbols = sum((len(m.functions) + len(m.classes) + len(m.constants)...; symbol_density
+        = total_symbols / parsed if parsed > 0 else 0.0; quality = QualityMetrics(score=int(parse_rate), sub_scores={''parse_...;
+        duration_ms = int((time.time() - start) * 1000); return StageResult(output=inventory, quality=quality, diagnostics=diagnostics,
+        uncertainties=uncertainties, input_hash=str(len(py_files)), duration_ms=duration_ms, version=''1.0'')'
+    - name: InferStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[InferenceResult]
+      body_hint: 'start = time.time(); diagnostics: list[Diagnostic] = []; uncertainties: list[Uncertainty] = []; observe_result
+        = ctx.get(''observe''); if observe_result is None: ...; inventory: Inventory = observe_result.output; capabilities:
+        list[InferredCapability] = []; actors: list[InferredActor] = []; behaviors: list[InferredBehavior] = []; cap_counter
+        = 0; if inventory.routes: ...; is_scoped = bool(ctx.scope_files); domain_caps = _infer_from_domain_modules(inventory.modules,
+        capabilitie...; for cap in domain_caps: ...; cli_caps = _infer_from_cli(inventory.modules); for cap in cli_caps: ...;
+        if not actors: ...; behaviors = _infer_behaviors(inventory, capabilities, actors); for mod in inventory.modules: ...;
+        result = InferenceResult(capabilities=capabilities, actors=actors,...; for correction in get_corrections_for_stage(ctx,
+        ''infer''): ...; total_modules = len(inventory.modules); covered = sum((1 for m in inventory.modules if _module_has_clear_pu...;
+        coverage = covered / total_modules * 100 if total_modules > 0 else 1...; quality = QualityMetrics(score=int(coverage),
+        sub_scores={''capabili...; duration_ms = int((time.time() - start) * 1000); return StageResult(output=result, quality=quality,
+        diagnostics=diagnostics, uncertainties=uncertainties, input_hash=str(len(inventory.modules)), duration_ms=duration_ms,
+        version=''1.0'')'
+    - name: AllocateStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[AllocationResult]
+      body_hint: 'start = time.time(); diagnostics: list[Diagnostic] = []; uncertainties: list[Uncertainty] = []; observe_result
+        = ctx.get(''observe''); infer_result = ctx.get(''infer''); if observe_result is None or infer_result is None: ...;
+        inventory: Inventory = observe_result.output; inference: InferenceResult = infer_result.output; source_modules = [m
+        for m in inventory.modules if not _is_non_source_modul...; is_scoped = bool(ctx.scope_files); if is_scoped and len(source_modules)
+        <= _SCOPED_FILE_LIMIT: ...; comp_by_id = {c.id: c for c in components}; for correction in get_corrections_for_stage(ctx,
+        ''allocate''): ...; total_files = len(source_modules); allocated_count = sum((len(c.files) for c in components));
+        file_coverage = allocated_count / total_files * 100 if total_files > 0 el...; boundary_coherence = _compute_boundary_coherence(components,
+        inventory.edges); result = AllocationResult(components=components, unallocated=[], f...; quality = QualityMetrics(score=int((file_coverage
+        + boundary_cohere...; duration_ms = int((time.time() - start) * 1000); return StageResult(output=result, quality=quality,
+        diagnostics=diagnostics, uncertainties=uncertainties, input_hash=str(total_files), duration_ms=duration_ms, version=''1.0'')'
+    - name: RelateStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[RelateResult]
+      body_hint: 'start = time.time(); diagnostics: list[Diagnostic] = []; uncertainties: list[Uncertainty] = []; observe_result
+        = ctx.get(''observe''); infer_result = ctx.get(''infer''); allocate_result = ctx.get(''allocate''); if not all([observe_result,
+        infer_result, allocate_result]): ...; inventory: Inventory = observe_result.output; inference: InferenceResult = infer_result.output;
+        allocation: AllocationResult = allocate_result.output; relationships: list[DerivedRelationship] = []; for comp in
+        allocation.components: ...; file_to_comp = _build_file_map(allocation.components); dep_pairs: set[tuple[str, str]]
+        = set(); for mod in inventory.modules: ...; for (src, tgt) in dep_pairs: ...; layers_seen: dict[str, list[str]] =
+        defaultdict(list); for comp in allocation.components: ...; for (layer, comp_ids) in layers_seen.items(): ...; for
+        route in inventory.routes: ...; result = RelateResult(relationships=relationships); quality = QualityMetrics(score=min(100,
+        int(len(relationships) / ma...; duration_ms = int((time.time() - start) * 1000); return StageResult(output=result,
+        quality=quality, diagnostics=diagnostics, uncertainties=uncertainties, input_hash=str(len(allocation.components)),
+        duration_ms=duration_ms, version=''1.0'')'
+    - name: SpecifyStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[SpecifyResult]
+      body_hint: 'start = time.time(); diagnostics: list[Diagnostic] = []; uncertainties: list[Uncertainty] = []; observe_result
+        = ctx.get(''observe''); allocate_result = ctx.get(''allocate''); if not all([observe_result, allocate_result]): ...;
+        inventory: Inventory = observe_result.output; allocation: AllocationResult = allocate_result.output; interfaces: list[InterfaceSpec]
+        = []; iface_counter = 0; file_to_comp: dict[Path, str] = {}; for comp in allocation.components: ...; comp_routes:
+        dict[str, list[RouteRecord]] = defaultdict(l...; for route in inventory.routes: ...; for (comp_id, routes) in comp_routes.items():
+        ...; for mod in inventory.modules: ...; comp_public: dict[str, dict[str, str]] = defaultdict(dict); mod_path_to_comp:
+        dict[str, str] = {}; for mod in inventory.modules: ...; comp_consumed: dict[str, set[str]] = defaultdict(set); for
+        edge in inventory.edges: ...; if not inventory.edges: ...; for (comp_id, consumed) in comp_consumed.items(): ...;
+        result = SpecifyResult(interfaces=interfaces); comp_ids = {c.id for c in allocation.components}; comps_with_iface
+        = {i.component_id for i in interfaces}; coverage = len(comps_with_iface) / max(len(comp_ids), 1); score = max(50,
+        int(coverage * 100)); quality = QualityMetrics(score=score, sub_scores={''interface_count''...; duration_ms = int((time.time()
+        - start) * 1000); return StageResult(output=result, quality=quality, diagnostics=diagnostics, uncertainties=uncertainties,
+        input_hash=str(len(inventory.routes)), duration_ms=duration_ms, version=''1.0'')'
+    - name: ContractStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[ContractResult]
+      body_hint: 'start = time.time(); diagnostics: list[Diagnostic] = []; uncertainties: list[Uncertainty] = []; observe_result
+        = ctx.get(''observe''); allocate_result = ctx.get(''allocate''); if not all([observe_result, allocate_result]): ...;
+        inventory: Inventory = observe_result.output; allocation: AllocationResult = allocate_result.output; contracts: list[TestContract]
+        = []; stem_to_comp: dict[str, str] = {}; name_to_comp: dict[str, str] = {}; dir_to_comp: dict[str, str] = {}; for
+        comp in allocation.components: ...; components_with_tests: set[str] = set(); for test_file in inventory.test_files:
+        ...; total_comps = len(allocation.components); coverage_ratio = len(components_with_tests) / total_comps * 100 if
+        total_c...; result = ContractResult(contracts=contracts, coverage_ratio=covera...; quality = QualityMetrics(score=int(coverage_ratio),
+        sub_scores={''te...; duration_ms = int((time.time() - start) * 1000); return StageResult(output=result, quality=quality,
+        diagnostics=diagnostics, uncertainties=uncertainties, input_hash=str(len(inventory.test_files)), duration_ms=duration_ms,
+        version=''1.0'')'
+    - name: ValidateStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[ValidateResult]
+      body_hint: 'start = time.time(); diagnostics: list[Diagnostic] = []; uncertainties: list[Uncertainty] = []; issues:
+        list[ValidationIssue] = []; infer_result = ctx.get(''infer''); allocate_result = ctx.get(''allocate''); relate_result
+        = ctx.get(''relate''); if not all([infer_result, allocate_result, relate_result]): ...; inference: InferenceResult
+        = infer_result.output; allocation: AllocationResult = allocate_result.output; relationships: RelateResult = relate_result.output;
+        realized_caps = {r.to_id for r in relationships.relationships if r.rel_ty...; for cap in inference.capabilities: ...;
+        related_comps = set(); for r in relationships.relationships: ...; for comp in allocation.components: ...; if allocation.file_coverage
+        < 95.0: ...; if allocation.boundary_coherence < 50.0: ...; error_count = sum((1 for i in issues if i.severity == ''error''));
+        warning_count = sum((1 for i in issues if i.severity == ''warning'')); score = max(0, 100 - error_count * 20 - warning_count
+        * 5); is_valid = error_count == 0; result = ValidateResult(score=score, issues=issues, is_valid=is_va...; quality
+        = QualityMetrics(score=score, sub_scores={''error_count'': fl...; duration_ms = int((time.time() - start) * 1000);
+        return StageResult(output=result, quality=quality, diagnostics=diagnostics, uncertainties=uncertainties, input_hash='''',
+        duration_ms=duration_ms, version=''1.0'')'
+    - name: QualityTrend.direction
+      returns: str
+      decorators:
+      - property
+      body_hint: "if len(self.values) < 2:\n    return 'stable'; recent = [v for _, v in self.values[-3:]]; if all((recent[i]\
+        \ >= recent[i + 1] for i in range(len(recent) - 1))):\n    return 'degrading'; if all((recent[i] <= recent[i + 1]\
+        \ for i in range(len(recent) - 1))):\n    return 'improving'; return 'stable'"
+    - name: LearningStore.__init__
+      params:
+      - 'path: Path'
+      body_hint: self.path = path; self.path.mkdir(parents=True, exist_ok=True)
+    - name: LearningStore.add_correction
+      params:
+      - 'correction: Correction'
+      returns: None
+      body_hint: corrections = self._load_json('corrections.json', []); corrections.append(asdict(correction)); self._save_json('corrections.json',
+        corrections)
+    - name: LearningStore.get_corrections
+      params:
+      - 'module: str | None'
+      returns: list[Correction]
+      body_hint: "data = self._load_json('corrections.json', []); corrections = [Correction(**d) for d in data]; if module:\n\
+        \    corrections = [c for c in corrections if c.module == module]; return corrections"
+    - name: LearningStore.corrections_as_evidence
+      returns: list[Evidence]
+      body_hint: 'return [Evidence(source=''user_correction'', confidence=1.0, raw=f''{c.correction_type} {c.entity_id}: {c.reason}'')
+        for c in self.get_corrections()]'
+    - name: LearningStore.set_calibration
+      params:
+      - 'module: str'
+      - 'parameter: str'
+      - 'value: float'
+      - 'reason: str'
+      returns: None
+      body_hint: "cal = self._load_json('calibration.json', {}); if module not in cal:\n    cal[module] = {}; cal[module][parameter]\
+        \ = {'value': value, 'reason': reason}; self._save_json('calibration.json', cal)"
+    - name: LearningStore.get_calibration
+      params:
+      - 'module: str'
+      returns: dict[str, float]
+      body_hint: 'cal = self._load_json(''calibration.json'', {}); module_cal = cal.get(module, {}); return {k: v[''value'']
+        for k, v in module_cal.items()}'
+    - name: LearningStore.record_run
+      params:
+      - 'date: str'
+      - 'scores: dict[str, float]'
+      returns: None
+      body_hint: 'history = self._load_json(''history.json'', []); history.append({''date'': date, ''scores'': scores}); self._save_json(''history.json'',
+        history)'
+    - name: LearningStore.get_trend
+      params:
+      - 'module: str'
+      returns: QualityTrend
+      body_hint: history = self._load_json('history.json', []); values = [(h['date'], h['scores'].get(module, 0.0)) for h
+        in history if module in h.get('scores', {})]; trend = QualityTrend(module=module, values=values); return trend
+    - name: LearningStore.add_resolution
+      params:
+      - 'outcome: ResolutionOutcome'
+      returns: None
+      body_hint: 'resolutions = self._load_json(''resolutions.json'', []); resolutions.append({''category'': outcome.uncertainty.category,
+        ''description'': outcome.uncertainty.description, ''method'': outcome.method, ''attempts'': outcome.attempts, ''duration_ms'':
+        outcome.duration_ms, ''resolution_source'': outcome.resolution.source, ''resolution_raw'': outcome.resolution.raw});
+        self._save_json(''resolutions.json'', resolutions)'
+    - name: LearningStore.get_resolutions
+      params:
+      - 'category: str | None'
+      returns: list[ResolutionOutcome]
+      body_hint: "data = self._load_json('resolutions.json', []); results = []; for d in data:\n    outcome = ResolutionOutcome(uncertainty=Uncertainty(category=d['category'],\
+        \ description=d['description'], suggested_fallback='', priority=''), resolution=Evidence(source=d['resolution_source'],\
+        \ confidence=1.0, raw=d['resolution_raw']), method=d['method'], attempts=d['attempts'], duration_ms=d['duration_ms'])\n\
+        \    if category is None or d['category'] == category:\n        results.append(outcome); return results"
+    - name: write_artifacts
+      params:
+      - 'ctx: PipelineContext'
+      returns: Path
+      body_hint: 'out = ctx.output_dir; out.mkdir(parents=True, exist_ok=True); observe = ctx.get(''observe''); if observe:
+        ...; infer = ctx.get(''infer''); if infer: ...; allocate = ctx.get(''allocate''); if allocate: ...; relate = ctx.get(''relate'');
+        if relate: ...; validate = ctx.get(''validate''); if validate: ...; specify = ctx.get(''specify''); if specify: ...;
+        contract = ctx.get(''contract''); if contract: ...; return out'
+    - name: generate_context
+      params:
+      - 'ctx: PipelineContext'
+      returns: str
+      body_hint: 'lines: list[str] = []; observe = ctx.get(''observe''); infer = ctx.get(''infer''); allocate = ctx.get(''allocate'');
+        relate = ctx.get(''relate''); validate = ctx.get(''validate''); lines.append(f''# Architecture Context: {ctx.repo_path.name}'');
+        lines.append(''''); if validate: ...; if infer: ...; if allocate: ...; if relate: ...; if observe: ...; return ''\n''.join(lines)'
+    - name: write_context
+      params:
+      - 'ctx: PipelineContext'
+      returns: Path
+      body_hint: content = generate_context(ctx); path = ctx.output_dir / 'context.md'; path.parent.mkdir(parents=True, exist_ok=True);
+        path.write_text(content); return path
+    - name: get_corrections_for_stage
+      params:
+      - 'ctx: PipelineContext'
+      - 'stage_name: str'
+      returns: list[Correction]
+      body_hint: "if ctx.learning_store is None:\n    return []; return ctx.learning_store.get_corrections(module=stage_name)"
+    - name: RegenScoreStage.run
+      params:
+      - 'ctx: PipelineContext'
+      returns: StageResult[RegenScoreResult]
+      body_hint: 'start = time.perf_counter_ns(); from architecture_model.core.parser import load_model; from architecture_model.core.regen_readiness
+        import compu...; model_path = ctx.repo_path / ''.architecture-model.yaml''; model = load_model(model_path); result
+        = compute_regen_readiness(model); component_scores = {cr.name: cr.score for cr in result.components}; diagnostics:
+        list[Diagnostic] = []; components = model.entities.components if model.entities else []; has_enrichment = any((getattr(comp,
+        ''signatures'', None) for comp in compon...; if not has_enrichment: ...; duration_ms = int((time.perf_counter_ns()
+        - start) / 1000000); return StageResult(output=RegenScoreResult(overall=result.overall, grade=result.grade, component_scores=component_scores,
+        blockers=result.blockers, recommendation=result.recommendation), quality=QualityMetrics(score=result.overall, sub_scores={''grade'':
+        ord(result.grade[0]) if result.grade else 0}), diagnostics=diagnostics, uncertainties=[], input_hash='''', duration_ms=duration_ms,
+        version=self.version)'
+    - name: RegenScoreStage.can_run
+      params:
+      - 'ctx: PipelineContext'
+      returns: bool
+      body_hint: model_path = ctx.repo_path / '.architecture-model.yaml'; return model_path.exists()
+    - name: RegenScoreStage.output_path
+      params:
+      - 'ctx: PipelineContext'
+      returns: Path
+      body_hint: return ctx.output_dir / 'regen_score.json'
+    test_contracts:
+    - test_file: test_pipeline.py
+      test_method: test_run_pipeline_produces_manifests_and_sub_models
+      assertion: result isinstance PipelineResult
+      contract_type: type_check
+    - test_file: test_pipeline.py
+      test_method: test_run_pipeline_config_only
+      assertion: len(result.sub_models) == 0
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_export_names
+      assertion: unit.export_names == ['bar', 'baz']
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_defaults
+      assertion: unit.exports == []
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_canonical_format
+      assertion: g.root == '/tmp/repo'
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_shorthand_format
+      assertion: len(g.units) == 1
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_empty
+      assertion: g.units == []
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_language_inherits_to_units
+      assertion: g.units[0].language == 'rust'
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_roundtrip
+      assertion: len(restored.units) == 1
+      contract_type: value_equality
+    - test_file: test_protocol.py
+      test_method: test_converts_modules_and_interfaces
+      assertion: len(g.units) == 2
+      contract_type: value_equality
+    - test_file: test_corrections.py
+      test_method: test_load_empty
+      assertion: load_corrections(tmp_path) == []
+      contract_type: value_equality
+    - test_file: test_corrections.py
+      test_method: test_store_and_load
+      assertion: len(loaded) == 1
+      contract_type: value_equality
+    - test_file: test_corrections.py
+      test_method: test_auto_id_generation
+      assertion: corrections[0]['id'] == 'COR-1'
+      contract_type: value_equality
+    - test_file: test_corrections.py
+      test_method: test_apply_rename_correction
+      assertion: updated.entities.components[0].name == 'NewName'
+      contract_type: value_equality
+    - test_file: test_corrections.py
+      test_method: test_apply_add_relationship
+      assertion: len(updated.relationships) == 1
+      contract_type: value_equality
+    - test_file: test_corrections.py
+      test_method: test_unapplied_only
+      assertion: updated.entities.components[0].name == 'OldName'
+      contract_type: value_equality
 relationships:
 - type: realizes
-  from: COMP-PROFILES
-  to: CAP-PROFILE
+  from: COMP-PIPELINE
+  to: CAP-PIPELINE
+- type: realizes
+  from: COMP-PIPELINE
+  to: CAP-REGEN
 - type: depends-on
-  from: COMP-CORE
-  to: COMP-PROFILES
+  from: COMP-CLI
+  to: COMP-PIPELINE
+- type: depends-on
+  from: COMP-PIPELINE
+  to: COMP-CORE
+- type: depends-on
+  from: COMP-PIPELINE
+  to: COMP-MANIFEST
+- type: depends-on
+  from: COMP-PIPELINE
+  to: COMP-CONFIG
+- type: exposes
+  from: COMP-PIPELINE
+  to: IF-PIPELINE-ARTIFACTS
+- type: constrained-by
+  from: COMP-PIPELINE
+  to: CON-NO-LLM
+- type: constrained-by
+  from: COMP-PIPELINE
+  to: CON-PERF

@@ -3,24 +3,26 @@
 ```mermaid
 flowchart TD
   COMP-CLI[CLI] -->|depends-on| COMP-CORE[Core]
-  COMP-CLI[CLI] -->|depends-on| COMP-CONFIG[Config]
-  COMP-CLI[CLI] -->|depends-on| COMP-MANIFEST[Manifest]
   COMP-CLI[CLI] -->|depends-on| COMP-ORCHESTRATION[Orchestration]
+  COMP-CLI[CLI] -->|depends-on| COMP-PIPELINE[Pipeline]
+  COMP-CLI[CLI] -->|depends-on| COMP-MANIFEST[Manifest]
+  COMP-CLI[CLI] -->|depends-on| COMP-CONFIG[Config]
   COMP-ORCHESTRATION[Orchestration] -->|depends-on| COMP-CORE[Core]
   COMP-ORCHESTRATION[Orchestration] -->|depends-on| COMP-MANIFEST[Manifest]
-  COMP-ORCHESTRATION[Orchestration] -->|depends-on| COMP-CONFIG[Config]
+  COMP-PIPELINE[Pipeline] -->|depends-on| COMP-CORE[Core]
+  COMP-PIPELINE[Pipeline] -->|depends-on| COMP-MANIFEST[Manifest]
+  COMP-PIPELINE[Pipeline] -->|depends-on| COMP-CONFIG[Config]
   COMP-EXTRACT[Extract] -->|depends-on| COMP-CORE[Core]
-  COMP-EXTRACT[Extract] -->|depends-on| COMP-CONFIG[Config]
   COMP-EXTRACT[Extract] -->|depends-on| COMP-MANIFEST[Manifest]
-  COMP-CORE[Core] -->|depends-on| COMP-UTILS[Utils]
-  COMP-MANIFEST[Manifest] -->|depends-on| COMP-UTILS[Utils]
-  COMP-CONFIG[Config] -->|depends-on| COMP-UTILS[Utils]
-  COMP-CORE[Core] -->|depends-on| COMP-PROFILES[Profiles]
-  COMP-CORE[Core] -->|depends-on| COMP-SPEC[Spec]
+  COMP-EXTRACT[Extract] -->|depends-on| COMP-CONFIG[Config]
+  COMP-DOCS[Docs] -->|depends-on| COMP-CORE[Core]
+  COMP-DOCS[Docs] -->|depends-on| COMP-MANIFEST[Manifest]
+  COMP-EXPORT[Export] -->|depends-on| COMP-CORE[Core]
+  COMP-INTEGRATIONS[Integrations] -->|depends-on| COMP-CORE[Core]
+  COMP-AUTHORING[Authoring] -->|depends-on| COMP-CORE[Core]
   COMP-CORE[Core] -->|depends-on| COMP-CONFIG[Config]
-  COMP-CORE[Core] -->|depends-on| COMP-MANIFEST[Manifest]
   COMP-MANIFEST[Manifest] -->|depends-on| COMP-CONFIG[Config]
-  COMP-MANIFEST[Manifest] -->|depends-on| COMP-CORE[Core]
+  COMP-MANIFEST[Manifest] -->|depends-on| COMP-UTILS[Utils]
 ```
 
 ## CLI → Core (depends-on)
@@ -29,11 +31,17 @@ flowchart TD
 **Source:** COMP-CLI (CLI)
 **Target:** COMP-CORE (Core)
 
-## CLI → Config (depends-on)
+## CLI → Orchestration (depends-on)
 —
 
 **Source:** COMP-CLI (CLI)
-**Target:** COMP-CONFIG (Config)
+**Target:** COMP-ORCHESTRATION (Orchestration)
+
+## CLI → Pipeline (depends-on)
+—
+
+**Source:** COMP-CLI (CLI)
+**Target:** COMP-PIPELINE (Pipeline)
 
 ## CLI → Manifest (depends-on)
 —
@@ -41,11 +49,11 @@ flowchart TD
 **Source:** COMP-CLI (CLI)
 **Target:** COMP-MANIFEST (Manifest)
 
-## CLI → Orchestration (depends-on)
+## CLI → Config (depends-on)
 —
 
 **Source:** COMP-CLI (CLI)
-**Target:** COMP-ORCHESTRATION (Orchestration)
+**Target:** COMP-CONFIG (Config)
 
 ## Orchestration → Core (depends-on)
 —
@@ -59,10 +67,22 @@ flowchart TD
 **Source:** COMP-ORCHESTRATION (Orchestration)
 **Target:** COMP-MANIFEST (Manifest)
 
-## Orchestration → Config (depends-on)
+## Pipeline → Core (depends-on)
 —
 
-**Source:** COMP-ORCHESTRATION (Orchestration)
+**Source:** COMP-PIPELINE (Pipeline)
+**Target:** COMP-CORE (Core)
+
+## Pipeline → Manifest (depends-on)
+—
+
+**Source:** COMP-PIPELINE (Pipeline)
+**Target:** COMP-MANIFEST (Manifest)
+
+## Pipeline → Config (depends-on)
+—
+
+**Source:** COMP-PIPELINE (Pipeline)
 **Target:** COMP-CONFIG (Config)
 
 ## Extract → Core (depends-on)
@@ -71,47 +91,47 @@ flowchart TD
 **Source:** COMP-EXTRACT (Extract)
 **Target:** COMP-CORE (Core)
 
-## Extract → Config (depends-on)
-—
-
-**Source:** COMP-EXTRACT (Extract)
-**Target:** COMP-CONFIG (Config)
-
 ## Extract → Manifest (depends-on)
 —
 
 **Source:** COMP-EXTRACT (Extract)
 **Target:** COMP-MANIFEST (Manifest)
 
-## Core → Utils (depends-on)
+## Extract → Config (depends-on)
 —
 
-**Source:** COMP-CORE (Core)
-**Target:** COMP-UTILS (Utils)
+**Source:** COMP-EXTRACT (Extract)
+**Target:** COMP-CONFIG (Config)
 
-## Manifest → Utils (depends-on)
+## Docs → Core (depends-on)
 —
 
-**Source:** COMP-MANIFEST (Manifest)
-**Target:** COMP-UTILS (Utils)
+**Source:** COMP-DOCS (Docs)
+**Target:** COMP-CORE (Core)
 
-## Config → Utils (depends-on)
+## Docs → Manifest (depends-on)
 —
 
-**Source:** COMP-CONFIG (Config)
-**Target:** COMP-UTILS (Utils)
+**Source:** COMP-DOCS (Docs)
+**Target:** COMP-MANIFEST (Manifest)
 
-## Core → Profiles (depends-on)
+## Export → Core (depends-on)
 —
 
-**Source:** COMP-CORE (Core)
-**Target:** COMP-PROFILES (Profiles)
+**Source:** COMP-EXPORT (Export)
+**Target:** COMP-CORE (Core)
 
-## Core → Spec (depends-on)
+## Integrations → Core (depends-on)
 —
 
-**Source:** COMP-CORE (Core)
-**Target:** COMP-SPEC (Spec)
+**Source:** COMP-INTEGRATIONS (Integrations)
+**Target:** COMP-CORE (Core)
+
+## Authoring → Core (depends-on)
+—
+
+**Source:** COMP-AUTHORING (Authoring)
+**Target:** COMP-CORE (Core)
 
 ## Core → Config (depends-on)
 —
@@ -119,20 +139,14 @@ flowchart TD
 **Source:** COMP-CORE (Core)
 **Target:** COMP-CONFIG (Config)
 
-## Core → Manifest (depends-on)
-—
-
-**Source:** COMP-CORE (Core)
-**Target:** COMP-MANIFEST (Manifest)
-
 ## Manifest → Config (depends-on)
 —
 
 **Source:** COMP-MANIFEST (Manifest)
 **Target:** COMP-CONFIG (Config)
 
-## Manifest → Core (depends-on)
+## Manifest → Utils (depends-on)
 —
 
 **Source:** COMP-MANIFEST (Manifest)
-**Target:** COMP-CORE (Core)
+**Target:** COMP-UTILS (Utils)

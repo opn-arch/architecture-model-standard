@@ -1,0 +1,6 @@
+component: COMP-144
+contracts:
+- test_file: tests/test_protocol.py
+  assertions: 0
+- test_file: tests/test_pipeline_protocol.py
+  assertions: 0

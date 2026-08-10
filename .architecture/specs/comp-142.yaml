@@ -1,0 +1,9 @@
+component: COMP-142
+interfaces:
+- id: IF-8
+  name: COMP-142 Library API
+  type: library
+  methods:
+  - 'ValidateResult: class ValidateResult'
+  - 'ValidateStage: class ValidateStage'
+  - 'ValidationIssue: class ValidationIssue'

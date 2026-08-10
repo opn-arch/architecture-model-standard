@@ -2,60 +2,36 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Authoring
   system: Authoring
-  generated_at: '2026-08-06T21:52:00'
+  generated_at: '2026-08-10T21:46:22.714335+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-AUTHORING
 entities:
   capabilities:
-  - id: CAP-GATE
-    name: Development Gate
-    status: ACTIVE
-    description: Check if code reality tracks toward authored architecture intent (capability realization %, file coverage
-      %)
-    source_block: S1
   - id: CAP-AUTHOR
-    name: Requirements Authoring
+    name: Forward Authoring
     status: ACTIVE
-    description: Parse requirements documents into architecture model entities
-    source_block: S1
-  behaviors:
-  - id: BEH-GATE
-    name: Development Gate Check
-    status: ACTIVE
-    description: Verify code reality tracks toward architectural intent
-    trigger: Gate check in CI or CLI
-    actor: ACT-CI
-    steps:
-    - Load authored model and manifest
-    - Compute capability realization %
-    - Compute constraint allocation %
-    - Compute file coverage %
-    - Compare against phase thresholds
-    - Return GateResult with pass/fail
-  interfaces:
-  - id: IF-GATE
-    name: Development Gate API
-    status: ACTIVE
-    description: check_development_gate(model, manifest, phase?) -> GateResult
-    type: internal
-    provider: COMP-AUTHORING
+    description: Generate architecture model from requirements text before code exists
   components:
   - id: COMP-AUTHORING
     name: Authoring
     status: ACTIVE
-    description: Requirements-driven model authoring and development gate checking
-    layer: LAYER-ORCHESTRATION
-    source_block: S1
-    technology: python
+    description: 'Forward authoring: parse requirements into models, development gate checks'
+    layer: LYR-ORCHESTRATION
     files:
-    - src/architecture_model/authoring/gate.py
+    - src/architecture_model/authoring/__init__.py
     - src/architecture_model/authoring/parser.py
-    responsibilities:
-    - Parse requirements documents into model entities
-    - Check development gate (capability realization, constraint allocation, file coverage)
+    - src/architecture_model/authoring/gate.py
     kind: library
     signatures:
+    - name: parse_requirements_doc
+      params:
+      - 'text: str'
+      returns: ArchitectureModel
+      body_hint: 'sections = _split_sections(text); actors: list[Actor] = []; capabilities: list[Capability] = []; constraints:
+        list[Constraint] = []; relationships: list[Relationship] = []; if ''actors'' in sections: ...; if ''capabilities''
+        in sections: ...; if ''constraints'' in sections: ...; return ArchitectureModel(meta=ModelMeta(project=''authored'',
+        schema_version=''1.3''), entities=Entities(actors=actors, capabilities=capabilities, constraints=constraints), relationships=relationships)'
     - name: check_development_gate
       params:
       - 'model: ArchitectureModel'
@@ -71,14 +47,6 @@ entities:
         * 0....; issues: list[str] = []; if phase == ''concept'': ...; return GateResult(capability_realization=capability_realization,
         constraint_allocation=constraint_allocation, file_coverage=file_coverage, overall=overall, phase=phase, phase_requirements_met=phase_requirements_met,
         issues=issues)'
-    - name: parse_requirements_doc
-      params:
-      - 'text: str'
-      returns: ArchitectureModel
-      body_hint: 'sections = _split_sections(text); actors: list[Actor] = []; capabilities: list[Capability] = []; constraints:
-        list[Constraint] = []; relationships: list[Relationship] = []; if ''actors'' in sections: ...; if ''capabilities''
-        in sections: ...; if ''constraints'' in sections: ...; return ArchitectureModel(meta=ModelMeta(project=''authored'',
-        schema_version=''1.3''), entities=Entities(actors=actors, capabilities=capabilities, constraints=constraints), relationships=relationships)'
     test_contracts:
     - test_file: test_parser.py
       test_method: test_load_returns_architecture_model
@@ -127,22 +95,7 @@ entities:
 relationships:
 - type: realizes
   from: COMP-AUTHORING
-  to: CAP-GATE
-- type: realizes
-  from: COMP-AUTHORING
   to: CAP-AUTHOR
-- type: exposes
-  from: COMP-AUTHORING
-  to: IF-GATE
-- type: depends-on
-  from: COMP-CLI
-  to: COMP-AUTHORING
 - type: depends-on
   from: COMP-AUTHORING
   to: COMP-CORE
-- type: depends-on
-  from: COMP-AUTHORING
-  to: COMP-MANIFEST
-- type: traces-to
-  from: COMP-AUTHORING
-  to: BEH-GATE

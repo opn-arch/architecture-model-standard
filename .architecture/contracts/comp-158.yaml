@@ -1,0 +1,4 @@
+component: COMP-158
+contracts:
+- test_file: tests/test_core/test_decomposer.py
+  assertions: 0

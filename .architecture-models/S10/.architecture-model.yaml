@@ -2,7 +2,7 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Orchestration
   system: Orchestration
-  generated_at: '2026-08-06T21:52:00'
+  generated_at: '2026-08-10T21:46:22.714335+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-ORCHESTRATION
@@ -11,183 +11,43 @@ entities:
   - id: CAP-ENRICH
     name: Model Enrichment
     status: ACTIVE
-    description: Populate model components with signatures, constants, test_contracts, body_hints from manifest
-    source_block: S10
-    priority: high
+    description: Enrich model with signatures, body_hints, constants, test_contracts from manifest
   - id: CAP-DECOMPOSE
     name: Model Decomposition
     status: ACTIVE
-    description: Split parent model into self-contained per-subsystem sub-models with traced relationships
-    source_block: S10
-    priority: high
-  - id: CAP-MONITOR
-    name: Observability
-    status: ACTIVE
-    description: Per-function timing and quality metrics via @monitored decorator, drained by MCP
-    source_block: S10
-    priority: low
-  behaviors:
-  - id: BEH-ENRICH
-    name: Model Enrichment
-    status: ACTIVE
-    description: Populate model components with AST-level detail from manifest
-    trigger: architecture-model enrich <model>
-    actor: ACT-CLI
-    steps:
-    - Load model and manifest
-    - 'For each ACTIVE component with files:'
-    - Extract function signatures with body_hints
-    - Extract module-level constants
-    - Discover and analyze test files
-    - Attach signatures/constants/test_contracts to component
-  - id: BEH-DECOMPOSE
-    name: Model Decomposition
-    status: ACTIVE
-    description: Split parent model into per-subsystem self-contained sub-models
-    trigger: architecture-model decompose <model>
-    actor: ACT-CLI
-    steps:
-    - Generate recursive manifests per F-block
-    - Trace relationships from block components outward
-    - Copy related capabilities, interfaces, behaviors, constraints
-    - Write sub-models to .architecture-models/<block>/
-  - id: BEH-PIPELINE
-    name: Full Pipeline Execution
-    status: ACTIVE
-    description: 'End-to-end pipeline: scan, init, decompose, enrich, validate, visualize'
-    trigger: run_pipeline() or init with pipeline flag
-    actor: ACT-CLI
-    steps:
-    - Generate manifest
-    - Bootstrap/update model
-    - Generate recursive manifests
-    - Decompose into sub-models
-    - Enrich sub-models
-    - Validate all models
-    - Generate visualizations
-    pattern: pipeline
-  interfaces:
-  - id: IF-PIPELINE
-    name: Pipeline API
-    status: ACTIVE
-    description: run_pipeline(project_root, deep?, compact?, from_scratch?) -> PipelineResult
-    type: internal
-    provider: COMP-ORCHESTRATION
-  - id: IF-ENRICH
-    name: Enrichment API
-    status: ACTIVE
-    description: enrich_model(model, project_root) -> ArchitectureModel with signatures/constants/test_contracts
-    type: internal
-    provider: COMP-ORCHESTRATION
-  - id: IF-DECOMPOSE
-    name: Decomposition API
-    status: ACTIVE
-    description: decompose_model(model) -> dict[str, ArchitectureModel], write_sub_models()
-    type: internal
-    provider: COMP-ORCHESTRATION
-  constraints:
-  - id: CON-REGEN
-    name: Regeneration Readiness
-    status: ACTIVE
-    description: Enriched models must have sufficient signatures, constants, test_contracts for blind regeneration
-    type: technology
-    rationale: Enables lossless behavioral representation (100% fidelity in blind regen)
+    description: Split model into per-F-block sub-models with recursive manifests
   components:
   - id: COMP-ORCHESTRATION
     name: Orchestration
     status: ACTIVE
-    description: 'Pipeline coordination: enrichment, decomposition, inference, compaction, full extraction workflows'
-    layer: LAYER-ORCHESTRATION
-    source_block: S10
-    technology: python
+    description: 'High-level workflows: enrichment, decomposition, behavior flows, capability inference'
+    layer: LYR-ORCHESTRATION
     files:
-    - src/architecture_model/orchestration/pipeline.py
-    - src/architecture_model/orchestration/decompose.py
-    - src/architecture_model/orchestration/enrich.py
+    - src/architecture_model/orchestration/__init__.py
     - src/architecture_model/orchestration/auto_enrich.py
-    - src/architecture_model/orchestration/deep_decompose.py
-    - src/architecture_model/orchestration/full_extraction.py
-    - src/architecture_model/orchestration/capability_inference.py
-    - src/architecture_model/orchestration/use_case_inference.py
     - src/architecture_model/orchestration/behavior_decompose.py
     - src/architecture_model/orchestration/behavior_flows.py
-    - src/architecture_model/orchestration/trigger_detection.py
-    - src/architecture_model/orchestration/naming_context.py
-    - src/architecture_model/orchestration/enrichment_context.py
+    - src/architecture_model/orchestration/capability_inference.py
     - src/architecture_model/orchestration/compaction.py
-    responsibilities:
-    - Coordinate multi-step pipelines
-    - Enrich models from manifests
-    - Decompose into sub-models
-    - Infer capabilities and use cases
-    - Detect behavior triggers
-    - Compact models (remove redundancy)
+    - src/architecture_model/orchestration/decompose.py
+    - src/architecture_model/orchestration/deep_decompose.py
+    - src/architecture_model/orchestration/enrich.py
+    - src/architecture_model/orchestration/enrichment_context.py
+    - src/architecture_model/orchestration/full_extraction.py
+    - src/architecture_model/orchestration/naming_context.py
+    - src/architecture_model/orchestration/pipeline.py
+    - src/architecture_model/orchestration/trigger_detection.py
+    - src/architecture_model/orchestration/use_case_inference.py
     constants:
+    - name: _TRIGGER_DECORATORS
+      value: re.compile('(route|get|post|put|delete|patch|event|signal|handler|listen|subscribe|on_event|on_message|webhook|cron|scheduled)',
+        re.IGNORECASE)
     - name: _COMPACT_KEEP
       value: frozenset({'id', 'name', 'source_block', 'status', 'contract', 'pattern', 'kind', 'layer', 'description', 'tags'})
     - name: _COMPACT_STRIP
       value: frozenset({'signatures', 'symbols', 'constants', 'files', 'responsibilities', 'test_contracts', 'observability',
         'fields', 'functions'})
-    - name: _TRIGGER_DECORATORS
-      value: re.compile('(route|get|post|put|delete|patch|event|signal|handler|listen|subscribe|on_event|on_message|webhook|cron|scheduled)',
-        re.IGNORECASE)
     signatures:
-    - name: run_pipeline
-      params:
-      - 'project_root: Path'
-      - 'parent_model: str'
-      - 'model_file: str | None'
-      - 'output_dir: str'
-      - 'deep: bool'
-      - 'compact: bool'
-      - 'from_scratch: bool'
-      returns: PipelineResult
-      decorators:
-      - 'monitored(module=''orchestration.pipeline'', inputs=lambda a, kw: {''deep'': kw.get(''deep'', False), ''from_scratch'':
-        kw.get(''from_scratch'', False)}, outputs=lambda r: {''blocks_scanned'': len(r.manifests), ''blocks_decomposed'':
-        len(r.deep_decompositions), ''errors'': len(r.errors)})'
-      body_hint: 'result = PipelineResult(); out = project_root / output_dir; logger.info(''Step 1: Generating recursive manifests...'');
-        try/except: ...; if deep: ...; if model_file is not None: ...; if actual_model and actual_model.exists(): ...; if
-        actual_model and actual_model.exists(): ...; return result'
-    - name: decompose_model
-      params:
-      - project_root
-      - model_path
-      decorators:
-      - 'monitored(module=''orchestration.decompose'', outputs=lambda r: {''sub_model_count'': len(r)})'
-      body_hint: 'if model_path is None: ...; model = load_model(model_path); config = get_config(project_root); results =
-        {}; for (block_id, block_def) in config.source_block_dict.items(): ...; return results'
-    - name: compact_root_model
-      params:
-      - model
-      - 'block_ids: list[str]'
-      returns: None
-      decorators:
-      - monitored(module='orchestration.compact_root_model')
-      body_hint: "components = model.entities.components if hasattr(model.entities, 'components') else model.entities.get('components',\
-        \ []) if hasattr(model.entities, 'get') else []; target_blocks = set(block_ids); for comp in components:\n    fb =\
-        \ comp.source_block if hasattr(comp, 'source_block') else comp.get('source_block', '')\n    if fb not in target_blocks:\n\
-        \        continue\n    for attr in _COMPACT_STRIP:\n        if hasattr(comp, attr):\n            val = getattr(comp,\
-        \ attr)\n            if isinstance(val, list):\n                setattr(comp, attr, [])\n            else:\n     \
-        \           setattr(comp, attr, type(val)())"
-    - name: write_sub_models
-      params:
-      - sub_models
-      - output_dir
-      body_hint: "written = []; for block_id, model in sub_models.items():\n    block_dir = output_dir / block_id\n    block_dir.mkdir(parents=True,\
-        \ exist_ok=True)\n    out_path = block_dir / '.architecture-model.yaml'\n    save_model(model, out_path)\n    written.append(out_path)\n\
-        \    logger.info('Wrote sub-model: %s', out_path); return written"
-    - name: enrich_model
-      params:
-      - 'model: ArchitectureModel'
-      - 'project_root: Path'
-      returns: ArchitectureModel
-      decorators:
-      - 'monitored(module=''orchestration.enrich'', outputs=lambda r: {''component_count'': len(r.entities.components)})'
-      body_hint: "components = model.entities.get('components', []) if isinstance(model.entities, dict) else model.entities.components;\
-        \ for comp in components:\n    if _enum_str(comp.status) != 'ACTIVE':\n        continue\n    if not comp.files:\n\
-        \        continue\n    _enrich_signatures(comp, project_root)\n    _enrich_constants(comp, project_root)\n    _enrich_test_contracts(comp,\
-        \ project_root); return model"
     - name: enrich_from_manifest
       params:
       - 'model: Any'
@@ -310,107 +170,6 @@ entities:
         ''delete_'', ''ad...; resource_map: dict[str, list[int]] = {}; for (idx, beh) in enumerate(behaviors): ...; indices_to_remove:
         set[int] = set(); for (resource, indices) in resource_map.items(): ...; if indices_to_remove: ...; return (behaviors,
         new_rels)'
-    - name: deep_decompose_block
-      params:
-      - 'manifest: Manifest'
-      - 'block_id: str'
-      - 'block_name: str'
-      - 'max_modules: int'
-      - 'target_k: int'
-      - 'min_cluster_size: int'
-      - 'parent_id: str'
-      returns: DecomposeResult
-      decorators:
-      - 'monitored(module=''orchestration.deep_decompose'', outputs=lambda r: {''cluster_count'': len(r.sub_components), ''avg_cluster_size'':
-        sum((len(sc.files) for sc in r.sub_components)) / len(r.sub_components) if r.sub_components else 0})'
-      body_hint: 'result = DecomposeResult(block_id=block_id, block_name=block_name); modules = [m for m in manifest.modules
-        if Path(m.file).stem != ''__i...; if len(modules) <= max_modules: ...; edges_raw = derive_interfaces(modules, Path(manifest.project_root
-        or ...; edges = [(e.source, e.target) for e in edges_raw]; module_files = [m.file for m in modules]; groups = cluster_modules(module_files,
-        edges, target_k=target_k, m...; comp_prefix = parent_id or f''COMP-{block_id}''; file_to_module = {m.file: m for m
-        in modules}; for (i, group) in enumerate(groups, 1): ...; file_to_comp: dict[str, str] = {}; for sc in result.sub_components:
-        ...; rel_counts: dict[tuple[str, str], int] = {}; for (src, tgt) in edges: ...; for ((from_id, to_id), count) in rel_counts.items():
-        ...; return result'
-    - name: iterative_decompose
-      params:
-      - 'manifest: Manifest'
-      - 'block_id: str'
-      - 'block_name: str'
-      - 'leaf_max_files: int'
-      - 'max_depth: int'
-      - 'target_k: int'
-      - 'min_cluster_size: int'
-      returns: list[DecomposeResult]
-      decorators:
-      - 'monitored(module=''orchestration.deep_decompose'', inputs=lambda a, kw: {''leaf_max_files'': kw.get(''leaf_max_files'',
-        3)}, outputs=lambda r: {''rounds'': len(r), ''total_sub_components'': sum((len(d.sub_components) for d in r))}, quality=lambda
-        r: {''leaf_compliance_pct'': 100.0 if not r else sum((1 for d in r for sc in d.sub_components if len(sc.files) <=
-        3)) / max(1, sum((len(d.sub_components) for d in r))) * 100})'
-      body_hint: 'results: list[DecomposeResult] = []; all_modules = [m for m in manifest.modules if Path(m.file).stem !=
-        ''__i...; queue: list[tuple[list[str], str, int]] = [([m.file for m...; file_to_module = {m.file: m for m in all_modules};
-        while queue: ...; return results'
-    - name: full_extraction
-      params:
-      - 'repo_path: Path'
-      - 'target_systems: int'
-      returns: ArchitectureModel
-      body_hint: 'from architecture_model.manifest.generator import generat...; from architecture_model.manifest.call_graph
-        import build_...; from architecture_model.manifest.grouping import create_c...; from architecture_model.core.decomposer
-        import detect_sys...; from architecture_model.orchestration.auto_enrich import ...; from architecture_model.orchestration.trigger_detection
-        i...; from architecture_model.orchestration.use_case_inference ...; from architecture_model.orchestration.behavior_decompose
-        ...; from architecture_model.orchestration.capability_inferenc...; from architecture_model.core.types import Relationship,
-        C...; manifest = generate_manifest(repo_path); multi_language = _has_non_python_sources(repo_path); source_graph =
-        None; if multi_language: ...; call_graph = build_call_graph(manifest); config_components = None; try/except: ...;
-        if config_components is not None: ...; project_name = repo_path.name; model = ArchitectureModel(meta=ModelMeta(project=project_name,
-        sc...; system_scores = detect_systems(model, manifest, target_systems=target_sys...; systems = []; for (i, ss) in
-        enumerate(system_scores, 1): ...; model = dc_replace(model, entities=dc_replace(model.entities, sys...; (behaviors,
-        beh_rels) = create_behaviors_from_manifest(model, manifest); model = dc_replace(model, entities=dc_replace(model.entities,
-        beh...; comp_rels = _derive_component_dependencies(components, manifest); model = dc_replace(model, relationships=list(model.relationships)...;
-        entry_map = build_behavior_entry_map(behaviors, call_graph); trigger_rels = detect_behavior_triggers(behaviors, call_graph,
-        entry_map); model = dc_replace(model, relationships=list(model.relationships)...; model = infer_composite_behaviors(model);
-        model = decompose_all_behaviors(model, manifest); model = infer_capabilities(model); model = build_capability_hierarchy(model);
-        normalized_rels = []; for r in model.relationships: ...; model = dc_replace(model, relationships=normalized_rels);
-        return model'
-    - name: full_extraction_with_docs
-      params:
-      - 'repo_path: Path'
-      - 'target_systems: int'
-      - 'output_dir: str'
-      returns: tuple[ArchitectureModel, dict]
-      body_hint: 'from architecture_model.core.parser import save_model; from architecture_model.orchestration.compaction
-        import c...; artifacts: dict = {''errors'': []}; out = repo_path / output_dir; model = full_extraction(repo_path,
-        target_systems=target_systems); artifacts[''full_model''] = {''components'': len(model.entities.components), ''systems'':...;
-        full_model_path = out / ''full-model.yaml''; full_model_path.parent.mkdir(parents=True, exist_ok=True); try/except:
-        ...; manifest = None; try/except: ...; (compact, offloaded) = compact_for_storage(model); artifacts[''compaction'']
-        = {''original_behaviors'': len(model.entities.behaviors or []...; docs_dir = out / ''docs''; try/except: ...; try/except:
-        ...; try/except: ...; for (comp_id, comp_behaviors) in offloaded.items(): ...; compact_path = out / ''compact-model.yaml'';
-        try/except: ...; return (compact, artifacts)'
-    - name: infer_capabilities
-      params:
-      - 'model: ArchitectureModel'
-      returns: ArchitectureModel
-      body_hint: 'behaviors = model.entities.behaviors or []; if not behaviors: ...; existing_caps = list(model.entities.capabilities
-        or []); existing_rels = list(model.relationships); components = model.entities.components or []; block_components
-        = [c for c in components if c.source_block]; if block_components: ...; new_entities = Entities(components=model.entities.components,
-        capabiliti...; return ArchitectureModel(meta=model.meta, entities=new_entities, relationships=existing_rels + new_rels)'
-    - name: build_capability_hierarchy
-      params:
-      - 'model: ArchitectureModel'
-      returns: ArchitectureModel
-      body_hint: 'from dataclasses import replace as dc_replace; caps = model.entities.capabilities or []; behaviors = model.entities.behaviors
-        or []; if len(caps) < 2: ...; realizes = [r for r in model.relationships if r.type == RelationType...; beh_index =
-        {b.id: b for b in behaviors}; cap_paths: dict[str, set[str]] = defaultdict(set); for rel in realizes: ...; cap_prefix:
-        dict[str, str] = {}; for (cap_id, paths) in cap_paths.items(): ...; new_rels = list(model.relationships); existing_contains
-        = {(r.from_id, r.to_id) for r in model.relationships if r.t...; for (child_id, child_prefix) in cap_prefix.items():
-        ...; return dc_replace(model, relationships=new_rels)'
-    - name: infer_composite_behaviors
-      params:
-      - 'model: ArchitectureModel'
-      returns: ArchitectureModel
-      body_hint: 'triggers = [r for r in model.relationships if _rel_type_str(r.type) ...; if not triggers: ...; chains =
-        _find_chains(triggers); if not chains: ...; beh_index = {b.id: b for b in model.entities.behaviors or []}; new_behaviors
-        = []; new_rels = []; for (i, chain) in enumerate(chains, 1): ...; all_behaviors = list(model.entities.behaviors or
-        []) + new_behaviors; all_rels = list(model.relationships) + new_rels; new_entities = dc_replace(model.entities, behaviors=all_behaviors);
-        return dc_replace(model, entities=new_entities, relationships=all_rels)'
     - name: decompose_behavior
       params:
       - 'behavior: Behavior'
@@ -480,6 +239,192 @@ entities:
       body_hint: 'mapping: dict[str, str] = {}; entities = model.entities; components = entities.components if isinstance(entities,
         Entities) els...; for comp in components: ...; if mapping: ...; beh_map: dict[str, str] = {}; for beh in entities.behaviors
         if isinstance(entities, Entities) else []: ...; for rel in model.relationships: ...; return mapping'
+    - name: infer_capabilities
+      params:
+      - 'model: ArchitectureModel'
+      returns: ArchitectureModel
+      body_hint: 'behaviors = model.entities.behaviors or []; if not behaviors: ...; existing_caps = list(model.entities.capabilities
+        or []); existing_rels = list(model.relationships); components = model.entities.components or []; block_components
+        = [c for c in components if c.source_block]; if block_components: ...; new_entities = Entities(components=model.entities.components,
+        capabiliti...; return ArchitectureModel(meta=model.meta, entities=new_entities, relationships=existing_rels + new_rels)'
+    - name: build_capability_hierarchy
+      params:
+      - 'model: ArchitectureModel'
+      returns: ArchitectureModel
+      body_hint: 'from dataclasses import replace as dc_replace; caps = model.entities.capabilities or []; behaviors = model.entities.behaviors
+        or []; if len(caps) < 2: ...; realizes = [r for r in model.relationships if r.type == RelationType...; beh_index =
+        {b.id: b for b in behaviors}; cap_paths: dict[str, set[str]] = defaultdict(set); for rel in realizes: ...; cap_prefix:
+        dict[str, str] = {}; for (cap_id, paths) in cap_paths.items(): ...; new_rels = list(model.relationships); existing_contains
+        = {(r.from_id, r.to_id) for r in model.relationships if r.t...; for (child_id, child_prefix) in cap_prefix.items():
+        ...; return dc_replace(model, relationships=new_rels)'
+    - name: compact_for_storage
+      params:
+      - 'model: ArchitectureModel'
+      returns: tuple[ArchitectureModel, dict[str, list[Behavior]]]
+      body_hint: 'use_cases = [b for b in model.entities.behaviors if b.id.startswith(''...; leaf_behaviors = [b for b in
+        model.entities.behaviors if not b.id.startswi...; leaf_ids = {b.id for b in leaf_behaviors}; beh_to_comp: dict[str,
+        str] = {}; for r in model.relationships: ...; comp_groups: dict[str, list[Behavior]] = {}; for b in leaf_behaviors:
+        ...; comp_names = {c.id: c.name for c in model.entities.components}; summaries: list[Behavior] = []; for (comp_id,
+        behs) in comp_groups.items(): ...; kept_behaviors = use_cases + summaries; offloaded_ids = {b.id for behs in comp_groups.values()
+        for b in behs}; kept_rels = [r for r in model.relationships if not (_rel_type_str(r.t...; compact = dc_replace(model,
+        entities=dc_replace(model.entities, beh...; return (compact, comp_groups)'
+    - name: decompose_model
+      params:
+      - project_root
+      - model_path
+      decorators:
+      - 'monitored(module=''orchestration.decompose'', outputs=lambda r: {''sub_model_count'': len(r)})'
+      body_hint: 'if model_path is None: ...; model = load_model(model_path); config = get_config(project_root); results =
+        {}; for (block_id, block_def) in config.source_block_dict.items(): ...; return results'
+    - name: compact_root_model
+      params:
+      - model
+      - 'block_ids: list[str]'
+      returns: None
+      decorators:
+      - monitored(module='orchestration.compact_root_model')
+      body_hint: "components = model.entities.components if hasattr(model.entities, 'components') else model.entities.get('components',\
+        \ []) if hasattr(model.entities, 'get') else []; target_blocks = set(block_ids); for comp in components:\n    fb =\
+        \ comp.source_block if hasattr(comp, 'source_block') else comp.get('source_block', '')\n    if fb not in target_blocks:\n\
+        \        continue\n    for attr in _COMPACT_STRIP:\n        if hasattr(comp, attr):\n            val = getattr(comp,\
+        \ attr)\n            if isinstance(val, list):\n                setattr(comp, attr, [])\n            else:\n     \
+        \           setattr(comp, attr, type(val)())"
+    - name: write_sub_models
+      params:
+      - sub_models
+      - output_dir
+      body_hint: "written = []; for block_id, model in sub_models.items():\n    block_dir = output_dir / block_id\n    block_dir.mkdir(parents=True,\
+        \ exist_ok=True)\n    out_path = block_dir / '.architecture-model.yaml'\n    save_model(model, out_path)\n    written.append(out_path)\n\
+        \    logger.info('Wrote sub-model: %s', out_path); return written"
+    - name: deep_decompose_block
+      params:
+      - 'manifest: Manifest'
+      - 'block_id: str'
+      - 'block_name: str'
+      - 'max_modules: int'
+      - 'target_k: int'
+      - 'min_cluster_size: int'
+      - 'parent_id: str'
+      returns: DecomposeResult
+      decorators:
+      - 'monitored(module=''orchestration.deep_decompose'', outputs=lambda r: {''cluster_count'': len(r.sub_components), ''avg_cluster_size'':
+        sum((len(sc.files) for sc in r.sub_components)) / len(r.sub_components) if r.sub_components else 0})'
+      body_hint: 'result = DecomposeResult(block_id=block_id, block_name=block_name); modules = [m for m in manifest.modules
+        if Path(m.file).stem != ''__i...; if len(modules) <= max_modules: ...; edges_raw = derive_interfaces(modules, Path(manifest.project_root
+        or ...; edges = [(e.source, e.target) for e in edges_raw]; module_files = [m.file for m in modules]; groups = cluster_modules(module_files,
+        edges, target_k=target_k, m...; comp_prefix = parent_id or f''COMP-{block_id}''; file_to_module = {m.file: m for m
+        in modules}; for (i, group) in enumerate(groups, 1): ...; file_to_comp: dict[str, str] = {}; for sc in result.sub_components:
+        ...; rel_counts: dict[tuple[str, str], int] = {}; for (src, tgt) in edges: ...; for ((from_id, to_id), count) in rel_counts.items():
+        ...; return result'
+    - name: iterative_decompose
+      params:
+      - 'manifest: Manifest'
+      - 'block_id: str'
+      - 'block_name: str'
+      - 'leaf_max_files: int'
+      - 'max_depth: int'
+      - 'target_k: int'
+      - 'min_cluster_size: int'
+      returns: list[DecomposeResult]
+      decorators:
+      - 'monitored(module=''orchestration.deep_decompose'', inputs=lambda a, kw: {''leaf_max_files'': kw.get(''leaf_max_files'',
+        3)}, outputs=lambda r: {''rounds'': len(r), ''total_sub_components'': sum((len(d.sub_components) for d in r))}, quality=lambda
+        r: {''leaf_compliance_pct'': 100.0 if not r else sum((1 for d in r for sc in d.sub_components if len(sc.files) <=
+        3)) / max(1, sum((len(d.sub_components) for d in r))) * 100})'
+      body_hint: 'results: list[DecomposeResult] = []; all_modules = [m for m in manifest.modules if Path(m.file).stem !=
+        ''__i...; queue: list[tuple[list[str], str, int]] = [([m.file for m...; file_to_module = {m.file: m for m in all_modules};
+        while queue: ...; return results'
+    - name: enrich_model
+      params:
+      - 'model: ArchitectureModel'
+      - 'project_root: Path'
+      returns: ArchitectureModel
+      decorators:
+      - 'monitored(module=''orchestration.enrich'', outputs=lambda r: {''component_count'': len(r.entities.components)})'
+      body_hint: "components = model.entities.get('components', []) if isinstance(model.entities, dict) else model.entities.components;\
+        \ for comp in components:\n    if _enum_str(comp.status) != 'ACTIVE':\n        continue\n    if not comp.files:\n\
+        \        continue\n    _enrich_signatures(comp, project_root)\n    _enrich_constants(comp, project_root)\n    _enrich_test_contracts(comp,\
+        \ project_root); return model"
+    - name: format_enrichment_prompt
+      params:
+      - 'decompositions: list[DecomposeResult]'
+      returns: str
+      decorators:
+      - 'monitored(module=''orchestration.enrichment_context'', inputs=lambda a, kw: {''decomposition_count'': len(a[0])},
+        outputs=lambda r: {''token_estimate'': len(r) // 4, ''char_count'': len(r)})'
+      body_hint: 'sections: list[str] = []; patterns = load_patterns(); sections.append(''## Available Patterns\n''); for
+        (name, p) in patterns.items(): ...; sections.append(''''); sections.append(''## Components to Annotate\n''); for decomp
+        in decompositions: ...; sections.append(''## Instructions\n''); sections.append("For each component above, respond
+        with YAML:\n```yaml\n- id: COMP-XX-N\n  pattern: <pattern-name or ''custom''>\n  contract: <one sentence: what it
+        does, for whom, how>\n```\n\nRules:\n- Contract must be ONE sentence (no ''and'' joining two responsibilities)\n-
+        If no pattern fits, use ''custom'' and the contract still applies\n- Use indicators + file/class names to infer pattern\n");
+        return ''\n''.join(sections)'
+    - name: full_extraction
+      params:
+      - 'repo_path: Path'
+      - 'target_systems: int'
+      returns: ArchitectureModel
+      body_hint: 'from architecture_model.manifest.generator import generat...; from architecture_model.manifest.call_graph
+        import build_...; from architecture_model.manifest.grouping import create_c...; from architecture_model.core.decomposer
+        import detect_sys...; from architecture_model.orchestration.auto_enrich import ...; from architecture_model.orchestration.trigger_detection
+        i...; from architecture_model.orchestration.use_case_inference ...; from architecture_model.orchestration.behavior_decompose
+        ...; from architecture_model.orchestration.capability_inferenc...; from architecture_model.core.types import Relationship,
+        C...; manifest = generate_manifest(repo_path); multi_language = _has_non_python_sources(repo_path); source_graph =
+        None; if multi_language: ...; call_graph = build_call_graph(manifest); config_components = None; try/except: ...;
+        if config_components is not None: ...; project_name = repo_path.name; model = ArchitectureModel(meta=ModelMeta(project=project_name,
+        sc...; system_scores = detect_systems(model, manifest, target_systems=target_sys...; systems = []; for (i, ss) in
+        enumerate(system_scores, 1): ...; model = dc_replace(model, entities=dc_replace(model.entities, sys...; (behaviors,
+        beh_rels) = create_behaviors_from_manifest(model, manifest); model = dc_replace(model, entities=dc_replace(model.entities,
+        beh...; comp_rels = _derive_component_dependencies(components, manifest); model = dc_replace(model, relationships=list(model.relationships)...;
+        entry_map = build_behavior_entry_map(behaviors, call_graph); trigger_rels = detect_behavior_triggers(behaviors, call_graph,
+        entry_map); model = dc_replace(model, relationships=list(model.relationships)...; model = infer_composite_behaviors(model);
+        model = decompose_all_behaviors(model, manifest); model = infer_capabilities(model); model = build_capability_hierarchy(model);
+        normalized_rels = []; for r in model.relationships: ...; model = dc_replace(model, relationships=normalized_rels);
+        return model'
+    - name: full_extraction_with_docs
+      params:
+      - 'repo_path: Path'
+      - 'target_systems: int'
+      - 'output_dir: str'
+      returns: tuple[ArchitectureModel, dict]
+      body_hint: 'from architecture_model.core.parser import save_model; from architecture_model.orchestration.compaction
+        import c...; artifacts: dict = {''errors'': []}; out = repo_path / output_dir; model = full_extraction(repo_path,
+        target_systems=target_systems); artifacts[''full_model''] = {''components'': len(model.entities.components), ''systems'':...;
+        full_model_path = out / ''full-model.yaml''; full_model_path.parent.mkdir(parents=True, exist_ok=True); try/except:
+        ...; manifest = None; try/except: ...; (compact, offloaded) = compact_for_storage(model); artifacts[''compaction'']
+        = {''original_behaviors'': len(model.entities.behaviors or []...; docs_dir = out / ''docs''; try/except: ...; try/except:
+        ...; try/except: ...; for (comp_id, comp_behaviors) in offloaded.items(): ...; compact_path = out / ''compact-model.yaml'';
+        try/except: ...; return (compact, artifacts)'
+    - name: format_naming_context
+      params:
+      - 'result: DecomposeResult'
+      returns: str
+      body_hint: "if not result.sub_components:\n    return f'{result.block_name}: no sub-components (below threshold)'; lines\
+        \ = [f'## {result.block_name} ({result.block_id}) — {len(result.sub_components)} sub-components\\n']; for sc in result.sub_components:\n\
+        \    stems = [f.rsplit('/', 1)[-1].removesuffix('.py') for f in sc.files[:8]]\n    extra = f' +{len(sc.files) - 8}\
+        \ more' if len(sc.files) > 8 else ''\n    top_classes = sc.classes[:6]\n    top_funcs = sc.functions[:4]\n    lines.append(f'###\
+        \ {sc.id} ({sc.line_count} lines, {len(sc.files)} files)')\n    lines.append(f\"  Files: {', '.join(stems)}{extra}\"\
+        )\n    if top_classes:\n        lines.append(f\"  Classes: {', '.join(top_classes)}\")\n    if top_funcs:\n      \
+        \  lines.append(f\"  Functions: {', '.join(top_funcs)}\")\n    lines.append(''); if result.internal_relationships:\n\
+        \    lines.append('### Dependencies')\n    for rel in sorted(result.internal_relationships, key=lambda r: -r.edge_count):\n\
+        \        lines.append(f'  {rel.from_id} → {rel.to_id} ({rel.edge_count} imports)'); return '\\n'.join(lines)"
+    - name: run_pipeline
+      params:
+      - 'project_root: Path'
+      - 'parent_model: str'
+      - 'model_file: str | None'
+      - 'output_dir: str'
+      - 'deep: bool'
+      - 'compact: bool'
+      - 'from_scratch: bool'
+      returns: PipelineResult
+      decorators:
+      - 'monitored(module=''orchestration.pipeline'', inputs=lambda a, kw: {''deep'': kw.get(''deep'', False), ''from_scratch'':
+        kw.get(''from_scratch'', False)}, outputs=lambda r: {''blocks_scanned'': len(r.manifests), ''blocks_decomposed'':
+        len(r.deep_decompositions), ''errors'': len(r.errors)})'
+      body_hint: 'result = PipelineResult(); out = project_root / output_dir; logger.info(''Step 1: Generating recursive manifests...'');
+        try/except: ...; if deep: ...; if model_file is not None: ...; if actual_model and actual_model.exists(): ...; if
+        actual_model and actual_model.exists(): ...; return result'
     - name: detect_behavior_triggers
       params:
       - 'behaviors: list[Behavior]'
@@ -508,73 +453,16 @@ entities:
         \        best_score = -1\n        for qn in file_qnames:\n            fname = qn.split(':', 1)[1]\n            score\
         \ = len(set(fname.lower()) & set(snake_name))\n            if score > best_score:\n                best = qn\n   \
         \             best_score = score\n        if best:\n            entries[beh.id] = best; return entries"
-    - name: format_naming_context
-      params:
-      - 'result: DecomposeResult'
-      returns: str
-      body_hint: "if not result.sub_components:\n    return f'{result.block_name}: no sub-components (below threshold)'; lines\
-        \ = [f'## {result.block_name} ({result.block_id}) — {len(result.sub_components)} sub-components\\n']; for sc in result.sub_components:\n\
-        \    stems = [f.rsplit('/', 1)[-1].removesuffix('.py') for f in sc.files[:8]]\n    extra = f' +{len(sc.files) - 8}\
-        \ more' if len(sc.files) > 8 else ''\n    top_classes = sc.classes[:6]\n    top_funcs = sc.functions[:4]\n    lines.append(f'###\
-        \ {sc.id} ({sc.line_count} lines, {len(sc.files)} files)')\n    lines.append(f\"  Files: {', '.join(stems)}{extra}\"\
-        )\n    if top_classes:\n        lines.append(f\"  Classes: {', '.join(top_classes)}\")\n    if top_funcs:\n      \
-        \  lines.append(f\"  Functions: {', '.join(top_funcs)}\")\n    lines.append(''); if result.internal_relationships:\n\
-        \    lines.append('### Dependencies')\n    for rel in sorted(result.internal_relationships, key=lambda r: -r.edge_count):\n\
-        \        lines.append(f'  {rel.from_id} → {rel.to_id} ({rel.edge_count} imports)'); return '\\n'.join(lines)"
-    - name: format_enrichment_prompt
-      params:
-      - 'decompositions: list[DecomposeResult]'
-      returns: str
-      decorators:
-      - 'monitored(module=''orchestration.enrichment_context'', inputs=lambda a, kw: {''decomposition_count'': len(a[0])},
-        outputs=lambda r: {''token_estimate'': len(r) // 4, ''char_count'': len(r)})'
-      body_hint: 'sections: list[str] = []; patterns = load_patterns(); sections.append(''## Available Patterns\n''); for
-        (name, p) in patterns.items(): ...; sections.append(''''); sections.append(''## Components to Annotate\n''); for decomp
-        in decompositions: ...; sections.append(''## Instructions\n''); sections.append("For each component above, respond
-        with YAML:\n```yaml\n- id: COMP-XX-N\n  pattern: <pattern-name or ''custom''>\n  contract: <one sentence: what it
-        does, for whom, how>\n```\n\nRules:\n- Contract must be ONE sentence (no ''and'' joining two responsibilities)\n-
-        If no pattern fits, use ''custom'' and the contract still applies\n- Use indicators + file/class names to infer pattern\n");
-        return ''\n''.join(sections)'
-    - name: compact_for_storage
+    - name: infer_composite_behaviors
       params:
       - 'model: ArchitectureModel'
-      returns: tuple[ArchitectureModel, dict[str, list[Behavior]]]
-      body_hint: 'use_cases = [b for b in model.entities.behaviors if b.id.startswith(''...; leaf_behaviors = [b for b in
-        model.entities.behaviors if not b.id.startswi...; leaf_ids = {b.id for b in leaf_behaviors}; beh_to_comp: dict[str,
-        str] = {}; for r in model.relationships: ...; comp_groups: dict[str, list[Behavior]] = {}; for b in leaf_behaviors:
-        ...; comp_names = {c.id: c.name for c in model.entities.components}; summaries: list[Behavior] = []; for (comp_id,
-        behs) in comp_groups.items(): ...; kept_behaviors = use_cases + summaries; offloaded_ids = {b.id for behs in comp_groups.values()
-        for b in behs}; kept_rels = [r for r in model.relationships if not (_rel_type_str(r.t...; compact = dc_replace(model,
-        entities=dc_replace(model.entities, beh...; return (compact, comp_groups)'
+      returns: ArchitectureModel
+      body_hint: 'triggers = [r for r in model.relationships if _rel_type_str(r.type) ...; if not triggers: ...; chains =
+        _find_chains(triggers); if not chains: ...; beh_index = {b.id: b for b in model.entities.behaviors or []}; new_behaviors
+        = []; new_rels = []; for (i, chain) in enumerate(chains, 1): ...; all_behaviors = list(model.entities.behaviors or
+        []) + new_behaviors; all_rels = list(model.relationships) + new_rels; new_entities = dc_replace(model.entities, behaviors=all_behaviors);
+        return dc_replace(model, entities=new_entities, relationships=all_rels)'
     test_contracts:
-    - test_file: test_pipeline.py
-      test_method: test_run_pipeline_produces_manifests_and_sub_models
-      assertion: result isinstance PipelineResult
-      contract_type: type_check
-    - test_file: test_pipeline.py
-      test_method: test_run_pipeline_config_only
-      assertion: len(result.sub_models) == 0
-      contract_type: value_equality
-    - test_file: test_decompose.py
-      test_method: test_decompose_meta_links_to_parent
-      assertion: sub.meta.parent_model == '../../.architecture-model.yaml'
-      contract_type: value_equality
-    - test_file: test_decompose.py
-      test_method: test_write_sub_models
-      assertion: data['meta']['parent_model'] == '../../.architecture-model.yaml'
-      contract_type: value_equality
-    - test_file: test_decompose.py
-      test_method: test_decompose_cli
-      assertion: ret == 0
-      contract_type: value_equality
-    - test_file: test_enrich.py
-      test_method: test_enrich_skips_planned_components
-      assertion: len(c.signatures) == 0
-      contract_type: value_equality
-    - test_file: test_enrich.py
-      test_method: test_enrich_handles_missing_files
-      assertion: len(c.signatures) == 0
-      contract_type: value_equality
     - test_file: test_auto_enrich.py
       test_method: test_basic_params_and_return
       assertion: sig.name == 'add'
@@ -630,62 +518,6 @@ entities:
     - test_file: test_auto_enrich.py
       test_method: test_crud_collapse
       assertion: len(behaviors) == 1
-      contract_type: value_equality
-    - test_file: test_deep_decompose.py
-      test_method: test_deep_decompose_produces_sub_components
-      assertion: result isinstance DecomposeResult
-      contract_type: type_check
-    - test_file: test_deep_decompose.py
-      test_method: test_deep_decompose_skips_small_blocks
-      assertion: result.sub_components == []
-      contract_type: value_equality
-    - test_file: test_full_extraction.py
-      test_method: test_produces_model_with_components
-      assertion: model.meta.project == tmp_path.name
-      contract_type: value_equality
-    - test_file: test_full_extraction.py
-      test_method: test_full_extraction_uses_config_blocks
-      assertion: auth_comp.source_block == 'F1'
-      contract_type: value_equality
-    - test_file: test_full_extraction.py
-      test_method: test_empty_repo_returns_empty_model
-      assertion: model.meta.project == tmp_path.name
-      contract_type: value_equality
-    - test_file: test_capability_inference.py
-      test_method: test_creates_realizes_relationships
-      assertion: len(realizes) == 2
-      contract_type: value_equality
-    - test_file: test_capability_inference.py
-      test_method: test_no_behaviors_returns_unchanged
-      assertion: result == model
-      contract_type: value_equality
-    - test_file: test_capability_inference.py
-      test_method: test_name_from_prefix_handles_irregular_plurals
-      assertion: _name_from_prefix('technologies') == 'Technology Management'
-      contract_type: value_equality
-    - test_file: test_use_case_inference.py
-      test_method: test_chain_becomes_composite
-      assertion: len(composites) == 1
-      contract_type: value_equality
-    - test_file: test_use_case_inference.py
-      test_method: test_parallel_chains_separate_composites
-      assertion: len(composites) == 2
-      contract_type: value_equality
-    - test_file: test_use_case_inference.py
-      test_method: test_single_behavior_no_composite
-      assertion: len(composites) == 0
-      contract_type: value_equality
-    - test_file: test_use_case_inference.py
-      test_method: test_composite_steps_are_behavior_names
-      assertion: composites[0].steps == ['Submit order', 'Process payment']
-      contract_type: value_equality
-    - test_file: test_use_case_inference.py
-      test_method: test_no_triggers_returns_unchanged
-      assertion: result.entities.behaviors == model.entities.behaviors
-      contract_type: value_equality
-    - test_file: test_use_case_inference.py
-      test_method: test_enum_type_triggers_detected
-      assertion: len(composites) == 1
       contract_type: value_equality
     - test_file: test_behavior_decompose.py
       test_method: test_maps_steps_to_components
@@ -755,6 +587,74 @@ entities:
       test_method: test_build_file_to_comp
       assertion: result['src/auth.py'] == 'COMP-1'
       contract_type: value_equality
+    - test_file: test_capability_inference.py
+      test_method: test_creates_realizes_relationships
+      assertion: len(realizes) == 2
+      contract_type: value_equality
+    - test_file: test_capability_inference.py
+      test_method: test_no_behaviors_returns_unchanged
+      assertion: result == model
+      contract_type: value_equality
+    - test_file: test_capability_inference.py
+      test_method: test_name_from_prefix_handles_irregular_plurals
+      assertion: _name_from_prefix('technologies') == 'Technology Management'
+      contract_type: value_equality
+    - test_file: test_compaction.py
+      test_method: test_preserves_components
+      assertion: len(compact.entities.components) == len(full_model.entities.components)
+      contract_type: value_equality
+    - test_file: test_compaction.py
+      test_method: test_preserves_non_behavior_relationships
+      assertion: len(uses_rels) == 1
+      contract_type: value_equality
+    - test_file: test_decompose.py
+      test_method: test_decompose_meta_links_to_parent
+      assertion: sub.meta.parent_model == '../../.architecture-model.yaml'
+      contract_type: value_equality
+    - test_file: test_decompose.py
+      test_method: test_write_sub_models
+      assertion: data['meta']['parent_model'] == '../../.architecture-model.yaml'
+      contract_type: value_equality
+    - test_file: test_decompose.py
+      test_method: test_decompose_cli
+      assertion: ret == 0
+      contract_type: value_equality
+    - test_file: test_deep_decompose.py
+      test_method: test_deep_decompose_produces_sub_components
+      assertion: result isinstance DecomposeResult
+      contract_type: type_check
+    - test_file: test_deep_decompose.py
+      test_method: test_deep_decompose_skips_small_blocks
+      assertion: result.sub_components == []
+      contract_type: value_equality
+    - test_file: test_enrich.py
+      test_method: test_enrich_skips_planned_components
+      assertion: len(c.signatures) == 0
+      contract_type: value_equality
+    - test_file: test_enrich.py
+      test_method: test_enrich_handles_missing_files
+      assertion: len(c.signatures) == 0
+      contract_type: value_equality
+    - test_file: test_full_extraction.py
+      test_method: test_produces_model_with_components
+      assertion: model.meta.project == tmp_path.name
+      contract_type: value_equality
+    - test_file: test_full_extraction.py
+      test_method: test_full_extraction_uses_config_blocks
+      assertion: auth_comp.source_block == 'F1'
+      contract_type: value_equality
+    - test_file: test_full_extraction.py
+      test_method: test_empty_repo_returns_empty_model
+      assertion: model.meta.project == tmp_path.name
+      contract_type: value_equality
+    - test_file: test_pipeline.py
+      test_method: test_run_pipeline_produces_manifests_and_sub_models
+      assertion: result isinstance PipelineResult
+      contract_type: type_check
+    - test_file: test_pipeline.py
+      test_method: test_run_pipeline_config_only
+      assertion: len(result.sub_models) == 0
+      contract_type: value_equality
     - test_file: test_trigger_detection.py
       test_method: test_direct_call_creates_trigger
       assertion: len(triggers) == 1
@@ -787,13 +687,29 @@ entities:
       test_method: test_fuzzy_match
       assertion: entries.get('BEH-1') == 'routers/graph.py:get_entity_relationships'
       contract_type: value_equality
-    - test_file: test_compaction.py
-      test_method: test_preserves_components
-      assertion: len(compact.entities.components) == len(full_model.entities.components)
+    - test_file: test_use_case_inference.py
+      test_method: test_chain_becomes_composite
+      assertion: len(composites) == 1
       contract_type: value_equality
-    - test_file: test_compaction.py
-      test_method: test_preserves_non_behavior_relationships
-      assertion: len(uses_rels) == 1
+    - test_file: test_use_case_inference.py
+      test_method: test_parallel_chains_separate_composites
+      assertion: len(composites) == 2
+      contract_type: value_equality
+    - test_file: test_use_case_inference.py
+      test_method: test_single_behavior_no_composite
+      assertion: len(composites) == 0
+      contract_type: value_equality
+    - test_file: test_use_case_inference.py
+      test_method: test_composite_steps_are_behavior_names
+      assertion: composites[0].steps == ['Submit order', 'Process payment']
+      contract_type: value_equality
+    - test_file: test_use_case_inference.py
+      test_method: test_no_triggers_returns_unchanged
+      assertion: result.entities.behaviors == model.entities.behaviors
+      contract_type: value_equality
+    - test_file: test_use_case_inference.py
+      test_method: test_enum_type_triggers_detected
+      assertion: len(composites) == 1
       contract_type: value_equality
 relationships:
 - type: realizes
@@ -802,18 +718,6 @@ relationships:
 - type: realizes
   from: COMP-ORCHESTRATION
   to: CAP-DECOMPOSE
-- type: realizes
-  from: COMP-ORCHESTRATION
-  to: CAP-MONITOR
-- type: exposes
-  from: COMP-ORCHESTRATION
-  to: IF-PIPELINE
-- type: exposes
-  from: COMP-ORCHESTRATION
-  to: IF-ENRICH
-- type: exposes
-  from: COMP-ORCHESTRATION
-  to: IF-DECOMPOSE
 - type: depends-on
   from: COMP-CLI
   to: COMP-ORCHESTRATION
@@ -823,27 +727,3 @@ relationships:
 - type: depends-on
   from: COMP-ORCHESTRATION
   to: COMP-MANIFEST
-- type: depends-on
-  from: COMP-ORCHESTRATION
-  to: COMP-CONFIG
-- type: traces-to
-  from: COMP-ORCHESTRATION
-  to: BEH-PIPELINE
-- type: traces-to
-  from: COMP-ORCHESTRATION
-  to: BEH-ENRICH
-- type: traces-to
-  from: COMP-ORCHESTRATION
-  to: BEH-DECOMPOSE
-- type: constrained-by
-  from: COMP-ORCHESTRATION
-  to: CON-REGEN
-- type: triggers
-  from: BEH-PIPELINE
-  to: BEH-DECOMPOSE
-- type: triggers
-  from: BEH-PIPELINE
-  to: BEH-ENRICH
-- type: verifies
-  from: COMP-ORCHESTRATION
-  to: CON-REGEN

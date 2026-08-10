@@ -1,7 +1,7 @@
 # architecture-model-standard — Architecture Documentation
 
 **Schema Version:** 2.0
-**Components:** 9
+**Components:** 15
 **Avg Confidence:** 0%
 
 ---
