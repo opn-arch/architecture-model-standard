@@ -97,6 +97,109 @@ class TestSpecifyStage:
         assert stage.name == "specify"
         assert "observe" in stage.requires
 
+    def test_specify_library_interface(self, tmp_path):
+        """Component with public functions consumed by another gets a library interface."""
+        from architecture_model.pipeline.observe_types import (
+            Inventory, ModuleRecord, FunctionRecord,
+        )
+        from architecture_model.pipeline.allocate_types import (
+            AllocationResult, ComponentAllocation,
+        )
+        from architecture_model.pipeline.protocol import (
+            PipelineContext, StageResult, QualityMetrics,
+        )
+        # Two components: auth (3 public funcs) and users (imports from auth)
+        auth_path = Path("auth/core.py")
+        users_path = Path("users/views.py")
+        inventory = Inventory(
+            modules=[
+                ModuleRecord(
+                    path=auth_path,
+                    functions=[
+                        FunctionRecord(name="authenticate", signature="(token)", body_hint=""),
+                        FunctionRecord(name="get_current_user", signature="(token)", body_hint=""),
+                        FunctionRecord(name="hash_password", signature="(pwd)", body_hint=""),
+                    ],
+                    imports=[],
+                ),
+                ModuleRecord(
+                    path=users_path,
+                    functions=[
+                        FunctionRecord(name="list_users", signature="()", body_hint=""),
+                    ],
+                    imports=["auth.core"],
+                ),
+            ],
+        )
+        allocation = AllocationResult(components=[
+            ComponentAllocation(id="COMP-AUTH", name="Auth", files=[auth_path]),
+            ComponentAllocation(id="COMP-USERS", name="Users", files=[users_path]),
+        ])
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = StageResult(
+            output=inventory, quality=QualityMetrics(score=100),
+            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+        )
+        ctx.cache["allocate"] = StageResult(
+            output=allocation, quality=QualityMetrics(score=100),
+            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+        )
+        result = SpecifyStage().run(ctx)
+        lib = [i for i in result.output.interfaces if i.interface_type == "library"]
+        assert len(lib) == 1
+        assert lib[0].component_id == "COMP-AUTH"
+        assert any("authenticate" in m for m in lib[0].methods)
+
+    def test_specify_quality_score_library_only(self, tmp_path):
+        """Quality score reflects component coverage when only library interfaces exist."""
+        from architecture_model.pipeline.observe_types import (
+            Inventory, ModuleRecord, FunctionRecord,
+        )
+        from architecture_model.pipeline.allocate_types import (
+            AllocationResult, ComponentAllocation,
+        )
+        from architecture_model.pipeline.protocol import (
+            PipelineContext, StageResult, QualityMetrics,
+        )
+        auth_path = Path("auth/core.py")
+        users_path = Path("users/views.py")
+        inventory = Inventory(
+            modules=[
+                ModuleRecord(
+                    path=auth_path,
+                    functions=[
+                        FunctionRecord(name="authenticate", signature="(token)", body_hint=""),
+                        FunctionRecord(name="get_current_user", signature="(token)", body_hint=""),
+                        FunctionRecord(name="hash_password", signature="(pwd)", body_hint=""),
+                    ],
+                    imports=[],
+                ),
+                ModuleRecord(
+                    path=users_path,
+                    functions=[
+                        FunctionRecord(name="list_users", signature="()", body_hint=""),
+                    ],
+                    imports=["auth.core"],
+                ),
+            ],
+        )
+        allocation = AllocationResult(components=[
+            ComponentAllocation(id="COMP-AUTH", name="Auth", files=[auth_path]),
+            ComponentAllocation(id="COMP-USERS", name="Users", files=[users_path]),
+        ])
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = StageResult(
+            output=inventory, quality=QualityMetrics(score=100),
+            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+        )
+        ctx.cache["allocate"] = StageResult(
+            output=allocation, quality=QualityMetrics(score=100),
+            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+        )
+        result = SpecifyStage().run(ctx)
+        assert result.quality.score >= 50
+        assert result.quality.sub_scores.get("library_count", 0) >= 1
+
 
 class TestContractStage:
     def test_contract_maps_tests_to_components(self, tmp_path):

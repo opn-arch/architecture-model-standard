@@ -24,11 +24,13 @@ from .protocol import (
     StageResult,
     Uncertainty,
 )
+from .corrections import get_corrections_for_stage
 
 
 # Thresholds
 MAX_COMPONENT_FILES = 15
 MIN_COMPONENT_FILES = 2
+_SCOPED_FILE_LIMIT = 15  # use per-file strategy when scoped context has <= this many files
 
 
 class AllocateStage:
@@ -56,33 +58,76 @@ class AllocateStage:
             if not _is_non_source_module(m)
         ]
 
-        # Step 1: Seed components from capabilities
-        components = _seed_from_capabilities(inference.capabilities, source_modules)
+        is_scoped = bool(ctx.scope_files)
 
-        # Step 2: Assign unallocated files by import affinity
-        allocated_files = {f for c in components for f in c.files}
-        unallocated = [m for m in source_modules if m.path not in allocated_files]
+        # Scoped small context: one component per substantive file
+        if is_scoped and len(source_modules) <= _SCOPED_FILE_LIMIT:
+            components = _allocate_per_file(source_modules, inference.capabilities)
+        else:
+            # Step 1: Seed components from capabilities
+            components = _seed_from_capabilities(inference.capabilities, source_modules)
 
-        if unallocated and components:
-            _assign_by_import_affinity(unallocated, components, inventory.edges)
+            # Step 2: Assign unallocated files by import affinity
             allocated_files = {f for c in components for f in c.files}
             unallocated = [m for m in source_modules if m.path not in allocated_files]
 
-        # Step 3: Remaining unallocated → "Infrastructure" component
-        still_unallocated = [m.path for m in unallocated]
-        if still_unallocated:
-            components.append(ComponentAllocation(
-                id=f"COMP-{len(components) + 1}",
-                name="Infrastructure",
-                files=still_unallocated,
-                layer="infra",
-            ))
+            if unallocated and components:
+                _assign_by_import_affinity(unallocated, components, inventory.edges)
+                allocated_files = {f for c in components for f in c.files}
+                unallocated = [m for m in source_modules if m.path not in allocated_files]
 
-        # Step 4: Split oversized components
-        components = _split_oversized(components)
+            # Step 3: Remaining unallocated → "Infrastructure" component
+            still_unallocated = [m.path for m in unallocated]
+            if still_unallocated:
+                components.append(ComponentAllocation(
+                    id=f"COMP-{len(components) + 1}",
+                    name="Infrastructure",
+                    files=still_unallocated,
+                    layer="infra",
+                ))
 
-        # Step 5: Merge undersized components
-        components = _merge_undersized(components)
+            # Step 4: Split oversized components
+            components = _split_oversized(components)
+
+            # Step 5: Merge undersized components
+            components = _merge_undersized(components)
+
+        # --- Apply prior corrections ---
+        comp_by_id = {c.id: c for c in components}
+        for correction in get_corrections_for_stage(ctx, "allocate"):
+            if correction.correction_type == "split" and correction.entity_id.startswith("COMP-"):
+                if correction.entity_id in comp_by_id:
+                    diagnostics.append(Diagnostic(
+                        severity="warning",
+                        code="split_suggested",
+                        message=(
+                            f"Prior correction suggests splitting {correction.entity_id}: "
+                            f"{correction.reason}"
+                        ),
+                        context={"entity_id": correction.entity_id, "after": correction.after},
+                    ))
+            elif correction.correction_type == "reassign" and correction.entity_id.startswith("COMP-"):
+                src_id = correction.entity_id
+                dst_id = correction.after.get("component_id", "")
+                files_to_move = [Path(f) for f in correction.after.get("files", [])]
+                src = comp_by_id.get(src_id)
+                dst = comp_by_id.get(dst_id)
+                if src and dst and files_to_move:
+                    moved = []
+                    for f in files_to_move:
+                        if f in src.files:
+                            src.files.remove(f)
+                            dst.files.append(f)
+                            moved.append(str(f))
+                    if moved:
+                        diagnostics.append(Diagnostic(
+                            severity="info",
+                            code="correction_applied",
+                            message=(
+                                f"Reassigned {len(moved)} file(s) from {src_id} to {dst_id} "
+                                f"(prior correction)"
+                            ),
+                        ))
 
         # Compute metrics
         total_files = len(source_modules)
@@ -118,6 +163,57 @@ class AllocateStage:
             duration_ms=duration_ms,
             version="1.0",
         )
+
+
+def _allocate_per_file(
+    modules: list[ModuleRecord], capabilities: list[InferredCapability]
+) -> list[ComponentAllocation]:
+    """One component per substantive file for small scoped contexts.
+
+    Files with classes or public functions become their own component.
+    ``__init__.py`` and helper-only files are grouped with the nearest
+    sibling or placed in an Infrastructure component.
+    """
+    components: list[ComponentAllocation] = []
+    infra_files: list[Path] = []
+    cap_by_stem: dict[str, str] = {}
+
+    # Build a stem → capability_id map for linking
+    for cap in capabilities:
+        slug = "_".join(cap.name.lower().split())
+        cap_by_stem[slug] = cap.id
+        for word in cap.name.lower().split():
+            cap_by_stem[word] = cap.id
+
+    comp_counter = 0
+    for mod in modules:
+        stem = mod.path.stem
+        # __init__.py and trivial helpers → infra bucket
+        if stem == "__init__" or (not mod.classes and not [f for f in mod.functions if not f.name.startswith("_")]):
+            infra_files.append(mod.path)
+            continue
+
+        comp_counter += 1
+        cap_id = cap_by_stem.get(stem.lower().lstrip("_"), "")
+        components.append(ComponentAllocation(
+            id=f"COMP-{comp_counter}",
+            name=stem.lstrip("_").replace("_", " ").title(),
+            capability_id=cap_id,
+            files=[mod.path],
+            layer=_infer_layer([mod.path]),
+        ))
+
+    # Attach infra files to an Infrastructure component if any
+    if infra_files:
+        comp_counter += 1
+        components.append(ComponentAllocation(
+            id=f"COMP-{comp_counter}",
+            name="Infrastructure",
+            files=infra_files,
+            layer="infra",
+        ))
+
+    return components
 
 
 def _seed_from_capabilities(

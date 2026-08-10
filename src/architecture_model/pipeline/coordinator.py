@@ -86,6 +86,8 @@ class PipelineCoordinator:
         # Inject learning data into context
         if self._learning and not ctx.prior_corrections:
             ctx.prior_corrections = self._learning.corrections_as_evidence()
+        if self._learning and not ctx.learning_store:
+            ctx.learning_store = self._learning
         if self._learning and not ctx.calibration:
             # Load calibration for all modules
             for stage_name in self._stages:

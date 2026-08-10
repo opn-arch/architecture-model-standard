@@ -58,3 +58,34 @@ def func_{i}_c(): pass
         result = coord.run_recursive(ctx, max_depth=0, leaf_threshold=0)
         # max_depth=0 means no recursion into subsystems
         assert result["subsystems"] == {}
+
+    def test_scoped_context_produces_multiple_components(self, tmp_path):
+        """A scoped context with 6 files should produce >1 component, not collapse to 1."""
+        files = {}
+        for name in ("parser", "validator", "slicer", "differ", "merger", "coverage"):
+            path = tmp_path / f"{name}.py"
+            path.write_text(f"class {name.title()}:\n    def run(self): pass\n")
+            files[name] = path
+
+        scope_files = [tmp_path / f"{n}.py" for n in files]
+        ctx = PipelineContext(
+            repo_path=tmp_path,
+            output_dir=tmp_path / ".architecture",
+            scope="COMP-CORE",
+            scope_files=scope_files,
+        )
+
+        obs = ObserveStage()
+        ctx.cache["observe"] = obs.run(ctx)
+        inf = InferStage()
+        ctx.cache["infer"] = inf.run(ctx)
+        alloc = AllocateStage()
+        result = alloc.run(ctx)
+
+        components = result.output.components
+        # Each file has a class → should get its own component
+        assert len(components) >= 4, (
+            f"Expected >=4 components for 6 scoped files, got {len(components)}: "
+            f"{[c.name for c in components]}"
+        )
+        assert result.output.file_coverage == 100.0

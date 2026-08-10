@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Generic, Protocol, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from .learning import LearningStore
 
 T = TypeVar("T")
 
@@ -125,6 +128,7 @@ class PipelineContext:
     config: dict[str, Any] = field(default_factory=dict)
     cache: dict[str, StageResult] = field(default_factory=dict)
     prior_corrections: list[Evidence] = field(default_factory=list)
+    learning_store: LearningStore | None = field(default=None, repr=False)
     calibration: dict[str, Any] = field(default_factory=dict)
 
     def has(self, stage_name: str) -> bool:

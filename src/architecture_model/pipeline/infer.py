@@ -26,6 +26,7 @@ from .protocol import (
     StageResult,
     Uncertainty,
 )
+from .corrections import get_corrections_for_stage
 
 
 class InferStage:
@@ -61,7 +62,8 @@ class InferStage:
             actors.extend(route_actors)
 
         # --- Strategy 2: Domain modules → capabilities ---
-        domain_caps = _infer_from_domain_modules(inventory.modules, capabilities)
+        is_scoped = bool(ctx.scope_files)
+        domain_caps = _infer_from_domain_modules(inventory.modules, capabilities, scoped=is_scoped)
         for cap in domain_caps:
             cap_counter += 1
             cap.id = f"CAP-{cap_counter}"
@@ -96,6 +98,22 @@ class InferStage:
             actors=actors,
             behaviors=behaviors,
         )
+
+        # --- Apply prior corrections ---
+        for correction in get_corrections_for_stage(ctx, "infer"):
+            if correction.correction_type == "rename" and correction.entity_id.startswith("CAP-"):
+                for cap in result.capabilities:
+                    if cap.id == correction.entity_id:
+                        old_name = correction.before.get("name")
+                        new_name = correction.after.get("name")
+                        if new_name and (old_name is None or cap.name == old_name):
+                            cap.name = new_name
+                            diagnostics.append(Diagnostic(
+                                severity="info",
+                                code="correction_applied",
+                                message=f"Renamed {cap.id} to '{new_name}' (prior correction)",
+                            ))
+                        break
 
         # Quality
         total_modules = len(inventory.modules)
@@ -194,11 +212,21 @@ def _name_from_prefix(prefix: str) -> str:
 
 
 def _infer_from_domain_modules(
-    modules: list[ModuleRecord], existing: list[InferredCapability]
+    modules: list[ModuleRecord], existing: list[InferredCapability],
+    *, scoped: bool = False,
 ) -> list[InferredCapability]:
-    """Infer capabilities from domain-named modules not yet covered by routes."""
+    """Infer capabilities from domain-named modules not yet covered by routes.
+
+    When *scoped* (recursive sub-pipeline), lower thresholds so each file with
+    any public API surface becomes a capability — subsystems are small and every
+    file is more likely to represent a distinct concern.
+    """
     existing_names = {c.name.lower() for c in existing}
     capabilities = []
+
+    # In scoped contexts, each meaningful file is a capability
+    min_funcs = 1 if scoped else 3
+    min_classes = 1 if scoped else 2
 
     # Look for modules with domain-rich classes/functions (not utils, not tests)
     for mod in modules:
@@ -208,9 +236,9 @@ def _infer_from_domain_modules(
         if name in ("utils", "helpers", "common", "base", "constants", "types", "config"):
             continue
 
-        # Module with multiple public functions/classes = potential capability
+        # Module with public functions/classes = potential capability
         public_funcs = [f for f in mod.functions if not f.name.startswith("_")]
-        if len(public_funcs) >= 3 or len(mod.classes) >= 2:
+        if len(public_funcs) >= min_funcs or len(mod.classes) >= min_classes:
             cap_name = name.lstrip("_").replace("_", " ").title()
             if cap_name.lower() not in existing_names:
                 capabilities.append(InferredCapability(
