@@ -246,6 +246,78 @@ class TestContractStage:
         assert len(targets) >= 1
 
 
+class TestRegenScoreStage:
+    def test_regen_score_stage_can_run(self, tmp_path):
+        """Returns True when model exists, False otherwise."""
+        from architecture_model.pipeline.regen_score import RegenScoreStage
+
+        stage = RegenScoreStage()
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        assert stage.can_run(ctx) is False
+
+        (tmp_path / ".architecture-model.yaml").write_text("meta:\n  project: x\n")
+        assert stage.can_run(ctx) is True
+
+    def test_regen_score_stage_no_model(self, tmp_path):
+        """Stage returns low score when no enriched data."""
+        from architecture_model.pipeline.regen_score import RegenScoreStage
+
+        model_yaml = """\
+meta:
+  project: test
+  schema_version: '1.3'
+entities:
+  components:
+    - id: COMP-1
+      name: Bare
+      status: ACTIVE
+relationships: []
+"""
+        (tmp_path / ".architecture-model.yaml").write_text(model_yaml)
+        stage = RegenScoreStage()
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        result = stage.run(ctx)
+        assert result.output.overall < 50
+        assert any(d.code == "REGEN_NOT_ENRICHED" for d in result.diagnostics)
+
+    def test_regen_score_stage_with_enrichment(self, tmp_path):
+        """Enriched component yields higher score."""
+        from architecture_model.pipeline.regen_score import RegenScoreStage
+
+        model_yaml = """\
+meta:
+  project: test
+  schema_version: '1.3'
+entities:
+  components:
+    - id: COMP-1
+      name: Test
+      status: ACTIVE
+      signatures:
+        - name: foo
+          params: ["x: int"]
+          returns: "int"
+          body_hint: "return x + 1"
+      test_contracts:
+        - test_file: test_foo.py
+          test_method: test_foo_works
+          assertion: "assert foo(1) == 2"
+      constants:
+        - name: MAX
+          value: "100"
+relationships: []
+"""
+        (tmp_path / ".architecture-model.yaml").write_text(model_yaml)
+        stage = RegenScoreStage()
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        result = stage.run(ctx)
+        assert result.output.overall > 0
+        assert result.output.grade in ("A", "B", "C", "D", "F")
+        assert "Test" in result.output.component_scores
+        # Should NOT have the not-enriched diagnostic
+        assert not any(d.code == "REGEN_NOT_ENRICHED" for d in result.diagnostics)
+
+
 class TestValidateStage:
     def test_validate_produces_score(self, tmp_path):
         _setup_project(tmp_path)

@@ -101,6 +101,12 @@ def main(argv: list[str] | None = None) -> int:
     p_author.add_argument("requirements", help="Path to requirements markdown file")
     p_author.add_argument("-o", "--output", default=".architecture-model.yaml", help="Output YAML path")
 
+    # --- regen-score ---
+    p_regen = subparsers.add_parser("regen-score", help="Show regen readiness score for enriched model")
+    p_regen.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
+    p_regen.add_argument("--component", help="Show detail for a specific component ID")
+    p_regen.add_argument("--verbose", action="store_true", help="Show per-function readiness")
+
     # --- pipeline ---
     p_pipeline = subparsers.add_parser("pipeline", help="Run modular extraction pipeline")
     p_pipeline.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
@@ -130,6 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         "visualize": _cmd_visualize,
         "docs": _cmd_docs,
         "author": _cmd_author,
+        "regen-score": _cmd_regen_score,
         "pipeline": _cmd_pipeline,
     }
     return handlers[args.command](args)
@@ -700,6 +707,88 @@ def _cmd_author(args) -> int:
     print(f"  Constraints: {len(model.entities.constraints)}")
     print(f"  Relationships: {len(model.relationships)}")
     return 0
+
+
+def _cmd_regen_score(args) -> int:
+    """Show regen readiness score for an enriched architecture model."""
+    from ..core.parser import load_model
+    from ..core.regen_readiness import compute_regen_readiness
+
+    root = Path(args.path).resolve()
+    model_path = root / ".architecture-model.yaml" if root.is_dir() else root
+    if not model_path.exists():
+        print(f"ERROR: No .architecture-model.yaml found in {root}")
+        return 1
+
+    model = load_model(model_path)
+    result = compute_regen_readiness(model)
+
+    # Single component detail
+    if args.component:
+        comp = next((c for c in result.components if c.id == args.component), None)
+        if not comp:
+            print(f"ERROR: Component '{args.component}' not found")
+            return 1
+        _print_component_verbose(comp)
+        return 0
+
+    # Verbose: all components with function detail
+    if args.verbose:
+        print(f"Regen Readiness: {result.overall:.0f}/100 ({result.grade})\n")
+        for comp in result.components:
+            _print_component_verbose(comp)
+            print()
+        return 0
+
+    # Default summary
+    print(f"Regen Readiness: {result.overall:.0f}/100 ({result.grade})\n")
+    if result.components:
+        print("Components:")
+        for comp in result.components:
+            sigs = len(comp.functions)
+            hints = sum(1 for f in comp.functions if f.has_body_hint)
+            contracts = comp.test_contract_count
+            blocker_str = f"  \u26a0 {len(comp.blockers)} blockers" if comp.blockers else ""
+            print(f"  {comp.id:<8s} {comp.name:<14s} {comp.score:3.0f}/100 {_grade(comp.score)}  [{sigs} sigs, {hints} hints, {contracts} contracts]{blocker_str}")
+    else:
+        print("No enriched components found.")
+
+    if result.blockers:
+        print(f"\nBlockers ({len(result.blockers)}):")
+        for b in result.blockers:
+            print(f"  \u26a0 {b}")
+
+    # Recommendation: find worst component
+    if result.components:
+        worst = min(result.components, key=lambda c: c.score)
+        if worst.score < 80:
+            print(f"\nRecommendation: Enrich {worst.id}: add body_hints and test contracts")
+
+    return 0
+
+
+def _print_component_verbose(comp) -> None:
+    """Print verbose detail for a single component."""
+    print(f"{comp.id} {comp.name} ({comp.score:.0f}/100 {_grade(comp.score)}):")
+    print(f"  body_hint_coverage: {comp.body_hint_coverage:.0f}%  trivial_ratio: {comp.body_hint_trivial_ratio:.0f}%")
+    print(f"  test_contracts: {comp.test_contract_count}  constant_coverage: {comp.constant_coverage:.0f}%  sig_coverage: {comp.signature_coverage:.0f}%")
+    if comp.functions:
+        print("  Functions:")
+        for fn in comp.functions:
+            tests_str = f"[{fn.called_in_tests} tests]"
+            print(f"    {fn.name:<20s} {fn.score:3.0f}  {fn.body_hint_quality:<8s} {tests_str}")
+
+
+def _grade(score: float) -> str:
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    elif score >= 60:
+        return "D"
+    return "F"
 
 
 def _cmd_pipeline(args) -> int:
