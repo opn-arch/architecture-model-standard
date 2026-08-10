@@ -232,18 +232,28 @@ Each system has its own complete, self-contained model. The top-level model refe
 
 ### Current Model Metrics
 
-| System | Score | Sigs | Consts | Test Contracts |
-|--------|-------|------|--------|----------------|
-| Core | 78/100 | 44 | 7 | 101 |
-| Manifest | 0/100* | 20 | 2 | 223 |
-| Config | 98/100 | 15 | 1 | 3 |
-| CLI | 98/100 | 4 | 0 | 0 |
-| Orchestration | 98/100 | 3 | 0 | 5 |
-| Extract | 94/100 | 1 | 0 | 0 |
-| Top-level | 98/100 | 7 | 1 | 7 |
-| **TOTAL** | | **94** | **11** | **339** |
+| Component | Validate | Regen Score | Sigs | Hints | Consts | Test Contracts |
+|-----------|:--------:|:-----------:|:----:|:-----:|:------:|:--------------:|
+| Core | 86/100 | 76/100 C | 85 | 85 | — | 131 |
+| Manifest | — | 74/100 C | 51 | 51 | — | 76 |
+| Pipeline | — | 73/100 C | 40 | 40 | — | 16 |
+| Orchestration | — | 70/100 C | 31 | 31 | — | 62 |
+| Authoring | — | 70/100 C | 2 | 2 | — | 11 |
+| Profiles | — | 70/100 C | 3 | 3 | — | 0 |
+| Regen Readiness | — | 68/100 D | 3 | 3 | — | 9 |
+| Monitoring | — | 66/100 D | 5 | 5 | — | 5 |
+| Persistence | — | 66/100 D | 3 | 3 | — | 8 |
+| Extract | — | 65/100 D | 1 | 1 | — | 0 |
+| Utils | — | 64/100 D | 4 | 4 | — | 7 |
+| Export | — | 62/100 D | 15 | 15 | — | 4 |
+| Config | — | 60/100 D | 15 | 15 | — | 1 |
+| Docs | — | 58/100 F | 15 | 15 | — | 4 |
+| CLI | — | 52/100 F | 1 | 1 | — | 1 |
+| Spec | — | 40/100 F | 0 | 0 | — | 0 |
+| **TOTAL** | **86/100** | **70/100 C** | **274** | **274** | **156** | **335** |
 
-\* Manifest score low due to REGEN_UNREADY checks (test contracts reference constants not yet extracted). Structurally valid.
+Previous (2026-07-07): 94 sigs, 11 constants, 339 contracts, no regen scoring.
+Current (2026-08-10): 274 sigs (+191%), 156 constants, 335 contracts, Pipeline module covered.
 
 ## E2E Benchmark Results (2026-07-07)
 
