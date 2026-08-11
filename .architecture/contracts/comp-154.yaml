@@ -1,6 +1,0 @@
-component: COMP-154
-contracts:
-- test_file: tests/test_req_coverage.py
-  assertions: 0
-- test_file: tests/test_coverage.py
-  assertions: 0

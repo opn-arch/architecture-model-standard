@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T21:46:24",
+  "generated_at": "2026-08-10T22:16:01",
   "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
   "metrics": {
     "total_python_files": 843
@@ -945,7 +945,7 @@
             "list[RouteInfo]"
           ],
           "status": "active",
-          "line_count": 400
+          "line_count": 412
         },
         {
           "id": "S8.5",
@@ -1494,7 +1494,7 @@
             "tuple[ArchitectureModel, dict[str, list[Behavior]]]"
           ],
           "status": "active",
-          "line_count": 74
+          "line_count": 93
         },
         {
           "id": "S10.7",
@@ -8034,7 +8034,7 @@
         "dataclasses",
         "pathlib"
       ],
-      "line_count": 400,
+      "line_count": 412,
       "status": "active",
       "classes": [
         {
@@ -11492,14 +11492,16 @@
           "name": "compact_for_storage",
           "signature": "compact_for_storage(model: ArchitectureModel) -> tuple[ArchitectureModel, dict[str, list[Behavior]]]",
           "calls": [
+            "set",
             "items",
             "dc_replace",
+            "_rel_type_str",
             "get",
             "append",
             "startswith",
             "Behavior",
             "values",
-            "_rel_type_str",
+            "add",
             "setdefault",
             "join"
           ],
@@ -11511,7 +11513,7 @@
         "dataclasses",
         "architecture_model.core.types"
       ],
-      "line_count": 74,
+      "line_count": 93,
       "status": "active",
       "classes": [],
       "exports": [],

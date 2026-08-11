@@ -1,6 +1,0 @@
-component: COMP-152
-contracts:
-- test_file: tests/test_representativeness_match.py
-  assertions: 0
-- test_file: tests/test_representativeness.py
-  assertions: 0

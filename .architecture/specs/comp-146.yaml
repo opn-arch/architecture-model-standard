@@ -1,9 +1,0 @@
-component: COMP-146
-interfaces:
-- id: IF-7
-  name: COMP-146 Library API
-  type: library
-  methods:
-  - 'DerivedRelationship: class DerivedRelationship'
-  - 'RelateResult: class RelateResult'
-  - 'RelateStage: class RelateStage'

@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-10T21:46:35.071659+00:00",
+  "generated_at": "2026-08-10T22:14:04.582429+00:00",
   "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
   "metrics": {
     "py_files": 5,
-    "total_lines": 2464,
+    "total_lines": 2476,
     "functions": 9,
     "classes": 1,
     "constants": 0
@@ -438,7 +438,7 @@
         "dataclasses",
         "pathlib"
       ],
-      "line_count": 400,
+      "line_count": 412,
       "status": "active",
       "classes": [
         {

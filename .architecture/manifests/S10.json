@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-08-10T21:46:35.207132+00:00",
+  "generated_at": "2026-08-10T22:14:04.725398+00:00",
   "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
   "metrics": {
     "py_files": 15,
-    "total_lines": 3200,
+    "total_lines": 3219,
     "functions": 31,
     "classes": 6,
     "constants": 0
@@ -737,14 +737,16 @@
           "name": "compact_for_storage",
           "signature": "compact_for_storage(model: ArchitectureModel) -> tuple[ArchitectureModel, dict[str, list[Behavior]]]",
           "calls": [
+            "set",
             "items",
             "dc_replace",
+            "_rel_type_str",
             "get",
             "append",
             "startswith",
             "Behavior",
             "values",
-            "_rel_type_str",
+            "add",
             "setdefault",
             "join"
           ],
@@ -756,7 +758,7 @@
         "dataclasses",
         "architecture_model.core.types"
       ],
-      "line_count": 74,
+      "line_count": 93,
       "status": "active",
       "classes": [],
       "exports": [],

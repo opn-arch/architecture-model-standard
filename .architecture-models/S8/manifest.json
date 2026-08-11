@@ -1,0 +1,654 @@
+{
+  "block_id": "S8",
+  "block_name": "Extract",
+  "parent_model": ".architecture-model.yaml",
+  "component_id": "COMP-EXTRACT",
+  "manifest": {
+    "generated_at": "2026-08-10T22:16:00.063707+00:00",
+    "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+    "metrics": {
+      "py_files": 5,
+      "total_lines": 2476,
+      "functions": 9,
+      "classes": 1,
+      "constants": 0
+    },
+    "functional_blocks": {},
+    "modules": [
+      {
+        "file": "src/architecture_model/extract/constraint_detector.py",
+        "name": "Constraint Detector",
+        "docstring": "Parse project configuration files to derive technical and organizational constraints.\n\nScans pyproject.toml, Dockerfile, .env templates, CI config, and setup.cfg to\nautomatically detect constraints such as Python version requirements, framework\nchoices, runtime images, exposed ports, and CI/CD platform.",
+        "functions": [
+          {
+            "name": "detect_constraints",
+            "signature": "detect_constraints(project_root: Path) -> list[Constraint]",
+            "calls": [
+              "_parse_pyproject",
+              "_parse_dockerfile",
+              "_parse_env_template",
+              "_parse_ci_config",
+              "_parse_setup_cfg"
+            ],
+            "docstring": "Scan project configuration files for derivable constraints.\n\nArgs:\n    project_root: Root directory of the project.\n\nReturns:\n    List of Constraint entities derived from config files."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "re",
+          "tomllib",
+          "pathlib",
+          "architecture_model.core.types"
+        ],
+        "line_count": 398,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "tomllib",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "Constraint",
+              "ConstraintType",
+              "Status"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/extract/from_artifacts.py",
+        "name": "Extract Architecture Model from Tier 1 markdown artifacts",
+        "docstring": "Extract Architecture Model from Tier 1 markdown artifacts.\n\nParses the 5 Tier 1 artifacts:\n  - functional-architecture.md \u2192 capabilities (F-blocks), actor hints\n  - use-cases.md \u2192 actors, behaviors (UCs), relationships\n  - logical-architecture.md \u2192 layers, components\n  - requirements-analysis.md \u2192 constraints\n  - icd.md \u2192 interfaces\n\nProduces an ArchitectureModel instance (and optionally writes YAML).",
+        "functions": [
+          {
+            "name": "extract_from_artifacts",
+            "signature": "extract_from_artifacts(artifact_dir: str | Path, project: str, system: str) -> ArchitectureModel",
+            "calls": [
+              "Path",
+              "_extract_actors",
+              "_extract_capabilities",
+              "_extract_behaviors",
+              "_extract_interfaces",
+              "_extract_constraints",
+              "_extract_layers",
+              "_extract_components",
+              "extend",
+              "_extract_interface_relationships",
+              "set",
+              "update",
+              "ModelMeta",
+              "ArchitectureModel",
+              "exists",
+              "_extract_uc_relationships",
+              "_extract_layer_relationships",
+              "_extract_capability_relationships",
+              "_extract_component_capability_relationships",
+              "_guess_project",
+              "read_text",
+              "append",
+              "add",
+              "items",
+              "isoformat",
+              "Entities",
+              "now"
+            ],
+            "docstring": "Extract a complete architecture model from Tier 1 artifact markdown files.\n\nArgs:\n    artifact_dir: Directory containing the stage2 artifact markdown files.\n    project: Project name (used in meta).\n    system: System identifier.\n\nReturns:\n    Populated ArchitectureModel."
+          },
+          {
+            "name": "main",
+            "signature": "main()",
+            "calls": [
+              "ArgumentParser",
+              "add_argument",
+              "parse_args",
+              "Path",
+              "print",
+              "extract_from_artifacts",
+              "save_model",
+              "len"
+            ],
+            "docstring": "CLI: extract architecture model from artifacts."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "re",
+          "datetime",
+          "pathlib",
+          "typing",
+          "architecture_model.core.types",
+          "architecture_model.core.parser",
+          "table_parser",
+          "argparse"
+        ],
+        "line_count": 837,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "datetime",
+            "symbols": [
+              "datetime",
+              "timezone"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Optional"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "Actor",
+              "ActorType",
+              "ArchitectureModel",
+              "Behavior",
+              "Capability",
+              "Component",
+              "Constraint",
+              "ConstraintType",
+              "Entities",
+              "Interface",
+              "InterfaceType",
+              "Layer",
+              "ModelMeta",
+              "Priority",
+              "Relationship",
+              "RelationType",
+              "Status",
+              "Strength"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.parser",
+            "symbols": [
+              "save_model"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "table_parser",
+            "symbols": [
+              "extract_sections",
+              "find_table_after_heading",
+              "parse_tables"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "argparse",
+            "symbols": [],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/extract/from_code.py",
+        "name": "Extract an ArchitectureModel directly from source code analysis",
+        "docstring": "Extract an ArchitectureModel directly from source code analysis.\n\nThis is the \"backward pass\" \u2014 code \u2192 model \u2014 bypassing the stage2 markdown\nartifact requirement. Derives entities and relationships from AST analysis,\nimport graphs, and project configuration files.",
+        "functions": [
+          {
+            "name": "extract_from_code",
+            "signature": "extract_from_code(project_root: str | Path, config: ProjectConfig | None, manifest: dict | None) -> ArchitectureModel",
+            "calls": [
+              "monitored",
+              "resolve",
+              "_derive_capabilities",
+              "detect_routes",
+              "_derive_actors",
+              "_derive_route_behaviors",
+              "_detect_service_behaviors",
+              "_derive_components",
+              "_derive_interfaces",
+              "_derive_layers",
+              "detect_constraints",
+              "Entities",
+              "_derive_relationships",
+              "ModelMeta",
+              "ArchitectureModel",
+              "get_config",
+              "to_dict",
+              "_get_web_layer_dirs",
+              "Path",
+              "strftime",
+              "generate_manifest",
+              "len",
+              "now"
+            ],
+            "docstring": "Extract an architecture model directly from source code analysis.\n\nThis bypasses the stage2 markdown artifact requirement by deriving\nentities and relationships from AST analysis, import graphs, and\nproject configuration files.\n\nArgs:\n    project_root: Root directory of the project to analyze.\n    config: Optional pre-loaded ProjectConfig. If None, auto-discovered.\n    manifest: Optional pre-generated manifest dict. If None, generated fresh.\n\nReturns:\n    Complete ArchitectureModel derived from code analysis."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "ast",
+          "re",
+          "datetime",
+          "pathlib",
+          "typing",
+          "config.loader",
+          "config.schema",
+          "core.types",
+          "constraint_detector",
+          "route_detector",
+          "architecture_model.monitoring",
+          "manifest"
+        ],
+        "line_count": 652,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [
+          {
+            "name": "extract_from_code",
+            "decorators": [
+              "monitored"
+            ],
+            "is_method": false,
+            "class_name": null
+          }
+        ],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "ast",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "datetime",
+            "symbols": [
+              "datetime",
+              "timezone"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "config.loader",
+            "symbols": [
+              "get_config"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "config.schema",
+            "symbols": [
+              "ProjectConfig"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "core.types",
+            "symbols": [
+              "Actor",
+              "ActorType",
+              "ArchitectureModel",
+              "Behavior",
+              "Capability",
+              "Component",
+              "Constraint",
+              "ConstraintType",
+              "Entities",
+              "Interface",
+              "InterfaceType",
+              "Layer",
+              "ModelMeta",
+              "Priority",
+              "Relationship",
+              "RelationType",
+              "Status",
+              "Strength"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "constraint_detector",
+            "symbols": [
+              "detect_constraints"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "route_detector",
+            "symbols": [
+              "RouteInfo",
+              "detect_routes"
+            ],
+            "is_relative": true
+          },
+          {
+            "module": "architecture_model.monitoring",
+            "symbols": [
+              "monitored"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "manifest",
+            "symbols": [
+              "generate_manifest"
+            ],
+            "is_relative": true
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/extract/route_detector.py",
+        "name": "Route Detector",
+        "docstring": "AST-based route handler detection for Python web frameworks.\n\nScans Python source files and extracts decorated route handlers for\nFastAPI, Flask, and Django projects.",
+        "functions": [
+          {
+            "name": "detect_routes",
+            "signature": "detect_routes(project_root: Path, web_layer_dirs: list[str] | None) -> list[RouteInfo]",
+            "calls": [
+              "Path",
+              "_collect_python_files",
+              "_parse_file",
+              "str",
+              "extend",
+              "relative_to",
+              "_extract_fastapi_routes",
+              "_extract_flask_routes",
+              "_extract_django_routes"
+            ],
+            "docstring": "Scan Python files for route handler declarations.\n\nArgs:\n    project_root: Root directory of the project.\n    web_layer_dirs: Optional list of directories to restrict scanning\n                   (e.g., [\"app/api\"]). If None, scans all .py files.\n\nReturns:\n    List of RouteInfo for each detected route handler."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "ast",
+          "sys",
+          "dataclasses",
+          "pathlib"
+        ],
+        "line_count": 412,
+        "status": "active",
+        "classes": [
+          {
+            "name": "RouteInfo",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "ast",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "sys",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/extract/table_parser.py",
+        "name": "Markdown table parser \u2014 extracts structured data from pipe",
+        "docstring": "Markdown table parser \u2014 extracts structured data from pipe-delimited tables.\n\nUsed by the artifact extractors to pull entity data from Tier 1 markdown docs.",
+        "functions": [
+          {
+            "name": "parse_tables",
+            "signature": "parse_tables(markdown: str) -> list[list[dict[str, str]]]",
+            "calls": [
+              "split",
+              "len",
+              "strip",
+              "match",
+              "_parse_row",
+              "append",
+              "enumerate",
+              "_normalize_header"
+            ],
+            "docstring": "Parse all markdown tables in the text.\n\nReturns a list of tables, where each table is a list of row-dicts\nkeyed by normalized header names."
+          },
+          {
+            "name": "find_table_after_heading",
+            "signature": "find_table_after_heading(markdown: str, heading_pattern: str) -> list[dict[str, str]]",
+            "calls": [
+              "split",
+              "compile",
+              "len",
+              "strip",
+              "startswith",
+              "sub",
+              "search",
+              "match",
+              "_parse_row",
+              "enumerate",
+              "append",
+              "_normalize_header"
+            ],
+            "docstring": "Find the first table that appears after a heading matching the pattern.\n\nArgs:\n    markdown: Full markdown text\n    heading_pattern: Regex pattern to match against heading text (case-insensitive)\n\nReturns:\n    List of row dicts, or empty list if no matching table found."
+          },
+          {
+            "name": "extract_sections",
+            "signature": "extract_sections(markdown: str, level: int) -> dict[str, str]",
+            "calls": [
+              "split",
+              "strip",
+              "startswith",
+              "sub",
+              "append",
+              "join"
+            ],
+            "docstring": "Split markdown into sections by heading level.\n\nReturns dict mapping heading text -> section content (including sub-headings)."
+          },
+          {
+            "name": "extract_list_items",
+            "signature": "extract_list_items(text: str) -> list[str]",
+            "calls": [
+              "split",
+              "strip",
+              "match",
+              "append",
+              "group"
+            ],
+            "docstring": "Extract bullet/numbered list items from text."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "re",
+          "typing"
+        ],
+        "line_count": 177,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      }
+    ],
+    "interfaces": [
+      {
+        "source": "src/architecture_model/extract/from_artifacts.py",
+        "target": "src/architecture_model/extract/table_parser.py",
+        "import_path": "table_parser"
+      },
+      {
+        "source": "src/architecture_model/extract/from_code.py",
+        "target": "src/architecture_model/extract/constraint_detector.py",
+        "import_path": "constraint_detector"
+      },
+      {
+        "source": "src/architecture_model/extract/from_code.py",
+        "target": "src/architecture_model/extract/route_detector.py",
+        "import_path": "route_detector"
+      }
+    ]
+  },
+  "children": {},
+  "block_dependencies": [
+    "S3",
+    "S4",
+    "S9"
+  ],
+  "intra_chains": [
+    {
+      "trigger": "From.extract_from_code",
+      "steps": [
+        "?.Path",
+        "?.resolve",
+        "?.get_config",
+        "?.generate_manifest",
+        "?.to_dict",
+        "?._derive_capabilities",
+        "?._get_web_layer_dirs",
+        "RouteDetector.detect_routes",
+        "?._derive_actors",
+        "?._derive_route_behaviors",
+        "?._detect_service_behaviors",
+        "?._derive_components",
+        "?._derive_interfaces",
+        "?._derive_layers",
+        "From.detect_constraints",
+        "?.Entities",
+        "?._derive_relationships",
+        "?.datetime.now",
+        "?.strftime",
+        "?.ModelMeta",
+        "?.ArchitectureModel"
+      ],
+      "components_involved": [
+        "From",
+        "RouteDetector"
+      ]
+    }
+  ]
+}

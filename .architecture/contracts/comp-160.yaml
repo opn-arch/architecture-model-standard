@@ -1,6 +1,0 @@
-component: COMP-160
-contracts:
-- test_file: tests/test_source_block_quality.py
-  assertions: 0
-- test_file: tests/test_source_block_assign.py
-  assertions: 0

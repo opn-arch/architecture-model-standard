@@ -1,4 +1,0 @@
-component: COMP-165
-contracts:
-- test_file: tests/test_module_grouping.py
-  assertions: 0

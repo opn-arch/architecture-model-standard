@@ -1,9 +1,0 @@
-component: COMP-141
-interfaces:
-- id: IF-6
-  name: COMP-141 Library API
-  type: library
-  methods:
-  - 'AllocateStage: class AllocateStage'
-  - 'AllocationResult: class AllocationResult'
-  - 'ComponentAllocation: class ComponentAllocation'

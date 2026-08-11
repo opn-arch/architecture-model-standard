@@ -1,4 +1,0 @@
-component: COMP-143
-contracts:
-- test_file: tests/test_regen_readiness.py
-  assertions: 0

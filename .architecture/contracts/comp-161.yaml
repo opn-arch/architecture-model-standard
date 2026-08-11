@@ -1,4 +1,0 @@
-component: COMP-161
-contracts:
-- test_file: tests/test_merger.py
-  assertions: 0

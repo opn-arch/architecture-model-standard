@@ -1,6 +1,0 @@
-component: COMP-178
-interfaces:
-- id: IF-1
-  name: main CLI
-  type: cli
-  methods: []

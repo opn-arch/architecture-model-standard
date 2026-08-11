@@ -1,6 +1,0 @@
-component: COMP-172
-contracts:
-- test_file: tests/test_decompose.py
-  assertions: 0
-- test_file: scripts/test_decomposed_round_trip.py
-  assertions: 0

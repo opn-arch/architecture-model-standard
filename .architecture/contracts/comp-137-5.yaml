@@ -1,4 +1,0 @@
-component: COMP-137-5
-contracts:
-- test_file: tests/test_development_gate.py
-  assertions: 0

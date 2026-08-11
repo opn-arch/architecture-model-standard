@@ -1,8 +1,0 @@
-component: COMP-140
-contracts:
-- test_file: tests/test_interface_contracts.py
-  assertions: 0
-- test_file: tests/test_observability_contract.py
-  assertions: 0
-- test_file: tests/test_pattern_contract_fields.py
-  assertions: 0

@@ -1,6 +1,0 @@
-component: COMP-159
-contracts:
-- test_file: tests/test_slicer.py
-  assertions: 0
-- test_file: tests/test_slicer_sub_models.py
-  assertions: 0

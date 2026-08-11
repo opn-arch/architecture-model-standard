@@ -1,6 +1,0 @@
-component: COMP-157
-contracts:
-- test_file: tests/test_pipeline_corrections.py
-  assertions: 0
-- test_file: tests/test_corrections.py
-  assertions: 0

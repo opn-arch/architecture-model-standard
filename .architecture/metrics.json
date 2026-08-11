@@ -1,5 +1,20 @@
 {
-  "generated_at": "2026-08-10T21:46:24.495061+00:00",
+  "generated_at": "2026-08-10T22:16:03.450241+00:00",
+  "representativeness": {
+    "file_coverage": 100.0,
+    "relationship_accuracy": 100.0,
+    "boundary_coherence": 49.38560589070793,
+    "behavioral_coverage": 100.0,
+    "overall": 87.34640147267697,
+    "uncovered_files": [],
+    "unverified_relationships": [],
+    "low_coherence_components": [
+      "Authoring",
+      "Manifest",
+      "Extract"
+    ],
+    "uncaptured_behaviors": []
+  },
   "manifest_metrics": {
     "total_python_files": 843
   }

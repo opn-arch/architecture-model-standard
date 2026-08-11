@@ -1,8 +1,0 @@
-component: COMP-156
-contracts:
-- test_file: tests/test_parser.py
-  assertions: 0
-- test_file: tests/test_authoring_parser.py
-  assertions: 0
-- test_file: tests/test_parser_tolerance.py
-  assertions: 0

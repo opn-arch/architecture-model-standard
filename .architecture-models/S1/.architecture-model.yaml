@@ -2,7 +2,7 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Authoring
   system: Authoring
-  generated_at: '2026-08-10T21:46:22.714335+00:00'
+  generated_at: '2026-08-10T22:13:51.810713+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-AUTHORING
@@ -23,75 +23,6 @@ entities:
     - src/architecture_model/authoring/parser.py
     - src/architecture_model/authoring/gate.py
     kind: library
-    signatures:
-    - name: parse_requirements_doc
-      params:
-      - 'text: str'
-      returns: ArchitectureModel
-      body_hint: 'sections = _split_sections(text); actors: list[Actor] = []; capabilities: list[Capability] = []; constraints:
-        list[Constraint] = []; relationships: list[Relationship] = []; if ''actors'' in sections: ...; if ''capabilities''
-        in sections: ...; if ''constraints'' in sections: ...; return ArchitectureModel(meta=ModelMeta(project=''authored'',
-        schema_version=''1.3''), entities=Entities(actors=actors, capabilities=capabilities, constraints=constraints), relationships=relationships)'
-    - name: check_development_gate
-      params:
-      - 'model: ArchitectureModel'
-      - 'manifest: Manifest'
-      - 'phase: str | None'
-      returns: GateResult
-      body_hint: 'if phase is None: ...; cap_ids = {c.id for c in model.entities.capabilities}; realized_caps = set(); for
-        rel in model.relationships: ...; capability_realization = len(realized_caps) / len(cap_ids) * 100 if cap_ids else
-        1...; con_ids = {c.id for c in model.entities.constraints}; allocated_cons = set(); for rel in model.relationships:
-        ...; constraint_allocation = len(allocated_cons) / len(con_ids) * 100 if con_ids else ...; manifest_files = {m.file
-        for m in manifest.modules}; component_files: set[str] = set(); for comp in model.entities.components: ...; file_coverage
-        = len(manifest_files & component_files) / len(manifest_file...; overall = capability_realization * 0.4 + constraint_allocation
-        * 0....; issues: list[str] = []; if phase == ''concept'': ...; return GateResult(capability_realization=capability_realization,
-        constraint_allocation=constraint_allocation, file_coverage=file_coverage, overall=overall, phase=phase, phase_requirements_met=phase_requirements_met,
-        issues=issues)'
-    test_contracts:
-    - test_file: test_parser.py
-      test_method: test_load_returns_architecture_model
-      assertion: model isinstance ArchitectureModel
-      contract_type: type_check
-    - test_file: test_parser.py
-      test_method: test_meta_has_schema_version
-      assertion: model.meta.schema_version == '0.1.0'
-      contract_type: value_equality
-    - test_file: test_parser.py
-      test_method: test_empty_file_raises
-      assertion: raises ValueError
-      contract_type: raises
-    - test_file: test_parser.py
-      test_method: test_missing_file_raises
-      assertion: raises FileNotFoundError
-      contract_type: raises
-    - test_file: test_parser.py
-      test_method: test_malformed_yaml_raises
-      assertion: raises Exception
-      contract_type: raises
-    - test_file: test_parser.py
-      test_method: test_round_trip_preserves_entity_count
-      assertion: reloaded.entity_count == model.entity_count
-      contract_type: value_equality
-    - test_file: test_parser.py
-      test_method: test_round_trip_preserves_relationship_count
-      assertion: reloaded.relationship_count == model.relationship_count
-      contract_type: value_equality
-    - test_file: test_parser.py
-      test_method: test_round_trip_preserves_meta
-      assertion: reloaded.meta.project == model.meta.project
-      contract_type: value_equality
-    - test_file: test_parser.py
-      test_method: test_round_trip_preserves_actor_ids
-      assertion: original_ids == reloaded_ids
-      contract_type: value_equality
-    - test_file: test_parser.py
-      test_method: test_real_model_passes_schema
-      assertion: len(real_errors) == 0
-      contract_type: value_equality
-    - test_file: test_parser.py
-      test_method: test_minimal_valid_structure
-      assertion: real_errors isinstance list
-      contract_type: type_check
 relationships:
 - type: realizes
   from: COMP-AUTHORING

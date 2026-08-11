@@ -1,0 +1,582 @@
+{
+  "block_id": "S0",
+  "block_name": "Shared",
+  "parent_model": ".architecture-model.yaml",
+  "component_id": "COMP-SHARED",
+  "manifest": {
+    "generated_at": "2026-08-10T22:16:03.238937+00:00",
+    "project_root": "/Users/baigm2/Documents/Projects/architecture-model-standard",
+    "metrics": {
+      "py_files": 5,
+      "total_lines": 1121,
+      "functions": 18,
+      "classes": 6,
+      "constants": 0
+    },
+    "functional_blocks": {},
+    "modules": [
+      {
+        "file": "src/architecture_model/authoring/gate.py",
+        "name": "Gate",
+        "docstring": "Development gate: check if code reality tracks toward authored architecture intent.",
+        "functions": [
+          {
+            "name": "check_development_gate",
+            "signature": "check_development_gate(model: ArchitectureModel, manifest: Manifest, phase: str | None) -> GateResult",
+            "calls": [
+              "set",
+              "GateResult",
+              "update",
+              "add",
+              "append",
+              "len"
+            ],
+            "docstring": "Check if code reality is tracking toward authored architecture intent.\n\nArgs:\n    model: The architecture model to check.\n    manifest: The reality manifest from code scanning.\n    phase: Override lifecycle phase (\"concept\" or \"production\").\n           If None, defaults to \"production\"."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "dataclasses",
+          "architecture_model.core.types",
+          "architecture_model.manifest.types"
+        ],
+        "line_count": 93,
+        "status": "active",
+        "classes": [
+          {
+            "name": "GateResult",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "ArchitectureModel",
+              "RelationType"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.manifest.types",
+            "symbols": [
+              "Manifest"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/authoring/parser.py",
+        "name": "Parse markdown requirements documents into ArchitectureModel instances",
+        "docstring": "Parse markdown requirements documents into ArchitectureModel instances.",
+        "functions": [
+          {
+            "name": "parse_requirements_doc",
+            "signature": "parse_requirements_doc(text: str) -> ArchitectureModel",
+            "calls": [
+              "_split_sections",
+              "ArchitectureModel",
+              "_parse_actors",
+              "_parse_capabilities",
+              "extend",
+              "_parse_constraints",
+              "ModelMeta",
+              "Entities"
+            ],
+            "docstring": "Parse a markdown requirements document into an ArchitectureModel.\n\nSupported sections: # Actors, # Capabilities, # Constraints (case-insensitive)."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "re",
+          "architecture_model.core.types"
+        ],
+        "line_count": 248,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "re",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.core.types",
+            "symbols": [
+              "Actor",
+              "ActorType",
+              "ArchitectureModel",
+              "Capability",
+              "Constraint",
+              "ConstraintType",
+              "Entities",
+              "ModelMeta",
+              "Relationship",
+              "RelationType",
+              "Status"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/export/flatfiles.py",
+        "name": "Flatfiles",
+        "docstring": null,
+        "functions": [
+          {
+            "name": "derive_prefix",
+            "signature": "derive_prefix(repo_name: str) -> str",
+            "calls": [
+              "get",
+              "replace",
+              "lower"
+            ],
+            "docstring": "Derive a short prefix from repo name.\n\nRules:\n- 'architecture-model-standard' -> 'model-std'\n- 'opencode-arch' -> 'opencode'\n- anything else: use as-is, lowercased, replacing _ with -"
+          },
+          {
+            "name": "build_flat_export",
+            "signature": "build_flat_export(repo_path: Path, prefix: str | None, include_manifests: bool, include_module_specs: bool) -> ExportResult",
+            "calls": [
+              "Path",
+              "generate_readme",
+              "generate_schema_reference",
+              "generate_api_reference",
+              "exists",
+              "concat_submodels",
+              "concat_behavior_submodels",
+              "concat_component_models",
+              "concat_behavior_specs",
+              "concat_docs",
+              "concat_diagrams",
+              "concat_skills",
+              "_gather_stats",
+              "generate_custom_instructions",
+              "sum",
+              "ExportResult",
+              "derive_prefix",
+              "read_text",
+              "manifests_to_markdown",
+              "concat_module_specs",
+              "len",
+              "encode",
+              "values"
+            ],
+            "docstring": "Build all flat files for a repo.\n\nScans for existing artifacts and only includes files that are present.\nEach output file is named {prefix}--{category}.{ext}"
+          },
+          {
+            "name": "concat_submodels",
+            "signature": "concat_submodels(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "exists",
+              "iterdir",
+              "_concat_yaml_files",
+              "is_dir",
+              "append"
+            ],
+            "docstring": "Concatenate F-block and named sub-model YAMLs."
+          },
+          {
+            "name": "concat_behavior_submodels",
+            "signature": "concat_behavior_submodels(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "exists",
+              "glob",
+              "_concat_yaml_files"
+            ],
+            "docstring": "Concatenate behavior sub-model YAMLs."
+          },
+          {
+            "name": "concat_component_models",
+            "signature": "concat_component_models(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "exists",
+              "glob",
+              "_concat_yaml_files"
+            ],
+            "docstring": "Concatenate COMP-* sub-model YAMLs."
+          },
+          {
+            "name": "concat_behavior_specs",
+            "signature": "concat_behavior_specs(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "exists",
+              "glob",
+              "_concat_md_files"
+            ],
+            "docstring": "Concatenate behavior spec markdowns."
+          },
+          {
+            "name": "concat_docs",
+            "signature": "concat_docs(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "exists",
+              "glob",
+              "_concat_md_files"
+            ],
+            "docstring": "Concatenate generated architecture docs (excluding behaviors subdir)."
+          },
+          {
+            "name": "concat_module_specs",
+            "signature": "concat_module_specs(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "join",
+              "exists",
+              "glob",
+              "_rel_from_models",
+              "strip",
+              "append",
+              "read_text"
+            ],
+            "docstring": "Concatenate per-component module YAML specs."
+          },
+          {
+            "name": "concat_diagrams",
+            "signature": "concat_diagrams(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "join",
+              "exists",
+              "glob",
+              "_rel_from_models",
+              "append",
+              "strip",
+              "read_text"
+            ],
+            "docstring": "Concatenate Mermaid diagram files."
+          },
+          {
+            "name": "concat_skills",
+            "signature": "concat_skills(repo_path: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "join",
+              "exists",
+              "glob",
+              "relative_to",
+              "append",
+              "strip",
+              "read_text"
+            ],
+            "docstring": "Concatenate skill markdown files."
+          },
+          {
+            "name": "manifests_to_markdown",
+            "signature": "manifests_to_markdown(manifest_dir: Path) -> str | None",
+            "calls": [
+              "sorted",
+              "exists",
+              "glob",
+              "join",
+              "loads",
+              "get",
+              "read_text",
+              "isinstance",
+              "append",
+              "len",
+              "startswith"
+            ],
+            "docstring": "Convert JSON manifests to readable markdown summaries."
+          }
+        ],
+        "imports": [
+          "__future__",
+          "json",
+          "dataclasses",
+          "pathlib",
+          "architecture_model.export.reference",
+          "yaml"
+        ],
+        "line_count": 329,
+        "status": "active",
+        "classes": [
+          {
+            "name": "ExportResult",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "json",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "architecture_model.export.reference",
+            "symbols": [
+              "generate_readme",
+              "generate_schema_reference",
+              "generate_api_reference",
+              "generate_custom_instructions"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "yaml",
+            "symbols": [],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/export/reference.py",
+        "name": "Reference",
+        "docstring": null,
+        "functions": [
+          {
+            "name": "generate_readme",
+            "signature": "generate_readme() -> str"
+          },
+          {
+            "name": "generate_schema_reference",
+            "signature": "generate_schema_reference() -> str"
+          },
+          {
+            "name": "generate_api_reference",
+            "signature": "generate_api_reference() -> str"
+          },
+          {
+            "name": "generate_custom_instructions",
+            "signature": "generate_custom_instructions(repo_name: str, stats: dict) -> str",
+            "calls": [
+              "get"
+            ]
+          }
+        ],
+        "imports": [
+          "__future__"
+        ],
+        "line_count": 366,
+        "status": "active",
+        "classes": [],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {}
+      },
+      {
+        "file": "src/architecture_model/profiles/schema.py",
+        "name": "Domain profile schema and loading logic",
+        "docstring": "Domain profile schema and loading logic.",
+        "functions": [
+          {
+            "name": "load_profile",
+            "signature": "load_profile(name_or_path: str) -> DomainProfile",
+            "calls": [
+              "safe_load",
+              "from_dict",
+              "info",
+              "Path",
+              "exists",
+              "FileNotFoundError",
+              "read_text"
+            ],
+            "raises": [
+              "FileNotFoundError"
+            ]
+          }
+        ],
+        "imports": [
+          "__future__",
+          "logging",
+          "dataclasses",
+          "pathlib",
+          "typing",
+          "yaml"
+        ],
+        "line_count": 85,
+        "status": "active",
+        "classes": [
+          {
+            "name": "EnumExtension",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "EntityExtension",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "ConditionalRule",
+            "bases": [],
+            "methods": [],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          },
+          {
+            "name": "DomainProfile",
+            "bases": [],
+            "methods": [
+              "from_dict",
+              "get_extended_values"
+            ],
+            "is_abstract": false,
+            "decorators": [
+              "dataclass"
+            ],
+            "attributes": {}
+          }
+        ],
+        "exports": [],
+        "decorated_functions": [],
+        "imports_detailed": [
+          {
+            "module": "__future__",
+            "symbols": [
+              "annotations"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "logging",
+            "symbols": [],
+            "is_relative": false
+          },
+          {
+            "module": "dataclasses",
+            "symbols": [
+              "dataclass",
+              "field"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "pathlib",
+            "symbols": [
+              "Path"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "typing",
+            "symbols": [
+              "Any"
+            ],
+            "is_relative": false
+          },
+          {
+            "module": "yaml",
+            "symbols": [],
+            "is_relative": false
+          }
+        ],
+        "module_constants": {},
+        "module_assignments": {
+          "logger": "logging.getLogger(__name__)"
+        }
+      }
+    ],
+    "interfaces": [
+      {
+        "source": "src/architecture_model/export/flatfiles.py",
+        "target": "src/architecture_model/export/reference.py",
+        "import_path": "architecture_model.export.reference"
+      }
+    ]
+  },
+  "children": {},
+  "block_dependencies": [
+    "S4",
+    "S7",
+    "S9"
+  ],
+  "intra_chains": []
+}

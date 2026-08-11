@@ -1,4 +1,0 @@
-component: COMP-137-3
-contracts:
-- test_file: tests/test_cluster.py
-  assertions: 0

@@ -2,11 +2,22 @@ meta:
   schema_version: '2.0'
   project: architecture-model-standard/Cli
   system: Cli
-  generated_at: '2026-08-10T21:46:22.714335+00:00'
+  generated_at: '2026-08-10T22:13:51.810713+00:00'
   manifest_path: manifest.json
   parent_model: ../../.architecture-model.yaml
   refines_component: COMP-CLI
 entities:
+  behaviors:
+  - id: BEH-INIT
+    name: Project Initialization
+    status: ACTIVE
+    description: Scan directory, discover source root, generate model, enrich, decompose
+    steps:
+    - Discover project configuration from directory structure
+    - Run extraction pipeline (7 stages)
+    - Enrich model from manifest
+    - Decompose into sub-models
+    - Generate documentation
   interfaces:
   - id: IF-CLI
     name: CLI Interface
@@ -24,58 +35,6 @@ entities:
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
     kind: application
-    signatures:
-    - name: main
-      params:
-      - 'argv: list[str] | None'
-      returns: int
-      body_hint: 'parser = argparse.ArgumentParser(prog=''architecture-model'', descri...; subparsers = parser.add_subparsers(dest=''command'',
-        help=''Available com...; p_validate = subparsers.add_parser(''validate'', help=''Validate model in...; p_validate.add_argument(''model'',
-        help=''Path to architecture-model.yaml''); p_validate.add_argument(''--strict'', action=''store_true'', help=''Promote
-        warnings to errors''); p_slice = subparsers.add_parser(''slice'', help=''Extract model subset''); p_slice.add_argument(''model'',
-        help=''Path to architecture-model.yaml''); p_slice.add_argument(''--source_block'', help=''Filter by F-block (e.g.,
-        F3)''); p_slice.add_argument(''--layer'', help=''Filter by layer (e.g., web-layer)''); p_slice.add_argument(''--artifact'',
-        help=''Slice for artifact regeneration''); p_slice.add_argument(''--status'', help=''Filter by status (ACTIVE, PLANNED)'');
-        p_slice.add_argument(''-o'', ''--output'', help=''Output YAML path (default: stdout summary)''); p_diff = subparsers.add_parser(''diff'',
-        help=''Compare two model ver...; p_diff.add_argument(''old_model'', help=''Path to old/baseline model''); p_diff.add_argument(''new_model'',
-        help=''Path to new/current model''); p_stats = subparsers.add_parser(''stats'', help=''Show model statistics''); p_stats.add_argument(''model'',
-        help=''Path to architecture-model.yaml''); p_init = subparsers.add_parser(''init'', help=''Auto-generate .archit...;
-        p_init.add_argument(''path'', nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_init.add_argument(''--force'',
-        action=''store_true'', help=''Overwrite existing config file''); p_init.add_argument(''--config-only'', action=''store_true'',
-        help=''Only write config, skip pipeline and docs''); p_impact = subparsers.add_parser(''impact'', help=''Impact analysis
-        for...; p_impact.add_argument(''model'', help=''Path to architecture-model.yaml''); p_impact.add_argument(''entity_id'',
-        help=''Entity ID to analyze''); p_impact.add_argument(''--depth'', type=int, default=2, help=''Traversal depth'');
-        p_manifest = subparsers.add_parser(''manifest'', help=''Generate reality-...; p_manifest.add_argument(''path'', nargs=''?'',
-        default=''.'', help=''Project root directory (default: cwd)''); p_manifest.add_argument(''-o'', ''--output'', help=''Output
-        JSON path''); p_manifest.add_argument(''--recursive'', action=''store_true'', help=''Generate per-F-block recursive
-        manifests''); p_enrich = subparsers.add_parser(''enrich'', help=''Auto-enrich model w...; p_enrich.add_argument(''model'',
-        help=''Path to architecture-model.yaml''); p_enrich.add_argument(''--root'', default=''.'', help=''Project root directory'');
-        p_decompose = subparsers.add_parser(''decompose'', help=''Generate per-F-b...; p_decompose.add_argument(''path'',
-        nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_decompose.add_argument(''-o'', ''--output'',
-        help=''Output directory (default: .architecture-models/)''); p_coverage = subparsers.add_parser(''coverage'', help=''Analyze
-        model cov...; p_coverage.add_argument(''model'', help=''Path to .architecture-model.yaml''); p_coverage.add_argument(''--project'',
-        ''-p'', help=''Project path for manifest generation (default: model directory)''); p_coverage.add_argument(''--manifest'',
-        help=''Path to pre-generated manifest JSON''); p_docs = subparsers.add_parser(''docs'', help=''Generate architecture...;
-        p_docs.add_argument(''repo'', help=''Repository root path''); p_docs.add_argument(''-o'', ''--output'', help=''Output
-        directory (default: {repo}/.architecture-models/docs)''); p_visualize = subparsers.add_parser(''visualize'', help=''Generate
-        Mermaid...; p_visualize.add_argument(''path'', nargs=''?'', default=''.'', help=''Project root directory (default:
-        cwd)''); p_visualize.add_argument(''-o'', ''--output'', default=''output/diagrams'', help=''Output directory (default:
-        output/diagrams)''); p_author = subparsers.add_parser(''author'', help=''Generate model from...; p_author.add_argument(''requirements'',
-        help=''Path to requirements markdown file''); p_author.add_argument(''-o'', ''--output'', default=''.architecture-model.yaml'',
-        help=''Output YAML path''); p_regen = subparsers.add_parser(''regen-score'', help=''Show regen rea...; p_regen.add_argument(''path'',
-        nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_regen.add_argument(''--component'',
-        help=''Show detail for a specific component ID''); p_regen.add_argument(''--verbose'', action=''store_true'', help=''Show
-        per-function readiness''); p_pipeline = subparsers.add_parser(''pipeline'', help=''Run modular extra...; p_pipeline.add_argument(''path'',
-        nargs=''?'', default=''.'', help=''Project root directory (default: cwd)''); p_pipeline.add_argument(''--stage'',
-        help=''Run up to this stage (default: all)''); p_pipeline.add_argument(''--recursive'', action=''store_true'', help=''Recurse
-        into large components''); p_pipeline.add_argument(''--max-depth'', type=int, default=3, help=''Max recursion depth'');
-        p_pipeline.add_argument(''-o'', ''--output'', help=''Output directory (default: .architecture/)''); args = parser.parse_args(argv);
-        if not args.command: ...; handlers = {''init'': _cmd_init, ''validate'': _cmd_validate, ''slice'': _...; return handlers[args.command](args)'
-    test_contracts:
-    - test_file: test_visualize.py
-      test_method: test_writes_all_files
-      assertion: len(paths) == 4
-      contract_type: value_equality
 relationships:
 - type: depends-on
   from: COMP-CLI
@@ -95,3 +54,6 @@ relationships:
 - type: exposes
   from: COMP-CLI
   to: IF-CLI
+- type: traces-to
+  from: COMP-CLI
+  to: BEH-INIT
