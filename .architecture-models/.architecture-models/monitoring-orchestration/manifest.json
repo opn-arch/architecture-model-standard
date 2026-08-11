@@ -1,0 +1,39 @@
+{
+  "modules": [
+    {
+      "file": "src/architecture_model/orchestration/use_case_inference.py",
+      "functions": 3,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/orchestration/capability_inference.py",
+      "functions": 6,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/orchestration/enrichment_context.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/orchestration/trigger_detection.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/orchestration/pipeline.py",
+      "functions": 1,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/orchestration/compaction.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/orchestration/naming_context.py",
+      "functions": 1,
+      "classes": 0
+    }
+  ]
+}

@@ -85,6 +85,9 @@ class ObserveStage:
         # Docs
         docs = _find_docs(ctx.repo_path)
 
+        # Resolve import edges from module imports
+        edges = _resolve_import_edges(modules)
+
         inventory = Inventory(
             modules=modules,
             edges=edges,
@@ -202,6 +205,68 @@ def _scan_module(
     )
 
     return mod, [], uncertainties
+
+
+def _resolve_import_edges(modules: list[ModuleRecord]) -> list[ImportEdge]:
+    """Resolve import strings into ImportEdge objects linking in-project modules.
+
+    Builds a mapping of qualified module names to file paths, then checks each
+    module's imports list against the map to produce edges.
+    """
+    # Build qualified name → Path mapping
+    # e.g. "architecture_model.core.parser" → Path("src/architecture_model/core/parser.py")
+    name_to_path: dict[str, Path] = {}
+    for mod in modules:
+        # Convert path to qualified name: src/foo/bar.py → foo.bar
+        parts = list(mod.path.with_suffix("").parts)
+        # Try various prefixes (handle src-layout)
+        for start in range(len(parts)):
+            qualified = ".".join(parts[start:])
+            name_to_path[qualified] = mod.path
+        # Also register __init__ as the package name
+        if parts and parts[-1] == "__init__":
+            pkg_parts = parts[:-1]
+            for start in range(len(pkg_parts)):
+                qualified = ".".join(pkg_parts[start:])
+                name_to_path[qualified] = mod.path
+
+    edges: list[ImportEdge] = []
+    seen: set[tuple[str, str]] = set()  # (source, target) dedup
+
+    for mod in modules:
+        source_path = mod.path
+        for imp in mod.imports:
+            # Try exact match and prefix matches
+            target_path = _resolve_import(imp, name_to_path)
+            if target_path and target_path != source_path:
+                key = (str(source_path), str(target_path))
+                if key not in seen:
+                    seen.add(key)
+                    # Extract symbol from "from X import Y" style
+                    symbols = []
+                    if "." in imp:
+                        symbols = [imp.rsplit(".", 1)[-1]]
+                    edges.append(ImportEdge(
+                        source=source_path,
+                        target=target_path,
+                        symbols=symbols,
+                    ))
+
+    return edges
+
+
+def _resolve_import(imp: str, name_to_path: dict[str, Path]) -> Path | None:
+    """Resolve an import string to a project module path."""
+    # Direct match
+    if imp in name_to_path:
+        return name_to_path[imp]
+    # Try as package (from X import Y — X might be a package)
+    parts = imp.split(".")
+    for i in range(len(parts), 0, -1):
+        prefix = ".".join(parts[:i])
+        if prefix in name_to_path:
+            return name_to_path[prefix]
+    return None
 
 
 def _extract_function(node: ast.FunctionDef | ast.AsyncFunctionDef, source: str) -> FunctionRecord:

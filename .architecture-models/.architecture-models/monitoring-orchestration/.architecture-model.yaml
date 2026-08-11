@@ -1,0 +1,21 @@
+meta:
+  schema_version: '2.0'
+  system: Monitoring (orchestration)
+  system_id: SYS-monitoring-(orchestration)
+entities:
+  capabilities:
+  - id: CAP-1
+    name: Use Case Inference
+  - id: CAP-2
+    name: Capability Inference
+  - id: CAP-3
+    name: Enrichment Context
+  - id: CAP-4
+    name: Trigger Detection
+  - id: CAP-5
+    name: Pipeline
+  - id: CAP-6
+    name: Compaction
+  - id: CAP-7
+    name: Naming Context
+relationships: []

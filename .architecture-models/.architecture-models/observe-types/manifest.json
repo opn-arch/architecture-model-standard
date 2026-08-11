@@ -1,0 +1,39 @@
+{
+  "modules": [
+    {
+      "file": "src/architecture_model/pipeline/observe_types.py",
+      "functions": 0,
+      "classes": 10
+    },
+    {
+      "file": "src/architecture_model/pipeline/observe.py",
+      "functions": 15,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/core/types.py",
+      "functions": 1,
+      "classes": 47
+    },
+    {
+      "file": "src/architecture_model/manifest/types.py",
+      "functions": 0,
+      "classes": 13
+    },
+    {
+      "file": "src/architecture_model/pipeline/context_gen.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/pipeline/artifacts.py",
+      "functions": 9,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/pipeline/emit.py",
+      "functions": 3,
+      "classes": 1
+    }
+  ]
+}

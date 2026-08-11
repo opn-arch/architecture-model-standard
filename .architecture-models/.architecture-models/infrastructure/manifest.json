@@ -1,0 +1,39 @@
+{
+  "modules": [
+    {
+      "file": "src/architecture_model/patterns.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/pipeline/emit_types.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/core/compression.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/manifest/chains.py",
+      "functions": 4,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/manifest/display.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/manifest/ts_scanner.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/extract/route_detector.py",
+      "functions": 21,
+      "classes": 1
+    }
+  ]
+}

@@ -106,6 +106,8 @@ def _reconstruct_dataclass(data: dict) -> Any:
             # Handle Path fields
             if f.type in ("Path", "Path | None") and isinstance(val, str):
                 kwargs[f.name] = Path(val)
+            elif "list[Path]" in str(f.type) and isinstance(val, list):
+                kwargs[f.name] = [Path(v) if isinstance(v, str) else v for v in val]
             else:
                 kwargs[f.name] = _deserialize(val)
     return cls(**kwargs)

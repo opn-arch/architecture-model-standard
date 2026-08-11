@@ -1,0 +1,21 @@
+meta:
+  schema_version: '2.0'
+  system: Infrastructure
+  system_id: SYS-infrastructure
+entities:
+  capabilities:
+  - id: CAP-1
+    name: Patterns
+  - id: CAP-2
+    name: Emit Types
+  - id: CAP-3
+    name: Compression
+  - id: CAP-4
+    name: Chains
+  - id: CAP-5
+    name: Display
+  - id: CAP-6
+    name: Ts Scanner
+  - id: CAP-7
+    name: Route Detector
+relationships: []
