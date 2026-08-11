@@ -130,12 +130,36 @@ class PipelineContext:
     prior_corrections: list[Evidence] = field(default_factory=list)
     learning_store: LearningStore | None = field(default=None, repr=False)
     calibration: dict[str, Any] = field(default_factory=dict)
+    llm_calls: list[LLMCallRecord] = field(default_factory=list)
 
     def has(self, stage_name: str) -> bool:
         return stage_name in self.cache
 
     def get(self, stage_name: str) -> StageResult | None:
         return self.cache.get(stage_name)
+
+
+@dataclass
+class LLMCallRecord:
+    """Record of a single LLM invocation during pipeline execution."""
+
+    stage: str
+    purpose: str
+    timestamp: str = ""
+    files_sent: list[str] = field(default_factory=list)
+    slices_sent: list[str] = field(default_factory=list)
+    prompt_template: str = ""
+    prompt_tokens: int = 0
+    context_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    model: str = ""
+    duration_ms: int = 0
+    cached: bool = False
+    output_used: bool = True
+    confidence: float = 0.0
+    items_produced: int = 0
+    notes: str = ""
 
 
 class Stage(Protocol[T]):
