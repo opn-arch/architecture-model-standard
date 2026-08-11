@@ -151,47 +151,26 @@ class PipelineCoordinator:
     def run_recursive(
         self, ctx: PipelineContext, *, max_depth: int = 3, leaf_threshold: int = 5
     ) -> dict[str, Any]:
-        """Run all stages, write artifacts, then recurse into large components.
+        """Run all stages including decompose→synthesize→emit which handle recursion.
 
-        For each component with more files than leaf_threshold, creates a
-        sub-context scoped to that component's files and re-runs the pipeline.
-        Artifacts are written at each level.
+        The synthesize stage runs scoped sub-pipelines for each detected system.
+        max_depth and leaf_threshold are passed via ctx.config for synthesize to use.
         """
-        from .artifacts import write_artifacts
-        from .context_gen import write_context
+        ctx.config["max_depth"] = max_depth
+        ctx.config["leaf_threshold"] = leaf_threshold
+        ctx.config["coordinator"] = self  # synthesize needs this for scoped runs
 
         results = self.run_all(ctx)
 
-        # Write artifacts at current level
+        # Write legacy artifacts for backward compatibility
+        from .artifacts import write_artifacts
+        from .context_gen import write_context
         write_artifacts(ctx)
         write_context(ctx)
-
-        # Recurse into large components
-        subsystems: dict[str, dict[str, Any]] = {}
-        allocate_result = ctx.get("allocate")
-        if allocate_result and max_depth > 0:
-            from .allocate_types import AllocationResult
-            allocation: AllocationResult = allocate_result.output
-
-            for comp in allocation.components:
-                if len(comp.files) > leaf_threshold:
-                    # Create sub-context scoped to component files
-                    sub_dir = ctx.output_dir / "subsystems" / comp.id.lower()
-                    sub_ctx = PipelineContext(
-                        repo_path=ctx.repo_path,
-                        output_dir=sub_dir,
-                        scope=comp.id,
-                        scope_files=comp.files,
-                    )
-                    # Run recursively at reduced depth
-                    sub_result = self.run_recursive(
-                        sub_ctx, max_depth=max_depth - 1, leaf_threshold=leaf_threshold
-                    )
-                    subsystems[comp.id] = sub_result
 
         return {
             "results": results,
             "depth": max_depth,
-            "subsystems": subsystems,
+            "subsystems": {},  # now handled by synthesize+emit
             "artifacts_dir": str(ctx.output_dir),
         }

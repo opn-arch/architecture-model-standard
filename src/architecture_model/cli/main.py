@@ -800,6 +800,9 @@ def _cmd_pipeline(args) -> int:
     from ..pipeline.specify import SpecifyStage
     from ..pipeline.contract import ContractStage
     from ..pipeline.validate import ValidateStage
+    from ..pipeline.decompose import DecomposeStage
+    from ..pipeline.synthesize import SynthesizeStage
+    from ..pipeline.emit import EmitStage
     from ..pipeline.coordinator import PipelineCoordinator
     from ..pipeline.learning import LearningStore
     from ..pipeline.protocol import PipelineContext
@@ -822,11 +825,15 @@ def _cmd_pipeline(args) -> int:
         "specify": SpecifyStage(),
         "contract": ContractStage(),
         "validate": ValidateStage(),
+        "decompose": DecomposeStage(),
+        "synthesize": SynthesizeStage(),
+        "emit": EmitStage(),
     }
 
     store = LearningStore(learning_path)
     coord = PipelineCoordinator(stages, learning_store=store)
     ctx = PipelineContext(repo_path=root, output_dir=output_dir)
+    ctx.config["coordinator"] = coord  # synthesize stage needs this
 
     if args.stage:
         print(f"Running pipeline to stage: {args.stage}")
