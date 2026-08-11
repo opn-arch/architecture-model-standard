@@ -76,7 +76,19 @@ def _collect_python_files(
             if target.is_dir():
                 files.extend(sorted(target.rglob("*.py")))
         return files
-    return sorted(root.rglob("*.py"))
+    _EXCLUDED_DIRS = {
+        ".git", "__pycache__", "node_modules", ".tox", "dist", "build",
+        ".eggs", "results", ".architecture-archive", "tests", "test",
+    }
+    all_files: list[Path] = []
+    for py in sorted(root.rglob("*.py")):
+        parts = set(py.relative_to(root).parts)
+        if parts & _EXCLUDED_DIRS:
+            continue
+        if any(p.startswith(".venv") or p == "venv" for p in parts):
+            continue
+        all_files.append(py)
+    return all_files
 
 
 # ---------------------------------------------------------------------------
