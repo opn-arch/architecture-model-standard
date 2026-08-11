@@ -138,7 +138,7 @@ def _extract_findings(stage_name: str, result: StageResult) -> list[str]:
             from .relate_types import RelateResult
 
             if isinstance(output, RelateResult):
-                type_counts = Counter(r.type for r in output.relationships)
+                type_counts = Counter(r.rel_type for r in output.relationships)
                 for rtype, count in type_counts.most_common():
                     findings.append(f"{count} {rtype} relationships")
         except ImportError:

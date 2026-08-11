@@ -118,7 +118,7 @@ def _build_manifest_json(results: dict[str, StageResult]) -> str:
     modules: list[dict[str, Any]] = []
     if hasattr(output, "modules"):
         for mod in output.modules:
-            mod_dict: dict[str, Any] = {"file": str(mod.file_path)}
+            mod_dict: dict[str, Any] = {"file": str(mod.path)}
             if hasattr(mod, "functions"):
                 mod_dict["functions"] = len(mod.functions)
             if hasattr(mod, "classes"):

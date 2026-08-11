@@ -76,7 +76,7 @@ class _FakeRelateOutput:
 
 @dataclass
 class _FakeModule:
-    file_path: str = "mod.py"
+    path: str = "mod.py"
     functions: list = field(default_factory=list)
     classes: list = field(default_factory=list)
 
