@@ -1,0 +1,51 @@
+{
+  "__dataclass__": "StageResult",
+  "__module__": "architecture_model.pipeline.protocol",
+  "output": {
+    "__dataclass__": "EmitResult",
+    "__module__": "architecture_model.pipeline.emit_types",
+    "written_paths": [
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/.architecture-model.yaml",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/pipeline-report.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/lessons.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-manifest/.architecture-model.yaml",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-manifest/manifest.json",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-manifest/pipeline-report.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-manifest/lessons.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-orchestration/.architecture-model.yaml",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-orchestration/manifest.json",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-orchestration/pipeline-report.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/monitoring-orchestration/lessons.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/observe-types/.architecture-model.yaml",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/observe-types/manifest.json",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/observe-types/pipeline-report.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/observe-types/lessons.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/infrastructure/.architecture-model.yaml",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/infrastructure/manifest.json",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/infrastructure/pipeline-report.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/infrastructure/lessons.md",
+      "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models/docs/system-interactions.md"
+    ],
+    "total_bytes": 96434,
+    "system_count": 47,
+    "doc_count": 1,
+    "output_dir": "/Users/baigm2/Documents/Projects/architecture-model-standard/.architecture-models/.architecture-models"
+  },
+  "quality": {
+    "__dataclass__": "QualityMetrics",
+    "__module__": "architecture_model.pipeline.protocol",
+    "score": 100.0,
+    "sub_scores": {
+      "files_written": 20,
+      "systems": 47,
+      "total_bytes": 96434
+    },
+    "thresholds": {},
+    "llm_prompt": ""
+  },
+  "diagnostics": [],
+  "uncertainties": [],
+  "input_hash": "",
+  "duration_ms": 12,
+  "version": "1.0"
+}

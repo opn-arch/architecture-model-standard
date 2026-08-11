@@ -17,7 +17,6 @@ from architecture_model.core.slicer import slice_by_source_block, slice_by_layer
 from architecture_model.core.test_affinity import test_affinity_decompose
 from architecture_model.core.merger import compose_enriched_model
 from architecture_model.core.coverage import coverage_report
-from architecture_model.orchestration.pipeline import run_pipeline
 from architecture_model.patterns import load_patterns, get_pattern
 from architecture_model.orchestration.enrichment_context import format_enrichment_prompt
 from architecture_model.orchestration.auto_enrich import enrich_from_manifest, enrich_behaviors_from_manifest, enrich_with_block_context

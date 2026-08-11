@@ -75,12 +75,16 @@ The `opencode-arch` MCP server wraps this package's APIs:
 - **PROJECT** — forecast effects of planned changes
 
 ### Self-Bootstrapping
-The pipeline requires no manual configuration to analyze a new project:
-1. `architecture-model init <path>` scans directory structure
-2. Discovers source root (src-layout, flat-layout, or lib-layout)
-3. Each subpackage becomes a Functional Block with files enumerated
-4. Writes `.architecture-model.yaml` with layers, F-blocks, and metrics
-5. Subsequent pipeline stages refine this config with LLM-synthesized groupings
+The 10-stage pipeline requires no manual configuration to analyze a new project:
+1. `architect_pipeline(repo_path, stage="observe")` — AST-scans all source files
+2. Discovers modules, imports, routes, constraints, tests, docs
+3. Subsequent stages (infer → allocate → relate → specify → contract → validate) build the model
+4. `decompose` detects system boundaries (components with ≥5 files become autonomous systems)
+5. `synthesize` runs scoped sub-pipelines for each detected system
+6. `emit` writes all artifacts to `.architecture-models/`
+
+**Entry point:** `architect_pipeline` MCP tool (stage-by-stage) or `architecture-model pipeline <path>` CLI.
+The `init` command has been removed — the pipeline is the single entry point.
 
 ### Domain Profiles
 The standard supports cross-domain architecture modeling via domain profiles:
@@ -100,12 +104,13 @@ Usage: Set `domain_profile: controls` in the model meta section.
 
 ```
 src/architecture_model/
-├── cli/          — CLI commands (init, extract, validate, slice, diff, query, context, stats, impact, generate)
+├── cli/          — CLI commands (validate, slice, diff, stats, impact, manifest, pipeline, etc.)
 ├── config/       — Configuration loading, auto-discovery, schema definition
 ├── core/         — Parser, validator, slicer, differ, merger, decomposer, type system
 ├── extract/      — Extract model from generated Tier 1 artifacts
 ├── integrations/ — LLM context formatting, pipeline bridge
 ├── manifest/     — Reality Manifest generator (AST scanning, metrics, blocks, interfaces)
+├── pipeline/     — 10-stage modular extraction pipeline (observe→emit) + cache + report + lessons
 ├── profiles/     — Domain profile system (software, controls, mechanical, electrical)
 ├── spec/         — JSON Schema for model validation
 └── utils/        — Shared utilities (file discovery, exclusion patterns)
@@ -177,7 +182,7 @@ relationships:
 
 - Schema version: 2.0
 - Package version: 0.3.0
-- Test suite: 509 passed
+- Test suite: 1171 passed
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
 
@@ -393,7 +398,7 @@ The `learning_curve` table in telemetry tracks improvement over successive repos
 
 | Repo | Path | Purpose | Tests |
 |------|------|---------|-------|
-| architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 509 passed |
+| architecture-model-standard | (this repo) | Schema, validator, CLI, manifest | 1171 passed |
 | opencode-arch | `../opencode-arch/` | MCP extension (token broker) + CLI + E2E benchmarks | 157 passed |
 | arch-agent | `../arch-agent/` | Training pipeline + surrogate | 574 passed |
 

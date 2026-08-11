@@ -1,0 +1,770 @@
+{
+  "__dataclass__": "StageResult",
+  "__module__": "architecture_model.pipeline.protocol",
+  "output": {
+    "__dataclass__": "InferenceResult",
+    "__module__": "architecture_model.pipeline.infer_types",
+    "capabilities": [
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-1",
+        "name": "Monitoring",
+        "description": "Domain logic in src/architecture_model/monitoring.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-2",
+        "name": "Monitoring Checks",
+        "description": "Domain logic in src/architecture_model/monitoring_checks.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-3",
+        "name": "Observe Types",
+        "description": "Domain logic in src/architecture_model/pipeline/observe_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-4",
+        "name": "Synthesize Types",
+        "description": "Domain logic in src/architecture_model/pipeline/synthesize_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-5",
+        "name": "Decompose Types",
+        "description": "Domain logic in src/architecture_model/pipeline/decompose_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-6",
+        "name": "Contract Types",
+        "description": "Domain logic in src/architecture_model/pipeline/contract_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-7",
+        "name": "Allocate Types",
+        "description": "Domain logic in src/architecture_model/pipeline/allocate_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-8",
+        "name": "Validate Types",
+        "description": "Domain logic in src/architecture_model/pipeline/validate_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-9",
+        "name": "Regen Score",
+        "description": "Domain logic in src/architecture_model/pipeline/regen_score.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-10",
+        "name": "Protocol",
+        "description": "Domain logic in src/architecture_model/pipeline/protocol.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-11",
+        "name": "Specify Types",
+        "description": "Domain logic in src/architecture_model/pipeline/specify_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-12",
+        "name": "Relate Types",
+        "description": "Domain logic in src/architecture_model/pipeline/relate_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-13",
+        "name": "Learning",
+        "description": "Domain logic in src/architecture_model/pipeline/learning.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-14",
+        "name": "Infer Types",
+        "description": "Domain logic in src/architecture_model/pipeline/infer_types.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-15",
+        "name": "Validator",
+        "description": "Domain logic in src/architecture_model/core/validator.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-16",
+        "name": "Regen Readiness",
+        "description": "Domain logic in src/architecture_model/core/regen_readiness.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-17",
+        "name": "Confidence",
+        "description": "Domain logic in src/architecture_model/core/confidence.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-18",
+        "name": "Representativeness",
+        "description": "Domain logic in src/architecture_model/core/representativeness.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-19",
+        "name": "Differ",
+        "description": "Domain logic in src/architecture_model/core/differ.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-20",
+        "name": "Coverage",
+        "description": "Domain logic in src/architecture_model/core/coverage.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-21",
+        "name": "Visualize",
+        "description": "Domain logic in src/architecture_model/core/visualize.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-22",
+        "name": "Parser",
+        "description": "Domain logic in src/architecture_model/core/parser.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-23",
+        "name": "Corrections",
+        "description": "Domain logic in src/architecture_model/core/corrections.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-24",
+        "name": "Decomposer",
+        "description": "Domain logic in src/architecture_model/core/decomposer.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-25",
+        "name": "Slicer",
+        "description": "Domain logic in src/architecture_model/core/slicer.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-26",
+        "name": "Source Block Quality",
+        "description": "Domain logic in src/architecture_model/core/source_block_quality.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-27",
+        "name": "Merger",
+        "description": "Domain logic in src/architecture_model/core/merger.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-28",
+        "name": "Loader",
+        "description": "Domain logic in src/architecture_model/config/loader.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-29",
+        "name": "Schema",
+        "description": "Domain logic in src/architecture_model/config/schema.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-30",
+        "name": "Behavior",
+        "description": "Domain logic in src/architecture_model/manifest/behavior.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-31",
+        "name": "Grouping",
+        "description": "Domain logic in src/architecture_model/manifest/grouping.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-32",
+        "name": "Recursive",
+        "description": "Domain logic in src/architecture_model/manifest/recursive.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-33",
+        "name": "Call Graph",
+        "description": "Domain logic in src/architecture_model/manifest/call_graph.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-34",
+        "name": "Body Hints",
+        "description": "Domain logic in src/architecture_model/manifest/body_hints.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-35",
+        "name": "Discovery",
+        "description": "Domain logic in src/architecture_model/utils/discovery.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-36",
+        "name": "Store",
+        "description": "Domain logic in src/architecture_model/persistence/store.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-37",
+        "name": "Auto Enrich",
+        "description": "Domain logic in src/architecture_model/orchestration/auto_enrich.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-38",
+        "name": "Decompose",
+        "description": "Domain logic in src/architecture_model/orchestration/decompose.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-39",
+        "name": "Deep Decompose",
+        "description": "Domain logic in src/architecture_model/orchestration/deep_decompose.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-40",
+        "name": "Behavior Flows",
+        "description": "Domain logic in src/architecture_model/orchestration/behavior_flows.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-41",
+        "name": "Table Parser",
+        "description": "Domain logic in src/architecture_model/extract/table_parser.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-42",
+        "name": "Flatfiles",
+        "description": "Domain logic in src/architecture_model/export/flatfiles.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-43",
+        "name": "Reference",
+        "description": "Domain logic in src/architecture_model/export/reference.py",
+        "evidence_source": "domain_module",
+        "sub_capabilities": []
+      },
+      {
+        "__dataclass__": "InferredCapability",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "CAP-44",
+        "name": "CLI Main",
+        "description": "CLI commands in src/architecture_model/cli/main.py",
+        "evidence_source": "cli_pattern",
+        "sub_capabilities": []
+      }
+    ],
+    "actors": [
+      {
+        "__dataclass__": "InferredActor",
+        "__module__": "architecture_model.pipeline.infer_types",
+        "id": "ACT-1",
+        "name": "CLI User",
+        "actor_type": "human",
+        "evidence_source": "cli_pattern"
+      }
+    ],
+    "behaviors": []
+  },
+  "quality": {
+    "__dataclass__": "QualityMetrics",
+    "__module__": "architecture_model.pipeline.protocol",
+    "score": 87,
+    "sub_scores": {
+      "capability_coverage": 87.8688524590164,
+      "actor_completeness": 100.0,
+      "capability_count": 44.0
+    },
+    "thresholds": {
+      "capability_coverage": 60.0
+    },
+    "llm_prompt": ""
+  },
+  "diagnostics": [],
+  "uncertainties": [
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/patterns.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/__main__.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/coordinator.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/lessons.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/cache.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/context_gen.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/emit_types.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/artifacts.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/emit.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/pipeline/report.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/core/compression.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/core/source_block_assign.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/core/cluster.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/interfaces.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/metrics.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/chains.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/scanner.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/slicers.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/multi_scanner.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/scan_cache.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/display.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/kt_scanner.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/generator.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/blocks.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/manifest/ts_scanner.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/authoring/gate.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/orchestration/use_case_inference.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/orchestration/capability_inference.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/orchestration/enrichment_context.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/orchestration/trigger_detection.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/orchestration/compaction.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/orchestration/behavior_decompose.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/orchestration/naming_context.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/extract/from_code.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/extract/from_artifacts.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/extract/constraint_detector.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    },
+    {
+      "__dataclass__": "Uncertainty",
+      "__module__": "architecture_model.pipeline.protocol",
+      "category": "ambiguous_module",
+      "description": "src/architecture_model/extract/route_detector.py has no clear capability affiliation",
+      "context": {},
+      "suggested_fallback": "llm_analysis",
+      "priority": "informational"
+    }
+  ],
+  "input_hash": "305",
+  "duration_ms": 1,
+  "version": "1.0"
+}

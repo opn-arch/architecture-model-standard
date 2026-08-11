@@ -1,5 +1,6 @@
 """Modular extraction pipeline for architecture models."""
 
+from architecture_model.pipeline.cache import PipelineCache
 from architecture_model.pipeline.coordinator import PipelineCoordinator
 from architecture_model.pipeline.decompose import DecomposeStage
 from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
@@ -42,6 +43,7 @@ __all__ = [
     "LLMCallRecord",
     "LearningStore",
     "LessonEntry",
+    "PipelineCache",
     "PipelineCoordinator",
     "PipelineContext",
     "QualityMetrics",

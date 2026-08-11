@@ -1,0 +1,3150 @@
+{
+  "__dataclass__": "StageResult",
+  "__module__": "architecture_model.pipeline.protocol",
+  "output": {
+    "__dataclass__": "DecomposeResult",
+    "__module__": "architecture_model.pipeline.decompose_types",
+    "systems": [
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-monitoring-(manifest)",
+        "name": "Monitoring (manifest)",
+        "component_ids": [
+          "COMP-1-4"
+        ],
+        "files": [
+          "src/architecture_model/manifest/interfaces.py",
+          "src/architecture_model/manifest/metrics.py",
+          "src/architecture_model/manifest/scanner.py",
+          "src/architecture_model/manifest/slicers.py",
+          "src/architecture_model/manifest/multi_scanner.py",
+          "src/architecture_model/manifest/scan_cache.py",
+          "src/architecture_model/manifest/kt_scanner.py",
+          "src/architecture_model/manifest/generator.py",
+          "src/architecture_model/manifest/blocks.py"
+        ],
+        "complexity": 9.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-monitoring-(orchestration)",
+        "name": "Monitoring (orchestration)",
+        "component_ids": [
+          "COMP-1-6"
+        ],
+        "files": [
+          "src/architecture_model/orchestration/use_case_inference.py",
+          "src/architecture_model/orchestration/capability_inference.py",
+          "src/architecture_model/orchestration/enrichment_context.py",
+          "src/architecture_model/orchestration/trigger_detection.py",
+          "src/architecture_model/orchestration/pipeline.py",
+          "src/architecture_model/orchestration/compaction.py",
+          "src/architecture_model/orchestration/naming_context.py"
+        ],
+        "complexity": 7.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-observe-types",
+        "name": "Observe Types",
+        "component_ids": [
+          "COMP-3"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/observe_types.py",
+          "src/architecture_model/pipeline/observe.py",
+          "src/architecture_model/core/types.py",
+          "src/architecture_model/manifest/types.py",
+          "src/architecture_model/pipeline/context_gen.py",
+          "src/architecture_model/pipeline/artifacts.py",
+          "src/architecture_model/pipeline/emit.py"
+        ],
+        "complexity": 7.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-infrastructure",
+        "name": "Infrastructure",
+        "component_ids": [
+          "COMP-45"
+        ],
+        "files": [
+          "src/architecture_model/patterns.py",
+          "src/architecture_model/pipeline/emit_types.py",
+          "src/architecture_model/core/compression.py",
+          "src/architecture_model/manifest/chains.py",
+          "src/architecture_model/manifest/display.py",
+          "src/architecture_model/manifest/ts_scanner.py",
+          "src/architecture_model/extract/route_detector.py"
+        ],
+        "complexity": 7.0,
+        "is_full_system": true
+      }
+    ],
+    "inline_components": [
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-monitoring-(architecture_model)",
+        "name": "Monitoring (architecture_model)",
+        "component_ids": [
+          "COMP-1-1"
+        ],
+        "files": [
+          "src/architecture_model/monitoring.py",
+          "src/architecture_model/monitoring_checks.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-monitoring-(pipeline)",
+        "name": "Monitoring (pipeline)",
+        "component_ids": [
+          "COMP-1-2"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/coordinator.py",
+          "src/architecture_model/pipeline/cache.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-monitoring-(core)",
+        "name": "Monitoring (core)",
+        "component_ids": [
+          "COMP-1-3"
+        ],
+        "files": [
+          "src/architecture_model/core/cluster.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-monitoring-(authoring)",
+        "name": "Monitoring (authoring)",
+        "component_ids": [
+          "COMP-1-5"
+        ],
+        "files": [
+          "src/architecture_model/authoring/gate.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-monitoring-(extract)",
+        "name": "Monitoring (extract)",
+        "component_ids": [
+          "COMP-1-7"
+        ],
+        "files": [
+          "src/architecture_model/extract/from_code.py",
+          "src/architecture_model/extract/from_artifacts.py",
+          "src/architecture_model/extract/constraint_detector.py"
+        ],
+        "complexity": 3.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-synthesize-types",
+        "name": "Synthesize Types",
+        "component_ids": [
+          "COMP-4"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/synthesize_types.py",
+          "src/architecture_model/pipeline/synthesize.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-decompose-types",
+        "name": "Decompose Types",
+        "component_ids": [
+          "COMP-5"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/decompose_types.py",
+          "src/architecture_model/pipeline/decompose.py",
+          "src/architecture_model/orchestration/decompose.py"
+        ],
+        "complexity": 3.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-contract-types",
+        "name": "Contract Types",
+        "component_ids": [
+          "COMP-6"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/contract_types.py",
+          "src/architecture_model/pipeline/contract.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-allocate-types",
+        "name": "Allocate Types",
+        "component_ids": [
+          "COMP-7"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/allocate_types.py",
+          "src/architecture_model/pipeline/allocate.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-validate-types",
+        "name": "Validate Types",
+        "component_ids": [
+          "COMP-8"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/validate_types.py",
+          "src/architecture_model/pipeline/validate.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-regen-score",
+        "name": "Regen Score",
+        "component_ids": [
+          "COMP-9"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/regen_score.py",
+          "src/architecture_model/core/regen_readiness.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-protocol",
+        "name": "Protocol",
+        "component_ids": [
+          "COMP-10"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/protocol.py",
+          "src/architecture_model/manifest/protocol.py",
+          "src/architecture_model/pipeline/lessons.py",
+          "src/architecture_model/pipeline/report.py"
+        ],
+        "complexity": 4.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-specify-types",
+        "name": "Specify Types",
+        "component_ids": [
+          "COMP-11"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/specify_types.py",
+          "src/architecture_model/pipeline/specify.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-relate-types",
+        "name": "Relate Types",
+        "component_ids": [
+          "COMP-12"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/relate_types.py",
+          "src/architecture_model/pipeline/relate.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-learning",
+        "name": "Learning",
+        "component_ids": [
+          "COMP-13"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/learning.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-infer-types",
+        "name": "Infer Types",
+        "component_ids": [
+          "COMP-14"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/infer.py",
+          "src/architecture_model/pipeline/infer_types.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-validator",
+        "name": "Validator",
+        "component_ids": [
+          "COMP-15"
+        ],
+        "files": [
+          "src/architecture_model/core/validator.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-confidence",
+        "name": "Confidence",
+        "component_ids": [
+          "COMP-17"
+        ],
+        "files": [
+          "src/architecture_model/core/confidence.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-representativeness",
+        "name": "Representativeness",
+        "component_ids": [
+          "COMP-18"
+        ],
+        "files": [
+          "src/architecture_model/core/representativeness.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-differ",
+        "name": "Differ",
+        "component_ids": [
+          "COMP-19"
+        ],
+        "files": [
+          "src/architecture_model/core/differ.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-coverage",
+        "name": "Coverage",
+        "component_ids": [
+          "COMP-20"
+        ],
+        "files": [
+          "src/architecture_model/core/coverage.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-visualize",
+        "name": "Visualize",
+        "component_ids": [
+          "COMP-21"
+        ],
+        "files": [
+          "src/architecture_model/core/visualize.py",
+          "src/architecture_model/cli/visualize.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-parser",
+        "name": "Parser",
+        "component_ids": [
+          "COMP-22"
+        ],
+        "files": [
+          "src/architecture_model/core/parser.py",
+          "src/architecture_model/authoring/parser.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-corrections",
+        "name": "Corrections",
+        "component_ids": [
+          "COMP-23"
+        ],
+        "files": [
+          "src/architecture_model/pipeline/corrections.py",
+          "src/architecture_model/core/corrections.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-decomposer",
+        "name": "Decomposer",
+        "component_ids": [
+          "COMP-24"
+        ],
+        "files": [
+          "src/architecture_model/core/decomposer.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-slicer",
+        "name": "Slicer",
+        "component_ids": [
+          "COMP-25"
+        ],
+        "files": [
+          "src/architecture_model/core/slicer.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-source-block-quality",
+        "name": "Source Block Quality",
+        "component_ids": [
+          "COMP-26"
+        ],
+        "files": [
+          "src/architecture_model/core/source_block_assign.py",
+          "src/architecture_model/core/source_block_quality.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-merger",
+        "name": "Merger",
+        "component_ids": [
+          "COMP-27"
+        ],
+        "files": [
+          "src/architecture_model/core/merger.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-loader",
+        "name": "Loader",
+        "component_ids": [
+          "COMP-28"
+        ],
+        "files": [
+          "src/architecture_model/config/loader.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-schema",
+        "name": "Schema",
+        "component_ids": [
+          "COMP-29"
+        ],
+        "files": [
+          "src/architecture_model/config/schema.py",
+          "src/architecture_model/profiles/schema.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-behavior",
+        "name": "Behavior",
+        "component_ids": [
+          "COMP-30"
+        ],
+        "files": [
+          "src/architecture_model/manifest/behavior.py",
+          "src/architecture_model/orchestration/behavior_flows.py",
+          "src/architecture_model/orchestration/behavior_decompose.py"
+        ],
+        "complexity": 3.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-grouping",
+        "name": "Grouping",
+        "component_ids": [
+          "COMP-31"
+        ],
+        "files": [
+          "src/architecture_model/manifest/grouping.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-recursive",
+        "name": "Recursive",
+        "component_ids": [
+          "COMP-32"
+        ],
+        "files": [
+          "src/architecture_model/manifest/recursive.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-call-graph",
+        "name": "Call Graph",
+        "component_ids": [
+          "COMP-33"
+        ],
+        "files": [
+          "src/architecture_model/manifest/call_graph.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-body-hints",
+        "name": "Body Hints",
+        "component_ids": [
+          "COMP-34"
+        ],
+        "files": [
+          "src/architecture_model/manifest/body_hints.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-discovery",
+        "name": "Discovery",
+        "component_ids": [
+          "COMP-35"
+        ],
+        "files": [
+          "src/architecture_model/utils/discovery.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-store",
+        "name": "Store",
+        "component_ids": [
+          "COMP-36"
+        ],
+        "files": [
+          "src/architecture_model/persistence/store.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-auto-enrich",
+        "name": "Auto Enrich",
+        "component_ids": [
+          "COMP-37"
+        ],
+        "files": [
+          "src/architecture_model/orchestration/auto_enrich.py",
+          "src/architecture_model/orchestration/enrich.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-deep-decompose",
+        "name": "Deep Decompose",
+        "component_ids": [
+          "COMP-39"
+        ],
+        "files": [
+          "src/architecture_model/orchestration/deep_decompose.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-table-parser",
+        "name": "Table Parser",
+        "component_ids": [
+          "COMP-41"
+        ],
+        "files": [
+          "src/architecture_model/extract/table_parser.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-flatfiles",
+        "name": "Flatfiles",
+        "component_ids": [
+          "COMP-42"
+        ],
+        "files": [
+          "src/architecture_model/export/flatfiles.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-reference",
+        "name": "Reference",
+        "component_ids": [
+          "COMP-43"
+        ],
+        "files": [
+          "src/architecture_model/export/reference.py"
+        ],
+        "complexity": 1.0,
+        "is_full_system": false
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-cli-main",
+        "name": "CLI Main",
+        "component_ids": [
+          "COMP-44"
+        ],
+        "files": [
+          "src/architecture_model/__main__.py",
+          "src/architecture_model/cli/main.py"
+        ],
+        "complexity": 2.0,
+        "is_full_system": false
+      }
+    ],
+    "inter_system_edges": [
+      [
+        "SYS-decomposer",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-learning",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-loader",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-specify-types",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-decompose-types",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(core)",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-synthesize-types",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-differ",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-validator",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-specify-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-discovery",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-merger",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-contract-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-infer-types",
+        "depends-on"
+      ],
+      [
+        "SYS-loader",
+        "SYS-discovery",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-table-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-relate-types",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-specify-types",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-discovery",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-synthesize-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-monitoring-(pipeline)",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-infer-types",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-specify-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-loader",
+        "depends-on"
+      ],
+      [
+        "SYS-slicer",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-contract-types",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-differ",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-coverage",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-contract-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-contract-types",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-allocate-types",
+        "SYS-infer-types",
+        "depends-on"
+      ],
+      [
+        "SYS-merger",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-contract-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-coverage",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-differ",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-loader",
+        "SYS-schema",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-monitoring-(pipeline)",
+        "depends-on"
+      ],
+      [
+        "SYS-allocate-types",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-monitoring-(orchestration)",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-validate-types",
+        "SYS-infer-types",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-relate-types",
+        "SYS-infer-types",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-relate-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-schema",
+        "depends-on"
+      ],
+      [
+        "SYS-specify-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-merger",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-validate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-infer-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-validator",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-contract-types",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-validate-types",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-allocate-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-schema",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-relate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-slicer",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-deep-decompose",
+        "depends-on"
+      ],
+      [
+        "SYS-contract-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-relate-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-synthesize-types",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-slicer",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-coverage",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-monitoring-(orchestration)",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-learning",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-monitoring-(orchestration)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-validate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-cli-main",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-allocate-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-learning",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-differ",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-infer-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-decompose-types",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-relate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-relate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-validate-types",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-infer-types",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-merger",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-monitoring-(pipeline)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(core)",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-schema",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-monitoring-(orchestration)",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-auto-enrich",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-specify-types",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-validator",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-validate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-merger",
+        "SYS-discovery",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-infer-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-validator",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-relate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-validate-types",
+        "SYS-protocol",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-monitoring-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-learning",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-monitoring-(pipeline)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-learning",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-validator",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-body-hints",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-call-graph",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-specify-types",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-recursive",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-decompose-types",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-slicer",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-parser",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-representativeness",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-recursive",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-infer-types",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-parser",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-visualize",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(pipeline)",
+        "SYS-validate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-decomposer",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(extract)",
+        "SYS-loader",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-merger",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-observe-types",
+        "depends-on"
+      ],
+      [
+        "SYS-decompose-types",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-confidence",
+        "depends-on"
+      ],
+      [
+        "SYS-behavior",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-decompose-types",
+        "depends-on"
+      ],
+      [
+        "SYS-synthesize-types",
+        "SYS-monitoring-(architecture_model)",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(core)",
+        "SYS-cli-main",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(orchestration)",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-coverage",
+        "SYS-infrastructure",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-source-block-quality",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-representativeness",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-validate-types",
+        "SYS-relate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-visualize",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-deep-decompose",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-grouping",
+        "SYS-coverage",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(authoring)",
+        "SYS-grouping",
+        "depends-on"
+      ],
+      [
+        "SYS-monitoring-(manifest)",
+        "SYS-behavior",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-corrections",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-call-graph",
+        "SYS-body-hints",
+        "depends-on"
+      ],
+      [
+        "SYS-observe-types",
+        "SYS-allocate-types",
+        "depends-on"
+      ],
+      [
+        "SYS-regen-score",
+        "SYS-slicer",
+        "depends-on"
+      ],
+      [
+        "SYS-auto-enrich",
+        "SYS-monitoring-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-decomposer",
+        "SYS-differ",
+        "depends-on"
+      ],
+      [
+        "SYS-source-block-quality",
+        "SYS-regen-score",
+        "depends-on"
+      ],
+      [
+        "SYS-confidence",
+        "SYS-parser",
+        "depends-on"
+      ]
+    ]
+  },
+  "quality": {
+    "__dataclass__": "QualityMetrics",
+    "__module__": "architecture_model.pipeline.protocol",
+    "score": 100.0,
+    "sub_scores": {
+      "system_count": 4.0,
+      "inline_count": 43.0
+    },
+    "thresholds": {},
+    "llm_prompt": ""
+  },
+  "diagnostics": [],
+  "uncertainties": [],
+  "input_hash": "",
+  "duration_ms": 0,
+  "version": "1.0"
+}

@@ -1,0 +1,63 @@
+{
+  "__dataclass__": "StageResult",
+  "__module__": "architecture_model.pipeline.protocol",
+  "output": {
+    "__dataclass__": "ValidateResult",
+    "__module__": "architecture_model.pipeline.validate_types",
+    "score": 80,
+    "issues": [
+      {
+        "__dataclass__": "ValidationIssue",
+        "__module__": "architecture_model.pipeline.validate_types",
+        "severity": "warning",
+        "message": "Capability Monitoring Checks (CAP-2) has no realizing component",
+        "entity_id": "CAP-2",
+        "rule": "capability_realization"
+      },
+      {
+        "__dataclass__": "ValidationIssue",
+        "__module__": "architecture_model.pipeline.validate_types",
+        "severity": "warning",
+        "message": "Capability Regen Readiness (CAP-16) has no realizing component",
+        "entity_id": "CAP-16",
+        "rule": "capability_realization"
+      },
+      {
+        "__dataclass__": "ValidationIssue",
+        "__module__": "architecture_model.pipeline.validate_types",
+        "severity": "warning",
+        "message": "Capability Decompose (CAP-38) has no realizing component",
+        "entity_id": "CAP-38",
+        "rule": "capability_realization"
+      },
+      {
+        "__dataclass__": "ValidationIssue",
+        "__module__": "architecture_model.pipeline.validate_types",
+        "severity": "warning",
+        "message": "Capability Behavior Flows (CAP-40) has no realizing component",
+        "entity_id": "CAP-40",
+        "rule": "capability_realization"
+      }
+    ],
+    "is_valid": true
+  },
+  "quality": {
+    "__dataclass__": "QualityMetrics",
+    "__module__": "architecture_model.pipeline.protocol",
+    "score": 80,
+    "sub_scores": {
+      "error_count": 0.0,
+      "warning_count": 4.0,
+      "info_count": 0.0
+    },
+    "thresholds": {
+      "error_count": 0.0
+    },
+    "llm_prompt": ""
+  },
+  "diagnostics": [],
+  "uncertainties": [],
+  "input_hash": "",
+  "duration_ms": 0,
+  "version": "1.0"
+}

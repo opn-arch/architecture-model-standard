@@ -1,0 +1,602 @@
+{
+  "__dataclass__": "StageResult",
+  "__module__": "architecture_model.pipeline.protocol",
+  "output": {
+    "__dataclass__": "AllocationResult",
+    "__module__": "architecture_model.pipeline.allocate_types",
+    "components": [
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-1-1",
+        "name": "Monitoring (architecture_model)",
+        "capability_id": "CAP-1",
+        "files": [
+          "src/architecture_model/monitoring.py",
+          "src/architecture_model/monitoring_checks.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-1-2",
+        "name": "Monitoring (pipeline)",
+        "capability_id": "CAP-1",
+        "files": [
+          "src/architecture_model/pipeline/coordinator.py",
+          "src/architecture_model/pipeline/cache.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-1-3",
+        "name": "Monitoring (core)",
+        "capability_id": "CAP-1",
+        "files": [
+          "src/architecture_model/core/cluster.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-1-4",
+        "name": "Monitoring (manifest)",
+        "capability_id": "CAP-1",
+        "files": [
+          "src/architecture_model/manifest/interfaces.py",
+          "src/architecture_model/manifest/metrics.py",
+          "src/architecture_model/manifest/scanner.py",
+          "src/architecture_model/manifest/slicers.py",
+          "src/architecture_model/manifest/multi_scanner.py",
+          "src/architecture_model/manifest/scan_cache.py",
+          "src/architecture_model/manifest/kt_scanner.py",
+          "src/architecture_model/manifest/generator.py",
+          "src/architecture_model/manifest/blocks.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-1-5",
+        "name": "Monitoring (authoring)",
+        "capability_id": "CAP-1",
+        "files": [
+          "src/architecture_model/authoring/gate.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-1-6",
+        "name": "Monitoring (orchestration)",
+        "capability_id": "CAP-1",
+        "files": [
+          "src/architecture_model/orchestration/use_case_inference.py",
+          "src/architecture_model/orchestration/capability_inference.py",
+          "src/architecture_model/orchestration/enrichment_context.py",
+          "src/architecture_model/orchestration/trigger_detection.py",
+          "src/architecture_model/orchestration/pipeline.py",
+          "src/architecture_model/orchestration/compaction.py",
+          "src/architecture_model/orchestration/naming_context.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-1-7",
+        "name": "Monitoring (extract)",
+        "capability_id": "CAP-1",
+        "files": [
+          "src/architecture_model/extract/from_code.py",
+          "src/architecture_model/extract/from_artifacts.py",
+          "src/architecture_model/extract/constraint_detector.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-3",
+        "name": "Observe Types",
+        "capability_id": "CAP-3",
+        "files": [
+          "src/architecture_model/pipeline/observe_types.py",
+          "src/architecture_model/pipeline/observe.py",
+          "src/architecture_model/core/types.py",
+          "src/architecture_model/manifest/types.py",
+          "src/architecture_model/pipeline/context_gen.py",
+          "src/architecture_model/pipeline/artifacts.py",
+          "src/architecture_model/pipeline/emit.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-4",
+        "name": "Synthesize Types",
+        "capability_id": "CAP-4",
+        "files": [
+          "src/architecture_model/pipeline/synthesize_types.py",
+          "src/architecture_model/pipeline/synthesize.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-5",
+        "name": "Decompose Types",
+        "capability_id": "CAP-5",
+        "files": [
+          "src/architecture_model/pipeline/decompose_types.py",
+          "src/architecture_model/pipeline/decompose.py",
+          "src/architecture_model/orchestration/decompose.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-6",
+        "name": "Contract Types",
+        "capability_id": "CAP-6",
+        "files": [
+          "src/architecture_model/pipeline/contract_types.py",
+          "src/architecture_model/pipeline/contract.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-7",
+        "name": "Allocate Types",
+        "capability_id": "CAP-7",
+        "files": [
+          "src/architecture_model/pipeline/allocate_types.py",
+          "src/architecture_model/pipeline/allocate.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-8",
+        "name": "Validate Types",
+        "capability_id": "CAP-8",
+        "files": [
+          "src/architecture_model/pipeline/validate_types.py",
+          "src/architecture_model/pipeline/validate.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-9",
+        "name": "Regen Score",
+        "capability_id": "CAP-9",
+        "files": [
+          "src/architecture_model/pipeline/regen_score.py",
+          "src/architecture_model/core/regen_readiness.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-10",
+        "name": "Protocol",
+        "capability_id": "CAP-10",
+        "files": [
+          "src/architecture_model/pipeline/protocol.py",
+          "src/architecture_model/manifest/protocol.py",
+          "src/architecture_model/pipeline/lessons.py",
+          "src/architecture_model/pipeline/report.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-11",
+        "name": "Specify Types",
+        "capability_id": "CAP-11",
+        "files": [
+          "src/architecture_model/pipeline/specify_types.py",
+          "src/architecture_model/pipeline/specify.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-12",
+        "name": "Relate Types",
+        "capability_id": "CAP-12",
+        "files": [
+          "src/architecture_model/pipeline/relate_types.py",
+          "src/architecture_model/pipeline/relate.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-13",
+        "name": "Learning",
+        "capability_id": "CAP-13",
+        "files": [
+          "src/architecture_model/pipeline/learning.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-14",
+        "name": "Infer Types",
+        "capability_id": "CAP-14",
+        "files": [
+          "src/architecture_model/pipeline/infer.py",
+          "src/architecture_model/pipeline/infer_types.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-15",
+        "name": "Validator",
+        "capability_id": "CAP-15",
+        "files": [
+          "src/architecture_model/core/validator.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-17",
+        "name": "Confidence",
+        "capability_id": "CAP-17",
+        "files": [
+          "src/architecture_model/core/confidence.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-18",
+        "name": "Representativeness",
+        "capability_id": "CAP-18",
+        "files": [
+          "src/architecture_model/core/representativeness.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-19",
+        "name": "Differ",
+        "capability_id": "CAP-19",
+        "files": [
+          "src/architecture_model/core/differ.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-20",
+        "name": "Coverage",
+        "capability_id": "CAP-20",
+        "files": [
+          "src/architecture_model/core/coverage.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-21",
+        "name": "Visualize",
+        "capability_id": "CAP-21",
+        "files": [
+          "src/architecture_model/core/visualize.py",
+          "src/architecture_model/cli/visualize.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-22",
+        "name": "Parser",
+        "capability_id": "CAP-22",
+        "files": [
+          "src/architecture_model/core/parser.py",
+          "src/architecture_model/authoring/parser.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-23",
+        "name": "Corrections",
+        "capability_id": "CAP-23",
+        "files": [
+          "src/architecture_model/pipeline/corrections.py",
+          "src/architecture_model/core/corrections.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-24",
+        "name": "Decomposer",
+        "capability_id": "CAP-24",
+        "files": [
+          "src/architecture_model/core/decomposer.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-25",
+        "name": "Slicer",
+        "capability_id": "CAP-25",
+        "files": [
+          "src/architecture_model/core/slicer.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-26",
+        "name": "Source Block Quality",
+        "capability_id": "CAP-26",
+        "files": [
+          "src/architecture_model/core/source_block_assign.py",
+          "src/architecture_model/core/source_block_quality.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-27",
+        "name": "Merger",
+        "capability_id": "CAP-27",
+        "files": [
+          "src/architecture_model/core/merger.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-28",
+        "name": "Loader",
+        "capability_id": "CAP-28",
+        "files": [
+          "src/architecture_model/config/loader.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-29",
+        "name": "Schema",
+        "capability_id": "CAP-29",
+        "files": [
+          "src/architecture_model/config/schema.py",
+          "src/architecture_model/profiles/schema.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-30",
+        "name": "Behavior",
+        "capability_id": "CAP-30",
+        "files": [
+          "src/architecture_model/manifest/behavior.py",
+          "src/architecture_model/orchestration/behavior_flows.py",
+          "src/architecture_model/orchestration/behavior_decompose.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-31",
+        "name": "Grouping",
+        "capability_id": "CAP-31",
+        "files": [
+          "src/architecture_model/manifest/grouping.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-32",
+        "name": "Recursive",
+        "capability_id": "CAP-32",
+        "files": [
+          "src/architecture_model/manifest/recursive.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-33",
+        "name": "Call Graph",
+        "capability_id": "CAP-33",
+        "files": [
+          "src/architecture_model/manifest/call_graph.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-34",
+        "name": "Body Hints",
+        "capability_id": "CAP-34",
+        "files": [
+          "src/architecture_model/manifest/body_hints.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-35",
+        "name": "Discovery",
+        "capability_id": "CAP-35",
+        "files": [
+          "src/architecture_model/utils/discovery.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-36",
+        "name": "Store",
+        "capability_id": "CAP-36",
+        "files": [
+          "src/architecture_model/persistence/store.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-37",
+        "name": "Auto Enrich",
+        "capability_id": "CAP-37",
+        "files": [
+          "src/architecture_model/orchestration/auto_enrich.py",
+          "src/architecture_model/orchestration/enrich.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-39",
+        "name": "Deep Decompose",
+        "capability_id": "CAP-39",
+        "files": [
+          "src/architecture_model/orchestration/deep_decompose.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-41",
+        "name": "Table Parser",
+        "capability_id": "CAP-41",
+        "files": [
+          "src/architecture_model/extract/table_parser.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-42",
+        "name": "Flatfiles",
+        "capability_id": "CAP-42",
+        "files": [
+          "src/architecture_model/export/flatfiles.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-43",
+        "name": "Reference",
+        "capability_id": "CAP-43",
+        "files": [
+          "src/architecture_model/export/reference.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-44",
+        "name": "CLI Main",
+        "capability_id": "CAP-44",
+        "files": [
+          "src/architecture_model/__main__.py",
+          "src/architecture_model/cli/main.py"
+        ],
+        "layer": "data"
+      },
+      {
+        "__dataclass__": "ComponentAllocation",
+        "__module__": "architecture_model.pipeline.allocate_types",
+        "id": "COMP-45",
+        "name": "Infrastructure",
+        "capability_id": "",
+        "files": [
+          "src/architecture_model/patterns.py",
+          "src/architecture_model/pipeline/emit_types.py",
+          "src/architecture_model/core/compression.py",
+          "src/architecture_model/manifest/chains.py",
+          "src/architecture_model/manifest/display.py",
+          "src/architecture_model/manifest/ts_scanner.py",
+          "src/architecture_model/extract/route_detector.py"
+        ],
+        "layer": "infra"
+      }
+    ],
+    "unallocated": [],
+    "file_coverage": 100.0,
+    "boundary_coherence": 100.0
+  },
+  "quality": {
+    "__dataclass__": "QualityMetrics",
+    "__module__": "architecture_model.pipeline.protocol",
+    "score": 100,
+    "sub_scores": {
+      "file_coverage": 100.0,
+      "boundary_coherence": 100.0,
+      "component_count": 47.0
+    },
+    "thresholds": {
+      "file_coverage": 95.0,
+      "boundary_coherence": 50.0
+    },
+    "llm_prompt": ""
+  },
+  "diagnostics": [],
+  "uncertainties": [],
+  "input_hash": "99",
+  "duration_ms": 18,
+  "version": "1.0"
+}

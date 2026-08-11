@@ -7,7 +7,7 @@ Usage:
     architecture-model slice <model.yaml> --artifact use-cases
     architecture-model diff <old.yaml> <new.yaml>
     architecture-model stats <model.yaml>
-    architecture-model init <path>
+    architecture-model pipeline <path> [--stage observe]
     architecture-model manifest <path>
 """
 
@@ -47,16 +47,6 @@ def main(argv: list[str] | None = None) -> int:
     # --- stats ---
     p_stats = subparsers.add_parser("stats", help="Show model statistics")
     p_stats.add_argument("model", help="Path to architecture-model.yaml")
-
-    # --- init ---
-    p_init = subparsers.add_parser(
-        "init", help="Auto-generate .architecture-model.yaml for a project"
-    )
-    p_init.add_argument(
-        "path", nargs="?", default=".", help="Project root directory (default: cwd)"
-    )
-    p_init.add_argument("--force", action="store_true", help="Overwrite existing config file")
-    p_init.add_argument("--config-only", action="store_true", help="Only write config, skip pipeline and docs")
 
     # --- impact ---
     p_impact = subparsers.add_parser("impact", help="Impact analysis for an entity")
@@ -123,7 +113,6 @@ def main(argv: list[str] | None = None) -> int:
 
     # Dispatch
     handlers = {
-        "init": _cmd_init,
         "validate": _cmd_validate,
         "slice": _cmd_slice,
         "diff": _cmd_diff,
@@ -145,82 +134,6 @@ def main(argv: list[str] | None = None) -> int:
 # ---------------------------------------------------------------------------
 # Command handlers
 # ---------------------------------------------------------------------------
-
-
-def _cmd_init(args) -> int:
-    from ..config.loader import discover_config, write_config, CONFIG_FILENAME
-
-    root = Path(args.path).resolve()
-    if not root.is_dir():
-        print(f"ERROR: {root} is not a directory")
-        return 1
-
-    config_path = root / CONFIG_FILENAME
-    if config_path.exists() and not args.force:
-        print(f"Config already exists: {config_path}")
-        print("Use --force to overwrite.")
-        return 1
-
-    print(f"Scanning: {root}")
-    config, _report = discover_config(root)
-
-    # Summary
-    print(f"\nProject: {config.name}")
-    print(f"System:  {config.system}")
-    print(f"Layers:  {len(config.layers)}")
-    for layer in config.layers:
-        print(f"  - {layer.id}: {layer.dirs}")
-    print(f"Functional Blocks: {len(config.functional_blocks)}")
-    for fb in config.functional_blocks:
-        print(f"  - [{fb.id}] {fb.name} ({len(fb.files)} files)")
-        if fb.description_source:
-            print(f"    {fb.description_source}")
-    print(f"Metrics: {len(config.metrics)}")
-    for m in config.metrics:
-        print(f"  - {m.label}: {m.path} ({m.pattern})")
-
-    # Write
-    out_path = write_config(config, root)
-    print(f"\nWritten: {out_path}")
-
-    if getattr(args, "config_only", False):
-        return 0
-
-    # Run full pipeline
-    try:
-        from ..orchestration.pipeline import run_pipeline
-
-        print("\nRunning pipeline...")
-        run_pipeline(root, from_scratch=True)
-        print("Pipeline complete.")
-    except Exception as e:
-        print(f"Pipeline warning: {e}")
-
-    # Generate docs
-    try:
-        from ..core.parser import load_model
-        from ..docs import generate_docs
-
-        model_path = root / ".architecture-model.yaml"
-        if model_path.exists():
-            model = load_model(str(model_path))
-            docs_dir = root / ".architecture-models" / "docs"
-            generate_docs(model, docs_dir)
-            print(f"Docs generated: {docs_dir}")
-    except Exception as e:
-        print(f"Docs warning: {e}")
-
-    # Show compression stats
-    try:
-        from ..core.compression import compute_compression_stats, format_compression_summary
-
-        stats = compute_compression_stats(root)
-        summary = format_compression_summary(stats)
-        print(f"\n{summary}")
-    except Exception as e:
-        print(f"Compression stats warning: {e}")
-
-    return 0
 
 
 def _cmd_validate(args) -> int:
