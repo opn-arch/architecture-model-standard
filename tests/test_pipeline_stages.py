@@ -5,6 +5,7 @@ from architecture_model.pipeline.observe import ObserveStage
 from architecture_model.pipeline.infer import InferStage
 from architecture_model.pipeline.allocate import AllocateStage
 from architecture_model.pipeline.relate import RelateStage
+from architecture_model.pipeline.decompose import DecomposeStage
 from architecture_model.pipeline.specify import SpecifyStage
 from architecture_model.pipeline.contract import ContractStage
 from architecture_model.pipeline.validate import ValidateStage
@@ -390,3 +391,50 @@ def test_allocate_splits_by_package_not_leaf_dir():
     groups = _group_by_package_level(files)
     assert set(groups.keys()) == {"models", "backends", "sql"}
     assert all(len(v) == 6 for v in groups.values())
+
+
+def test_full_pipeline_large_repo_produces_sensible_systems(tmp_path):
+    """End-to-end: a large repo should produce fewer than 20 caps and 25 components."""
+    import shutil
+
+    # Create 6 packages with varying module counts (83 total)
+    packages = {
+        "db": 20, "core": 18, "template": 12,
+        "forms": 10, "views": 15, "utils": 8,
+    }
+    for pkg, count in packages.items():
+        pkg_dir = tmp_path / pkg
+        pkg_dir.mkdir()
+        (pkg_dir / "__init__.py").write_text("")
+        for i in range(count):
+            (pkg_dir / f"mod_{i}.py").write_text(
+                f"class {pkg.title()}Class{i}:\n"
+                f"    pass\n\n"
+                f"def func_a_{i}():\n    return {i}\n\n"
+                f"def func_b_{i}():\n    return {i}\n\n"
+                f"def func_c_{i}():\n    return {i}\n\n"
+                f"def func_d_{i}():\n    return {i}\n"
+            )
+
+    out_dir = tmp_path / ".architecture" / "pipeline-cache"
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=out_dir)
+
+    # Run stages in order
+    ctx.cache["observe"] = ObserveStage().run(ctx)
+    ctx.cache["infer"] = InferStage().run(ctx)
+    ctx.cache["allocate"] = AllocateStage().run(ctx)
+    ctx.cache["relate"] = RelateStage().run(ctx)
+    ctx.cache["decompose"] = DecomposeStage().run(ctx)
+
+    # Extract results
+    infer_result = ctx.get("infer").output
+    alloc_result = ctx.get("allocate").output
+    decompose_result = ctx.get("decompose").output
+
+    caps = infer_result.capabilities
+    comps = alloc_result.components
+    systems = decompose_result.systems
+
+    assert len(caps) <= 20, f"Too many capabilities: {len(caps)}"
+    assert len(comps) <= 25, f"Too many components: {len(comps)}"
+    assert len(systems) >= 3, f"Too few systems: {len(systems)}"
