@@ -55,8 +55,15 @@ class EmitStage:
         if synth.top_manifest_json:
             _write_file(out_dir / "manifest.json", synth.top_manifest_json, result)
 
-        # 3. Write top-level reports
-        if synth.pipeline_report_md:
+        # 3. Write top-level reports (regenerate with accumulated LLM calls from ctx)
+        if ctx.llm_calls:
+            from architecture_model.pipeline.report import generate_pipeline_report
+            all_results = {name: ctx.cache[name] for name in ctx.cache}
+            fresh_report = generate_pipeline_report(
+                all_results, system_name=ctx.repo_path.name, llm_calls=ctx.llm_calls
+            )
+            _write_file(out_dir / "pipeline-report.md", fresh_report, result)
+        elif synth.pipeline_report_md:
             _write_file(out_dir / "pipeline-report.md", synth.pipeline_report_md, result)
         if synth.lessons_md:
             _write_file(out_dir / "lessons.md", synth.lessons_md, result)
