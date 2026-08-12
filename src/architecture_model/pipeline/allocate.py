@@ -290,19 +290,47 @@ def _import_affinity(mod: ModuleRecord, comp: ComponentAllocation, edges: list[I
     return score
 
 
+def _group_by_package_level(files: list[Path]) -> dict[str, list[Path]]:
+    """Group files by the first directory level after their common prefix.
+
+    For files like ``django/db/models/fields/a.py`` and ``django/db/backends/sqlite3/b.py``,
+    the common prefix is ``django/db`` and the grouping keys are ``models`` and ``backends``.
+    Files sitting directly at the prefix level go into a ``(root)`` group.
+    """
+    if not files:
+        return {}
+
+    # Find common prefix by iterating path parts until values diverge
+    parts_list = [f.parent.parts for f in files]
+    min_len = min(len(p) for p in parts_list)
+    prefix_len = 0
+    for i in range(min_len):
+        if len({p[i] for p in parts_list}) == 1:
+            prefix_len = i + 1
+        else:
+            break
+
+    groups: dict[str, list[Path]] = defaultdict(list)
+    for f in files:
+        parent_parts = f.parent.parts
+        if len(parent_parts) > prefix_len:
+            key = parent_parts[prefix_len]
+        else:
+            key = "(root)"
+        groups[key].append(f)
+    return dict(groups)
+
+
 def _split_oversized(components: list[ComponentAllocation]) -> list[ComponentAllocation]:
     """Split components exceeding MAX_COMPONENT_FILES."""
     result = []
     for comp in components:
         if len(comp.files) > MAX_COMPONENT_FILES:
-            # Split by subdirectory
-            by_dir: dict[str, list[Path]] = defaultdict(list)
-            for f in comp.files:
-                by_dir[str(f.parent)].append(f)
+            groups = _group_by_package_level(comp.files)
 
-            if len(by_dir) > 1:
-                for i, (dir_name, files) in enumerate(by_dir.items()):
-                    sub_name = Path(dir_name).stem if dir_name != "." else "core"
+            if len(groups) > 1:
+                for i, (pkg_name, files) in enumerate(groups.items()):
+                    sub_name = pkg_name if pkg_name != "(root)" else "core"
                     result.append(ComponentAllocation(
                         id=f"{comp.id}-{i + 1}",
                         name=f"{comp.name} ({sub_name})",

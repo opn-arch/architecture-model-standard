@@ -360,3 +360,33 @@ def test_infer_groups_by_package_for_large_repos(tmp_path):
     assert len(caps) >= 3
     assert len(caps) <= 10
     assert any("db" in c.name.lower() for c in caps)
+
+
+def test_allocate_splits_by_package_not_leaf_dir():
+    """When splitting oversized components, group by sub-package, not leaf dir."""
+    from architecture_model.pipeline.allocate import _split_oversized, _group_by_package_level
+    from architecture_model.pipeline.allocate_types import ComponentAllocation
+
+    # 18 files across 3 sub-packages (models, backends, sql), each with 2 sub-dirs (a, b), 3 files each
+    files = []
+    for pkg in ("models", "backends", "sql"):
+        for sub in ("a", "b"):
+            for i in range(3):
+                files.append(Path(f"django/db/{pkg}/{sub}/file_{i}.py"))
+
+    comp = ComponentAllocation(
+        id="COMP-1",
+        name="Database",
+        files=files,
+        layer="data",
+    )
+
+    result = _split_oversized([comp])
+    # Should split by sub-package (models, backends, sql) = 3, not by leaf dir (6)
+    assert len(result) >= 2
+    assert len(result) <= 4
+
+    # Also test the helper directly
+    groups = _group_by_package_level(files)
+    assert set(groups.keys()) == {"models", "backends", "sql"}
+    assert all(len(v) == 6 for v in groups.values())
