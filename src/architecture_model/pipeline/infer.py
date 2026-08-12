@@ -29,6 +29,9 @@ from .protocol import (
 from .corrections import get_corrections_for_stage
 
 
+_LARGE_REPO_MODULE_THRESHOLD = 50
+
+
 class InferStage:
     """Infers capabilities, actors, and behaviors from observed Inventory."""
 
@@ -224,6 +227,17 @@ def _infer_from_domain_modules(
     existing_names = {c.name.lower() for c in existing}
     capabilities = []
 
+    # Filter source modules once for both paths
+    source_modules = [
+        mod for mod in modules
+        if not _is_non_source_module(mod)
+        and mod.path.stem not in ("utils", "helpers", "common", "base", "constants", "types", "config")
+    ]
+
+    # Large repos: group by package instead of one-cap-per-file
+    if not scoped and len(source_modules) > _LARGE_REPO_MODULE_THRESHOLD:
+        return _infer_capabilities_by_package(source_modules, existing_names)
+
     # In scoped contexts, each meaningful file is a capability
     min_funcs = 1 if scoped else 3
     min_classes = 1 if scoped else 2
@@ -248,6 +262,50 @@ def _infer_from_domain_modules(
                     evidence_source="domain_module",
                 ))
                 existing_names.add(cap_name.lower())
+
+    return capabilities
+
+
+def _infer_capabilities_by_package(
+    source_modules: list[ModuleRecord],
+    existing_names: set[str],
+) -> list[InferredCapability]:
+    """Group modules by top-level package directory for large repos."""
+    # Find common path prefix
+    all_parts = [mod.path.parts for mod in source_modules]
+    if not all_parts:
+        return []
+    prefix_len = 0
+    for i in range(min(len(p) for p in all_parts)):
+        values = {p[i] for p in all_parts}
+        if len(values) == 1:
+            prefix_len = i + 1
+        else:
+            break
+
+    # Group by directory immediately after common prefix
+    groups: dict[str, list[ModuleRecord]] = defaultdict(list)
+    for mod in source_modules:
+        parts = mod.path.parts
+        if len(parts) > prefix_len:
+            group_key = parts[prefix_len]
+        else:
+            group_key = "(root)"
+        groups[group_key].append(mod)
+
+    capabilities = []
+    for group_name, mods in groups.items():
+        if group_name == "(root)" and len(mods) < 3:
+            continue
+        cap_name = group_name.replace("_", " ").title()
+        if cap_name.lower() not in existing_names:
+            capabilities.append(InferredCapability(
+                id="",
+                name=cap_name,
+                description=f"Package group with {len(mods)} modules",
+                evidence_source="package_group",
+            ))
+            existing_names.add(cap_name.lower())
 
     return capabilities
 

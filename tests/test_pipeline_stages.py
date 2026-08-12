@@ -337,3 +337,26 @@ class TestValidateStage:
         stage = ValidateStage()
         assert stage.name == "validate"
         assert "relate" in stage.requires
+
+
+def test_infer_groups_by_package_for_large_repos(tmp_path):
+    """Large repos (>50 modules) group capabilities by top-level package."""
+    src = tmp_path / "src"
+    for pkg in ("db", "core", "template", "forms"):
+        pkg_dir = src / pkg
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "__init__.py").write_text("")
+        for i in range(15):
+            funcs = "\n".join(
+                f"def func_{j}():\n    pass\n" for j in range(5)
+            )
+            (pkg_dir / f"mod_{i}.py").write_text(funcs)
+
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+    ctx.cache["observe"] = ObserveStage().run(ctx)
+    ctx.cache["infer"] = InferStage().run(ctx)
+
+    caps = ctx.cache["infer"].output.capabilities
+    assert len(caps) >= 3
+    assert len(caps) <= 10
+    assert any("db" in c.name.lower() for c in caps)
