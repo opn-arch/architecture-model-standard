@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from architecture_model.pipeline.cache import PipelineCache
 from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
 from architecture_model.pipeline.lessons import LessonEntry, generate_lessons
 from architecture_model.pipeline.protocol import (
@@ -245,11 +246,48 @@ class SynthesizeStage:
             stages = _decide_stages(boundary)
             last_stage = stages[-1]
 
-            if coordinator is not None:
-                # Create scoped context
+            # Check for pre-existing scoped cache (from agent's enriched MCP runs)
+            slug = _slugify(boundary.name)
+            scoped_cache_dir = ctx.output_dir.parent / slug
+            scoped_cache = PipelineCache(scoped_cache_dir)
+            if scoped_cache.exists():
+                # Use pre-existing enriched results from agent's scoped pipeline run
+                sub_results = scoped_cache.load_all()
+                sub_llm_calls = scoped_cache.load_llm_calls()
+
+                model_yaml = _build_system_model_yaml(boundary, sub_results)
+                manifest_json = _build_manifest_json(sub_results)
+                report_md = generate_pipeline_report(
+                    sub_results,
+                    system_name=boundary.name,
+                    llm_calls=sub_llm_calls,
+                )
+                lesson_entries = _collect_lessons(sub_results, sub_llm_calls)
+                lessons_md = generate_lessons(lesson_entries, system_name=boundary.name)
+
+                sm = SystemModel(
+                    system_id=boundary.system_id,
+                    name=boundary.name,
+                    model_yaml=model_yaml,
+                    manifest_json=manifest_json,
+                    pipeline_report_md=report_md,
+                    lessons_md=lessons_md,
+                    stage_results=sub_results,
+                    llm_calls=sub_llm_calls,
+                )
+                all_llm_calls.extend(sub_llm_calls)
+                diagnostics.append(
+                    Diagnostic(
+                        severity="info",
+                        code="SCOPED_CACHE_USED",
+                        message=f"Used pre-existing scoped cache for {boundary.name}",
+                    )
+                )
+            elif coordinator is not None:
+                # Create scoped context and run deterministically
                 sub_ctx = PipelineContext(
                     repo_path=ctx.repo_path,
-                    output_dir=ctx.output_dir / _slugify(boundary.name),
+                    output_dir=ctx.output_dir / slug,
                     scope=boundary.system_id,
                     scope_files=[Path(f) for f in boundary.files],
                     config=ctx.config,
@@ -281,7 +319,7 @@ class SynthesizeStage:
                 )
                 all_llm_calls.extend(sub_llm_calls)
             else:
-                # No coordinator — create minimal system model
+                # No coordinator and no cached results — create minimal system model
                 sm = SystemModel(
                     system_id=boundary.system_id,
                     name=boundary.name,
