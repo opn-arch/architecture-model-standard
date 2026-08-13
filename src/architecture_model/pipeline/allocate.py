@@ -222,28 +222,38 @@ def _seed_from_capabilities(
     """Create one component per capability, seed files by name matching.
 
     Each file is assigned to at most one component (first match wins).
-    Uses exact stem match only — no substring/path matching to prevent greedy allocation.
+    For package_group capabilities, matches by directory path.
+    For other capabilities, uses exact stem match.
     """
     components = []
     assigned: set[Path] = set()
 
     for i, cap in enumerate(capabilities, 1):
-        # Match modules whose stem exactly matches a capability word
-        cap_words = set(cap.name.lower().replace(" management", "").replace("cli ", "").split())
-        # Also try underscore-joined variants (e.g. "Shell Completion" → "shell_completion")
-        cap_slug = "_".join(cap.name.lower().replace(" management", "").replace("cli ", "").split())
         matched_files = []
 
-        for mod in modules:
-            if mod.path in assigned:
-                continue
-            mod_stem = mod.path.stem.lower().lstrip("_")  # strip leading _ for _compat, _utils
-            # Exact stem match
-            if mod_stem == cap_slug or mod_stem in cap_words:
-                matched_files.append(mod.path)
-            # Stem starts with cap word (e.g. "termui" matches "termui_impl" → "termui")
-            elif any(mod_stem == w or mod_stem.startswith(w + "_") for w in cap_words if len(w) > 3):
-                matched_files.append(mod.path)
+        if cap.evidence_source == "package_group":
+            # Match files whose path contains this package directory
+            pkg_name = "_".join(cap.name.lower().split())
+            for mod in modules:
+                if mod.path in assigned:
+                    continue
+                # Check if any parent directory matches the package name
+                parts = [p.lower() for p in mod.path.parts[:-1]]  # exclude filename
+                if pkg_name in parts:
+                    matched_files.append(mod.path)
+        else:
+            # Original stem-matching logic for route/domain/cli caps
+            cap_words = set(cap.name.lower().replace(" management", "").replace("cli ", "").split())
+            cap_slug = "_".join(cap.name.lower().replace(" management", "").replace("cli ", "").split())
+
+            for mod in modules:
+                if mod.path in assigned:
+                    continue
+                mod_stem = mod.path.stem.lower().lstrip("_")
+                if mod_stem == cap_slug or mod_stem in cap_words:
+                    matched_files.append(mod.path)
+                elif any(mod_stem == w or mod_stem.startswith(w + "_") for w in cap_words if len(w) > 3):
+                    matched_files.append(mod.path)
 
         assigned.update(matched_files)
         comp = ComponentAllocation(

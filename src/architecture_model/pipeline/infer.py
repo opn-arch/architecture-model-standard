@@ -57,12 +57,37 @@ class InferStage:
 
         # --- Strategy 1: Routes → capabilities grouped by URL prefix ---
         if inventory.routes:
-            route_caps, route_actors = _infer_from_routes(inventory.routes)
-            for cap in route_caps:
+            # For large repos, consolidate routes into a single capability
+            source_count = sum(
+                1 for m in inventory.modules
+                if not _is_non_source_module(m)
+                and m.path.stem not in ("utils", "helpers", "common", "base",
+                                        "constants", "types", "config")
+            )
+            if source_count > _LARGE_REPO_MODULE_THRESHOLD:
+                # Single "Web Routes" capability for all routes
                 cap_counter += 1
-                cap.id = f"CAP-{cap_counter}"
-                capabilities.append(cap)
-            actors.extend(route_actors)
+                capabilities.append(InferredCapability(
+                    id=f"CAP-{cap_counter}",
+                    name="Web Routes",
+                    description=f"HTTP routing ({len(inventory.routes)} endpoints)",
+                    evidence_source="routes",
+                ))
+                # Still infer actors from routes
+                has_auth = any(r.is_authenticated for r in inventory.routes)
+                actors.append(InferredActor(
+                    id="ACT-1",
+                    name="API Consumer",
+                    actor_type="system" if not has_auth else "human",
+                    evidence_source="routes",
+                ))
+            else:
+                route_caps, route_actors = _infer_from_routes(inventory.routes)
+                for cap in route_caps:
+                    cap_counter += 1
+                    cap.id = f"CAP-{cap_counter}"
+                    capabilities.append(cap)
+                actors.extend(route_actors)
 
         # --- Strategy 2: Domain modules → capabilities ---
         is_scoped = bool(ctx.scope_files)
@@ -289,6 +314,9 @@ def _infer_capabilities_by_package(
         parts = mod.path.parts
         if len(parts) > prefix_len:
             group_key = parts[prefix_len]
+            # If it's a file (not a directory), put in root
+            if group_key.endswith(".py"):
+                group_key = "(root)"
         else:
             group_key = "(root)"
         groups[group_key].append(mod)
