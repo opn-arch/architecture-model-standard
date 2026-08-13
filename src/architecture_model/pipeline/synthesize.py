@@ -157,16 +157,13 @@ def _build_system_model_yaml(
     # Derive layers from unique layer values on components
     layers: list[dict[str, Any]] = []
     seen_layers: set[str] = set()
-    for comp in components:
-        # Need to get layer from allocation
-        pass
-    alloc_result2 = results.get("allocate")
-    if alloc_result2 and alloc_result2.output and hasattr(alloc_result2.output, "components"):
-        for comp in alloc_result2.output.components:
-            if comp.layer and comp.layer not in seen_layers:
-                seen_layers.add(comp.layer)
-                slug = re.sub(r"[^a-z0-9]+", "-", comp.layer.lower()).strip("-")
-                layers.append({"id": f"LAYER-{slug}", "name": comp.layer})
+    if alloc_result and alloc_result.output and hasattr(alloc_result.output, "components"):
+        for comp in alloc_result.output.components:
+            layer = getattr(comp, "layer", "")
+            if layer and layer not in seen_layers:
+                seen_layers.add(layer)
+                slug = re.sub(r"[^a-z0-9]+", "-", layer.lower()).strip("-")
+                layers.append({"id": f"LAYER-{slug}", "name": layer})
 
     # Extract from relate results
     relate_result = results.get("relate")
