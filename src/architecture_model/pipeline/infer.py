@@ -119,7 +119,8 @@ class InferStage:
             actors = _infer_default_actors(inventory)
 
         # --- Behaviors: from trigger chains (route → function → calls) ---
-        behaviors = _infer_behaviors(inventory, capabilities, actors)
+        behaviors, behavior_uncertainties = _infer_behaviors(inventory, capabilities, actors)
+        uncertainties.extend(behavior_uncertainties)
 
         # --- Uncertainties for ambiguous modules ---
         for mod in inventory.modules:
@@ -407,9 +408,10 @@ def _infer_behaviors(
     inventory: Inventory,
     capabilities: list[InferredCapability],
     actors: list[InferredActor],
-) -> list[InferredBehavior]:
+) -> tuple[list[InferredBehavior], list[Uncertainty]]:
     """Infer behaviors from route handlers and function call chains."""
     behaviors = []
+    uncertainties: list[Uncertainty] = []
     beh_counter = 0
 
     # One behavior per route
@@ -537,7 +539,44 @@ def _infer_behaviors(
                     behavior_type="workflow",
                 ))
 
-    return behaviors
+    # --- Uncertainty: Complex classes (≥15 public methods) ---
+    COMPLEX_METHOD_THRESHOLD = 15
+    for mod in inventory.modules:
+        for cls in mod.classes:
+            if cls.name.startswith("_") or "Test" in cls.name:
+                continue
+            public_methods = [m for m in cls.methods if not m.startswith("_")]
+            if len(public_methods) >= COMPLEX_METHOD_THRESHOLD:
+                uncertainties.append(Uncertainty(
+                    category="complex_behavior",
+                    description=f"{cls.name} in {mod.path} has {len(public_methods)} public methods — needs LLM analysis to identify key workflows and use cases",
+                    context={"class": cls.name, "file": str(mod.path),
+                             "methods": public_methods[:20],
+                             "method_count": len(public_methods)},
+                    suggested_fallback=f"Create generic workflow for {cls.name}",
+                    priority="medium",
+                ))
+
+    # --- Uncertainty: Modules with many cross-calling functions ---
+    MODULE_FUNCTION_THRESHOLD = 10
+    for mod in inventory.modules:
+        public_funcs = [f for f in mod.functions if not f.name.startswith("_")]
+        if len(public_funcs) >= MODULE_FUNCTION_THRESHOLD:
+            func_names = {f.name for f in public_funcs}
+            cross_calls = sum(1 for f in public_funcs
+                              for c in (f.calls or []) if c in func_names)
+            if cross_calls >= 3:
+                uncertainties.append(Uncertainty(
+                    category="complex_behavior",
+                    description=f"{mod.path} has {len(public_funcs)} public functions with {cross_calls} cross-calls — likely contains workflow patterns",
+                    context={"file": str(mod.path),
+                             "functions": [f.name for f in public_funcs[:15]],
+                             "cross_calls": cross_calls},
+                    suggested_fallback=f"Create module-level workflow for {mod.path.stem}",
+                    priority="medium",
+                ))
+
+    return behaviors, uncertainties
 
 
 def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapability]) -> bool:

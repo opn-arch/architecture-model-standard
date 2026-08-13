@@ -631,3 +631,44 @@ def test_synthesize_propagates_all_entities():
     assert "actors" in entities
     assert len(entities["actors"]) == 1
     assert entities["actors"][0]["id"] == "ACT-1"
+
+
+def test_infer_flags_complex_behavior_uncertainty(tmp_path):
+    """Complex classes should flag uncertainties for LLM enrichment."""
+    from architecture_model.pipeline.infer import InferStage
+    from architecture_model.pipeline.observe_types import (
+        Inventory, ModuleRecord, ClassRecord,
+    )
+    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+
+    mod = ModuleRecord(
+        path=Path("django/db/models/query.py"),
+        functions=[],
+        classes=[ClassRecord(
+            name="QuerySet",
+            bases=["object"],
+            methods=["filter", "exclude", "annotate", "aggregate", "values",
+                     "order_by", "distinct", "union", "intersection", "difference",
+                     "select_related", "prefetch_related", "defer", "only",
+                     "using", "all", "none", "get", "create", "update", "delete",
+                     "count", "exists", "first", "last", "earliest", "latest"],
+            method_details=[], attributes={}, decorators=[], is_abstract=False,
+        )],
+        imports=[], constants=[], line_count=2000, docstring="",
+    )
+    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
+                          test_files=[], docs=[])
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path)
+    ctx.cache["observe"] = StageResult(
+        output=inventory, quality=QualityMetrics(score=100),
+        diagnostics=[], uncertainties=[], input_hash="1",
+        duration_ms=0, version="1.0",
+    )
+
+    stage = InferStage()
+    result = stage.run(ctx)
+
+    complex_unc = [u for u in result.uncertainties
+                   if u.category == "complex_behavior"]
+    assert len(complex_unc) >= 1
+    assert "QuerySet" in complex_unc[0].description
