@@ -19,10 +19,10 @@ FULL_SYSTEM_FILE_THRESHOLD = 5  # components with >= this many files become auto
 class DecomposeStage:
     name = "decompose"
     version = "1.0"
-    requires = ["allocate", "relate"]
+    requires = ["allocate", "relate", "specify"]
 
     def can_run(self, ctx: PipelineContext) -> bool:
-        return ctx.has("allocate") and ctx.has("relate")
+        return ctx.has("allocate") and ctx.has("relate") and ctx.has("specify")
 
     def output_path(self, ctx: PipelineContext):
         return ctx.output_dir / "decompose.yaml"

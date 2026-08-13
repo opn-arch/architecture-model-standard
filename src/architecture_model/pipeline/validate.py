@@ -24,7 +24,7 @@ class ValidateStage:
     """Validates the extracted architecture model for structural correctness."""
 
     name: str = "validate"
-    requires: list[str] = ["infer", "allocate", "relate"]
+    requires: list[str] = ["infer", "allocate", "relate", "specify", "contract"]
 
     def run(self, ctx: PipelineContext) -> StageResult[ValidateResult]:
         start = time.time()

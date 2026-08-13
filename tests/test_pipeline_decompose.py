@@ -48,7 +48,7 @@ class TestStageMetadata:
         stage = DecomposeStage()
         assert stage.name == "decompose"
         assert stage.version == "1.0"
-        assert stage.requires == ["allocate", "relate"]
+        assert stage.requires == ["allocate", "relate", "specify"]
 
     def test_can_run_requires_both(self):
         stage = DecomposeStage()
@@ -59,6 +59,9 @@ class TestStageMetadata:
         assert stage.can_run(ctx) is False
 
         ctx.cache["relate"] = StageResult(output=None, quality=QualityMetrics(score=0))
+        assert stage.can_run(ctx) is False
+
+        ctx.cache["specify"] = StageResult(output=None, quality=QualityMetrics(score=0))
         assert stage.can_run(ctx) is True
 
     def test_output_path(self):

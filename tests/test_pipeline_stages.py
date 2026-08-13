@@ -319,6 +319,14 @@ relationships: []
         assert not any(d.code == "REGEN_NOT_ENRICHED" for d in result.diagnostics)
 
 
+def test_validate_depends_on_specify_and_contract():
+    """Validate should depend on specify and contract so all entities are available."""
+    from architecture_model.pipeline.validate import ValidateStage
+    stage = ValidateStage()
+    assert "specify" in stage.requires
+    assert "contract" in stage.requires
+
+
 class TestValidateStage:
     def test_validate_produces_score(self, tmp_path):
         _setup_project(tmp_path)
@@ -424,6 +432,7 @@ def test_full_pipeline_large_repo_produces_sensible_systems(tmp_path):
     ctx.cache["infer"] = InferStage().run(ctx)
     ctx.cache["allocate"] = AllocateStage().run(ctx)
     ctx.cache["relate"] = RelateStage().run(ctx)
+    ctx.cache["specify"] = SpecifyStage().run(ctx)
     ctx.cache["decompose"] = DecomposeStage().run(ctx)
 
     # Extract results
