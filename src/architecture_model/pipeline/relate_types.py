@@ -18,3 +18,4 @@ class DerivedRelationship:
 class RelateResult:
     """All derived relationships between architecture entities."""
     relationships: list[DerivedRelationship] = field(default_factory=list)
+    layers: list[dict] = field(default_factory=list)  # first-class layer entities

@@ -672,3 +672,78 @@ def test_infer_flags_complex_behavior_uncertainty(tmp_path):
                    if u.category == "complex_behavior"]
     assert len(complex_unc) >= 1
     assert "QuerySet" in complex_unc[0].description
+
+
+def test_relate_produces_constrained_by(tmp_path):
+    """Constraints should produce constrained-by relationships."""
+    from architecture_model.pipeline.relate import RelateStage
+    from architecture_model.pipeline.observe_types import (
+        Inventory, ModuleRecord, ConstraintRecord,
+    )
+    from architecture_model.pipeline.infer_types import InferenceResult, InferredCapability
+    from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
+    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+
+    mod = ModuleRecord(path=Path("app/main.py"), functions=[], classes=[],
+                       imports=[], constants=[], line_count=50, docstring="")
+    constraint = ConstraintRecord(name="python", value=">=3.10",
+                                  source="pyproject.toml", constraint_type="TECHNOLOGY")
+    inventory = Inventory(modules=[mod], edges=[], routes=[],
+                          constraints=[constraint], test_files=[], docs=[])
+
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+    ctx.cache["observe"] = StageResult(output=inventory, quality=QualityMetrics(score=100),
+                                        diagnostics=[], uncertainties=[], input_hash="1",
+                                        duration_ms=0, version="1.0")
+    ctx.cache["infer"] = StageResult(
+        output=InferenceResult(capabilities=[InferredCapability(id="CAP-1", name="App")]),
+        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
+        input_hash="1", duration_ms=0, version="1.0")
+    ctx.cache["allocate"] = StageResult(
+        output=AllocationResult(components=[
+            ComponentAllocation(id="COMP-1", name="App", capability_id="CAP-1",
+                              files=[Path("app/main.py")])
+        ]),
+        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
+        input_hash="1", duration_ms=0, version="1.0")
+
+    stage = RelateStage()
+    result = stage.run(ctx)
+    constrained = [r for r in result.output.relationships if r.rel_type == "constrained-by"]
+    assert len(constrained) >= 1
+    assert constrained[0].to_id == "CON-1"
+
+
+def test_relate_produces_layer_entities(tmp_path):
+    """Relate should produce first-class layer entities."""
+    from architecture_model.pipeline.relate import RelateStage
+    from architecture_model.pipeline.observe_types import Inventory, ModuleRecord
+    from architecture_model.pipeline.infer_types import InferenceResult, InferredCapability
+    from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
+    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+
+    mod = ModuleRecord(path=Path("app/main.py"), functions=[], classes=[],
+                       imports=[], constants=[], line_count=50, docstring="")
+    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
+                          test_files=[], docs=[])
+
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+    ctx.cache["observe"] = StageResult(output=inventory, quality=QualityMetrics(score=100),
+                                        diagnostics=[], uncertainties=[], input_hash="1",
+                                        duration_ms=0, version="1.0")
+    ctx.cache["infer"] = StageResult(
+        output=InferenceResult(capabilities=[InferredCapability(id="CAP-1", name="App")]),
+        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
+        input_hash="1", duration_ms=0, version="1.0")
+    ctx.cache["allocate"] = StageResult(
+        output=AllocationResult(components=[
+            ComponentAllocation(id="COMP-1", name="App", capability_id="CAP-1",
+                              files=[Path("app/main.py")], layer="service")
+        ]),
+        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
+        input_hash="1", duration_ms=0, version="1.0")
+
+    stage = RelateStage()
+    result = stage.run(ctx)
+    assert len(result.output.layers) >= 1
+    assert result.output.layers[0]["id"] == "LAYER-SERVICE"

@@ -101,7 +101,37 @@ class RelateStage:
                     evidence_source="route",
                 ))
 
-        result = RelateResult(relationships=relationships)
+        # 5. constrained-by: component → constraint
+        for i, con in enumerate(inventory.constraints):
+            con_id = f"CON-{i + 1}"
+            # Technology constraints apply to all components
+            if con.constraint_type == "TECHNOLOGY":
+                for comp in allocation.components:
+                    relationships.append(DerivedRelationship(
+                        from_id=comp.id,
+                        to_id=con_id,
+                        rel_type="constrained-by",
+                        evidence_source="constraint_detection",
+                    ))
+            else:
+                # File-specific constraints — find which component owns the file
+                comp_id = file_to_comp.get(Path(con.source))
+                if comp_id:
+                    relationships.append(DerivedRelationship(
+                        from_id=comp_id,
+                        to_id=con_id,
+                        rel_type="constrained-by",
+                        evidence_source="constraint_detection",
+                    ))
+
+        result = RelateResult(
+            relationships=relationships,
+            layers=[
+                {"id": f"LAYER-{layer.upper()}", "name": layer.title(),
+                 "description": f"Components in the {layer} architectural tier"}
+                for layer in sorted(layers_seen.keys())
+            ],
+        )
 
         quality = QualityMetrics(
             score=min(100, int(len(relationships) / max(len(allocation.components), 1) * 25)),
@@ -109,6 +139,8 @@ class RelateStage:
                 "relationship_count": float(len(relationships)),
                 "realizes_count": float(sum(1 for r in relationships if r.rel_type == "realizes")),
                 "depends_on_count": float(sum(1 for r in relationships if r.rel_type == "depends-on")),
+                "constrained_by_count": float(sum(1 for r in relationships if r.rel_type == "constrained-by")),
+                "layer_count": float(len(layers_seen)),
             },
             thresholds={},
         )
