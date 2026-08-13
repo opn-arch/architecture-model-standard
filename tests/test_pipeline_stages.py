@@ -447,3 +447,91 @@ def test_full_pipeline_large_repo_produces_sensible_systems(tmp_path):
     assert len(caps) <= 20, f"Too many capabilities: {len(caps)}"
     assert len(comps) <= 25, f"Too many components: {len(comps)}"
     assert len(systems) >= 3, f"Too few systems: {len(systems)}"
+
+
+def test_infer_cli_use_cases(tmp_path):
+    """CLI commands should produce use-case behaviors."""
+    from architecture_model.pipeline.infer import InferStage
+    from architecture_model.pipeline.observe_types import (
+        Inventory, ModuleRecord, FunctionRecord,
+    )
+    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+
+    mod = ModuleRecord(
+        path=Path("manage.py"),
+        functions=[
+            FunctionRecord(
+                name="handle",
+                signature="def handle(self, options)",
+                body_hint="",
+                calls=["migrate", "flush"],
+                decorators=[],
+                docstring="Run database migrations",
+            ),
+        ],
+        classes=[],
+        imports=["click"],
+        constants=[],
+        line_count=50,
+        docstring="Management command for migrations",
+    )
+    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
+                          test_files=[], docs=[])
+
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture-models")
+    ctx.cache["observe"] = StageResult(
+        output=inventory, quality=QualityMetrics(score=100),
+        diagnostics=[], uncertainties=[], input_hash="1",
+        duration_ms=0, version="1.0",
+    )
+
+    stage = InferStage()
+    result = stage.run(ctx)
+    behaviors = result.output.behaviors
+    cli_behaviors = [b for b in behaviors if b.behavior_type == "use_case"]
+    assert len(cli_behaviors) >= 1
+
+
+def test_infer_middleware_workflow(tmp_path):
+    """Middleware classes should produce workflow behaviors."""
+    from architecture_model.pipeline.infer import InferStage
+    from architecture_model.pipeline.observe_types import (
+        Inventory, ModuleRecord, ClassRecord,
+    )
+    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+
+    mod = ModuleRecord(
+        path=Path("django/middleware/csrf.py"),
+        functions=[],
+        classes=[
+            ClassRecord(
+                name="CsrfViewMiddleware",
+                bases=["MiddlewareMixin"],
+                methods=["process_request", "process_view", "process_response"],
+                method_details=[],
+                attributes={},
+                decorators=[],
+                is_abstract=False,
+            ),
+        ],
+        imports=["django.utils.deprecation"],
+        constants=[],
+        line_count=100,
+        docstring="",
+    )
+    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
+                          test_files=[], docs=[])
+
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture-models")
+    ctx.cache["observe"] = StageResult(
+        output=inventory, quality=QualityMetrics(score=100),
+        diagnostics=[], uncertainties=[], input_hash="1",
+        duration_ms=0, version="1.0",
+    )
+
+    stage = InferStage()
+    result = stage.run(ctx)
+    workflows = [b for b in result.output.behaviors if b.behavior_type == "workflow"]
+    assert len(workflows) >= 1
+    csrf_wf = [w for w in workflows if "Csrf" in w.name][0]
+    assert "process_request" in csrf_wf.steps

@@ -430,7 +430,112 @@ def _infer_behaviors(
             actor_id=actor_id,
             capability_id=cap_id,
             steps=[route.function_name],
+            behavior_type="route_handler",
         ))
+
+    # CLI command use cases
+    CLI_IMPORTS = {"click", "typer", "argparse"}
+    CLI_FUNC_NAMES = {"handle", "main", "run", "execute"}
+    CLI_DECORATORS = {"command", "click"}
+
+    for mod in inventory.modules:
+        has_cli_import = any(
+            cli_imp in imp for imp in mod.imports for cli_imp in CLI_IMPORTS
+        )
+        if not has_cli_import:
+            continue
+
+        for func in mod.functions:
+            is_cli_func = (
+                func.name in CLI_FUNC_NAMES
+                or any(
+                    any(dec_kw in dec.lower() for dec_kw in CLI_DECORATORS)
+                    for dec in func.decorators
+                )
+            )
+            if not is_cli_func:
+                continue
+
+            beh_counter += 1
+            stem = mod.path.stem.replace("_", " ").title()
+            behaviors.append(InferredBehavior(
+                id=f"BEH-{beh_counter}",
+                name=f"CLI: {stem}",
+                actor_id=actors[0].id if actors else "",
+                steps=func.calls[:5],
+                behavior_type="use_case",
+            ))
+
+    # Handler/view class use cases
+    HANDLER_BASES = {"view", "handler", "command"}
+
+    for mod in inventory.modules:
+        for cls in mod.classes:
+            if cls.name.startswith("_") or cls.name.lower().startswith("test"):
+                continue
+            bases_lower = [b.lower() for b in cls.bases]
+            is_handler = any(
+                kw in base for base in bases_lower for kw in HANDLER_BASES
+            )
+            if not is_handler:
+                continue
+
+            public_methods = [m for m in cls.methods if not m.startswith("_")]
+            if not public_methods:
+                continue
+
+            beh_counter += 1
+            behaviors.append(InferredBehavior(
+                id=f"BEH-{beh_counter}",
+                name=cls.name,
+                actor_id=actors[0].id if actors else "",
+                steps=public_methods,
+                behavior_type="use_case",
+            ))
+
+    # Workflow behaviors from ordered method patterns
+    WORKFLOW_PATTERNS = {
+        "middleware": {
+            "bases": ["middleware", "mixin"],
+            "ordered_methods": [
+                "process_request", "process_view",
+                "process_response", "process_exception",
+            ],
+        },
+        "lifecycle": {
+            "bases": ["model", "form", "serializer"],
+            "ordered_methods": ["clean", "validate", "save", "delete"],
+        },
+    }
+
+    for mod in inventory.modules:
+        for cls in mod.classes:
+            if cls.name.startswith("_") or cls.name.lower().startswith("test"):
+                continue
+            bases_lower = [b.lower() for b in cls.bases]
+
+            for pattern_name, pattern in WORKFLOW_PATTERNS.items():
+                base_match = any(
+                    kw in base
+                    for base in bases_lower
+                    for kw in pattern["bases"]
+                )
+                if not base_match:
+                    continue
+
+                matched = [
+                    m for m in pattern["ordered_methods"] if m in cls.methods
+                ]
+                if len(matched) < 2:
+                    continue
+
+                beh_counter += 1
+                behaviors.append(InferredBehavior(
+                    id=f"BEH-{beh_counter}",
+                    name=f"{cls.name} {pattern_name} workflow",
+                    steps=matched,
+                    behavior_type="workflow",
+                ))
 
     return behaviors
 

@@ -32,6 +32,7 @@ class InferredBehavior:
     capability_id: str = ""
     steps: list[str] = field(default_factory=list)
     triggers: list[str] = field(default_factory=list)
+    behavior_type: str = "use_case"  # use_case | workflow | route_handler
 
 
 @dataclass
