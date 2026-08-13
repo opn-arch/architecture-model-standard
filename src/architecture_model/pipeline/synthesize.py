@@ -78,6 +78,96 @@ def _build_system_model_yaml(
                 cap_dict: dict[str, Any] = {"id": cap.id, "name": cap.name}
                 capabilities.append(cap_dict)
 
+    cap_ids = {c["id"] for c in capabilities}
+    comp_ids = {c["id"] for c in components}
+    file_set = set(boundary.files)
+
+    # Extract behaviors from infer results (filter by capability_id)
+    behaviors: list[dict[str, Any]] = []
+    if infer_result and infer_result.output:
+        output = infer_result.output
+        if hasattr(output, "behaviors"):
+            for beh in output.behaviors:
+                if beh.capability_id and beh.capability_id not in cap_ids:
+                    continue
+                beh_dict: dict[str, Any] = {"id": beh.id, "name": beh.name}
+                if beh.behavior_type:
+                    beh_dict["behavior_type"] = beh.behavior_type
+                if beh.steps:
+                    beh_dict["steps"] = beh.steps
+                if beh.actor_id:
+                    beh_dict["actor_id"] = beh.actor_id
+                if beh.triggers:
+                    beh_dict["triggers"] = beh.triggers
+                behaviors.append(beh_dict)
+
+    # Extract actors from infer results (all are system-wide)
+    actors: list[dict[str, Any]] = []
+    if infer_result and infer_result.output:
+        output = infer_result.output
+        if hasattr(output, "actors"):
+            for actor in output.actors:
+                actor_dict: dict[str, Any] = {"id": actor.id, "name": actor.name}
+                if actor.actor_type:
+                    actor_dict["actor_type"] = actor.actor_type
+                if actor.evidence_source:
+                    actor_dict["evidence_source"] = actor.evidence_source
+                actors.append(actor_dict)
+
+    # Extract interfaces from specify results (filter by component_id)
+    interfaces: list[dict[str, Any]] = []
+    specify_result = results.get("specify")
+    if specify_result and specify_result.output:
+        output = specify_result.output
+        if hasattr(output, "interfaces"):
+            for iface in output.interfaces:
+                if iface.component_id not in comp_ids:
+                    continue
+                iface_dict: dict[str, Any] = {
+                    "id": iface.id,
+                    "name": iface.name,
+                    "interface_type": iface.interface_type,
+                    "component_id": iface.component_id,
+                }
+                if iface.methods:
+                    iface_dict["methods"] = iface.methods
+                if iface.description:
+                    iface_dict["description"] = iface.description
+                interfaces.append(iface_dict)
+
+    # Extract constraints from observe results (filter by source file)
+    constraints: list[dict[str, Any]] = []
+    observe_result = results.get("observe")
+    if observe_result and observe_result.output:
+        output = observe_result.output
+        if hasattr(output, "constraints"):
+            for i, con in enumerate(output.constraints):
+                if con.source not in file_set:
+                    continue
+                con_dict: dict[str, Any] = {
+                    "id": f"CON-{i + 1}",
+                    "name": con.name,
+                    "value": con.value,
+                    "source": con.source,
+                }
+                if con.constraint_type:
+                    con_dict["constraint_type"] = con.constraint_type
+                constraints.append(con_dict)
+
+    # Derive layers from unique layer values on components
+    layers: list[dict[str, Any]] = []
+    seen_layers: set[str] = set()
+    for comp in components:
+        # Need to get layer from allocation
+        pass
+    alloc_result2 = results.get("allocate")
+    if alloc_result2 and alloc_result2.output and hasattr(alloc_result2.output, "components"):
+        for comp in alloc_result2.output.components:
+            if comp.layer and comp.layer not in seen_layers:
+                seen_layers.add(comp.layer)
+                slug = re.sub(r"[^a-z0-9]+", "-", comp.layer.lower()).strip("-")
+                layers.append({"id": f"LAYER-{slug}", "name": comp.layer})
+
     # Extract from relate results
     relate_result = results.get("relate")
     if relate_result and relate_result.output:
@@ -105,6 +195,16 @@ def _build_system_model_yaml(
         model_dict["entities"]["components"] = components
     if capabilities:
         model_dict["entities"]["capabilities"] = capabilities
+    if behaviors:
+        model_dict["entities"]["behaviors"] = behaviors
+    if actors:
+        model_dict["entities"]["actors"] = actors
+    if interfaces:
+        model_dict["entities"]["interfaces"] = interfaces
+    if constraints:
+        model_dict["entities"]["constraints"] = constraints
+    if layers:
+        model_dict["entities"]["layers"] = layers
 
     return yaml.dump(model_dict, default_flow_style=False, sort_keys=False)
 

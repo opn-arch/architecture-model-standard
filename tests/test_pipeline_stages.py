@@ -535,3 +535,99 @@ def test_infer_middleware_workflow(tmp_path):
     assert len(workflows) >= 1
     csrf_wf = [w for w in workflows if "Csrf" in w.name][0]
     assert "process_request" in csrf_wf.steps
+
+
+def test_synthesize_propagates_all_entities():
+    """_build_system_model_yaml includes behaviors, interfaces, constraints, layers, actors."""
+    import yaml
+    from pathlib import Path
+    from architecture_model.pipeline.synthesize import _build_system_model_yaml
+    from architecture_model.pipeline.protocol import StageResult, QualityMetrics
+    from architecture_model.pipeline.observe_types import Inventory, ConstraintRecord
+    from architecture_model.pipeline.infer_types import (
+        InferenceResult, InferredCapability, InferredActor, InferredBehavior,
+    )
+    from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
+    from architecture_model.pipeline.relate_types import RelateResult, DerivedRelationship
+    from architecture_model.pipeline.specify_types import SpecifyResult, InterfaceSpec
+    from architecture_model.pipeline.decompose_types import SystemBoundary
+
+    boundary = SystemBoundary(
+        system_id="SYS-CORE",
+        name="Core",
+        files=["src/core/parser.py", "src/core/validator.py"],
+        is_full_system=True,
+    )
+
+    def _sr(output):
+        return StageResult(
+            output=output, quality=QualityMetrics(score=100),
+            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+        )
+
+    results = {
+        "observe": _sr(Inventory(
+            modules=[],
+            constraints=[
+                ConstraintRecord(name="python", value=">=3.10", source="src/core/parser.py", constraint_type="version"),
+                ConstraintRecord(name="timeout", value="30s", source="src/other/unrelated.py", constraint_type="timeout"),
+            ],
+        )),
+        "infer": _sr(InferenceResult(
+            capabilities=[
+                InferredCapability(id="CAP-1", name="Parsing"),
+                InferredCapability(id="CAP-2", name="Validation"),
+            ],
+            actors=[
+                InferredActor(id="ACT-1", name="Developer", actor_type="human", evidence_source="cli"),
+            ],
+            behaviors=[
+                InferredBehavior(id="BEH-1", name="Parse File", capability_id="CAP-1", behavior_type="use_case", steps=["read", "parse"]),
+                InferredBehavior(id="BEH-2", name="Unrelated", capability_id="CAP-99", behavior_type="workflow"),
+                InferredBehavior(id="BEH-3", name="Global", capability_id="", behavior_type="use_case"),
+            ],
+        )),
+        "allocate": _sr(AllocationResult(components=[
+            ComponentAllocation(id="COMP-1", name="Parser", files=[Path("src/core/parser.py")], layer="service"),
+            ComponentAllocation(id="COMP-2", name="Validator", files=[Path("src/core/validator.py")], layer="service"),
+        ])),
+        "relate": _sr(RelateResult(relationships=[
+            DerivedRelationship(from_id="COMP-1", to_id="CAP-1", rel_type="realizes"),
+        ])),
+        "specify": _sr(SpecifyResult(interfaces=[
+            InterfaceSpec(id="IF-1", name="ParserAPI", component_id="COMP-1", interface_type="library", methods=["parse"], description="Parser interface"),
+            InterfaceSpec(id="IF-2", name="OtherAPI", component_id="COMP-OTHER", interface_type="rest"),
+        ])),
+    }
+
+    yaml_str = _build_system_model_yaml(boundary, results)
+    model = yaml.safe_load(yaml_str)
+    entities = model["entities"]
+
+    # Behaviors: BEH-1 (cap matches) and BEH-3 (no cap_id) included, BEH-2 excluded
+    assert "behaviors" in entities
+    beh_ids = [b["id"] for b in entities["behaviors"]]
+    assert "BEH-1" in beh_ids
+    assert "BEH-3" in beh_ids
+    assert "BEH-2" not in beh_ids
+
+    # Interfaces: only IF-1 (component matches)
+    assert "interfaces" in entities
+    assert len(entities["interfaces"]) == 1
+    assert entities["interfaces"][0]["id"] == "IF-1"
+
+    # Constraints: only the one with source in boundary files
+    assert "constraints" in entities
+    assert len(entities["constraints"]) == 1
+    assert entities["constraints"][0]["name"] == "python"
+    assert "id" in entities["constraints"][0]
+
+    # Layers: derived from components
+    assert "layers" in entities
+    assert len(entities["layers"]) == 1
+    assert entities["layers"][0]["name"] == "service"
+
+    # Actors: all included
+    assert "actors" in entities
+    assert len(entities["actors"]) == 1
+    assert entities["actors"][0]["id"] == "ACT-1"
