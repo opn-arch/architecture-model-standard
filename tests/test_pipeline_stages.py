@@ -747,3 +747,119 @@ def test_relate_produces_layer_entities(tmp_path):
     result = stage.run(ctx)
     assert len(result.output.layers) >= 1
     assert result.output.layers[0]["id"] == "LAYER-SERVICE"
+
+
+def test_full_pipeline_produces_all_entity_types(tmp_path):
+    """A complete pipeline should produce all 7 entity types in model YAML."""
+    import yaml
+    from architecture_model.pipeline.observe_types import (
+        Inventory, ModuleRecord, FunctionRecord, ClassRecord,
+        RouteRecord, ConstraintRecord,
+    )
+    from architecture_model.pipeline.synthesize import _build_system_model_yaml
+    from architecture_model.pipeline.decompose_types import SystemBoundary
+    from architecture_model.pipeline.protocol import StageResult, QualityMetrics
+
+    # Build a Django-like inventory with routes, CLI, middleware, models
+    modules = [
+        ModuleRecord(
+            path=Path("myapp/views.py"), language="python",
+            functions=[
+                FunctionRecord(name="list_items", signature="(request)", body_hint="return JsonResponse(...)",
+                               calls=["get_queryset", "serialize"], decorators=[], docstring="List all items"),
+            ],
+            classes=[], constants=[], imports=["django.http"], line_count=100, docstring="Views",
+        ),
+        ModuleRecord(
+            path=Path("myapp/management/commands/sync.py"), language="python",
+            functions=[
+                FunctionRecord(name="handle", signature="(self, *args, **options)", body_hint="...",
+                               calls=["sync_data", "log_result"], decorators=[], docstring="Sync external data"),
+            ],
+            classes=[], constants=[], imports=["click"], line_count=50, docstring="Sync command",
+        ),
+        ModuleRecord(
+            path=Path("myapp/middleware.py"), language="python",
+            functions=[],
+            classes=[
+                ClassRecord(
+                    name="AuthMiddleware", bases=["MiddlewareMixin"],
+                    methods=["process_request", "process_response"],
+                    method_details=[], attributes={}, decorators=[], is_abstract=False,
+                ),
+            ],
+            constants=[], imports=["django.utils.deprecation"], line_count=80, docstring="",
+        ),
+        ModuleRecord(
+            path=Path("myapp/models.py"), language="python",
+            functions=[],
+            classes=[
+                ClassRecord(name="Item", bases=["Model"], methods=["save", "clean"],
+                            method_details=[], attributes={}, decorators=[], is_abstract=False),
+            ],
+            constants=[], imports=["django.db"], line_count=120, docstring="Data models",
+        ),
+    ]
+
+    routes = [
+        RouteRecord(method="GET", path="/api/items", function_name="list_items",
+                    file=Path("myapp/views.py"), docstring="List items", is_authenticated=False, framework="django"),
+    ]
+
+    constraints = [
+        ConstraintRecord(name="python", value=">=3.10", source="pyproject.toml", constraint_type="TECHNOLOGY"),
+        ConstraintRecord(name="django", value=">=4.2", source="requirements.txt", constraint_type="TECHNOLOGY"),
+    ]
+
+    inventory = Inventory(
+        modules=modules, edges=[], routes=routes, constraints=constraints,
+        test_files=[], docs=[],
+    )
+
+    # Run stages sequentially
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+    ctx.cache["observe"] = StageResult(
+        output=inventory, quality=QualityMetrics(score=100),
+        diagnostics=[], uncertainties=[], input_hash="1",
+        duration_ms=0, version="1.0",
+    )
+
+    infer_result = InferStage().run(ctx)
+    ctx.cache["infer"] = infer_result
+
+    alloc_result = AllocateStage().run(ctx)
+    ctx.cache["allocate"] = alloc_result
+
+    relate_result = RelateStage().run(ctx)
+    ctx.cache["relate"] = relate_result
+
+    specify_result = SpecifyStage().run(ctx)
+    ctx.cache["specify"] = specify_result
+
+    # Build system model YAML
+    boundary = SystemBoundary(
+        system_id="SYS-MYAPP", name="MyApp",
+        files=[str(m.path) for m in modules],
+        is_full_system=True,
+    )
+
+    model_yaml = _build_system_model_yaml(boundary, ctx.cache)
+    model = yaml.safe_load(model_yaml)
+    entities = model.get("entities", {})
+
+    # Verify all 7 entity types present
+    assert "components" in entities, f"Missing components. Got: {list(entities.keys())}"
+    assert "capabilities" in entities, f"Missing capabilities. Got: {list(entities.keys())}"
+    assert "behaviors" in entities, f"Missing behaviors. Got: {list(entities.keys())}"
+    assert "actors" in entities, f"Missing actors. Got: {list(entities.keys())}"
+    assert "layers" in entities, f"Missing layers. Got: {list(entities.keys())}"
+
+    # Verify behavior type diversity
+    behavior_types = {b.get("behavior_type") for b in entities["behaviors"]}
+    assert "route_handler" in behavior_types, f"Missing route_handler. Got: {behavior_types}"
+    assert "use_case" in behavior_types, f"Missing use_case. Got: {behavior_types}"
+
+    # Verify relationships include key types
+    rels = model.get("relationships", [])
+    rel_types = {r["type"] for r in rels}
+    assert "realizes" in rel_types, f"Missing realizes. Got: {rel_types}"
