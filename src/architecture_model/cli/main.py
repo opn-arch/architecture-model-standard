@@ -17,6 +17,8 @@ import argparse
 import sys
 from pathlib import Path
 
+GLOBAL_LEARNING_PATH = Path.home() / ".config" / "opencode" / "arch-learning"
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
@@ -105,6 +107,8 @@ def main(argv: list[str] | None = None) -> int:
     p_pipeline.add_argument("--max-depth", type=int, default=3, help="Max recursion depth")
     p_pipeline.add_argument("-o", "--output", help="Output directory (default: .architecture/)")
 
+    subparsers.add_parser("learnings", help="Show global learnings (heuristics, archetypes, workflows)")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -127,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
         "author": _cmd_author,
         "regen-score": _cmd_regen_score,
         "pipeline": _cmd_pipeline,
+        "learnings": _cmd_learnings,
     }
     return handlers[args.command](args)
 
@@ -773,6 +778,42 @@ def _cmd_pipeline(args) -> int:
         print(f"  {name:12s} score={score:3d}  uncertainties={uncertainties}  {duration}ms  [{status}]")
 
     print(f"\nArtifacts written to: {output_dir}")
+    return 0
+
+
+def _cmd_learnings(args) -> int:
+    """Show global learnings (heuristics, archetypes, workflows)."""
+    from architecture_model.pipeline.global_learning import GlobalLearningStore
+
+    store = GlobalLearningStore(GLOBAL_LEARNING_PATH)
+    rules = store.get_heuristics()
+    archetypes = store.get_archetypes()
+    workflows = store.get_workflows()
+
+    if not rules and not archetypes and not workflows:
+        print("No learnings recorded yet. Use architect_learn MCP tool to add.")
+        return 0
+
+    if rules:
+        print(f"\n## Heuristic Rules ({len(rules)})\n")
+        for r in rules:
+            print(f"  {r.id} [{r.stage}]: {r.condition} → {r.action}")
+            if r.validated_on:
+                print(f"         validated on: {', '.join(r.validated_on)}")
+
+    if archetypes:
+        print(f"\n## Archetype Patterns ({len(archetypes)})\n")
+        for a in archetypes:
+            print(f"  {a.id} {a.name}: {a.problem}")
+            print(f"         solution: {a.solution}")
+
+    if workflows:
+        print(f"\n## Workflow Lessons ({len(workflows)})\n")
+        for w in workflows:
+            print(f"  {w.id}: {w.trigger}")
+            print(f"         fix: {w.fix_applied}")
+            print(f"         result: {w.validation}")
+
     return 0
 
 
