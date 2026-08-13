@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 if TYPE_CHECKING:
+    from .global_learning import GlobalLearningStore
     from .learning import LearningStore
 
 T = TypeVar("T")
@@ -129,6 +130,7 @@ class PipelineContext:
     cache: dict[str, StageResult] = field(default_factory=dict)
     prior_corrections: list[Evidence] = field(default_factory=list)
     learning_store: LearningStore | None = field(default=None, repr=False)
+    global_learning: GlobalLearningStore | None = field(default=None, repr=False)
     calibration: dict[str, Any] = field(default_factory=dict)
     llm_calls: list[LLMCallRecord] = field(default_factory=list)
 

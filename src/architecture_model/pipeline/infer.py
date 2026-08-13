@@ -38,6 +38,16 @@ class InferStage:
     name: str = "infer"
     requires: list[str] = ["observe"]
 
+    @staticmethod
+    def _get_large_repo_threshold(ctx: PipelineContext) -> int:
+        """Get large repo threshold, checking global heuristics first."""
+        if ctx.global_learning:
+            rules = ctx.global_learning.get_heuristics(stage="infer")
+            for rule in rules:
+                if rule.threshold.get("parameter") == "LARGE_REPO_MODULE_THRESHOLD":
+                    return int(rule.threshold["value"])
+        return _LARGE_REPO_MODULE_THRESHOLD
+
     def run(self, ctx: PipelineContext) -> StageResult[InferenceResult]:
         start = time.time()
         diagnostics: list[Diagnostic] = []
@@ -64,7 +74,7 @@ class InferStage:
                 and m.path.stem not in ("utils", "helpers", "common", "base",
                                         "constants", "types", "config")
             )
-            if source_count > _LARGE_REPO_MODULE_THRESHOLD:
+            if source_count > self._get_large_repo_threshold(ctx):
                 # Single "Web Routes" capability for all routes
                 cap_counter += 1
                 capabilities.append(InferredCapability(

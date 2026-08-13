@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from architecture_model.pipeline.global_learning import GlobalLearningStore
 from architecture_model.pipeline.learning import LearningStore
 from architecture_model.pipeline.protocol import PipelineContext, Stage, StageResult
 
@@ -13,9 +14,10 @@ from architecture_model.pipeline.protocol import PipelineContext, Stage, StageRe
 class PipelineCoordinator:
     """Resolves stage dependencies and runs minimum stages needed to reach a target."""
 
-    def __init__(self, stages: dict[str, Stage], learning_store: LearningStore | None = None) -> None:
+    def __init__(self, stages: dict[str, Stage], learning_store: LearningStore | None = None, global_learning: GlobalLearningStore | None = None) -> None:
         self._stages = stages
         self._learning = learning_store
+        self._global_learning = global_learning
 
     def resolve_order(self, target: str) -> list[str]:
         """Topological sort of deps needed to reach target."""
@@ -94,6 +96,8 @@ class PipelineCoordinator:
                 cal = self._learning.get_calibration(stage_name)
                 if cal:
                     ctx.calibration[stage_name] = cal
+        if self._global_learning and not ctx.global_learning:
+            ctx.global_learning = self._global_learning
 
         all_names: set[str] = set(self._stages.keys())
         visiting: set[str] = set()

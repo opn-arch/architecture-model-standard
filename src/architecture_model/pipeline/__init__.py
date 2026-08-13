@@ -6,6 +6,12 @@ from architecture_model.pipeline.decompose import DecomposeStage
 from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
 from architecture_model.pipeline.emit import EmitStage
 from architecture_model.pipeline.emit_types import EmitResult
+from architecture_model.pipeline.global_learning import (
+    ArchetypePattern,
+    GlobalLearningStore,
+    HeuristicRule,
+    WorkflowLesson,
+)
 from architecture_model.pipeline.learning import (
     Calibration,
     Correction,
@@ -31,6 +37,7 @@ from architecture_model.pipeline.synthesize import SynthesizeStage
 from architecture_model.pipeline.synthesize_types import SoSModel, SynthesizeResult, SystemModel
 
 __all__ = [
+    "ArchetypePattern",
     "Calibration",
     "Claim",
     "Correction",
@@ -40,6 +47,8 @@ __all__ = [
     "EmitResult",
     "EmitStage",
     "Evidence",
+    "GlobalLearningStore",
+    "HeuristicRule",
     "LLMCallRecord",
     "LearningStore",
     "LessonEntry",
@@ -59,6 +68,7 @@ __all__ = [
     "SystemBoundary",
     "SystemModel",
     "Uncertainty",
+    "WorkflowLesson",
     "generate_lessons",
     "generate_pipeline_report",
 ]

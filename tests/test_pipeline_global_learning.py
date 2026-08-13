@@ -115,3 +115,35 @@ class TestPersistence:
         rules = store.get_heuristics()
         assert len(rules) == 1
         assert rules[0].condition == "new"
+
+
+class TestStageIntegration:
+    def test_context_has_global_learning(self, store, tmp_path):
+        from architecture_model.pipeline.protocol import PipelineContext
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path)
+        ctx.global_learning = store
+        assert ctx.global_learning is store
+
+    def test_infer_uses_heuristic_threshold(self, store, tmp_path):
+        from architecture_model.pipeline.infer import InferStage
+        from architecture_model.pipeline.protocol import PipelineContext
+
+        store.add_heuristic(HeuristicRule(
+            id="HR-TEST", stage="infer", condition="module_count > 30",
+            action="use package_group strategy", rationale="test",
+            learned_from="test", validated_on=[],
+            threshold={"parameter": "LARGE_REPO_MODULE_THRESHOLD", "value": 30},
+        ))
+
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path)
+        ctx.global_learning = store
+        threshold = InferStage._get_large_repo_threshold(ctx)
+        assert threshold == 30
+
+    def test_infer_default_without_heuristic(self, tmp_path):
+        from architecture_model.pipeline.infer import InferStage, _LARGE_REPO_MODULE_THRESHOLD
+        from architecture_model.pipeline.protocol import PipelineContext
+
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path)
+        threshold = InferStage._get_large_repo_threshold(ctx)
+        assert threshold == _LARGE_REPO_MODULE_THRESHOLD
