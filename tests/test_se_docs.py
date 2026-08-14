@@ -324,3 +324,56 @@ class TestInterfaceSpec:
         md = generate_interface_spec(model)
         for section in ["Interface Inventory", "Interface Details"]:
             assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestProjectSpecificDetection:
+    def test_detects_api_reference(self) -> None:
+        from architecture_model.docs.se.detect import detect_project_docs
+        model = _make_model()  # has REST interface
+        docs = detect_project_docs(model)
+        assert "api_reference" in docs
+
+    def test_detects_deployment_guide(self) -> None:
+        from architecture_model.docs.se.detect import detect_project_docs
+        model = _make_model()  # has technology constraint
+        docs = detect_project_docs(model)
+        assert "deployment_guide" in docs
+
+    def test_no_false_positives(self) -> None:
+        from architecture_model.docs.se.detect import detect_project_docs
+        from architecture_model.core.parser import _parse_raw
+        minimal = _parse_raw({"meta": {"schema_version": "2.0"}, "entities": {}, "relationships": []})
+        docs = detect_project_docs(minimal)
+        assert docs == []
+
+
+class TestApiReference:
+    def test_generates_api_reference(self) -> None:
+        from architecture_model.docs.se.api_reference import generate_api_reference
+        model = _make_model()
+        md = generate_api_reference(model)
+        assert "# API Reference" in md
+        assert "/api/data" in md
+
+
+class TestEmitIntegration:
+    def test_emit_generates_se_docs(self, tmp_path: Path) -> None:
+        from architecture_model.docs.se.generator import generate_se_docs
+        model = _make_model()
+        se_dir = tmp_path / "se"
+        result = generate_se_docs(model, se_dir)
+        assert len(result["generated"]) >= 5
+        assert (se_dir / "conops.md").exists()
+        assert (se_dir / "changelog.yaml").exists()
+        content = (se_dir / "conops.md").read_text()
+        assert "---" in content
+        assert "document: ConOps" in content
+
+
+class TestDataModel:
+    def test_generates_data_model(self) -> None:
+        from architecture_model.docs.se.data_model import generate_data_model
+        model = _make_model()
+        md = generate_data_model(model)
+        assert "# Data Model" in md
+        assert "DataStore" in md

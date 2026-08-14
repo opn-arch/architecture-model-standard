@@ -88,6 +88,9 @@ class EmitStage:
             _write_file(docs_dir / "system-interactions.md", interactions_md, result)
             result.doc_count += 1
 
+        # 6. Generate SE docs (non-fatal)
+        self._generate_se_docs(out_dir, synth, result, diagnostics)
+
         duration = int((time.monotonic() - t0) * 1000)
 
         if not result.written_paths:
@@ -115,6 +118,66 @@ class EmitStage:
             uncertainties=[],
             duration_ms=duration,
         )
+
+
+    def _generate_se_docs(
+        self,
+        out_dir: Path,
+        synth: SynthesizeResult,
+        result: EmitResult,
+        diagnostics: list[Diagnostic],
+    ) -> None:
+        """Generate SE docs for top-level and subsystem models (non-fatal)."""
+        try:
+            from architecture_model.core.parser import load_model
+            from architecture_model.docs.se.generator import generate_se_docs
+        except ImportError:
+            diagnostics.append(
+                Diagnostic(
+                    severity="info",
+                    code="SE_DOCS_UNAVAILABLE",
+                    message="SE doc generator not available — skipping",
+                )
+            )
+            return
+
+        # Top-level SoS model
+        sos_model_path = out_dir / ".architecture-model.yaml"
+        if sos_model_path.exists():
+            try:
+                model = load_model(sos_model_path)
+                se_dir = out_dir / "docs" / "se"
+                se_result = generate_se_docs(model, se_dir)
+                for doc_name in se_result.get("generated", []):
+                    result.doc_count += 1
+            except Exception as exc:
+                diagnostics.append(
+                    Diagnostic(
+                        severity="warning",
+                        code="SE_DOCS_FAILED",
+                        message=f"SE doc generation failed for top-level model: {exc}",
+                    )
+                )
+
+        # Per-subsystem models
+        for sm in synth.system_models:
+            sys_dir = out_dir / _slugify(sm.name)
+            sys_model_path = sys_dir / ".architecture-model.yaml"
+            if sys_model_path.exists():
+                try:
+                    model = load_model(sys_model_path)
+                    se_dir = sys_dir / "docs" / "se"
+                    se_result = generate_se_docs(model, se_dir)
+                    for doc_name in se_result.get("generated", []):
+                        result.doc_count += 1
+                except Exception as exc:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="warning",
+                            code="SE_DOCS_FAILED",
+                            message=f"SE doc generation failed for {sm.name}: {exc}",
+                        )
+                    )
 
 
 def _generate_system_interactions(synth: SynthesizeResult) -> str:
