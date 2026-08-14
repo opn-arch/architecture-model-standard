@@ -82,6 +82,9 @@ def main(argv: list[str] | None = None) -> int:
     p_docs = subparsers.add_parser("docs", help="Generate architecture documentation site")
     p_docs.add_argument("repo", help="Repository root path")
     p_docs.add_argument("-o", "--output", help="Output directory (default: {repo}/.architecture-models/docs)")
+    p_docs.add_argument("--se", action="store_true", help="Generate SE documents (ConOps, V&V, etc.)")
+    p_docs.add_argument("--se-only", action="store_true", help="Generate only SE documents")
+    p_docs.add_argument("--formats", help="Comma-separated doc types (e.g. conops,use_cases,se_all)")
 
     # --- visualize ---
     p_visualize = subparsers.add_parser("visualize", help="Generate Mermaid diagrams from architecture model")
@@ -595,7 +598,33 @@ def _cmd_docs(args) -> int:
         pass
 
     output_dir = Path(args.output) if args.output else repo / ".architecture-models" / "docs"
-    result = generate_docs(model, output_dir=output_dir, manifest=manifest)
+
+    # SE document generation
+    se_mode = getattr(args, "se", False) or getattr(args, "se_only", False)
+    se_only = getattr(args, "se_only", False)
+    formats_arg = getattr(args, "formats", None)
+
+    if not se_only:
+        result = generate_docs(model, output_dir=output_dir, manifest=manifest)
+
+    if se_mode or se_only or (formats_arg and any(f.strip() in (
+        "se_all", "conops", "functional_analysis", "logical_architecture",
+        "requirements_analysis", "verification_validation", "operations_manual",
+        "maintenance_manual", "use_cases", "risk_assessment", "interface_spec",
+    ) for f in formats_arg.split(","))):
+        try:
+            from ..docs.se.generator import generate_se_docs
+            se_dir = output_dir / "se"
+            doc_filter = None
+            if formats_arg:
+                doc_filter = [f.strip() for f in formats_arg.split(",") if f.strip() != "se_all"]
+                if not doc_filter:
+                    doc_filter = None
+            se_result = generate_se_docs(model, se_dir, manifest, doc_filter=doc_filter)
+            se_count = len(se_result.get("generated", []))
+            print(f"Generated {se_count} SE documents in {se_dir}/")
+        except Exception as e:
+            print(f"SE doc generation failed: {e}")
 
     print(f"Generated docs in {output_dir}/")
     for f in sorted(output_dir.rglob("*.md")):
