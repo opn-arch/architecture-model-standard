@@ -167,3 +167,160 @@ class TestOrchestrator:
         result = generate_se_docs(model, tmp_path)
         new_content = conops.read_text()
         assert "User added this line." in new_content
+
+
+class TestFunctionalAnalysis:
+    def test_generates_functional_analysis(self) -> None:
+        from architecture_model.docs.se.functional_analysis import generate_functional_analysis
+        model = _make_model()
+        md = generate_functional_analysis(model)
+        assert "# Functional Analysis" in md
+        assert "Data Processing" in md  # capability
+        assert "COMP-1" in md or "APIServer" in md  # component realizing capability
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.functional_analysis import generate_functional_analysis
+        model = _make_model()
+        md = generate_functional_analysis(model)
+        for section in ["Capability Inventory", "Functional Decomposition",
+                        "Capability-Component Mapping"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestLogicalArchitecture:
+    def test_generates_logical_architecture(self) -> None:
+        from architecture_model.docs.se.logical_architecture import generate_logical_architecture
+        model = _make_model()
+        md = generate_logical_architecture(model)
+        assert "# Logical Architecture" in md
+        assert "web" in md  # layer
+        assert "APIServer" in md  # component
+
+    def test_has_mermaid_diagram(self) -> None:
+        from architecture_model.docs.se.logical_architecture import generate_logical_architecture
+        model = _make_model()
+        md = generate_logical_architecture(model)
+        assert "```mermaid" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.logical_architecture import generate_logical_architecture
+        model = _make_model()
+        md = generate_logical_architecture(model)
+        for section in ["Layer Structure", "Component Allocation", "Inter-Component Interfaces",
+                        "Dependency Graph"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestRequirementsAnalysis:
+    def test_generates_requirements_analysis(self) -> None:
+        from architecture_model.docs.se.requirements_analysis import generate_requirements_analysis
+        model = _make_model()
+        md = generate_requirements_analysis(model)
+        assert "# Requirements Analysis" in md
+        assert "Python 3.10+" in md  # constraint
+        assert "constrained-by" in md or "Traceability" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.requirements_analysis import generate_requirements_analysis
+        model = _make_model()
+        md = generate_requirements_analysis(model)
+        for section in ["Constraint Inventory", "Requirements Traceability",
+                        "Constraint Allocation", "Coverage Gaps"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestVerificationValidation:
+    def test_generates_vv(self) -> None:
+        from architecture_model.docs.se.verification_validation import generate_verification_validation
+        model = _make_model()
+        md = generate_verification_validation(model)
+        assert "# Verification & Validation" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.verification_validation import generate_verification_validation
+        model = _make_model()
+        md = generate_verification_validation(model)
+        for section in ["Verification Matrix", "Validation Coverage", "Unverified Items"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestOperationsManual:
+    def test_generates_operations_manual(self) -> None:
+        from architecture_model.docs.se.operations_manual import generate_operations_manual
+        model = _make_model()
+        md = generate_operations_manual(model)
+        assert "# Operations Manual" in md
+        assert "REST API" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.operations_manual import generate_operations_manual
+        model = _make_model()
+        md = generate_operations_manual(model)
+        for section in ["Interface Catalog", "Operational Workflows",
+                        "Configuration & Constraints", "Error Handling"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestMaintenanceManual:
+    def test_generates_maintenance_manual(self) -> None:
+        from architecture_model.docs.se.maintenance_manual import generate_maintenance_manual
+        model = _make_model()
+        md = generate_maintenance_manual(model)
+        assert "# Maintenance Manual" in md
+        assert "APIServer" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.maintenance_manual import generate_maintenance_manual
+        model = _make_model()
+        md = generate_maintenance_manual(model)
+        for section in ["Component Inventory", "Dependency Impact Analysis",
+                        "Modification Procedures", "Known Constraints"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestUseCases:
+    def test_generates_use_cases(self) -> None:
+        from architecture_model.docs.se.use_cases import generate_use_cases
+        model = _make_model()
+        md = generate_use_cases(model)
+        assert "# Use Cases" in md
+        assert "Submit Form" in md
+        assert "Developer" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.use_cases import generate_use_cases
+        model = _make_model()
+        md = generate_use_cases(model)
+        for section in ["Actor-Goal Matrix", "Use Case Specifications", "Use Case Diagram"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestRiskAssessment:
+    def test_generates_risk_assessment(self) -> None:
+        from architecture_model.docs.se.risk_assessment import generate_risk_assessment
+        model = _make_model()
+        md = generate_risk_assessment(model)
+        assert "# Risk Assessment" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.risk_assessment import generate_risk_assessment
+        model = _make_model()
+        md = generate_risk_assessment(model)
+        for section in ["Risk Register", "Dependency Risks", "Constraint Risks"]:
+            assert f"## {section}" in md, f"Missing: {section}"
+
+
+class TestInterfaceSpec:
+    def test_generates_interface_spec(self) -> None:
+        from architecture_model.docs.se.interface_spec import generate_interface_spec
+        model = _make_model()
+        md = generate_interface_spec(model)
+        assert "# Interface Specification" in md
+        assert "REST API" in md
+
+    def test_has_required_sections(self) -> None:
+        from architecture_model.docs.se.interface_spec import generate_interface_spec
+        model = _make_model()
+        md = generate_interface_spec(model)
+        for section in ["Interface Inventory", "Interface Details"]:
+            assert f"## {section}" in md, f"Missing: {section}"
