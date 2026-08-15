@@ -6,6 +6,7 @@ Strategy:
 3. Split: oversized components (>15 files) by sub-clustering
 4. Merge: undersized components (<2 files) into nearest neighbor
 """
+
 from __future__ import annotations
 
 import time
@@ -53,10 +54,7 @@ class AllocateStage:
         inference: InferenceResult = infer_result.output
 
         # All source modules (exclude tests, examples, benchmarks, etc.)
-        source_modules = [
-            m for m in inventory.modules
-            if not _is_non_source_module(m)
-        ]
+        source_modules = [m for m in inventory.modules if not _is_non_source_module(m)]
 
         is_scoped = bool(ctx.scope_files)
 
@@ -79,12 +77,14 @@ class AllocateStage:
             # Step 3: Remaining unallocated → "Infrastructure" component
             still_unallocated = [m.path for m in unallocated]
             if still_unallocated:
-                components.append(ComponentAllocation(
-                    id=f"COMP-{len(components) + 1}",
-                    name="Infrastructure",
-                    files=still_unallocated,
-                    layer="infra",
-                ))
+                components.append(
+                    ComponentAllocation(
+                        id=f"COMP-{len(components) + 1}",
+                        name="Infrastructure",
+                        files=still_unallocated,
+                        layer="infra",
+                    )
+                )
 
             # Step 4: Split oversized components
             components = _split_oversized(components)
@@ -97,16 +97,20 @@ class AllocateStage:
         for correction in get_corrections_for_stage(ctx, "allocate"):
             if correction.correction_type == "split" and correction.entity_id.startswith("COMP-"):
                 if correction.entity_id in comp_by_id:
-                    diagnostics.append(Diagnostic(
-                        severity="warning",
-                        code="split_suggested",
-                        message=(
-                            f"Prior correction suggests splitting {correction.entity_id}: "
-                            f"{correction.reason}"
-                        ),
-                        context={"entity_id": correction.entity_id, "after": correction.after},
-                    ))
-            elif correction.correction_type == "reassign" and correction.entity_id.startswith("COMP-"):
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="warning",
+                            code="split_suggested",
+                            message=(
+                                f"Prior correction suggests splitting {correction.entity_id}: "
+                                f"{correction.reason}"
+                            ),
+                            context={"entity_id": correction.entity_id, "after": correction.after},
+                        )
+                    )
+            elif correction.correction_type == "reassign" and correction.entity_id.startswith(
+                "COMP-"
+            ):
                 src_id = correction.entity_id
                 dst_id = correction.after.get("component_id", "")
                 files_to_move = [Path(f) for f in correction.after.get("files", [])]
@@ -120,14 +124,20 @@ class AllocateStage:
                             dst.files.append(f)
                             moved.append(str(f))
                     if moved:
-                        diagnostics.append(Diagnostic(
-                            severity="info",
-                            code="correction_applied",
-                            message=(
-                                f"Reassigned {len(moved)} file(s) from {src_id} to {dst_id} "
-                                f"(prior correction)"
-                            ),
-                        ))
+                        diagnostics.append(
+                            Diagnostic(
+                                severity="info",
+                                code="correction_applied",
+                                message=(
+                                    f"Reassigned {len(moved)} file(s) from {src_id} to {dst_id} "
+                                    f"(prior correction)"
+                                ),
+                            )
+                        )
+
+        # Ensure component files are sorted for deterministic output
+        for comp in components:
+            comp.files = sorted(comp.files, key=str)
 
         # Compute metrics
         total_files = len(source_modules)
@@ -189,29 +199,35 @@ def _allocate_per_file(
     for mod in modules:
         stem = mod.path.stem
         # __init__.py and trivial helpers → infra bucket
-        if stem == "__init__" or (not mod.classes and not [f for f in mod.functions if not f.name.startswith("_")]):
+        if stem == "__init__" or (
+            not mod.classes and not [f for f in mod.functions if not f.name.startswith("_")]
+        ):
             infra_files.append(mod.path)
             continue
 
         comp_counter += 1
         cap_id = cap_by_stem.get(stem.lower().lstrip("_"), "")
-        components.append(ComponentAllocation(
-            id=f"COMP-{comp_counter}",
-            name=stem.lstrip("_").replace("_", " ").title(),
-            capability_id=cap_id,
-            files=[mod.path],
-            layer=_infer_layer([mod.path]),
-        ))
+        components.append(
+            ComponentAllocation(
+                id=f"COMP-{comp_counter}",
+                name=stem.lstrip("_").replace("_", " ").title(),
+                capability_id=cap_id,
+                files=[mod.path],
+                layer=_infer_layer([mod.path]),
+            )
+        )
 
     # Attach infra files to an Infrastructure component if any
     if infra_files:
         comp_counter += 1
-        components.append(ComponentAllocation(
-            id=f"COMP-{comp_counter}",
-            name="Infrastructure",
-            files=infra_files,
-            layer="infra",
-        ))
+        components.append(
+            ComponentAllocation(
+                id=f"COMP-{comp_counter}",
+                name="Infrastructure",
+                files=infra_files,
+                layer="infra",
+            )
+        )
 
     return components
 
@@ -244,7 +260,9 @@ def _seed_from_capabilities(
         else:
             # Original stem-matching logic for route/domain/cli caps
             cap_words = set(cap.name.lower().replace(" management", "").replace("cli ", "").split())
-            cap_slug = "_".join(cap.name.lower().replace(" management", "").replace("cli ", "").split())
+            cap_slug = "_".join(
+                cap.name.lower().replace(" management", "").replace("cli ", "").split()
+            )
 
             for mod in modules:
                 if mod.path in assigned:
@@ -252,7 +270,9 @@ def _seed_from_capabilities(
                 mod_stem = mod.path.stem.lower().lstrip("_")
                 if mod_stem == cap_slug or mod_stem in cap_words:
                     matched_files.append(mod.path)
-                elif any(mod_stem == w or mod_stem.startswith(w + "_") for w in cap_words if len(w) > 3):
+                elif any(
+                    mod_stem == w or mod_stem.startswith(w + "_") for w in cap_words if len(w) > 3
+                ):
                     matched_files.append(mod.path)
 
         assigned.update(matched_files)
@@ -341,13 +361,15 @@ def _split_oversized(components: list[ComponentAllocation]) -> list[ComponentAll
             if len(groups) > 1:
                 for i, (pkg_name, files) in enumerate(groups.items()):
                     sub_name = pkg_name if pkg_name != "(root)" else "core"
-                    result.append(ComponentAllocation(
-                        id=f"{comp.id}-{i + 1}",
-                        name=f"{comp.name} ({sub_name})",
-                        capability_id=comp.capability_id,
-                        files=files,
-                        layer=comp.layer,
-                    ))
+                    result.append(
+                        ComponentAllocation(
+                            id=f"{comp.id}-{i + 1}",
+                            name=f"{comp.name} ({sub_name})",
+                            capability_id=comp.capability_id,
+                            files=files,
+                            layer=comp.layer,
+                        )
+                    )
             else:
                 result.append(comp)
         else:

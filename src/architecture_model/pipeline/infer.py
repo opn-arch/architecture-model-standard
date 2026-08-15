@@ -3,6 +3,7 @@
 Capability-driven: clusters by purpose (routes, domain modules, test patterns),
 not by import structure. Import affinity is a secondary signal only.
 """
+
 from __future__ import annotations
 
 import re
@@ -69,28 +70,33 @@ class InferStage:
         if inventory.routes:
             # For large repos, consolidate routes into a single capability
             source_count = sum(
-                1 for m in inventory.modules
+                1
+                for m in inventory.modules
                 if not _is_non_source_module(m)
-                and m.path.stem not in ("utils", "helpers", "common", "base",
-                                        "constants", "types", "config")
+                and m.path.stem
+                not in ("utils", "helpers", "common", "base", "constants", "types", "config")
             )
             if source_count > self._get_large_repo_threshold(ctx):
                 # Single "Web Routes" capability for all routes
                 cap_counter += 1
-                capabilities.append(InferredCapability(
-                    id=f"CAP-{cap_counter}",
-                    name="Web Routes",
-                    description=f"HTTP routing ({len(inventory.routes)} endpoints)",
-                    evidence_source="routes",
-                ))
+                capabilities.append(
+                    InferredCapability(
+                        id=f"CAP-{cap_counter}",
+                        name="Web Routes",
+                        description=f"HTTP routing ({len(inventory.routes)} endpoints)",
+                        evidence_source="routes",
+                    )
+                )
                 # Still infer actors from routes
                 has_auth = any(r.is_authenticated for r in inventory.routes)
-                actors.append(InferredActor(
-                    id="ACT-1",
-                    name="API Consumer",
-                    actor_type="system" if not has_auth else "human",
-                    evidence_source="routes",
-                ))
+                actors.append(
+                    InferredActor(
+                        id="ACT-1",
+                        name="API Consumer",
+                        actor_type="system" if not has_auth else "human",
+                        evidence_source="routes",
+                    )
+                )
             else:
                 route_caps, route_actors = _infer_from_routes(inventory.routes)
                 for cap in route_caps:
@@ -114,6 +120,13 @@ class InferStage:
             cap.id = f"CAP-{cap_counter}"
             capabilities.append(cap)
 
+        # --- Strategy 4: Infrastructure file detection ---
+        infra_caps = _infer_infrastructure_capabilities(inventory.modules, capabilities)
+        for cap in infra_caps:
+            cap_counter += 1
+            cap.id = f"CAP-{cap_counter}"
+            capabilities.append(cap)
+
         # --- Actors: infer from auth patterns, CLI entry points ---
         if not actors:
             actors = _infer_default_actors(inventory)
@@ -125,12 +138,14 @@ class InferStage:
         # --- Uncertainties for ambiguous modules ---
         for mod in inventory.modules:
             if not _module_has_clear_purpose(mod, capabilities):
-                uncertainties.append(Uncertainty(
-                    category="ambiguous_module",
-                    description=f"{mod.path} has no clear capability affiliation",
-                    suggested_fallback="llm_analysis",
-                    priority="informational",
-                ))
+                uncertainties.append(
+                    Uncertainty(
+                        category="ambiguous_module",
+                        description=f"{mod.path} has no clear capability affiliation",
+                        suggested_fallback="llm_analysis",
+                        priority="informational",
+                    )
+                )
 
         result = InferenceResult(
             capabilities=capabilities,
@@ -147,11 +162,13 @@ class InferStage:
                         new_name = correction.after.get("name")
                         if new_name and (old_name is None or cap.name == old_name):
                             cap.name = new_name
-                            diagnostics.append(Diagnostic(
-                                severity="info",
-                                code="correction_applied",
-                                message=f"Renamed {cap.id} to '{new_name}' (prior correction)",
-                            ))
+                            diagnostics.append(
+                                Diagnostic(
+                                    severity="info",
+                                    code="correction_applied",
+                                    message=f"Renamed {cap.id} to '{new_name}' (prior correction)",
+                                )
+                            )
                         break
 
         # Quality
@@ -182,7 +199,9 @@ class InferStage:
         )
 
 
-def _infer_from_routes(routes: list[RouteRecord]) -> tuple[list[InferredCapability], list[InferredActor]]:
+def _infer_from_routes(
+    routes: list[RouteRecord],
+) -> tuple[list[InferredCapability], list[InferredActor]]:
     """Group routes by URL prefix → one capability per prefix."""
     prefix_groups: dict[str, list[RouteRecord]] = defaultdict(list)
 
@@ -205,12 +224,14 @@ def _infer_from_routes(routes: list[RouteRecord]) -> tuple[list[InferredCapabili
     actors = []
     if routes:
         has_auth = any(r.is_authenticated for r in routes)
-        actors.append(InferredActor(
-            id="ACT-1",
-            name="API Consumer",
-            actor_type="system" if not has_auth else "human",
-            evidence_source="routes",
-        ))
+        actors.append(
+            InferredActor(
+                id="ACT-1",
+                name="API Consumer",
+                actor_type="system" if not has_auth else "human",
+                evidence_source="routes",
+            )
+        )
 
     return capabilities, actors
 
@@ -222,11 +243,26 @@ def _extract_prefix(path: str) -> str:
 
 
 # Directories that contain non-source modules (tests, examples, docs, etc.)
-_NON_SOURCE_DIRS = frozenset({
-    "tests", "test", "testing", "examples", "example", "demos", "demo",
-    "docs", "doc", "typing_tests", "benchmarks", "fixtures", "tools",
-    "_unicode_data", "scripts", "contrib",
-})
+_NON_SOURCE_DIRS = frozenset(
+    {
+        "tests",
+        "test",
+        "testing",
+        "examples",
+        "example",
+        "demos",
+        "demo",
+        "docs",
+        "doc",
+        "typing_tests",
+        "benchmarks",
+        "fixtures",
+        "tools",
+        "_unicode_data",
+        "scripts",
+        "contrib",
+    }
+)
 
 
 def _is_non_source_module(mod: ModuleRecord) -> bool:
@@ -251,8 +287,10 @@ def _name_from_prefix(prefix: str) -> str:
 
 
 def _infer_from_domain_modules(
-    modules: list[ModuleRecord], existing: list[InferredCapability],
-    *, scoped: bool = False,
+    modules: list[ModuleRecord],
+    existing: list[InferredCapability],
+    *,
+    scoped: bool = False,
 ) -> list[InferredCapability]:
     """Infer capabilities from domain-named modules not yet covered by routes.
 
@@ -265,9 +303,11 @@ def _infer_from_domain_modules(
 
     # Filter source modules once for both paths
     source_modules = [
-        mod for mod in modules
+        mod
+        for mod in modules
         if not _is_non_source_module(mod)
-        and mod.path.stem not in ("utils", "helpers", "common", "base", "constants", "types", "config")
+        and mod.path.stem
+        not in ("utils", "helpers", "common", "base", "constants", "types", "config")
     ]
 
     # Large repos: group by package instead of one-cap-per-file
@@ -291,12 +331,14 @@ def _infer_from_domain_modules(
         if len(public_funcs) >= min_funcs or len(mod.classes) >= min_classes:
             cap_name = name.lstrip("_").replace("_", " ").title()
             if cap_name.lower() not in existing_names:
-                capabilities.append(InferredCapability(
-                    id="",
-                    name=cap_name,
-                    description=f"Domain logic in {mod.path}",
-                    evidence_source="domain_module",
-                ))
+                capabilities.append(
+                    InferredCapability(
+                        id="",
+                        name=cap_name,
+                        description=f"Domain logic in {mod.path}",
+                        evidence_source="domain_module",
+                    )
+                )
                 existing_names.add(cap_name.lower())
 
     return capabilities
@@ -338,12 +380,14 @@ def _infer_capabilities_by_package(
             continue
         cap_name = group_name.replace("_", " ").title()
         if cap_name.lower() not in existing_names:
-            capabilities.append(InferredCapability(
-                id="",
-                name=cap_name,
-                description=f"Package group with {len(mods)} modules",
-                evidence_source="package_group",
-            ))
+            capabilities.append(
+                InferredCapability(
+                    id="",
+                    name=cap_name,
+                    description=f"Package group with {len(mods)} modules",
+                    evidence_source="package_group",
+                )
+            )
             existing_names.add(cap_name.lower())
 
     return capabilities
@@ -356,17 +400,16 @@ def _infer_from_cli(modules: list[ModuleRecord]) -> list[InferredCapability]:
         if _is_non_source_module(mod):
             continue
         # Check for click/typer/argparse patterns
-        has_cli = any(
-            "click" in imp or "typer" in imp or "argparse" in imp
-            for imp in mod.imports
-        )
+        has_cli = any("click" in imp or "typer" in imp or "argparse" in imp for imp in mod.imports)
         if has_cli and mod.path.stem not in ("__init__",):
-            capabilities.append(InferredCapability(
-                id="",
-                name=f"CLI {mod.path.stem.replace('_', ' ').title()}",
-                description=f"CLI commands in {mod.path}",
-                evidence_source="cli_pattern",
-            ))
+            capabilities.append(
+                InferredCapability(
+                    id="",
+                    name=f"CLI {mod.path.stem.replace('_', ' ').title()}",
+                    description=f"CLI commands in {mod.path}",
+                    evidence_source="cli_pattern",
+                )
+            )
     return capabilities
 
 
@@ -381,9 +424,11 @@ def _infer_default_actors(inventory: Inventory) -> list[InferredActor]:
         for m in source_modules
     )
     if has_cli:
-        actors.append(InferredActor(
-            id="ACT-1", name="CLI User", actor_type="human", evidence_source="cli_pattern"
-        ))
+        actors.append(
+            InferredActor(
+                id="ACT-1", name="CLI User", actor_type="human", evidence_source="cli_pattern"
+            )
+        )
 
     # Check for scheduled/timer patterns
     has_scheduler = any(
@@ -391,15 +436,19 @@ def _infer_default_actors(inventory: Inventory) -> list[InferredActor]:
         for m in source_modules
     )
     if has_scheduler:
-        actors.append(InferredActor(
-            id=f"ACT-{len(actors) + 1}", name="Scheduler", actor_type="timer",
-            evidence_source="scheduler_pattern",
-        ))
+        actors.append(
+            InferredActor(
+                id=f"ACT-{len(actors) + 1}",
+                name="Scheduler",
+                actor_type="timer",
+                evidence_source="scheduler_pattern",
+            )
+        )
 
     if not actors:
-        actors.append(InferredActor(
-            id="ACT-1", name="User", actor_type="human", evidence_source="default"
-        ))
+        actors.append(
+            InferredActor(id="ACT-1", name="User", actor_type="human", evidence_source="default")
+        )
 
     return actors
 
@@ -426,14 +475,16 @@ def _infer_behaviors(
                 cap_id = cap.id
                 break
 
-        behaviors.append(InferredBehavior(
-            id=f"BEH-{beh_counter}",
-            name=f"{route.method} {route.path}",
-            actor_id=actor_id,
-            capability_id=cap_id,
-            steps=[route.function_name],
-            behavior_type="route_handler",
-        ))
+        behaviors.append(
+            InferredBehavior(
+                id=f"BEH-{beh_counter}",
+                name=f"{route.method} {route.path}",
+                actor_id=actor_id,
+                capability_id=cap_id,
+                steps=[route.function_name],
+                behavior_type="route_handler",
+            )
+        )
 
     # CLI command use cases
     CLI_IMPORTS = {"click", "typer", "argparse"}
@@ -441,32 +492,28 @@ def _infer_behaviors(
     CLI_DECORATORS = {"command", "click"}
 
     for mod in inventory.modules:
-        has_cli_import = any(
-            cli_imp in imp for imp in mod.imports for cli_imp in CLI_IMPORTS
-        )
+        has_cli_import = any(cli_imp in imp for imp in mod.imports for cli_imp in CLI_IMPORTS)
         if not has_cli_import:
             continue
 
         for func in mod.functions:
-            is_cli_func = (
-                func.name in CLI_FUNC_NAMES
-                or any(
-                    any(dec_kw in dec.lower() for dec_kw in CLI_DECORATORS)
-                    for dec in func.decorators
-                )
+            is_cli_func = func.name in CLI_FUNC_NAMES or any(
+                any(dec_kw in dec.lower() for dec_kw in CLI_DECORATORS) for dec in func.decorators
             )
             if not is_cli_func:
                 continue
 
             beh_counter += 1
             stem = mod.path.stem.replace("_", " ").title()
-            behaviors.append(InferredBehavior(
-                id=f"BEH-{beh_counter}",
-                name=f"CLI: {stem}",
-                actor_id=actors[0].id if actors else "",
-                steps=func.calls[:5],
-                behavior_type="use_case",
-            ))
+            behaviors.append(
+                InferredBehavior(
+                    id=f"BEH-{beh_counter}",
+                    name=f"CLI: {stem}",
+                    actor_id=actors[0].id if actors else "",
+                    steps=func.calls[:5],
+                    behavior_type="use_case",
+                )
+            )
 
     # Handler/view class use cases
     HANDLER_BASES = {"view", "handler", "command"}
@@ -476,9 +523,7 @@ def _infer_behaviors(
             if cls.name.startswith("_") or cls.name.lower().startswith("test"):
                 continue
             bases_lower = [b.lower() for b in cls.bases]
-            is_handler = any(
-                kw in base for base in bases_lower for kw in HANDLER_BASES
-            )
+            is_handler = any(kw in base for base in bases_lower for kw in HANDLER_BASES)
             if not is_handler:
                 continue
 
@@ -487,21 +532,25 @@ def _infer_behaviors(
                 continue
 
             beh_counter += 1
-            behaviors.append(InferredBehavior(
-                id=f"BEH-{beh_counter}",
-                name=cls.name,
-                actor_id=actors[0].id if actors else "",
-                steps=public_methods,
-                behavior_type="use_case",
-            ))
+            behaviors.append(
+                InferredBehavior(
+                    id=f"BEH-{beh_counter}",
+                    name=cls.name,
+                    actor_id=actors[0].id if actors else "",
+                    steps=public_methods,
+                    behavior_type="use_case",
+                )
+            )
 
     # Workflow behaviors from ordered method patterns
     WORKFLOW_PATTERNS = {
         "middleware": {
             "bases": ["middleware", "mixin"],
             "ordered_methods": [
-                "process_request", "process_view",
-                "process_response", "process_exception",
+                "process_request",
+                "process_view",
+                "process_response",
+                "process_exception",
             ],
         },
         "lifecycle": {
@@ -517,27 +566,23 @@ def _infer_behaviors(
             bases_lower = [b.lower() for b in cls.bases]
 
             for pattern_name, pattern in WORKFLOW_PATTERNS.items():
-                base_match = any(
-                    kw in base
-                    for base in bases_lower
-                    for kw in pattern["bases"]
-                )
+                base_match = any(kw in base for base in bases_lower for kw in pattern["bases"])
                 if not base_match:
                     continue
 
-                matched = [
-                    m for m in pattern["ordered_methods"] if m in cls.methods
-                ]
+                matched = [m for m in pattern["ordered_methods"] if m in cls.methods]
                 if len(matched) < 2:
                     continue
 
                 beh_counter += 1
-                behaviors.append(InferredBehavior(
-                    id=f"BEH-{beh_counter}",
-                    name=f"{cls.name} {pattern_name} workflow",
-                    steps=matched,
-                    behavior_type="workflow",
-                ))
+                behaviors.append(
+                    InferredBehavior(
+                        id=f"BEH-{beh_counter}",
+                        name=f"{cls.name} {pattern_name} workflow",
+                        steps=matched,
+                        behavior_type="workflow",
+                    )
+                )
 
     # --- Uncertainty: Complex classes (≥15 public methods) ---
     COMPLEX_METHOD_THRESHOLD = 15
@@ -547,15 +592,20 @@ def _infer_behaviors(
                 continue
             public_methods = [m for m in cls.methods if not m.startswith("_")]
             if len(public_methods) >= COMPLEX_METHOD_THRESHOLD:
-                uncertainties.append(Uncertainty(
-                    category="complex_behavior",
-                    description=f"{cls.name} in {mod.path} has {len(public_methods)} public methods — needs LLM analysis to identify key workflows and use cases",
-                    context={"class": cls.name, "file": str(mod.path),
-                             "methods": public_methods[:20],
-                             "method_count": len(public_methods)},
-                    suggested_fallback=f"Create generic workflow for {cls.name}",
-                    priority="medium",
-                ))
+                uncertainties.append(
+                    Uncertainty(
+                        category="complex_behavior",
+                        description=f"{cls.name} in {mod.path} has {len(public_methods)} public methods — needs LLM analysis to identify key workflows and use cases",
+                        context={
+                            "class": cls.name,
+                            "file": str(mod.path),
+                            "methods": public_methods[:20],
+                            "method_count": len(public_methods),
+                        },
+                        suggested_fallback=f"Create generic workflow for {cls.name}",
+                        priority="medium",
+                    )
+                )
 
     # --- Uncertainty: Modules with many cross-calling functions ---
     MODULE_FUNCTION_THRESHOLD = 10
@@ -563,20 +613,94 @@ def _infer_behaviors(
         public_funcs = [f for f in mod.functions if not f.name.startswith("_")]
         if len(public_funcs) >= MODULE_FUNCTION_THRESHOLD:
             func_names = {f.name for f in public_funcs}
-            cross_calls = sum(1 for f in public_funcs
-                              for c in (f.calls or []) if c in func_names)
+            cross_calls = sum(1 for f in public_funcs for c in (f.calls or []) if c in func_names)
             if cross_calls >= 3:
-                uncertainties.append(Uncertainty(
-                    category="complex_behavior",
-                    description=f"{mod.path} has {len(public_funcs)} public functions with {cross_calls} cross-calls — likely contains workflow patterns",
-                    context={"file": str(mod.path),
-                             "functions": [f.name for f in public_funcs[:15]],
-                             "cross_calls": cross_calls},
-                    suggested_fallback=f"Create module-level workflow for {mod.path.stem}",
-                    priority="medium",
-                ))
+                uncertainties.append(
+                    Uncertainty(
+                        category="complex_behavior",
+                        description=f"{mod.path} has {len(public_funcs)} public functions with {cross_calls} cross-calls — likely contains workflow patterns",
+                        context={
+                            "file": str(mod.path),
+                            "functions": [f.name for f in public_funcs[:15]],
+                            "cross_calls": cross_calls,
+                        },
+                        suggested_fallback=f"Create module-level workflow for {mod.path.stem}",
+                        priority="medium",
+                    )
+                )
 
     return behaviors, uncertainties
+
+
+# Infrastructure detection patterns
+_INFRA_PATTERNS = {
+    "Dockerfile",
+    "docker-compose.yml",
+    "docker-compose.yaml",
+    ".env.example",
+    "Makefile",
+    "Procfile",
+    "fly.toml",
+    "nginx.conf",
+    "supervisord.conf",
+}
+_MIGRATION_DIRS = {"alembic", "migrations", "prisma"}
+_CONFIG_FILES = {"config.py", "settings.py", "pyproject.toml", "setup.cfg"}
+
+
+def _infer_infrastructure_capabilities(
+    modules: list[ModuleRecord], existing: list[InferredCapability]
+) -> list[InferredCapability]:
+    """Detect infrastructure, migration, and config files and create capabilities."""
+    existing_names = {c.name.lower() for c in existing}
+    capabilities: list[InferredCapability] = []
+
+    has_infra = False
+    has_migrations = False
+    has_config = False
+
+    for mod in modules:
+        filename = mod.path.name
+        parts = set(mod.path.parts[:-1])  # directory components
+
+        if filename in _INFRA_PATTERNS:
+            has_infra = True
+        if parts & _MIGRATION_DIRS:
+            has_migrations = True
+        if filename in _CONFIG_FILES:
+            has_config = True
+
+    if has_infra and "infrastructure & deployment" not in existing_names:
+        capabilities.append(
+            InferredCapability(
+                id="",
+                name="Infrastructure & Deployment",
+                description="Infrastructure and deployment configuration files",
+                evidence_source="infra_pattern",
+            )
+        )
+
+    if has_migrations and "database migrations" not in existing_names:
+        capabilities.append(
+            InferredCapability(
+                id="",
+                name="Database Migrations",
+                description="Database migration and schema management",
+                evidence_source="infra_pattern",
+            )
+        )
+
+    if has_config and "configuration" not in existing_names:
+        capabilities.append(
+            InferredCapability(
+                id="",
+                name="Configuration",
+                description="Application configuration files",
+                evidence_source="infra_pattern",
+            )
+        )
+
+    return capabilities
 
 
 def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapability]) -> bool:
@@ -586,7 +710,17 @@ def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapa
         return True
     name = mod.path.stem
     # Utility/infra modules are fine without capability
-    if name in ("__init__", "utils", "helpers", "common", "base", "constants", "types", "config", "conftest"):
+    if name in (
+        "__init__",
+        "utils",
+        "helpers",
+        "common",
+        "base",
+        "constants",
+        "types",
+        "config",
+        "conftest",
+    ):
         return True
     # Has capability mentioning it
     for cap in capabilities:
