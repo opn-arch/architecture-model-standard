@@ -92,6 +92,7 @@ class ValidationResult:
 def validate_model(
     model: ArchitectureModel,
     strict: bool = False,
+    raw_dict: dict | None = None,
 ) -> ValidationResult:
     """
     Run all validation checks on the architecture model.
@@ -99,11 +100,16 @@ def validate_model(
     Args:
         model: The model to validate.
         strict: If True, promote warnings to errors.
+        raw_dict: Optional raw YAML dict for JSON Schema validation.
 
     Returns:
         ValidationResult with all issues found.
     """
     result = ValidationResult()
+
+    # JSON Schema validation (if raw dict provided and jsonschema available)
+    if raw_dict is not None:
+        _check_json_schema(raw_dict, result)
 
     _check_id_uniqueness(model, result)
     _check_referential_integrity(model, result)
@@ -116,14 +122,13 @@ def validate_model(
     _check_domain_profile(model, result)
     _check_improvement_opportunities(model, result)
     _check_requirements_verification(model, result)
+    _check_dependency_cycles(model, result)
+    _check_operational_fields(model, result)
 
     # Lifecycle-gated: skip verification checks in concept phase
-    lifecycle_phase = getattr(model.meta, 'lifecycle_phase', 'production')
+    lifecycle_phase = getattr(model.meta, "lifecycle_phase", "production")
     if lifecycle_phase == "concept":
-        result.issues = [
-            i for i in result.issues
-            if not (i.code and "UNVERIFIED" in i.code)
-        ]
+        result.issues = [i for i in result.issues if not (i.code and "UNVERIFIED" in i.code)]
 
     if strict:
         # Promote warnings to errors
@@ -132,6 +137,7 @@ def validate_model(
                 issue.severity = Severity.ERROR
 
     from architecture_model.core.confidence import compute_model_confidence
+
     compute_model_confidence(model)
 
     return result
@@ -162,6 +168,7 @@ def _check_id_uniqueness(model: ArchitectureModel, result: ValidationResult) -> 
         ("quality_attribute", model.entities.quality_attributes),
         ("decision", model.entities.decisions),
         ("lifecycle", model.entities.lifecycles),
+        ("external_system", model.entities.external_systems),
     ]
 
     for type_name, entities in type_entities:
@@ -278,6 +285,8 @@ def _check_status_consistency(model: ArchitectureModel, result: ValidationResult
         status_map[dec.id] = dec.status
     for lc in model.entities.lifecycles:
         status_map[lc.id] = lc.status
+    for es in model.entities.external_systems:
+        status_map[es.id] = es.status
 
     for rel in model.relationships:
         from_status = status_map.get(rel.from_id)
@@ -361,7 +370,7 @@ def _check_regen_readiness(model: ArchitectureModel, result: ValidationResult) -
         referenced_constants: set[str] = set()
         for tc in comp.test_contracts:
             # Match patterns: Identifier.CONSTANT_NAME (uppercase with underscores)
-            matches = re.findall(r'\b\w+\.([A-Z][A-Z0-9_]+)\b', tc.assertion)
+            matches = re.findall(r"\b\w+\.([A-Z][A-Z0-9_]+)\b", tc.assertion)
             referenced_constants.update(matches)
 
         if referenced_constants:
@@ -369,8 +378,8 @@ def _check_regen_readiness(model: ArchitectureModel, result: ValidationResult) -
             defined_names: set[str] = set()
             for c in comp.constants:
                 defined_names.add(c.name)
-                if '.' in c.name:
-                    defined_names.add(c.name.rsplit('.', 1)[1])
+                if "." in c.name:
+                    defined_names.add(c.name.rsplit(".", 1)[1])
             covered = len(referenced_constants & defined_names)
             coverage = covered / len(referenced_constants)
 
@@ -406,12 +415,34 @@ def _check_regen_readiness(model: ArchitectureModel, result: ValidationResult) -
         called_functions: set[str] = set()
         for tc in comp.test_contracts:
             # Match function calls: name(...) — excluding assert, common builtins
-            matches = re.findall(r'\b([a-z_]\w*)\s*\(', tc.assertion)
+            matches = re.findall(r"\b([a-z_]\w*)\s*\(", tc.assertion)
             # Filter out Python keywords/builtins that aren't component functions
-            excluded = {"assert", "len", "str", "int", "float", "bool", "list",
-                        "dict", "set", "tuple", "type", "isinstance", "print",
-                        "repr", "sorted", "reversed", "enumerate", "range", "zip",
-                        "map", "filter", "hasattr", "getattr", "setattr"}
+            excluded = {
+                "assert",
+                "len",
+                "str",
+                "int",
+                "float",
+                "bool",
+                "list",
+                "dict",
+                "set",
+                "tuple",
+                "type",
+                "isinstance",
+                "print",
+                "repr",
+                "sorted",
+                "reversed",
+                "enumerate",
+                "range",
+                "zip",
+                "map",
+                "filter",
+                "hasattr",
+                "getattr",
+                "setattr",
+            }
             called_functions.update(m for m in matches if m not in excluded)
 
         if called_functions:
@@ -480,17 +511,19 @@ def _check_v11_semantics(model: ArchitectureModel, result: ValidationResult) -> 
 
     # Data-model components without fields: INFO hint
     for comp in model.entities.components:
-        if hasattr(comp, 'kind') and comp.kind == ComponentKind.DATA_MODEL and not comp.fields:
-            result.issues.append(ValidationIssue(
-                severity=Severity.INFO,
-                code="DATA_MODEL_NO_FIELDS",
-                message="Data-model component has no fields defined",
-                entity_id=comp.id,
-            ))
+        if hasattr(comp, "kind") and comp.kind == ComponentKind.DATA_MODEL and not comp.fields:
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="DATA_MODEL_NO_FIELDS",
+                    message="Data-model component has no fields defined",
+                    entity_id=comp.id,
+                )
+            )
 
     # State-machine: check for unreachable states
     for beh in model.entities.behaviors:
-        if hasattr(beh, 'pattern') and beh.pattern == BehaviorPattern.STATE_MACHINE and beh.states:
+        if hasattr(beh, "pattern") and beh.pattern == BehaviorPattern.STATE_MACHINE and beh.states:
             all_targets = set()
             for state in beh.states:
                 for t in state.transitions:
@@ -498,12 +531,14 @@ def _check_v11_semantics(model: ArchitectureModel, result: ValidationResult) -> 
             reachable = {beh.states[0].name} | all_targets
             for state in beh.states:
                 if state.name not in reachable:
-                    result.issues.append(ValidationIssue(
-                        severity=Severity.WARNING,
-                        code="STATE_UNREACHABLE",
-                        message=f"Orphan state '{state.name}' has no incoming transitions",
-                        entity_id=beh.id,
-                    ))
+                    result.issues.append(
+                        ValidationIssue(
+                            severity=Severity.WARNING,
+                            code="STATE_UNREACHABLE",
+                            message=f"Orphan state '{state.name}' has no incoming transitions",
+                            entity_id=beh.id,
+                        )
+                    )
 
 
 def _check_domain_profile(model: ArchitectureModel, result: ValidationResult) -> None:
@@ -514,6 +549,7 @@ def _check_domain_profile(model: ArchitectureModel, result: ValidationResult) ->
 
     try:
         from architecture_model.profiles.schema import load_profile
+
         profile = load_profile(profile_name)
     except Exception as exc:
         logger.warning("Could not load domain profile '%s': %s", profile_name, exc)
@@ -560,18 +596,27 @@ def _check_domain_profile(model: ArchitectureModel, result: ValidationResult) ->
                 val = getattr(entity, req_field, None)
                 if val is not None and val != "" and val != []:
                     has_field = True
-                elif hasattr(entity, "extensions") and entity.extensions and req_field in entity.extensions:
+                elif (
+                    hasattr(entity, "extensions")
+                    and entity.extensions
+                    and req_field in entity.extensions
+                ):
                     has_field = True
 
                 if not has_field:
-                    msg = rule.message or f"Profile '{profile_name}' requires '{req_field}' on {rule.entity_type} with {rule.when}"
-                    result.issues.append(ValidationIssue(
-                        severity=Severity.WARNING,
-                        code="PROFILE_RULE",
-                        message=f"{msg} (missing: {req_field})",
-                        entity_id=entity.id,
-                        context=f"profile:{profile_name}",
-                    ))
+                    msg = (
+                        rule.message
+                        or f"Profile '{profile_name}' requires '{req_field}' on {rule.entity_type} with {rule.when}"
+                    )
+                    result.issues.append(
+                        ValidationIssue(
+                            severity=Severity.WARNING,
+                            code="PROFILE_RULE",
+                            message=f"{msg} (missing: {req_field})",
+                            entity_id=entity.id,
+                            context=f"profile:{profile_name}",
+                        )
+                    )
 
 
 def _check_improvement_opportunities(model: ArchitectureModel, result: ValidationResult) -> None:
@@ -581,30 +626,36 @@ def _check_improvement_opportunities(model: ArchitectureModel, result: Validatio
             continue
 
         if not comp.signatures:
-            result.issues.append(ValidationIssue(
-                severity=Severity.INFO,
-                code="IMPROVEMENT_NO_SIGNATURES",
-                message=f"Component '{comp.name}' has no function signatures",
-                entity_id=comp.id,
-            ))
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="IMPROVEMENT_NO_SIGNATURES",
+                    message=f"Component '{comp.name}' has no function signatures",
+                    entity_id=comp.id,
+                )
+            )
             continue
 
         if not comp.test_contracts:
-            result.issues.append(ValidationIssue(
-                severity=Severity.INFO,
-                code="IMPROVEMENT_NO_TEST_CONTRACTS",
-                message=f"Component '{comp.name}' has signatures but no test contracts",
-                entity_id=comp.id,
-            ))
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="IMPROVEMENT_NO_TEST_CONTRACTS",
+                    message=f"Component '{comp.name}' has signatures but no test contracts",
+                    entity_id=comp.id,
+                )
+            )
             continue
 
         if not comp.observability:
-            result.issues.append(ValidationIssue(
-                severity=Severity.INFO,
-                code="IMPROVEMENT_NO_OBSERVABILITY",
-                message=f"Component '{comp.name}' has signatures and test contracts but no observability contracts",
-                entity_id=comp.id,
-            ))
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="IMPROVEMENT_NO_OBSERVABILITY",
+                    message=f"Component '{comp.name}' has signatures and test contracts but no observability contracts",
+                    entity_id=comp.id,
+                )
+            )
 
 
 def _check_requirements_verification(model: ArchitectureModel, result: ValidationResult) -> None:
@@ -631,9 +682,135 @@ def _check_requirements_verification(model: ArchitectureModel, result: Validatio
     leaf_ids = constraint_ids - parent_ids
     for leaf_id in leaf_ids:
         if leaf_id not in verified_ids:
-            result.issues.append(ValidationIssue(
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.WARNING,
+                    code="UNVERIFIED_CONSTRAINT",
+                    message=f"Leaf constraint '{leaf_id}' has no 'verifies' relationship",
+                    entity_id=leaf_id,
+                )
+            )
+
+
+def _check_dependency_cycles(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Detect circular dependency chains in depends-on relationships."""
+    from .types import RelationType as RT
+
+    # Build adjacency list for depends-on edges
+    graph: dict[str, list[str]] = {}
+    for rel in model.relationships:
+        rel_type = rel.type.value if isinstance(rel.type, RT) else rel.type
+        if rel_type == "depends-on":
+            graph.setdefault(rel.from_id, []).append(rel.to_id)
+
+    if not graph:
+        return
+
+    # DFS cycle detection
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: dict[str, int] = {n: WHITE for n in graph}
+    # Also add nodes that are targets but not sources
+    for targets in list(graph.values()):
+        for t in targets:
+            if t not in color:
+                color[t] = WHITE
+
+    cycles_found: list[list[str]] = []
+
+    def dfs(node: str, path: list[str]) -> None:
+        color[node] = GRAY
+        path.append(node)
+        for neighbor in graph.get(node, []):
+            if color.get(neighbor) == GRAY:
+                # Found cycle — extract it
+                cycle_start = path.index(neighbor)
+                cycle = path[cycle_start:] + [neighbor]
+                cycles_found.append(cycle)
+            elif color.get(neighbor, WHITE) == WHITE:
+                dfs(neighbor, path)
+        path.pop()
+        color[node] = BLACK
+
+    for node in list(color.keys()):
+        if color[node] == WHITE:
+            dfs(node, [])
+
+    for cycle in cycles_found[:5]:  # Report max 5 cycles
+        cycle_str = " → ".join(cycle)
+        result.issues.append(
+            ValidationIssue(
                 severity=Severity.WARNING,
-                code="UNVERIFIED_CONSTRAINT",
-                message=f"Leaf constraint '{leaf_id}' has no 'verifies' relationship",
-                entity_id=leaf_id,
-            ))
+                code="DEPENDENCY_CYCLE",
+                message=f"Circular dependency: {cycle_str}",
+                entity_id=cycle[0],
+            )
+        )
+
+
+def _check_json_schema(raw_dict: dict, result: ValidationResult) -> None:
+    """Validate raw YAML dict against the JSON Schema spec."""
+    try:
+        import jsonschema
+        import json
+        from pathlib import Path
+
+        schema_path = Path(__file__).parent.parent / "spec" / "schema.json"
+        if not schema_path.exists():
+            return
+
+        schema = json.loads(schema_path.read_text())
+        validator = jsonschema.Draft7Validator(schema)
+        errors = list(validator.iter_errors(raw_dict))
+
+        for error in errors[:10]:  # Cap at 10 schema errors
+            path_str = ".".join(str(p) for p in error.absolute_path) or "(root)"
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.ERROR,
+                    code="JSON_SCHEMA_VIOLATION",
+                    message=f"At '{path_str}': {error.message[:200]}",
+                )
+            )
+    except ImportError:
+        # jsonschema not installed — skip silently
+        pass
+    except Exception as e:
+        result.issues.append(
+            ValidationIssue(
+                severity=Severity.INFO,
+                code="JSON_SCHEMA_CHECK_FAILED",
+                message=f"Could not run JSON Schema validation: {e}",
+            )
+        )
+
+
+def _check_operational_fields(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Validate structure of optional operational fields on components."""
+    valid_ops_keys = {"startup_command", "health_check", "deployment_config"}
+    valid_ext_dep_keys = {"name", "type", "url", "auth_method"}
+
+    for comp in model.entities.components:
+        # Validate operations dict keys
+        if comp.operations:
+            unknown_keys = set(comp.operations.keys()) - valid_ops_keys
+            if unknown_keys:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="UNKNOWN_OPERATIONS_KEY",
+                        message=f"Component '{comp.name}' has unknown operations keys: {sorted(unknown_keys)}",
+                        entity_id=comp.id,
+                    )
+                )
+
+        # Validate external_dependencies entries have 'name'
+        for i, dep in enumerate(comp.external_dependencies):
+            if "name" not in dep:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="EXT_DEP_MISSING_NAME",
+                        message=f"Component '{comp.name}' external_dependencies[{i}] missing 'name'",
+                        entity_id=comp.id,
+                    )
+                )

@@ -175,6 +175,7 @@ class BehaviorPattern(str, Enum):
 
 class SymbolKind(str, Enum):
     """Kind of code symbol (language-neutral type discrimination)."""
+
     CLASS = "class"
     DATACLASS = "dataclass"
     EXCEPTION = "exception"
@@ -305,6 +306,7 @@ class Capability(BaseEntity):
 @dataclass
 class StateTransition:
     """A state in a state-machine behavior."""
+
     name: str
     transitions: list[dict[str, str]] = field(default_factory=list)
 
@@ -312,6 +314,7 @@ class StateTransition:
 @dataclass
 class Compensation:
     """A compensation pair for saga behaviors."""
+
     step: str
     compensate: str
 
@@ -319,6 +322,7 @@ class Compensation:
 @dataclass
 class Step:
     """A structured step within a behavior sequence."""
+
     order: int = 0
     action: str = ""  # Human-readable description
     component_ref: str = ""  # Component ID that performs this step
@@ -380,6 +384,7 @@ class Layer(BaseEntity):
 @dataclass
 class Symbol:
     """A code-level type definition within a component (language-neutral)."""
+
     name: str
     kind: SymbolKind = SymbolKind.CLASS
     members: list[str] = field(default_factory=list)
@@ -389,6 +394,7 @@ class Symbol:
 @dataclass
 class DataField:
     """Schema field for data-model components."""
+
     name: str
     type: str = "string"
     required: bool = False
@@ -398,6 +404,7 @@ class DataField:
 @dataclass
 class Constant:
     """A named constant value within a component (e.g., BLACK=30)."""
+
     name: str
     value: str
     context: str = ""
@@ -407,6 +414,7 @@ class Constant:
 @dataclass
 class FunctionSignature:
     """Full function signature with params, return type, and decorators."""
+
     name: str
     params: list[str] = field(default_factory=list)
     returns: str = ""
@@ -419,6 +427,7 @@ class FunctionSignature:
 @dataclass
 class TestContract:
     """A behavioral spec derived from test assertions."""
+
     test_file: str
     test_method: str
     assertion: str
@@ -429,6 +438,7 @@ class TestContract:
 @dataclass
 class ObservabilityContract:
     """Declares expected logging/metrics behavior for a function."""
+
     function: str
     log_level: str  # DEBUG, INFO, WARNING, ERROR
     emits_metric: Optional[str] = None
@@ -443,6 +453,7 @@ class ComponentInterface:
     Captures what a component provides to (or requires from) other components.
     Used to generate cross-dependency stubs during regeneration.
     """
+
     name: str  # e.g. "authenticate", "get_user"
     kind: str = "provides"  # provides | requires
     target_component: str = ""  # ID of the other component (for 'requires')
@@ -470,11 +481,26 @@ class Component(BaseEntity):
     test_contracts: list[TestContract] = field(default_factory=list)
     observability: list[ObservabilityContract] = field(default_factory=list)
     interfaces: list[ComponentInterface] = field(default_factory=list)
+    technology_stack: list[str] = field(default_factory=list)
+    operations: dict[str, Any] = field(default_factory=dict)
+    external_dependencies: list[dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass
+class ExternalSystem(BaseEntity):
+    """An external API or system that this architecture integrates with."""
+
+    url: str = ""
+    auth_method: str = ""
+    api_type: str = ""  # REST, GraphQL, SOAP, gRPC, etc.
+    provider: str = ""
+    sla: str = ""
 
 
 @dataclass
 class System(BaseEntity):
     """A system-level entity that aggregates components into a logical subsystem."""
+
     layer: str = ""
     source_block: str = ""
     complexity_score: float = 0.0
@@ -485,6 +511,7 @@ class System(BaseEntity):
 @dataclass
 class Data(BaseEntity):
     """A data structure, schema, domain object, or BOM."""
+
     schema_def: str = ""
     format: str = ""
     fields: list[DataField] = field(default_factory=list)
@@ -495,6 +522,7 @@ class Data(BaseEntity):
 @dataclass
 class Event(BaseEntity):
     """A discrete event, signal, or message that flows between components."""
+
     kind: EventKind = EventKind.MESSAGE
     source: str = ""
     target: str = ""
@@ -506,6 +534,7 @@ class Event(BaseEntity):
 @dataclass
 class Resource(BaseEntity):
     """An external dependency the system uses but doesn't own."""
+
     kind: ResourceKind = ResourceKind.DATABASE
     provider: str = ""
     location: str = ""
@@ -515,6 +544,7 @@ class Resource(BaseEntity):
 @dataclass
 class Environment(BaseEntity):
     """A deployment target or physical context where the system runs."""
+
     kind: EnvironmentKind = EnvironmentKind.PRODUCTION
     infrastructure: list[str] = field(default_factory=list)
     constraints: list[str] = field(default_factory=list)
@@ -524,6 +554,7 @@ class Environment(BaseEntity):
 @dataclass
 class QualityAttribute(BaseEntity):
     """A measured quality property of the system."""
+
     metric: str = ""
     target: str = ""
     current: str = ""
@@ -534,6 +565,7 @@ class QualityAttribute(BaseEntity):
 @dataclass
 class Decision(BaseEntity):
     """An Architecture Decision Record (ADR)."""
+
     decision_status: DecisionStatus = DecisionStatus.ACCEPTED
     context: str = ""
     options: list[str] = field(default_factory=list)
@@ -545,6 +577,7 @@ class Decision(BaseEntity):
 @dataclass
 class Lifecycle(BaseEntity):
     """A version, phase, or migration path."""
+
     phase: LifecyclePhase = LifecyclePhase.PRODUCTION
     version: str = ""
     start_date: str = ""
@@ -557,6 +590,7 @@ class Lifecycle(BaseEntity):
 @dataclass
 class Requirement(BaseEntity):
     """A traceable requirement."""
+
     text: str = ""
     source_doc: str = ""
     source_anchor: str = ""
@@ -575,6 +609,8 @@ class Relationship:
     to_id: str  # 'to' kept as to_id for symmetry
     description: str = ""
     strength: Strength = Strength.MODERATE
+    import_count: int = 0  # Actual import edge count from AST (0 = unquantified)
+    weight: float = 0.0  # Numeric coupling weight (0.0 = unquantified)
     extensions: dict[str, Any] = field(default_factory=dict)
     imports: list[str] = field(default_factory=list)
 
@@ -618,6 +654,7 @@ class Entities:
     decisions: list[Decision] = field(default_factory=list)
     lifecycles: list[Lifecycle] = field(default_factory=list)
     requirements: list[Requirement] = field(default_factory=list)
+    external_systems: list[ExternalSystem] = field(default_factory=list)
 
 
 @dataclass
@@ -662,6 +699,8 @@ class ArchitectureModel:
             ids.add(lc.id)
         for req in self.entities.requirements:
             ids.add(req.id)
+        for es in self.entities.external_systems:
+            ids.add(es.id)
         return ids
 
     @property
@@ -740,13 +779,19 @@ class ArchitectureModel:
         if self.entities.environments:
             d["environments"] = [self._dump_environment(x) for x in self.entities.environments]
         if self.entities.quality_attributes:
-            d["quality_attributes"] = [self._dump_quality_attribute(x) for x in self.entities.quality_attributes]
+            d["quality_attributes"] = [
+                self._dump_quality_attribute(x) for x in self.entities.quality_attributes
+            ]
         if self.entities.decisions:
             d["decisions"] = [self._dump_decision(x) for x in self.entities.decisions]
         if self.entities.lifecycles:
             d["lifecycles"] = [self._dump_lifecycle(x) for x in self.entities.lifecycles]
         if self.entities.requirements:
             d["requirements"] = [self._dump_requirement(x) for x in self.entities.requirements]
+        if self.entities.external_systems:
+            d["external_systems"] = [
+                self._dump_external_system(x) for x in self.entities.external_systems
+            ]
         return d
 
     @staticmethod
@@ -807,14 +852,10 @@ class ArchitectureModel:
         if b.pattern != BehaviorPattern.SEQUENTIAL:
             d["pattern"] = _enum_value(b.pattern)
         if b.states:
-            d["states"] = [
-                {"name": s.name, "transitions": s.transitions}
-                for s in b.states
-            ]
+            d["states"] = [{"name": s.name, "transitions": s.transitions} for s in b.states]
         if b.compensations:
             d["compensations"] = [
-                {"step": c.step, "compensate": c.compensate}
-                for c in b.compensations
+                {"step": c.step, "compensate": c.compensate} for c in b.compensations
             ]
         return d
 
@@ -909,7 +950,11 @@ class ArchitectureModel:
             ]
         if c.test_contracts:
             d["test_contracts"] = [
-                {"test_file": tc.test_file, "test_method": tc.test_method, "assertion": tc.assertion}
+                {
+                    "test_file": tc.test_file,
+                    "test_method": tc.test_method,
+                    "assertion": tc.assertion,
+                }
                 | ({"contract_type": tc.contract_type} if tc.contract_type else {})
                 for tc in c.test_contracts
             ]
@@ -921,6 +966,12 @@ class ArchitectureModel:
                 | ({"on_success": o.on_success} if o.on_success else {})
                 for o in c.observability
             ]
+        if c.technology_stack:
+            d["technology_stack"] = c.technology_stack
+        if c.operations:
+            d["operations"] = c.operations
+        if c.external_dependencies:
+            d["external_dependencies"] = c.external_dependencies
         return d
 
     @classmethod
@@ -941,82 +992,137 @@ class ArchitectureModel:
     @classmethod
     def _dump_data(cls, d_ent: "Data") -> dict[str, Any]:
         d = cls._dump_base(d_ent)
-        if d_ent.schema_def: d["schema_def"] = d_ent.schema_def
-        if d_ent.format: d["format"] = d_ent.format
-        if d_ent.fields: d["fields"] = [{"name":f.name,"type":f.type,"required":f.required}|({"description":f.description} if f.description else {}) for f in d_ent.fields]
-        if d_ent.owner: d["owner"] = d_ent.owner
-        if d_ent.sensitivity: d["sensitivity"] = d_ent.sensitivity
+        if d_ent.schema_def:
+            d["schema_def"] = d_ent.schema_def
+        if d_ent.format:
+            d["format"] = d_ent.format
+        if d_ent.fields:
+            d["fields"] = [
+                {"name": f.name, "type": f.type, "required": f.required}
+                | ({"description": f.description} if f.description else {})
+                for f in d_ent.fields
+            ]
+        if d_ent.owner:
+            d["owner"] = d_ent.owner
+        if d_ent.sensitivity:
+            d["sensitivity"] = d_ent.sensitivity
         return d
 
     @classmethod
     def _dump_event(cls, e: "Event") -> dict[str, Any]:
         d = cls._dump_base(e)
         d["kind"] = _enum_value(e.kind)
-        if e.source: d["source"] = e.source
-        if e.target: d["target"] = e.target
-        if e.payload: d["payload"] = e.payload
-        if e.frequency: d["frequency"] = e.frequency
-        if e.reliability: d["reliability"] = e.reliability
+        if e.source:
+            d["source"] = e.source
+        if e.target:
+            d["target"] = e.target
+        if e.payload:
+            d["payload"] = e.payload
+        if e.frequency:
+            d["frequency"] = e.frequency
+        if e.reliability:
+            d["reliability"] = e.reliability
         return d
 
     @classmethod
     def _dump_resource(cls, res: "Resource") -> dict[str, Any]:
         d = cls._dump_base(res)
         d["kind"] = _enum_value(res.kind)
-        if res.provider: d["provider"] = res.provider
-        if res.location: d["location"] = res.location
-        if res.sla: d["sla"] = res.sla
+        if res.provider:
+            d["provider"] = res.provider
+        if res.location:
+            d["location"] = res.location
+        if res.sla:
+            d["sla"] = res.sla
         return d
 
     @classmethod
     def _dump_environment(cls, env: "Environment") -> dict[str, Any]:
         d = cls._dump_base(env)
         d["kind"] = _enum_value(env.kind)
-        if env.infrastructure: d["infrastructure"] = env.infrastructure
-        if env.constraints: d["constraints"] = env.constraints
-        if env.region: d["region"] = env.region
+        if env.infrastructure:
+            d["infrastructure"] = env.infrastructure
+        if env.constraints:
+            d["constraints"] = env.constraints
+        if env.region:
+            d["region"] = env.region
         return d
 
     @classmethod
     def _dump_quality_attribute(cls, qa: "QualityAttribute") -> dict[str, Any]:
         d = cls._dump_base(qa)
-        if qa.metric: d["metric"] = qa.metric
-        if qa.target: d["target"] = qa.target
-        if qa.current: d["current"] = qa.current
-        if qa.measurement_method: d["measurement_method"] = qa.measurement_method
-        if qa.applies_to: d["applies_to"] = qa.applies_to
+        if qa.metric:
+            d["metric"] = qa.metric
+        if qa.target:
+            d["target"] = qa.target
+        if qa.current:
+            d["current"] = qa.current
+        if qa.measurement_method:
+            d["measurement_method"] = qa.measurement_method
+        if qa.applies_to:
+            d["applies_to"] = qa.applies_to
         return d
 
     @classmethod
     def _dump_decision(cls, dec: "Decision") -> dict[str, Any]:
         d = cls._dump_base(dec)
         d["decision_status"] = _enum_value(dec.decision_status)
-        if dec.context: d["context"] = dec.context
-        if dec.options: d["options"] = dec.options
-        if dec.rationale: d["rationale"] = dec.rationale
-        if dec.consequences: d["consequences"] = dec.consequences
-        if dec.supersedes: d["supersedes"] = dec.supersedes
+        if dec.context:
+            d["context"] = dec.context
+        if dec.options:
+            d["options"] = dec.options
+        if dec.rationale:
+            d["rationale"] = dec.rationale
+        if dec.consequences:
+            d["consequences"] = dec.consequences
+        if dec.supersedes:
+            d["supersedes"] = dec.supersedes
         return d
 
     @classmethod
     def _dump_lifecycle(cls, lc: "Lifecycle") -> dict[str, Any]:
         d = cls._dump_base(lc)
         d["phase"] = _enum_value(lc.phase)
-        if lc.version: d["version"] = lc.version
-        if lc.start_date: d["start_date"] = lc.start_date
-        if lc.end_date: d["end_date"] = lc.end_date
-        if lc.migration_from: d["migration_from"] = lc.migration_from
-        if lc.migration_to: d["migration_to"] = lc.migration_to
-        if lc.milestones: d["milestones"] = lc.milestones
+        if lc.version:
+            d["version"] = lc.version
+        if lc.start_date:
+            d["start_date"] = lc.start_date
+        if lc.end_date:
+            d["end_date"] = lc.end_date
+        if lc.migration_from:
+            d["migration_from"] = lc.migration_from
+        if lc.migration_to:
+            d["migration_to"] = lc.migration_to
+        if lc.milestones:
+            d["milestones"] = lc.milestones
         return d
 
     @classmethod
     def _dump_requirement(cls, req: "Requirement") -> dict[str, Any]:
         d = cls._dump_base(req)
-        if req.text: d["text"] = req.text
-        if req.source_doc: d["source_doc"] = req.source_doc
-        if req.source_anchor: d["source_anchor"] = req.source_anchor
-        if req.content_hash: d["content_hash"] = req.content_hash
+        if req.text:
+            d["text"] = req.text
+        if req.source_doc:
+            d["source_doc"] = req.source_doc
+        if req.source_anchor:
+            d["source_anchor"] = req.source_anchor
+        if req.content_hash:
+            d["content_hash"] = req.content_hash
+        return d
+
+    @classmethod
+    def _dump_external_system(cls, es: "ExternalSystem") -> dict[str, Any]:
+        d = cls._dump_base(es)
+        if es.url:
+            d["url"] = es.url
+        if es.auth_method:
+            d["auth_method"] = es.auth_method
+        if es.api_type:
+            d["api_type"] = es.api_type
+        if es.provider:
+            d["provider"] = es.provider
+        if es.sla:
+            d["sla"] = es.sla
         return d
 
     @staticmethod
