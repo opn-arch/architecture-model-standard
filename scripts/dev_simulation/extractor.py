@@ -89,6 +89,17 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
         ctx.config["coordinator"] = coordinator  # Enable recursive sub-pipeline in synthesize
         results = coordinator.run_all(ctx)
 
+        # Extract import graph from observe stage for slice expansion
+        observe_result = results.get("observe")
+        import_graph: dict[str, set[str]] = {}  # file → set of files it imports
+        reverse_graph: dict[str, set[str]] = {}  # file → set of files that import it
+        if observe_result and hasattr(observe_result, "output") and observe_result.output:
+            for edge in observe_result.output.edges:
+                src = str(edge.source)
+                tgt = str(edge.target)
+                import_graph.setdefault(src, set()).add(tgt)
+                reverse_graph.setdefault(tgt, set()).add(src)
+
         # Extract file→component mapping from allocate stage (top-level = systems)
         alloc_result = results.get("allocate")
         file_component_map: dict[str, str] = {}
@@ -99,6 +110,8 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
                     file_system_map[str(f)] = comp.id  # Top-level = system-level
 
         # Also gather file maps from sub-pipeline allocate results (synthesize stage)
+        # and collect realizes relationships from sub-pipeline relate stages
+        realizes_pairs: list[tuple[str, str]] = []  # (component_id, capability_id)
         synth_result = results.get("synthesize")
         if synth_result and hasattr(synth_result, "output") and synth_result.output:
             for sm in getattr(synth_result.output, "system_models", []):
@@ -108,6 +121,12 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
                     for comp in sub_alloc.output.components:
                         for f in comp.files:
                             file_component_map[str(f)] = comp.id
+                # Collect realizes from sub-pipeline relate
+                sub_relate = sub_results.get("relate")
+                if sub_relate and hasattr(sub_relate, "output") and sub_relate.output:
+                    for rel in sub_relate.output.relationships:
+                        if rel.rel_type == "realizes":
+                            realizes_pairs.append((rel.from_id, rel.to_id))
 
         # If no sub-pipeline results, fall back to top-level
         if not file_component_map:
@@ -133,6 +152,10 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
             # Inject file→component map from allocate stage onto model for evaluators
             model._file_component_map = file_component_map
             model._file_system_map = file_system_map
+            model._import_graph = import_graph
+            model._reverse_import_graph = reverse_graph
+            # Inject sub-model realizes relationships for regen scoring
+            model._sub_realizes = realizes_pairs
             snapshot.model = model
 
             # Validation

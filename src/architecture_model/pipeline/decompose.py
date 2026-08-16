@@ -22,6 +22,8 @@ from architecture_model.pipeline.relate_types import RelateResult
 
 FULL_SYSTEM_FILE_THRESHOLD = 5
 HIERARCHY_FILE_THRESHOLD = 8  # components with >= this many files get sub-components
+MAX_SYSTEMS = 8  # merge overly fragmented decompositions
+MERGE_COUPLING_THRESHOLD = 0.3  # merge systems with >30% mutual import density
 
 
 def _cluster_by_directory(files: list[Path]) -> dict[str, list[Path]]:
@@ -78,6 +80,75 @@ def _decompose_component(comp_id: str, comp_name: str, files: list[Path]) -> lis
     return subs
 
 
+def _merge_coupled_systems(
+    systems: list[SystemBoundary],
+    inlines: list[SystemBoundary],
+    inter_edges: list[tuple[str, str, str]],
+) -> tuple[list[SystemBoundary], list[SystemBoundary], list[tuple[str, str, str]]]:
+    """Merge tightly-coupled systems to improve cohesion.
+
+    Two systems merge if:
+    - Combined they'd still be reasonable size (<200 files)
+    - They share high coupling (many inter-system edges relative to size)
+    - Total system count exceeds MAX_SYSTEMS
+    """
+    if len(systems) <= MAX_SYSTEMS:
+        return systems, inlines, inter_edges
+
+    # Count edge density between system pairs
+    pair_edges: dict[tuple[str, str], int] = defaultdict(int)
+    sys_by_id = {s.system_id: s for s in systems}
+
+    for from_sys, to_sys, _ in inter_edges:
+        key = tuple(sorted([from_sys, to_sys]))
+        pair_edges[key] += 1
+
+    # Sort pairs by coupling density (edges / min_files)
+    merge_candidates = []
+    for (a, b), count in pair_edges.items():
+        sa, sb = sys_by_id.get(a), sys_by_id.get(b)
+        if not sa or not sb:
+            continue
+        min_files = min(len(sa.files), len(sb.files))
+        if min_files == 0:
+            continue
+        density = count / min_files
+        if density >= MERGE_COUPLING_THRESHOLD:
+            merge_candidates.append((density, a, b))
+
+    merge_candidates.sort(reverse=True)
+
+    # Perform merges until we're at MAX_SYSTEMS
+    merged_ids: set[str] = set()
+    for _, a, b in merge_candidates:
+        if len(systems) - len(merged_ids) <= MAX_SYSTEMS:
+            break
+        if a in merged_ids or b in merged_ids:
+            continue
+        sa, sb = sys_by_id.get(a), sys_by_id.get(b)
+        if not sa or not sb:
+            continue
+        # Merge b into a
+        sa.files.extend(sb.files)
+        sa.component_ids.extend(sb.component_ids)
+        sa.name = f"{sa.name} + {sb.name}"
+        sa.complexity = float(len(sa.files))
+        merged_ids.add(b)
+
+    # Remove merged systems
+    systems = [s for s in systems if s.system_id not in merged_ids]
+
+    # Remove inter-edges that are now intra-system
+    remaining_sys_ids = {s.system_id for s in systems}
+    inter_edges = [
+        (f, t, r)
+        for f, t, r in inter_edges
+        if f in remaining_sys_ids and t in remaining_sys_ids and f != t
+    ]
+
+    return systems, inlines, inter_edges
+
+
 class DecomposeStage:
     name = "decompose"
     version = "2.0"
@@ -130,6 +201,9 @@ class DecomposeStage:
             to_sys = comp_to_sys.get(rel.to_id)
             if from_sys and to_sys and from_sys != to_sys:
                 inter_edges.append((from_sys, to_sys, rel.rel_type))
+
+        # Merge tightly-coupled small systems to reduce fragmentation
+        systems, inlines, inter_edges = _merge_coupled_systems(systems, inlines, inter_edges)
 
         result = DecomposeResult(
             systems=systems,

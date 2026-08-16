@@ -1,4 +1,5 @@
 """Synthesize stage — build per-system models and assemble System-of-Systems."""
+
 from __future__ import annotations
 
 import json
@@ -50,9 +51,7 @@ def _slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
-def _build_system_model_yaml(
-    boundary: SystemBoundary, results: dict[str, StageResult]
-) -> str:
+def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageResult]) -> str:
     """Build a YAML model string from scoped pipeline results."""
     components: list[dict[str, Any]] = []
     capabilities: list[dict[str, Any]] = []
@@ -246,7 +245,9 @@ def _build_sos_model(
                 actors.append({"id": getattr(actor, "id", ""), "name": getattr(actor, "name", "")})
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
-                capabilities.append({"id": getattr(cap, "id", ""), "name": getattr(cap, "name", "")})
+                capabilities.append(
+                    {"id": getattr(cap, "id", ""), "name": getattr(cap, "name", "")}
+                )
         if hasattr(output, "behaviors"):
             for beh in output.behaviors:
                 behaviors.append({"id": getattr(beh, "id", ""), "name": getattr(beh, "name", "")})
@@ -254,9 +255,23 @@ def _build_sos_model(
     # Inter-system interfaces from decompose edges
     inter_system_interfaces: list[dict[str, Any]] = []
     for from_sys, to_sys, rel_type in decompose.inter_system_edges:
-        inter_system_interfaces.append(
-            {"from": from_sys, "to": to_sys, "type": rel_type}
-        )
+        inter_system_interfaces.append({"from": from_sys, "to": to_sys, "type": rel_type})
+
+    # Add realizes relationships (system → capability) from top-level relate
+    # The decompose maps comp_id → system_id, so we can translate
+    relate_result = top_results.get("relate")
+    if relate_result and hasattr(relate_result, "output") and relate_result.output:
+        comp_to_sys_map: dict[str, str] = {}
+        for boundary in decompose.systems + decompose.inline_components:
+            for cid in boundary.component_ids:
+                comp_to_sys_map[cid] = boundary.system_id
+        for rel in relate_result.output.relationships:
+            if rel.rel_type == "realizes":
+                sys_id = comp_to_sys_map.get(rel.from_id)
+                if sys_id:
+                    inter_system_interfaces.append(
+                        {"from": sys_id, "to": rel.to_id, "type": "realizes"}
+                    )
 
     # Build SoS YAML
     sos_dict: dict[str, Any] = {
@@ -284,8 +299,7 @@ def _build_sos_model(
     # Add inline components
     if inlines:
         sos_dict["entities"]["inline_components"] = [
-            {"id": i.system_id, "name": i.name, "files": i.files}
-            for i in inlines
+            {"id": i.system_id, "name": i.name, "files": i.files} for i in inlines
         ]
 
     sos_yaml = yaml.dump(sos_dict, default_flow_style=False, sort_keys=False)
@@ -299,7 +313,9 @@ def _build_sos_model(
     )
 
 
-def _collect_lessons(results: dict[str, StageResult], llm_calls: list[LLMCallRecord]) -> list[LessonEntry]:
+def _collect_lessons(
+    results: dict[str, StageResult], llm_calls: list[LLMCallRecord]
+) -> list[LessonEntry]:
     """Collect lesson entries from all stage results."""
     entries: list[LessonEntry] = []
     for stage_name, result in results.items():

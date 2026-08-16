@@ -84,7 +84,13 @@ def get_component_files(component_id: str, model: Any) -> set[str]:
 
 
 def evaluate_slice(model: Any, commit: Any) -> SliceMetrics:
-    """Evaluate how well the model's slice would serve this commit."""
+    """Evaluate how well the model's slice would serve this commit.
+
+    The slice includes:
+    1. All files in the primary component (direct match)
+    2. Files in ALL touched components (multi-component awareness)
+    3. Direct import neighbors of changed files (context expansion)
+    """
     # Collect all changed files
     all_changed = list(
         set(
@@ -105,19 +111,43 @@ def evaluate_slice(model: Any, commit: Any) -> SliceMetrics:
             files_changed=all_changed,
         )
 
-    # Identify primary component
-    comp_id, comp_name = identify_component(source_changed, model)
-
-    # Get what slice would return (component files)
-    slice_files = get_component_files(comp_id, model) if comp_id else set()
-
-    # Count how many components were touched
+    # Identify ALL touched components (not just primary)
     file_map = getattr(model, "_file_component_map", {})
     comp_touches: Counter = Counter()
     for f in source_changed:
-        comp_id = file_map.get(f)
-        if comp_id:
-            comp_touches[comp_id] += 1
+        cid = file_map.get(f)
+        if cid:
+            comp_touches[cid] += 1
+
+    # Primary component = most-touched
+    primary_id = comp_touches.most_common(1)[0][0] if comp_touches else ""
+    primary_name = ""
+    for comp in model.entities.components or []:
+        if comp.id == primary_id:
+            primary_name = comp.name
+            break
+    for sys in model.entities.systems or []:
+        if sys.id == primary_id:
+            primary_name = sys.name
+            break
+
+    # Build slice: all touched components + same-system import deps
+    slice_files: set[str] = set()
+
+    # Add files from ALL touched components (multi-component awareness for recall)
+    for cid in comp_touches:
+        slice_files.update(f for f, c in file_map.items() if c == cid)
+
+    # Expand with imports that are in the SAME system as the primary component
+    # (cross-system imports are too broad — e.g., every widget imports core)
+    import_graph = getattr(model, "_import_graph", {})
+    system_map = getattr(model, "_file_system_map", {})
+    primary_system = system_map.get(source_changed[0], "") if source_changed else ""
+    if primary_system:
+        for f in source_changed:
+            for dep in import_graph.get(f, set()):
+                if system_map.get(dep) == primary_system and dep in file_map:
+                    slice_files.add(dep)
 
     # Calculate metrics
     changed_set = set(source_changed)
@@ -131,13 +161,13 @@ def evaluate_slice(model: Any, commit: Any) -> SliceMetrics:
         date=commit.date,
         message=commit.message,
         files_changed=all_changed,
-        component_id=comp_id,
-        component_name=comp_name,
+        component_id=primary_id,
+        component_name=primary_name,
         slice_files=sorted(slice_files),
         slice_recall=recall,
         slice_precision=precision,
         slice_f1=f1,
-        component_hit=comp_id != "",
+        component_hit=primary_id != "",
         cross_boundary=len(comp_touches) > 1,
         components_touched=len(comp_touches),
     )

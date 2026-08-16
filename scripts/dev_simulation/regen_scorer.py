@@ -134,6 +134,12 @@ def score_regenability(model: Any) -> RegenReport:
         if getattr(rel, "type", "") == "realizes" or getattr(rel, "rel_type", "") == "realizes":
             realizes_map[getattr(rel, "to_id", "")] = getattr(rel, "from_id", "")
 
+    # Also include sub-model realizes (from recursive sub-pipelines)
+    sub_realizes = getattr(model, "_sub_realizes", [])
+    for comp_id, cap_id in sub_realizes:
+        if cap_id not in realizes_map:
+            realizes_map[cap_id] = comp_id
+
     comp_map = {c.id: c for c in components}
 
     for cap in capabilities:
