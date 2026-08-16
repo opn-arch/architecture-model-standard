@@ -29,7 +29,7 @@ from .corrections import get_corrections_for_stage
 
 
 # Thresholds
-MAX_COMPONENT_FILES = 15
+MAX_COMPONENT_FILES = 12
 MIN_COMPONENT_FILES = 2
 _SCOPED_FILE_LIMIT = 15  # use per-file strategy when scoped context has <= this many files
 

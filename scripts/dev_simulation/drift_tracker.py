@@ -12,9 +12,10 @@ class DriftPoint:
 
     date: str
     commits_since_extraction: int
+    files_changed_outside_model: int = 0
     files_added_since: int = 0
     files_removed_since: int = 0
-    freshness_score: float = 100.0  # starts at extraction score, degrades
+    freshness_score: float = 100.0  # starts at 100 at extraction, degrades
 
 
 @dataclass
@@ -33,58 +34,101 @@ def track_drift(
     daily_commits: list[Any],  # CommitInfo
     checkpoint_interval: int = 3,
 ) -> DriftCurve:
-    """Track how model freshness degrades between extraction checkpoints."""
+    """Track how model freshness degrades between extraction checkpoints.
+
+    Freshness degrades based on:
+    - New files added that aren't in the model (structural drift)
+    - Files deleted that were in the model (stale references)
+    - Changed files not covered by any component (blind spots)
+    """
     curve = DriftCurve()
 
     if not snapshots or not daily_commits:
         return curve
 
-    # Map snapshot dates to indices in daily_commits
-    snapshot_dates = {s.date[:10]: s for s in snapshots if hasattr(s, "date")}
+    # Map snapshot dates to indices
+    snapshot_dates = {s.date[:10]: s for s in snapshots if hasattr(s, "date") and s.date}
 
-    current_snapshot_idx = 0
+    # Get file map from model (use injected _file_component_map)
+    file_map: dict[str, str] = {}
+    current_snapshot = snapshots[0] if snapshots else None
+
+    def _refresh_file_map(snap: Any) -> dict[str, str]:
+        if snap and snap.model and hasattr(snap.model, "_file_component_map"):
+            return dict(snap.model._file_component_map)
+        # Fallback: extract from components
+        fmap: dict[str, str] = {}
+        if snap and snap.model:
+            for comp in snap.model.entities.components or []:
+                for f in comp.files or []:
+                    fmap[str(f)] = comp.id
+        return fmap
+
+    file_map = _refresh_file_map(current_snapshot)
+    model_file_count = len(file_map)
+
     commits_since = 0
-    files_in_model = set()
+    cumulative_unmodeled_changes = 0
+    cumulative_new_files = 0
+    cumulative_removed_files = 0
 
-    # Initialize with first snapshot's files
-    if snapshots[0].model:
-        for comp in snapshots[0].model.entities.components or []:
-            files_in_model.update(comp.files)
-
-    base_score = snapshots[0].validation_score if snapshots else 100.0
-
-    for i, commit in enumerate(daily_commits):
+    for commit in daily_commits:
         day = commit.date[:10] if hasattr(commit, "date") else ""
 
         # Check if this day is a new extraction checkpoint
         if day in snapshot_dates:
-            # Reset — new extraction happened
             snap = snapshot_dates[day]
-            base_score = snap.validation_score
+            file_map = _refresh_file_map(snap)
+            model_file_count = len(file_map)
             commits_since = 0
-            files_in_model = set()
-            if snap.model:
-                for comp in snap.model.entities.components or []:
-                    files_in_model.update(comp.files)
+            cumulative_unmodeled_changes = 0
+            cumulative_new_files = 0
+            cumulative_removed_files = 0
         else:
             commits_since += 1
 
-        # Estimate freshness degradation
-        # Each commit with new/removed files degrades score slightly
-        new_files = len(getattr(commit, "files_added", []))
-        removed_files = len(getattr(commit, "files_deleted", []))
+        # Count changes outside model coverage
+        changed = getattr(commit, "files_changed", [])
+        added = getattr(commit, "files_added", [])
+        removed = getattr(commit, "files_deleted", [])
 
-        # Degradation: -0.5 per new file not in model, -0.3 per removed file still in model
-        degradation = new_files * 0.5 + removed_files * 0.3
-        freshness = max(0, base_score - degradation * commits_since * 0.1)
+        unmodeled = sum(1 for f in changed if f not in file_map and f.endswith(".py"))
+        new_unmodeled = sum(1 for f in added if f.endswith(".py"))
+        removed_modeled = sum(1 for f in removed if f in file_map)
+
+        cumulative_unmodeled_changes += unmodeled
+        cumulative_new_files += new_unmodeled
+        cumulative_removed_files += removed_modeled
+
+        # Freshness formula:
+        # - Each unmodeled change represents a blind spot (-1 per occurrence)
+        # - New files not in model (-2 each, structural gap)
+        # - Removed files still in model (-3 each, stale reference)
+        # Normalized by model size to keep scale reasonable
+        if model_file_count > 0:
+            penalty = (
+                (
+                    cumulative_unmodeled_changes * 1.0
+                    + cumulative_new_files * 2.0
+                    + cumulative_removed_files * 3.0
+                )
+                / model_file_count
+                * 10
+            )
+        else:
+            # No file map = instant drift
+            penalty = commits_since * 5.0
+
+        freshness = max(0.0, 100.0 - penalty)
 
         curve.points.append(
             DriftPoint(
                 date=day,
                 commits_since_extraction=commits_since,
-                files_added_since=new_files,
-                files_removed_since=removed_files,
-                freshness_score=freshness,
+                files_changed_outside_model=unmodeled,
+                files_added_since=cumulative_new_files,
+                files_removed_since=cumulative_removed_files,
+                freshness_score=round(freshness, 1),
             )
         )
 

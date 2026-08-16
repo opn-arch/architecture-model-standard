@@ -12,8 +12,11 @@ class CohesionReport:
     """Results of co-change cohesion analysis."""
 
     intra_component_cohesion: float = 0.0  # % co-changing pairs in same component
+    intra_system_cohesion: float = 0.0  # % co-changing pairs in same system
     cross_boundary_rate: float = 0.0  # % commits touching >1 component
+    cross_system_rate: float = 0.0  # % commits touching >1 system
     avg_components_per_commit: float = 0.0
+    avg_systems_per_commit: float = 0.0
     boundary_suggestions: list[str] = field(default_factory=list)
     # Details
     total_commits_analyzed: int = 0
@@ -64,6 +67,10 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
     """Analyze how well component boundaries align with change patterns."""
     report = CohesionReport()
     file_map = _get_file_component_map(model)
+    # System-level map (coarser)
+    system_map: dict[str, str] = {}
+    if model and hasattr(model, "_file_system_map"):
+        system_map = model._file_system_map
 
     if not file_map or not commits:
         return report
@@ -71,6 +78,9 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
     # Track co-change patterns and cross-boundary commits
     co_change_counter: Counter = Counter()  # (comp_a, comp_b) → count
     component_touches_per_commit: list[int] = []
+    system_touches_per_commit: list[int] = []
+    same_system_pairs = 0
+    total_system_pairs = 0
 
     for commit in commits:
         all_files = list(
@@ -83,24 +93,30 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
 
         # Filter to source files with known components
         file_components = []
+        file_systems = []
         for f in all_files:
             comp_id = file_map.get(f)
             if comp_id:
                 file_components.append((f, comp_id))
+            sys_id = system_map.get(f)
+            if sys_id:
+                file_systems.append((f, sys_id))
 
         if not file_components:
             continue
 
         report.total_commits_analyzed += 1
 
-        # Count unique components touched
+        # Count unique components/systems touched
         unique_comps = set(comp_id for _, comp_id in file_components)
+        unique_systems = set(sys_id for _, sys_id in file_systems)
         component_touches_per_commit.append(len(unique_comps))
+        system_touches_per_commit.append(len(unique_systems))
 
         if len(unique_comps) > 1:
             report.cross_boundary_commits += 1
 
-        # Build co-change pairs
+        # Build co-change pairs (component level)
         comp_ids = [comp_id for _, comp_id in file_components]
         for i in range(len(comp_ids)):
             for j in range(i + 1, len(comp_ids)):
@@ -111,6 +127,14 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
                 else:
                     co_change_counter[(a, b)] += 1
 
+        # System-level pairs
+        sys_ids = [sys_id for _, sys_id in file_systems]
+        for i in range(len(sys_ids)):
+            for j in range(i + 1, len(sys_ids)):
+                total_system_pairs += 1
+                if sys_ids[i] == sys_ids[j]:
+                    same_system_pairs += 1
+
     # Compute metrics
     if report.total_commits_analyzed > 0:
         report.cross_boundary_rate = report.cross_boundary_commits / report.total_commits_analyzed
@@ -119,9 +143,19 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
             if component_touches_per_commit
             else 0.0
         )
+        report.avg_systems_per_commit = (
+            sum(system_touches_per_commit) / len(system_touches_per_commit)
+            if system_touches_per_commit
+            else 0.0
+        )
+        cross_system_commits = sum(1 for t in system_touches_per_commit if t > 1)
+        report.cross_system_rate = cross_system_commits / report.total_commits_analyzed
 
     if report.co_change_pairs > 0:
         report.intra_component_cohesion = report.same_component_pairs / report.co_change_pairs
+
+    if total_system_pairs > 0:
+        report.intra_system_cohesion = same_system_pairs / total_system_pairs
 
     # Suggest boundary adjustments for frequently co-changing components
     for (comp_a, comp_b), count in co_change_counter.most_common(5):

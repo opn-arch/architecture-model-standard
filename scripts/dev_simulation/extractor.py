@@ -86,17 +86,36 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
         }
         coordinator = PipelineCoordinator(stages)
         ctx = PipelineContext(repo_path=repo_dir, output_dir=repo_dir / ".architecture")
+        ctx.config["coordinator"] = coordinator  # Enable recursive sub-pipeline in synthesize
         results = coordinator.run_all(ctx)
 
-        # Extract file→component mapping from allocate stage
+        # Extract file→component mapping from allocate stage (top-level = systems)
         alloc_result = results.get("allocate")
         file_component_map: dict[str, str] = {}
+        file_system_map: dict[str, str] = {}
         if alloc_result and hasattr(alloc_result, "output") and alloc_result.output:
             for comp in alloc_result.output.components:
                 for f in comp.files:
-                    file_component_map[str(f)] = comp.id
+                    file_system_map[str(f)] = comp.id  # Top-level = system-level
+
+        # Also gather file maps from sub-pipeline allocate results (synthesize stage)
+        synth_result = results.get("synthesize")
+        if synth_result and hasattr(synth_result, "output") and synth_result.output:
+            for sm in getattr(synth_result.output, "system_models", []):
+                sub_results = getattr(sm, "stage_results", {})
+                sub_alloc = sub_results.get("allocate")
+                if sub_alloc and hasattr(sub_alloc, "output") and sub_alloc.output:
+                    for comp in sub_alloc.output.components:
+                        for f in comp.files:
+                            file_component_map[str(f)] = comp.id
+
+        # If no sub-pipeline results, fall back to top-level
+        if not file_component_map:
+            file_component_map = dict(file_system_map)
+
         # Store on snapshot for evaluators
         snapshot._file_map = file_component_map
+        snapshot._file_system_map = file_system_map
         snapshot._alloc_components = (
             alloc_result.output.components if alloc_result and alloc_result.output else []
         )
@@ -113,16 +132,21 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
             model = load_model(str(model_path))
             # Inject file→component map from allocate stage onto model for evaluators
             model._file_component_map = file_component_map
+            model._file_system_map = file_system_map
             snapshot.model = model
 
             # Validation
             val_result = validate_model(model)
             snapshot.validation_score = val_result.score
 
-            # Counts — use components if available, else systems
+            # Counts — use components if available, else systems; include sub-model components
             comps = model.entities.components or []
             systems = model.entities.systems or []
-            snapshot.component_count = len(comps) if comps else len(systems)
+            # Count components from sub-models via file_component_map (unique comp IDs)
+            unique_comp_ids = set(file_component_map.values())
+            snapshot.component_count = (
+                len(unique_comp_ids) if unique_comp_ids else (len(comps) if comps else len(systems))
+            )
             snapshot.capability_count = (
                 len(model.entities.capabilities) if model.entities.capabilities else 0
             )

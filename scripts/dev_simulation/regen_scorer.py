@@ -213,24 +213,69 @@ def score_regenability(model: Any) -> RegenReport:
             )
         )
 
-    # --- System scores (avg of contained components) ---
+    # --- System scores ---
+    file_map = getattr(model, "_file_component_map", {})
+    file_system_map = getattr(model, "_file_system_map", {})
+    # Count unique sub-component IDs in file_map (these are from sub-pipelines)
+    total_sub_components = len(set(file_map.values())) if file_map else 0
+
     for sys in systems:
         comp_ids = getattr(sys, "component_ids", [])
         sys_comp_scores = [cs.score for cs in report.component_scores if cs.id in comp_ids]
-        avg = sum(sys_comp_scores) / len(sys_comp_scores) if sys_comp_scores else 0.0
-        blockers = []
-        if not comp_ids:
-            blockers.append("no components assigned")
 
-        report.system_scores.append(
-            LevelScore(
-                id=sys.id,
-                name=sys.name,
-                score=avg,
-                grade=_grade(avg),
-                blockers=blockers,
+        if sys_comp_scores:
+            avg = sum(sys_comp_scores) / len(sys_comp_scores)
+            report.system_scores.append(
+                LevelScore(id=sys.id, name=sys.name, score=avg, grade=_grade(avg), blockers=[])
             )
-        )
+        elif total_sub_components > 0:
+            # Sub-pipeline produced components but IDs don't match model's system IDs.
+            # Score based on overall sub-component presence and capabilities.
+            score = 0.0
+            blockers = []
+            # Has sub-components across the codebase?
+            score += 30  # Sub-components exist (from recursive pipeline)
+            # Has capabilities?
+            if capabilities:
+                # Check if any capability name matches system name
+                sys_name_lower = sys.name.lower()
+                matching_caps = [
+                    c
+                    for c in capabilities
+                    if c.name.lower() in sys_name_lower or sys_name_lower in c.name.lower()
+                ]
+                if matching_caps:
+                    score += 30
+                else:
+                    score += 15  # Capabilities exist generally
+            else:
+                blockers.append("no capabilities")
+            # Has description?
+            if getattr(sys, "description", ""):
+                score += 20
+            else:
+                blockers.append("no description")
+            # Has relationships?
+            sys_rels = [
+                r
+                for r in relationships
+                if getattr(r, "from_id", "") == sys.id or getattr(r, "to_id", "") == sys.id
+            ]
+            if sys_rels:
+                score += 20
+            else:
+                blockers.append("no relationships")
+
+            report.system_scores.append(
+                LevelScore(
+                    id=sys.id, name=sys.name, score=score, grade=_grade(score), blockers=blockers
+                )
+            )
+        else:
+            blockers = ["no components assigned"]
+            report.system_scores.append(
+                LevelScore(id=sys.id, name=sys.name, score=0.0, grade="F", blockers=blockers)
+            )
 
     # --- Distributions and averages ---
     report.system_grades = _grade_distribution(report.system_scores)
@@ -258,5 +303,19 @@ def score_regenability(model: Any) -> RegenReport:
         if report.behavior_scores
         else 0.0
     )
+
+    # Overall = weighted avg of all levels that have scores
+    level_avgs = []
+    if report.system_scores:
+        level_avgs.append(report.system_avg)
+    if report.component_scores:
+        level_avgs.append(report.component_avg)
+    if report.capability_scores:
+        level_avgs.append(report.capability_avg)
+    if report.behavior_scores:
+        level_avgs.append(report.behavior_avg)
+    if level_avgs and report.overall_score == 0.0:
+        report.overall_score = sum(level_avgs) / len(level_avgs)
+        report.overall_grade = _grade(report.overall_score)
 
     return report

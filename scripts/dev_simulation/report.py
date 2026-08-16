@@ -42,7 +42,7 @@ def generate_report(
         f"| Model Completeness (final) | {final_snap.file_coverage:.0f}% | {_grade_pct(final_snap.file_coverage / 100)} |"
     )
     lines.append(
-        f"| Architecture Accuracy (cohesion) | {cohesion.intra_component_cohesion:.0%} | {_grade_pct(cohesion.intra_component_cohesion)} |"
+        f"| Architecture Accuracy (system cohesion) | {getattr(cohesion, 'intra_system_cohesion', cohesion.intra_component_cohesion):.0%} | {_grade_pct(getattr(cohesion, 'intra_system_cohesion', cohesion.intra_component_cohesion))} |"
     )
     lines.append(
         f"| Regen Readiness (overall) | {regen.overall_score:.0f}% | {regen.overall_grade} |"
@@ -136,8 +136,11 @@ def generate_report(
     # --- Co-Change Cohesion ---
     lines.append("## Co-Change Cohesion\n")
     lines.append(f"- Intra-component cohesion: {cohesion.intra_component_cohesion:.0%}")
-    lines.append(f"- Cross-boundary rate: {cohesion.cross_boundary_rate:.0%}")
+    lines.append(f"- Intra-system cohesion: {getattr(cohesion, 'intra_system_cohesion', 0):.0%}")
+    lines.append(f"- Cross-component rate: {cohesion.cross_boundary_rate:.0%}")
+    lines.append(f"- Cross-system rate: {getattr(cohesion, 'cross_system_rate', 0):.0%}")
     lines.append(f"- Avg components per commit: {cohesion.avg_components_per_commit:.1f}")
+    lines.append(f"- Avg systems per commit: {getattr(cohesion, 'avg_systems_per_commit', 0):.1f}")
     if cohesion.boundary_suggestions:
         lines.append("\n**Boundary suggestions:**")
         for s in cohesion.boundary_suggestions:

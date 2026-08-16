@@ -127,29 +127,30 @@ def run_benchmark(
         avg_f1 = sum(m.slice_f1 for m in slice_metrics) / len(slice_metrics)
         print(f"  Avg slice recall: {avg_recall:.0%}, F1: {avg_f1:.0%}")
 
-    # Step 6: Drift tracking
+    # Step 6: Drift tracking (needs file-enriched commits)
     print("[5/7] Tracking model drift...")
-    # Enrich daily commits with file info for drift tracking
-    drift = track_drift(snapshots, daily_commits, checkpoint_interval)
+    # Enrich daily commits with file info for accurate drift detection
+    enriched_daily = []
+    for commit in daily_commits:
+        try:
+            detailed = get_commit_files(base_dir, commit.sha)
+            enriched_daily.append(detailed)
+        except Exception:
+            enriched_daily.append(commit)
+    drift = track_drift(snapshots, enriched_daily, checkpoint_interval)
     print(
         f"  Avg freshness: {drift.avg_freshness:.1f}, Update needed every {drift.recommended_update_frequency} commits"
     )
 
-    # Step 7: Cohesion analysis
+    # Step 7: Cohesion analysis (reuse enriched daily commits)
     print("[6/7] Analyzing co-change cohesion...")
-    # Use all commits with file details for cohesion
-    all_detailed_commits = []
-    for commit in daily_commits:
-        try:
-            detailed = get_commit_files(base_dir, commit.sha)
-            all_detailed_commits.append(detailed)
-        except Exception:
-            pass
-
     final_model = snapshots[-1].model if snapshots else None
-    cohesion = analyze_cohesion(all_detailed_commits, final_model)
+    cohesion = analyze_cohesion(enriched_daily, final_model)
     print(
-        f"  Cohesion: {cohesion.intra_component_cohesion:.0%}, Cross-boundary: {cohesion.cross_boundary_rate:.0%}"
+        f"  Component cohesion: {cohesion.intra_component_cohesion:.0%}, System cohesion: {cohesion.intra_system_cohesion:.0%}"
+    )
+    print(
+        f"  Cross-component: {cohesion.cross_boundary_rate:.0%}, Cross-system: {cohesion.cross_system_rate:.0%}"
     )
 
     # Step 8: Regenability

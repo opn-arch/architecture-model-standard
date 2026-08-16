@@ -60,6 +60,7 @@ class RelateStage:
         relationships: list[DerivedRelationship] = []
 
         # 1. realizes: component → capability (from allocation)
+        realized_caps: set[str] = set()
         for comp in allocation.components:
             if comp.capability_id:
                 relationships.append(
@@ -70,6 +71,36 @@ class RelateStage:
                         evidence_source="allocation",
                     )
                 )
+                realized_caps.add(comp.capability_id)
+
+        # 1b. Infer realizes for components without capability_id
+        # Match by name similarity to unrealized capabilities
+        unrealized_caps = [c for c in inference.capabilities if c.id not in realized_caps]
+        if unrealized_caps:
+            for comp in allocation.components:
+                if comp.capability_id:
+                    continue
+                # Try name matching
+                comp_words = set(comp.name.lower().replace("(", "").replace(")", "").split())
+                best_cap = None
+                best_score = 0
+                for cap in unrealized_caps:
+                    cap_words = set(cap.name.lower().split())
+                    overlap = len(comp_words & cap_words)
+                    if overlap > best_score:
+                        best_score = overlap
+                        best_cap = cap
+                if best_cap and best_score >= 1:
+                    relationships.append(
+                        DerivedRelationship(
+                            from_id=comp.id,
+                            to_id=best_cap.id,
+                            rel_type="realizes",
+                            evidence_source="name_inference",
+                        )
+                    )
+                    realized_caps.add(best_cap.id)
+                    unrealized_caps.remove(best_cap)
 
         # 2. depends-on/uses: component → component (from import edges)
         file_to_comp = _build_file_map(allocation.components)
