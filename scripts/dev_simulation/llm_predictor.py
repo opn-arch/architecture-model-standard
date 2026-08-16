@@ -421,60 +421,32 @@ def _get_mcp_context(repo_path: str, commit_message: str) -> str:
         sub_models_dir = path / ".architecture-models"
     if sub_models_dir.exists():
         msg_lower = commit_message.lower()
-        # Map keywords to sub-model directories
-        # Try direct keyword match first, then broader heuristics
-        matched_subdir = None
+        msg_words = set(msg_lower.replace("-", " ").replace("_", " ").split())
+
+        # Score all sub-model directories by word overlap with commit message
+        scored_subdirs: list[tuple[int, "_Path"]] = []
         for subdir in sub_models_dir.iterdir():
             if not subdir.is_dir():
                 continue
             sub_model = subdir / ".architecture-model.yaml"
             if not sub_model.exists():
                 continue
-            # Check if system name keywords appear in commit message
-            sys_name = subdir.name.replace("-", " ")
-            keywords = sys_name.split()
-            if any(kw in msg_lower for kw in keywords if len(kw) > 3):
-                matched_subdir = subdir
-                break
+            # Extract words from directory name (e.g., "layouts-widgets-core" → {"layouts", "widgets", "core"})
+            dir_words = set(subdir.name.replace("-", " ").replace("_", " ").split())
+            # Score: number of overlapping words (only count words > 2 chars)
+            overlap = sum(1 for w in dir_words if len(w) > 2 and w in msg_words)
+            # Also check if any dir word is a substring of commit message
+            substring_score = sum(1 for w in dir_words if len(w) > 3 and w in msg_lower)
+            total_score = overlap * 2 + substring_score
+            if total_score > 0:
+                scored_subdirs.append((total_score, subdir))
 
-        # If no direct match, use broader heuristics
-        if not matched_subdir:
-            # Common domain mappings
-            domain_map = {
-                "layouts-widgets-core": [
-                    "screen",
-                    "layout",
-                    "scroll",
-                    "compositor",
-                    "pilot",
-                    "app",
-                    "mount",
-                    "compose",
-                ],
-                "widgets-widgets": [
-                    "widget",
-                    "input",
-                    "button",
-                    "text_area",
-                    "textarea",
-                    "select",
-                    "tree",
-                    "table",
-                    "list",
-                ],
-                "css-css": ["css", "style", "theme", "color", "border", "padding", "margin"],
-                "css-core": ["scalar", "token", "parse"],
-                "infrastructure": ["key", "event", "message", "timer", "worker", "binding"],
-                "renderables": ["render", "content", "opacity", "blend"],
-                "drivers": ["driver", "terminal", "xterm", "ansi"],
-                "document": ["markdown", "document", "dom"],
-            }
-            for sys_dir, keywords in domain_map.items():
-                if any(kw in msg_lower for kw in keywords):
-                    candidate = sub_models_dir / sys_dir
-                    if candidate.exists() and (candidate / ".architecture-model.yaml").exists():
-                        matched_subdir = candidate
-                        break
+        # Pick the best match (above threshold of 1)
+        matched_subdir = None
+        if scored_subdirs:
+            scored_subdirs.sort(key=lambda x: x[0], reverse=True)
+            if scored_subdirs[0][0] >= 1:
+                matched_subdir = scored_subdirs[0][1]
 
         if matched_subdir:
             sub_slice = asyncio.run(

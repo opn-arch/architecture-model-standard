@@ -131,23 +131,45 @@ def evaluate_slice(model: Any, commit: Any) -> SliceMetrics:
             primary_name = sys.name
             break
 
-    # Build slice: all touched components + same-system import deps
+    # Build slice: 1-hop forward imports + same-directory locality (precision-focused)
     slice_files: set[str] = set()
 
-    # Add files from ALL touched components (multi-component awareness for recall)
-    for cid in comp_touches:
-        slice_files.update(f for f, c in file_map.items() if c == cid)
-
-    # Expand with imports that are in the SAME system as the primary component
-    # (cross-system imports are too broad — e.g., every widget imports core)
     import_graph = getattr(model, "_import_graph", {})
-    system_map = getattr(model, "_file_system_map", {})
-    primary_system = system_map.get(source_changed[0], "") if source_changed else ""
-    if primary_system:
+
+    # Start with the changed files themselves
+    slice_files.update(source_changed)
+
+    # Forward deps only (files this file imports — likely to co-change)
+    for f in source_changed:
+        for dep in import_graph.get(f, set()):
+            if dep in file_map:
+                slice_files.add(dep)
+
+    # Same-directory siblings of changed files (high co-change likelihood)
+    from pathlib import Path
+
+    changed_dirs = {str(Path(f).parent) for f in source_changed}
+    for f in file_map:
+        if str(Path(f).parent) in changed_dirs:
+            slice_files.add(f)
+
+    # Cap expansion at 2x changed file count to maintain precision
+    max_size = max(len(source_changed) * 2, 8)
+    if len(slice_files) > max_size:
+        # Prioritize: changed files > forward imports > siblings
+        priority_files = list(source_changed)
         for f in source_changed:
             for dep in import_graph.get(f, set()):
-                if system_map.get(dep) == primary_system and dep in file_map:
-                    slice_files.add(dep)
+                if dep in file_map:
+                    priority_files.append(dep)
+        # Deduplicate preserving order
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for pf in priority_files:
+            if pf not in seen:
+                seen.add(pf)
+                ordered.append(pf)
+        slice_files = set(ordered[:max_size])
 
     # Calculate metrics
     changed_set = set(source_changed)

@@ -57,13 +57,17 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
     capabilities: list[dict[str, Any]] = []
     relationships: list[dict[str, Any]] = []
 
+    # Namespace prefix for component IDs to avoid collisions across sub-systems
+    sys_prefix = _slugify(boundary.name)
+
     # Extract from allocate results
     alloc_result = results.get("allocate")
     if alloc_result and alloc_result.output:
         output = alloc_result.output
         if hasattr(output, "components"):
             for comp in output.components:
-                comp_dict: dict[str, Any] = {"id": comp.id, "name": comp.name}
+                namespaced_id = f"{sys_prefix}-{comp.id}"
+                comp_dict: dict[str, Any] = {"id": namespaced_id, "name": comp.name}
                 if hasattr(comp, "files") and comp.files:
                     comp_dict["files"] = [str(f) for f in comp.files]
                 components.append(comp_dict)
@@ -120,13 +124,14 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
         output = specify_result.output
         if hasattr(output, "interfaces"):
             for iface in output.interfaces:
-                if iface.component_id not in comp_ids:
+                namespaced_comp_id = f"{sys_prefix}-{iface.component_id}"
+                if namespaced_comp_id not in comp_ids:
                     continue
                 iface_dict: dict[str, Any] = {
                     "id": iface.id,
                     "name": iface.name,
                     "interface_type": iface.interface_type,
-                    "component_id": iface.component_id,
+                    "component_id": namespaced_comp_id,
                 }
                 if iface.methods:
                     iface_dict["methods"] = iface.methods
@@ -164,6 +169,12 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
                 slug = re.sub(r"[^a-z0-9]+", "-", layer.lower()).strip("-")
                 layers.append({"id": f"LAYER-{slug}", "name": layer})
 
+    # Build ID remap for namespacing (original COMP-N → sys_prefix-COMP-N)
+    id_remap: dict[str, str] = {}
+    if alloc_result and alloc_result.output and hasattr(alloc_result.output, "components"):
+        for comp in alloc_result.output.components:
+            id_remap[comp.id] = f"{sys_prefix}-{comp.id}"
+
     # Extract from relate results
     relate_result = results.get("relate")
     if relate_result and relate_result.output:
@@ -172,8 +183,8 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
             for rel in output.relationships:
                 relationships.append(
                     {
-                        "from": rel.from_id,
-                        "to": rel.to_id,
+                        "from": id_remap.get(rel.from_id, rel.from_id),
+                        "to": id_remap.get(rel.to_id, rel.to_id),
                         "type": rel.rel_type,
                     }
                 )

@@ -309,14 +309,16 @@ def _assign_by_import_affinity(
 
 
 def _import_affinity(mod: ModuleRecord, comp: ComponentAllocation, edges: list[ImportEdge]) -> int:
-    """Count import connections between module and component files."""
+    """Count import connections between module and component files using resolved edges."""
     comp_files = set(comp.files)
     score = 0
-    # Check if module imports anything from the component
-    for imp in mod.imports:
-        for cf in comp_files:
-            if cf.stem in imp or cf.parent.stem in imp:
-                score += 1
+    for edge in edges:
+        # Module imports something from this component
+        if edge.source == mod.path and edge.target in comp_files:
+            score += 1
+        # Something in this component imports the module
+        elif edge.target == mod.path and edge.source in comp_files:
+            score += 1
     return score
 
 

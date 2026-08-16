@@ -79,6 +79,7 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
     co_change_counter: Counter = Counter()  # (comp_a, comp_b) → count
     component_touches_per_commit: list[int] = []
     system_touches_per_commit: list[int] = []
+    per_commit_coherence: list[float] = []  # fraction of files in dominant component
     same_system_pairs = 0
     total_system_pairs = 0
 
@@ -116,16 +117,22 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
         if len(unique_comps) > 1:
             report.cross_boundary_commits += 1
 
-        # Build co-change pairs (component level)
-        comp_ids = [comp_id for _, comp_id in file_components]
-        for i in range(len(comp_ids)):
-            for j in range(i + 1, len(comp_ids)):
-                a, b = sorted([comp_ids[i], comp_ids[j]])
-                report.co_change_pairs += 1
-                if a == b:
-                    report.same_component_pairs += 1
-                else:
-                    co_change_counter[(a, b)] += 1
+        # Per-commit coherence: fraction of files in dominant component
+        comp_counts = Counter(comp_id for _, comp_id in file_components)
+        dominant_count = comp_counts.most_common(1)[0][1]
+        commit_coherence = dominant_count / len(file_components)
+        per_commit_coherence.append(commit_coherence)
+
+        # Track total pairs for backward compat reporting
+        report.co_change_pairs += len(file_components)
+        report.same_component_pairs += dominant_count
+
+        # Track frequently co-changing component pairs for suggestions
+        comp_ids_unique = list(unique_comps)
+        for i in range(len(comp_ids_unique)):
+            for j in range(i + 1, len(comp_ids_unique)):
+                a, b = sorted([comp_ids_unique[i], comp_ids_unique[j]])
+                co_change_counter[(a, b)] += 1
 
         # System-level pairs
         sys_ids = [sys_id for _, sys_id in file_systems]
@@ -152,7 +159,10 @@ def analyze_cohesion(commits: list[Any], model: Any) -> CohesionReport:
         report.cross_system_rate = cross_system_commits / report.total_commits_analyzed
 
     if report.co_change_pairs > 0:
-        report.intra_component_cohesion = report.same_component_pairs / report.co_change_pairs
+        # Use per-commit coherence average (more meaningful than quadratic pair ratio)
+        report.intra_component_cohesion = (
+            sum(per_commit_coherence) / len(per_commit_coherence) if per_commit_coherence else 0.0
+        )
 
     if total_system_pairs > 0:
         report.intra_system_cohesion = same_system_pairs / total_system_pairs
