@@ -124,6 +124,7 @@ def validate_model(
     _check_requirements_verification(model, result)
     _check_dependency_cycles(model, result)
     _check_operational_fields(model, result)
+    _check_hierarchy_consistency(model, result)
 
     # Lifecycle-gated: skip verification checks in concept phase
     lifecycle_phase = getattr(model.meta, "lifecycle_phase", "production")
@@ -811,6 +812,57 @@ def _check_operational_fields(model: ArchitectureModel, result: ValidationResult
                         severity=Severity.WARNING,
                         code="EXT_DEP_MISSING_NAME",
                         message=f"Component '{comp.name}' external_dependencies[{i}] missing 'name'",
+                        entity_id=comp.id,
+                    )
+                )
+
+
+def _check_hierarchy_consistency(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Check parent_id/children bidirectional consistency on components."""
+    components = model.entities.components
+    comp_map = {c.id: c for c in components}
+
+    for comp in components:
+        # If parent_id is set, parent must exist
+        if comp.parent_id:
+            parent = comp_map.get(comp.parent_id)
+            if not parent:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.ERROR,
+                        code="HIERARCHY_MISSING_PARENT",
+                        message=f"Component '{comp.name}' references non-existent parent '{comp.parent_id}'",
+                        entity_id=comp.id,
+                    )
+                )
+            elif comp.id not in parent.children:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="HIERARCHY_PARENT_MISSING_CHILD",
+                        message=f"Component '{comp.name}' has parent '{comp.parent_id}' but parent doesn't list it in children",
+                        entity_id=comp.id,
+                    )
+                )
+
+        # If children listed, each child must exist and reference this as parent
+        for child_id in comp.children:
+            child = comp_map.get(child_id)
+            if not child:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.ERROR,
+                        code="HIERARCHY_MISSING_CHILD",
+                        message=f"Component '{comp.name}' lists non-existent child '{child_id}'",
+                        entity_id=comp.id,
+                    )
+                )
+            elif child.parent_id != comp.id:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.WARNING,
+                        code="HIERARCHY_CHILD_MISSING_PARENT",
+                        message=f"Component '{comp.name}' lists child '{child_id}' but child doesn't reference it as parent",
                         entity_id=comp.id,
                     )
                 )

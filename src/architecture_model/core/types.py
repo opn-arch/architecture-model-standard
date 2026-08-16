@@ -497,6 +497,8 @@ class Component(BaseEntity):
     technology_stack: list[str] = field(default_factory=list)
     operations: dict[str, Any] = field(default_factory=dict)
     external_dependencies: list[dict[str, Any]] = field(default_factory=list)
+    parent_id: Optional[str] = None
+    children: list[str] = field(default_factory=list)
 
 
 @dataclass
