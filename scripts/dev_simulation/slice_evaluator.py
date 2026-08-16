@@ -28,41 +28,58 @@ class SliceMetrics:
 
 
 def identify_component(changed_files: list[str], model: Any) -> tuple[str, str]:
-    """Find which component best matches the changed files."""
-    if not model or not model.entities.components:
+    """Find which component/system best matches the changed files."""
+    if not model:
         return "", ""
+
+    # Use injected file map if available (from allocate stage)
+    file_map = getattr(model, "_file_component_map", {})
+
+    # Fall back to component files
+    if not file_map:
+        for comp in model.entities.components or []:
+            for f in comp.files or []:
+                file_map[str(f)] = comp.id
 
     comp_hits: Counter = Counter()
     for f in changed_files:
-        for comp in model.entities.components:
-            if f in comp.files:
-                comp_hits[comp.id] += 1
+        comp_id = file_map.get(f)
+        if comp_id:
+            comp_hits[comp_id] += 1
 
     if not comp_hits:
         return "", ""
 
     best_id = comp_hits.most_common(1)[0][0]
-    best_comp = next((c for c in model.entities.components if c.id == best_id), None)
-    return best_id, (best_comp.name if best_comp else "")
+    # Get name
+    for comp in model.entities.components or []:
+        if comp.id == best_id:
+            return best_id, comp.name
+    for sys in model.entities.systems or []:
+        if sys.id == best_id:
+            return best_id, sys.name
+    return best_id, ""
 
 
 def get_component_files(component_id: str, model: Any) -> set[str]:
-    """Get all files in a component (including children if hierarchical)."""
-    if not model or not model.entities.components:
+    """Get all files in a component/system."""
+    if not model:
         return set()
 
+    # Use injected file map
+    file_map = getattr(model, "_file_component_map", {})
+    if file_map:
+        return {f for f, cid in file_map.items() if cid == component_id}
+
+    # Fall back to component files
     files = set()
     target_ids = {component_id}
-
-    # Also include children
-    for comp in model.entities.components:
+    for comp in model.entities.components or []:
         if getattr(comp, "parent_id", None) == component_id:
             target_ids.add(comp.id)
-
-    for comp in model.entities.components:
+    for comp in model.entities.components or []:
         if comp.id in target_ids:
-            files.update(comp.files)
-
+            files.update(str(f) for f in (comp.files or []))
     return files
 
 
@@ -95,12 +112,12 @@ def evaluate_slice(model: Any, commit: Any) -> SliceMetrics:
     slice_files = get_component_files(comp_id, model) if comp_id else set()
 
     # Count how many components were touched
+    file_map = getattr(model, "_file_component_map", {})
     comp_touches: Counter = Counter()
     for f in source_changed:
-        for comp in model.entities.components if model else []:
-            if f in comp.files:
-                comp_touches[comp.id] += 1
-                break
+        comp_id = file_map.get(f)
+        if comp_id:
+            comp_touches[comp_id] += 1
 
     # Calculate metrics
     changed_set = set(source_changed)

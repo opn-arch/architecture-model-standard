@@ -55,8 +55,29 @@ def run_benchmark(
     clone_repo(repo_url, base_dir, days=days)
     print(f"  Done ({time.monotonic() - t0:.1f}s)")
 
-    # Step 2: Get daily commits
+    # Step 2: Get daily commits (ensure we're on default branch first)
     print("[2/7] Gathering commit history...")
+    import subprocess
+
+    # Find default branch and checkout to get full history
+    default_branch = (
+        subprocess.run(
+            ["git", "symbolic-ref", "refs/remotes/origin/HEAD"],
+            cwd=base_dir,
+            capture_output=True,
+            text=True,
+        )
+        .stdout.strip()
+        .replace("refs/remotes/origin/", "")
+    )
+    if not default_branch:
+        default_branch = "main"
+    subprocess.run(
+        ["git", "checkout", "--force", default_branch],
+        cwd=base_dir,
+        capture_output=True,
+        timeout=30,
+    )
     daily_commits = get_daily_commits(base_dir, days=days)
     print(f"  Found {len(daily_commits)} daily commits over {days} days")
 

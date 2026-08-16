@@ -59,27 +59,70 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
     try:
         # Run pipeline
         from architecture_model.pipeline.coordinator import PipelineCoordinator
+        from architecture_model.pipeline.observe import ObserveStage
+        from architecture_model.pipeline.infer import InferStage
+        from architecture_model.pipeline.allocate import AllocateStage
+        from architecture_model.pipeline.relate import RelateStage
+        from architecture_model.pipeline.specify import SpecifyStage
+        from architecture_model.pipeline.contract import ContractStage
+        from architecture_model.pipeline.validate import ValidateStage
+        from architecture_model.pipeline.decompose import DecomposeStage
+        from architecture_model.pipeline.synthesize import SynthesizeStage
+        from architecture_model.pipeline.emit import EmitStage
+        from architecture_model.pipeline.protocol import PipelineContext
         from architecture_model.core.validator import validate_model
 
-        coordinator = PipelineCoordinator(project_root=repo_dir)
-        result = coordinator.run()
+        stages = {
+            "observe": ObserveStage(),
+            "infer": InferStage(),
+            "allocate": AllocateStage(),
+            "relate": RelateStage(),
+            "specify": SpecifyStage(),
+            "contract": ContractStage(),
+            "validate": ValidateStage(),
+            "decompose": DecomposeStage(),
+            "synthesize": SynthesizeStage(),
+            "emit": EmitStage(),
+        }
+        coordinator = PipelineCoordinator(stages)
+        ctx = PipelineContext(repo_path=repo_dir, output_dir=repo_dir / ".architecture")
+        results = coordinator.run_all(ctx)
 
-        # Get model from emit output
-        model_path = repo_dir / ".architecture-model.yaml"
+        # Extract file→component mapping from allocate stage
+        alloc_result = results.get("allocate")
+        file_component_map: dict[str, str] = {}
+        if alloc_result and hasattr(alloc_result, "output") and alloc_result.output:
+            for comp in alloc_result.output.components:
+                for f in comp.files:
+                    file_component_map[str(f)] = comp.id
+        # Store on snapshot for evaluators
+        snapshot._file_map = file_component_map
+        snapshot._alloc_components = (
+            alloc_result.output.components if alloc_result and alloc_result.output else []
+        )
+
+        # Get model from emit output (emit writes to .architecture/.architecture-models/)
+        model_path = (
+            repo_dir / ".architecture" / ".architecture-models" / ".architecture-model.yaml"
+        )
+        if not model_path.exists():
+            model_path = repo_dir / ".architecture-model.yaml"
         if model_path.exists():
             from architecture_model.core.parser import load_model
 
             model = load_model(str(model_path))
+            # Inject file→component map from allocate stage onto model for evaluators
+            model._file_component_map = file_component_map
             snapshot.model = model
 
             # Validation
             val_result = validate_model(model)
             snapshot.validation_score = val_result.score
 
-            # Counts
-            snapshot.component_count = (
-                len(model.entities.components) if model.entities.components else 0
-            )
+            # Counts — use components if available, else systems
+            comps = model.entities.components or []
+            systems = model.entities.systems or []
+            snapshot.component_count = len(comps) if comps else len(systems)
             snapshot.capability_count = (
                 len(model.entities.capabilities) if model.entities.capabilities else 0
             )
@@ -88,20 +131,22 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
             )
             snapshot.relationship_count = len(model.relationships) if model.relationships else 0
 
-            # File coverage
+            # File coverage — gather from components and systems
             model_files = set()
-            for comp in model.entities.components or []:
-                model_files.update(comp.files)
+            for entity in list(comps) + list(systems):
+                if hasattr(entity, "files"):
+                    model_files.update(entity.files or [])
 
-            # Count Python files in src/
+            # Count Python files in src/ (fallback to repo root)
             src_dir = repo_dir / "src"
-            if src_dir.exists():
-                all_py = list(src_dir.rglob("*.py"))
-                non_trivial = [f for f in all_py if f.stat().st_size > 50]
-                if non_trivial:
-                    rel_files = {str(f.relative_to(repo_dir)) for f in non_trivial}
-                    covered = model_files & rel_files
-                    snapshot.file_coverage = len(covered) / len(rel_files) * 100
+            if not src_dir.exists():
+                src_dir = repo_dir
+            all_py = list(src_dir.rglob("*.py"))
+            non_trivial = [f for f in all_py if f.stat().st_size > 50]
+            if non_trivial:
+                rel_files = {str(f.relative_to(repo_dir)) for f in non_trivial}
+                covered = model_files & rel_files
+                snapshot.file_coverage = len(covered) / len(rel_files) * 100
 
             # Regen readiness
             try:

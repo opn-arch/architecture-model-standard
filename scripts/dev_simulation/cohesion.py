@@ -24,12 +24,39 @@ class CohesionReport:
 
 def _get_file_component_map(model: Any) -> dict[str, str]:
     """Build file → component_id mapping."""
+    # Prefer injected map from allocate stage (most accurate)
+    if hasattr(model, "_file_component_map") and model._file_component_map:
+        return model._file_component_map
+
     file_map: dict[str, str] = {}
-    if not model or not model.entities.components:
+    if not model:
         return file_map
-    for comp in model.entities.components:
-        for f in comp.files:
-            file_map[f] = comp.id
+    for comp in model.entities.components or []:
+        for f in comp.files or []:
+            file_map[str(f)] = comp.id
+    return file_map
+
+    # First try components (which have files directly)
+    for comp in model.entities.components or []:
+        for f in comp.files or []:
+            file_map[str(f)] = comp.id
+
+    # If no component files, build mapping from systems using directory prefix heuristic
+    if not file_map and model.entities.systems:
+        # Build system name→id lookup for prefix matching
+        system_prefixes: list[tuple[str, str]] = []
+        for sys in model.entities.systems:
+            # Convert system name to likely directory prefix
+            name_slug = sys.name.lower().replace(" ", "_").replace("-", "_")
+            system_prefixes.append((name_slug, sys.id))
+
+        # This is approximate — we match files by checking if any path segment
+        # contains the system name slug
+        # (The actual file list isn't stored on systems, so we rely on the model
+        # being used with actual commit data in the cohesion analysis)
+        file_map["__use_prefix_matching__"] = ""  # sentinel
+        file_map["__prefixes__"] = ""  # store for later use
+
     return file_map
 
 
