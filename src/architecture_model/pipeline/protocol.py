@@ -60,9 +60,7 @@ class Claim(Generic[T]):
     def confidence(self) -> float:
         if not self.evidence:
             return 0.0
-        total = sum(
-            e.confidence * SOURCE_WEIGHTS.get(e.source, 0.5) for e in self.evidence
-        )
+        total = sum(e.confidence * SOURCE_WEIGHTS.get(e.source, 0.5) for e in self.evidence)
         result = total / len(self.evidence)
         return min(result, 1.0)
 
@@ -99,9 +97,7 @@ class QualityMetrics:
 
     @property
     def passes(self) -> bool:
-        return all(
-            self.sub_scores.get(k, 0.0) >= v for k, v in self.thresholds.items()
-        )
+        return all(self.sub_scores.get(k, 0.0) >= v for k, v in self.thresholds.items())
 
 
 @dataclass
@@ -133,12 +129,41 @@ class PipelineContext:
     global_learning: GlobalLearningStore | None = field(default=None, repr=False)
     calibration: dict[str, Any] = field(default_factory=dict)
     llm_calls: list[LLMCallRecord] = field(default_factory=list)
+    # LLM enrichment callback: stages can call this for naming, classification, etc.
+    # Signature: async (stage: str, prompt: str, context: dict) -> str
+    # If None, stages use heuristic fallbacks (deterministic mode).
+    llm_callback: Any = field(default=None, repr=False)
 
     def has(self, stage_name: str) -> bool:
         return stage_name in self.cache
 
     def get(self, stage_name: str) -> StageResult | None:
         return self.cache.get(stage_name)
+
+    async def llm_enrich(self, stage: str, prompt: str, context: dict | None = None) -> str | None:
+        """Call LLM enrichment if callback is registered. Returns None if no LLM available."""
+        if self.llm_callback is None:
+            return None
+        import time as _time
+
+        start = _time.time()
+        try:
+            result = await self.llm_callback(stage, prompt, context or {})
+            duration_ms = int((_time.time() - start) * 1000)
+            self.llm_calls.append(
+                LLMCallRecord(
+                    stage=stage,
+                    purpose=prompt[:100],
+                    timestamp=_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                    duration_ms=duration_ms,
+                    confidence=0.7,
+                    items_produced=1,
+                    notes=result[:200] if result else "",
+                )
+            )
+            return result
+        except Exception:
+            return None
 
 
 @dataclass

@@ -106,7 +106,8 @@ def group_modules(
     for dir_path, files in dir_groups.items():
         # Files with underscore prefix (but not __init__ etc.)
         underscore_files = [
-            f for f in files
+            f
+            for f in files
             if PurePosixPath(f).stem.startswith("_") and PurePosixPath(f).stem not in ("__init__",)
         ]
         normal_files = [f for f in files if f not in underscore_files]
@@ -161,14 +162,14 @@ def group_modules(
     # Step 4: Import-affinity merging (only unlocked groups)
     locked = [(n, f) for n, f, lk in initial_groups if lk]
     unlocked = [(n, f) for n, f, lk in initial_groups if not lk]
-    
+
     target_unlocked = target_groups - len(locked)
     if len(unlocked) > target_unlocked and target_unlocked > 0:
         unlocked = _merge_by_import_affinity(unlocked, interfaces, target_unlocked)
     elif len(unlocked) < target_unlocked and target_unlocked > 0:
         # Need MORE groups: split largest unlocked groups by import sub-clustering
         unlocked = _split_to_target(unlocked, interfaces, target_unlocked, mod_by_file)
-    
+
     merged_groups = locked + unlocked
 
     # Step 5: Build ModuleGroup objects
@@ -198,7 +199,7 @@ def _is_subdirectory_group(dir_path: str, all_dirs: dict[str, list[str]]) -> boo
 
 def _group_by_prefix(files: list[str]) -> dict[str, list[str]]:
     """Group files by shared name prefix (minimum 2 chars before first underscore).
-    
+
     Examples:
         auth_login.py, auth_utils.py → prefix "auth"
         db_connection.py, db_pool.py → prefix "db"
@@ -207,7 +208,7 @@ def _group_by_prefix(files: list[str]) -> dict[str, list[str]]:
     """
     prefix_map: dict[str, list[str]] = defaultdict(list)
     no_prefix: list[str] = []
-    
+
     for f in files:
         stem = PurePosixPath(f).stem.lstrip("_")
         if "_" in stem:
@@ -218,7 +219,7 @@ def _group_by_prefix(files: list[str]) -> dict[str, list[str]]:
                 no_prefix.append(f)
         else:
             no_prefix.append(f)
-    
+
     # Only keep prefixes with 2+ files AND not dominating the directory
     # A prefix capturing >60% of a large directory is just a naming convention
     total = len(files)
@@ -229,7 +230,7 @@ def _group_by_prefix(files: list[str]) -> dict[str, list[str]]:
             result[prefix] = pfiles
         else:
             no_prefix.extend(pfiles)
-    
+
     if no_prefix:
         result[""] = no_prefix
     return result
@@ -240,12 +241,12 @@ def _merge_by_import_affinity(
     interfaces: list[InterfaceEdge],
     target: int,
 ) -> list[tuple[str, list[str]]]:
-    """Iteratively merge groups with highest normalized import affinity."""
-    # Build edge set between file pairs
-    edges: set[tuple[str, str]] = set()
+    """Iteratively merge groups with highest weighted import affinity."""
+    # Build weighted edge map between file pairs (count multiple imports)
+    edge_weights: dict[tuple[str, str], int] = defaultdict(int)
     for iface in interfaces:
         key = (min(iface.source, iface.target), max(iface.source, iface.target))
-        edges.add(key)
+        edge_weights[key] += 1
 
     groups = list(groups)
 
@@ -255,7 +256,7 @@ def _merge_by_import_affinity(
 
         for i in range(len(groups)):
             for j in range(i + 1, len(groups)):
-                score = _normalized_affinity(groups[i][1], groups[j][1], edges)
+                score = _weighted_affinity(groups[i][1], groups[j][1], edge_weights)
                 if score > best_score:
                     best_score = score
                     best_pair = (i, j)
@@ -275,26 +276,25 @@ def _merge_by_import_affinity(
     return groups
 
 
-def _normalized_affinity(
-    files_a: list[str], files_b: list[str], edges: set[tuple[str, str]]
+def _weighted_affinity(
+    files_a: list[str], files_b: list[str], edge_weights: dict[tuple[str, str], int]
 ) -> float:
-    """Normalized affinity: actual_edges / possible_edges between two groups.
-    
-    Prevents large groups from always winning since more files = more 
-    possible edges = lower score unless connections are dense.
+    """Weighted affinity: sum(edge_weights) / possible_edges between two groups.
+
+    Uses actual import counts rather than binary presence, so modules with
+    many cross-imports are considered more strongly coupled.
     """
     possible = len(files_a) * len(files_b)
     if possible == 0:
         return 0.0
-    
-    actual = 0
+
+    total_weight = 0
     for a in files_a:
         for b in files_b:
             key = (min(a, b), max(a, b))
-            if key in edges:
-                actual += 1
-    
-    return actual / possible
+            total_weight += edge_weights.get(key, 0)
+
+    return total_weight / possible
 
 
 def _split_to_target(
@@ -304,7 +304,7 @@ def _split_to_target(
     mod_by_file: dict[str, ModuleInfo],
 ) -> list[tuple[str, list[str]]]:
     """Split largest groups until we reach target count.
-    
+
     Uses a simple bisection: find the file with least affinity to the rest
     of its group, split it off as a seed for a new group, then reassign
     files that are closer to the new group.
@@ -332,7 +332,7 @@ def _split_to_target(
         name, files = groups[largest_idx]
 
         # Find file with lowest internal affinity (least connected to group)
-        min_affinity = float('inf')
+        min_affinity = float("inf")
         split_file = files[0]
         for f in files:
             others = [o for o in files if o != f]
@@ -368,7 +368,9 @@ def _split_to_target(
 
         # Name new group from its primary file
         primary = max(new_group, key=lambda f: mod_by_file[f].line_count if f in mod_by_file else 0)
-        new_name = PurePosixPath(primary).stem.lstrip("_").replace("_", " ").title().replace(" ", "")
+        new_name = (
+            PurePosixPath(primary).stem.lstrip("_").replace("_", " ").title().replace(" ", "")
+        )
 
         groups[largest_idx] = (name, remainder)
         groups.append((new_name, new_group))
@@ -536,21 +538,22 @@ def group_source_graph(
             else:
                 functions.append(FunctionInfo(name=exp.name, signature=exp.signature))
 
-        modules.append(ModuleInfo(
-            file=unit.file,
-            name=PurePosixPath(unit.file).stem,
-            docstring=None,
-            functions=functions,
-            imports=[],
-            line_count=1 if unit.has_content else 0,
-            status=ModuleStatus.ACTIVE,
-            classes=classes,
-        ))
+        modules.append(
+            ModuleInfo(
+                file=unit.file,
+                name=PurePosixPath(unit.file).stem,
+                docstring=None,
+                functions=functions,
+                imports=[],
+                line_count=1 if unit.has_content else 0,
+                status=ModuleStatus.ACTIVE,
+                classes=classes,
+            )
+        )
 
     # Convert DependencyEdges to InterfaceEdges
     interfaces: list[InterfaceEdge] = [
-        InterfaceEdge(source=e.source, target=e.target, import_path="")
-        for e in graph.edges
+        InterfaceEdge(source=e.source, target=e.target, import_path="") for e in graph.edges
     ]
 
     return group_modules(

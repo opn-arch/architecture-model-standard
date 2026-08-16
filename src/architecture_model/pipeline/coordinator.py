@@ -14,7 +14,12 @@ from architecture_model.pipeline.protocol import PipelineContext, Stage, StageRe
 class PipelineCoordinator:
     """Resolves stage dependencies and runs minimum stages needed to reach a target."""
 
-    def __init__(self, stages: dict[str, Stage], learning_store: LearningStore | None = None, global_learning: GlobalLearningStore | None = None) -> None:
+    def __init__(
+        self,
+        stages: dict[str, Stage],
+        learning_store: LearningStore | None = None,
+        global_learning: GlobalLearningStore | None = None,
+    ) -> None:
         self._stages = stages
         self._learning = learning_store
         self._global_learning = global_learning
@@ -152,6 +157,69 @@ class PipelineCoordinator:
         visiting.discard(name)
         visited.add(name)
 
+    async def enrich_stage_output(self, stage_name: str, ctx: PipelineContext) -> list[str]:
+        """Post-stage LLM enrichment: improve names/descriptions of low-quality outputs.
+
+        Called by the MCP tool after a stage completes, if ctx.llm_callback is set.
+        Returns list of changes made.
+        """
+        if ctx.llm_callback is None:
+            return []
+
+        result = ctx.get(stage_name)
+        if result is None:
+            return []
+
+        changes: list[str] = []
+
+        if stage_name == "infer":
+            # Enrich capability names that are too generic
+            from .infer_types import InferenceResult
+
+            output: InferenceResult = result.output
+            for cap in output.capabilities:
+                if cap.name in ("Web Routes", "Domain Logic", "CLI Commands", "Core"):
+                    prompt = (
+                        f"Given a software component with these files: {cap.evidence_source}, "
+                        f"suggest a specific, descriptive name (2-4 words) that captures its "
+                        f"primary business purpose. Current generic name: '{cap.name}'. "
+                        f"Return ONLY the new name, nothing else."
+                    )
+                    new_name = await ctx.llm_enrich("infer", prompt, {"cap_id": cap.id})
+                    if new_name and new_name.strip():
+                        old = cap.name
+                        cap.name = new_name.strip().strip('"').strip("'")
+                        changes.append(f"CAP {cap.id}: '{old}' → '{cap.name}'")
+
+        elif stage_name == "allocate":
+            # Enrich component names
+            from .allocate_types import AllocationResult
+
+            output = result.output
+            for comp in output.components:
+                if comp.name and len(comp.name) <= 3:  # Very short/generic names
+                    files_str = ", ".join(str(f) for f in comp.files[:5])
+                    prompt = (
+                        f"Given a software component containing files: [{files_str}], "
+                        f"suggest a clear 2-4 word name describing its responsibility. "
+                        f"Return ONLY the name."
+                    )
+                    new_name = await ctx.llm_enrich("allocate", prompt, {"comp_id": comp.id})
+                    if new_name and new_name.strip():
+                        old = comp.name
+                        comp.name = new_name.strip().strip('"').strip("'")
+                        changes.append(f"COMP {comp.id}: '{old}' → '{comp.name}'")
+
+        elif stage_name == "relate":
+            # Enrich ambiguous relationship descriptions
+            pass  # Future: classify weak relationships
+
+        elif stage_name == "observe":
+            # Nothing to enrich — purely AST-based
+            pass
+
+        return changes
+
     def run_recursive(
         self, ctx: PipelineContext, *, max_depth: int = 3, leaf_threshold: int = 5
     ) -> dict[str, Any]:
@@ -169,6 +237,7 @@ class PipelineCoordinator:
         # Write legacy artifacts for backward compatibility
         from .artifacts import write_artifacts
         from .context_gen import write_context
+
         write_artifacts(ctx)
         write_context(ctx)
 

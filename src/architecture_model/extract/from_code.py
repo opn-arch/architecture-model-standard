@@ -49,7 +49,10 @@ from architecture_model.monitoring import monitored
 
 @monitored(
     module="extract.from_code",
-    outputs=lambda r: {"component_count": len(r.entities.components), "relationship_count": len(r.relationships)},
+    outputs=lambda r: {
+        "component_count": len(r.entities.components),
+        "relationship_count": len(r.relationships),
+    },
 )
 def extract_from_code(
     project_root: str | Path,
@@ -245,9 +248,7 @@ def _derive_actors(routes: list[RouteInfo], manifest: dict) -> list[Actor]:
     return actors
 
 
-def _derive_route_behaviors(
-    routes: list[RouteInfo], config: ProjectConfig
-) -> list[Behavior]:
+def _derive_route_behaviors(routes: list[RouteInfo], config: ProjectConfig) -> list[Behavior]:
     """Derive behaviors from route handlers."""
     behaviors: list[Behavior] = []
     seen_ids: set[str] = set()
@@ -295,9 +296,15 @@ def _derive_route_behaviors(
 
 
 def _detect_service_behaviors(
-    project_root: Path, config: ProjectConfig
+    project_root: Path,
+    config: ProjectConfig,
+    max_behaviors_per_component: int = 40,
 ) -> list[Behavior]:
-    """Scan service-layer files for public functions using AST."""
+    """Scan service-layer files for public functions using AST.
+
+    Filters out trivial getters/setters, merges near-duplicate behaviors,
+    and caps output at *max_behaviors_per_component* per source file (component).
+    """
     behaviors: list[Behavior] = []
     seen_ids: set[str] = set()
 
@@ -309,6 +316,11 @@ def _detect_service_behaviors(
 
     if not service_dirs:
         return behaviors
+
+    # Collect per-file (component proxy) so we can cap later
+    per_file_behaviors: dict[
+        str, list[tuple[Behavior, int]]
+    ] = {}  # rel_path -> [(beh, complexity)]
 
     for dir_path in service_dirs:
         target = project_root / dir_path
@@ -338,6 +350,11 @@ def _detect_service_behaviors(
                 if node.name.startswith("_"):
                     continue
 
+                # --- Filter: trivial getters/setters (< 3 lines, no side effects) ---
+                body_lines = (node.end_lineno or node.lineno) - node.lineno
+                if body_lines < 3 and _is_trivial_getter_setter(node):
+                    continue
+
                 behavior_id = f"BEH-SVC-{module_name}-{node.name}"
                 if behavior_id in seen_ids:
                     continue
@@ -346,20 +363,66 @@ def _detect_service_behaviors(
                 docstring = ast.get_docstring(node) or ""
                 first_line = docstring.split("\n")[0].strip() if docstring else ""
 
-                behaviors.append(
-                    Behavior(
-                        id=behavior_id,
-                        name=first_line or f"{module_name}.{node.name}",
-                        status=Status.ACTIVE,
-                        description=first_line or f"Service function: {module_name}.{node.name}",
-                        source_file=rel_path,
-                        source_line=node.lineno,
-                        tags=["internal", source_block] if source_block else ["internal"],
-                        priority=Priority.MEDIUM,
-                    )
+                # Compute complexity as proxy for importance (outgoing calls + branches)
+                complexity = _function_complexity(node)
+
+                beh = Behavior(
+                    id=behavior_id,
+                    name=first_line or f"{module_name}.{node.name}",
+                    status=Status.ACTIVE,
+                    description=first_line or f"Service function: {module_name}.{node.name}",
+                    source_file=rel_path,
+                    source_line=node.lineno,
+                    tags=["internal", source_block] if source_block else ["internal"],
+                    priority=Priority.MEDIUM,
                 )
+                per_file_behaviors.setdefault(rel_path, []).append((beh, complexity))
+
+    # --- Cap: keep highest-complexity behaviors per component ---
+    for rel_path, beh_list in per_file_behaviors.items():
+        if len(beh_list) > max_behaviors_per_component:
+            beh_list.sort(key=lambda x: x[1], reverse=True)
+            beh_list = beh_list[:max_behaviors_per_component]
+        behaviors.extend(beh for beh, _ in beh_list)
 
     return behaviors
+
+
+def _is_trivial_getter_setter(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    """Return True if function is a simple getter/setter with no side effects."""
+    # Getter: single return of self.attr or a param
+    body = [
+        s for s in node.body if not isinstance(s, ast.Expr) or not isinstance(s.value, ast.Constant)
+    ]
+    if not body:
+        return True
+    if len(body) == 1:
+        stmt = body[0]
+        # return self.x
+        if isinstance(stmt, ast.Return):
+            return True
+        # self.x = value (simple setter)
+        if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1:
+            target = stmt.targets[0]
+            if (
+                isinstance(target, ast.Attribute)
+                and isinstance(target.value, ast.Name)
+                and target.value.id == "self"
+            ):
+                return True
+    return False
+
+
+def _function_complexity(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    """Compute a simple complexity score: call count + branch count."""
+    calls = 0
+    branches = 0
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            calls += 1
+        elif isinstance(child, (ast.If, ast.For, ast.While, ast.Try, ast.With)):
+            branches += 1
+    return calls + branches
 
 
 def _derive_components(manifest: dict, config: ProjectConfig) -> list[Component]:
@@ -498,8 +561,7 @@ def _cap_to_layer(cap_id: str, config: ProjectConfig) -> str | None:
             for bdir in block.dirs:
                 for layer in config.layers:
                     if bdir in layer.dirs or any(
-                        bdir.startswith(ld + "/") or ld.startswith(bdir + "/")
-                        for ld in layer.dirs
+                        bdir.startswith(ld + "/") or ld.startswith(bdir + "/") for ld in layer.dirs
                     ):
                         return layer.id
     return None
@@ -634,9 +696,7 @@ def _derive_relationships(
             )
 
     # constrained-by: all capabilities → technology constraints
-    tech_constraints = [
-        c for c in constraints if c.type == ConstraintType.TECHNOLOGY
-    ]
+    tech_constraints = [c for c in constraints if c.type == ConstraintType.TECHNOLOGY]
     for cap in capabilities:
         for con in tech_constraints:
             relationships.append(

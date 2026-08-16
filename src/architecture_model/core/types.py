@@ -31,11 +31,24 @@ class Status(str, Enum):
 
 
 class RelationType(str, Enum):
+    """Relationship types for architecture model edges.
+
+    Valid values:
+        realizes, contains, depends-on, exposes, consumes, uses,
+        traces-to, allocated-to, constrained-by,
+        mounted-on, connected-at, routed-through,
+        produces, subscribes-to, transforms,
+        supersedes, migrates-to, triggers,
+        satisfies, derives-from, verifies,
+        resolves, affects.
+    """
+
     REALIZES = "realizes"
     CONTAINS = "contains"
     DEPENDS_ON = "depends-on"
     EXPOSES = "exposes"
     CONSUMES = "consumes"
+    USES = "uses"
     TRACES_TO = "traces-to"
     ALLOCATED_TO = "allocated-to"
     CONSTRAINED_BY = "constrained-by"

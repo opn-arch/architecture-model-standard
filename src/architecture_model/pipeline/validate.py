@@ -3,6 +3,7 @@
 Runs checks: orphan components, unrealized capabilities, missing relationships,
 file coverage, naming conventions.
 """
+
 from __future__ import annotations
 
 import time
@@ -46,12 +47,14 @@ class ValidateStage:
         realized_caps = {r.to_id for r in relationships.relationships if r.rel_type == "realizes"}
         for cap in inference.capabilities:
             if cap.id not in realized_caps:
-                issues.append(ValidationIssue(
-                    severity="warning",
-                    message=f"Capability {cap.name} ({cap.id}) has no realizing component",
-                    entity_id=cap.id,
-                    rule="capability_realization",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        severity="warning",
+                        message=f"Capability {cap.name} ({cap.id}) has no realizing component",
+                        entity_id=cap.id,
+                        rule="capability_realization",
+                    )
+                )
 
         # Check 2: No orphan components (components with no relationships)
         related_comps = set()
@@ -60,28 +63,73 @@ class ValidateStage:
             related_comps.add(r.to_id)
         for comp in allocation.components:
             if comp.id not in related_comps:
-                issues.append(ValidationIssue(
-                    severity="info",
-                    message=f"Component {comp.name} ({comp.id}) has no relationships",
-                    entity_id=comp.id,
-                    rule="orphan_detection",
-                ))
+                issues.append(
+                    ValidationIssue(
+                        severity="info",
+                        message=f"Component {comp.name} ({comp.id}) has no relationships",
+                        entity_id=comp.id,
+                        rule="orphan_detection",
+                    )
+                )
 
         # Check 3: File coverage
         if allocation.file_coverage < 95.0:
-            issues.append(ValidationIssue(
-                severity="warning",
-                message=f"File coverage is {allocation.file_coverage:.1f}% (target: 95%)",
-                rule="file_coverage",
-            ))
+            issues.append(
+                ValidationIssue(
+                    severity="warning",
+                    message=f"File coverage is {allocation.file_coverage:.1f}% (target: 95%)",
+                    rule="file_coverage",
+                )
+            )
 
         # Check 4: Boundary coherence
         if allocation.boundary_coherence < 50.0:
-            issues.append(ValidationIssue(
-                severity="info",
-                message=f"Boundary coherence is {allocation.boundary_coherence:.1f}% (target: 50%)",
-                rule="boundary_coherence",
-            ))
+            issues.append(
+                ValidationIssue(
+                    severity="info",
+                    message=f"Boundary coherence is {allocation.boundary_coherence:.1f}% (target: 50%)",
+                    rule="boundary_coherence",
+                )
+            )
+
+        # Check 5: Confidence-driven re-extraction candidates
+        # Flag components with low confidence for LLM enrichment
+        for comp in allocation.components:
+            confidence = getattr(comp, "confidence", 1.0)
+            if confidence < 0.5:
+                uncertainties.append(
+                    Uncertainty(
+                        category="low_confidence_component",
+                        description=(
+                            f"Component '{comp.name}' ({comp.id}) has confidence {confidence:.2f}. "
+                            f"Files: {comp.files[:3]}. Consider LLM analysis to improve naming/boundaries."
+                        ),
+                        context={
+                            "component_id": comp.id,
+                            "confidence": confidence,
+                            "files": comp.files[:5],
+                        },
+                        suggested_fallback="llm_analysis",
+                        priority="enriching",
+                    )
+                )
+
+        for cap in inference.capabilities:
+            # Check if capability name is generic (heuristic: very short or common)
+            generic_names = {"Web Routes", "Domain Logic", "CLI Commands", "Core", "Utils", "Misc"}
+            if cap.name in generic_names:
+                uncertainties.append(
+                    Uncertainty(
+                        category="generic_capability_name",
+                        description=(
+                            f"Capability '{cap.name}' ({cap.id}) has a generic name. "
+                            f"LLM analysis could produce a more specific business-oriented name."
+                        ),
+                        context={"capability_id": cap.id, "current_name": cap.name},
+                        suggested_fallback="llm_analysis",
+                        priority="enriching",
+                    )
+                )
 
         # Score: 100 - penalties
         error_count = sum(1 for i in issues if i.severity == "error")

@@ -105,6 +105,13 @@ class InferStage:
                     capabilities.append(cap)
                 actors.extend(route_actors)
 
+        # --- Strategy 1b: WebSocket, gRPC, scheduled task triggers ---
+        trigger_caps = _infer_from_triggers(inventory.modules)
+        for cap in trigger_caps:
+            cap_counter += 1
+            cap.id = f"CAP-{cap_counter}"
+            capabilities.append(cap)
+
         # --- Strategy 2: Domain modules → capabilities ---
         is_scoped = bool(ctx.scope_files)
         domain_caps = _infer_from_domain_modules(inventory.modules, capabilities, scoped=is_scoped)
@@ -393,6 +400,61 @@ def _infer_capabilities_by_package(
     return capabilities
 
 
+def _infer_from_triggers(modules: list[ModuleRecord]) -> list[InferredCapability]:
+    """Detect WebSocket handlers, gRPC services, and scheduled tasks."""
+    capabilities: list[InferredCapability] = []
+    has_websocket = False
+    has_grpc = False
+    has_scheduled = False
+
+    for mod in modules:
+        if _is_non_source_module(mod):
+            continue
+        for imp in mod.imports:
+            # WebSocket detection
+            if any(kw in imp for kw in ("websocket", "socketio", "channels", "ws_handler")):
+                has_websocket = True
+            # gRPC detection
+            if any(kw in imp for kw in ("grpc", "grpcio", "proto")):
+                has_grpc = True
+            # Scheduled task detection (celery, apscheduler, cron)
+            if any(
+                kw in imp
+                for kw in ("celery", "apscheduler", "schedule", "crontab", "periodic_task")
+            ):
+                has_scheduled = True
+
+    if has_websocket:
+        capabilities.append(
+            InferredCapability(
+                id="",
+                name="WebSocket Handlers",
+                description="Real-time WebSocket communication endpoints",
+                evidence_source="websocket_pattern",
+            )
+        )
+    if has_grpc:
+        capabilities.append(
+            InferredCapability(
+                id="",
+                name="gRPC Services",
+                description="gRPC service definitions and handlers",
+                evidence_source="grpc_pattern",
+            )
+        )
+    if has_scheduled:
+        capabilities.append(
+            InferredCapability(
+                id="",
+                name="Scheduled Tasks",
+                description="Periodic/scheduled task execution (cron/celery)",
+                evidence_source="scheduler_pattern",
+            )
+        )
+
+    return capabilities
+
+
 def _infer_from_cli(modules: list[ModuleRecord]) -> list[InferredCapability]:
     """Infer capabilities from CLI command modules."""
     capabilities = []
@@ -628,6 +690,23 @@ def _infer_behaviors(
                         priority="medium",
                     )
                 )
+
+    # --- Cap: max 40 behaviors per capability (component proxy) ---
+    MAX_BEHAVIORS_PER_COMPONENT = 40
+    cap_groups: dict[str, list[InferredBehavior]] = defaultdict(list)
+    for beh in behaviors:
+        key = beh.capability_id or "__uncapped__"
+        cap_groups[key].append(beh)
+
+    capped: list[InferredBehavior] = []
+    for key, group in cap_groups.items():
+        if key == "__uncapped__" or len(group) <= MAX_BEHAVIORS_PER_COMPONENT:
+            capped.extend(group)
+        else:
+            # Keep behaviors with the most steps (proxy for complexity)
+            group.sort(key=lambda b: len(b.steps), reverse=True)
+            capped.extend(group[:MAX_BEHAVIORS_PER_COMPONENT])
+    behaviors = capped
 
     return behaviors, uncertainties
 
