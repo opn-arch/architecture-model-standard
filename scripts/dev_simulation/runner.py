@@ -161,6 +161,83 @@ def run_benchmark(
         f"  Components avg: {regen.component_avg:.0f}%, Capabilities avg: {regen.capability_avg:.0f}%"
     )
 
+    # Phase 2: LLM predictions
+    phase2_results = None
+    phase2_summary = None
+    if phase == "llm":
+        from .llm_predictor import run_phase2, summarize_phase2
+
+        print(f"\n=== Phase 2: LLM File Predictions ===")
+        print(f"  Relay: {relay_url}")
+        print(f"  Sample rate: every {sample_rate} commit(s)")
+        print(f"  Commits to evaluate: ~{len(enriched_daily) // sample_rate}")
+
+        phase2_results = run_phase2(
+            commits=enriched_daily,
+            snapshots=snapshots,
+            checkpoint_commits=checkpoints,
+            relay_url=relay_url,
+            sample_rate=sample_rate,
+        )
+        phase2_summary = summarize_phase2(phase2_results)
+
+        print(f"\n  --- Phase 2 Results ---")
+        print(f"  Predictions: {phase2_summary.total_predictions} ({phase2_summary.errors} errors)")
+        print(
+            f"  With context:    R={phase2_summary.avg_recall_with_context:.0%} P={phase2_summary.avg_precision_with_context:.0%} F1={phase2_summary.avg_f1_with_context:.0%}"
+        )
+        print(
+            f"  Without context: R={phase2_summary.avg_recall_no_context:.0%} P={phase2_summary.avg_precision_no_context:.0%} F1={phase2_summary.avg_f1_no_context:.0%}"
+        )
+        print(
+            f"  Value-add (lift): Recall +{phase2_summary.recall_lift:+.0%}, F1 +{phase2_summary.f1_lift:+.0%}"
+        )
+        print(f"  Avg latency: {phase2_summary.avg_latency:.1f}s")
+
+        # Save Phase 2 results
+        import json as json_mod
+
+        phase2_out = output_dir_path / "phase2-results.json"
+        phase2_data = {
+            "summary": {
+                "total": phase2_summary.total_predictions,
+                "errors": phase2_summary.errors,
+                "with_context": {
+                    "recall": phase2_summary.avg_recall_with_context,
+                    "precision": phase2_summary.avg_precision_with_context,
+                    "f1": phase2_summary.avg_f1_with_context,
+                },
+                "no_context": {
+                    "recall": phase2_summary.avg_recall_no_context,
+                    "precision": phase2_summary.avg_precision_no_context,
+                    "f1": phase2_summary.avg_f1_no_context,
+                },
+                "lift": {"recall": phase2_summary.recall_lift, "f1": phase2_summary.f1_lift},
+                "avg_latency_s": phase2_summary.avg_latency,
+            },
+            "predictions": [
+                {
+                    "sha": r.sha,
+                    "date": r.date,
+                    "message": r.message[:100],
+                    "actual_files": r.actual_files[:20],
+                    "predicted_with_context": r.predicted_files_with_context[:20],
+                    "predicted_no_context": r.predicted_files_no_context[:20],
+                    "recall_with": r.recall_with_context,
+                    "precision_with": r.precision_with_context,
+                    "f1_with": r.f1_with_context,
+                    "recall_no": r.recall_no_context,
+                    "precision_no": r.precision_no_context,
+                    "f1_no": r.f1_no_context,
+                    "error": r.error,
+                }
+                for r in phase2_results
+            ],
+        }
+        output_dir_path.mkdir(parents=True, exist_ok=True)
+        phase2_out.write_text(json_mod.dumps(phase2_data, indent=2))
+        print(f"  Saved to: {phase2_out}")
+
     # Generate report
     print("\n=== Generating Report ===")
     cold_start = snapshots[0] if snapshots else None

@@ -49,9 +49,41 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
         cache_file = cache_dir / f"{sha}.json"
         if cache_file.exists():
             data = json.loads(cache_file.read_text())
-            return ModelSnapshot(
+            snap = ModelSnapshot(
                 **{k: v for k, v in data.items() if k in ModelSnapshot.__dataclass_fields__}
             )
+            # Try to load cached model YAML
+            model_cache = cache_dir / f"{sha}.model.yaml"
+            if model_cache.exists():
+                try:
+                    from architecture_model.core.parser import load_model
+
+                    snap.model = load_model(str(model_cache))
+                    # Restore file maps if available
+                    maps_file = cache_dir / f"{sha}.maps.json"
+                    if maps_file.exists():
+                        maps = json.loads(maps_file.read_text())
+                        snap.model._file_component_map = maps.get("file_component_map", {})
+                        snap.model._file_system_map = maps.get("file_system_map", {})
+                        snap._file_map = maps.get("file_component_map", {})
+                        snap._file_system_map = maps.get("file_system_map", {})
+                    # Restore sub-model data for Phase 2 context
+                    sub_file = cache_dir / f"{sha}.sub_models.json"
+                    if sub_file.exists():
+                        snap.model._sub_models_data = json.loads(sub_file.read_text())
+                    # Restore import graph if available
+                    graph_file = cache_dir / f"{sha}.import_graph.json"
+                    if graph_file.exists():
+                        graph_data = json.loads(graph_file.read_text())
+                        snap.model._import_graph = {
+                            k: set(v) for k, v in graph_data.get("forward", {}).items()
+                        }
+                        snap.model._reverse_import_graph = {
+                            k: set(v) for k, v in graph_data.get("reverse", {}).items()
+                        }
+                except Exception:
+                    pass
+            return snap
 
     t0 = time.monotonic()
     snapshot = ModelSnapshot(sha=sha, date="")
@@ -215,5 +247,77 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / f"{sha}.json"
         cache_file.write_text(json.dumps(snapshot.to_dict(), indent=2))
+        # Cache model YAML for Phase 2
+        if snapshot.model:
+            model_path_out = cache_dir / f"{sha}.model.yaml"
+            # Find the model YAML that was written during extraction
+            for mp in [
+                repo_dir / ".architecture" / ".architecture-models" / ".architecture-model.yaml",
+                repo_dir / ".architecture-model.yaml",
+            ]:
+                if mp.exists():
+                    model_path_out.write_text(mp.read_text())
+                    break
+            # Cache file maps
+            maps_file = cache_dir / f"{sha}.maps.json"
+            maps_file.write_text(
+                json.dumps(
+                    {
+                        "file_component_map": file_component_map,
+                        "file_system_map": file_system_map,
+                    }
+                )
+            )
+            # Cache import graph for Phase 2 impact analysis
+            if import_graph or reverse_graph:
+                graph_file = cache_dir / f"{sha}.import_graph.json"
+                graph_file.write_text(
+                    json.dumps(
+                        {
+                            "forward": {k: list(v) for k, v in import_graph.items()},
+                            "reverse": {k: list(v) for k, v in reverse_graph.items()},
+                        }
+                    )
+                )
+            # Cache sub-model data for rich Phase 2 context
+            sub_models_dir = repo_dir / ".architecture" / ".architecture-models"
+            if sub_models_dir.exists():
+                from architecture_model.core.parser import load_model as _load_sub
+
+                sub_data = {}
+                for subdir in sub_models_dir.iterdir():
+                    if not subdir.is_dir():
+                        continue
+                    sub_model_file = subdir / ".architecture-model.yaml"
+                    if not sub_model_file.exists():
+                        continue
+                    try:
+                        sm = _load_sub(str(sub_model_file))
+                        sub_data[subdir.name] = {
+                            "components": [
+                                {
+                                    "id": c.id,
+                                    "name": c.name,
+                                    "description": getattr(c, "description", "") or "",
+                                    "files": list(c.files or []),
+                                }
+                                for c in (sm.entities.components or [])
+                            ],
+                            "relationships": [
+                                {
+                                    "from": r.from_id,
+                                    "to": r.to_id,
+                                    "type": r.type.value
+                                    if hasattr(r.type, "value")
+                                    else str(r.type),
+                                }
+                                for r in (sm.relationships or [])
+                            ],
+                        }
+                    except Exception:
+                        pass
+                if sub_data:
+                    sub_file = cache_dir / f"{sha}.sub_models.json"
+                    sub_file.write_text(json.dumps(sub_data))
 
     return snapshot
