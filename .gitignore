@@ -11,3 +11,4 @@ build/
 venv/
 .worktrees/
 .architecture-archive/
+projects/
