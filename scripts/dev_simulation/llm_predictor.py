@@ -35,10 +35,17 @@ class PredictionResult:
     recall_no_context: float = 0.0
     precision_no_context: float = 0.0
     f1_no_context: float = 0.0
+    # With MCP tool (architect_slice) context
+    predicted_files_mcp: list[str] = field(default_factory=list)
+    recall_mcp: float = 0.0
+    precision_mcp: float = 0.0
+    f1_mcp: float = 0.0
     # Metadata
     error: str = ""
     latency_with_context: float = 0.0
     latency_no_context: float = 0.0
+    latency_mcp: float = 0.0
+    mcp_context_chars: int = 0
 
 
 def _call_relay(relay_url: str, content: str, system_prompt: str) -> str:
@@ -382,6 +389,142 @@ def predict_files(
             result.f1_no_context = f1
         except Exception as e:
             result.error = f"no_context: {e}"
+
+    return result
+
+
+def _get_mcp_context(repo_path: str, commit_message: str) -> str:
+    """Get context via architect_slice MCP tool, simulating real developer workflow.
+
+    Strategy (what a smart AI developer would do):
+    1. Call slice with focus='all' for overview
+    2. If the repo has sub-models, try to identify relevant system from message
+       and slice that specific sub-model for deeper context
+    """
+    import asyncio
+    import sys as _sys
+
+    _sys.path.insert(0, "/Users/baigm2/Documents/Projects/opencode-arch/src")
+    from opencode_arch.mcp.tools.slice import slice_context
+    from pathlib import Path as _Path
+
+    path = _Path(repo_path)
+    parts = []
+
+    # Step 1: Get full model overview
+    overview = asyncio.run(slice_context(str(path), focus="all", budget=4000, detail="full"))
+    parts.append(overview)
+
+    # Step 2: Try to slice relevant sub-model based on commit keywords
+    sub_models_dir = path / ".architecture" / ".architecture-models"
+    if not sub_models_dir.exists():
+        sub_models_dir = path / ".architecture-models"
+    if sub_models_dir.exists():
+        msg_lower = commit_message.lower()
+        # Map keywords to sub-model directories
+        # Try direct keyword match first, then broader heuristics
+        matched_subdir = None
+        for subdir in sub_models_dir.iterdir():
+            if not subdir.is_dir():
+                continue
+            sub_model = subdir / ".architecture-model.yaml"
+            if not sub_model.exists():
+                continue
+            # Check if system name keywords appear in commit message
+            sys_name = subdir.name.replace("-", " ")
+            keywords = sys_name.split()
+            if any(kw in msg_lower for kw in keywords if len(kw) > 3):
+                matched_subdir = subdir
+                break
+
+        # If no direct match, use broader heuristics
+        if not matched_subdir:
+            # Common domain mappings
+            domain_map = {
+                "layouts-widgets-core": [
+                    "screen",
+                    "layout",
+                    "scroll",
+                    "compositor",
+                    "pilot",
+                    "app",
+                    "mount",
+                    "compose",
+                ],
+                "widgets-widgets": [
+                    "widget",
+                    "input",
+                    "button",
+                    "text_area",
+                    "textarea",
+                    "select",
+                    "tree",
+                    "table",
+                    "list",
+                ],
+                "css-css": ["css", "style", "theme", "color", "border", "padding", "margin"],
+                "css-core": ["scalar", "token", "parse"],
+                "infrastructure": ["key", "event", "message", "timer", "worker", "binding"],
+                "renderables": ["render", "content", "opacity", "blend"],
+                "drivers": ["driver", "terminal", "xterm", "ansi"],
+                "document": ["markdown", "document", "dom"],
+            }
+            for sys_dir, keywords in domain_map.items():
+                if any(kw in msg_lower for kw in keywords):
+                    candidate = sub_models_dir / sys_dir
+                    if candidate.exists() and (candidate / ".architecture-model.yaml").exists():
+                        matched_subdir = candidate
+                        break
+
+        if matched_subdir:
+            sub_slice = asyncio.run(
+                slice_context(str(matched_subdir), focus="all", budget=4000, detail="full")
+            )
+            parts.append(f"\n## Focused System: {matched_subdir.name}\n{sub_slice}")
+
+    return "\n".join(parts)
+
+
+def predict_files_mcp(
+    commit: Any,
+    repo_path: str,
+    relay_url: str = "http://localhost:8400",
+) -> PredictionResult:
+    """Predict files using MCP architect_slice tool as context source.
+
+    This simulates how a real AI developer would use the MCP tools:
+    1. Call architect_slice to get architecture context
+    2. Use that context + commit message to predict file changes
+    """
+    result = PredictionResult(
+        sha=commit.sha,
+        date=commit.date,
+        message=commit.message,
+        actual_files=commit.files_changed or [],
+    )
+
+    if not commit.message or not result.actual_files:
+        result.error = "No message or no files"
+        return result
+
+    try:
+        # Get MCP context
+        mcp_context = _get_mcp_context(repo_path, commit.message)
+        result.mcp_context_chars = len(mcp_context)
+
+        prompt = PROMPT_WITH_CONTEXT.format(context=mcp_context, message=commit.message)
+
+        t0 = time.monotonic()
+        response = _call_relay(relay_url, prompt, SYSTEM_PROMPT)
+        result.latency_mcp = time.monotonic() - t0
+
+        result.predicted_files_mcp = _parse_file_list(response)
+        r, p, f1 = _compute_metrics(result.predicted_files_mcp, result.actual_files)
+        result.recall_mcp = r
+        result.precision_mcp = p
+        result.f1_mcp = f1
+    except Exception as e:
+        result.error = f"mcp: {e}"
 
     return result
 
