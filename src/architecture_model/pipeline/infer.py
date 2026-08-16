@@ -33,6 +33,56 @@ from .corrections import get_corrections_for_stage
 _LARGE_REPO_MODULE_THRESHOLD = 50
 
 
+def _infer_fallback_capabilities(modules: list, existing: list) -> list:
+    """Fallback: if no capabilities found, treat packages with >3 public functions as capabilities."""
+    if existing:
+        return []
+
+    from architecture_model.pipeline.infer_types import InferredCapability
+
+    # Group by top-level package
+    package_functions: dict[str, int] = {}
+    for mod in modules:
+        # Get top-level package from module path
+        parts = getattr(mod, "file", "") if isinstance(mod, str) else str(getattr(mod, "file", ""))
+        path_parts = parts.replace("\\", "/").split("/")
+        # Find src-relative package name
+        pkg = None
+        for i, p in enumerate(path_parts):
+            if p == "src" and i + 1 < len(path_parts):
+                pkg = path_parts[i + 1] if i + 2 < len(path_parts) else path_parts[i + 1]
+                if i + 2 < len(path_parts):
+                    pkg = path_parts[i + 2]
+                break
+        if not pkg or pkg.startswith("_"):
+            continue
+
+        # Count public functions
+        funcs = getattr(mod, "functions", [])
+        public = [
+            f
+            for f in funcs
+            if not (getattr(f, "name", "") or f if isinstance(f, str) else "").startswith("_")
+        ]
+        package_functions[pkg] = package_functions.get(pkg, 0) + len(public)
+
+    # Create capability per package with >3 public functions
+    caps = []
+    for pkg, count in sorted(package_functions.items(), key=lambda x: -x[1]):
+        if count > 3:
+            cap_id = f"CAP-{pkg.replace('_', '-')}"
+            caps.append(
+                InferredCapability(
+                    id=cap_id,
+                    name=f"Provide {pkg.replace('_', ' ').title()} functionality",
+                    description=f"Package '{pkg}' exposes {count} public functions",
+                    evidence_source=f"fallback:package:{pkg}",
+                )
+            )
+
+    return caps
+
+
 class InferStage:
     """Infers capabilities, actors, and behaviors from observed Inventory."""
 
@@ -153,6 +203,11 @@ class InferStage:
                         priority="informational",
                     )
                 )
+
+        # Fallback if no capabilities from primary strategies
+        if not capabilities:
+            fallback_caps = _infer_fallback_capabilities(inventory.modules, capabilities)
+            capabilities.extend(fallback_caps)
 
         result = InferenceResult(
             capabilities=capabilities,

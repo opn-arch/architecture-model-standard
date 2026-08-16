@@ -3,6 +3,7 @@
 Produces relationships: realizes (component→capability), depends-on (component→component),
 contains (layer→component), exposes (component→interface from routes).
 """
+
 from __future__ import annotations
 
 import time
@@ -20,6 +21,19 @@ from .protocol import (
     Uncertainty,
 )
 from .relate_types import DerivedRelationship, RelateResult
+
+
+UTILITY_PATTERNS = {"utils", "helpers", "common", "shared", "lib", "support", "base"}
+
+
+def _pick_relationship_type(target_layer: str, target_name: str) -> str:
+    """Choose 'uses' for utility/infrastructure targets, 'depends-on' otherwise."""
+    if target_layer in ("infrastructure", "utility"):
+        return "uses"
+    name_lower = target_name.lower().replace("-", "_").replace(" ", "_")
+    if any(pat in name_lower for pat in UTILITY_PATTERNS):
+        return "uses"
+    return "depends-on"
 
 
 class RelateStage:
@@ -48,15 +62,18 @@ class RelateStage:
         # 1. realizes: component → capability (from allocation)
         for comp in allocation.components:
             if comp.capability_id:
-                relationships.append(DerivedRelationship(
-                    from_id=comp.id,
-                    to_id=comp.capability_id,
-                    rel_type="realizes",
-                    evidence_source="allocation",
-                ))
+                relationships.append(
+                    DerivedRelationship(
+                        from_id=comp.id,
+                        to_id=comp.capability_id,
+                        rel_type="realizes",
+                        evidence_source="allocation",
+                    )
+                )
 
-        # 2. depends-on: component → component (from import edges)
+        # 2. depends-on/uses: component → component (from import edges)
         file_to_comp = _build_file_map(allocation.components)
+        comp_by_id = {comp.id: comp for comp in allocation.components}
         dep_pairs: set[tuple[str, str]] = set()
         for mod in inventory.modules:
             src_comp = file_to_comp.get(mod.path)
@@ -71,10 +88,18 @@ class RelateStage:
                             dep_pairs.add((src_comp, tgt_comp))
 
         for src, tgt in dep_pairs:
-            relationships.append(DerivedRelationship(
-                from_id=src, to_id=tgt, rel_type="depends-on",
-                evidence_source="import",
-            ))
+            tgt_alloc = comp_by_id.get(tgt)
+            tgt_layer = getattr(tgt_alloc, "layer", "") or "" if tgt_alloc else ""
+            tgt_name = getattr(tgt_alloc, "name", "") or "" if tgt_alloc else ""
+            rel_type = _pick_relationship_type(tgt_layer, tgt_name)
+            relationships.append(
+                DerivedRelationship(
+                    from_id=src,
+                    to_id=tgt,
+                    rel_type=rel_type,
+                    evidence_source="import",
+                )
+            )
 
         # 3. contains: layer → component
         layers_seen: dict[str, list[str]] = defaultdict(list)
@@ -85,10 +110,14 @@ class RelateStage:
         for layer, comp_ids in layers_seen.items():
             layer_id = f"LAYER-{layer.upper()}"
             for comp_id in comp_ids:
-                relationships.append(DerivedRelationship(
-                    from_id=layer_id, to_id=comp_id, rel_type="contains",
-                    evidence_source="layer_inference",
-                ))
+                relationships.append(
+                    DerivedRelationship(
+                        from_id=layer_id,
+                        to_id=comp_id,
+                        rel_type="contains",
+                        evidence_source="layer_inference",
+                    )
+                )
 
         # 4. exposes: component → interface (from routes)
         for route in inventory.routes:
@@ -96,10 +125,14 @@ class RelateStage:
             comp_id = file_to_comp.get(route_file)
             if comp_id:
                 iface_id = f"IF-{route.method}-{route.path.strip('/').replace('/', '-')}"
-                relationships.append(DerivedRelationship(
-                    from_id=comp_id, to_id=iface_id, rel_type="exposes",
-                    evidence_source="route",
-                ))
+                relationships.append(
+                    DerivedRelationship(
+                        from_id=comp_id,
+                        to_id=iface_id,
+                        rel_type="exposes",
+                        evidence_source="route",
+                    )
+                )
 
         # 5. constrained-by: component → constraint
         for i, con in enumerate(inventory.constraints):
@@ -107,28 +140,35 @@ class RelateStage:
             # Technology constraints apply to all components
             if con.constraint_type == "TECHNOLOGY":
                 for comp in allocation.components:
-                    relationships.append(DerivedRelationship(
-                        from_id=comp.id,
-                        to_id=con_id,
-                        rel_type="constrained-by",
-                        evidence_source="constraint_detection",
-                    ))
+                    relationships.append(
+                        DerivedRelationship(
+                            from_id=comp.id,
+                            to_id=con_id,
+                            rel_type="constrained-by",
+                            evidence_source="constraint_detection",
+                        )
+                    )
             else:
                 # File-specific constraints — find which component owns the file
                 comp_id = file_to_comp.get(Path(con.source))
                 if comp_id:
-                    relationships.append(DerivedRelationship(
-                        from_id=comp_id,
-                        to_id=con_id,
-                        rel_type="constrained-by",
-                        evidence_source="constraint_detection",
-                    ))
+                    relationships.append(
+                        DerivedRelationship(
+                            from_id=comp_id,
+                            to_id=con_id,
+                            rel_type="constrained-by",
+                            evidence_source="constraint_detection",
+                        )
+                    )
 
         result = RelateResult(
             relationships=relationships,
             layers=[
-                {"id": f"LAYER-{layer.upper()}", "name": layer.title(),
-                 "description": f"Components in the {layer} architectural tier"}
+                {
+                    "id": f"LAYER-{layer.upper()}",
+                    "name": layer.title(),
+                    "description": f"Components in the {layer} architectural tier",
+                }
                 for layer in sorted(layers_seen.keys())
             ],
         )
@@ -138,8 +178,12 @@ class RelateStage:
             sub_scores={
                 "relationship_count": float(len(relationships)),
                 "realizes_count": float(sum(1 for r in relationships if r.rel_type == "realizes")),
-                "depends_on_count": float(sum(1 for r in relationships if r.rel_type == "depends-on")),
-                "constrained_by_count": float(sum(1 for r in relationships if r.rel_type == "constrained-by")),
+                "depends_on_count": float(
+                    sum(1 for r in relationships if r.rel_type == "depends-on")
+                ),
+                "constrained_by_count": float(
+                    sum(1 for r in relationships if r.rel_type == "constrained-by")
+                ),
                 "layer_count": float(len(layers_seen)),
             },
             thresholds={},

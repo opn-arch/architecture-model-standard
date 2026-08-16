@@ -518,6 +518,158 @@ entities:
     status: ACTIVE
     description: Automated pipeline running validation and doc generation on commits
 
+  requirements:
+  - id: REQ-1
+    name: Model validation score threshold
+    status: ACTIVE
+    text: Model must score >= 80 on validation
+    priority: must
+  - id: REQ-2
+    name: Zero errors on valid models
+    status: ACTIVE
+    text: Valid models must produce zero validation errors
+    priority: must
+  - id: REQ-3
+    name: Hierarchy consistency
+    status: ACTIVE
+    text: parent_id/children must be bidirectionally consistent
+    priority: must
+  - id: REQ-4
+    name: Entity type coverage
+    status: ACTIVE
+    text: "Include entities: capabilities, components with signatures, constants, symbols, and files"
+    priority: must
+  - id: REQ-5
+    name: Relationship population
+    status: ACTIVE
+    text: Include relationships (realizes, depends-on, contains at minimum)
+    priority: must
+  - id: REQ-6
+    name: Deterministic pipeline
+    status: ACTIVE
+    text: Same input must produce same output (no randomness in stage execution)
+    priority: must
+  - id: REQ-7
+    name: Pipeline stage independence
+    status: ACTIVE
+    text: Each pipeline stage must be independently runnable with cached predecessors
+    priority: should
+  - id: REQ-8
+    name: Complete file scanning
+    status: ACTIVE
+    text: Manifest must scan all non-trivial Python files in the repository
+    priority: must
+  - id: REQ-9
+    name: Import edge resolution
+    status: ACTIVE
+    text: All resolvable imports must produce edges in the manifest
+    priority: must
+  - id: REQ-10
+    name: Multi-language scanning
+    status: ACTIVE
+    text: Support Python, TypeScript, and Kotlin source scanning
+    priority: should
+  - id: REQ-11
+    name: Live artifact regeneration
+    status: ACTIVE
+    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs) must regenerate in <1s without LLM
+    priority: must
+  - id: REQ-12
+    name: SE doc completeness
+    status: ACTIVE
+    text: Generate at minimum functional analysis, logical architecture, use cases, and requirements analysis
+    priority: must
+  - id: REQ-13
+    name: User edit preservation
+    status: ACTIVE
+    text: Regeneration must preserve user-edited sections in SE docs
+    priority: should
+  - id: REQ-14
+    name: Requirements-to-model parsing
+    status: ACTIVE
+    text: Parse markdown requirements document into concept-phase ArchitectureModel
+    priority: must
+  - id: REQ-15
+    name: Regen score accuracy
+    status: ACTIVE
+    text: Regen readiness score must correlate with actual regeneration success rate
+    priority: should
+  - id: REQ-16
+    name: Per-component readiness
+    status: ACTIVE
+    text: Provide per-component regen score with actionable blockers
+    priority: must
+  - id: REQ-17
+    name: Test preservation
+    status: ACTIVE
+    text: All existing tests must continue to pass after changes
+    priority: must
+  - id: REQ-18
+    name: Behavior filtering cap
+    status: ACTIVE
+    text: Maximum 40 behaviors per component to prevent orphan explosion
+    priority: must
+  - id: REQ-19
+    name: Boundary coherence
+    status: ACTIVE
+    text: Components should have >70% intra-component imports vs cross-boundary
+    priority: should
+  - id: REQ-20
+    name: Token-efficient output
+    status: ACTIVE
+    text: Model slice output must fit within 4000 tokens for AI consumption
+    priority: must
+  - id: REQ-21
+    name: Self-documenting artifacts
+    status: ACTIVE
+    text: Generated docs must be readable by both humans and AI without additional context
+    priority: must
+  - id: REQ-22
+    name: Hierarchical navigation
+    status: ACTIVE
+    text: Model must support parent/child component navigation for focused exploration
+    priority: must
+  - id: REQ-23
+    name: Graceful degradation
+    status: ACTIVE
+    text: Pipeline must produce partial results on failure, not crash entirely
+    priority: must
+  - id: REQ-24
+    name: Uncertainty surfacing
+    status: ACTIVE
+    text: Ambiguous inferences must be flagged as uncertainties, not silently guessed
+    priority: should
+  - id: REQ-25
+    name: Large repo handling
+    status: ACTIVE
+    text: Repos with >200 files must complete pipeline in <60s without LLM
+    priority: should
+  - id: REQ-26
+    name: MCP tool compatibility
+    status: ACTIVE
+    text: All model operations must be invocable via MCP tools (architect_*)
+    priority: must
+  - id: REQ-27
+    name: YAML round-trip fidelity
+    status: ACTIVE
+    text: Load/dump cycle must not lose any data or change ordering
+    priority: must
+  - id: REQ-28
+    name: Schema backward compatibility
+    status: ACTIVE
+    text: New schema versions must load models from older schema versions
+    priority: should
+  - id: REQ-29
+    name: Flat-file export completeness
+    status: ACTIVE
+    text: Export must include model, sub-models, docs, manifests, and diagrams
+    priority: should
+  - id: REQ-30
+    name: Offline AI usability
+    status: ACTIVE
+    text: Exported package must be self-contained for token-limited AI environments
+    priority: should
+
   systems:
   - id: SYS-1
     name: Model Foundation
@@ -764,3 +916,124 @@ relationships:
 - type: contains
   from_id: COMP-5
   to_id: COMP-5.2
+# Requirement satisfaction
+- type: satisfies
+  from_id: COMP-1.2
+  to_id: REQ-1
+  description: Validator enforces score >= 80
+- type: satisfies
+  from_id: COMP-1.2
+  to_id: REQ-2
+  description: Validator checks produce zero errors on valid models
+- type: satisfies
+  from_id: COMP-1.2
+  to_id: REQ-3
+  description: Hierarchy validator checks bidirectional consistency
+- type: satisfies
+  from_id: COMP-2.2
+  to_id: REQ-4
+  description: Infer stage produces all entity types
+- type: satisfies
+  from_id: COMP-2.3
+  to_id: REQ-5
+  description: Relate stage produces typed relationships
+- type: satisfies
+  from_id: COMP-2.1
+  to_id: REQ-6
+  description: Pipeline coordinator runs deterministically
+- type: satisfies
+  from_id: COMP-2.1
+  to_id: REQ-7
+  description: Stage caching enables independent runs
+- type: satisfies
+  from_id: COMP-3.1
+  to_id: REQ-8
+  description: Scanners cover all Python files
+- type: satisfies
+  from_id: COMP-3.2
+  to_id: REQ-9
+  description: Graph analysis resolves imports to edges
+- type: satisfies
+  from_id: COMP-3.1
+  to_id: REQ-10
+  description: Multi-scanner supports Python/TS/Kotlin
+- type: satisfies
+  from_id: COMP-4.1
+  to_id: REQ-11
+  description: Template-based generators run in <1s
+- type: satisfies
+  from_id: COMP-4.2
+  to_id: REQ-12
+  description: SE suite generates all required doc types
+- type: satisfies
+  from_id: COMP-4.2
+  to_id: REQ-13
+  description: SE generator preserves user edits on regen
+- type: satisfies
+  from_id: COMP-7
+  to_id: REQ-14
+  description: Authoring parser handles markdown requirements
+- type: satisfies
+  from_id: COMP-1.5
+  to_id: REQ-15
+  description: Regen readiness scoring
+- type: satisfies
+  from_id: COMP-1.5
+  to_id: REQ-16
+  description: Per-component readiness with blockers
+- type: satisfies
+  from_id: COMP-2.4
+  to_id: REQ-17
+  description: Validate stage ensures test preservation
+- type: satisfies
+  from_id: COMP-5.1
+  to_id: REQ-18
+  description: Enrichment applies behavior cap at 40
+- type: satisfies
+  from_id: COMP-3.3
+  to_id: REQ-19
+  description: Grouping optimizes boundary coherence
+- type: satisfies
+  from_id: COMP-1.4
+  to_id: REQ-20
+  description: Slicer enforces token budget
+- type: satisfies
+  from_id: COMP-4
+  to_id: REQ-21
+  description: All docs are self-documenting markdown
+- type: satisfies
+  from_id: COMP-1.1
+  to_id: REQ-22
+  description: Type system supports parent_id/children
+- type: satisfies
+  from_id: COMP-2.1
+  to_id: REQ-23
+  description: Coordinator catches stage failures gracefully
+- type: satisfies
+  from_id: COMP-2.2
+  to_id: REQ-24
+  description: Infer stage surfaces uncertainties
+- type: satisfies
+  from_id: COMP-2
+  to_id: REQ-25
+  description: Pipeline completes large repos without LLM
+- type: satisfies
+  from_id: COMP-8
+  to_id: REQ-26
+  description: CLI exposes all operations for MCP wrapping
+- type: satisfies
+  from_id: COMP-1.3
+  to_id: REQ-27
+  description: Parser ensures round-trip fidelity
+- type: satisfies
+  from_id: COMP-1.3
+  to_id: REQ-28
+  description: Parser handles old schema versions
+- type: satisfies
+  from_id: COMP-10
+  to_id: REQ-29
+  description: Export includes all artifact types
+- type: satisfies
+  from_id: COMP-10
+  to_id: REQ-30
+  description: Export is self-contained for AI
