@@ -131,7 +131,15 @@ def _merge_coupled_systems(
         # Merge b into a
         sa.files.extend(sb.files)
         sa.component_ids.extend(sb.component_ids)
-        sa.name = f"{sa.name} + {sb.name}"
+        # Keep merged name concise for MCP routing
+        merge_count = getattr(sa, "_merge_count", 1) + 1
+        sa._merge_count = merge_count
+        if merge_count == 2:
+            sa.name = f"{sa.name} + {sb.name}"
+        else:
+            # After 2+ merges, use primary name + count
+            primary = sa.name.split(" + ")[0]
+            sa.name = f"{primary} (+ {merge_count - 1} related)"
         sa.complexity = float(len(sa.files))
         merged_ids.add(b)
 

@@ -40,6 +40,10 @@ class PredictionResult:
     recall_mcp: float = 0.0
     precision_mcp: float = 0.0
     f1_mcp: float = 0.0
+    # Per-type metrics (with context)
+    source_recall: float = 0.0
+    test_recall: float = 0.0
+    doc_recall: float = 0.0
     # Metadata
     error: str = ""
     latency_with_context: float = 0.0
@@ -113,6 +117,43 @@ def _compute_metrics(predicted: list[str], actual: list[str]) -> tuple[float, fl
     precision = tp / len(pred_set) if pred_set else 0.0
     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
     return recall, precision, f1
+
+
+def _classify_file(path: str) -> str:
+    """Classify a file as 'source', 'test', or 'doc'."""
+    from pathlib import Path as _P
+
+    parts = _P(path).parts
+    stem = _P(path).stem
+    # Test files
+    if any(p in ("tests", "test", "testing") for p in parts[:-1]):
+        return "test"
+    if stem.startswith("test_") or stem.endswith("_test") or stem == "conftest":
+        return "test"
+    # Doc files
+    if any(p in ("docs", "doc", "documentation") for p in parts):
+        return "doc"
+    if path.endswith((".rst", ".md", ".txt")) and not path.endswith("requirements.txt"):
+        return "doc"
+    return "source"
+
+
+def _compute_typed_recall(predicted: list[str], actual: list[str]) -> tuple[float, float, float]:
+    """Compute recall separately for source, test, and doc files.
+
+    Returns: (source_recall, test_recall, doc_recall)
+    """
+    pred_set = set(predicted)
+    source_actual = [f for f in actual if _classify_file(f) == "source"]
+    test_actual = [f for f in actual if _classify_file(f) == "test"]
+    doc_actual = [f for f in actual if _classify_file(f) == "doc"]
+
+    def _recall(actual_subset: list[str]) -> float:
+        if not actual_subset:
+            return 0.0
+        return len(pred_set & set(actual_subset)) / len(actual_subset)
+
+    return _recall(source_actual), _recall(test_actual), _recall(doc_actual)
 
 
 def _build_architecture_context(model: Any, commit_files: list[str]) -> str:
@@ -224,25 +265,62 @@ def _build_architecture_context(model: Any, commit_files: list[str]) -> str:
             lines.append(f"  {r.from_id} --{rtype}--> {r.to_id}")
         lines.append("")
 
+    # Test mapping (source → test files that import it)
+    test_map = getattr(model, "_test_map", {})
+    if test_map:
+        lines.append("## Test Mapping (source file → test files that import it)")
+        lines.append("(If you change a source file, these tests likely need updating)")
+        shown = 0
+        for src_file in sorted(test_map.keys()):
+            tests = test_map[src_file]
+            tests_str = ", ".join(sorted(tests)[:5])
+            if len(tests) > 5:
+                tests_str += f" +{len(tests) - 5} more"
+            lines.append(f"  {src_file} → {tests_str}")
+            shown += 1
+            if shown >= 80:
+                remaining = len(test_map) - shown
+                if remaining > 0:
+                    lines.append(f"  ... +{remaining} more source→test mappings")
+                break
+        lines.append("")
+
     return "\n".join(lines)
 
 
-def _build_file_list(model: Any) -> str:
-    """Build a flat file list from the model (for no-context baseline).
+def _build_file_list(model: Any, repo_path: str = "") -> str:
+    """Build a flat file list (for no-context baseline).
 
-    Intentionally minimal — just the file paths, no architecture structure.
+    If repo_path is provided, scans the actual filesystem for ALL files.
+    Otherwise falls back to model files only.
     This is the 'without architecture' baseline to measure value-add.
     """
-    if not model:
-        return ""
+    all_files: set[str] = set()
 
-    all_files = set()
-    file_map = getattr(model, "_file_component_map", {})
-    all_files.update(file_map.keys())
-    if not all_files:
-        for comp in model.entities.components or []:
-            for f in comp.files or []:
-                all_files.add(str(f))
+    if repo_path:
+        from pathlib import Path as _P
+
+        repo = _P(repo_path)
+        for f in repo.rglob("*.py"):
+            parts = f.parts
+            if any(
+                p in parts
+                for p in (".git", "__pycache__", ".tox", "node_modules", ".benchmark-cache")
+            ):
+                continue
+            try:
+                rel = str(f.relative_to(repo))
+                all_files.add(rel)
+            except ValueError:
+                pass
+
+    if not all_files and model:
+        file_map = getattr(model, "_file_component_map", {})
+        all_files.update(file_map.keys())
+        if not all_files:
+            for comp in model.entities.components or []:
+                for f in comp.files or []:
+                    all_files.add(str(f))
 
     if not all_files:
         return ""
@@ -256,10 +334,11 @@ def _build_file_list(model: Any) -> str:
     return "\n".join(lines)
 
 
-def is_predictable_commit(message: str) -> bool:
+def is_predictable_commit(message: str, files_changed: list[str] | None = None) -> bool:
     """Filter out commits that are inherently unpredictable from their message alone.
 
     Unpredictable = vague messages where no model could help.
+    Also filters doc-only and CI-only commits (architecture can't help with those).
     Returns True if the commit message has enough info for meaningful prediction.
     """
     msg = message.lower().strip()
@@ -287,6 +366,26 @@ def is_predictable_commit(message: str) -> bool:
     ]
     for p in vague_patterns:
         if p in msg:
+            return False
+
+    # If we have file info, filter commits that architecture can't help with
+    if files_changed:
+        has_source = any(
+            f.endswith(".py")
+            and "/tests/" not in f
+            and "/test/" not in f
+            and not f.startswith("docs/")
+            and not f.startswith("doc/")
+            and not f.endswith(".txt")
+            and not f.endswith(".rst")
+            and not f.endswith(".yml")
+            and not f.endswith(".yaml")
+            and not f.endswith(".cfg")
+            and not f.endswith(".toml")
+            for f in files_changed
+        )
+        if not has_source:
+            # Doc-only, CI-only, or test-only commit — architecture model can't help
             return False
 
     return True
@@ -332,6 +431,7 @@ def predict_files(
     model: Any,
     relay_url: str = "http://localhost:8400",
     skip_baseline: bool = False,
+    repo_path: str = "",
 ) -> PredictionResult:
     """Predict which files a commit would change, with and without architecture context.
 
@@ -368,6 +468,11 @@ def predict_files(
         result.recall_with_context = r
         result.precision_with_context = p
         result.f1_with_context = f1
+        # Per-type breakdown
+        sr, tr, dr = _compute_typed_recall(result.predicted_files_with_context, result.actual_files)
+        result.source_recall = sr
+        result.test_recall = tr
+        result.doc_recall = dr
     except Exception as e:
         result.error = f"with_context: {e}"
         return result
@@ -375,7 +480,7 @@ def predict_files(
     # Prediction WITHOUT context (baseline)
     if not skip_baseline:
         try:
-            file_list = _build_file_list(model)
+            file_list = _build_file_list(model, repo_path=repo_path)
             prompt = PROMPT_NO_CONTEXT.format(file_list=file_list, message=commit.message)
 
             t0 = time.monotonic()
@@ -551,7 +656,7 @@ def run_phase2(
         # Skip commits with no files or trivial messages
         if not getattr(commit, "files_changed", None):
             continue
-        if not is_predictable_commit(commit.message):
+        if not is_predictable_commit(commit.message, getattr(commit, "files_changed", None)):
             continue
 
         print(
@@ -587,6 +692,10 @@ class Phase2Summary:
     avg_recall_no_context: float = 0.0
     avg_precision_no_context: float = 0.0
     avg_f1_no_context: float = 0.0
+    # Per-type (with context)
+    avg_source_recall: float = 0.0
+    avg_test_recall: float = 0.0
+    avg_doc_recall: float = 0.0
     # Value-add
     recall_lift: float = 0.0  # with_context - no_context
     f1_lift: float = 0.0
@@ -611,6 +720,11 @@ def summarize_phase2(results: list[PredictionResult]) -> Phase2Summary:
     summary.avg_recall_no_context = sum(r.recall_no_context for r in valid) / len(valid)
     summary.avg_precision_no_context = sum(r.precision_no_context for r in valid) / len(valid)
     summary.avg_f1_no_context = sum(r.f1_no_context for r in valid) / len(valid)
+
+    # Per-type recall
+    summary.avg_source_recall = sum(r.source_recall for r in valid) / len(valid)
+    summary.avg_test_recall = sum(r.test_recall for r in valid) / len(valid)
+    summary.avg_doc_recall = sum(r.doc_recall for r in valid) / len(valid)
 
     summary.recall_lift = summary.avg_recall_with_context - summary.avg_recall_no_context
     summary.f1_lift = summary.avg_f1_with_context - summary.avg_f1_no_context

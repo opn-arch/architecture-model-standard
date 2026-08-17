@@ -1,6 +1,8 @@
 """Emit pipeline stage — writes final SoS artifact structure to disk."""
+
 from __future__ import annotations
 
+import json
 import re
 import time
 from pathlib import Path
@@ -26,6 +28,57 @@ def _write_file(path: Path, content: str, result: EmitResult) -> None:
     path.write_text(content)
     result.written_paths.append(str(path))
     result.total_bytes += len(content.encode("utf-8"))
+
+
+_TEST_DIR_MARKERS = frozenset({"tests", "test", "testing", "typing_tests"})
+
+
+def _is_test_path(path_str: str) -> bool:
+    """Check if a file path is a test file based on directory or filename."""
+    parts = Path(path_str).parts
+    # Directory-based: any parent is a test dir
+    if _TEST_DIR_MARKERS & set(parts[:-1]):
+        return True
+    # Filename-based: test_*.py or *_test.py
+    stem = Path(path_str).stem
+    return stem.startswith("test_") or stem.endswith("_test") or stem == "conftest"
+
+
+def _build_test_map(ctx: PipelineContext) -> dict[str, list[str]]:
+    """Build source→test reverse mapping from observe stage import edges.
+
+    For each test file that imports a source file, record the reverse:
+    source_file → [test files that import it].
+    """
+    observe_result = ctx.get("observe")
+    if not observe_result or not observe_result.output:
+        return {}
+
+    source_to_tests: dict[str, list[str]] = {}
+    for edge in observe_result.output.edges:
+        src_str = str(edge.source)  # The file doing the importing
+        tgt_str = str(edge.target)  # The file being imported
+
+        # If importer is a test file and target is NOT a test file → source←test mapping
+        if _is_test_path(src_str) and not _is_test_path(tgt_str):
+            source_to_tests.setdefault(tgt_str, []).append(src_str)
+
+    return source_to_tests
+
+
+def _build_component_test_map(
+    test_map: dict[str, list[str]], file_component_map: dict[str, str]
+) -> dict[str, list[str]]:
+    """Aggregate test_map by component ID.
+
+    Returns: comp_id → [unique test files]
+    """
+    comp_tests: dict[str, set[str]] = {}
+    for source_file, test_files in test_map.items():
+        comp_id = file_component_map.get(source_file)
+        if comp_id:
+            comp_tests.setdefault(comp_id, set()).update(test_files)
+    return {k: sorted(v) for k, v in comp_tests.items()}
 
 
 class EmitStage:
@@ -58,6 +111,7 @@ class EmitStage:
         # 3. Write top-level reports (regenerate with accumulated LLM calls from ctx)
         if ctx.llm_calls:
             from architecture_model.pipeline.report import generate_pipeline_report
+
             all_results = {name: ctx.cache[name] for name in ctx.cache}
             fresh_report = generate_pipeline_report(
                 all_results, system_name=ctx.repo_path.name, llm_calls=ctx.llm_calls
@@ -91,6 +145,60 @@ class EmitStage:
         # 6. Generate SE docs (non-fatal)
         self._generate_se_docs(out_dir, synth, result, diagnostics)
 
+        # 7. Build and write test map (source→test reverse mapping)
+        try:
+            test_map = _build_test_map(ctx)
+            if test_map:
+                arch_dir = ctx.output_dir
+                arch_dir.mkdir(parents=True, exist_ok=True)
+                test_map_path = arch_dir / "test_map.json"
+                test_map_path.write_text(json.dumps(test_map, indent=2, sort_keys=True))
+                result.written_paths.append(str(test_map_path))
+                result.total_bytes += test_map_path.stat().st_size
+
+                # Build component→test aggregate if allocate data available
+                alloc_result = ctx.get("allocate") if ctx.has("allocate") else None
+                file_component_map: dict[str, str] = {}
+                if alloc_result and alloc_result.output:
+                    for comp in alloc_result.output.components:
+                        for f in comp.files:
+                            file_component_map[str(f)] = comp.id
+                # Also check synthesize sub-results for detailed file maps
+                for sm in synth.system_models:
+                    sub_results = getattr(sm, "stage_results", {})
+                    sub_alloc = sub_results.get("allocate")
+                    if sub_alloc and hasattr(sub_alloc, "output") and sub_alloc.output:
+                        for comp in sub_alloc.output.components:
+                            for f in comp.files:
+                                file_component_map[str(f)] = comp.id
+
+                if file_component_map:
+                    comp_test_map = _build_component_test_map(test_map, file_component_map)
+                    if comp_test_map:
+                        comp_map_path = arch_dir / "component_test_map.json"
+                        comp_map_path.write_text(
+                            json.dumps(comp_test_map, indent=2, sort_keys=True)
+                        )
+                        result.written_paths.append(str(comp_map_path))
+                        result.total_bytes += comp_map_path.stat().st_size
+
+                diagnostics.append(
+                    Diagnostic(
+                        severity="info",
+                        code="TEST_MAP_BUILT",
+                        message=f"Test map: {len(test_map)} source files → tests; "
+                        f"{len(file_component_map)} files mapped to components",
+                    )
+                )
+        except Exception as exc:
+            diagnostics.append(
+                Diagnostic(
+                    severity="warning",
+                    code="TEST_MAP_FAILED",
+                    message=f"Test map generation failed: {exc}",
+                )
+            )
+
         duration = int((time.monotonic() - t0) * 1000)
 
         if not result.written_paths:
@@ -118,7 +226,6 @@ class EmitStage:
             uncertainties=[],
             duration_ms=duration,
         )
-
 
     def _generate_se_docs(
         self,

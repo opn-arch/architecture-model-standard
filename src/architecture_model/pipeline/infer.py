@@ -319,10 +319,7 @@ _NON_SOURCE_DIRS = frozenset(
         "typing_tests",
         "benchmarks",
         "fixtures",
-        "tools",
         "_unicode_data",
-        "scripts",
-        "contrib",
     }
 )
 
@@ -332,8 +329,12 @@ def _is_non_source_module(mod: ModuleRecord) -> bool:
     name = mod.path.stem
     if name.startswith("test_") or name.endswith("_test"):
         return True
-    if name in ("__init__", "conftest", "setup"):
+    if name in ("conftest", "setup"):
         return True
+    if name == "__init__":
+        # Keep __init__.py if it has real code (functions, classes, or >10 lines)
+        has_code = bool(mod.functions or mod.classes) or mod.line_count > 10
+        return not has_code
     # Check if any parent directory is non-source
     parts = set(mod.path.parts[:-1])  # all dirs except filename
     return bool(parts & _NON_SOURCE_DIRS)

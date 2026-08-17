@@ -81,6 +81,12 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
                         snap.model._reverse_import_graph = {
                             k: set(v) for k, v in graph_data.get("reverse", {}).items()
                         }
+                    # Restore test map if available
+                    test_map_file = cache_dir / f"{sha}.test_map.json"
+                    if test_map_file.exists():
+                        snap.model._test_map = json.loads(test_map_file.read_text())
+                    else:
+                        snap.model._test_map = {}
                 except Exception:
                     pass
             return snap
@@ -131,6 +137,17 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
                 tgt = str(edge.target)
                 import_graph.setdefault(src, set()).add(tgt)
                 reverse_graph.setdefault(tgt, set()).add(src)
+
+        # Build test map (source → test files that import it)
+        test_map: dict[str, list[str]] = {}
+        if observe_result and hasattr(observe_result, "output") and observe_result.output:
+            from architecture_model.pipeline.emit import _is_test_path
+
+            for edge in observe_result.output.edges:
+                src_str = str(edge.source)
+                tgt_str = str(edge.target)
+                if _is_test_path(src_str) and not _is_test_path(tgt_str):
+                    test_map.setdefault(tgt_str, []).append(src_str)
 
         # Extract file→component mapping from allocate stage (top-level = systems)
         alloc_result = results.get("allocate")
@@ -186,6 +203,7 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
             model._file_system_map = file_system_map
             model._import_graph = import_graph
             model._reverse_import_graph = reverse_graph
+            model._test_map = test_map
             # Inject sub-model realizes relationships for regen scoring
             model._sub_realizes = realizes_pairs
             snapshot.model = model
@@ -210,20 +228,26 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
             )
             snapshot.relationship_count = len(model.relationships) if model.relationships else 0
 
-            # File coverage — gather from components and systems
-            model_files = set()
-            for entity in list(comps) + list(systems):
-                if hasattr(entity, "files"):
-                    model_files.update(entity.files or [])
+            # File coverage — use file_component_map (authoritative) or entity files
+            model_files = set(file_component_map.keys())
+            if not model_files:
+                for entity in list(comps) + list(systems):
+                    if hasattr(entity, "files"):
+                        model_files.update(str(f) for f in (entity.files or []))
 
-            # Count Python files in src/ (fallback to repo root)
+            # Count Python files in src/ (fallback to repo root), excluding test dirs
             src_dir = repo_dir / "src"
             if not src_dir.exists():
                 src_dir = repo_dir
             all_py = list(src_dir.rglob("*.py"))
             non_trivial = [f for f in all_py if f.stat().st_size > 50]
-            if non_trivial:
-                rel_files = {str(f.relative_to(repo_dir)) for f in non_trivial}
+            # Exclude test directories from denominator (model intentionally skips them)
+            _test_dirs = {"tests", "test", "testing", "typing_tests"}
+            source_py = [
+                f for f in non_trivial if not (_test_dirs & set(f.relative_to(repo_dir).parts[:-1]))
+            ]
+            if source_py:
+                rel_files = {str(f.relative_to(repo_dir)) for f in source_py}
                 covered = model_files & rel_files
                 snapshot.file_coverage = len(covered) / len(rel_files) * 100
 
@@ -279,6 +303,10 @@ def extract_at_checkpoint(repo_dir: Path, cache_dir: Path | None = None) -> Mode
                         }
                     )
                 )
+            # Cache test map for Phase 2 impact analysis
+            if test_map:
+                test_map_file = cache_dir / f"{sha}.test_map.json"
+                test_map_file.write_text(json.dumps(test_map))
             # Cache sub-model data for rich Phase 2 context
             sub_models_dir = repo_dir / ".architecture" / ".architecture-models"
             if sub_models_dir.exists():
