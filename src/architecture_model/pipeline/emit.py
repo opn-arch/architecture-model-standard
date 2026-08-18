@@ -265,7 +265,7 @@ class EmitStage:
         # 10. LLM review pass on generated artifacts
         try:
             if ctx.llm_callback is not None:
-                reviews = asyncio.run(self._run_llm_reviews(out_dir, ctx.llm_callback))
+                reviews = self._run_llm_reviews_sync(out_dir, ctx.llm_callback)
                 inlined = _inline_reviews(out_dir, reviews)
                 ctx._artifact_reviews = reviews
                 diagnostics.append(
@@ -392,15 +392,35 @@ class EmitStage:
                         )
                     )
 
+    def _run_llm_reviews_sync(self, out_dir: Path, llm_callback) -> list[ArtifactReview]:
+        """Synchronous wrapper for _run_llm_reviews that works in any context."""
+        coro = self._run_llm_reviews(out_dir, llm_callback)
+        try:
+            asyncio.get_running_loop()
+            # Already in an async context — run in a new thread with its own loop
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(asyncio.run, coro)
+                return future.result(timeout=300)
+        except RuntimeError:
+            # No running loop — safe to use asyncio.run directly
+            return asyncio.run(coro)
+
     async def _run_llm_reviews(self, out_dir: Path, llm_callback) -> list[ArtifactReview]:
         """Send each reviewable artifact to LLM for review."""
         _SKIP_NAMES = {"index.md", "pipeline-report.md", "lessons.md"}
         reviews: list[ArtifactReview] = []
 
-        # Collect reviewable files
+        # Only review top-level SE docs and the main model YAML (not per-subsystem copies)
         candidates: list[Path] = []
-        for pattern in ("**/*.md", "**/*.yaml"):
-            candidates.extend(out_dir.rglob(pattern.replace("**/", "")))
+        se_dir = out_dir / "docs" / "se"
+        if se_dir.exists():
+            candidates.extend(se_dir.glob("*.md"))
+        # Main model YAML
+        main_model = out_dir / ".architecture-model.yaml"
+        if main_model.exists():
+            candidates.append(main_model)
 
         for fpath in sorted(candidates):
             if fpath.name in _SKIP_NAMES:
@@ -423,6 +443,9 @@ class EmitStage:
             t0 = time.monotonic()
             response = await llm_callback("review", prompt, {"artifact": rel_path})
             duration_ms = int((time.monotonic() - t0) * 1000)
+
+            if not response:
+                continue
 
             # Parse response
             summary = ""

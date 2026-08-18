@@ -26,6 +26,9 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-1.1 (Type System) | depends-on | Pipeline coordination uses core types |
+| REQ-6 | satisfies | Pipeline coordinator runs deterministically |
+| REQ-7 | satisfies | Stage caching enables independent runs |
+| REQ-23 | satisfies | Coordinator catches stage failures gracefully |
 
 ### Dependents (incoming)
 

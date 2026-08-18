@@ -1,7 +1,7 @@
 # Pipeline Report: Scripts (dev_simulation)
 
-**Generated:** 2026-08-18T20:05:39Z
-**Total Duration:** 3875ms
+**Generated:** 2026-08-18T23:36:05Z
+**Total Duration:** 3929ms
 **Stages:** 7
 
 ## LLM Summary
@@ -12,7 +12,7 @@ No LLM calls — deterministic pipeline run
 
 | Stage | Score | Duration | LLM Calls |
 |-------|-------|----------|-----------|
-| observe | 100 | 3875ms | 0 |
+| observe | 100 | 3929ms | 0 |
 | infer | 100 | 0ms | 0 |
 | allocate | 50 | 0ms | 0 |
 | contract | 0 | 0ms | 0 |
@@ -21,7 +21,7 @@ No LLM calls — deterministic pipeline run
 | validate | 25 | 0ms | 0 |
 
 ## Stage: observe
-**Score:** 100 | **Duration:** 3875ms
+**Score:** 100 | **Duration:** 3929ms
 
 ### Deterministic Findings
 - Discovered 10 modules

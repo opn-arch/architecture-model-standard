@@ -25,6 +25,7 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-1.2 (Validation) | depends-on | Validate stage invokes core validator |
+| REQ-17 | satisfies | Validate stage ensures test preservation |
 
 ### Dependents (incoming)
 

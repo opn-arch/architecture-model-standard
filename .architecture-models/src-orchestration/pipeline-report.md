@@ -1,6 +1,6 @@
 # Pipeline Report: Src (orchestration)
 
-**Generated:** 2026-08-18T20:05:59Z
+**Generated:** 2026-08-18T23:36:24Z
 **Total Duration:** 3912ms
 **Stages:** 7
 
@@ -12,16 +12,16 @@ No LLM calls — deterministic pipeline run
 
 | Stage | Score | Duration | LLM Calls |
 |-------|-------|----------|-----------|
-| observe | 100 | 3911ms | 0 |
+| observe | 100 | 3910ms | 0 |
 | infer | 100 | 0ms | 0 |
 | allocate | 50 | 0ms | 0 |
 | contract | 0 | 0ms | 0 |
-| relate | 100 | 1ms | 0 |
+| relate | 100 | 2ms | 0 |
 | specify | 50 | 0ms | 0 |
 | validate | 25 | 0ms | 0 |
 
 ## Stage: observe
-**Score:** 100 | **Duration:** 3911ms
+**Score:** 100 | **Duration:** 3910ms
 
 ### Deterministic Findings
 - Discovered 13 modules
@@ -75,7 +75,7 @@ No LLM calls — deterministic pipeline run
 *(none)*
 
 ## Stage: relate
-**Score:** 100 | **Duration:** 1ms
+**Score:** 100 | **Duration:** 2ms
 
 ### Deterministic Findings
 - 36 depends-on relationships

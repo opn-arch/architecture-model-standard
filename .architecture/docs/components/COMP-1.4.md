@@ -29,6 +29,7 @@
 | CAP-7 | realizes | Model Operations implements slice and query |
 | CAP-8 | realizes | Model Operations implements model diff |
 | CAP-13 | realizes | Coverage/representativeness detects drift |
+| REQ-20 | satisfies | Slicer enforces token budget |
 
 ### Dependents (incoming)
 

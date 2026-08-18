@@ -2,10 +2,10 @@
 document: Use Cases
 system: System
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:03Z
+generated_at: 2026-08-18T23:36:29Z
 generator_version: 0.3.0
 model_hash: 41fb0d4bec16
-edition: 5
+edition: 7
 ---
 
 > **Model Completeness: F (14%)**
@@ -17,15 +17,11 @@ edition: 5
 > Run the extraction pipeline or manually add behaviors/interfaces/constraints.
 
 # Use Cases: System
-
 ## Actor-Goal Matrix
-
 | Actor | Goals |
 |-------|-------|
 | API Consumer | — |
-
 ## Use Case Specifications
-
 ### UC: GET 
 
 **ID:** BEH-1
@@ -105,9 +101,7 @@ edition: 5
 ### UC: CLI: Test Enriched Round Trip
 
 **ID:** BEH-20
-
 ## Use Case Diagram
-
 ```mermaid
 graph LR
     ACT-1(("API Consumer"))
@@ -127,3 +121,57 @@ graph LR
     BEH-14["GET password_reset/"]
     BEH-15["GET password_reset/done/"]
 ```
+
+---
+
+---
+
+## LLM Review
+
+*Reviewed: 2026-08-18T23:37:59.635738+00:00 | Duration: 7444ms*
+
+**Summary:** This use cases document is extremely incomplete (14% model completeness) and provides no meaningful architectural value — use cases are merely auto-extracted URL endpoints with no descriptions, preconditions, postconditions, flows, or actor-goal mappings.
+
+- The use cases are raw Django admin URL routes mechanically extracted rather than actual user-facing behaviors; they lack primary flows, alternative flows, preconditions, and postconditions that would make them useful specifications.
+- The Actor-Goal Matrix lists "API Consumer" with no goals ("—"), making the actor definition pointless and indicating the extraction pipeline failed to connect behaviors to actors.
+- The Mermaid diagram is truncated (only shows BEH-1 through BEH-15) and has no edges connecting the actor to any use case, rendering it non-functional.
+
+<details>
+<summary>Review details</summary>
+
+**Prompt sent (truncated):**
+```
+Review the following architecture artifact 'docs/se/use-cases.md'.
+Respond ONLY in this format:
+SUMMARY: <one paragraph overall assessment>
+COMMENT: <specific observation>
+COMMENT: <another observation>
+
+---
+---
+document: Use Cases
+system: System
+system_id: SYS-unknown
+generated_at: 2026-08-18T23:36:29Z
+generator_version: 0.3.0
+model_hash: 41fb0d4bec16
+edition: 7
+---
+
+> **Model Completeness: F (14%)**
+> Some sections may be empty due to missing model entities.
+> - No interfaces defined on compon
+```
+
+**Full LLM response:**
+```
+SUMMARY: This use cases document is extremely incomplete (14% model completeness) and provides no meaningful architectural value — use cases are merely auto-extracted URL endpoints with no descriptions, preconditions, postconditions, flows, or actor-goal mappings.
+
+COMMENT: The use cases are raw Django admin URL routes mechanically extracted rather than actual user-facing behaviors; they lack primary flows, alternative flows, preconditions, and postconditions that would make them useful specifications.
+
+COMMENT: The Actor-Goal Matrix lists "API Consumer" with no goals ("—"), making the actor definition pointless and indicating the extraction pipeline failed to connect behaviors to actors.
+
+COMMENT: The Mermaid diagram is truncated (only shows BEH-1 through BEH-15) and has no edges connecting the actor to any use case, rendering it non-functional.
+```
+
+</details>

@@ -268,113 +268,113 @@ relationships:
 - from: src-orchestration-COMP-13
   to: CAP-27
   type: realizes
-- from: src-orchestration-COMP-9
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-11
   to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-1
   type: depends-on
 - from: src-orchestration-COMP-9
   to: src-orchestration-COMP-12
   type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-9
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-6
   type: depends-on
-- from: src-orchestration-COMP-10
+- from: src-orchestration-COMP-11
   to: src-orchestration-COMP-3
   type: depends-on
 - from: src-orchestration-COMP-11
   to: src-orchestration-COMP-9
   type: depends-on
 - from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-8
-  type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-3
-  type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-8
-  type: depends-on
-- from: src-orchestration-COMP-9
-  to: src-orchestration-COMP-7
-  type: depends-on
-- from: src-orchestration-COMP-9
-  to: src-orchestration-COMP-2
-  type: depends-on
-- from: src-orchestration-COMP-9
-  to: src-orchestration-COMP-8
-  type: depends-on
-- from: src-orchestration-COMP-9
-  to: src-orchestration-COMP-3
-  type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-5
-  type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-5
-  type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-1
-  type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-6
-  type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-1
-  type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-6
+  to: src-orchestration-COMP-10
   type: depends-on
 - from: src-orchestration-COMP-10
   to: src-orchestration-COMP-13
   type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-10
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-2
   type: depends-on
-- from: src-orchestration-COMP-9
+- from: src-orchestration-COMP-10
   to: src-orchestration-COMP-5
   type: depends-on
-- from: src-orchestration-COMP-11
+- from: src-orchestration-COMP-9
   to: src-orchestration-COMP-13
   type: depends-on
 - from: src-orchestration-COMP-10
   to: src-orchestration-COMP-11
   type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-4
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-5
   type: depends-on
 - from: src-orchestration-COMP-9
-  to: src-orchestration-COMP-1
-  type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-12
-  type: depends-on
-- from: src-orchestration-COMP-9
-  to: src-orchestration-COMP-6
-  type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-4
-  type: depends-on
-- from: src-orchestration-COMP-11
   to: src-orchestration-COMP-2
-  type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-12
-  type: depends-on
-- from: src-orchestration-COMP-11
-  to: src-orchestration-COMP-7
-  type: depends-on
-- from: src-orchestration-COMP-10
-  to: src-orchestration-COMP-7
   type: depends-on
 - from: src-orchestration-COMP-9
   to: src-orchestration-COMP-11
   type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-7
+  type: depends-on
 - from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-7
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-11
   to: src-orchestration-COMP-13
   type: depends-on
 - from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-9
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-5
+  type: depends-on
+- from: src-orchestration-COMP-11
   to: src-orchestration-COMP-2
   type: depends-on
 - from: src-orchestration-COMP-9
   to: src-orchestration-COMP-10
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-7
   type: depends-on
 - from: LAYER-DATA
   to: src-orchestration-COMP-1

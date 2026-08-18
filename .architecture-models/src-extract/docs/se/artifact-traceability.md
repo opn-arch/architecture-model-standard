@@ -2,10 +2,10 @@
 document: Artifact Traceability Map
 system: Src (extract)
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:08Z
+generated_at: 2026-08-18T23:36:36Z
 generator_version: 0.3.0
 model_hash: ef39ecd21e5d
-edition: 4
+edition: 6
 ---
 
 > **Model Completeness: F (0%)**
@@ -92,3 +92,15 @@ graph TD
 | `.architecture/pipeline-cache/` | Cached intermediate pipeline stage results | Pipeline (all stages) |
 | `.architecture/docs/se/` | Generated SE documents | SE doc generator |
 | `.architecture/learning/` | Accumulated heuristics and learnings | Learning subsystem |
+
+## LLM Review Status
+
+No LLM reviews available.
+
+## LLM Enrichment Provenance
+
+No LLM enrichment records available.
+
+## Review Details
+
+No review details available.

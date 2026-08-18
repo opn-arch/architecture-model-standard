@@ -1,5 +1,5 @@
 {
-  "created": "2026-08-18T15:05:25",
+  "created": "2026-08-18T18:35:49",
   "stages_completed": [
     "infer",
     "allocate",
@@ -8,7 +8,9 @@
     "specify",
     "decompose",
     "synthesize",
-    "emit"
+    "emit",
+    "contract",
+    "validate"
   ],
-  "last_updated": "2026-08-18T15:06:08"
+  "last_updated": "2026-08-18T18:38:07"
 }

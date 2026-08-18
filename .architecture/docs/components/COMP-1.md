@@ -24,6 +24,10 @@
 | COMP-1.3 (Parser & Persistence) | contains | — |
 | COMP-1.4 (Model Operations) | contains | — |
 | COMP-1.5 (Quality Metrics) | contains | — |
+| REQ-O14 | satisfies | — |
+| REQ-O15 | satisfies | — |
+| REQ-O16 | satisfies | — |
+| REQ-O17 | satisfies | — |
 
 ### Dependents (incoming)
 

@@ -2,10 +2,10 @@
 document: Maintenance Manual
 system: Src (orchestration)
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:07Z
+generated_at: 2026-08-18T23:36:35Z
 generator_version: 0.3.0
 model_hash: 1390e5be5ea9
-edition: 4
+edition: 6
 ---
 
 > **Model Completeness: F (25%)**
@@ -40,19 +40,19 @@ edition: 4
 
 | Component | Depends On (fan-out) | Depended By (fan-in) | Impact Risk |
 |-----------|---------------------|---------------------|-------------|
-| Auto Enrich | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
-| Behavior Decompose | — | Enrichment Context, Pipeline, Naming Context | MEDIUM |
-| Behavior Flows | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
-| Capability Inference | — | Enrichment Context, Naming Context, Pipeline | MEDIUM |
-| Compaction | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
-| Decompose | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
-| Deep Decompose | — | Enrichment Context, Pipeline, Naming Context | MEDIUM |
+| Auto Enrich | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Behavior Decompose | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Behavior Flows | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
+| Capability Inference | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
+| Compaction | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Decompose | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Deep Decompose | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
 | Enrich | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
-| Enrichment Context | Capability Inference, Trigger Detection, Deep Decompose, Behavior Decompose, Enrich, Behavior Flows, Compaction, Auto Enrich, Decompose, Pipeline, Use Case Inference, Naming Context | Naming Context, Pipeline | MEDIUM |
-| Naming Context | Enrichment Context, Behavior Flows, Enrich, Compaction, Auto Enrich, Decompose, Use Case Inference, Pipeline, Capability Inference, Trigger Detection, Deep Decompose, Behavior Decompose | Pipeline, Enrichment Context | MEDIUM |
-| Pipeline | Enrichment Context, Enrich, Behavior Flows, Compaction, Auto Enrich, Decompose, Naming Context, Use Case Inference, Capability Inference, Behavior Decompose, Trigger Detection, Deep Decompose | Naming Context, Enrichment Context | MEDIUM |
-| Trigger Detection | — | Enrichment Context, Naming Context, Pipeline | MEDIUM |
-| Use Case Inference | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
+| Enrichment Context | Auto Enrich, Trigger Detection, Decompose, Use Case Inference, Compaction, Behavior Decompose, Pipeline, Deep Decompose, Enrich, Capability Inference, Behavior Flows, Naming Context | Pipeline, Naming Context | MEDIUM |
+| Naming Context | Trigger Detection, Decompose, Auto Enrich, Use Case Inference, Behavior Decompose, Compaction, Pipeline, Deep Decompose, Enrich, Capability Inference, Behavior Flows, Enrichment Context | Pipeline, Enrichment Context | MEDIUM |
+| Pipeline | Enrich, Capability Inference, Behavior Flows, Enrichment Context, Naming Context, Trigger Detection, Auto Enrich, Decompose, Use Case Inference, Compaction, Behavior Decompose, Deep Decompose | Naming Context, Enrichment Context | MEDIUM |
+| Trigger Detection | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Use Case Inference | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
 
 ## Modification Procedures
 
@@ -62,43 +62,43 @@ For each component, the following files and dependencies must be considered:
 
 **Files:**
 - `src/architecture_model/orchestration/auto_enrich.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Behavior Decompose (src-orchestration-COMP-2)
 
 **Files:**
 - `src/architecture_model/orchestration/behavior_decompose.py`
-**Downstream dependents (must re-test):** Enrichment Context, Pipeline, Naming Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Behavior Flows (src-orchestration-COMP-3)
 
 **Files:**
 - `src/architecture_model/orchestration/behavior_flows.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Pipeline, Naming Context, Enrichment Context
 
 ### Capability Inference (src-orchestration-COMP-4)
 
 **Files:**
 - `src/architecture_model/orchestration/capability_inference.py`
-**Downstream dependents (must re-test):** Enrichment Context, Naming Context, Pipeline
+**Downstream dependents (must re-test):** Pipeline, Naming Context, Enrichment Context
 
 ### Compaction (src-orchestration-COMP-5)
 
 **Files:**
 - `src/architecture_model/orchestration/compaction.py`
-**Downstream dependents (must re-test):** Pipeline, Naming Context, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Decompose (src-orchestration-COMP-6)
 
 **Files:**
 - `src/architecture_model/orchestration/decompose.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Deep Decompose (src-orchestration-COMP-7)
 
 **Files:**
 - `src/architecture_model/orchestration/deep_decompose.py`
-**Downstream dependents (must re-test):** Enrichment Context, Pipeline, Naming Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Enrich (src-orchestration-COMP-8)
 
@@ -110,7 +110,7 @@ For each component, the following files and dependencies must be considered:
 
 **Files:**
 - `src/architecture_model/orchestration/enrichment_context.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline
+**Downstream dependents (must re-test):** Pipeline, Naming Context
 
 ### Naming Context (src-orchestration-COMP-10)
 
@@ -128,13 +128,13 @@ For each component, the following files and dependencies must be considered:
 
 **Files:**
 - `src/architecture_model/orchestration/trigger_detection.py`
-**Downstream dependents (must re-test):** Enrichment Context, Naming Context, Pipeline
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Use Case Inference (src-orchestration-COMP-13)
 
 **Files:**
 - `src/architecture_model/orchestration/use_case_inference.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ## Known Constraints
 

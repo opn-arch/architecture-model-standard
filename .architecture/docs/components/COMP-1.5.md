@@ -24,6 +24,8 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | CAP-11 | realizes | Quality Metrics implements regen readiness |
+| REQ-15 | satisfies | Regen readiness scoring |
+| REQ-16 | satisfies | Per-component readiness with blockers |
 
 ### Dependents (incoming)
 

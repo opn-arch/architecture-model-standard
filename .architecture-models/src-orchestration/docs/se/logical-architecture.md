@@ -2,10 +2,10 @@
 document: Logical Architecture
 system: Src (orchestration)
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:07Z
+generated_at: 2026-08-18T23:36:35Z
 generator_version: 0.3.0
 model_hash: 1390e5be5ea9
-edition: 4
+edition: 6
 ---
 
 > **Model Completeness: F (25%)**
@@ -52,53 +52,53 @@ edition: 4
 
 ```mermaid
 graph TD
-    src-orchestration-COMP-9["Enrichment Context"]
-    src-orchestration-COMP-4["Capability Inference"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-4
-    src-orchestration-COMP-12["Trigger Detection"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-12
-    src-orchestration-COMP-10["Naming Context"]
-    src-orchestration-COMP-10 --> src-orchestration-COMP-9
-    src-orchestration-COMP-3["Behavior Flows"]
-    src-orchestration-COMP-10 --> src-orchestration-COMP-3
     src-orchestration-COMP-11["Pipeline"]
-    src-orchestration-COMP-11 --> src-orchestration-COMP-9
     src-orchestration-COMP-8["Enrich"]
     src-orchestration-COMP-11 --> src-orchestration-COMP-8
-    src-orchestration-COMP-11 --> src-orchestration-COMP-3
-    src-orchestration-COMP-10 --> src-orchestration-COMP-8
-    src-orchestration-COMP-7["Deep Decompose"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-7
-    src-orchestration-COMP-2["Behavior Decompose"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-2
-    src-orchestration-COMP-9 --> src-orchestration-COMP-8
-    src-orchestration-COMP-9 --> src-orchestration-COMP-3
-    src-orchestration-COMP-5["Compaction"]
-    src-orchestration-COMP-11 --> src-orchestration-COMP-5
-    src-orchestration-COMP-10 --> src-orchestration-COMP-5
-    src-orchestration-COMP-1["Auto Enrich"]
-    src-orchestration-COMP-10 --> src-orchestration-COMP-1
+    src-orchestration-COMP-4["Capability Inference"]
+    src-orchestration-COMP-11 --> src-orchestration-COMP-4
+    src-orchestration-COMP-10["Naming Context"]
+    src-orchestration-COMP-12["Trigger Detection"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-12
     src-orchestration-COMP-6["Decompose"]
     src-orchestration-COMP-10 --> src-orchestration-COMP-6
-    src-orchestration-COMP-11 --> src-orchestration-COMP-1
-    src-orchestration-COMP-11 --> src-orchestration-COMP-6
+    src-orchestration-COMP-1["Auto Enrich"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-1
+    src-orchestration-COMP-9["Enrichment Context"]
+    src-orchestration-COMP-9 --> src-orchestration-COMP-1
+    src-orchestration-COMP-9 --> src-orchestration-COMP-12
+    src-orchestration-COMP-9 --> src-orchestration-COMP-6
+    src-orchestration-COMP-3["Behavior Flows"]
+    src-orchestration-COMP-11 --> src-orchestration-COMP-3
+    src-orchestration-COMP-11 --> src-orchestration-COMP-9
+    src-orchestration-COMP-11 --> src-orchestration-COMP-10
     src-orchestration-COMP-13["Use Case Inference"]
     src-orchestration-COMP-10 --> src-orchestration-COMP-13
-    src-orchestration-COMP-11 --> src-orchestration-COMP-10
-    src-orchestration-COMP-9 --> src-orchestration-COMP-5
-    src-orchestration-COMP-11 --> src-orchestration-COMP-13
-    src-orchestration-COMP-10 --> src-orchestration-COMP-11
-    src-orchestration-COMP-10 --> src-orchestration-COMP-4
-    src-orchestration-COMP-9 --> src-orchestration-COMP-1
-    src-orchestration-COMP-10 --> src-orchestration-COMP-12
-    src-orchestration-COMP-9 --> src-orchestration-COMP-6
-    src-orchestration-COMP-11 --> src-orchestration-COMP-4
-    src-orchestration-COMP-11 --> src-orchestration-COMP-2
-    src-orchestration-COMP-11 --> src-orchestration-COMP-12
-    src-orchestration-COMP-11 --> src-orchestration-COMP-7
-    src-orchestration-COMP-10 --> src-orchestration-COMP-7
-    src-orchestration-COMP-9 --> src-orchestration-COMP-11
-    src-orchestration-COMP-9 --> src-orchestration-COMP-13
+    src-orchestration-COMP-2["Behavior Decompose"]
     src-orchestration-COMP-10 --> src-orchestration-COMP-2
+    src-orchestration-COMP-5["Compaction"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-5
+    src-orchestration-COMP-9 --> src-orchestration-COMP-13
+    src-orchestration-COMP-10 --> src-orchestration-COMP-11
+    src-orchestration-COMP-9 --> src-orchestration-COMP-5
+    src-orchestration-COMP-9 --> src-orchestration-COMP-2
+    src-orchestration-COMP-9 --> src-orchestration-COMP-11
+    src-orchestration-COMP-7["Deep Decompose"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-7
+    src-orchestration-COMP-9 --> src-orchestration-COMP-7
+    src-orchestration-COMP-11 --> src-orchestration-COMP-12
+    src-orchestration-COMP-11 --> src-orchestration-COMP-1
+    src-orchestration-COMP-11 --> src-orchestration-COMP-6
+    src-orchestration-COMP-10 --> src-orchestration-COMP-8
+    src-orchestration-COMP-10 --> src-orchestration-COMP-4
+    src-orchestration-COMP-10 --> src-orchestration-COMP-3
+    src-orchestration-COMP-9 --> src-orchestration-COMP-8
+    src-orchestration-COMP-9 --> src-orchestration-COMP-4
+    src-orchestration-COMP-11 --> src-orchestration-COMP-13
+    src-orchestration-COMP-10 --> src-orchestration-COMP-9
+    src-orchestration-COMP-9 --> src-orchestration-COMP-3
+    src-orchestration-COMP-11 --> src-orchestration-COMP-5
+    src-orchestration-COMP-11 --> src-orchestration-COMP-2
     src-orchestration-COMP-9 --> src-orchestration-COMP-10
+    src-orchestration-COMP-11 --> src-orchestration-COMP-7
 ```

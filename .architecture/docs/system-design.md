@@ -39,13 +39,43 @@ Schema version: 1.3
 | COMP-11 | Pipeline Learning | Status.ACTIVE | 3 | 1 |
 | COMP-12 | Utilities | Status.ACTIVE | 6 | 0 |
 
+## Key Behaviors
+
+- **GET ** (BEH-1)
+- **GET bookmarklets/** (BEH-2)
+- **GET tags/** (BEH-3)
+- **GET filters/** (BEH-4)
+- **GET views/** (BEH-5)
+- **GET views/<view>/** (BEH-6)
+- **GET models/** (BEH-7)
+- **GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$** (BEH-8)
+- **GET templates/<path:template>/** (BEH-9)
+- **GET login/** (BEH-10)
+- **GET logout/** (BEH-11)
+- **GET password_change/** (BEH-12)
+- **GET password_change/done/** (BEH-13)
+- **GET password_reset/** (BEH-14)
+- **GET password_reset/done/** (BEH-15)
+- **GET reset/<uidb64>/<token>/** (BEH-16)
+- **GET reset/done/** (BEH-17)
+- **GET <path:url>** (BEH-18)
+- **CLI: Test Guided Round Trip** (BEH-19)
+- **CLI: Test Enriched Round Trip** (BEH-20)
+- **CLI: Test Multi Repo** (BEH-21)
+- **CLI: Test Round Trip** (BEH-22)
+- **CLI: Test Decomposed Round Trip** (BEH-23)
+- **CLI: Main** (BEH-24)
+- **CLI: Runner** (BEH-25)
+
 ## Relationship Summary
 
 | Type | Count |
 |------|-------|
 | contains | 18 |
 | depends-on | 26 |
+| exposes | 2 |
 | realizes | 15 |
+| satisfies | 49 |
 
 ## Architecture Diagram
 

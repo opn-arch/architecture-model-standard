@@ -248,6 +248,14 @@ derived_requirements:
   component_id: COMP-27
   evidence: 8 test files import this component's source
 - id: REQ-Q14
+  name: Component COMP-19 has 7 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-19:7
+  component_id: COMP-19
+  evidence: 7 test files import this component's source
+- id: REQ-Q15
   name: Component COMP-18 has 7 test file(s) covering its source
   category: quality
   priority: should
@@ -255,7 +263,7 @@ derived_requirements:
   source_signal: test_coverage:COMP-18:7
   component_id: COMP-18
   evidence: 7 test files import this component's source
-- id: REQ-Q15
+- id: REQ-Q16
   name: Component COMP-21 has 7 test file(s) covering its source
   category: quality
   priority: should
@@ -263,21 +271,13 @@ derived_requirements:
   source_signal: test_coverage:COMP-21:7
   component_id: COMP-21
   evidence: 7 test files import this component's source
-- id: REQ-Q16
+- id: REQ-Q17
   name: Component COMP-38 has 6 test file(s) covering its source
   category: quality
   priority: should
   source_file: ''
   source_signal: test_coverage:COMP-38:6
   component_id: COMP-38
-  evidence: 6 test files import this component's source
-- id: REQ-Q17
-  name: Component COMP-19 has 6 test file(s) covering its source
-  category: quality
-  priority: should
-  source_file: ''
-  source_signal: test_coverage:COMP-19:6
-  component_id: COMP-19
   evidence: 6 test files import this component's source
 - id: REQ-Q18
   name: Component COMP-46 has 5 test file(s) covering its source
@@ -384,13 +384,13 @@ derived_requirements:
   component_id: COMP-4
   evidence: 2 test files import this component's source
 - id: REQ-Q3
-  name: Component COMP-24 has 29 test file(s) covering its source
+  name: Component COMP-24 has 30 test file(s) covering its source
   category: quality
   priority: should
   source_file: ''
-  source_signal: test_coverage:COMP-24:29
+  source_signal: test_coverage:COMP-24:30
   component_id: COMP-24
-  evidence: 29 test files import this component's source
+  evidence: 30 test files import this component's source
 - id: REQ-Q30
   name: Component COMP-33 has 2 test file(s) covering its source
   category: quality
@@ -472,13 +472,13 @@ derived_requirements:
   component_id: COMP-2
   evidence: 1 test files import this component's source
 - id: REQ-Q4
-  name: Component COMP-30 has 22 test file(s) covering its source
+  name: Component COMP-36 has 23 test file(s) covering its source
   category: quality
   priority: should
   source_file: ''
-  source_signal: test_coverage:COMP-30:22
-  component_id: COMP-30
-  evidence: 22 test files import this component's source
+  source_signal: test_coverage:COMP-36:23
+  component_id: COMP-36
+  evidence: 23 test files import this component's source
 - id: REQ-Q40
   name: Component COMP-4-9 has 1 test file(s) covering its source
   category: quality
@@ -552,13 +552,13 @@ derived_requirements:
   component_id: COMP-13
   evidence: 1 test files import this component's source
 - id: REQ-Q5
-  name: Component COMP-36 has 18 test file(s) covering its source
+  name: Component COMP-30 has 22 test file(s) covering its source
   category: quality
   priority: should
   source_file: ''
-  source_signal: test_coverage:COMP-36:18
-  component_id: COMP-36
-  evidence: 18 test files import this component's source
+  source_signal: test_coverage:COMP-30:22
+  component_id: COMP-30
+  evidence: 22 test files import this component's source
 - id: REQ-Q6
   name: Component COMP-4-1 has 15 test file(s) covering its source
   category: quality
@@ -576,13 +576,13 @@ derived_requirements:
   component_id: COMP-25
   evidence: 15 test files import this component's source
 - id: REQ-Q8
-  name: Component COMP-23 has 12 test file(s) covering its source
+  name: Component COMP-23 has 13 test file(s) covering its source
   category: quality
   priority: should
   source_file: ''
-  source_signal: test_coverage:COMP-23:12
+  source_signal: test_coverage:COMP-23:13
   component_id: COMP-23
-  evidence: 12 test files import this component's source
+  evidence: 13 test files import this component's source
 - id: REQ-Q9
   name: Component COMP-29 has 9 test file(s) covering its source
   category: quality

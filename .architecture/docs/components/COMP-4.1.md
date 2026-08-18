@@ -30,6 +30,7 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-1.1 (Type System) | depends-on | Doc generators read model types |
+| REQ-11 | satisfies | Template-based generators run in <1s |
 
 ### Dependents (incoming)
 

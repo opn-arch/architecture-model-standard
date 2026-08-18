@@ -25,6 +25,7 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-3.2 (Graph & Analysis) | depends-on | Grouping uses graph edges for affinity |
+| REQ-19 | satisfies | Grouping optimizes boundary coherence |
 
 ### Dependents (incoming)
 

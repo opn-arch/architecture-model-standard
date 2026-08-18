@@ -2,10 +2,10 @@
 document: Logical Architecture
 system: Src (pipeline)
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:05Z
+generated_at: 2026-08-18T23:36:32Z
 generator_version: 0.3.0
 model_hash: ccd998005d8e
-edition: 4
+edition: 6
 ---
 
 > **Model Completeness: F (25%)**
@@ -60,165 +60,165 @@ edition: 4
 
 ```mermaid
 graph TD
-    src-pipeline-COMP-20["Context Gen"]
+    src-pipeline-COMP-19["Cache"]
     src-pipeline-COMP-30["Infer"]
-    src-pipeline-COMP-20 --> src-pipeline-COMP-30
-    src-pipeline-COMP-33["Lessons"]
-    src-pipeline-COMP-36["Protocol"]
-    src-pipeline-COMP-33 --> src-pipeline-COMP-36
-    src-pipeline-COMP-37["Regen Score"]
-    src-pipeline-COMP-37 --> src-pipeline-COMP-36
-    src-pipeline-COMP-25["Decompose"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-33
+    src-pipeline-COMP-19 --> src-pipeline-COMP-30
     src-pipeline-COMP-38["Relate"]
     src-pipeline-COMP-16["Allocate"]
     src-pipeline-COMP-38 --> src-pipeline-COMP-16
-    src-pipeline-COMP-44["Synthesize"]
-    src-pipeline-COMP-44 --> src-pipeline-COMP-30
-    src-pipeline-COMP-21["Contract"]
-    src-pipeline-COMP-21 --> src-pipeline-COMP-16
-    src-pipeline-COMP-20 --> src-pipeline-COMP-16
-    src-pipeline-COMP-34["Observe"]
-    src-pipeline-COMP-30 --> src-pipeline-COMP-34
-    src-pipeline-COMP-40["Report"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-40
-    src-pipeline-COMP-42["Specify"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-42
-    src-pipeline-COMP-19["Cache"]
-    src-pipeline-COMP-19 --> src-pipeline-COMP-33
-    src-pipeline-COMP-38 --> src-pipeline-COMP-34
-    src-pipeline-COMP-29["Global Learning"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-29
-    src-pipeline-COMP-21 --> src-pipeline-COMP-34
-    src-pipeline-COMP-27["Emit"]
-    src-pipeline-COMP-27 --> src-pipeline-COMP-16
-    src-pipeline-COMP-20 --> src-pipeline-COMP-34
-    src-pipeline-COMP-19 --> src-pipeline-COMP-40
     src-pipeline-COMP-23["Coordinator"]
-    src-pipeline-COMP-23 --> src-pipeline-COMP-20
-    src-pipeline-COMP-19 --> src-pipeline-COMP-42
-    src-pipeline-COMP-25 --> src-pipeline-COMP-21
-    src-pipeline-COMP-27 --> src-pipeline-COMP-34
-    src-pipeline-COMP-16 --> src-pipeline-COMP-30
+    src-pipeline-COMP-44["Synthesize"]
     src-pipeline-COMP-23 --> src-pipeline-COMP-44
-    src-pipeline-COMP-23 --> src-pipeline-COMP-36
-    src-pipeline-COMP-27 --> src-pipeline-COMP-33
-    src-pipeline-COMP-23 --> src-pipeline-COMP-38
     src-pipeline-COMP-18["Artifacts"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-18
+    src-pipeline-COMP-44 --> src-pipeline-COMP-30
+    src-pipeline-COMP-25["Decompose"]
+    src-pipeline-COMP-27["Emit"]
+    src-pipeline-COMP-25 --> src-pipeline-COMP-27
+    src-pipeline-COMP-23 --> src-pipeline-COMP-19
+    src-pipeline-COMP-34["Observe"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-34
     src-pipeline-COMP-46["Validate"]
     src-pipeline-COMP-18 --> src-pipeline-COMP-46
-    src-pipeline-COMP-19 --> src-pipeline-COMP-46
-    src-pipeline-COMP-24["Corrections"]
-    src-pipeline-COMP-23 --> src-pipeline-COMP-24
-    src-pipeline-COMP-20 --> src-pipeline-COMP-36
-    src-pipeline-COMP-27 --> src-pipeline-COMP-19
-    src-pipeline-COMP-27 --> src-pipeline-COMP-24
-    src-pipeline-COMP-19 --> src-pipeline-COMP-25
+    src-pipeline-COMP-23 --> src-pipeline-COMP-38
+    src-pipeline-COMP-25 --> src-pipeline-COMP-23
+    src-pipeline-COMP-27 --> src-pipeline-COMP-34
+    src-pipeline-COMP-37["Regen Score"]
+    src-pipeline-COMP-19 --> src-pipeline-COMP-37
+    src-pipeline-COMP-16 --> src-pipeline-COMP-30
+    src-pipeline-COMP-38 --> src-pipeline-COMP-34
+    src-pipeline-COMP-27 --> src-pipeline-COMP-37
+    src-pipeline-COMP-44 --> src-pipeline-COMP-37
     src-pipeline-COMP-41["Requirements Derive"]
     src-pipeline-COMP-25 --> src-pipeline-COMP-41
-    src-pipeline-COMP-27 --> src-pipeline-COMP-40
-    src-pipeline-COMP-25 --> src-pipeline-COMP-18
-    src-pipeline-COMP-44 --> src-pipeline-COMP-36
-    src-pipeline-COMP-42 --> src-pipeline-COMP-36
-    src-pipeline-COMP-25 --> src-pipeline-COMP-23
-    src-pipeline-COMP-25 --> src-pipeline-COMP-20
-    src-pipeline-COMP-44 --> src-pipeline-COMP-24
-    src-pipeline-COMP-19 --> src-pipeline-COMP-41
-    src-pipeline-COMP-19 --> src-pipeline-COMP-18
-    src-pipeline-COMP-19 --> src-pipeline-COMP-23
-    src-pipeline-COMP-27 --> src-pipeline-COMP-46
-    src-pipeline-COMP-46 --> src-pipeline-COMP-38
-    src-pipeline-COMP-25 --> src-pipeline-COMP-27
-    src-pipeline-COMP-23 --> src-pipeline-COMP-16
-    src-pipeline-COMP-25 --> src-pipeline-COMP-38
-    src-pipeline-COMP-16 --> src-pipeline-COMP-36
-    src-pipeline-COMP-23 --> src-pipeline-COMP-34
-    src-pipeline-COMP-27 --> src-pipeline-COMP-37
-    src-pipeline-COMP-27 --> src-pipeline-COMP-18
-    src-pipeline-COMP-46 --> src-pipeline-COMP-30
-    src-pipeline-COMP-34 --> src-pipeline-COMP-36
-    src-pipeline-COMP-16 --> src-pipeline-COMP-24
-    src-pipeline-COMP-44 --> src-pipeline-COMP-16
-    src-pipeline-COMP-42 --> src-pipeline-COMP-16
-    src-pipeline-COMP-25 --> src-pipeline-COMP-30
-    src-pipeline-COMP-18 --> src-pipeline-COMP-42
-    src-pipeline-COMP-19 --> src-pipeline-COMP-29
-    src-pipeline-COMP-44 --> src-pipeline-COMP-34
-    src-pipeline-COMP-42 --> src-pipeline-COMP-34
-    src-pipeline-COMP-46 --> src-pipeline-COMP-16
-    src-pipeline-COMP-18 --> src-pipeline-COMP-21
-    src-pipeline-COMP-19 --> src-pipeline-COMP-21
-    src-pipeline-COMP-44 --> src-pipeline-COMP-19
-    src-pipeline-COMP-29 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-40
-    src-pipeline-COMP-27 --> src-pipeline-COMP-42
-    src-pipeline-COMP-23 --> src-pipeline-COMP-46
-    src-pipeline-COMP-27 --> src-pipeline-COMP-29
-    src-pipeline-COMP-40 --> src-pipeline-COMP-36
-    src-pipeline-COMP-20 --> src-pipeline-COMP-46
-    src-pipeline-COMP-16 --> src-pipeline-COMP-34
-    src-pipeline-COMP-46 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-46
-    src-pipeline-COMP-19 --> src-pipeline-COMP-20
-    src-pipeline-COMP-27 --> src-pipeline-COMP-21
-    src-pipeline-COMP-23 --> src-pipeline-COMP-37
-    src-pipeline-COMP-25 --> src-pipeline-COMP-44
-    src-pipeline-COMP-25 --> src-pipeline-COMP-36
-    src-pipeline-COMP-27 --> src-pipeline-COMP-25
-    src-pipeline-COMP-25 --> src-pipeline-COMP-24
-    src-pipeline-COMP-19 --> src-pipeline-COMP-27
-    src-pipeline-COMP-19 --> src-pipeline-COMP-44
-    src-pipeline-COMP-19 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-37
-    src-pipeline-COMP-27 --> src-pipeline-COMP-41
-    src-pipeline-COMP-18 --> src-pipeline-COMP-38
-    src-pipeline-COMP-19 --> src-pipeline-COMP-38
-    src-pipeline-COMP-44 --> src-pipeline-COMP-18
-    src-pipeline-COMP-23 --> src-pipeline-COMP-33
-    src-pipeline-COMP-27 --> src-pipeline-COMP-23
+    src-pipeline-COMP-20["Context Gen"]
     src-pipeline-COMP-27 --> src-pipeline-COMP-20
-    src-pipeline-COMP-23 --> src-pipeline-COMP-19
-    src-pipeline-COMP-23 --> src-pipeline-COMP-40
-    src-pipeline-COMP-23 --> src-pipeline-COMP-42
-    src-pipeline-COMP-18 --> src-pipeline-COMP-30
-    src-pipeline-COMP-19 --> src-pipeline-COMP-30
-    src-pipeline-COMP-23 --> src-pipeline-COMP-29
-    src-pipeline-COMP-44 --> src-pipeline-COMP-33
-    src-pipeline-COMP-27 --> src-pipeline-COMP-44
-    src-pipeline-COMP-25 --> src-pipeline-COMP-16
-    src-pipeline-COMP-38 --> src-pipeline-COMP-30
-    src-pipeline-COMP-27 --> src-pipeline-COMP-38
-    src-pipeline-COMP-44 --> src-pipeline-COMP-42
-    src-pipeline-COMP-18 --> src-pipeline-COMP-16
+    src-pipeline-COMP-44 --> src-pipeline-COMP-20
+    src-pipeline-COMP-36["Protocol"]
+    src-pipeline-COMP-19 --> src-pipeline-COMP-36
     src-pipeline-COMP-19 --> src-pipeline-COMP-16
-    src-pipeline-COMP-23 --> src-pipeline-COMP-21
-    src-pipeline-COMP-25 --> src-pipeline-COMP-34
-    src-pipeline-COMP-44 --> src-pipeline-COMP-29
-    src-pipeline-COMP-23 --> src-pipeline-COMP-25
-    src-pipeline-COMP-25 --> src-pipeline-COMP-19
-    src-pipeline-COMP-27 --> src-pipeline-COMP-30
-    src-pipeline-COMP-18 --> src-pipeline-COMP-34
+    src-pipeline-COMP-42["Specify"]
+    src-pipeline-COMP-27 --> src-pipeline-COMP-42
+    src-pipeline-COMP-44 --> src-pipeline-COMP-42
+    src-pipeline-COMP-29["Global Learning"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-29
+    src-pipeline-COMP-44 --> src-pipeline-COMP-36
+    src-pipeline-COMP-44 --> src-pipeline-COMP-16
+    src-pipeline-COMP-27 --> src-pipeline-COMP-29
+    src-pipeline-COMP-21["Contract"]
+    src-pipeline-COMP-25 --> src-pipeline-COMP-21
+    src-pipeline-COMP-18 --> src-pipeline-COMP-30
+    src-pipeline-COMP-40["Report"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-40
+    src-pipeline-COMP-20 --> src-pipeline-COMP-30
+    src-pipeline-COMP-19 --> src-pipeline-COMP-44
+    src-pipeline-COMP-19 --> src-pipeline-COMP-18
+    src-pipeline-COMP-23 --> src-pipeline-COMP-46
+    src-pipeline-COMP-30 --> src-pipeline-COMP-36
+    src-pipeline-COMP-24["Corrections"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-24
+    src-pipeline-COMP-16 --> src-pipeline-COMP-36
+    src-pipeline-COMP-33["Lessons"]
+    src-pipeline-COMP-25 --> src-pipeline-COMP-33
     src-pipeline-COMP-19 --> src-pipeline-COMP-34
-    src-pipeline-COMP-44 --> src-pipeline-COMP-21
+    src-pipeline-COMP-27 --> src-pipeline-COMP-44
+    src-pipeline-COMP-27 --> src-pipeline-COMP-18
+    src-pipeline-COMP-44 --> src-pipeline-COMP-18
+    src-pipeline-COMP-46 --> src-pipeline-COMP-30
+    src-pipeline-COMP-19 --> src-pipeline-COMP-38
+    src-pipeline-COMP-27 --> src-pipeline-COMP-19
+    src-pipeline-COMP-44 --> src-pipeline-COMP-19
+    src-pipeline-COMP-18 --> src-pipeline-COMP-21
+    src-pipeline-COMP-44 --> src-pipeline-COMP-34
+    src-pipeline-COMP-21 --> src-pipeline-COMP-36
+    src-pipeline-COMP-21 --> src-pipeline-COMP-16
+    src-pipeline-COMP-23 --> src-pipeline-COMP-25
+    src-pipeline-COMP-25 --> src-pipeline-COMP-30
+    src-pipeline-COMP-27 --> src-pipeline-COMP-38
+    src-pipeline-COMP-44 --> src-pipeline-COMP-38
+    src-pipeline-COMP-19 --> src-pipeline-COMP-20
+    src-pipeline-COMP-23 --> src-pipeline-COMP-27
+    src-pipeline-COMP-27 --> src-pipeline-COMP-25
+    src-pipeline-COMP-19 --> src-pipeline-COMP-42
+    src-pipeline-COMP-18 --> src-pipeline-COMP-16
+    src-pipeline-COMP-20 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-23
+    src-pipeline-COMP-30 --> src-pipeline-COMP-34
+    src-pipeline-COMP-20 --> src-pipeline-COMP-16
+    src-pipeline-COMP-16 --> src-pipeline-COMP-34
+    src-pipeline-COMP-19 --> src-pipeline-COMP-29
+    src-pipeline-COMP-27 --> src-pipeline-COMP-23
+    src-pipeline-COMP-44 --> src-pipeline-COMP-23
+    src-pipeline-COMP-42 --> src-pipeline-COMP-36
+    src-pipeline-COMP-25 --> src-pipeline-COMP-37
+    src-pipeline-COMP-44 --> src-pipeline-COMP-29
+    src-pipeline-COMP-42 --> src-pipeline-COMP-16
     src-pipeline-COMP-23 --> src-pipeline-COMP-41
-    src-pipeline-COMP-23 --> src-pipeline-COMP-18
+    src-pipeline-COMP-46 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-40
+    src-pipeline-COMP-21 --> src-pipeline-COMP-34
+    src-pipeline-COMP-46 --> src-pipeline-COMP-16
+    src-pipeline-COMP-19 --> src-pipeline-COMP-46
+    src-pipeline-COMP-27 --> src-pipeline-COMP-40
+    src-pipeline-COMP-19 --> src-pipeline-COMP-24
+    src-pipeline-COMP-44 --> src-pipeline-COMP-40
+    src-pipeline-COMP-25 --> src-pipeline-COMP-36
+    src-pipeline-COMP-25 --> src-pipeline-COMP-16
+    src-pipeline-COMP-18 --> src-pipeline-COMP-34
+    src-pipeline-COMP-23 --> src-pipeline-COMP-21
+    src-pipeline-COMP-20 --> src-pipeline-COMP-34
+    src-pipeline-COMP-27 --> src-pipeline-COMP-46
+    src-pipeline-COMP-44 --> src-pipeline-COMP-46
+    src-pipeline-COMP-27 --> src-pipeline-COMP-24
+    src-pipeline-COMP-44 --> src-pipeline-COMP-24
+    src-pipeline-COMP-20 --> src-pipeline-COMP-38
+    src-pipeline-COMP-42 --> src-pipeline-COMP-34
+    src-pipeline-COMP-19 --> src-pipeline-COMP-25
+    src-pipeline-COMP-19 --> src-pipeline-COMP-27
+    src-pipeline-COMP-23 --> src-pipeline-COMP-33
+    src-pipeline-COMP-18 --> src-pipeline-COMP-42
+    src-pipeline-COMP-25 --> src-pipeline-COMP-44
+    src-pipeline-COMP-25 --> src-pipeline-COMP-18
     src-pipeline-COMP-44 --> src-pipeline-COMP-25
     src-pipeline-COMP-18 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-41
-    src-pipeline-COMP-25 --> src-pipeline-COMP-46
-    src-pipeline-COMP-30 --> src-pipeline-COMP-36
-    src-pipeline-COMP-19 --> src-pipeline-COMP-24
-    src-pipeline-COMP-23 --> src-pipeline-COMP-27
-    src-pipeline-COMP-38 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-23
-    src-pipeline-COMP-30 --> src-pipeline-COMP-24
-    src-pipeline-COMP-44 --> src-pipeline-COMP-20
-    src-pipeline-COMP-21 --> src-pipeline-COMP-36
-    src-pipeline-COMP-20 --> src-pipeline-COMP-38
-    src-pipeline-COMP-25 --> src-pipeline-COMP-37
     src-pipeline-COMP-44 --> src-pipeline-COMP-27
-    src-pipeline-COMP-27 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-38
+    src-pipeline-COMP-25 --> src-pipeline-COMP-34
+    src-pipeline-COMP-37 --> src-pipeline-COMP-36
     src-pipeline-COMP-23 --> src-pipeline-COMP-30
-    src-pipeline-COMP-19 --> src-pipeline-COMP-37
+    src-pipeline-COMP-25 --> src-pipeline-COMP-38
+    src-pipeline-COMP-19 --> src-pipeline-COMP-41
+    src-pipeline-COMP-27 --> src-pipeline-COMP-30
+    src-pipeline-COMP-34 --> src-pipeline-COMP-36
+    src-pipeline-COMP-25 --> src-pipeline-COMP-20
+    src-pipeline-COMP-27 --> src-pipeline-COMP-41
+    src-pipeline-COMP-44 --> src-pipeline-COMP-41
+    src-pipeline-COMP-25 --> src-pipeline-COMP-42
+    src-pipeline-COMP-38 --> src-pipeline-COMP-30
+    src-pipeline-COMP-33 --> src-pipeline-COMP-36
+    src-pipeline-COMP-20 --> src-pipeline-COMP-46
+    src-pipeline-COMP-25 --> src-pipeline-COMP-29
+    src-pipeline-COMP-23 --> src-pipeline-COMP-37
+    src-pipeline-COMP-29 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-21
+    src-pipeline-COMP-18 --> src-pipeline-COMP-38
+    src-pipeline-COMP-23 --> src-pipeline-COMP-20
+    src-pipeline-COMP-27 --> src-pipeline-COMP-21
+    src-pipeline-COMP-44 --> src-pipeline-COMP-21
+    src-pipeline-COMP-23 --> src-pipeline-COMP-42
+    src-pipeline-COMP-25 --> src-pipeline-COMP-40
+    src-pipeline-COMP-23 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-33
+    src-pipeline-COMP-23 --> src-pipeline-COMP-16
+    src-pipeline-COMP-25 --> src-pipeline-COMP-46
+    src-pipeline-COMP-30 --> src-pipeline-COMP-24
+    src-pipeline-COMP-25 --> src-pipeline-COMP-24
+    src-pipeline-COMP-27 --> src-pipeline-COMP-36
+    src-pipeline-COMP-16 --> src-pipeline-COMP-24
+    src-pipeline-COMP-40 --> src-pipeline-COMP-36
+    src-pipeline-COMP-46 --> src-pipeline-COMP-38
+    src-pipeline-COMP-27 --> src-pipeline-COMP-16
+    src-pipeline-COMP-27 --> src-pipeline-COMP-33
+    src-pipeline-COMP-44 --> src-pipeline-COMP-33
+    src-pipeline-COMP-25 --> src-pipeline-COMP-19
+    src-pipeline-COMP-38 --> src-pipeline-COMP-36
 ```

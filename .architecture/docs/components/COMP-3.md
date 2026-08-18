@@ -24,6 +24,7 @@
 | COMP-3.1 (Scanners) | contains | — |
 | COMP-3.2 (Graph & Analysis) | contains | — |
 | COMP-3.3 (Grouping & Generation) | contains | — |
+| IF-2 | exposes | — |
 
 ### Dependents (incoming)
 

@@ -62,7 +62,7 @@
     },
     {
       "file": "src/architecture_model/pipeline/emit.py",
-      "functions": 7,
+      "functions": 8,
       "classes": 1
     },
     {
@@ -108,7 +108,7 @@
     {
       "file": "src/architecture_model/pipeline/protocol.py",
       "functions": 0,
-      "classes": 9
+      "classes": 11
     },
     {
       "file": "src/architecture_model/pipeline/regen_score.py",

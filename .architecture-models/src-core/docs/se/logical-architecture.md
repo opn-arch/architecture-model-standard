@@ -2,10 +2,10 @@
 document: Logical Architecture
 system: Src (core)
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:06Z
+generated_at: 2026-08-18T23:36:33Z
 generator_version: 0.3.0
 model_hash: 65254bb02f54
-edition: 8
+edition: 12
 ---
 
 > **Model Completeness: F (25%)**
@@ -55,101 +55,101 @@ edition: 8
 
 ```mermaid
 graph TD
-    src-core-COMP-21["Decomposer"]
-    src-core-COMP-17["Compression"]
-    src-core-COMP-21 --> src-core-COMP-17
-    src-core-COMP-28["Source Block Assign"]
-    src-core-COMP-28 --> src-core-COMP-17
     src-core-COMP-26["Representativeness"]
-    src-core-COMP-21 --> src-core-COMP-26
-    src-core-COMP-18["Confidence"]
-    src-core-COMP-18 --> src-core-COMP-28
-    src-core-COMP-15["Cluster"]
-    src-core-COMP-28 --> src-core-COMP-15
-    src-core-COMP-16["Completeness"]
-    src-core-COMP-21 --> src-core-COMP-16
-    src-core-COMP-28 --> src-core-COMP-16
-    src-core-COMP-19["Corrections"]
-    src-core-COMP-18 --> src-core-COMP-19
-    src-core-COMP-22["Differ"]
-    src-core-COMP-26 --> src-core-COMP-22
+    src-core-COMP-28["Source Block Assign"]
     src-core-COMP-26 --> src-core-COMP-28
-    src-core-COMP-21 --> src-core-COMP-19
+    src-core-COMP-21["Decomposer"]
+    src-core-COMP-24["Parser"]
+    src-core-COMP-21 --> src-core-COMP-24
     src-core-COMP-25["Regen Readiness"]
-    src-core-COMP-25 --> src-core-COMP-21
-    src-core-COMP-18 --> src-core-COMP-25
-    src-core-COMP-25 --> src-core-COMP-18
-    src-core-COMP-25 --> src-core-COMP-22
+    src-core-COMP-28 --> src-core-COMP-25
+    src-core-COMP-27["Slicer"]
+    src-core-COMP-28 --> src-core-COMP-27
+    src-core-COMP-25 --> src-core-COMP-27
+    src-core-COMP-18["Confidence"]
+    src-core-COMP-18 --> src-core-COMP-24
+    src-core-COMP-26 --> src-core-COMP-18
     src-core-COMP-23["Merger"]
+    src-core-COMP-28 --> src-core-COMP-23
     src-core-COMP-25 --> src-core-COMP-23
+    src-core-COMP-22["Differ"]
+    src-core-COMP-21 --> src-core-COMP-22
+    src-core-COMP-18 --> src-core-COMP-25
+    src-core-COMP-18 --> src-core-COMP-27
     src-core-COMP-20["Coverage"]
-    src-core-COMP-25 --> src-core-COMP-20
+    src-core-COMP-26 --> src-core-COMP-20
+    src-core-COMP-30["Validator"]
+    src-core-COMP-21 --> src-core-COMP-30
+    src-core-COMP-15["Cluster"]
+    src-core-COMP-26 --> src-core-COMP-15
+    src-core-COMP-20 --> src-core-COMP-28
+    src-core-COMP-28 --> src-core-COMP-24
+    src-core-COMP-28 --> src-core-COMP-21
+    src-core-COMP-25 --> src-core-COMP-21
+    src-core-COMP-18 --> src-core-COMP-30
     src-core-COMP-31["Visualize"]
     src-core-COMP-28 --> src-core-COMP-31
-    src-core-COMP-28 --> src-core-COMP-26
-    src-core-COMP-18 --> src-core-COMP-22
-    src-core-COMP-26 --> src-core-COMP-21
-    src-core-COMP-18 --> src-core-COMP-23
-    src-core-COMP-27["Slicer"]
-    src-core-COMP-25 --> src-core-COMP-27
-    src-core-COMP-30["Validator"]
-    src-core-COMP-30 --> src-core-COMP-28
-    src-core-COMP-26 --> src-core-COMP-25
-    src-core-COMP-21 --> src-core-COMP-22
-    src-core-COMP-21 --> src-core-COMP-28
-    src-core-COMP-20 --> src-core-COMP-28
-    src-core-COMP-26 --> src-core-COMP-18
-    src-core-COMP-26 --> src-core-COMP-23
-    src-core-COMP-25 --> src-core-COMP-30
-    src-core-COMP-26 --> src-core-COMP-20
-    src-core-COMP-27 --> src-core-COMP-28
-    src-core-COMP-28 --> src-core-COMP-19
-    src-core-COMP-26 --> src-core-COMP-27
-    src-core-COMP-18 --> src-core-COMP-21
-    src-core-COMP-28 --> src-core-COMP-21
-    src-core-COMP-21 --> src-core-COMP-25
-    src-core-COMP-26 --> src-core-COMP-30
-    src-core-COMP-28 --> src-core-COMP-25
-    src-core-COMP-18 --> src-core-COMP-20
-    src-core-COMP-26 --> src-core-COMP-15
-    src-core-COMP-21 --> src-core-COMP-18
-    src-core-COMP-28 --> src-core-COMP-18
-    src-core-COMP-22 --> src-core-COMP-28
-    src-core-COMP-23 --> src-core-COMP-28
-    src-core-COMP-24["Parser"]
-    src-core-COMP-25 --> src-core-COMP-24
-    src-core-COMP-21 --> src-core-COMP-23
-    src-core-COMP-28 --> src-core-COMP-22
-    src-core-COMP-21 --> src-core-COMP-20
-    src-core-COMP-28 --> src-core-COMP-23
-    src-core-COMP-18 --> src-core-COMP-27
-    src-core-COMP-21 --> src-core-COMP-27
-    src-core-COMP-28 --> src-core-COMP-27
-    src-core-COMP-25 --> src-core-COMP-17
-    src-core-COMP-18 --> src-core-COMP-30
-    src-core-COMP-25 --> src-core-COMP-15
-    src-core-COMP-25 --> src-core-COMP-16
-    src-core-COMP-26 --> src-core-COMP-24
-    src-core-COMP-21 --> src-core-COMP-30
-    src-core-COMP-18 --> src-core-COMP-15
-    src-core-COMP-28 --> src-core-COMP-30
-    src-core-COMP-18 --> src-core-COMP-16
-    src-core-COMP-24 --> src-core-COMP-28
-    src-core-COMP-21 --> src-core-COMP-15
-    src-core-COMP-26 --> src-core-COMP-31
-    src-core-COMP-25 --> src-core-COMP-19
-    src-core-COMP-26 --> src-core-COMP-17
-    src-core-COMP-26 --> src-core-COMP-16
-    src-core-COMP-28 --> src-core-COMP-20
-    src-core-COMP-18 --> src-core-COMP-24
     src-core-COMP-25 --> src-core-COMP-31
-    src-core-COMP-26 --> src-core-COMP-19
-    src-core-COMP-25 --> src-core-COMP-26
-    src-core-COMP-21 --> src-core-COMP-24
-    src-core-COMP-28 --> src-core-COMP-24
-    src-core-COMP-18 --> src-core-COMP-31
-    src-core-COMP-18 --> src-core-COMP-17
-    src-core-COMP-18 --> src-core-COMP-26
-    src-core-COMP-25 --> src-core-COMP-28
+    src-core-COMP-17["Compression"]
+    src-core-COMP-21 --> src-core-COMP-17
+    src-core-COMP-28 --> src-core-COMP-22
+    src-core-COMP-25 --> src-core-COMP-22
+    src-core-COMP-30 --> src-core-COMP-28
+    src-core-COMP-18 --> src-core-COMP-21
     src-core-COMP-21 --> src-core-COMP-31
+    src-core-COMP-19["Corrections"]
+    src-core-COMP-26 --> src-core-COMP-19
+    src-core-COMP-18 --> src-core-COMP-17
+    src-core-COMP-16["Completeness"]
+    src-core-COMP-21 --> src-core-COMP-16
+    src-core-COMP-28 --> src-core-COMP-30
+    src-core-COMP-25 --> src-core-COMP-30
+    src-core-COMP-21 --> src-core-COMP-28
+    src-core-COMP-18 --> src-core-COMP-31
+    src-core-COMP-26 --> src-core-COMP-25
+    src-core-COMP-18 --> src-core-COMP-16
+    src-core-COMP-26 --> src-core-COMP-27
+    src-core-COMP-18 --> src-core-COMP-22
+    src-core-COMP-18 --> src-core-COMP-28
+    src-core-COMP-22 --> src-core-COMP-28
+    src-core-COMP-26 --> src-core-COMP-23
+    src-core-COMP-28 --> src-core-COMP-17
+    src-core-COMP-25 --> src-core-COMP-17
+    src-core-COMP-28 --> src-core-COMP-16
+    src-core-COMP-25 --> src-core-COMP-16
+    src-core-COMP-21 --> src-core-COMP-20
+    src-core-COMP-25 --> src-core-COMP-28
+    src-core-COMP-21 --> src-core-COMP-15
+    src-core-COMP-26 --> src-core-COMP-24
+    src-core-COMP-21 --> src-core-COMP-26
+    src-core-COMP-26 --> src-core-COMP-21
+    src-core-COMP-18 --> src-core-COMP-20
+    src-core-COMP-18 --> src-core-COMP-26
+    src-core-COMP-25 --> src-core-COMP-18
+    src-core-COMP-28 --> src-core-COMP-18
+    src-core-COMP-23 --> src-core-COMP-28
+    src-core-COMP-26 --> src-core-COMP-31
+    src-core-COMP-26 --> src-core-COMP-22
+    src-core-COMP-21 --> src-core-COMP-18
+    src-core-COMP-24 --> src-core-COMP-28
+    src-core-COMP-21 --> src-core-COMP-19
+    src-core-COMP-28 --> src-core-COMP-20
+    src-core-COMP-25 --> src-core-COMP-20
+    src-core-COMP-26 --> src-core-COMP-30
+    src-core-COMP-28 --> src-core-COMP-15
+    src-core-COMP-25 --> src-core-COMP-15
+    src-core-COMP-28 --> src-core-COMP-26
+    src-core-COMP-25 --> src-core-COMP-26
+    src-core-COMP-18 --> src-core-COMP-19
+    src-core-COMP-21 --> src-core-COMP-25
+    src-core-COMP-21 --> src-core-COMP-27
+    src-core-COMP-21 --> src-core-COMP-23
+    src-core-COMP-18 --> src-core-COMP-15
+    src-core-COMP-26 --> src-core-COMP-17
+    src-core-COMP-25 --> src-core-COMP-24
+    src-core-COMP-18 --> src-core-COMP-23
+    src-core-COMP-28 --> src-core-COMP-19
+    src-core-COMP-25 --> src-core-COMP-19
+    src-core-COMP-26 --> src-core-COMP-16
+    src-core-COMP-27 --> src-core-COMP-28
 ```

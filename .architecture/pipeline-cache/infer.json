@@ -27,7 +27,7 @@
         "__dataclass__": "InferredCapability",
         "__module__": "architecture_model.pipeline.infer_types",
         "id": "CAP-3",
-        "name": "Package Group Management",
+        "name": "Build Configuration Scripts",
         "description": "Package group with 16 modules",
         "evidence_source": "package_group",
         "sub_capabilities": []
@@ -45,7 +45,7 @@
         "__dataclass__": "InferredCapability",
         "__module__": "architecture_model.pipeline.infer_types",
         "id": "CAP-5",
-        "name": "Command Line Interface Handler",
+        "name": "Command Line Interface Entry Point",
         "description": "CLI commands in src/architecture_model/cli/main.py",
         "evidence_source": "cli_pattern",
         "sub_capabilities": []
@@ -430,7 +430,7 @@
     "__module__": "architecture_model.pipeline.protocol",
     "score": 67,
     "sub_scores": {
-      "capability_coverage": 67.05539358600583,
+      "capability_coverage": 67.52873563218391,
       "actor_completeness": 100.0,
       "capability_count": 6.0
     },
@@ -1561,7 +1561,7 @@
       "priority": "informational"
     }
   ],
-  "input_hash": "343",
+  "input_hash": "348",
   "duration_ms": 2,
   "version": "1.0"
 }

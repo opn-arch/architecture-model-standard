@@ -24,6 +24,7 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-3.1 (Scanners) | depends-on | Graph analysis builds on scanner output |
+| REQ-9 | satisfies | Graph analysis resolves imports to edges |
 
 ### Dependents (incoming)
 

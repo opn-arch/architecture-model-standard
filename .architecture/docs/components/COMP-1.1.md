@@ -17,7 +17,9 @@
 
 ### Dependencies (outgoing)
 
-None
+| Target | Type | Description |
+|--------|------|-------------|
+| REQ-22 | satisfies | Type system supports parent_id/children |
 
 ### Dependents (incoming)
 

@@ -6902,6 +6902,73 @@
       {
         "__dataclass__": "ModuleRecord",
         "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_protocol_review.py",
+        "language": "python",
+        "functions": [
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_enrichment_record_construction",
+            "signature": "def test_enrichment_record_construction()",
+            "body_hint": "[5 statements]",
+            "calls": [
+              "EnrichmentRecord"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 6
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_enrichment_record_with_optionals",
+            "signature": "def test_enrichment_record_with_optionals()",
+            "body_hint": "[4 statements]",
+            "calls": [
+              "EnrichmentRecord"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 23
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_artifact_review_construction",
+            "signature": "def test_artifact_review_construction()",
+            "body_hint": "[5 statements]",
+            "calls": [
+              "ArtifactReview"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 42
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_artifact_review_with_optionals",
+            "signature": "def test_artifact_review_with_optionals()",
+            "body_hint": "[4 statements]",
+            "calls": [
+              "ArtifactReview"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 57
+          }
+        ],
+        "classes": [],
+        "constants": [],
+        "imports": [
+          "architecture_model.pipeline.protocol"
+        ],
+        "line_count": 71,
+        "docstring": "Tests for EnrichmentRecord and ArtifactReview dataclasses."
+      },
+      {
+        "__dataclass__": "ModuleRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
         "path": "tests/test_behavior_extraction.py",
         "language": "python",
         "functions": [],
@@ -7257,6 +7324,111 @@
         ],
         "line_count": 111,
         "docstring": "Tests for behavioral extraction from function bodies."
+      },
+      {
+        "__dataclass__": "ModuleRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_emit_review.py",
+        "language": "python",
+        "functions": [
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_run_llm_reviews_creates_reviews",
+            "signature": "def test_run_llm_reviews_creates_reviews(tmp_path)",
+            "body_hint": "[17 statements]",
+            "calls": [
+              "mkdir",
+              "write_text",
+              "AsyncMock",
+              "EmitStage",
+              "run",
+              "isinstance",
+              "_run_llm_reviews",
+              "len"
+            ],
+            "decorators": [],
+            "docstring": "_run_llm_reviews produces ArtifactReview for each artifact.",
+            "line_number": 7
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_run_llm_reviews_skips_small_files",
+            "signature": "def test_run_llm_reviews_skips_small_files(tmp_path)",
+            "body_hint": "[7 statements]",
+            "calls": [
+              "write_text",
+              "AsyncMock",
+              "EmitStage",
+              "run",
+              "assert_not_called",
+              "_run_llm_reviews",
+              "len"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 38
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_inline_reviews_appends_section",
+            "signature": "def test_inline_reviews_appends_section(tmp_path)",
+            "body_hint": "[13 statements]",
+            "calls": [
+              "write_text",
+              "_inline_reviews",
+              "read_text",
+              "ArtifactReview"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 49
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_inline_reviews_idempotent",
+            "signature": "def test_inline_reviews_idempotent(tmp_path)",
+            "body_hint": "[9 statements]",
+            "calls": [
+              "write_text",
+              "_inline_reviews",
+              "read_text",
+              "ArtifactReview",
+              "count"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 79
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_inline_reviews_skips_non_md",
+            "signature": "def test_inline_reviews_skips_non_md(tmp_path)",
+            "body_hint": "[6 statements]",
+            "calls": [
+              "write_text",
+              "_inline_reviews",
+              "ArtifactReview"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 104
+          }
+        ],
+        "classes": [],
+        "constants": [],
+        "imports": [
+          "asyncio",
+          "unittest.mock",
+          "pathlib",
+          "architecture_model.pipeline.protocol"
+        ],
+        "line_count": 122,
+        "docstring": null
       },
       {
         "__dataclass__": "ModuleRecord",
@@ -13167,6 +13339,124 @@
         ],
         "line_count": 31,
         "docstring": "Tests for learnings CLI command."
+      },
+      {
+        "__dataclass__": "ModuleRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_coordinator_enrichment.py",
+        "language": "python",
+        "functions": [
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_infer_enrichment_records",
+            "signature": "async def test_infer_enrichment_records()",
+            "body_hint": "[15 statements]",
+            "calls": [
+              "PipelineContext",
+              "FakeCap",
+              "StageResult",
+              "PipelineCoordinator",
+              "enrich_stage_output",
+              "len",
+              "Path",
+              "FakeInferResult",
+              "QualityMetrics"
+            ],
+            "decorators": [
+              "pytest.mark.asyncio"
+            ],
+            "docstring": null,
+            "line_number": 41
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_allocate_enrichment_records",
+            "signature": "async def test_allocate_enrichment_records()",
+            "body_hint": "[13 statements]",
+            "calls": [
+              "PipelineContext",
+              "FakeComp",
+              "StageResult",
+              "PipelineCoordinator",
+              "enrich_stage_output",
+              "len",
+              "Path",
+              "FakeAllocResult",
+              "QualityMetrics"
+            ],
+            "decorators": [
+              "pytest.mark.asyncio"
+            ],
+            "docstring": null,
+            "line_number": 71
+          }
+        ],
+        "classes": [
+          {
+            "__dataclass__": "ClassRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "FakeCap",
+            "bases": [],
+            "methods": [],
+            "method_details": [],
+            "attributes": {},
+            "decorators": [
+              "dataclass"
+            ],
+            "is_abstract": false
+          },
+          {
+            "__dataclass__": "ClassRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "FakeInferResult",
+            "bases": [],
+            "methods": [],
+            "method_details": [],
+            "attributes": {},
+            "decorators": [
+              "dataclass"
+            ],
+            "is_abstract": false
+          },
+          {
+            "__dataclass__": "ClassRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "FakeComp",
+            "bases": [],
+            "methods": [],
+            "method_details": [],
+            "attributes": {},
+            "decorators": [
+              "dataclass"
+            ],
+            "is_abstract": false
+          },
+          {
+            "__dataclass__": "ClassRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "FakeAllocResult",
+            "bases": [],
+            "methods": [],
+            "method_details": [],
+            "attributes": {},
+            "decorators": [
+              "dataclass"
+            ],
+            "is_abstract": false
+          }
+        ],
+        "constants": [],
+        "imports": [
+          "pytest",
+          "dataclasses",
+          "pathlib",
+          "architecture_model.pipeline.coordinator",
+          "architecture_model.pipeline.protocol"
+        ],
+        "line_count": 95,
+        "docstring": "Tests for enrichment record creation in coordinator."
       },
       {
         "__dataclass__": "ModuleRecord",
@@ -23407,6 +23697,109 @@
       {
         "__dataclass__": "ModuleRecord",
         "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_artifact_traceability_review.py",
+        "language": "python",
+        "functions": [
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "_make_model",
+            "signature": "def _make_model()",
+            "body_hint": "with tempfile.NamedTemporaryFile(suffix='.yaml', mode='w', delete=False) as f:\n    yaml.dump(_MINIMAL, f); return load_model(Path(f.name))",
+            "calls": [
+              "load_model",
+              "NamedTemporaryFile",
+              "dump",
+              "Path"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 26
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_traceability_with_reviews",
+            "signature": "def test_traceability_with_reviews()",
+            "body_hint": "[7 statements]",
+            "calls": [
+              "_make_model",
+              "generate_artifact_traceability",
+              "ArtifactReview"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 32
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_traceability_with_enrichments",
+            "signature": "def test_traceability_with_enrichments()",
+            "body_hint": "[8 statements]",
+            "calls": [
+              "_make_model",
+              "generate_artifact_traceability",
+              "EnrichmentRecord"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 53
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_traceability_with_review_details",
+            "signature": "def test_traceability_with_review_details()",
+            "body_hint": "[7 statements]",
+            "calls": [
+              "_make_model",
+              "generate_artifact_traceability",
+              "ArtifactReview"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 76
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_traceability_without_reviews",
+            "signature": "def test_traceability_without_reviews()",
+            "body_hint": "[5 statements]",
+            "calls": [
+              "_make_model",
+              "generate_artifact_traceability"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 96
+          }
+        ],
+        "classes": [],
+        "constants": [
+          {
+            "__dataclass__": "ConstantRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "_MINIMAL",
+            "value": "{'meta': {'schema_version': '1.3', 'project': 'test'}, 'entities': {'capabilities': [{'id': 'CAP-1', 'name': 'Test'}], 'components': [{'id': 'COMP-1', 'name': 'Core'}], 'behaviors': [], 'actors': [], 'interfaces': [], 'constraints': [], 'requirements': []}, 'relationships': []}",
+            "type": "",
+            "context": ""
+          }
+        ],
+        "imports": [
+          "tempfile",
+          "pathlib",
+          "yaml",
+          "architecture_model.core.parser",
+          "architecture_model.pipeline.protocol"
+        ],
+        "line_count": 102,
+        "docstring": "Tests for artifact traceability with LLM review and enrichment data."
+      },
+      {
+        "__dataclass__": "ModuleRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
         "path": "tests/test_diagrams.py",
         "language": "python",
         "functions": [
@@ -25626,6 +26019,85 @@
         ],
         "line_count": 186,
         "docstring": null
+      },
+      {
+        "__dataclass__": "ModuleRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_cache_reviews.py",
+        "language": "python",
+        "functions": [
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_enrichment_log_round_trip",
+            "signature": "def test_enrichment_log_round_trip(tmp_path: Path)",
+            "body_hint": "[8 statements]",
+            "calls": [
+              "PipelineCache",
+              "save_enrichment_log",
+              "load_enrichment_log",
+              "EnrichmentRecord",
+              "len"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 9
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_enrichment_log_empty",
+            "signature": "def test_enrichment_log_empty(tmp_path: Path)",
+            "body_hint": "cache = PipelineCache(tmp_path / 'cache'); assert cache.load_enrichment_log() == []",
+            "calls": [
+              "PipelineCache",
+              "load_enrichment_log"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 43
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_reviews_round_trip",
+            "signature": "def test_reviews_round_trip(tmp_path: Path)",
+            "body_hint": "[7 statements]",
+            "calls": [
+              "PipelineCache",
+              "save_reviews",
+              "load_reviews",
+              "ArtifactReview",
+              "len"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 48
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "test_reviews_empty",
+            "signature": "def test_reviews_empty(tmp_path: Path)",
+            "body_hint": "cache = PipelineCache(tmp_path / 'cache'); assert cache.load_reviews() == []",
+            "calls": [
+              "PipelineCache",
+              "load_reviews"
+            ],
+            "decorators": [],
+            "docstring": null,
+            "line_number": 70
+          }
+        ],
+        "classes": [],
+        "constants": [],
+        "imports": [
+          "pathlib",
+          "architecture_model.pipeline.cache",
+          "architecture_model.pipeline.protocol"
+        ],
+        "line_count": 72,
+        "docstring": "Tests for cache save/load of enrichment log and reviews."
       },
       {
         "__dataclass__": "ModuleRecord",
@@ -29079,7 +29551,7 @@
                 "calls": [],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 17
+                "line_number": 22
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29095,7 +29567,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Topological sort of deps needed to reach target.",
-                "line_number": 27
+                "line_number": 32
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29112,7 +29584,7 @@
                 ],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 36
+                "line_number": 41
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29130,7 +29602,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Kahn's algorithm on the subset.",
-                "line_number": 49
+                "line_number": 54
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29145,7 +29617,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Run minimum stages to produce target. Skips cached.",
-                "line_number": 72
+                "line_number": 77
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29158,7 +29630,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Run single stage + its deps. Returns target's result.",
-                "line_number": 86
+                "line_number": 91
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29179,7 +29651,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Run all stages in dep order. Detects circular deps.",
-                "line_number": 91
+                "line_number": 96
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29196,7 +29668,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Record stage quality scores to learning store.",
-                "line_number": 129
+                "line_number": 134
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29209,7 +29681,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Get corrections from learning store as prior evidence for stages.",
-                "line_number": 136
+                "line_number": 141
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29222,7 +29694,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Get calibration overrides for a module.",
-                "line_number": 142
+                "line_number": 147
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29238,7 +29710,7 @@
                 ],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 148
+                "line_number": 153
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29248,17 +29720,19 @@
                 "body_hint": "[6 statements]",
                 "calls": [
                   "get",
+                  "append",
                   "llm_enrich",
                   "strip",
-                  "append",
                   "join",
                   "len",
+                  "EnrichmentRecord",
                   "split",
-                  "str"
+                  "str",
+                  "strftime"
                 ],
                 "decorators": [],
                 "docstring": "Post-stage LLM enrichment: improve names/descriptions of low-quality outputs.\n\nCalled by the MCP tool after a stage completes, if ctx.llm_callback is set.\nReturns list of changes made.",
-                "line_number": 160
+                "line_number": 165
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -29274,7 +29748,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Run all stages including decompose\u2192synthesize\u2192emit which handle recursion.\n\nThe synthesize stage runs scoped sub-pipelines for each detected system.\nmax_depth and leaf_threshold are passed via ctx.config for synthesize to use.",
-                "line_number": 249
+                "line_number": 304
               }
             ],
             "attributes": {},
@@ -29292,7 +29766,7 @@
           "architecture_model.pipeline.learning",
           "architecture_model.pipeline.protocol"
         ],
-        "line_count": 275,
+        "line_count": 330,
         "docstring": "Pipeline coordinator with DAG resolution and recursive decomposition."
       },
       {
@@ -30490,7 +30964,7 @@
                 "calls": [],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 137
+                "line_number": 138
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30503,7 +30977,7 @@
                 ],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 140
+                "line_number": 141
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30521,7 +30995,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Call LLM enrichment if callback is registered. Returns None if no LLM available.",
-                "line_number": 143
+                "line_number": 144
               }
             ],
             "attributes": {},
@@ -30534,6 +31008,32 @@
             "__dataclass__": "ClassRecord",
             "__module__": "architecture_model.pipeline.observe_types",
             "name": "LLMCallRecord",
+            "bases": [],
+            "methods": [],
+            "method_details": [],
+            "attributes": {},
+            "decorators": [
+              "dataclass"
+            ],
+            "is_abstract": false
+          },
+          {
+            "__dataclass__": "ClassRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "EnrichmentRecord",
+            "bases": [],
+            "methods": [],
+            "method_details": [],
+            "attributes": {},
+            "decorators": [
+              "dataclass"
+            ],
+            "is_abstract": false
+          },
+          {
+            "__dataclass__": "ClassRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "ArtifactReview",
             "bases": [],
             "methods": [],
             "method_details": [],
@@ -30565,7 +31065,7 @@
                 "calls": [],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 199
+                "line_number": 232
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30576,7 +31076,7 @@
                 "calls": [],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 200
+                "line_number": 233
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30587,7 +31087,7 @@
                 "calls": [],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 201
+                "line_number": 234
               }
             ],
             "attributes": {},
@@ -30611,7 +31111,7 @@
           "pathlib",
           "typing"
         ],
-        "line_count": 201,
+        "line_count": 234,
         "docstring": "Protocol types for the modular extraction pipeline."
       },
       {
@@ -30638,7 +31138,7 @@
             ],
             "decorators": [],
             "docstring": "Recursively serialize dataclasses and Path objects to JSON-safe dicts.",
-            "line_number": 25
+            "line_number": 31
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -30653,7 +31153,7 @@
             ],
             "decorators": [],
             "docstring": "Get the output dataclass for a given stage name.",
-            "line_number": 48
+            "line_number": 54
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -30669,7 +31169,7 @@
             ],
             "decorators": [],
             "docstring": "Recursively deserialize JSON data back into dataclasses.",
-            "line_number": 70
+            "line_number": 77
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -30692,7 +31192,7 @@
             ],
             "decorators": [],
             "docstring": "Reconstruct a dataclass from serialized dict with __dataclass__ marker.",
-            "line_number": 85
+            "line_number": 92
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -30712,7 +31212,7 @@
             ],
             "decorators": [],
             "docstring": "Deserialize a StageResult from JSON dict.",
-            "line_number": 116
+            "line_number": 123
           }
         ],
         "classes": [
@@ -30729,6 +31229,10 @@
               "load_all",
               "save_llm_calls",
               "load_llm_calls",
+              "save_enrichment_log",
+              "load_enrichment_log",
+              "save_reviews",
+              "load_reviews",
               "clear",
               "_update_meta",
               "_read_meta",
@@ -30744,7 +31248,7 @@
                 "calls": [],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 171
+                "line_number": 176
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30757,7 +31261,7 @@
                 ],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 174
+                "line_number": 179
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30774,7 +31278,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Persist a single stage result to disk.",
-                "line_number": 177
+                "line_number": 182
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30790,7 +31294,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Load a cached stage result from disk.",
-                "line_number": 185
+                "line_number": 190
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30806,7 +31310,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Load all cached stage results.",
-                "line_number": 193
+                "line_number": 198
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30822,7 +31326,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Persist LLM call records.",
-                "line_number": 205
+                "line_number": 210
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30842,7 +31346,73 @@
                 ],
                 "decorators": [],
                 "docstring": "Load persisted LLM call records.",
-                "line_number": 212
+                "line_number": 217
+              },
+              {
+                "__dataclass__": "FunctionRecord",
+                "__module__": "architecture_model.pipeline.observe_types",
+                "name": "save_enrichment_log",
+                "signature": "def save_enrichment_log(self, records: list[EnrichmentRecord]) -> None",
+                "body_hint": "self.cache_dir.mkdir(parents=True, exist_ok=True); path = self.cache_dir / 'enrichment_log.json'; path.write_text(json.dumps([_serialize(r) for r in records], indent=2))",
+                "calls": [
+                  "mkdir",
+                  "write_text",
+                  "dumps",
+                  "_serialize"
+                ],
+                "decorators": [],
+                "docstring": null,
+                "line_number": 231
+              },
+              {
+                "__dataclass__": "FunctionRecord",
+                "__module__": "architecture_model.pipeline.observe_types",
+                "name": "load_enrichment_log",
+                "signature": "def load_enrichment_log(self) -> list[EnrichmentRecord]",
+                "body_hint": "[4 statements]",
+                "calls": [
+                  "loads",
+                  "exists",
+                  "read_text",
+                  "EnrichmentRecord",
+                  "items"
+                ],
+                "decorators": [],
+                "docstring": null,
+                "line_number": 236
+              },
+              {
+                "__dataclass__": "FunctionRecord",
+                "__module__": "architecture_model.pipeline.observe_types",
+                "name": "save_reviews",
+                "signature": "def save_reviews(self, reviews: list[ArtifactReview]) -> None",
+                "body_hint": "self.cache_dir.mkdir(parents=True, exist_ok=True); path = self.cache_dir / 'reviews.json'; path.write_text(json.dumps([_serialize(r) for r in reviews], indent=2))",
+                "calls": [
+                  "mkdir",
+                  "write_text",
+                  "dumps",
+                  "_serialize"
+                ],
+                "decorators": [],
+                "docstring": null,
+                "line_number": 246
+              },
+              {
+                "__dataclass__": "FunctionRecord",
+                "__module__": "architecture_model.pipeline.observe_types",
+                "name": "load_reviews",
+                "signature": "def load_reviews(self) -> list[ArtifactReview]",
+                "body_hint": "[4 statements]",
+                "calls": [
+                  "loads",
+                  "exists",
+                  "read_text",
+                  "ArtifactReview",
+                  "items"
+                ],
+                "decorators": [],
+                "docstring": null,
+                "line_number": 251
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30856,7 +31426,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Remove all cached data.",
-                "line_number": 226
+                "line_number": 258
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30874,7 +31444,7 @@
                 ],
                 "decorators": [],
                 "docstring": "Update meta.json with completed stage.",
-                "line_number": 232
+                "line_number": 265
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -30890,24 +31460,25 @@
                 ],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 242
+                "line_number": 275
               },
               {
                 "__dataclass__": "FunctionRecord",
                 "__module__": "architecture_model.pipeline.observe_types",
                 "name": "hydrate_context",
                 "signature": "def hydrate_context(self, ctx: PipelineContext) -> list[str]",
-                "body_hint": "[4 statements]",
+                "body_hint": "[5 statements]",
                 "calls": [
                   "load_all",
                   "items",
                   "load_llm_calls",
+                  "load_enrichment_log",
                   "list",
                   "keys"
                 ],
                 "decorators": [],
                 "docstring": "Load all cached results into a PipelineContext. Returns stage names loaded.",
-                "line_number": 248
+                "line_number": 281
               }
             ],
             "attributes": {},
@@ -30925,7 +31496,7 @@
           "typing",
           "architecture_model.pipeline.protocol"
         ],
-        "line_count": 254,
+        "line_count": 288,
         "docstring": "File-based pipeline cache for stage-by-stage MCP execution.\n\nSerializes StageResult objects to JSON files in .architecture/pipeline-cache/\nso the MCP orchestrator can resume between stage invocations."
       },
       {
@@ -33060,7 +33631,7 @@
             ],
             "decorators": [],
             "docstring": "Convert name to filesystem-safe slug.",
-            "line_number": 20
+            "line_number": 23
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -33078,7 +33649,7 @@
             ],
             "decorators": [],
             "docstring": "Write a file and track in result.",
-            "line_number": 25
+            "line_number": 28
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -33094,7 +33665,7 @@
             ],
             "decorators": [],
             "docstring": "Check if a file path is a test file based on directory or filename.",
-            "line_number": 36
+            "line_number": 39
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -33111,7 +33682,7 @@
             ],
             "decorators": [],
             "docstring": "Build source\u2192test reverse mapping from observe stage import edges.\n\nFor each test file that imports a source file, record the reverse:\nsource_file \u2192 [test files that import it].",
-            "line_number": 47
+            "line_number": 50
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -33129,7 +33700,28 @@
             ],
             "decorators": [],
             "docstring": "Aggregate test_map by component ID.\n\nReturns: comp_id \u2192 [unique test files]",
-            "line_number": 69
+            "line_number": 72
+          },
+          {
+            "__dataclass__": "FunctionRecord",
+            "__module__": "architecture_model.pipeline.observe_types",
+            "name": "_inline_reviews",
+            "signature": "def _inline_reviews(out_dir: Path, reviews: list[ArtifactReview]) -> int",
+            "body_hint": "count = 0; for rev in reviews:\n    if not rev.artifact_path.endswith('.md'):\n        continue\n    fpath = out_dir / rev.artifact_path\n    if not fpath.exists():\n        continue\n    content = fpath.read_text()\n    marker = '## LLM Review'\n    idx = content.find(marker)\n    if idx != -1:\n        prefix = content[:idx].rstrip()\n        if prefix.endswith('---'):\n            prefix = prefix[:-3].rstrip()\n        content = prefix\n    prompt_preview = rev.prompt_sent[:500]\n    lines = ['', '---', '', '## LLM Review', '', f'*Reviewed: {rev.timestamp} | Duration: {rev.duration_ms}ms*', '', f'**Summary:** {rev.review_summary}', '']\n    if rev.comments:\n        for c in rev.comments:\n            lines.append(f'- {c}')\n        lines.append('')\n    lines.extend(['<details>', '<summary>Review details</summary>', '', '**Prompt sent (truncated):**', '```', prompt_preview, '```', '', '**Full LLM response:**', '```', rev.response_received, '```', '', '</details>', ''])\n    content = content.rstrip() + '\\n' + '\\n'.join(lines)\n    fpath.write_text(content)\n    count += 1; return count",
+            "calls": [
+              "read_text",
+              "find",
+              "extend",
+              "write_text",
+              "endswith",
+              "exists",
+              "rstrip",
+              "append",
+              "join"
+            ],
+            "decorators": [],
+            "docstring": "Append LLM Review sections to reviewed .md files. Returns count modified.",
+            "line_number": 475
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -33145,7 +33737,7 @@
             ],
             "decorators": [],
             "docstring": "Generate a system interactions doc from SoS model.",
-            "line_number": 350
+            "line_number": 542
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -33182,7 +33774,7 @@
             ],
             "decorators": [],
             "docstring": "Enrich the repo's top-level .architecture-model.yaml with pipeline-derived entities.\n\nMerges behaviors, interfaces, actors, constraints, requirements, and\ncomponent descriptions from pipeline stages into the existing model YAML.\nOnly adds entities that don't already exist (by ID).",
-            "line_number": 365
+            "line_number": 557
           }
         ],
         "classes": [
@@ -33195,7 +33787,9 @@
               "can_run",
               "output_path",
               "run",
-              "_generate_se_docs"
+              "_generate_se_docs",
+              "_run_llm_reviews_sync",
+              "_run_llm_reviews"
             ],
             "method_details": [
               {
@@ -33209,7 +33803,7 @@
                 ],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 89
+                "line_number": 92
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -33220,14 +33814,14 @@
                 "calls": [],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 92
+                "line_number": 95
               },
               {
                 "__dataclass__": "FunctionRecord",
                 "__module__": "architecture_model.pipeline.observe_types",
                 "name": "run",
                 "signature": "def run(self, ctx: PipelineContext) -> StageResult[EmitResult]",
-                "body_hint": "[22 statements]",
+                "body_hint": "[23 statements]",
                 "calls": [
                   "monotonic",
                   "output_path",
@@ -33252,18 +33846,23 @@
                   "write_text",
                   "persist_requirements",
                   "select_top_requirements",
+                  "_run_llm_reviews_sync",
+                  "_inline_reviews",
                   "Diagnostic",
                   "hasattr",
                   "dumps",
                   "stat",
                   "_build_component_test_map",
+                  "exists",
                   "len",
                   "dir",
+                  "_load_model",
+                  "generate_artifact_traceability",
                   "set"
                 ],
                 "decorators": [],
                 "docstring": null,
-                "line_number": 95
+                "line_number": 98
               },
               {
                 "__dataclass__": "FunctionRecord",
@@ -33282,7 +33881,55 @@
                 ],
                 "decorators": [],
                 "docstring": "Generate SE docs for top-level and subsystem models (non-fatal).",
-                "line_number": 290
+                "line_number": 336
+              },
+              {
+                "__dataclass__": "FunctionRecord",
+                "__module__": "architecture_model.pipeline.observe_types",
+                "name": "_run_llm_reviews_sync",
+                "signature": "def _run_llm_reviews_sync(self, out_dir: Path, llm_callback) -> list[ArtifactReview]",
+                "body_hint": "coro = self._run_llm_reviews(out_dir, llm_callback); try:\n    asyncio.get_running_loop()\n    import concurrent.futures\n    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:\n        future = pool.submit(asyncio.run, coro)\n        return future.result(timeout=300)\nexcept RuntimeError:\n    return asyncio.run(coro)",
+                "calls": [
+                  "_run_llm_reviews",
+                  "get_running_loop",
+                  "ThreadPoolExecutor",
+                  "submit",
+                  "result",
+                  "run"
+                ],
+                "decorators": [],
+                "docstring": "Synchronous wrapper for _run_llm_reviews that works in any context.",
+                "line_number": 395
+              },
+              {
+                "__dataclass__": "FunctionRecord",
+                "__module__": "architecture_model.pipeline.observe_types",
+                "name": "_run_llm_reviews",
+                "signature": "async def _run_llm_reviews(self, out_dir: Path, llm_callback) -> list[ArtifactReview]",
+                "body_hint": "[9 statements]",
+                "calls": [
+                  "exists",
+                  "sorted",
+                  "extend",
+                  "append",
+                  "read_text",
+                  "str",
+                  "monotonic",
+                  "int",
+                  "splitlines",
+                  "glob",
+                  "len",
+                  "relative_to",
+                  "llm_callback",
+                  "strip",
+                  "startswith",
+                  "ArtifactReview",
+                  "isoformat",
+                  "now"
+                ],
+                "decorators": [],
+                "docstring": "Send each reviewable artifact to LLM for review.",
+                "line_number": 410
               }
             ],
             "attributes": {
@@ -33306,15 +33953,17 @@
         ],
         "imports": [
           "__future__",
+          "asyncio",
           "json",
           "re",
           "time",
+          "datetime",
           "pathlib",
           "architecture_model.pipeline.emit_types",
           "architecture_model.pipeline.protocol",
           "architecture_model.pipeline.synthesize_types"
         ],
-        "line_count": 681,
+        "line_count": 873,
         "docstring": "Emit pipeline stage \u2014 writes final SoS artifact structure to disk."
       },
       {
@@ -48942,7 +49591,7 @@
             "__dataclass__": "FunctionRecord",
             "__module__": "architecture_model.pipeline.observe_types",
             "name": "generate_se_docs",
-            "signature": "def generate_se_docs(model: ArchitectureModel, output_dir: Path, manifest: Any | None=None, *, doc_filter: list[str] | None=None, author: str='architect_pipeline') -> dict[str, Any]",
+            "signature": "def generate_se_docs(model: ArchitectureModel, output_dir: Path, manifest: Any | None=None, *, doc_filter: list[str] | None=None, author: str='architect_pipeline', reviews: list | None=None, enrichments: list | None=None) -> dict[str, Any]",
             "body_hint": "[15 statements]",
             "calls": [
               "mkdir",
@@ -48961,13 +49610,13 @@
               "extract_section_hashes",
               "join",
               "_import_generator",
-              "gen_func",
               "read_text",
               "parse_frontmatter",
               "detect_edits",
               "str",
               "record_regeneration",
               "record_generation",
+              "gen_func",
               "_merge_sections",
               "extend",
               "len"
@@ -48990,7 +49639,7 @@
             ],
             "decorators": [],
             "docstring": "Merge new content with existing, preserving user-edited sections.",
-            "line_number": 218
+            "line_number": 223
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -49007,7 +49656,7 @@
             ],
             "decorators": [],
             "docstring": "Split markdown into {section_name: content} dict.",
-            "line_number": 241
+            "line_number": 246
           },
           {
             "__dataclass__": "FunctionRecord",
@@ -49023,7 +49672,7 @@
             ],
             "decorators": [],
             "docstring": "Write SE docs index file.",
-            "line_number": 262
+            "line_number": 267
           }
         ],
         "classes": [],
@@ -49037,7 +49686,7 @@
           "frontmatter",
           "detect"
         ],
-        "line_count": 296,
+        "line_count": 301,
         "docstring": "SE document generation orchestrator."
       },
       {
@@ -49308,8 +49957,8 @@
             "__dataclass__": "FunctionRecord",
             "__module__": "architecture_model.pipeline.observe_types",
             "name": "generate_artifact_traceability",
-            "signature": "def generate_artifact_traceability(model: ArchitectureModel, manifest: object | None=None) -> str",
-            "body_hint": "[62 statements]",
+            "signature": "def generate_artifact_traceability(model: ArchitectureModel, manifest: object | None=None, *, reviews: list | None=None, enrichments: list | None=None) -> str",
+            "body_hint": "[74 statements]",
             "calls": [
               "append",
               "items",
@@ -49340,7 +49989,7 @@
           "collections",
           "typing"
         ],
-        "line_count": 214,
+        "line_count": 280,
         "docstring": "Artifact Traceability Map document generator."
       },
       {
@@ -56155,10 +56804,28 @@
       {
         "__dataclass__": "ImportEdge",
         "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_protocol_review.py",
+        "target": "src/architecture_model/pipeline/protocol.py",
+        "symbols": [
+          "protocol"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
         "source": "tests/test_behavior_extraction.py",
         "target": "src/architecture_model/manifest/behavior.py",
         "symbols": [
           "behavior"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_emit_review.py",
+        "target": "src/architecture_model/pipeline/protocol.py",
+        "symbols": [
+          "protocol"
         ]
       },
       {
@@ -56790,6 +57457,24 @@
         "target": "src/architecture_model/cli/main.py",
         "symbols": [
           "main"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_coordinator_enrichment.py",
+        "target": "src/architecture_model/pipeline/coordinator.py",
+        "symbols": [
+          "coordinator"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_coordinator_enrichment.py",
+        "target": "src/architecture_model/pipeline/protocol.py",
+        "symbols": [
+          "protocol"
         ]
       },
       {
@@ -57927,6 +58612,24 @@
       {
         "__dataclass__": "ImportEdge",
         "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_artifact_traceability_review.py",
+        "target": "src/architecture_model/core/parser.py",
+        "symbols": [
+          "parser"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_artifact_traceability_review.py",
+        "target": "src/architecture_model/pipeline/protocol.py",
+        "symbols": [
+          "protocol"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
         "source": "tests/test_diagrams.py",
         "target": "src/architecture_model/docs/diagrams.py",
         "symbols": [
@@ -58147,6 +58850,24 @@
         "target": "src/architecture_model/docs/generator.py",
         "symbols": [
           "generator"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_cache_reviews.py",
+        "target": "src/architecture_model/pipeline/cache.py",
+        "symbols": [
+          "cache"
+        ]
+      },
+      {
+        "__dataclass__": "ImportEdge",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "source": "tests/test_cache_reviews.py",
+        "target": "src/architecture_model/pipeline/protocol.py",
+        "symbols": [
+          "protocol"
         ]
       },
       {
@@ -61347,9 +62068,25 @@
       {
         "__dataclass__": "TestFileRecord",
         "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_protocol_review.py",
+        "targets": [
+          "protocol_review"
+        ]
+      },
+      {
+        "__dataclass__": "TestFileRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
         "path": "tests/test_behavior_extraction.py",
         "targets": [
           "behavior_extraction"
+        ]
+      },
+      {
+        "__dataclass__": "TestFileRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_emit_review.py",
+        "targets": [
+          "emit_review"
         ]
       },
       {
@@ -61662,6 +62399,14 @@
         "path": "tests/test_cli_learnings.py",
         "targets": [
           "cli_learnings"
+        ]
+      },
+      {
+        "__dataclass__": "TestFileRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_coordinator_enrichment.py",
+        "targets": [
+          "coordinator_enrichment"
         ]
       },
       {
@@ -62131,6 +62876,14 @@
       {
         "__dataclass__": "TestFileRecord",
         "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_artifact_traceability_review.py",
+        "targets": [
+          "artifact_traceability_review"
+        ]
+      },
+      {
+        "__dataclass__": "TestFileRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
         "path": "tests/test_diagrams.py",
         "targets": [
           "diagrams"
@@ -62214,6 +62967,14 @@
         "path": "tests/test_docs_gen.py",
         "targets": [
           "docs_gen"
+        ]
+      },
+      {
+        "__dataclass__": "TestFileRecord",
+        "__module__": "architecture_model.pipeline.observe_types",
+        "path": "tests/test_cache_reviews.py",
+        "targets": [
+          "cache_reviews"
         ]
       },
       {
@@ -62676,8 +63437,8 @@
     "score": 100,
     "sub_scores": {
       "parse_success_rate": 100.0,
-      "symbol_density": 5.454810495626822,
-      "file_count": 343.0
+      "symbol_density": 5.456896551724138,
+      "file_count": 348.0
     },
     "thresholds": {
       "parse_success_rate": 90.0
@@ -62690,7 +63451,7 @@
       "__dataclass__": "Uncertainty",
       "__module__": "architecture_model.pipeline.protocol",
       "category": "dynamic_import",
-      "description": "Dynamic import in src/architecture_model/pipeline/cache.py:66",
+      "description": "Dynamic import in src/architecture_model/pipeline/cache.py:73",
       "context": {},
       "suggested_fallback": "search",
       "priority": "informational"
@@ -62705,7 +63466,7 @@
       "priority": "informational"
     }
   ],
-  "input_hash": "343",
-  "duration_ms": 6229,
+  "input_hash": "348",
+  "duration_ms": 6998,
   "version": "1.0"
 }

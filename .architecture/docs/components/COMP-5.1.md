@@ -28,6 +28,7 @@
 | CAP-10 | realizes | Enrichment implements code intelligence |
 | COMP-3 (Manifest) | depends-on | Enrichment reads manifest data |
 | COMP-1.1 (Type System) | depends-on | Enrichment populates core types |
+| REQ-18 | satisfies | Enrichment applies behavior cap at 40 |
 
 ### Dependents (incoming)
 

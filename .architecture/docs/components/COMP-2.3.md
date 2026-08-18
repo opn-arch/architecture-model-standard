@@ -23,6 +23,7 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-1.1 (Type System) | depends-on | Allocation uses core types and model structure |
+| REQ-5 | satisfies | Relate stage produces typed relationships |
 
 ### Dependents (incoming)
 

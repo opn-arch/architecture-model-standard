@@ -2,10 +2,10 @@
 document: Maintenance Manual
 system: System
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:03Z
+generated_at: 2026-08-18T23:36:29Z
 generator_version: 0.3.0
 model_hash: 41fb0d4bec16
-edition: 5
+edition: 7
 ---
 
 > **Model Completeness: F (14%)**
@@ -17,9 +17,7 @@ edition: 5
 > Run the extraction pipeline or manually add behaviors/interfaces/constraints.
 
 # Maintenance Manual: System
-
 ## Component Inventory
-
 | Component | Kind | Layer | Files | Signatures | Test Contracts |
 |-----------|------|-------|-------|-----------|----------------|
 | Checkout (scripts-dev-simulation-COMP-1) | service | — | 1 | 0 | 0 |
@@ -114,9 +112,7 @@ edition: 5
 | Src (extract) (COMP-4-11) | service | web | 5 | 0 | 0 |
 | Src (profiles) (COMP-4-12) | service | web | 1 | 0 | 0 |
 | Src (export) (COMP-4-13) | service | web | 2 | 0 | 0 |
-
 ## Dependency Impact Analysis
-
 | Component | Depends On (fan-out) | Depended By (fan-in) | Impact Risk |
 |-----------|---------------------|---------------------|-------------|
 | Checkout | — | — | LOW |
@@ -129,73 +125,73 @@ edition: 5
 | Runner | — | Infrastructure | LOW |
 | Slice Evaluator | — | — | LOW |
 | Infrastructure | Runner | — | LOW |
-| Allocate | Infer, Protocol, Corrections, Observe | Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Validate, Decompose, Artifacts, Cache | HIGH |
-| Artifacts | Validate, Specify, Contract, Relate, Infer, Allocate, Observe, Protocol | Decompose, Cache, Emit, Synthesize, Coordinator | HIGH |
-| Cache | Lessons, Report, Specify, Validate, Decompose, Requirements Derive, Artifacts, Coordinator, Global Learning, Contract, Context Gen, Emit, Synthesize, Protocol, Relate, Infer, Allocate, Observe, Corrections, Regen Score | Emit, Synthesize, Coordinator, Decompose | MEDIUM |
-| Context Gen | Infer, Allocate, Observe, Protocol, Validate, Relate | Coordinator, Decompose, Cache, Emit, Synthesize | HIGH |
-| Contract | Allocate, Observe, Protocol | Decompose, Artifacts, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Coordinator | Context Gen, Synthesize, Protocol, Relate, Corrections, Allocate, Observe, Validate, Regen Score, Lessons, Cache, Report, Specify, Global Learning, Contract, Decompose, Requirements Derive, Artifacts, Emit, Infer | Decompose, Cache, Emit, Synthesize | MEDIUM |
-| Corrections | — | Coordinator, Emit, Synthesize, Allocate, Decompose, Cache, Infer | HIGH |
-| Decompose | Lessons, Report, Specify, Global Learning, Contract, Requirements Derive, Artifacts, Coordinator, Context Gen, Emit, Relate, Infer, Synthesize, Protocol, Corrections, Allocate, Observe, Cache, Validate, Regen Score | Cache, Emit, Coordinator, Synthesize | MEDIUM |
-| Emit | Allocate, Observe, Lessons, Cache, Corrections, Report, Validate, Regen Score, Artifacts, Specify, Global Learning, Contract, Decompose, Requirements Derive, Coordinator, Context Gen, Synthesize, Relate, Infer, Protocol | Decompose, Cache, Coordinator, Synthesize | MEDIUM |
-| Global Learning | Protocol | Decompose, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Infer | Observe, Protocol, Corrections | Context Gen, Synthesize, Allocate, Validate, Decompose, Artifacts, Cache, Relate, Emit, Coordinator | HIGH |
-| Lessons | Protocol | Decompose, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Observe | Protocol | Infer, Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Allocate, Decompose, Artifacts, Cache | HIGH |
-| Protocol | — | Lessons, Regen Score, Coordinator, Context Gen, Synthesize, Specify, Allocate, Observe, Global Learning, Report, Validate, Decompose, Cache, Artifacts, Infer, Relate, Contract, Emit | HIGH |
-| Regen Score | Protocol | Emit, Coordinator, Synthesize, Decompose, Cache | HIGH |
-| Relate | Allocate, Observe, Infer, Protocol | Coordinator, Validate, Decompose, Artifacts, Cache, Emit, Context Gen, Synthesize | HIGH |
-| Report | Protocol | Decompose, Cache, Emit, Synthesize, Coordinator | HIGH |
-| Requirements Derive | — | Decompose, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Specify | Protocol, Allocate, Observe | Decompose, Cache, Artifacts, Emit, Coordinator, Synthesize | HIGH |
-| Synthesize | Infer, Protocol, Corrections, Allocate, Observe, Cache, Report, Validate, Regen Score, Artifacts, Lessons, Specify, Global Learning, Contract, Decompose, Requirements Derive, Coordinator, Context Gen, Emit, Relate | Coordinator, Decompose, Cache, Emit | MEDIUM |
-| Validate | Relate, Infer, Allocate, Protocol | Artifacts, Cache, Emit, Coordinator, Context Gen, Synthesize, Decompose | HIGH |
-| Cluster | — | Source Block Assign, Representativeness, Regen Readiness, Confidence, Decomposer | HIGH |
-| Completeness | — | Decomposer, Source Block Assign, Regen Readiness, Confidence, Representativeness | HIGH |
-| Compression | — | Decomposer, Source Block Assign, Regen Readiness, Representativeness, Confidence | HIGH |
-| Confidence | Source Block Assign, Corrections, Regen Readiness, Differ, Merger, Decomposer, Coverage, Slicer, Validator, Cluster, Completeness, Parser, Visualize, Compression, Representativeness | Regen Readiness, Representativeness, Decomposer, Source Block Assign | MEDIUM |
-| Corrections | — | Confidence, Decomposer, Source Block Assign, Regen Readiness, Representativeness | HIGH |
-| Coverage | Source Block Assign | Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign | HIGH |
-| Decomposer | Compression, Representativeness, Completeness, Corrections, Differ, Source Block Assign, Regen Readiness, Confidence, Merger, Coverage, Slicer, Validator, Cluster, Parser, Visualize | Regen Readiness, Representativeness, Confidence, Source Block Assign | MEDIUM |
-| Differ | Source Block Assign | Representativeness, Regen Readiness, Confidence, Decomposer, Source Block Assign | HIGH |
-| Merger | Source Block Assign | Regen Readiness, Confidence, Representativeness, Decomposer, Source Block Assign | HIGH |
-| Parser | Source Block Assign | Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign | HIGH |
-| Regen Readiness | Decomposer, Confidence, Differ, Merger, Coverage, Slicer, Validator, Parser, Compression, Cluster, Completeness, Corrections, Visualize, Representativeness, Source Block Assign | Confidence, Representativeness, Decomposer, Source Block Assign | MEDIUM |
-| Representativeness | Differ, Source Block Assign, Decomposer, Regen Readiness, Confidence, Merger, Coverage, Slicer, Validator, Cluster, Parser, Visualize, Compression, Completeness, Corrections | Decomposer, Source Block Assign, Regen Readiness, Confidence | MEDIUM |
-| Slicer | Source Block Assign | Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign | HIGH |
-| Source Block Assign | Compression, Cluster, Completeness, Visualize, Representativeness, Corrections, Decomposer, Regen Readiness, Confidence, Differ, Merger, Slicer, Validator, Coverage, Parser | Confidence, Representativeness, Validator, Decomposer, Coverage, Slicer, Differ, Merger, Parser, Regen Readiness | HIGH |
-| Validator | Source Block Assign | Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign | HIGH |
-| Visualize | — | Source Block Assign, Representativeness, Regen Readiness, Confidence, Decomposer | HIGH |
-| Behavior | — | Scan Cache, Multi Scanner, Generator, Grouping, Interfaces, Recursive, Kt Scanner, Call Graph, Slicers, Blocks, Metrics | HIGH |
-| Blocks | Body Hints, Generator, Grouping, Recursive, Display, Kt Scanner, Chains, Multi Scanner, Scan Cache, Interfaces, Metrics, Behavior, Protocol, Slicers, Ts Scanner, Call Graph | Multi Scanner, Grouping, Interfaces, Generator, Recursive, Kt Scanner, Slicers, Metrics, Scan Cache, Body Hints, Call Graph | HIGH |
-| Body Hints | Blocks | Slicers, Blocks, Recursive, Kt Scanner, Call Graph, Scan Cache, Metrics, Multi Scanner, Generator, Grouping, Interfaces | HIGH |
-| Call Graph | Protocol, Slicers, Ts Scanner, Kt Scanner, Body Hints, Generator, Grouping, Recursive, Display, Chains, Multi Scanner, Scan Cache, Behavior, Interfaces, Blocks, Metrics | Scan Cache, Multi Scanner, Generator, Grouping, Recursive, Kt Scanner, Interfaces, Slicers, Blocks, Metrics | HIGH |
-| Chains | — | Generator, Grouping, Recursive, Kt Scanner, Interfaces, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner | HIGH |
-| Display | — | Generator, Recursive, Kt Scanner, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner, Grouping, Interfaces | HIGH |
-| Generator | Display, Chains, Interfaces, Scan Cache, Behavior, Blocks, Metrics, Protocol, Slicers, Ts Scanner, Call Graph, Kt Scanner, Body Hints, Grouping, Multi Scanner, Recursive | Interfaces, Slicers, Blocks, Metrics, Kt Scanner, Call Graph, Scan Cache, Multi Scanner, Grouping, Recursive | HIGH |
-| Grouping | Chains, Interfaces, Blocks, Behavior, Slicers, Scan Cache, Metrics, Protocol, Ts Scanner, Call Graph, Recursive, Display, Kt Scanner, Body Hints, Generator, Multi Scanner | Interfaces, Slicers, Blocks, Recursive, Kt Scanner, Call Graph, Metrics, Scan Cache, Multi Scanner, Generator | HIGH |
-| Interfaces | Generator, Grouping, Multi Scanner, Recursive, Chains, Scan Cache, Blocks, Behavior, Slicers, Metrics, Protocol, Ts Scanner, Call Graph, Display, Kt Scanner, Body Hints | Generator, Grouping, Recursive, Kt Scanner, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner | HIGH |
-| Kt Scanner | Ts Scanner, Recursive, Display, Body Hints, Generator, Grouping, Chains, Multi Scanner, Scan Cache, Interfaces, Blocks, Behavior, Slicers, Call Graph, Metrics, Protocol | Recursive, Call Graph, Slicers, Blocks, Metrics, Scan Cache, Multi Scanner, Generator, Grouping, Interfaces | HIGH |
-| Metrics | Generator, Protocol, Ts Scanner, Recursive, Display, Kt Scanner, Body Hints, Grouping, Chains, Multi Scanner, Scan Cache, Interfaces, Blocks, Behavior, Slicers, Call Graph | Multi Scanner, Generator, Grouping, Recursive, Interfaces, Slicers, Blocks, Kt Scanner, Call Graph, Scan Cache | HIGH |
-| Multi Scanner | Blocks, Metrics, Behavior, Slicers, Ts Scanner, Call Graph, Body Hints, Generator, Protocol, Recursive, Display, Kt Scanner, Grouping, Chains, Scan Cache, Interfaces | Interfaces, Recursive, Kt Scanner, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Generator, Grouping | HIGH |
-| Protocol | — | Call Graph, Metrics, Scan Cache, Multi Scanner, Generator, Grouping, Interfaces, Slicers, Blocks, Recursive, Kt Scanner | HIGH |
-| Recursive | Display, Kt Scanner, Body Hints, Grouping, Chains, Multi Scanner, Scan Cache, Interfaces, Blocks, Metrics, Behavior, Slicers, Call Graph, Generator, Protocol, Ts Scanner | Kt Scanner, Interfaces, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner, Grouping, Generator | HIGH |
-| Scan Cache | Behavior, Slicers, Ts Scanner, Call Graph, Body Hints, Generator, Protocol, Recursive, Display, Kt Scanner, Grouping, Chains, Multi Scanner, Blocks, Interfaces, Metrics | Generator, Recursive, Kt Scanner, Interfaces, Slicers, Blocks, Grouping, Metrics, Call Graph, Multi Scanner | HIGH |
-| Slicers | Body Hints, Generator, Grouping, Recursive, Display, Kt Scanner, Chains, Multi Scanner, Scan Cache, Interfaces, Blocks, Metrics, Behavior, Protocol, Ts Scanner, Call Graph | Call Graph, Scan Cache, Multi Scanner, Grouping, Interfaces, Generator, Recursive, Kt Scanner, Blocks, Metrics | HIGH |
-| Ts Scanner | — | Kt Scanner, Call Graph, Scan Cache, Metrics, Multi Scanner, Generator, Grouping, Interfaces, Slicers, Blocks, Recursive | HIGH |
-| Auto Enrich | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
-| Behavior Decompose | — | Enrichment Context, Pipeline, Naming Context | MEDIUM |
-| Behavior Flows | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
-| Capability Inference | — | Enrichment Context, Naming Context, Pipeline | MEDIUM |
-| Compaction | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
-| Decompose | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
-| Deep Decompose | — | Enrichment Context, Pipeline, Naming Context | MEDIUM |
+| Allocate | Infer, Protocol, Observe, Corrections | Relate, Cache, Synthesize, Contract, Artifacts, Context Gen, Specify, Validate, Decompose, Coordinator, Emit | HIGH |
+| Artifacts | Validate, Infer, Contract, Allocate, Observe, Specify, Protocol, Relate | Coordinator, Cache, Emit, Synthesize, Decompose | HIGH |
+| Cache | Infer, Regen Score, Protocol, Allocate, Synthesize, Artifacts, Observe, Relate, Context Gen, Specify, Coordinator, Global Learning, Report, Validate, Corrections, Decompose, Emit, Requirements Derive, Contract, Lessons | Coordinator, Emit, Synthesize, Decompose | MEDIUM |
+| Context Gen | Infer, Protocol, Allocate, Observe, Relate, Validate | Emit, Synthesize, Cache, Decompose, Coordinator | HIGH |
+| Contract | Protocol, Allocate, Observe | Decompose, Artifacts, Coordinator, Cache, Emit, Synthesize | HIGH |
+| Coordinator | Synthesize, Artifacts, Cache, Observe, Relate, Global Learning, Report, Validate, Corrections, Decompose, Emit, Requirements Derive, Contract, Lessons, Infer, Regen Score, Context Gen, Specify, Protocol, Allocate | Decompose, Cache, Emit, Synthesize | MEDIUM |
+| Corrections | — | Coordinator, Cache, Emit, Synthesize, Infer, Decompose, Allocate | HIGH |
+| Decompose | Emit, Coordinator, Requirements Derive, Contract, Lessons, Infer, Regen Score, Protocol, Allocate, Synthesize, Artifacts, Observe, Relate, Context Gen, Specify, Global Learning, Report, Validate, Corrections, Cache | Coordinator, Emit, Cache, Synthesize | MEDIUM |
+| Emit | Observe, Regen Score, Context Gen, Specify, Global Learning, Synthesize, Artifacts, Cache, Relate, Decompose, Coordinator, Report, Validate, Corrections, Infer, Requirements Derive, Contract, Protocol, Allocate, Lessons | Decompose, Coordinator, Cache, Synthesize | MEDIUM |
+| Global Learning | Protocol | Coordinator, Emit, Cache, Synthesize, Decompose | HIGH |
+| Infer | Protocol, Observe, Corrections | Cache, Synthesize, Allocate, Artifacts, Context Gen, Validate, Decompose, Coordinator, Emit, Relate | HIGH |
+| Lessons | Protocol | Decompose, Coordinator, Cache, Emit, Synthesize | HIGH |
+| Observe | Protocol | Coordinator, Emit, Relate, Cache, Synthesize, Infer, Allocate, Contract, Artifacts, Context Gen, Specify, Decompose | HIGH |
+| Protocol | — | Cache, Synthesize, Infer, Allocate, Contract, Context Gen, Specify, Validate, Decompose, Artifacts, Regen Score, Observe, Lessons, Global Learning, Coordinator, Emit, Report, Relate | HIGH |
+| Regen Score | Protocol | Cache, Emit, Synthesize, Decompose, Coordinator | HIGH |
+| Relate | Allocate, Observe, Infer, Protocol | Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose, Artifacts, Validate | HIGH |
+| Report | Protocol | Coordinator, Cache, Emit, Synthesize, Decompose | HIGH |
+| Requirements Derive | — | Decompose, Coordinator, Cache, Emit, Synthesize | HIGH |
+| Specify | Protocol, Allocate, Observe | Emit, Synthesize, Cache, Artifacts, Decompose, Coordinator | HIGH |
+| Synthesize | Infer, Regen Score, Context Gen, Specify, Protocol, Allocate, Artifacts, Cache, Observe, Relate, Coordinator, Global Learning, Report, Validate, Corrections, Decompose, Emit, Requirements Derive, Contract, Lessons | Coordinator, Cache, Emit, Decompose | MEDIUM |
+| Validate | Infer, Protocol, Allocate, Relate | Artifacts, Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose | HIGH |
+| Cluster | — | Representativeness, Decomposer, Source Block Assign, Regen Readiness, Confidence | HIGH |
+| Completeness | — | Decomposer, Confidence, Source Block Assign, Regen Readiness, Representativeness | HIGH |
+| Compression | — | Decomposer, Confidence, Source Block Assign, Regen Readiness, Representativeness | HIGH |
+| Confidence | Parser, Regen Readiness, Slicer, Validator, Decomposer, Compression, Visualize, Completeness, Differ, Source Block Assign, Coverage, Representativeness, Corrections, Cluster, Merger | Representativeness, Regen Readiness, Source Block Assign, Decomposer | MEDIUM |
+| Corrections | — | Representativeness, Decomposer, Confidence, Source Block Assign, Regen Readiness | HIGH |
+| Coverage | Source Block Assign | Representativeness, Decomposer, Confidence, Source Block Assign, Regen Readiness | HIGH |
+| Decomposer | Parser, Differ, Validator, Compression, Visualize, Completeness, Source Block Assign, Coverage, Cluster, Representativeness, Confidence, Corrections, Regen Readiness, Slicer, Merger | Source Block Assign, Regen Readiness, Confidence, Representativeness | MEDIUM |
+| Differ | Source Block Assign | Decomposer, Source Block Assign, Regen Readiness, Confidence, Representativeness | HIGH |
+| Merger | Source Block Assign | Source Block Assign, Regen Readiness, Representativeness, Decomposer, Confidence | HIGH |
+| Parser | Source Block Assign | Decomposer, Confidence, Source Block Assign, Representativeness, Regen Readiness | HIGH |
+| Regen Readiness | Slicer, Merger, Decomposer, Visualize, Differ, Validator, Compression, Completeness, Source Block Assign, Confidence, Coverage, Cluster, Representativeness, Parser, Corrections | Source Block Assign, Confidence, Representativeness, Decomposer | MEDIUM |
+| Representativeness | Source Block Assign, Confidence, Coverage, Cluster, Corrections, Regen Readiness, Slicer, Merger, Parser, Decomposer, Visualize, Differ, Validator, Compression, Completeness | Decomposer, Confidence, Source Block Assign, Regen Readiness | MEDIUM |
+| Slicer | Source Block Assign | Source Block Assign, Regen Readiness, Confidence, Representativeness, Decomposer | HIGH |
+| Source Block Assign | Regen Readiness, Slicer, Merger, Parser, Decomposer, Visualize, Differ, Validator, Compression, Completeness, Confidence, Coverage, Cluster, Representativeness, Corrections | Representativeness, Coverage, Validator, Decomposer, Confidence, Differ, Regen Readiness, Merger, Parser, Slicer | HIGH |
+| Validator | Source Block Assign | Decomposer, Confidence, Source Block Assign, Regen Readiness, Representativeness | HIGH |
+| Visualize | — | Source Block Assign, Regen Readiness, Decomposer, Confidence, Representativeness | HIGH |
+| Behavior | — | Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner, Interfaces, Recursive, Grouping, Multi Scanner, Metrics | HIGH |
+| Blocks | Display, Behavior, Ts Scanner, Generator, Protocol, Slicers, Chains, Metrics, Recursive, Body Hints, Call Graph, Kt Scanner, Grouping, Interfaces, Multi Scanner, Scan Cache | Call Graph, Scan Cache, Body Hints, Generator, Slicers, Kt Scanner, Interfaces, Recursive, Grouping, Multi Scanner, Metrics | HIGH |
+| Body Hints | Blocks | Grouping, Metrics, Interfaces, Call Graph, Multi Scanner, Scan Cache, Blocks, Kt Scanner, Generator, Slicers, Recursive | HIGH |
+| Call Graph | Scan Cache, Blocks, Metrics, Behavior, Protocol, Body Hints, Chains, Grouping, Recursive, Interfaces, Kt Scanner, Multi Scanner, Display, Ts Scanner, Generator, Slicers | Grouping, Interfaces, Recursive, Multi Scanner, Metrics, Blocks, Scan Cache, Generator, Slicers, Kt Scanner | HIGH |
+| Chains | — | Recursive, Multi Scanner, Metrics, Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner, Grouping, Interfaces | HIGH |
+| Display | — | Blocks, Kt Scanner, Generator, Slicers, Recursive, Grouping, Metrics, Interfaces, Call Graph, Multi Scanner, Scan Cache | HIGH |
+| Generator | Grouping, Interfaces, Kt Scanner, Multi Scanner, Display, Blocks, Behavior, Ts Scanner, Protocol, Slicers, Scan Cache, Chains, Metrics, Recursive, Body Hints, Call Graph | Scan Cache, Blocks, Slicers, Kt Scanner, Interfaces, Recursive, Grouping, Multi Scanner, Metrics, Call Graph | HIGH |
+| Grouping | Body Hints, Call Graph, Recursive, Interfaces, Kt Scanner, Multi Scanner, Display, Ts Scanner, Generator, Protocol, Slicers, Scan Cache, Blocks, Chains, Metrics, Behavior | Generator, Slicers, Kt Scanner, Interfaces, Recursive, Call Graph, Multi Scanner, Metrics, Blocks, Scan Cache | HIGH |
+| Interfaces | Recursive, Body Hints, Call Graph, Kt Scanner, Multi Scanner, Grouping, Generator, Scan Cache, Display, Blocks, Behavior, Ts Scanner, Protocol, Slicers, Chains, Metrics | Generator, Slicers, Recursive, Grouping, Call Graph, Multi Scanner, Metrics, Blocks, Scan Cache, Kt Scanner | HIGH |
+| Kt Scanner | Multi Scanner, Grouping, Display, Ts Scanner, Generator, Slicers, Scan Cache, Blocks, Behavior, Protocol, Body Hints, Chains, Metrics, Recursive, Interfaces, Call Graph | Generator, Interfaces, Recursive, Grouping, Multi Scanner, Metrics, Blocks, Call Graph, Scan Cache, Slicers | HIGH |
+| Metrics | Protocol, Body Hints, Chains, Recursive, Call Graph, Kt Scanner, Multi Scanner, Grouping, Interfaces, Display, Generator, Slicers, Scan Cache, Blocks, Behavior, Ts Scanner | Recursive, Call Graph, Multi Scanner, Blocks, Scan Cache, Generator, Slicers, Kt Scanner, Grouping, Interfaces | HIGH |
+| Multi Scanner | Slicers, Chains, Metrics, Recursive, Body Hints, Call Graph, Kt Scanner, Grouping, Interfaces, Generator, Protocol, Scan Cache, Display, Blocks, Behavior, Ts Scanner | Slicers, Kt Scanner, Generator, Interfaces, Recursive, Grouping, Metrics, Call Graph, Scan Cache, Blocks | HIGH |
+| Protocol | — | Metrics, Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner, Grouping, Multi Scanner, Interfaces, Recursive | HIGH |
+| Recursive | Chains, Metrics, Interfaces, Call Graph, Kt Scanner, Multi Scanner, Grouping, Display, Ts Scanner, Generator, Slicers, Scan Cache, Blocks, Behavior, Protocol, Body Hints | Interfaces, Grouping, Multi Scanner, Metrics, Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner | HIGH |
+| Scan Cache | Generator, Slicers, Blocks, Behavior, Ts Scanner, Protocol, Body Hints, Chains, Metrics, Recursive, Call Graph, Kt Scanner, Multi Scanner, Grouping, Interfaces, Display | Call Graph, Slicers, Kt Scanner, Generator, Interfaces, Recursive, Grouping, Multi Scanner, Metrics, Blocks | HIGH |
+| Slicers | Multi Scanner, Grouping, Interfaces, Generator, Scan Cache, Display, Blocks, Behavior, Ts Scanner, Protocol, Chains, Metrics, Recursive, Body Hints, Call Graph, Kt Scanner | Multi Scanner, Scan Cache, Blocks, Kt Scanner, Generator, Recursive, Grouping, Metrics, Interfaces, Call Graph | HIGH |
+| Ts Scanner | — | Blocks, Scan Cache, Kt Scanner, Generator, Slicers, Recursive, Grouping, Interfaces, Call Graph, Multi Scanner, Metrics | HIGH |
+| Auto Enrich | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Behavior Decompose | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Behavior Flows | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
+| Capability Inference | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
+| Compaction | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Decompose | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Deep Decompose | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
 | Enrich | — | Pipeline, Naming Context, Enrichment Context | MEDIUM |
-| Enrichment Context | Capability Inference, Trigger Detection, Deep Decompose, Behavior Decompose, Enrich, Behavior Flows, Compaction, Auto Enrich, Decompose, Pipeline, Use Case Inference, Naming Context | Naming Context, Pipeline | MEDIUM |
-| Naming Context | Enrichment Context, Behavior Flows, Enrich, Compaction, Auto Enrich, Decompose, Use Case Inference, Pipeline, Capability Inference, Trigger Detection, Deep Decompose, Behavior Decompose | Pipeline, Enrichment Context | MEDIUM |
-| Pipeline | Enrichment Context, Enrich, Behavior Flows, Compaction, Auto Enrich, Decompose, Naming Context, Use Case Inference, Capability Inference, Behavior Decompose, Trigger Detection, Deep Decompose | Naming Context, Enrichment Context | MEDIUM |
-| Trigger Detection | — | Enrichment Context, Naming Context, Pipeline | MEDIUM |
-| Use Case Inference | — | Naming Context, Pipeline, Enrichment Context | MEDIUM |
+| Enrichment Context | Auto Enrich, Trigger Detection, Decompose, Use Case Inference, Compaction, Behavior Decompose, Pipeline, Deep Decompose, Enrich, Capability Inference, Behavior Flows, Naming Context | Pipeline, Naming Context | MEDIUM |
+| Naming Context | Trigger Detection, Decompose, Auto Enrich, Use Case Inference, Behavior Decompose, Compaction, Pipeline, Deep Decompose, Enrich, Capability Inference, Behavior Flows, Enrichment Context | Pipeline, Enrichment Context | MEDIUM |
+| Pipeline | Enrich, Capability Inference, Behavior Flows, Enrichment Context, Naming Context, Trigger Detection, Auto Enrich, Decompose, Use Case Inference, Compaction, Behavior Decompose, Deep Decompose | Naming Context, Enrichment Context | MEDIUM |
+| Trigger Detection | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
+| Use Case Inference | — | Naming Context, Enrichment Context, Pipeline | MEDIUM |
 | Scripts (core) | — | — | LOW |
 | Scripts (dev_simulation) | — | — | LOW |
 | Architecture Model Monitoring | — | — | LOW |
@@ -211,9 +207,7 @@ edition: 5
 | Src (extract) | — | — | LOW |
 | Src (profiles) | — | — | LOW |
 | Src (export) | — | — | LOW |
-
 ## Modification Procedures
-
 For each component, the following files and dependencies must be considered:
 
 ### Checkout (scripts-dev-simulation-COMP-1)
@@ -272,32 +266,32 @@ For each component, the following files and dependencies must be considered:
 **Files:**
 - `src/architecture_model/pipeline/allocate.py`
 - `src/architecture_model/pipeline/allocate_types.py`
-**Downstream dependents (must re-test):** Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Validate, Decompose, Artifacts, Cache
+**Downstream dependents (must re-test):** Relate, Cache, Synthesize, Contract, Artifacts, Context Gen, Specify, Validate, Decompose, Coordinator, Emit
 
 ### Artifacts (src-pipeline-COMP-18)
 
 **Files:**
 - `src/architecture_model/pipeline/artifacts.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Synthesize, Coordinator
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Decompose
 
 ### Cache (src-pipeline-COMP-19)
 
 **Files:**
 - `src/architecture_model/pipeline/cache.py`
-**Downstream dependents (must re-test):** Emit, Synthesize, Coordinator, Decompose
+**Downstream dependents (must re-test):** Coordinator, Emit, Synthesize, Decompose
 
 ### Context Gen (src-pipeline-COMP-20)
 
 **Files:**
 - `src/architecture_model/pipeline/context_gen.py`
-**Downstream dependents (must re-test):** Coordinator, Decompose, Cache, Emit, Synthesize
+**Downstream dependents (must re-test):** Emit, Synthesize, Cache, Decompose, Coordinator
 
 ### Contract (src-pipeline-COMP-21)
 
 **Files:**
 - `src/architecture_model/pipeline/contract.py`
 - `src/architecture_model/pipeline/contract_types.py`
-**Downstream dependents (must re-test):** Decompose, Artifacts, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Artifacts, Coordinator, Cache, Emit, Synthesize
 
 ### Coordinator (src-pipeline-COMP-23)
 
@@ -309,7 +303,7 @@ For each component, the following files and dependencies must be considered:
 
 **Files:**
 - `src/architecture_model/pipeline/corrections.py`
-**Downstream dependents (must re-test):** Coordinator, Emit, Synthesize, Allocate, Decompose, Cache, Infer
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Infer, Decompose, Allocate
 
 ### Decompose (src-pipeline-COMP-25)
 
@@ -317,171 +311,171 @@ For each component, the following files and dependencies must be considered:
 - `src/architecture_model/pipeline/__init__.py`
 - `src/architecture_model/pipeline/decompose.py`
 - `src/architecture_model/pipeline/decompose_types.py`
-**Downstream dependents (must re-test):** Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Coordinator, Emit, Cache, Synthesize
 
 ### Emit (src-pipeline-COMP-27)
 
 **Files:**
 - `src/architecture_model/pipeline/emit.py`
 - `src/architecture_model/pipeline/emit_types.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Coordinator, Cache, Synthesize
 
 ### Global Learning (src-pipeline-COMP-29)
 
 **Files:**
 - `src/architecture_model/pipeline/global_learning.py`
 - `src/architecture_model/pipeline/learning.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Coordinator, Emit, Cache, Synthesize, Decompose
 
 ### Infer (src-pipeline-COMP-30)
 
 **Files:**
 - `src/architecture_model/pipeline/infer.py`
 - `src/architecture_model/pipeline/infer_types.py`
-**Downstream dependents (must re-test):** Context Gen, Synthesize, Allocate, Validate, Decompose, Artifacts, Cache, Relate, Emit, Coordinator
+**Downstream dependents (must re-test):** Cache, Synthesize, Allocate, Artifacts, Context Gen, Validate, Decompose, Coordinator, Emit, Relate
 
 ### Lessons (src-pipeline-COMP-33)
 
 **Files:**
 - `src/architecture_model/pipeline/lessons.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Coordinator, Cache, Emit, Synthesize
 
 ### Observe (src-pipeline-COMP-34)
 
 **Files:**
 - `src/architecture_model/pipeline/observe.py`
 - `src/architecture_model/pipeline/observe_types.py`
-**Downstream dependents (must re-test):** Infer, Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Allocate, Decompose, Artifacts, Cache
+**Downstream dependents (must re-test):** Coordinator, Emit, Relate, Cache, Synthesize, Infer, Allocate, Contract, Artifacts, Context Gen, Specify, Decompose
 
 ### Protocol (src-pipeline-COMP-36)
 
 **Files:**
 - `src/architecture_model/pipeline/protocol.py`
-**Downstream dependents (must re-test):** Lessons, Regen Score, Coordinator, Context Gen, Synthesize, Specify, Allocate, Observe, Global Learning, Report, Validate, Decompose, Cache, Artifacts, Infer, Relate, Contract, Emit
+**Downstream dependents (must re-test):** Cache, Synthesize, Infer, Allocate, Contract, Context Gen, Specify, Validate, Decompose, Artifacts, Regen Score, Observe, Lessons, Global Learning, Coordinator, Emit, Report, Relate
 
 ### Regen Score (src-pipeline-COMP-37)
 
 **Files:**
 - `src/architecture_model/pipeline/regen_score.py`
-**Downstream dependents (must re-test):** Emit, Coordinator, Synthesize, Decompose, Cache
+**Downstream dependents (must re-test):** Cache, Emit, Synthesize, Decompose, Coordinator
 
 ### Relate (src-pipeline-COMP-38)
 
 **Files:**
 - `src/architecture_model/pipeline/relate.py`
 - `src/architecture_model/pipeline/relate_types.py`
-**Downstream dependents (must re-test):** Coordinator, Validate, Decompose, Artifacts, Cache, Emit, Context Gen, Synthesize
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose, Artifacts, Validate
 
 ### Report (src-pipeline-COMP-40)
 
 **Files:**
 - `src/architecture_model/pipeline/report.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Synthesize, Coordinator
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Decompose
 
 ### Requirements Derive (src-pipeline-COMP-41)
 
 **Files:**
 - `src/architecture_model/pipeline/requirements_derive.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Coordinator, Cache, Emit, Synthesize
 
 ### Specify (src-pipeline-COMP-42)
 
 **Files:**
 - `src/architecture_model/pipeline/specify.py`
 - `src/architecture_model/pipeline/specify_types.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Artifacts, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Emit, Synthesize, Cache, Artifacts, Decompose, Coordinator
 
 ### Synthesize (src-pipeline-COMP-44)
 
 **Files:**
 - `src/architecture_model/pipeline/synthesize.py`
 - `src/architecture_model/pipeline/synthesize_types.py`
-**Downstream dependents (must re-test):** Coordinator, Decompose, Cache, Emit
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Decompose
 
 ### Validate (src-pipeline-COMP-46)
 
 **Files:**
 - `src/architecture_model/pipeline/validate.py`
 - `src/architecture_model/pipeline/validate_types.py`
-**Downstream dependents (must re-test):** Artifacts, Cache, Emit, Coordinator, Context Gen, Synthesize, Decompose
+**Downstream dependents (must re-test):** Artifacts, Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose
 
 ### Cluster (src-core-COMP-15)
 
 **Files:**
 - `src/architecture_model/core/cluster.py`
-**Downstream dependents (must re-test):** Source Block Assign, Representativeness, Regen Readiness, Confidence, Decomposer
+**Downstream dependents (must re-test):** Representativeness, Decomposer, Source Block Assign, Regen Readiness, Confidence
 
 ### Completeness (src-core-COMP-16)
 
 **Files:**
 - `src/architecture_model/core/completeness.py`
-**Downstream dependents (must re-test):** Decomposer, Source Block Assign, Regen Readiness, Confidence, Representativeness
+**Downstream dependents (must re-test):** Decomposer, Confidence, Source Block Assign, Regen Readiness, Representativeness
 
 ### Compression (src-core-COMP-17)
 
 **Files:**
 - `src/architecture_model/core/compression.py`
-**Downstream dependents (must re-test):** Decomposer, Source Block Assign, Regen Readiness, Representativeness, Confidence
+**Downstream dependents (must re-test):** Decomposer, Confidence, Source Block Assign, Regen Readiness, Representativeness
 
 ### Confidence (src-core-COMP-18)
 
 **Files:**
 - `src/architecture_model/core/confidence.py`
-**Downstream dependents (must re-test):** Regen Readiness, Representativeness, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Representativeness, Regen Readiness, Source Block Assign, Decomposer
 
 ### Corrections (src-core-COMP-19)
 
 **Files:**
 - `src/architecture_model/core/corrections.py`
-**Downstream dependents (must re-test):** Confidence, Decomposer, Source Block Assign, Regen Readiness, Representativeness
+**Downstream dependents (must re-test):** Representativeness, Decomposer, Confidence, Source Block Assign, Regen Readiness
 
 ### Coverage (src-core-COMP-20)
 
 **Files:**
 - `src/architecture_model/core/coverage.py`
-**Downstream dependents (must re-test):** Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Representativeness, Decomposer, Confidence, Source Block Assign, Regen Readiness
 
 ### Decomposer (src-core-COMP-21)
 
 **Files:**
 - `src/architecture_model/core/decomposer.py`
-**Downstream dependents (must re-test):** Regen Readiness, Representativeness, Confidence, Source Block Assign
+**Downstream dependents (must re-test):** Source Block Assign, Regen Readiness, Confidence, Representativeness
 
 ### Differ (src-core-COMP-22)
 
 **Files:**
 - `src/architecture_model/core/differ.py`
-**Downstream dependents (must re-test):** Representativeness, Regen Readiness, Confidence, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Decomposer, Source Block Assign, Regen Readiness, Confidence, Representativeness
 
 ### Merger (src-core-COMP-23)
 
 **Files:**
 - `src/architecture_model/core/merger.py`
-**Downstream dependents (must re-test):** Regen Readiness, Confidence, Representativeness, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Source Block Assign, Regen Readiness, Representativeness, Decomposer, Confidence
 
 ### Parser (src-core-COMP-24)
 
 **Files:**
 - `src/architecture_model/core/parser.py`
-**Downstream dependents (must re-test):** Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Decomposer, Confidence, Source Block Assign, Representativeness, Regen Readiness
 
 ### Regen Readiness (src-core-COMP-25)
 
 **Files:**
 - `src/architecture_model/core/regen_readiness.py`
-**Downstream dependents (must re-test):** Confidence, Representativeness, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Source Block Assign, Confidence, Representativeness, Decomposer
 
 ### Representativeness (src-core-COMP-26)
 
 **Files:**
 - `src/architecture_model/core/representativeness.py`
-**Downstream dependents (must re-test):** Decomposer, Source Block Assign, Regen Readiness, Confidence
+**Downstream dependents (must re-test):** Decomposer, Confidence, Source Block Assign, Regen Readiness
 
 ### Slicer (src-core-COMP-27)
 
 **Files:**
 - `src/architecture_model/core/slicer.py`
-**Downstream dependents (must re-test):** Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Source Block Assign, Regen Readiness, Confidence, Representativeness, Decomposer
 
 ### Source Block Assign (src-core-COMP-28)
 
@@ -489,25 +483,25 @@ For each component, the following files and dependencies must be considered:
 - `src/architecture_model/core/source_block_assign.py`
 - `src/architecture_model/core/source_block_quality.py`
 - `src/architecture_model/core/types.py`
-**Downstream dependents (must re-test):** Confidence, Representativeness, Validator, Decomposer, Coverage, Slicer, Differ, Merger, Parser, Regen Readiness
+**Downstream dependents (must re-test):** Representativeness, Coverage, Validator, Decomposer, Confidence, Differ, Regen Readiness, Merger, Parser, Slicer
 
 ### Validator (src-core-COMP-30)
 
 **Files:**
 - `src/architecture_model/core/validator.py`
-**Downstream dependents (must re-test):** Regen Readiness, Representativeness, Confidence, Decomposer, Source Block Assign
+**Downstream dependents (must re-test):** Decomposer, Confidence, Source Block Assign, Regen Readiness, Representativeness
 
 ### Visualize (src-core-COMP-31)
 
 **Files:**
 - `src/architecture_model/core/visualize.py`
-**Downstream dependents (must re-test):** Source Block Assign, Representativeness, Regen Readiness, Confidence, Decomposer
+**Downstream dependents (must re-test):** Source Block Assign, Regen Readiness, Decomposer, Confidence, Representativeness
 
 ### Behavior (src-manifest-COMP-16)
 
 **Files:**
 - `src/architecture_model/manifest/behavior.py`
-**Downstream dependents (must re-test):** Scan Cache, Multi Scanner, Generator, Grouping, Interfaces, Recursive, Kt Scanner, Call Graph, Slicers, Blocks, Metrics
+**Downstream dependents (must re-test):** Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner, Interfaces, Recursive, Grouping, Multi Scanner, Metrics
 
 ### Blocks (src-manifest-COMP-17)
 
@@ -515,140 +509,140 @@ For each component, the following files and dependencies must be considered:
 - `src/architecture_model/manifest/__init__.py`
 - `src/architecture_model/manifest/blocks.py`
 - `src/architecture_model/manifest/types.py`
-**Downstream dependents (must re-test):** Multi Scanner, Grouping, Interfaces, Generator, Recursive, Kt Scanner, Slicers, Metrics, Scan Cache, Body Hints, Call Graph
+**Downstream dependents (must re-test):** Call Graph, Scan Cache, Body Hints, Generator, Slicers, Kt Scanner, Interfaces, Recursive, Grouping, Multi Scanner, Metrics
 
 ### Body Hints (src-manifest-COMP-18)
 
 **Files:**
 - `src/architecture_model/manifest/body_hints.py`
-**Downstream dependents (must re-test):** Slicers, Blocks, Recursive, Kt Scanner, Call Graph, Scan Cache, Metrics, Multi Scanner, Generator, Grouping, Interfaces
+**Downstream dependents (must re-test):** Grouping, Metrics, Interfaces, Call Graph, Multi Scanner, Scan Cache, Blocks, Kt Scanner, Generator, Slicers, Recursive
 
 ### Call Graph (src-manifest-COMP-19)
 
 **Files:**
 - `src/architecture_model/manifest/call_graph.py`
-**Downstream dependents (must re-test):** Scan Cache, Multi Scanner, Generator, Grouping, Recursive, Kt Scanner, Interfaces, Slicers, Blocks, Metrics
+**Downstream dependents (must re-test):** Grouping, Interfaces, Recursive, Multi Scanner, Metrics, Blocks, Scan Cache, Generator, Slicers, Kt Scanner
 
 ### Chains (src-manifest-COMP-20)
 
 **Files:**
 - `src/architecture_model/manifest/chains.py`
-**Downstream dependents (must re-test):** Generator, Grouping, Recursive, Kt Scanner, Interfaces, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner
+**Downstream dependents (must re-test):** Recursive, Multi Scanner, Metrics, Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner, Grouping, Interfaces
 
 ### Display (src-manifest-COMP-21)
 
 **Files:**
 - `src/architecture_model/manifest/display.py`
-**Downstream dependents (must re-test):** Generator, Recursive, Kt Scanner, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner, Grouping, Interfaces
+**Downstream dependents (must re-test):** Blocks, Kt Scanner, Generator, Slicers, Recursive, Grouping, Metrics, Interfaces, Call Graph, Multi Scanner, Scan Cache
 
 ### Generator (src-manifest-COMP-22)
 
 **Files:**
 - `src/architecture_model/manifest/generator.py`
-**Downstream dependents (must re-test):** Interfaces, Slicers, Blocks, Metrics, Kt Scanner, Call Graph, Scan Cache, Multi Scanner, Grouping, Recursive
+**Downstream dependents (must re-test):** Scan Cache, Blocks, Slicers, Kt Scanner, Interfaces, Recursive, Grouping, Multi Scanner, Metrics, Call Graph
 
 ### Grouping (src-manifest-COMP-23)
 
 **Files:**
 - `src/architecture_model/manifest/grouping.py`
-**Downstream dependents (must re-test):** Interfaces, Slicers, Blocks, Recursive, Kt Scanner, Call Graph, Metrics, Scan Cache, Multi Scanner, Generator
+**Downstream dependents (must re-test):** Generator, Slicers, Kt Scanner, Interfaces, Recursive, Call Graph, Multi Scanner, Metrics, Blocks, Scan Cache
 
 ### Interfaces (src-manifest-COMP-24)
 
 **Files:**
 - `src/architecture_model/manifest/interfaces.py`
-**Downstream dependents (must re-test):** Generator, Grouping, Recursive, Kt Scanner, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner
+**Downstream dependents (must re-test):** Generator, Slicers, Recursive, Grouping, Call Graph, Multi Scanner, Metrics, Blocks, Scan Cache, Kt Scanner
 
 ### Kt Scanner (src-manifest-COMP-25)
 
 **Files:**
 - `src/architecture_model/manifest/kt_scanner.py`
 - `src/architecture_model/manifest/scanner.py`
-**Downstream dependents (must re-test):** Recursive, Call Graph, Slicers, Blocks, Metrics, Scan Cache, Multi Scanner, Generator, Grouping, Interfaces
+**Downstream dependents (must re-test):** Generator, Interfaces, Recursive, Grouping, Multi Scanner, Metrics, Blocks, Call Graph, Scan Cache, Slicers
 
 ### Metrics (src-manifest-COMP-26)
 
 **Files:**
 - `src/architecture_model/manifest/metrics.py`
-**Downstream dependents (must re-test):** Multi Scanner, Generator, Grouping, Recursive, Interfaces, Slicers, Blocks, Kt Scanner, Call Graph, Scan Cache
+**Downstream dependents (must re-test):** Recursive, Call Graph, Multi Scanner, Blocks, Scan Cache, Generator, Slicers, Kt Scanner, Grouping, Interfaces
 
 ### Multi Scanner (src-manifest-COMP-27)
 
 **Files:**
 - `src/architecture_model/manifest/multi_scanner.py`
-**Downstream dependents (must re-test):** Interfaces, Recursive, Kt Scanner, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Generator, Grouping
+**Downstream dependents (must re-test):** Slicers, Kt Scanner, Generator, Interfaces, Recursive, Grouping, Metrics, Call Graph, Scan Cache, Blocks
 
 ### Protocol (src-manifest-COMP-28)
 
 **Files:**
 - `src/architecture_model/manifest/protocol.py`
-**Downstream dependents (must re-test):** Call Graph, Metrics, Scan Cache, Multi Scanner, Generator, Grouping, Interfaces, Slicers, Blocks, Recursive, Kt Scanner
+**Downstream dependents (must re-test):** Metrics, Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner, Grouping, Multi Scanner, Interfaces, Recursive
 
 ### Recursive (src-manifest-COMP-29)
 
 **Files:**
 - `src/architecture_model/manifest/recursive.py`
-**Downstream dependents (must re-test):** Kt Scanner, Interfaces, Slicers, Blocks, Metrics, Call Graph, Scan Cache, Multi Scanner, Grouping, Generator
+**Downstream dependents (must re-test):** Interfaces, Grouping, Multi Scanner, Metrics, Blocks, Call Graph, Scan Cache, Generator, Slicers, Kt Scanner
 
 ### Scan Cache (src-manifest-COMP-30)
 
 **Files:**
 - `src/architecture_model/manifest/scan_cache.py`
-**Downstream dependents (must re-test):** Generator, Recursive, Kt Scanner, Interfaces, Slicers, Blocks, Grouping, Metrics, Call Graph, Multi Scanner
+**Downstream dependents (must re-test):** Call Graph, Slicers, Kt Scanner, Generator, Interfaces, Recursive, Grouping, Multi Scanner, Metrics, Blocks
 
 ### Slicers (src-manifest-COMP-32)
 
 **Files:**
 - `src/architecture_model/manifest/slicers.py`
-**Downstream dependents (must re-test):** Call Graph, Scan Cache, Multi Scanner, Grouping, Interfaces, Generator, Recursive, Kt Scanner, Blocks, Metrics
+**Downstream dependents (must re-test):** Multi Scanner, Scan Cache, Blocks, Kt Scanner, Generator, Recursive, Grouping, Metrics, Interfaces, Call Graph
 
 ### Ts Scanner (src-manifest-COMP-33)
 
 **Files:**
 - `src/architecture_model/manifest/ts_scanner.py`
-**Downstream dependents (must re-test):** Kt Scanner, Call Graph, Scan Cache, Metrics, Multi Scanner, Generator, Grouping, Interfaces, Slicers, Blocks, Recursive
+**Downstream dependents (must re-test):** Blocks, Scan Cache, Kt Scanner, Generator, Slicers, Recursive, Grouping, Interfaces, Call Graph, Multi Scanner, Metrics
 
 ### Auto Enrich (src-orchestration-COMP-1)
 
 **Files:**
 - `src/architecture_model/orchestration/auto_enrich.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Behavior Decompose (src-orchestration-COMP-2)
 
 **Files:**
 - `src/architecture_model/orchestration/behavior_decompose.py`
-**Downstream dependents (must re-test):** Enrichment Context, Pipeline, Naming Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Behavior Flows (src-orchestration-COMP-3)
 
 **Files:**
 - `src/architecture_model/orchestration/behavior_flows.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Pipeline, Naming Context, Enrichment Context
 
 ### Capability Inference (src-orchestration-COMP-4)
 
 **Files:**
 - `src/architecture_model/orchestration/capability_inference.py`
-**Downstream dependents (must re-test):** Enrichment Context, Naming Context, Pipeline
+**Downstream dependents (must re-test):** Pipeline, Naming Context, Enrichment Context
 
 ### Compaction (src-orchestration-COMP-5)
 
 **Files:**
 - `src/architecture_model/orchestration/compaction.py`
-**Downstream dependents (must re-test):** Pipeline, Naming Context, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Decompose (src-orchestration-COMP-6)
 
 **Files:**
 - `src/architecture_model/orchestration/decompose.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Deep Decompose (src-orchestration-COMP-7)
 
 **Files:**
 - `src/architecture_model/orchestration/deep_decompose.py`
-**Downstream dependents (must re-test):** Enrichment Context, Pipeline, Naming Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Enrich (src-orchestration-COMP-8)
 
@@ -660,7 +654,7 @@ For each component, the following files and dependencies must be considered:
 
 **Files:**
 - `src/architecture_model/orchestration/enrichment_context.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline
+**Downstream dependents (must re-test):** Pipeline, Naming Context
 
 ### Naming Context (src-orchestration-COMP-10)
 
@@ -678,13 +672,13 @@ For each component, the following files and dependencies must be considered:
 
 **Files:**
 - `src/architecture_model/orchestration/trigger_detection.py`
-**Downstream dependents (must re-test):** Enrichment Context, Naming Context, Pipeline
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Use Case Inference (src-orchestration-COMP-13)
 
 **Files:**
 - `src/architecture_model/orchestration/use_case_inference.py`
-**Downstream dependents (must re-test):** Naming Context, Pipeline, Enrichment Context
+**Downstream dependents (must re-test):** Naming Context, Enrichment Context, Pipeline
 
 ### Scripts (core) (COMP-3-1)
 
@@ -856,7 +850,54 @@ For each component, the following files and dependencies must be considered:
 **Files:**
 - `src/architecture_model/export/flatfiles.py`
 - `src/architecture_model/export/reference.py`
-
 ## Known Constraints
-
 *No constraint allocations defined.*
+
+---
+
+---
+
+## LLM Review
+
+*Reviewed: 2026-08-18T23:37:27.227237+00:00 | Duration: 6382ms*
+
+**Summary:** This maintenance manual is severely incomplete at 14% model completeness, with all 92 components lacking descriptions, responsibilities, signatures, and test contracts, rendering it nearly useless for actual maintenance purposes despite having a basic inventory and partial dependency analysis.
+
+- The dependency impact analysis shows Allocate, Artifacts, Contract, and Context Gen as HIGH impact risk components with significant fan-in/fan-out, yet none have documented interfaces or test contracts to safeguard against breaking changes.
+- Every component is classified as "service" kind regardless of actual role (scanners, parsers, CLI layers, configs), suggesting the extraction pipeline lacks differentiation logic and the taxonomy needs refinement.
+
+<details>
+<summary>Review details</summary>
+
+**Prompt sent (truncated):**
+```
+Review the following architecture artifact 'docs/se/maintenance-manual.md'.
+Respond ONLY in this format:
+SUMMARY: <one paragraph overall assessment>
+COMMENT: <specific observation>
+COMMENT: <another observation>
+
+---
+---
+document: Maintenance Manual
+system: System
+system_id: SYS-unknown
+generated_at: 2026-08-18T23:36:29Z
+generator_version: 0.3.0
+model_hash: 41fb0d4bec16
+edition: 7
+---
+
+> **Model Completeness: F (14%)**
+> Some sections may be empty due to missing model entities.
+> - No interfaces
+```
+
+**Full LLM response:**
+```
+SUMMARY: This maintenance manual is severely incomplete at 14% model completeness, with all 92 components lacking descriptions, responsibilities, signatures, and test contracts, rendering it nearly useless for actual maintenance purposes despite having a basic inventory and partial dependency analysis.
+COMMENT: The dependency impact analysis shows Allocate, Artifacts, Contract, and Context Gen as HIGH impact risk components with significant fan-in/fan-out, yet none have documented interfaces or test contracts to safeguard against breaking changes.
+COMMENT: Every component is classified as "service" kind regardless of actual role (scanners, parsers, CLI layers, configs), suggesting the extraction pipeline lacks differentiation logic and the taxonomy needs refinement.
+```
+
+</details>

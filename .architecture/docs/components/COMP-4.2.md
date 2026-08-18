@@ -41,6 +41,8 @@
 |--------|------|-------------|
 | CAP-5 | realizes | SE Document Suite generates full SE docs |
 | COMP-4.1 (Core Doc Generators) | depends-on | SE docs build on core doc generators |
+| REQ-12 | satisfies | SE suite generates all required doc types |
+| REQ-13 | satisfies | SE generator preserves user edits on regen |
 
 ### Dependents (incoming)
 

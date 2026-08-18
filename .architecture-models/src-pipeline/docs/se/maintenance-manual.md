@@ -2,10 +2,10 @@
 document: Maintenance Manual
 system: Src (pipeline)
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:05Z
+generated_at: 2026-08-18T23:36:32Z
 generator_version: 0.3.0
 model_hash: ccd998005d8e
-edition: 4
+edition: 6
 ---
 
 > **Model Completeness: F (25%)**
@@ -48,27 +48,27 @@ edition: 4
 
 | Component | Depends On (fan-out) | Depended By (fan-in) | Impact Risk |
 |-----------|---------------------|---------------------|-------------|
-| Allocate | Infer, Protocol, Corrections, Observe | Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Validate, Decompose, Artifacts, Cache | HIGH |
-| Artifacts | Validate, Specify, Contract, Relate, Infer, Allocate, Observe, Protocol | Decompose, Cache, Emit, Synthesize, Coordinator | HIGH |
-| Cache | Lessons, Report, Specify, Validate, Decompose, Requirements Derive, Artifacts, Coordinator, Global Learning, Contract, Context Gen, Emit, Synthesize, Protocol, Relate, Infer, Allocate, Observe, Corrections, Regen Score | Emit, Synthesize, Coordinator, Decompose | MEDIUM |
-| Context Gen | Infer, Allocate, Observe, Protocol, Validate, Relate | Coordinator, Decompose, Cache, Emit, Synthesize | HIGH |
-| Contract | Allocate, Observe, Protocol | Decompose, Artifacts, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Coordinator | Context Gen, Synthesize, Protocol, Relate, Corrections, Allocate, Observe, Validate, Regen Score, Lessons, Cache, Report, Specify, Global Learning, Contract, Decompose, Requirements Derive, Artifacts, Emit, Infer | Decompose, Cache, Emit, Synthesize | MEDIUM |
-| Corrections | — | Coordinator, Emit, Synthesize, Allocate, Decompose, Cache, Infer | HIGH |
-| Decompose | Lessons, Report, Specify, Global Learning, Contract, Requirements Derive, Artifacts, Coordinator, Context Gen, Emit, Relate, Infer, Synthesize, Protocol, Corrections, Allocate, Observe, Cache, Validate, Regen Score | Cache, Emit, Coordinator, Synthesize | MEDIUM |
-| Emit | Allocate, Observe, Lessons, Cache, Corrections, Report, Validate, Regen Score, Artifacts, Specify, Global Learning, Contract, Decompose, Requirements Derive, Coordinator, Context Gen, Synthesize, Relate, Infer, Protocol | Decompose, Cache, Coordinator, Synthesize | MEDIUM |
-| Global Learning | Protocol | Decompose, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Infer | Observe, Protocol, Corrections | Context Gen, Synthesize, Allocate, Validate, Decompose, Artifacts, Cache, Relate, Emit, Coordinator | HIGH |
-| Lessons | Protocol | Decompose, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Observe | Protocol | Infer, Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Allocate, Decompose, Artifacts, Cache | HIGH |
-| Protocol | — | Lessons, Regen Score, Coordinator, Context Gen, Synthesize, Specify, Allocate, Observe, Global Learning, Report, Validate, Decompose, Cache, Artifacts, Infer, Relate, Contract, Emit | HIGH |
-| Regen Score | Protocol | Emit, Coordinator, Synthesize, Decompose, Cache | HIGH |
-| Relate | Allocate, Observe, Infer, Protocol | Coordinator, Validate, Decompose, Artifacts, Cache, Emit, Context Gen, Synthesize | HIGH |
-| Report | Protocol | Decompose, Cache, Emit, Synthesize, Coordinator | HIGH |
-| Requirements Derive | — | Decompose, Cache, Emit, Coordinator, Synthesize | HIGH |
-| Specify | Protocol, Allocate, Observe | Decompose, Cache, Artifacts, Emit, Coordinator, Synthesize | HIGH |
-| Synthesize | Infer, Protocol, Corrections, Allocate, Observe, Cache, Report, Validate, Regen Score, Artifacts, Lessons, Specify, Global Learning, Contract, Decompose, Requirements Derive, Coordinator, Context Gen, Emit, Relate | Coordinator, Decompose, Cache, Emit | MEDIUM |
-| Validate | Relate, Infer, Allocate, Protocol | Artifacts, Cache, Emit, Coordinator, Context Gen, Synthesize, Decompose | HIGH |
+| Allocate | Infer, Protocol, Observe, Corrections | Relate, Cache, Synthesize, Contract, Artifacts, Context Gen, Specify, Validate, Decompose, Coordinator, Emit | HIGH |
+| Artifacts | Validate, Infer, Contract, Allocate, Observe, Specify, Protocol, Relate | Coordinator, Cache, Emit, Synthesize, Decompose | HIGH |
+| Cache | Infer, Regen Score, Protocol, Allocate, Synthesize, Artifacts, Observe, Relate, Context Gen, Specify, Coordinator, Global Learning, Report, Validate, Corrections, Decompose, Emit, Requirements Derive, Contract, Lessons | Coordinator, Emit, Synthesize, Decompose | MEDIUM |
+| Context Gen | Infer, Protocol, Allocate, Observe, Relate, Validate | Emit, Synthesize, Cache, Decompose, Coordinator | HIGH |
+| Contract | Protocol, Allocate, Observe | Decompose, Artifacts, Coordinator, Cache, Emit, Synthesize | HIGH |
+| Coordinator | Synthesize, Artifacts, Cache, Observe, Relate, Global Learning, Report, Validate, Corrections, Decompose, Emit, Requirements Derive, Contract, Lessons, Infer, Regen Score, Context Gen, Specify, Protocol, Allocate | Decompose, Cache, Emit, Synthesize | MEDIUM |
+| Corrections | — | Coordinator, Cache, Emit, Synthesize, Infer, Decompose, Allocate | HIGH |
+| Decompose | Emit, Coordinator, Requirements Derive, Contract, Lessons, Infer, Regen Score, Protocol, Allocate, Synthesize, Artifacts, Observe, Relate, Context Gen, Specify, Global Learning, Report, Validate, Corrections, Cache | Coordinator, Emit, Cache, Synthesize | MEDIUM |
+| Emit | Observe, Regen Score, Context Gen, Specify, Global Learning, Synthesize, Artifacts, Cache, Relate, Decompose, Coordinator, Report, Validate, Corrections, Infer, Requirements Derive, Contract, Protocol, Allocate, Lessons | Decompose, Coordinator, Cache, Synthesize | MEDIUM |
+| Global Learning | Protocol | Coordinator, Emit, Cache, Synthesize, Decompose | HIGH |
+| Infer | Protocol, Observe, Corrections | Cache, Synthesize, Allocate, Artifacts, Context Gen, Validate, Decompose, Coordinator, Emit, Relate | HIGH |
+| Lessons | Protocol | Decompose, Coordinator, Cache, Emit, Synthesize | HIGH |
+| Observe | Protocol | Coordinator, Emit, Relate, Cache, Synthesize, Infer, Allocate, Contract, Artifacts, Context Gen, Specify, Decompose | HIGH |
+| Protocol | — | Cache, Synthesize, Infer, Allocate, Contract, Context Gen, Specify, Validate, Decompose, Artifacts, Regen Score, Observe, Lessons, Global Learning, Coordinator, Emit, Report, Relate | HIGH |
+| Regen Score | Protocol | Cache, Emit, Synthesize, Decompose, Coordinator | HIGH |
+| Relate | Allocate, Observe, Infer, Protocol | Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose, Artifacts, Validate | HIGH |
+| Report | Protocol | Coordinator, Cache, Emit, Synthesize, Decompose | HIGH |
+| Requirements Derive | — | Decompose, Coordinator, Cache, Emit, Synthesize | HIGH |
+| Specify | Protocol, Allocate, Observe | Emit, Synthesize, Cache, Artifacts, Decompose, Coordinator | HIGH |
+| Synthesize | Infer, Regen Score, Context Gen, Specify, Protocol, Allocate, Artifacts, Cache, Observe, Relate, Coordinator, Global Learning, Report, Validate, Corrections, Decompose, Emit, Requirements Derive, Contract, Lessons | Coordinator, Cache, Emit, Decompose | MEDIUM |
+| Validate | Infer, Protocol, Allocate, Relate | Artifacts, Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose | HIGH |
 
 ## Modification Procedures
 
@@ -79,32 +79,32 @@ For each component, the following files and dependencies must be considered:
 **Files:**
 - `src/architecture_model/pipeline/allocate.py`
 - `src/architecture_model/pipeline/allocate_types.py`
-**Downstream dependents (must re-test):** Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Validate, Decompose, Artifacts, Cache
+**Downstream dependents (must re-test):** Relate, Cache, Synthesize, Contract, Artifacts, Context Gen, Specify, Validate, Decompose, Coordinator, Emit
 
 ### Artifacts (src-pipeline-COMP-18)
 
 **Files:**
 - `src/architecture_model/pipeline/artifacts.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Synthesize, Coordinator
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Decompose
 
 ### Cache (src-pipeline-COMP-19)
 
 **Files:**
 - `src/architecture_model/pipeline/cache.py`
-**Downstream dependents (must re-test):** Emit, Synthesize, Coordinator, Decompose
+**Downstream dependents (must re-test):** Coordinator, Emit, Synthesize, Decompose
 
 ### Context Gen (src-pipeline-COMP-20)
 
 **Files:**
 - `src/architecture_model/pipeline/context_gen.py`
-**Downstream dependents (must re-test):** Coordinator, Decompose, Cache, Emit, Synthesize
+**Downstream dependents (must re-test):** Emit, Synthesize, Cache, Decompose, Coordinator
 
 ### Contract (src-pipeline-COMP-21)
 
 **Files:**
 - `src/architecture_model/pipeline/contract.py`
 - `src/architecture_model/pipeline/contract_types.py`
-**Downstream dependents (must re-test):** Decompose, Artifacts, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Artifacts, Coordinator, Cache, Emit, Synthesize
 
 ### Coordinator (src-pipeline-COMP-23)
 
@@ -116,7 +116,7 @@ For each component, the following files and dependencies must be considered:
 
 **Files:**
 - `src/architecture_model/pipeline/corrections.py`
-**Downstream dependents (must re-test):** Coordinator, Emit, Synthesize, Allocate, Decompose, Cache, Infer
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Infer, Decompose, Allocate
 
 ### Decompose (src-pipeline-COMP-25)
 
@@ -124,93 +124,93 @@ For each component, the following files and dependencies must be considered:
 - `src/architecture_model/pipeline/__init__.py`
 - `src/architecture_model/pipeline/decompose.py`
 - `src/architecture_model/pipeline/decompose_types.py`
-**Downstream dependents (must re-test):** Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Coordinator, Emit, Cache, Synthesize
 
 ### Emit (src-pipeline-COMP-27)
 
 **Files:**
 - `src/architecture_model/pipeline/emit.py`
 - `src/architecture_model/pipeline/emit_types.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Coordinator, Cache, Synthesize
 
 ### Global Learning (src-pipeline-COMP-29)
 
 **Files:**
 - `src/architecture_model/pipeline/global_learning.py`
 - `src/architecture_model/pipeline/learning.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Coordinator, Emit, Cache, Synthesize, Decompose
 
 ### Infer (src-pipeline-COMP-30)
 
 **Files:**
 - `src/architecture_model/pipeline/infer.py`
 - `src/architecture_model/pipeline/infer_types.py`
-**Downstream dependents (must re-test):** Context Gen, Synthesize, Allocate, Validate, Decompose, Artifacts, Cache, Relate, Emit, Coordinator
+**Downstream dependents (must re-test):** Cache, Synthesize, Allocate, Artifacts, Context Gen, Validate, Decompose, Coordinator, Emit, Relate
 
 ### Lessons (src-pipeline-COMP-33)
 
 **Files:**
 - `src/architecture_model/pipeline/lessons.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Coordinator, Cache, Emit, Synthesize
 
 ### Observe (src-pipeline-COMP-34)
 
 **Files:**
 - `src/architecture_model/pipeline/observe.py`
 - `src/architecture_model/pipeline/observe_types.py`
-**Downstream dependents (must re-test):** Infer, Relate, Contract, Context Gen, Emit, Coordinator, Synthesize, Specify, Allocate, Decompose, Artifacts, Cache
+**Downstream dependents (must re-test):** Coordinator, Emit, Relate, Cache, Synthesize, Infer, Allocate, Contract, Artifacts, Context Gen, Specify, Decompose
 
 ### Protocol (src-pipeline-COMP-36)
 
 **Files:**
 - `src/architecture_model/pipeline/protocol.py`
-**Downstream dependents (must re-test):** Lessons, Regen Score, Coordinator, Context Gen, Synthesize, Specify, Allocate, Observe, Global Learning, Report, Validate, Decompose, Cache, Artifacts, Infer, Relate, Contract, Emit
+**Downstream dependents (must re-test):** Cache, Synthesize, Infer, Allocate, Contract, Context Gen, Specify, Validate, Decompose, Artifacts, Regen Score, Observe, Lessons, Global Learning, Coordinator, Emit, Report, Relate
 
 ### Regen Score (src-pipeline-COMP-37)
 
 **Files:**
 - `src/architecture_model/pipeline/regen_score.py`
-**Downstream dependents (must re-test):** Emit, Coordinator, Synthesize, Decompose, Cache
+**Downstream dependents (must re-test):** Cache, Emit, Synthesize, Decompose, Coordinator
 
 ### Relate (src-pipeline-COMP-38)
 
 **Files:**
 - `src/architecture_model/pipeline/relate.py`
 - `src/architecture_model/pipeline/relate_types.py`
-**Downstream dependents (must re-test):** Coordinator, Validate, Decompose, Artifacts, Cache, Emit, Context Gen, Synthesize
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose, Artifacts, Validate
 
 ### Report (src-pipeline-COMP-40)
 
 **Files:**
 - `src/architecture_model/pipeline/report.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Synthesize, Coordinator
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Synthesize, Decompose
 
 ### Requirements Derive (src-pipeline-COMP-41)
 
 **Files:**
 - `src/architecture_model/pipeline/requirements_derive.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Decompose, Coordinator, Cache, Emit, Synthesize
 
 ### Specify (src-pipeline-COMP-42)
 
 **Files:**
 - `src/architecture_model/pipeline/specify.py`
 - `src/architecture_model/pipeline/specify_types.py`
-**Downstream dependents (must re-test):** Decompose, Cache, Artifacts, Emit, Coordinator, Synthesize
+**Downstream dependents (must re-test):** Emit, Synthesize, Cache, Artifacts, Decompose, Coordinator
 
 ### Synthesize (src-pipeline-COMP-44)
 
 **Files:**
 - `src/architecture_model/pipeline/synthesize.py`
 - `src/architecture_model/pipeline/synthesize_types.py`
-**Downstream dependents (must re-test):** Coordinator, Decompose, Cache, Emit
+**Downstream dependents (must re-test):** Coordinator, Cache, Emit, Decompose
 
 ### Validate (src-pipeline-COMP-46)
 
 **Files:**
 - `src/architecture_model/pipeline/validate.py`
 - `src/architecture_model/pipeline/validate_types.py`
-**Downstream dependents (must re-test):** Artifacts, Cache, Emit, Coordinator, Context Gen, Synthesize, Decompose
+**Downstream dependents (must re-test):** Artifacts, Coordinator, Cache, Emit, Synthesize, Context Gen, Decompose
 
 ## Known Constraints
 

@@ -26,6 +26,7 @@
 | COMP-2.4 (Specification & Contract Stages) | contains | — |
 | COMP-2.5 (Synthesis & Emit Stages) | contains | — |
 | COMP-11 (Pipeline Learning) | contains | — |
+| REQ-25 | satisfies | Pipeline completes large repos without LLM |
 
 ### Dependents (incoming)
 

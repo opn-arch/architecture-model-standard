@@ -21,6 +21,21 @@
 |--------|------|-------------|
 | COMP-4.1 (Core Doc Generators) | contains | — |
 | COMP-4.2 (SE Document Suite) | contains | — |
+| REQ-21 | satisfies | All docs are self-documenting markdown |
+| REQ-O1 | satisfies | — |
+| REQ-Q1 | satisfies | — |
+| REQ-O10 | satisfies | — |
+| REQ-O11 | satisfies | — |
+| REQ-O12 | satisfies | — |
+| REQ-O13 | satisfies | — |
+| REQ-O14 | satisfies | — |
+| REQ-O15 | satisfies | — |
+| REQ-O16 | satisfies | — |
+| REQ-O17 | satisfies | — |
+| REQ-O18 | satisfies | — |
+| REQ-O19 | satisfies | — |
+| REQ-O2 | satisfies | — |
+| IF-1 | exposes | — |
 
 ### Dependents (incoming)
 

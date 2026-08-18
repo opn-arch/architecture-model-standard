@@ -85,6 +85,7 @@
   "COMP-19": [
     "tests/test_behavior_flows.py",
     "tests/test_behavior_spec.py",
+    "tests/test_cache_reviews.py",
     "tests/test_call_graph.py",
     "tests/test_corrections.py",
     "tests/test_pipeline_cache.py",
@@ -120,6 +121,7 @@
     "scripts/test_guided_round_trip.py",
     "tests/test_auto_fblocks.py",
     "tests/test_compose_enriched.py",
+    "tests/test_coordinator_enrichment.py",
     "tests/test_core/test_enrichment.py",
     "tests/test_event_chains.py",
     "tests/test_init_reexport_mapping.py",
@@ -139,6 +141,7 @@
     "scripts/test_round_trip.py",
     "scripts/test_sentry.py",
     "tests/conftest.py",
+    "tests/test_artifact_traceability_review.py",
     "tests/test_confidence_auto.py",
     "tests/test_core/test_schema_v12.py",
     "tests/test_core/test_schema_v13.py",
@@ -329,6 +332,10 @@
     "tests/test_pipeline_stages.py"
   ],
   "COMP-36": [
+    "tests/test_artifact_traceability_review.py",
+    "tests/test_cache_reviews.py",
+    "tests/test_coordinator_enrichment.py",
+    "tests/test_emit_review.py",
     "tests/test_pipeline_allocate.py",
     "tests/test_pipeline_artifacts.py",
     "tests/test_pipeline_cache.py",
@@ -346,7 +353,8 @@
     "tests/test_pipeline_recursive.py",
     "tests/test_pipeline_report.py",
     "tests/test_pipeline_stages.py",
-    "tests/test_pipeline_synthesize.py"
+    "tests/test_pipeline_synthesize.py",
+    "tests/test_protocol_review.py"
   ],
   "COMP-38": [
     "tests/test_pipeline_artifacts.py",

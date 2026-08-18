@@ -2,10 +2,10 @@
 document: Logical Architecture
 system: System
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:03Z
+generated_at: 2026-08-18T23:36:29Z
 generator_version: 0.3.0
 model_hash: 41fb0d4bec16
-edition: 5
+edition: 7
 ---
 
 > **Model Completeness: F (14%)**
@@ -17,16 +17,12 @@ edition: 5
 > Run the extraction pipeline or manually add behaviors/interfaces/constraints.
 
 # Logical Architecture: System
-
 ## Layer Structure
-
 | Order | Layer | Technologies | Directories |
 |-------|-------|-------------|-------------|
 | 0 | infra | — | — |
 | 0 | data | — | — |
-
 ## Component Allocation
-
 ### data
 
 | Component | Kind | Files | Responsibilities |
@@ -133,519 +129,572 @@ edition: 5
 | Src (extract) (COMP-4-11) | service | 5 files | — |
 | Src (profiles) (COMP-4-12) | service | 1 files | — |
 | Src (export) (COMP-4-13) | service | 2 files | — |
-
 ## Inter-Component Interfaces
-
 | Interface | Type | Protocol | Provider | Consumer |
 |-----------|------|----------|----------|----------|
 | runner CLI | internal | — | — | — |
-
 ## Dependency Graph
-
 ```mermaid
 graph TD
     scripts-dev-simulation-COMP-10["Infrastructure"]
     scripts-dev-simulation-COMP-8["Runner"]
     scripts-dev-simulation-COMP-10 --> scripts-dev-simulation-COMP-8
-    src-pipeline-COMP-20["Context Gen"]
+    src-pipeline-COMP-19["Cache"]
     src-pipeline-COMP-30["Infer"]
-    src-pipeline-COMP-20 --> src-pipeline-COMP-30
-    src-pipeline-COMP-33["Lessons"]
-    src-pipeline-COMP-36["Protocol"]
-    src-pipeline-COMP-33 --> src-pipeline-COMP-36
-    src-pipeline-COMP-37["Regen Score"]
-    src-pipeline-COMP-37 --> src-pipeline-COMP-36
-    src-pipeline-COMP-25["Decompose"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-33
+    src-pipeline-COMP-19 --> src-pipeline-COMP-30
     src-pipeline-COMP-38["Relate"]
     src-pipeline-COMP-16["Allocate"]
     src-pipeline-COMP-38 --> src-pipeline-COMP-16
-    src-pipeline-COMP-44["Synthesize"]
-    src-pipeline-COMP-44 --> src-pipeline-COMP-30
-    src-pipeline-COMP-21["Contract"]
-    src-pipeline-COMP-21 --> src-pipeline-COMP-16
-    src-pipeline-COMP-20 --> src-pipeline-COMP-16
-    src-pipeline-COMP-34["Observe"]
-    src-pipeline-COMP-30 --> src-pipeline-COMP-34
-    src-pipeline-COMP-40["Report"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-40
-    src-pipeline-COMP-42["Specify"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-42
-    src-pipeline-COMP-19["Cache"]
-    src-pipeline-COMP-19 --> src-pipeline-COMP-33
-    src-pipeline-COMP-38 --> src-pipeline-COMP-34
-    src-pipeline-COMP-29["Global Learning"]
-    src-pipeline-COMP-25 --> src-pipeline-COMP-29
-    src-pipeline-COMP-21 --> src-pipeline-COMP-34
-    src-pipeline-COMP-27["Emit"]
-    src-pipeline-COMP-27 --> src-pipeline-COMP-16
-    src-pipeline-COMP-20 --> src-pipeline-COMP-34
-    src-pipeline-COMP-19 --> src-pipeline-COMP-40
     src-pipeline-COMP-23["Coordinator"]
-    src-pipeline-COMP-23 --> src-pipeline-COMP-20
-    src-pipeline-COMP-19 --> src-pipeline-COMP-42
-    src-pipeline-COMP-25 --> src-pipeline-COMP-21
-    src-pipeline-COMP-27 --> src-pipeline-COMP-34
-    src-pipeline-COMP-16 --> src-pipeline-COMP-30
+    src-pipeline-COMP-44["Synthesize"]
     src-pipeline-COMP-23 --> src-pipeline-COMP-44
-    src-pipeline-COMP-23 --> src-pipeline-COMP-36
-    src-pipeline-COMP-27 --> src-pipeline-COMP-33
-    src-pipeline-COMP-23 --> src-pipeline-COMP-38
     src-pipeline-COMP-18["Artifacts"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-18
+    src-pipeline-COMP-44 --> src-pipeline-COMP-30
+    src-pipeline-COMP-25["Decompose"]
+    src-pipeline-COMP-27["Emit"]
+    src-pipeline-COMP-25 --> src-pipeline-COMP-27
+    src-pipeline-COMP-23 --> src-pipeline-COMP-19
+    src-pipeline-COMP-34["Observe"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-34
     src-pipeline-COMP-46["Validate"]
     src-pipeline-COMP-18 --> src-pipeline-COMP-46
-    src-pipeline-COMP-19 --> src-pipeline-COMP-46
-    src-pipeline-COMP-24["Corrections"]
-    src-pipeline-COMP-23 --> src-pipeline-COMP-24
-    src-pipeline-COMP-20 --> src-pipeline-COMP-36
-    src-pipeline-COMP-27 --> src-pipeline-COMP-19
-    src-pipeline-COMP-27 --> src-pipeline-COMP-24
-    src-pipeline-COMP-19 --> src-pipeline-COMP-25
+    src-pipeline-COMP-23 --> src-pipeline-COMP-38
+    src-pipeline-COMP-25 --> src-pipeline-COMP-23
+    src-pipeline-COMP-27 --> src-pipeline-COMP-34
+    src-pipeline-COMP-37["Regen Score"]
+    src-pipeline-COMP-19 --> src-pipeline-COMP-37
+    src-pipeline-COMP-16 --> src-pipeline-COMP-30
+    src-pipeline-COMP-38 --> src-pipeline-COMP-34
+    src-pipeline-COMP-27 --> src-pipeline-COMP-37
+    src-pipeline-COMP-44 --> src-pipeline-COMP-37
     src-pipeline-COMP-41["Requirements Derive"]
     src-pipeline-COMP-25 --> src-pipeline-COMP-41
-    src-pipeline-COMP-27 --> src-pipeline-COMP-40
-    src-pipeline-COMP-25 --> src-pipeline-COMP-18
-    src-pipeline-COMP-44 --> src-pipeline-COMP-36
-    src-pipeline-COMP-42 --> src-pipeline-COMP-36
-    src-pipeline-COMP-25 --> src-pipeline-COMP-23
-    src-pipeline-COMP-25 --> src-pipeline-COMP-20
-    src-pipeline-COMP-44 --> src-pipeline-COMP-24
-    src-pipeline-COMP-19 --> src-pipeline-COMP-41
-    src-pipeline-COMP-19 --> src-pipeline-COMP-18
-    src-pipeline-COMP-19 --> src-pipeline-COMP-23
-    src-pipeline-COMP-27 --> src-pipeline-COMP-46
-    src-pipeline-COMP-46 --> src-pipeline-COMP-38
-    src-pipeline-COMP-25 --> src-pipeline-COMP-27
-    src-pipeline-COMP-23 --> src-pipeline-COMP-16
-    src-pipeline-COMP-25 --> src-pipeline-COMP-38
-    src-pipeline-COMP-16 --> src-pipeline-COMP-36
-    src-pipeline-COMP-23 --> src-pipeline-COMP-34
-    src-pipeline-COMP-27 --> src-pipeline-COMP-37
-    src-pipeline-COMP-27 --> src-pipeline-COMP-18
-    src-pipeline-COMP-46 --> src-pipeline-COMP-30
-    src-pipeline-COMP-34 --> src-pipeline-COMP-36
-    src-pipeline-COMP-16 --> src-pipeline-COMP-24
-    src-pipeline-COMP-44 --> src-pipeline-COMP-16
-    src-pipeline-COMP-42 --> src-pipeline-COMP-16
-    src-pipeline-COMP-25 --> src-pipeline-COMP-30
-    src-pipeline-COMP-18 --> src-pipeline-COMP-42
-    src-pipeline-COMP-19 --> src-pipeline-COMP-29
-    src-pipeline-COMP-44 --> src-pipeline-COMP-34
-    src-pipeline-COMP-42 --> src-pipeline-COMP-34
-    src-pipeline-COMP-46 --> src-pipeline-COMP-16
-    src-pipeline-COMP-18 --> src-pipeline-COMP-21
-    src-pipeline-COMP-19 --> src-pipeline-COMP-21
-    src-pipeline-COMP-44 --> src-pipeline-COMP-19
-    src-pipeline-COMP-29 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-40
-    src-pipeline-COMP-27 --> src-pipeline-COMP-42
-    src-pipeline-COMP-23 --> src-pipeline-COMP-46
-    src-pipeline-COMP-27 --> src-pipeline-COMP-29
-    src-pipeline-COMP-40 --> src-pipeline-COMP-36
-    src-pipeline-COMP-20 --> src-pipeline-COMP-46
-    src-pipeline-COMP-16 --> src-pipeline-COMP-34
-    src-pipeline-COMP-46 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-46
-    src-pipeline-COMP-19 --> src-pipeline-COMP-20
-    src-pipeline-COMP-27 --> src-pipeline-COMP-21
-    src-pipeline-COMP-23 --> src-pipeline-COMP-37
-    src-pipeline-COMP-25 --> src-pipeline-COMP-44
-    src-pipeline-COMP-25 --> src-pipeline-COMP-36
-    src-pipeline-COMP-27 --> src-pipeline-COMP-25
-    src-pipeline-COMP-25 --> src-pipeline-COMP-24
-    src-pipeline-COMP-19 --> src-pipeline-COMP-27
-    src-pipeline-COMP-19 --> src-pipeline-COMP-44
-    src-pipeline-COMP-19 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-37
-    src-pipeline-COMP-27 --> src-pipeline-COMP-41
-    src-pipeline-COMP-18 --> src-pipeline-COMP-38
-    src-pipeline-COMP-19 --> src-pipeline-COMP-38
-    src-pipeline-COMP-44 --> src-pipeline-COMP-18
-    src-pipeline-COMP-23 --> src-pipeline-COMP-33
-    src-pipeline-COMP-27 --> src-pipeline-COMP-23
+    src-pipeline-COMP-20["Context Gen"]
     src-pipeline-COMP-27 --> src-pipeline-COMP-20
-    src-pipeline-COMP-23 --> src-pipeline-COMP-19
-    src-pipeline-COMP-23 --> src-pipeline-COMP-40
-    src-pipeline-COMP-23 --> src-pipeline-COMP-42
-    src-pipeline-COMP-18 --> src-pipeline-COMP-30
-    src-pipeline-COMP-19 --> src-pipeline-COMP-30
-    src-pipeline-COMP-23 --> src-pipeline-COMP-29
-    src-pipeline-COMP-44 --> src-pipeline-COMP-33
-    src-pipeline-COMP-27 --> src-pipeline-COMP-44
-    src-pipeline-COMP-25 --> src-pipeline-COMP-16
-    src-pipeline-COMP-38 --> src-pipeline-COMP-30
-    src-pipeline-COMP-27 --> src-pipeline-COMP-38
-    src-pipeline-COMP-44 --> src-pipeline-COMP-42
-    src-pipeline-COMP-18 --> src-pipeline-COMP-16
+    src-pipeline-COMP-44 --> src-pipeline-COMP-20
+    src-pipeline-COMP-36["Protocol"]
+    src-pipeline-COMP-19 --> src-pipeline-COMP-36
     src-pipeline-COMP-19 --> src-pipeline-COMP-16
-    src-pipeline-COMP-23 --> src-pipeline-COMP-21
-    src-pipeline-COMP-25 --> src-pipeline-COMP-34
-    src-pipeline-COMP-44 --> src-pipeline-COMP-29
-    src-pipeline-COMP-23 --> src-pipeline-COMP-25
-    src-pipeline-COMP-25 --> src-pipeline-COMP-19
-    src-pipeline-COMP-27 --> src-pipeline-COMP-30
-    src-pipeline-COMP-18 --> src-pipeline-COMP-34
+    src-pipeline-COMP-42["Specify"]
+    src-pipeline-COMP-27 --> src-pipeline-COMP-42
+    src-pipeline-COMP-44 --> src-pipeline-COMP-42
+    src-pipeline-COMP-29["Global Learning"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-29
+    src-pipeline-COMP-44 --> src-pipeline-COMP-36
+    src-pipeline-COMP-44 --> src-pipeline-COMP-16
+    src-pipeline-COMP-27 --> src-pipeline-COMP-29
+    src-pipeline-COMP-21["Contract"]
+    src-pipeline-COMP-25 --> src-pipeline-COMP-21
+    src-pipeline-COMP-18 --> src-pipeline-COMP-30
+    src-pipeline-COMP-40["Report"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-40
+    src-pipeline-COMP-20 --> src-pipeline-COMP-30
+    src-pipeline-COMP-19 --> src-pipeline-COMP-44
+    src-pipeline-COMP-19 --> src-pipeline-COMP-18
+    src-pipeline-COMP-23 --> src-pipeline-COMP-46
+    src-pipeline-COMP-30 --> src-pipeline-COMP-36
+    src-pipeline-COMP-24["Corrections"]
+    src-pipeline-COMP-23 --> src-pipeline-COMP-24
+    src-pipeline-COMP-16 --> src-pipeline-COMP-36
+    src-pipeline-COMP-33["Lessons"]
+    src-pipeline-COMP-25 --> src-pipeline-COMP-33
     src-pipeline-COMP-19 --> src-pipeline-COMP-34
-    src-pipeline-COMP-44 --> src-pipeline-COMP-21
+    src-pipeline-COMP-27 --> src-pipeline-COMP-44
+    src-pipeline-COMP-27 --> src-pipeline-COMP-18
+    src-pipeline-COMP-44 --> src-pipeline-COMP-18
+    src-pipeline-COMP-46 --> src-pipeline-COMP-30
+    src-pipeline-COMP-19 --> src-pipeline-COMP-38
+    src-pipeline-COMP-27 --> src-pipeline-COMP-19
+    src-pipeline-COMP-44 --> src-pipeline-COMP-19
+    src-pipeline-COMP-18 --> src-pipeline-COMP-21
+    src-pipeline-COMP-44 --> src-pipeline-COMP-34
+    src-pipeline-COMP-21 --> src-pipeline-COMP-36
+    src-pipeline-COMP-21 --> src-pipeline-COMP-16
+    src-pipeline-COMP-23 --> src-pipeline-COMP-25
+    src-pipeline-COMP-25 --> src-pipeline-COMP-30
+    src-pipeline-COMP-27 --> src-pipeline-COMP-38
+    src-pipeline-COMP-44 --> src-pipeline-COMP-38
+    src-pipeline-COMP-19 --> src-pipeline-COMP-20
+    src-pipeline-COMP-23 --> src-pipeline-COMP-27
+    src-pipeline-COMP-27 --> src-pipeline-COMP-25
+    src-pipeline-COMP-19 --> src-pipeline-COMP-42
+    src-pipeline-COMP-18 --> src-pipeline-COMP-16
+    src-pipeline-COMP-20 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-23
+    src-pipeline-COMP-30 --> src-pipeline-COMP-34
+    src-pipeline-COMP-20 --> src-pipeline-COMP-16
+    src-pipeline-COMP-16 --> src-pipeline-COMP-34
+    src-pipeline-COMP-19 --> src-pipeline-COMP-29
+    src-pipeline-COMP-27 --> src-pipeline-COMP-23
+    src-pipeline-COMP-44 --> src-pipeline-COMP-23
+    src-pipeline-COMP-42 --> src-pipeline-COMP-36
+    src-pipeline-COMP-25 --> src-pipeline-COMP-37
+    src-pipeline-COMP-44 --> src-pipeline-COMP-29
+    src-pipeline-COMP-42 --> src-pipeline-COMP-16
     src-pipeline-COMP-23 --> src-pipeline-COMP-41
-    src-pipeline-COMP-23 --> src-pipeline-COMP-18
+    src-pipeline-COMP-46 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-40
+    src-pipeline-COMP-21 --> src-pipeline-COMP-34
+    src-pipeline-COMP-46 --> src-pipeline-COMP-16
+    src-pipeline-COMP-19 --> src-pipeline-COMP-46
+    src-pipeline-COMP-27 --> src-pipeline-COMP-40
+    src-pipeline-COMP-19 --> src-pipeline-COMP-24
+    src-pipeline-COMP-44 --> src-pipeline-COMP-40
+    src-pipeline-COMP-25 --> src-pipeline-COMP-36
+    src-pipeline-COMP-25 --> src-pipeline-COMP-16
+    src-pipeline-COMP-18 --> src-pipeline-COMP-34
+    src-pipeline-COMP-23 --> src-pipeline-COMP-21
+    src-pipeline-COMP-20 --> src-pipeline-COMP-34
+    src-pipeline-COMP-27 --> src-pipeline-COMP-46
+    src-pipeline-COMP-44 --> src-pipeline-COMP-46
+    src-pipeline-COMP-27 --> src-pipeline-COMP-24
+    src-pipeline-COMP-44 --> src-pipeline-COMP-24
+    src-pipeline-COMP-20 --> src-pipeline-COMP-38
+    src-pipeline-COMP-42 --> src-pipeline-COMP-34
+    src-pipeline-COMP-19 --> src-pipeline-COMP-25
+    src-pipeline-COMP-19 --> src-pipeline-COMP-27
+    src-pipeline-COMP-23 --> src-pipeline-COMP-33
+    src-pipeline-COMP-18 --> src-pipeline-COMP-42
+    src-pipeline-COMP-25 --> src-pipeline-COMP-44
+    src-pipeline-COMP-25 --> src-pipeline-COMP-18
     src-pipeline-COMP-44 --> src-pipeline-COMP-25
     src-pipeline-COMP-18 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-41
-    src-pipeline-COMP-25 --> src-pipeline-COMP-46
-    src-pipeline-COMP-30 --> src-pipeline-COMP-36
-    src-pipeline-COMP-19 --> src-pipeline-COMP-24
-    src-pipeline-COMP-23 --> src-pipeline-COMP-27
-    src-pipeline-COMP-38 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-23
-    src-pipeline-COMP-30 --> src-pipeline-COMP-24
-    src-pipeline-COMP-44 --> src-pipeline-COMP-20
-    src-pipeline-COMP-21 --> src-pipeline-COMP-36
-    src-pipeline-COMP-20 --> src-pipeline-COMP-38
-    src-pipeline-COMP-25 --> src-pipeline-COMP-37
     src-pipeline-COMP-44 --> src-pipeline-COMP-27
-    src-pipeline-COMP-27 --> src-pipeline-COMP-36
-    src-pipeline-COMP-44 --> src-pipeline-COMP-38
+    src-pipeline-COMP-25 --> src-pipeline-COMP-34
+    src-pipeline-COMP-37 --> src-pipeline-COMP-36
     src-pipeline-COMP-23 --> src-pipeline-COMP-30
-    src-pipeline-COMP-19 --> src-pipeline-COMP-37
-    src-core-COMP-21["Decomposer"]
-    src-core-COMP-17["Compression"]
-    src-core-COMP-21 --> src-core-COMP-17
-    src-core-COMP-28["Source Block Assign"]
-    src-core-COMP-28 --> src-core-COMP-17
+    src-pipeline-COMP-25 --> src-pipeline-COMP-38
+    src-pipeline-COMP-19 --> src-pipeline-COMP-41
+    src-pipeline-COMP-27 --> src-pipeline-COMP-30
+    src-pipeline-COMP-34 --> src-pipeline-COMP-36
+    src-pipeline-COMP-25 --> src-pipeline-COMP-20
+    src-pipeline-COMP-27 --> src-pipeline-COMP-41
+    src-pipeline-COMP-44 --> src-pipeline-COMP-41
+    src-pipeline-COMP-25 --> src-pipeline-COMP-42
+    src-pipeline-COMP-38 --> src-pipeline-COMP-30
+    src-pipeline-COMP-33 --> src-pipeline-COMP-36
+    src-pipeline-COMP-20 --> src-pipeline-COMP-46
+    src-pipeline-COMP-25 --> src-pipeline-COMP-29
+    src-pipeline-COMP-23 --> src-pipeline-COMP-37
+    src-pipeline-COMP-29 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-21
+    src-pipeline-COMP-18 --> src-pipeline-COMP-38
+    src-pipeline-COMP-23 --> src-pipeline-COMP-20
+    src-pipeline-COMP-27 --> src-pipeline-COMP-21
+    src-pipeline-COMP-44 --> src-pipeline-COMP-21
+    src-pipeline-COMP-23 --> src-pipeline-COMP-42
+    src-pipeline-COMP-25 --> src-pipeline-COMP-40
+    src-pipeline-COMP-23 --> src-pipeline-COMP-36
+    src-pipeline-COMP-19 --> src-pipeline-COMP-33
+    src-pipeline-COMP-23 --> src-pipeline-COMP-16
+    src-pipeline-COMP-25 --> src-pipeline-COMP-46
+    src-pipeline-COMP-30 --> src-pipeline-COMP-24
+    src-pipeline-COMP-25 --> src-pipeline-COMP-24
+    src-pipeline-COMP-27 --> src-pipeline-COMP-36
+    src-pipeline-COMP-16 --> src-pipeline-COMP-24
+    src-pipeline-COMP-40 --> src-pipeline-COMP-36
+    src-pipeline-COMP-46 --> src-pipeline-COMP-38
+    src-pipeline-COMP-27 --> src-pipeline-COMP-16
+    src-pipeline-COMP-27 --> src-pipeline-COMP-33
+    src-pipeline-COMP-44 --> src-pipeline-COMP-33
+    src-pipeline-COMP-25 --> src-pipeline-COMP-19
+    src-pipeline-COMP-38 --> src-pipeline-COMP-36
     src-core-COMP-26["Representativeness"]
-    src-core-COMP-21 --> src-core-COMP-26
-    src-core-COMP-18["Confidence"]
-    src-core-COMP-18 --> src-core-COMP-28
-    src-core-COMP-15["Cluster"]
-    src-core-COMP-28 --> src-core-COMP-15
-    src-core-COMP-16["Completeness"]
-    src-core-COMP-21 --> src-core-COMP-16
-    src-core-COMP-28 --> src-core-COMP-16
-    src-core-COMP-19["Corrections"]
-    src-core-COMP-18 --> src-core-COMP-19
-    src-core-COMP-22["Differ"]
-    src-core-COMP-26 --> src-core-COMP-22
+    src-core-COMP-28["Source Block Assign"]
     src-core-COMP-26 --> src-core-COMP-28
-    src-core-COMP-21 --> src-core-COMP-19
+    src-core-COMP-21["Decomposer"]
+    src-core-COMP-24["Parser"]
+    src-core-COMP-21 --> src-core-COMP-24
     src-core-COMP-25["Regen Readiness"]
-    src-core-COMP-25 --> src-core-COMP-21
-    src-core-COMP-18 --> src-core-COMP-25
-    src-core-COMP-25 --> src-core-COMP-18
-    src-core-COMP-25 --> src-core-COMP-22
+    src-core-COMP-28 --> src-core-COMP-25
+    src-core-COMP-27["Slicer"]
+    src-core-COMP-28 --> src-core-COMP-27
+    src-core-COMP-25 --> src-core-COMP-27
+    src-core-COMP-18["Confidence"]
+    src-core-COMP-18 --> src-core-COMP-24
+    src-core-COMP-26 --> src-core-COMP-18
     src-core-COMP-23["Merger"]
+    src-core-COMP-28 --> src-core-COMP-23
     src-core-COMP-25 --> src-core-COMP-23
+    src-core-COMP-22["Differ"]
+    src-core-COMP-21 --> src-core-COMP-22
+    src-core-COMP-18 --> src-core-COMP-25
+    src-core-COMP-18 --> src-core-COMP-27
     src-core-COMP-20["Coverage"]
-    src-core-COMP-25 --> src-core-COMP-20
+    src-core-COMP-26 --> src-core-COMP-20
+    src-core-COMP-30["Validator"]
+    src-core-COMP-21 --> src-core-COMP-30
+    src-core-COMP-15["Cluster"]
+    src-core-COMP-26 --> src-core-COMP-15
+    src-core-COMP-20 --> src-core-COMP-28
+    src-core-COMP-28 --> src-core-COMP-24
+    src-core-COMP-28 --> src-core-COMP-21
+    src-core-COMP-25 --> src-core-COMP-21
+    src-core-COMP-18 --> src-core-COMP-30
     src-core-COMP-31["Visualize"]
     src-core-COMP-28 --> src-core-COMP-31
-    src-core-COMP-28 --> src-core-COMP-26
-    src-core-COMP-18 --> src-core-COMP-22
-    src-core-COMP-26 --> src-core-COMP-21
-    src-core-COMP-18 --> src-core-COMP-23
-    src-core-COMP-27["Slicer"]
-    src-core-COMP-25 --> src-core-COMP-27
-    src-core-COMP-30["Validator"]
-    src-core-COMP-30 --> src-core-COMP-28
-    src-core-COMP-26 --> src-core-COMP-25
-    src-core-COMP-21 --> src-core-COMP-22
-    src-core-COMP-21 --> src-core-COMP-28
-    src-core-COMP-20 --> src-core-COMP-28
-    src-core-COMP-26 --> src-core-COMP-18
-    src-core-COMP-26 --> src-core-COMP-23
-    src-core-COMP-25 --> src-core-COMP-30
-    src-core-COMP-26 --> src-core-COMP-20
-    src-core-COMP-27 --> src-core-COMP-28
-    src-core-COMP-28 --> src-core-COMP-19
-    src-core-COMP-26 --> src-core-COMP-27
-    src-core-COMP-18 --> src-core-COMP-21
-    src-core-COMP-28 --> src-core-COMP-21
-    src-core-COMP-21 --> src-core-COMP-25
-    src-core-COMP-26 --> src-core-COMP-30
-    src-core-COMP-28 --> src-core-COMP-25
-    src-core-COMP-18 --> src-core-COMP-20
-    src-core-COMP-26 --> src-core-COMP-15
-    src-core-COMP-21 --> src-core-COMP-18
-    src-core-COMP-28 --> src-core-COMP-18
-    src-core-COMP-22 --> src-core-COMP-28
-    src-core-COMP-23 --> src-core-COMP-28
-    src-core-COMP-24["Parser"]
-    src-core-COMP-25 --> src-core-COMP-24
-    src-core-COMP-21 --> src-core-COMP-23
-    src-core-COMP-28 --> src-core-COMP-22
-    src-core-COMP-21 --> src-core-COMP-20
-    src-core-COMP-28 --> src-core-COMP-23
-    src-core-COMP-18 --> src-core-COMP-27
-    src-core-COMP-21 --> src-core-COMP-27
-    src-core-COMP-28 --> src-core-COMP-27
-    src-core-COMP-25 --> src-core-COMP-17
-    src-core-COMP-18 --> src-core-COMP-30
-    src-core-COMP-25 --> src-core-COMP-15
-    src-core-COMP-25 --> src-core-COMP-16
-    src-core-COMP-26 --> src-core-COMP-24
-    src-core-COMP-21 --> src-core-COMP-30
-    src-core-COMP-18 --> src-core-COMP-15
-    src-core-COMP-28 --> src-core-COMP-30
-    src-core-COMP-18 --> src-core-COMP-16
-    src-core-COMP-24 --> src-core-COMP-28
-    src-core-COMP-21 --> src-core-COMP-15
-    src-core-COMP-26 --> src-core-COMP-31
-    src-core-COMP-25 --> src-core-COMP-19
-    src-core-COMP-26 --> src-core-COMP-17
-    src-core-COMP-26 --> src-core-COMP-16
-    src-core-COMP-28 --> src-core-COMP-20
-    src-core-COMP-18 --> src-core-COMP-24
     src-core-COMP-25 --> src-core-COMP-31
-    src-core-COMP-26 --> src-core-COMP-19
-    src-core-COMP-25 --> src-core-COMP-26
-    src-core-COMP-21 --> src-core-COMP-24
-    src-core-COMP-28 --> src-core-COMP-24
-    src-core-COMP-18 --> src-core-COMP-31
-    src-core-COMP-18 --> src-core-COMP-17
-    src-core-COMP-18 --> src-core-COMP-26
-    src-core-COMP-25 --> src-core-COMP-28
+    src-core-COMP-17["Compression"]
+    src-core-COMP-21 --> src-core-COMP-17
+    src-core-COMP-28 --> src-core-COMP-22
+    src-core-COMP-25 --> src-core-COMP-22
+    src-core-COMP-30 --> src-core-COMP-28
+    src-core-COMP-18 --> src-core-COMP-21
     src-core-COMP-21 --> src-core-COMP-31
-    src-manifest-COMP-32["Slicers"]
-    src-manifest-COMP-18["Body Hints"]
-    src-manifest-COMP-32 --> src-manifest-COMP-18
-    src-manifest-COMP-24["Interfaces"]
-    src-manifest-COMP-22["Generator"]
-    src-manifest-COMP-24 --> src-manifest-COMP-22
-    src-manifest-COMP-21["Display"]
-    src-manifest-COMP-22 --> src-manifest-COMP-21
-    src-manifest-COMP-23["Grouping"]
-    src-manifest-COMP-24 --> src-manifest-COMP-23
+    src-core-COMP-19["Corrections"]
+    src-core-COMP-26 --> src-core-COMP-19
+    src-core-COMP-18 --> src-core-COMP-17
+    src-core-COMP-16["Completeness"]
+    src-core-COMP-21 --> src-core-COMP-16
+    src-core-COMP-28 --> src-core-COMP-30
+    src-core-COMP-25 --> src-core-COMP-30
+    src-core-COMP-21 --> src-core-COMP-28
+    src-core-COMP-18 --> src-core-COMP-31
+    src-core-COMP-26 --> src-core-COMP-25
+    src-core-COMP-18 --> src-core-COMP-16
+    src-core-COMP-26 --> src-core-COMP-27
+    src-core-COMP-18 --> src-core-COMP-22
+    src-core-COMP-18 --> src-core-COMP-28
+    src-core-COMP-22 --> src-core-COMP-28
+    src-core-COMP-26 --> src-core-COMP-23
+    src-core-COMP-28 --> src-core-COMP-17
+    src-core-COMP-25 --> src-core-COMP-17
+    src-core-COMP-28 --> src-core-COMP-16
+    src-core-COMP-25 --> src-core-COMP-16
+    src-core-COMP-21 --> src-core-COMP-20
+    src-core-COMP-25 --> src-core-COMP-28
+    src-core-COMP-21 --> src-core-COMP-15
+    src-core-COMP-26 --> src-core-COMP-24
+    src-core-COMP-21 --> src-core-COMP-26
+    src-core-COMP-26 --> src-core-COMP-21
+    src-core-COMP-18 --> src-core-COMP-20
+    src-core-COMP-18 --> src-core-COMP-26
+    src-core-COMP-25 --> src-core-COMP-18
+    src-core-COMP-28 --> src-core-COMP-18
+    src-core-COMP-23 --> src-core-COMP-28
+    src-core-COMP-26 --> src-core-COMP-31
+    src-core-COMP-26 --> src-core-COMP-22
+    src-core-COMP-21 --> src-core-COMP-18
+    src-core-COMP-24 --> src-core-COMP-28
+    src-core-COMP-21 --> src-core-COMP-19
+    src-core-COMP-28 --> src-core-COMP-20
+    src-core-COMP-25 --> src-core-COMP-20
+    src-core-COMP-26 --> src-core-COMP-30
+    src-core-COMP-28 --> src-core-COMP-15
+    src-core-COMP-25 --> src-core-COMP-15
+    src-core-COMP-28 --> src-core-COMP-26
+    src-core-COMP-25 --> src-core-COMP-26
+    src-core-COMP-18 --> src-core-COMP-19
+    src-core-COMP-21 --> src-core-COMP-25
+    src-core-COMP-21 --> src-core-COMP-27
+    src-core-COMP-21 --> src-core-COMP-23
+    src-core-COMP-18 --> src-core-COMP-15
+    src-core-COMP-26 --> src-core-COMP-17
+    src-core-COMP-25 --> src-core-COMP-24
+    src-core-COMP-18 --> src-core-COMP-23
+    src-core-COMP-28 --> src-core-COMP-19
+    src-core-COMP-25 --> src-core-COMP-19
+    src-core-COMP-26 --> src-core-COMP-16
+    src-core-COMP-27 --> src-core-COMP-28
     src-manifest-COMP-19["Call Graph"]
-    src-manifest-COMP-28["Protocol"]
-    src-manifest-COMP-19 --> src-manifest-COMP-28
-    src-manifest-COMP-17["Blocks"]
-    src-manifest-COMP-17 --> src-manifest-COMP-18
-    src-manifest-COMP-32 --> src-manifest-COMP-22
     src-manifest-COMP-30["Scan Cache"]
-    src-manifest-COMP-16["Behavior"]
-    src-manifest-COMP-30 --> src-manifest-COMP-16
-    src-manifest-COMP-32 --> src-manifest-COMP-23
-    src-manifest-COMP-17 --> src-manifest-COMP-22
-    src-manifest-COMP-25["Kt Scanner"]
-    src-manifest-COMP-33["Ts Scanner"]
-    src-manifest-COMP-25 --> src-manifest-COMP-33
-    src-manifest-COMP-17 --> src-manifest-COMP-23
-    src-manifest-COMP-29["Recursive"]
-    src-manifest-COMP-29 --> src-manifest-COMP-21
-    src-manifest-COMP-19 --> src-manifest-COMP-32
-    src-manifest-COMP-27["Multi Scanner"]
-    src-manifest-COMP-27 --> src-manifest-COMP-17
-    src-manifest-COMP-24 --> src-manifest-COMP-27
-    src-manifest-COMP-26["Metrics"]
-    src-manifest-COMP-27 --> src-manifest-COMP-26
-    src-manifest-COMP-29 --> src-manifest-COMP-25
-    src-manifest-COMP-30 --> src-manifest-COMP-32
-    src-manifest-COMP-19 --> src-manifest-COMP-33
-    src-manifest-COMP-25 --> src-manifest-COMP-29
-    src-manifest-COMP-30 --> src-manifest-COMP-33
-    src-manifest-COMP-30 --> src-manifest-COMP-19
-    src-manifest-COMP-26 --> src-manifest-COMP-22
-    src-manifest-COMP-20["Chains"]
-    src-manifest-COMP-22 --> src-manifest-COMP-20
-    src-manifest-COMP-23 --> src-manifest-COMP-20
-    src-manifest-COMP-26 --> src-manifest-COMP-28
-    src-manifest-COMP-27 --> src-manifest-COMP-16
-    src-manifest-COMP-24 --> src-manifest-COMP-29
-    src-manifest-COMP-29 --> src-manifest-COMP-18
-    src-manifest-COMP-32 --> src-manifest-COMP-29
-    src-manifest-COMP-29 --> src-manifest-COMP-23
-    src-manifest-COMP-25 --> src-manifest-COMP-21
-    src-manifest-COMP-29 --> src-manifest-COMP-20
-    src-manifest-COMP-17 --> src-manifest-COMP-29
-    src-manifest-COMP-27 --> src-manifest-COMP-32
-    src-manifest-COMP-26 --> src-manifest-COMP-33
-    src-manifest-COMP-27 --> src-manifest-COMP-33
-    src-manifest-COMP-22 --> src-manifest-COMP-24
-    src-manifest-COMP-23 --> src-manifest-COMP-24
-    src-manifest-COMP-27 --> src-manifest-COMP-19
-    src-manifest-COMP-32 --> src-manifest-COMP-21
-    src-manifest-COMP-29 --> src-manifest-COMP-27
-    src-manifest-COMP-19 --> src-manifest-COMP-25
-    src-manifest-COMP-17 --> src-manifest-COMP-21
-    src-manifest-COMP-25 --> src-manifest-COMP-18
-    src-manifest-COMP-32 --> src-manifest-COMP-25
-    src-manifest-COMP-26 --> src-manifest-COMP-29
-    src-manifest-COMP-17 --> src-manifest-COMP-25
-    src-manifest-COMP-25 --> src-manifest-COMP-22
-    src-manifest-COMP-25 --> src-manifest-COMP-23
-    src-manifest-COMP-22 --> src-manifest-COMP-30
-    src-manifest-COMP-25 --> src-manifest-COMP-20
-    src-manifest-COMP-19 --> src-manifest-COMP-18
-    src-manifest-COMP-23 --> src-manifest-COMP-17
-    src-manifest-COMP-30 --> src-manifest-COMP-18
-    src-manifest-COMP-19 --> src-manifest-COMP-22
-    src-manifest-COMP-24 --> src-manifest-COMP-20
-    src-manifest-COMP-19 --> src-manifest-COMP-23
-    src-manifest-COMP-26 --> src-manifest-COMP-21
-    src-manifest-COMP-29 --> src-manifest-COMP-30
-    src-manifest-COMP-25 --> src-manifest-COMP-27
-    src-manifest-COMP-30 --> src-manifest-COMP-22
-    src-manifest-COMP-30 --> src-manifest-COMP-28
-    src-manifest-COMP-32 --> src-manifest-COMP-20
-    src-manifest-COMP-26 --> src-manifest-COMP-25
-    src-manifest-COMP-22 --> src-manifest-COMP-16
-    src-manifest-COMP-23 --> src-manifest-COMP-16
-    src-manifest-COMP-17 --> src-manifest-COMP-20
-    src-manifest-COMP-32 --> src-manifest-COMP-27
-    src-manifest-COMP-26 --> src-manifest-COMP-18
-    src-manifest-COMP-23 --> src-manifest-COMP-32
-    src-manifest-COMP-27 --> src-manifest-COMP-18
-    src-manifest-COMP-17 --> src-manifest-COMP-27
-    src-manifest-COMP-26 --> src-manifest-COMP-23
-    src-manifest-COMP-27 --> src-manifest-COMP-22
-    src-manifest-COMP-25 --> src-manifest-COMP-30
-    src-manifest-COMP-26 --> src-manifest-COMP-20
-    src-manifest-COMP-27 --> src-manifest-COMP-28
-    src-manifest-COMP-19 --> src-manifest-COMP-29
-    src-manifest-COMP-30 --> src-manifest-COMP-29
-    src-manifest-COMP-24 --> src-manifest-COMP-30
-    src-manifest-COMP-24 --> src-manifest-COMP-17
-    src-manifest-COMP-26 --> src-manifest-COMP-27
-    src-manifest-COMP-32 --> src-manifest-COMP-30
-    src-manifest-COMP-17 --> src-manifest-COMP-30
-    src-manifest-COMP-19 --> src-manifest-COMP-21
-    src-manifest-COMP-30 --> src-manifest-COMP-21
-    src-manifest-COMP-24 --> src-manifest-COMP-16
-    src-manifest-COMP-29 --> src-manifest-COMP-24
-    src-manifest-COMP-30 --> src-manifest-COMP-25
-    src-manifest-COMP-27 --> src-manifest-COMP-29
-    src-manifest-COMP-23 --> src-manifest-COMP-30
-    src-manifest-COMP-26 --> src-manifest-COMP-30
-    src-manifest-COMP-24 --> src-manifest-COMP-32
-    src-manifest-COMP-22 --> src-manifest-COMP-17
-    src-manifest-COMP-22 --> src-manifest-COMP-26
-    src-manifest-COMP-23 --> src-manifest-COMP-26
-    src-manifest-COMP-19 --> src-manifest-COMP-20
-    src-manifest-COMP-27 --> src-manifest-COMP-21
-    src-manifest-COMP-29 --> src-manifest-COMP-17
-    src-manifest-COMP-29 --> src-manifest-COMP-26
-    src-manifest-COMP-30 --> src-manifest-COMP-23
-    src-manifest-COMP-30 --> src-manifest-COMP-20
-    src-manifest-COMP-27 --> src-manifest-COMP-25
-    src-manifest-COMP-22 --> src-manifest-COMP-28
-    src-manifest-COMP-23 --> src-manifest-COMP-28
-    src-manifest-COMP-25 --> src-manifest-COMP-24
-    src-manifest-COMP-19 --> src-manifest-COMP-27
-    src-manifest-COMP-29 --> src-manifest-COMP-16
-    src-manifest-COMP-30 --> src-manifest-COMP-27
-    src-manifest-COMP-22 --> src-manifest-COMP-32
-    src-manifest-COMP-32 --> src-manifest-COMP-24
-    src-manifest-COMP-22 --> src-manifest-COMP-33
-    src-manifest-COMP-23 --> src-manifest-COMP-33
-    src-manifest-COMP-27 --> src-manifest-COMP-23
-    src-manifest-COMP-17 --> src-manifest-COMP-24
-    src-manifest-COMP-22 --> src-manifest-COMP-19
-    src-manifest-COMP-23 --> src-manifest-COMP-19
-    src-manifest-COMP-25 --> src-manifest-COMP-17
-    src-manifest-COMP-27 --> src-manifest-COMP-20
-    src-manifest-COMP-29 --> src-manifest-COMP-32
     src-manifest-COMP-19 --> src-manifest-COMP-30
-    src-manifest-COMP-29 --> src-manifest-COMP-19
-    src-manifest-COMP-23 --> src-manifest-COMP-29
-    src-manifest-COMP-24 --> src-manifest-COMP-26
-    src-manifest-COMP-25 --> src-manifest-COMP-16
-    src-manifest-COMP-32 --> src-manifest-COMP-17
-    src-manifest-COMP-32 --> src-manifest-COMP-26
-    src-manifest-COMP-26 --> src-manifest-COMP-24
-    src-manifest-COMP-17 --> src-manifest-COMP-26
-    src-manifest-COMP-19 --> src-manifest-COMP-16
-    src-manifest-COMP-24 --> src-manifest-COMP-28
-    src-manifest-COMP-23 --> src-manifest-COMP-21
-    src-manifest-COMP-25 --> src-manifest-COMP-32
-    src-manifest-COMP-32 --> src-manifest-COMP-16
-    src-manifest-COMP-32 --> src-manifest-COMP-28
-    src-manifest-COMP-17 --> src-manifest-COMP-16
-    src-manifest-COMP-22 --> src-manifest-COMP-25
-    src-manifest-COMP-23 --> src-manifest-COMP-25
-    src-manifest-COMP-17 --> src-manifest-COMP-28
-    src-manifest-COMP-25 --> src-manifest-COMP-19
-    src-manifest-COMP-27 --> src-manifest-COMP-30
-    src-manifest-COMP-26 --> src-manifest-COMP-17
-    src-manifest-COMP-24 --> src-manifest-COMP-33
-    src-manifest-COMP-17 --> src-manifest-COMP-32
-    src-manifest-COMP-22 --> src-manifest-COMP-18
-    src-manifest-COMP-23 --> src-manifest-COMP-18
-    src-manifest-COMP-24 --> src-manifest-COMP-19
-    src-manifest-COMP-32 --> src-manifest-COMP-33
-    src-manifest-COMP-32 --> src-manifest-COMP-19
-    src-manifest-COMP-17 --> src-manifest-COMP-33
-    src-manifest-COMP-23 --> src-manifest-COMP-22
+    src-manifest-COMP-32["Slicers"]
+    src-manifest-COMP-27["Multi Scanner"]
+    src-manifest-COMP-32 --> src-manifest-COMP-27
+    src-manifest-COMP-26["Metrics"]
+    src-manifest-COMP-28["Protocol"]
+    src-manifest-COMP-26 --> src-manifest-COMP-28
+    src-manifest-COMP-22["Generator"]
+    src-manifest-COMP-23["Grouping"]
     src-manifest-COMP-22 --> src-manifest-COMP-23
-    src-manifest-COMP-26 --> src-manifest-COMP-16
-    src-manifest-COMP-17 --> src-manifest-COMP-19
-    src-manifest-COMP-29 --> src-manifest-COMP-22
-    src-manifest-COMP-29 --> src-manifest-COMP-28
-    src-manifest-COMP-26 --> src-manifest-COMP-32
-    src-manifest-COMP-19 --> src-manifest-COMP-24
-    src-manifest-COMP-22 --> src-manifest-COMP-27
-    src-manifest-COMP-23 --> src-manifest-COMP-27
-    src-manifest-COMP-30 --> src-manifest-COMP-17
-    src-manifest-COMP-30 --> src-manifest-COMP-24
-    src-manifest-COMP-24 --> src-manifest-COMP-21
-    src-manifest-COMP-26 --> src-manifest-COMP-19
-    src-manifest-COMP-25 --> src-manifest-COMP-26
-    src-manifest-COMP-24 --> src-manifest-COMP-25
-    src-manifest-COMP-29 --> src-manifest-COMP-33
-    src-manifest-COMP-22 --> src-manifest-COMP-29
-    src-manifest-COMP-18 --> src-manifest-COMP-17
-    src-manifest-COMP-19 --> src-manifest-COMP-17
-    src-manifest-COMP-19 --> src-manifest-COMP-26
-    src-manifest-COMP-25 --> src-manifest-COMP-28
-    src-manifest-COMP-30 --> src-manifest-COMP-26
+    src-manifest-COMP-17["Blocks"]
+    src-manifest-COMP-21["Display"]
+    src-manifest-COMP-17 --> src-manifest-COMP-21
+    src-manifest-COMP-24["Interfaces"]
+    src-manifest-COMP-29["Recursive"]
+    src-manifest-COMP-24 --> src-manifest-COMP-29
+    src-manifest-COMP-27 --> src-manifest-COMP-32
+    src-manifest-COMP-18["Body Hints"]
+    src-manifest-COMP-23 --> src-manifest-COMP-18
+    src-manifest-COMP-25["Kt Scanner"]
+    src-manifest-COMP-25 --> src-manifest-COMP-27
+    src-manifest-COMP-32 --> src-manifest-COMP-23
+    src-manifest-COMP-23 --> src-manifest-COMP-19
+    src-manifest-COMP-20["Chains"]
+    src-manifest-COMP-29 --> src-manifest-COMP-20
+    src-manifest-COMP-30 --> src-manifest-COMP-22
+    src-manifest-COMP-16["Behavior"]
+    src-manifest-COMP-17 --> src-manifest-COMP-16
+    src-manifest-COMP-33["Ts Scanner"]
+    src-manifest-COMP-17 --> src-manifest-COMP-33
+    src-manifest-COMP-26 --> src-manifest-COMP-18
+    src-manifest-COMP-29 --> src-manifest-COMP-26
+    src-manifest-COMP-17 --> src-manifest-COMP-22
+    src-manifest-COMP-25 --> src-manifest-COMP-23
+    src-manifest-COMP-17 --> src-manifest-COMP-28
     src-manifest-COMP-24 --> src-manifest-COMP-18
+    src-manifest-COMP-30 --> src-manifest-COMP-32
+    src-manifest-COMP-22 --> src-manifest-COMP-24
+    src-manifest-COMP-19 --> src-manifest-COMP-17
+    src-manifest-COMP-24 --> src-manifest-COMP-19
+    src-manifest-COMP-17 --> src-manifest-COMP-32
+    src-manifest-COMP-19 --> src-manifest-COMP-26
+    src-manifest-COMP-32 --> src-manifest-COMP-24
+    src-manifest-COMP-27 --> src-manifest-COMP-20
+    src-manifest-COMP-19 --> src-manifest-COMP-16
+    src-manifest-COMP-26 --> src-manifest-COMP-20
+    src-manifest-COMP-23 --> src-manifest-COMP-29
+    src-manifest-COMP-22 --> src-manifest-COMP-25
+    src-manifest-COMP-24 --> src-manifest-COMP-25
+    src-manifest-COMP-27 --> src-manifest-COMP-26
+    src-manifest-COMP-19 --> src-manifest-COMP-28
+    src-manifest-COMP-22 --> src-manifest-COMP-27
+    src-manifest-COMP-24 --> src-manifest-COMP-27
+    src-manifest-COMP-27 --> src-manifest-COMP-29
+    src-manifest-COMP-29 --> src-manifest-COMP-24
+    src-manifest-COMP-25 --> src-manifest-COMP-21
+    src-manifest-COMP-26 --> src-manifest-COMP-29
+    src-manifest-COMP-29 --> src-manifest-COMP-19
+    src-manifest-COMP-30 --> src-manifest-COMP-17
+    src-manifest-COMP-24 --> src-manifest-COMP-23
+    src-manifest-COMP-32 --> src-manifest-COMP-22
+    src-manifest-COMP-17 --> src-manifest-COMP-20
+    src-manifest-COMP-19 --> src-manifest-COMP-18
+    src-manifest-COMP-23 --> src-manifest-COMP-24
+    src-manifest-COMP-29 --> src-manifest-COMP-25
+    src-manifest-COMP-30 --> src-manifest-COMP-16
+    src-manifest-COMP-30 --> src-manifest-COMP-33
+    src-manifest-COMP-25 --> src-manifest-COMP-33
+    src-manifest-COMP-17 --> src-manifest-COMP-26
+    src-manifest-COMP-29 --> src-manifest-COMP-27
+    src-manifest-COMP-25 --> src-manifest-COMP-22
+    src-manifest-COMP-27 --> src-manifest-COMP-18
+    src-manifest-COMP-30 --> src-manifest-COMP-28
+    src-manifest-COMP-32 --> src-manifest-COMP-30
+    src-manifest-COMP-17 --> src-manifest-COMP-29
+    src-manifest-COMP-27 --> src-manifest-COMP-19
+    src-manifest-COMP-26 --> src-manifest-COMP-19
+    src-manifest-COMP-29 --> src-manifest-COMP-23
+    src-manifest-COMP-18 --> src-manifest-COMP-17
+    src-manifest-COMP-23 --> src-manifest-COMP-25
+    src-manifest-COMP-25 --> src-manifest-COMP-32
+    src-manifest-COMP-25 --> src-manifest-COMP-30
+    src-manifest-COMP-19 --> src-manifest-COMP-20
+    src-manifest-COMP-23 --> src-manifest-COMP-27
+    src-manifest-COMP-22 --> src-manifest-COMP-21
+    src-manifest-COMP-27 --> src-manifest-COMP-25
+    src-manifest-COMP-30 --> src-manifest-COMP-18
+    src-manifest-COMP-22 --> src-manifest-COMP-17
+    src-manifest-COMP-26 --> src-manifest-COMP-25
+    src-manifest-COMP-19 --> src-manifest-COMP-23
+    src-manifest-COMP-17 --> src-manifest-COMP-18
+    src-manifest-COMP-26 --> src-manifest-COMP-27
+    src-manifest-COMP-19 --> src-manifest-COMP-29
+    src-manifest-COMP-32 --> src-manifest-COMP-21
+    src-manifest-COMP-32 --> src-manifest-COMP-17
+    src-manifest-COMP-17 --> src-manifest-COMP-19
+    src-manifest-COMP-22 --> src-manifest-COMP-16
+    src-manifest-COMP-22 --> src-manifest-COMP-33
+    src-manifest-COMP-27 --> src-manifest-COMP-23
+    src-manifest-COMP-24 --> src-manifest-COMP-22
+    src-manifest-COMP-22 --> src-manifest-COMP-28
+    src-manifest-COMP-26 --> src-manifest-COMP-23
+    src-manifest-COMP-29 --> src-manifest-COMP-21
+    src-manifest-COMP-25 --> src-manifest-COMP-17
+    src-manifest-COMP-30 --> src-manifest-COMP-20
+    src-manifest-COMP-32 --> src-manifest-COMP-16
+    src-manifest-COMP-32 --> src-manifest-COMP-33
+    src-manifest-COMP-17 --> src-manifest-COMP-25
+    src-manifest-COMP-22 --> src-manifest-COMP-32
+    src-manifest-COMP-30 --> src-manifest-COMP-26
+    src-manifest-COMP-22 --> src-manifest-COMP-30
+    src-manifest-COMP-24 --> src-manifest-COMP-30
+    src-manifest-COMP-32 --> src-manifest-COMP-28
+    src-manifest-COMP-19 --> src-manifest-COMP-24
+    src-manifest-COMP-25 --> src-manifest-COMP-16
+    src-manifest-COMP-30 --> src-manifest-COMP-29
+    src-manifest-COMP-23 --> src-manifest-COMP-21
+    src-manifest-COMP-29 --> src-manifest-COMP-33
+    src-manifest-COMP-25 --> src-manifest-COMP-28
     src-manifest-COMP-27 --> src-manifest-COMP-24
-    src-orchestration-COMP-9["Enrichment Context"]
-    src-orchestration-COMP-4["Capability Inference"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-4
-    src-orchestration-COMP-12["Trigger Detection"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-12
-    src-orchestration-COMP-10["Naming Context"]
-    src-orchestration-COMP-10 --> src-orchestration-COMP-9
-    src-orchestration-COMP-3["Behavior Flows"]
-    src-orchestration-COMP-10 --> src-orchestration-COMP-3
+    src-manifest-COMP-17 --> src-manifest-COMP-23
+    src-manifest-COMP-29 --> src-manifest-COMP-22
+    src-manifest-COMP-26 --> src-manifest-COMP-24
+    src-manifest-COMP-19 --> src-manifest-COMP-25
+    src-manifest-COMP-26 --> src-manifest-COMP-21
+    src-manifest-COMP-19 --> src-manifest-COMP-27
+    src-manifest-COMP-29 --> src-manifest-COMP-32
+    src-manifest-COMP-29 --> src-manifest-COMP-30
+    src-manifest-COMP-23 --> src-manifest-COMP-33
+    src-manifest-COMP-24 --> src-manifest-COMP-21
+    src-manifest-COMP-23 --> src-manifest-COMP-22
+    src-manifest-COMP-25 --> src-manifest-COMP-18
+    src-manifest-COMP-23 --> src-manifest-COMP-28
+    src-manifest-COMP-24 --> src-manifest-COMP-17
+    src-manifest-COMP-22 --> src-manifest-COMP-20
+    src-manifest-COMP-30 --> src-manifest-COMP-19
+    src-manifest-COMP-27 --> src-manifest-COMP-22
+    src-manifest-COMP-17 --> src-manifest-COMP-24
+    src-manifest-COMP-22 --> src-manifest-COMP-26
+    src-manifest-COMP-23 --> src-manifest-COMP-32
+    src-manifest-COMP-26 --> src-manifest-COMP-22
+    src-manifest-COMP-23 --> src-manifest-COMP-30
+    src-manifest-COMP-27 --> src-manifest-COMP-28
+    src-manifest-COMP-32 --> src-manifest-COMP-20
+    src-manifest-COMP-24 --> src-manifest-COMP-16
+    src-manifest-COMP-22 --> src-manifest-COMP-29
+    src-manifest-COMP-24 --> src-manifest-COMP-33
+    src-manifest-COMP-30 --> src-manifest-COMP-25
+    src-manifest-COMP-24 --> src-manifest-COMP-28
+    src-manifest-COMP-27 --> src-manifest-COMP-30
+    src-manifest-COMP-32 --> src-manifest-COMP-26
+    src-manifest-COMP-30 --> src-manifest-COMP-27
+    src-manifest-COMP-25 --> src-manifest-COMP-20
+    src-manifest-COMP-26 --> src-manifest-COMP-32
+    src-manifest-COMP-26 --> src-manifest-COMP-30
+    src-manifest-COMP-29 --> src-manifest-COMP-17
+    src-manifest-COMP-32 --> src-manifest-COMP-29
+    src-manifest-COMP-17 --> src-manifest-COMP-27
+    src-manifest-COMP-24 --> src-manifest-COMP-32
+    src-manifest-COMP-25 --> src-manifest-COMP-26
+    src-manifest-COMP-30 --> src-manifest-COMP-23
+    src-manifest-COMP-25 --> src-manifest-COMP-29
+    src-manifest-COMP-19 --> src-manifest-COMP-21
+    src-manifest-COMP-22 --> src-manifest-COMP-18
+    src-manifest-COMP-29 --> src-manifest-COMP-16
+    src-manifest-COMP-23 --> src-manifest-COMP-17
+    src-manifest-COMP-23 --> src-manifest-COMP-20
+    src-manifest-COMP-22 --> src-manifest-COMP-19
+    src-manifest-COMP-29 --> src-manifest-COMP-28
+    src-manifest-COMP-27 --> src-manifest-COMP-21
+    src-manifest-COMP-17 --> src-manifest-COMP-30
+    src-manifest-COMP-32 --> src-manifest-COMP-18
+    src-manifest-COMP-27 --> src-manifest-COMP-17
+    src-manifest-COMP-23 --> src-manifest-COMP-26
+    src-manifest-COMP-26 --> src-manifest-COMP-17
+    src-manifest-COMP-32 --> src-manifest-COMP-19
+    src-manifest-COMP-19 --> src-manifest-COMP-33
+    src-manifest-COMP-23 --> src-manifest-COMP-16
+    src-manifest-COMP-19 --> src-manifest-COMP-22
+    src-manifest-COMP-30 --> src-manifest-COMP-24
+    src-manifest-COMP-25 --> src-manifest-COMP-24
+    src-manifest-COMP-24 --> src-manifest-COMP-20
+    src-manifest-COMP-29 --> src-manifest-COMP-18
+    src-manifest-COMP-27 --> src-manifest-COMP-16
+    src-manifest-COMP-27 --> src-manifest-COMP-33
+    src-manifest-COMP-25 --> src-manifest-COMP-19
+    src-manifest-COMP-30 --> src-manifest-COMP-21
+    src-manifest-COMP-26 --> src-manifest-COMP-16
+    src-manifest-COMP-26 --> src-manifest-COMP-33
+    src-manifest-COMP-32 --> src-manifest-COMP-25
+    src-manifest-COMP-24 --> src-manifest-COMP-26
+    src-manifest-COMP-19 --> src-manifest-COMP-32
     src-orchestration-COMP-11["Pipeline"]
-    src-orchestration-COMP-11 --> src-orchestration-COMP-9
     src-orchestration-COMP-8["Enrich"]
     src-orchestration-COMP-11 --> src-orchestration-COMP-8
-    src-orchestration-COMP-11 --> src-orchestration-COMP-3
-    src-orchestration-COMP-10 --> src-orchestration-COMP-8
-    src-orchestration-COMP-7["Deep Decompose"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-7
-    src-orchestration-COMP-2["Behavior Decompose"]
-    src-orchestration-COMP-9 --> src-orchestration-COMP-2
-    src-orchestration-COMP-9 --> src-orchestration-COMP-8
-    src-orchestration-COMP-9 --> src-orchestration-COMP-3
-    src-orchestration-COMP-5["Compaction"]
-    src-orchestration-COMP-11 --> src-orchestration-COMP-5
-    src-orchestration-COMP-10 --> src-orchestration-COMP-5
-    src-orchestration-COMP-1["Auto Enrich"]
-    src-orchestration-COMP-10 --> src-orchestration-COMP-1
+    src-orchestration-COMP-4["Capability Inference"]
+    src-orchestration-COMP-11 --> src-orchestration-COMP-4
+    src-orchestration-COMP-10["Naming Context"]
+    src-orchestration-COMP-12["Trigger Detection"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-12
     src-orchestration-COMP-6["Decompose"]
     src-orchestration-COMP-10 --> src-orchestration-COMP-6
-    src-orchestration-COMP-11 --> src-orchestration-COMP-1
-    src-orchestration-COMP-11 --> src-orchestration-COMP-6
+    src-orchestration-COMP-1["Auto Enrich"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-1
+    src-orchestration-COMP-9["Enrichment Context"]
+    src-orchestration-COMP-9 --> src-orchestration-COMP-1
+    src-orchestration-COMP-9 --> src-orchestration-COMP-12
+    src-orchestration-COMP-9 --> src-orchestration-COMP-6
+    src-orchestration-COMP-3["Behavior Flows"]
+    src-orchestration-COMP-11 --> src-orchestration-COMP-3
+    src-orchestration-COMP-11 --> src-orchestration-COMP-9
+    src-orchestration-COMP-11 --> src-orchestration-COMP-10
     src-orchestration-COMP-13["Use Case Inference"]
     src-orchestration-COMP-10 --> src-orchestration-COMP-13
-    src-orchestration-COMP-11 --> src-orchestration-COMP-10
-    src-orchestration-COMP-9 --> src-orchestration-COMP-5
-    src-orchestration-COMP-11 --> src-orchestration-COMP-13
-    src-orchestration-COMP-10 --> src-orchestration-COMP-11
-    src-orchestration-COMP-10 --> src-orchestration-COMP-4
-    src-orchestration-COMP-9 --> src-orchestration-COMP-1
-    src-orchestration-COMP-10 --> src-orchestration-COMP-12
-    src-orchestration-COMP-9 --> src-orchestration-COMP-6
-    src-orchestration-COMP-11 --> src-orchestration-COMP-4
-    src-orchestration-COMP-11 --> src-orchestration-COMP-2
-    src-orchestration-COMP-11 --> src-orchestration-COMP-12
-    src-orchestration-COMP-11 --> src-orchestration-COMP-7
-    src-orchestration-COMP-10 --> src-orchestration-COMP-7
-    src-orchestration-COMP-9 --> src-orchestration-COMP-11
-    src-orchestration-COMP-9 --> src-orchestration-COMP-13
+    src-orchestration-COMP-2["Behavior Decompose"]
     src-orchestration-COMP-10 --> src-orchestration-COMP-2
+    src-orchestration-COMP-5["Compaction"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-5
+    src-orchestration-COMP-9 --> src-orchestration-COMP-13
+    src-orchestration-COMP-10 --> src-orchestration-COMP-11
+    src-orchestration-COMP-9 --> src-orchestration-COMP-5
+    src-orchestration-COMP-9 --> src-orchestration-COMP-2
+    src-orchestration-COMP-9 --> src-orchestration-COMP-11
+    src-orchestration-COMP-7["Deep Decompose"]
+    src-orchestration-COMP-10 --> src-orchestration-COMP-7
+    src-orchestration-COMP-9 --> src-orchestration-COMP-7
+    src-orchestration-COMP-11 --> src-orchestration-COMP-12
+    src-orchestration-COMP-11 --> src-orchestration-COMP-1
+    src-orchestration-COMP-11 --> src-orchestration-COMP-6
+    src-orchestration-COMP-10 --> src-orchestration-COMP-8
+    src-orchestration-COMP-10 --> src-orchestration-COMP-4
+    src-orchestration-COMP-10 --> src-orchestration-COMP-3
+    src-orchestration-COMP-9 --> src-orchestration-COMP-8
+    src-orchestration-COMP-9 --> src-orchestration-COMP-4
+    src-orchestration-COMP-11 --> src-orchestration-COMP-13
+    src-orchestration-COMP-10 --> src-orchestration-COMP-9
+    src-orchestration-COMP-9 --> src-orchestration-COMP-3
+    src-orchestration-COMP-11 --> src-orchestration-COMP-5
+    src-orchestration-COMP-11 --> src-orchestration-COMP-2
     src-orchestration-COMP-9 --> src-orchestration-COMP-10
+    src-orchestration-COMP-11 --> src-orchestration-COMP-7
 ```
+
+---
+
+---
+
+## LLM Review
+
+*Reviewed: 2026-08-18T23:37:20.844165+00:00 | Duration: 9048ms*
+
+**Summary:** This logical architecture document is at a very early, auto-generated stage (14% completeness) with 92 components lacking descriptions, responsibilities, interfaces, and requirements—rendering it nearly useless as an architectural reference for decision-making or onboarding.
+
+- The overwhelming majority of components (92/92) are dumped into "unassigned" with no layer allocation, indicating the extraction pipeline produced a flat file inventory rather than a meaningful logical decomposition.
+- Every component is labeled as kind "service" regardless of its actual nature (e.g., Parser, Slicer, Differ are clearly libraries/utilities), suggesting the classifier is defaulting rather than inferring component kinds.
+- The dependency graph is truncated mid-line (`src-pi`), indicating either a generation bug or a rendering limit that leaves the architecture's most valuable structural information incomplete.
+- The layer structure defines "infra" and "data" layers with no technologies or directories, yet components are allocated to "web" and "unassigned" layers not listed in the layer table—an internal inconsistency.
+
+<details>
+<summary>Review details</summary>
+
+**Prompt sent (truncated):**
+```
+Review the following architecture artifact 'docs/se/logical-architecture.md'.
+Respond ONLY in this format:
+SUMMARY: <one paragraph overall assessment>
+COMMENT: <specific observation>
+COMMENT: <another observation>
+
+---
+---
+document: Logical Architecture
+system: System
+system_id: SYS-unknown
+generated_at: 2026-08-18T23:36:29Z
+generator_version: 0.3.0
+model_hash: 41fb0d4bec16
+edition: 7
+---
+
+> **Model Completeness: F (14%)**
+> Some sections may be empty due to missing model entities.
+> - No interf
+```
+
+**Full LLM response:**
+```
+SUMMARY: This logical architecture document is at a very early, auto-generated stage (14% completeness) with 92 components lacking descriptions, responsibilities, interfaces, and requirements—rendering it nearly useless as an architectural reference for decision-making or onboarding.
+
+COMMENT: The overwhelming majority of components (92/92) are dumped into "unassigned" with no layer allocation, indicating the extraction pipeline produced a flat file inventory rather than a meaningful logical decomposition.
+
+COMMENT: Every component is labeled as kind "service" regardless of its actual nature (e.g., Parser, Slicer, Differ are clearly libraries/utilities), suggesting the classifier is defaulting rather than inferring component kinds.
+
+COMMENT: The dependency graph is truncated mid-line (`src-pi`), indicating either a generation bug or a rendering limit that leaves the architecture's most valuable structural information incomplete.
+
+COMMENT: The layer structure defines "infra" and "data" layers with no technologies or directories, yet components are allocated to "web" and "unassigned" layers not listed in the layer table—an internal inconsistency.
+```
+
+</details>

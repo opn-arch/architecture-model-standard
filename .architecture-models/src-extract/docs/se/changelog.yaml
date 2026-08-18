@@ -32,6 +32,18 @@ documents:
       summary: Model updated
       preserved_sections: []
       conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:35Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
   functional-analysis.md:
     created: '2026-08-18T19:46:38Z'
     created_by: architect_pipeline
@@ -64,6 +76,18 @@ documents:
       summary: Model updated
       preserved_sections: []
       conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:35Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
   logical-architecture.md:
     created: '2026-08-18T19:46:38Z'
     created_by: architect_pipeline
@@ -91,6 +115,18 @@ documents:
       preserved_sections: []
       conflicts: []
     - timestamp: '2026-08-18T20:06:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:35Z'
       author: architect_pipeline
       type: regenerated
       summary: Model updated
@@ -129,6 +165,18 @@ documents:
       summary: Model updated
       preserved_sections: []
       conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:35Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
   verification-validation.md:
     created: '2026-08-18T19:46:38Z'
     created_by: architect_pipeline
@@ -156,6 +204,18 @@ documents:
       preserved_sections: []
       conflicts: []
     - timestamp: '2026-08-18T20:06:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:35Z'
       author: architect_pipeline
       type: regenerated
       summary: Model updated
@@ -193,6 +253,18 @@ documents:
       summary: Model updated
       preserved_sections: []
       conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:35Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
   maintenance-manual.md:
     created: '2026-08-18T19:46:38Z'
     created_by: architect_pipeline
@@ -220,6 +292,18 @@ documents:
       preserved_sections: []
       conflicts: []
     - timestamp: '2026-08-18T20:06:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:36Z'
       author: architect_pipeline
       type: regenerated
       summary: Model updated
@@ -256,6 +340,18 @@ documents:
       summary: Model updated
       preserved_sections: []
       conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:36Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
   risk-assessment.md:
     created: '2026-08-18T19:46:38Z'
     created_by: architect_pipeline
@@ -282,6 +378,18 @@ documents:
       preserved_sections: []
       conflicts: []
     - timestamp: '2026-08-18T20:06:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:36Z'
       author: architect_pipeline
       type: regenerated
       summary: Model updated
@@ -318,6 +426,18 @@ documents:
       summary: Model updated
       preserved_sections: []
       conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:36Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
   artifact-traceability.md:
     created: '2026-08-18T19:46:39Z'
     created_by: architect_pipeline
@@ -329,6 +449,9 @@ documents:
       4. Relationship Distribution: 01d6f481123cf75bb132e059128b4d4f
       5. Traceability Gaps: 0d151dcc6c23844b13893edc893cbec7
       6. Architecture File Map: 5d6f9964c4b0c1513e89e3084a890a31
+      LLM Review Status: a9515666abfc62ba7457085183c516fd
+      LLM Enrichment Provenance: 67e6f20cd2f443eeb432cf76edecef7e
+      Review Details: da7342beb6395b70076b757affd78c93
     editions:
     - timestamp: '2026-08-18T19:46:39Z'
       author: architect_pipeline
@@ -347,6 +470,18 @@ documents:
       preserved_sections: []
       conflicts: []
     - timestamp: '2026-08-18T20:06:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:34:10Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T23:36:36Z'
       author: architect_pipeline
       type: regenerated
       summary: Model updated

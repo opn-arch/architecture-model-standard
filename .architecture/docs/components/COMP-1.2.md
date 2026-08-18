@@ -21,6 +21,9 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | CAP-1 | realizes | Validator implements model validation |
+| REQ-1 | satisfies | Validator enforces score >= 80 |
+| REQ-2 | satisfies | Validator checks produce zero errors on valid models |
+| REQ-3 | satisfies | Hierarchy validator checks bidirectional consistency |
 
 ### Dependents (incoming)
 

@@ -26,6 +26,8 @@
 | CAP-2 | realizes | Extract implements code-to-model extraction |
 | COMP-3.1 (Scanners) | depends-on | Extract uses scanners for code analysis |
 | COMP-9 (Configuration) | depends-on | Extract uses config for settings |
+| REQ-O18 | satisfies | — |
+| REQ-O19 | satisfies | — |
 
 ### Dependents (incoming)
 

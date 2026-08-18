@@ -25,6 +25,7 @@
 | CAP-12 | realizes | Authoring gate check |
 | COMP-1.1 (Type System) | depends-on | Authoring produces core model types |
 | COMP-3 (Manifest) | depends-on | Gate check reads manifest |
+| REQ-14 | satisfies | Authoring parser handles markdown requirements |
 
 ### Dependents (incoming)
 

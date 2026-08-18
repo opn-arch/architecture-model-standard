@@ -343,13 +343,83 @@
     ],
     "inter_system_edges": [
       [
-        "SYS-src-(cli)",
+        "SYS-src-(core)",
+        "SYS-src-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(pipeline)",
+        "SYS-src-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(core)",
+        "SYS-src-(authoring)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(orchestration)",
         "SYS-src-(core)",
         "depends-on"
       ],
       [
-        "SYS-src-(authoring)",
+        "SYS-src-(config)",
+        "SYS-src-(utils)",
+        "uses"
+      ],
+      [
+        "SYS-src-(extract)",
+        "SYS-src-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-scripts-(core)",
         "SYS-src-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-scripts-(core)",
+        "SYS-src-(authoring)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(core)",
+        "SYS-src-(cli)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(authoring)",
+        "SYS-src-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(pipeline)",
+        "SYS-src-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(config)",
+        "SYS-src-(profiles)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(orchestration)",
+        "SYS-src-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(manifest)",
+        "SYS-src-(pipeline)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(orchestration)",
+        "SYS-src-(config)",
+        "depends-on"
+      ],
+      [
+        "SYS-scripts-(core)",
+        "SYS-src-(core)",
         "depends-on"
       ],
       [
@@ -358,73 +428,8 @@
         "depends-on"
       ],
       [
+        "SYS-src-(extract)",
         "SYS-src-(core)",
-        "SYS-src-(cli)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(orchestration)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-scripts-(core)",
-        "SYS-src-(authoring)",
-        "depends-on"
-      ],
-      [
-        "SYS-scripts-(core)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(authoring)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(core)",
-        "SYS-src-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-scripts-(core)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(pipeline)",
-        "SYS-src-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(core)",
-        "SYS-src-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(authoring)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(manifest)",
-        "SYS-src-(config)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(core)",
-        "SYS-src-(pipeline)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(pipeline)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(core)",
-        "SYS-src-(authoring)",
         "depends-on"
       ],
       [
@@ -433,69 +438,29 @@
         "depends-on"
       ],
       [
-        "SYS-scripts-(core)",
+        "SYS-src-(core)",
+        "SYS-src-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(pipeline)",
+        "SYS-src-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(core)",
+        "SYS-src-(orchestration)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(pipeline)",
         "SYS-src-(orchestration)",
         "depends-on"
       ],
       [
         "SYS-src-(manifest)",
-        "SYS-src-(pipeline)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(pipeline)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(extract)",
-        "SYS-src-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(pipeline)",
-        "SYS-scripts-(dev_simulation)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(manifest)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(core)",
-        "SYS-scripts-(dev_simulation)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(manifest)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(extract)",
-        "SYS-src-(authoring)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(core)",
         "SYS-src-(utils)",
         "uses"
-      ],
-      [
-        "SYS-src-(orchestration)",
-        "SYS-src-(config)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(orchestration)",
-        "SYS-src-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(extract)",
-        "SYS-src-(core)",
-        "depends-on"
       ],
       [
         "SYS-src-(persistence)",
@@ -503,38 +468,53 @@
         "depends-on"
       ],
       [
-        "SYS-src-(orchestration)",
-        "SYS-src-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(config)",
-        "SYS-src-(utils)",
-        "uses"
-      ],
-      [
-        "SYS-src-(extract)",
+        "SYS-scripts-(core)",
         "SYS-src-(core)",
         "depends-on"
       ],
       [
-        "SYS-src-(pipeline)",
-        "SYS-src-(orchestration)",
-        "depends-on"
-      ],
-      [
-        "SYS-src-(config)",
-        "SYS-src-(profiles)",
-        "depends-on"
-      ],
-      [
         "SYS-src-(manifest)",
+        "SYS-src-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(core)",
         "SYS-src-(utils)",
         "uses"
       ],
       [
+        "SYS-src-(authoring)",
+        "SYS-src-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-scripts-(core)",
+        "SYS-src-(orchestration)",
+        "depends-on"
+      ],
+      [
         "SYS-src-(orchestration)",
         "SYS-src-(pipeline)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(core)",
+        "SYS-scripts-(dev_simulation)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(pipeline)",
+        "SYS-scripts-(dev_simulation)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(orchestration)",
+        "SYS-src-(manifest)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(cli)",
+        "SYS-src-(core)",
         "depends-on"
       ],
       [
@@ -543,13 +523,33 @@
         "depends-on"
       ],
       [
-        "SYS-scripts-(core)",
+        "SYS-src-(extract)",
         "SYS-src-(manifest)",
         "depends-on"
       ],
       [
+        "SYS-src-(extract)",
+        "SYS-src-(authoring)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(manifest)",
+        "SYS-src-(config)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(authoring)",
         "SYS-src-(core)",
-        "SYS-src-(orchestration)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(manifest)",
+        "SYS-src-(core)",
+        "depends-on"
+      ],
+      [
+        "SYS-src-(core)",
+        "SYS-src-(pipeline)",
         "depends-on"
       ]
     ]

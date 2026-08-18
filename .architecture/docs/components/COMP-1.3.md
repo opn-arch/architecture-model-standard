@@ -21,7 +21,10 @@
 
 ### Dependencies (outgoing)
 
-None
+| Target | Type | Description |
+|--------|------|-------------|
+| REQ-27 | satisfies | Parser ensures round-trip fidelity |
+| REQ-28 | satisfies | Parser handles old schema versions |
 
 ### Dependents (incoming)
 

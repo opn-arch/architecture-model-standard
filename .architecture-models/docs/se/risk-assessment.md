@@ -2,10 +2,10 @@
 document: Risk Assessment
 system: System
 system_id: SYS-unknown
-generated_at: 2026-08-18T20:06:03Z
+generated_at: 2026-08-18T23:36:29Z
 generator_version: 0.3.0
 model_hash: 41fb0d4bec16
-edition: 5
+edition: 7
 ---
 
 > **Model Completeness: F (14%)**
@@ -17,9 +17,7 @@ edition: 5
 > Run the extraction pipeline or manually add behaviors/interfaces/constraints.
 
 # Risk Assessment: System
-
 ## Risk Register
-
 | Risk ID | Category | Severity | Description | Mitigation |
 |---------|----------|----------|-------------|------------|
 | RISK-DEP-src-pipeline-COMP-16 | Dependency | HIGH | Allocate has 11 dependents — single point of failure | Ensure thorough testing of Allocate; consider interface abstraction |
@@ -69,7 +67,7 @@ edition: 5
 | RISK-DEP-src-manifest-COMP-33 | Dependency | HIGH | Ts Scanner has 11 dependents — single point of failure | Ensure thorough testing of Ts Scanner; consider interface abstraction |
 | RISK-CAP-CAP-1 | Capability | HIGH | Capability 'HTTP Route Definitions' has no realizing component | Allocate to component or remove if not needed |
 | RISK-CAP-CAP-2 | Capability | HIGH | Capability 'gRPC Services' has no realizing component | Allocate to component or remove if not needed |
-| RISK-CAP-CAP-5 | Capability | HIGH | Capability 'Command Line Interface Handler' has no realizing component | Allocate to component or remove if not needed |
+| RISK-CAP-CAP-5 | Capability | HIGH | Capability 'Command Line Interface Entry Point' has no realizing component | Allocate to component or remove if not needed |
 | RISK-CAP-CAP-6 | Capability | HIGH | Capability 'Command Line Executor' has no realizing component | Allocate to component or remove if not needed |
 | RISK-DEP-src-pipeline-COMP-19 | Dependency | MEDIUM | Cache has 4 dependents | Monitor for breaking changes |
 | RISK-DEP-src-pipeline-COMP-23 | Dependency | MEDIUM | Coordinator has 4 dependents | Monitor for breaking changes |
@@ -90,9 +88,7 @@ edition: 5
 | RISK-DEP-src-orchestration-COMP-8 | Dependency | MEDIUM | Enrich has 3 dependents | Monitor for breaking changes |
 | RISK-DEP-src-orchestration-COMP-12 | Dependency | MEDIUM | Trigger Detection has 3 dependents | Monitor for breaking changes |
 | RISK-DEP-src-orchestration-COMP-13 | Dependency | MEDIUM | Use Case Inference has 3 dependents | Monitor for breaking changes |
-
 ## Dependency Risks
-
 Components with high dependency count (fragile to upstream changes):
 
 | Component | Dependencies (fan-out) |
@@ -129,7 +125,59 @@ Components with high dependency count (fragile to upstream changes):
 | Contract | 3 |
 | Infer | 3 |
 | Specify | 3 |
-
 ## Constraint Risks
-
 *No constraints defined.*
+
+---
+
+---
+
+## LLM Review
+
+*Reviewed: 2026-08-18T23:37:46.525850+00:00 | Duration: 8018ms*
+
+**Summary:** This risk assessment is almost entirely auto-generated with extremely low model completeness (14%), producing a monotonous register of 40+ identical "dependency/single point of failure" risks with copy-paste mitigations, offering negligible actionable insight for engineering decisions.
+
+- Every risk entry uses the same templated mitigation ("ensure thorough testing; consider interface abstraction") regardless of the component's role, criticality, or blast radius — this fails to prioritize or differentiate response strategies.
+- The assessment only covers dependency fan-in risks and completely ignores other critical categories such as security, performance, data integrity, operational/deployment risks, and failure propagation across subsystem boundaries.
+- With 92/92 components missing descriptions and no requirements or interfaces defined, this document cannot meaningfully inform architectural decisions and should be regenerated after the extraction pipeline populates the model.
+
+<details>
+<summary>Review details</summary>
+
+**Prompt sent (truncated):**
+```
+Review the following architecture artifact 'docs/se/risk-assessment.md'.
+Respond ONLY in this format:
+SUMMARY: <one paragraph overall assessment>
+COMMENT: <specific observation>
+COMMENT: <another observation>
+
+---
+---
+document: Risk Assessment
+system: System
+system_id: SYS-unknown
+generated_at: 2026-08-18T23:36:29Z
+generator_version: 0.3.0
+model_hash: 41fb0d4bec16
+edition: 7
+---
+
+> **Model Completeness: F (14%)**
+> Some sections may be empty due to missing model entities.
+> - No interfaces defin
+```
+
+**Full LLM response:**
+```
+SUMMARY: This risk assessment is almost entirely auto-generated with extremely low model completeness (14%), producing a monotonous register of 40+ identical "dependency/single point of failure" risks with copy-paste mitigations, offering negligible actionable insight for engineering decisions.
+
+COMMENT: Every risk entry uses the same templated mitigation ("ensure thorough testing; consider interface abstraction") regardless of the component's role, criticality, or blast radius — this fails to prioritize or differentiate response strategies.
+
+COMMENT: The assessment only covers dependency fan-in risks and completely ignores other critical categories such as security, performance, data integrity, operational/deployment risks, and failure propagation across subsystem boundaries.
+
+COMMENT: With 92/92 components missing descriptions and no requirements or interfaces defined, this document cannot meaningfully inform architectural decisions and should be regenerated after the extraction pipeline populates the model.
+```
+
+</details>

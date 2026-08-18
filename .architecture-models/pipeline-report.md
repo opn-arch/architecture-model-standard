@@ -1,8 +1,8 @@
 # Pipeline Report: architecture-model-standard
 
-**Generated:** 2026-08-18T20:06:03Z
-**Total Duration:** 37787ms
-**Stages:** 7
+**Generated:** 2026-08-18T23:36:29Z
+**Total Duration:** 39206ms
+**Stages:** 9
 
 ## LLM Summary
 
@@ -12,27 +12,29 @@
 | Total Tokens | 0 (prompt: 0, completion: 0) |
 | Models Used | unknown |
 | Cache Hits | 0/8 |
-| Total LLM Duration | 16,874ms |
+| Total LLM Duration | 17,977ms |
 
 ## Stage Scores
 
 | Stage | Score | Duration | LLM Calls |
 |-------|-------|----------|-----------|
-| observe | 100 | 6229ms | 0 |
+| observe | 100 | 6998ms | 0 |
 | infer | 67 | 2ms | 5 |
 | allocate | 75 | 0ms | 3 |
-| relate | 100 | 225ms | 0 |
+| contract | 100 | 1ms | 0 |
+| relate | 100 | 235ms | 0 |
 | specify | 50 | 0ms | 0 |
 | decompose | 100.0 | 0ms | 0 |
-| synthesize | 100.0 | 31331ms | 0 |
+| validate | 80 | 0ms | 0 |
+| synthesize | 100.0 | 31970ms | 0 |
 
 ## Stage: observe
-**Score:** 100 | **Duration:** 6229ms
+**Score:** 100 | **Duration:** 6998ms
 
 ### Deterministic Findings
-- Discovered 343 modules
-- 1253 functions, 498 classes
-- 627 import edges
+- Discovered 348 modules
+- 1274 functions, 504 classes
+- 635 import edges
 
 ### LLM Calls
 *(none)*
@@ -41,7 +43,7 @@
 *(none)*
 
 ### Uncertainties
-- dynamic_import: Dynamic import in src/architecture_model/pipeline/cache.py:66
+- dynamic_import: Dynamic import in src/architecture_model/pipeline/cache.py:73
 - dynamic_import: Dynamic import in src/architecture_model/docs/se/generator.py:72
 
 ## Stage: infer
@@ -54,23 +56,23 @@
 
 ### LLM Calls (5)
 
-#### 1. Given a software component with these files: routes, suggest a specific, descriptive name (2-4 words (2,700ms)
+#### 1. Given a software component with these files: routes, suggest a specific, descriptive name (2-4 words (2,116ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
-#### 2. Given a software component with these files: package_group, suggest a specific, descriptive name (2- (1,845ms)
+#### 2. Given a software component with these files: package_group, suggest a specific, descriptive name (2- (2,109ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
-#### 3. Given a software component with these files: package_group, suggest a specific, descriptive name (2- (2,073ms)
+#### 3. Given a software component with these files: package_group, suggest a specific, descriptive name (2- (2,322ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
-#### 4. Given a software component with these files: cli_pattern, suggest a specific, descriptive name (2-4  (1,722ms)
+#### 4. Given a software component with these files: cli_pattern, suggest a specific, descriptive name (2-4  (2,019ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
-#### 5. Given a software component with these files: cli_pattern, suggest a specific, descriptive name (2-4  (2,303ms)
+#### 5. Given a software component with these files: cli_pattern, suggest a specific, descriptive name (2-4  (2,068ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
@@ -206,23 +208,35 @@
 
 ### LLM Calls (3)
 
-#### 1. Given a software component containing files: [src/architecture_model/__init__.py, src/architecture_m (1,881ms)
+#### 1. Given a software component containing files: [src/architecture_model/__init__.py, src/architecture_m (3,196ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
-#### 2. Given a software component containing files: [src/architecture_model/core/cluster.py, src/architectu (2,183ms)
+#### 2. Given a software component containing files: [src/architecture_model/core/cluster.py, src/architectu (2,162ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
-#### 3. Given a software component containing files: [src/architecture_model/cli/main.py, src/architecture_m (2,167ms)
+#### 3. Given a software component containing files: [src/architecture_model/cli/main.py, src/architecture_m (1,985ms)
 - **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
 - **Result:** 1 items produced (confidence: 0.70)
 
 ### Diagnostics
 *(none)*
 
+## Stage: contract
+**Score:** 100 | **Duration:** 1ms
+
+### Deterministic Findings
+- 142 contracts
+
+### LLM Calls
+*(none)*
+
+### Diagnostics
+*(none)*
+
 ## Stage: relate
-**Score:** 100 | **Duration:** 225ms
+**Score:** 100 | **Duration:** 235ms
 
 ### Deterministic Findings
 - 41 depends-on relationships
@@ -262,8 +276,24 @@
 ### Diagnostics
 *(none)*
 
+## Stage: validate
+**Score:** 80 | **Duration:** 0ms
+
+### Deterministic Findings
+- Score: 80/100
+- 4 issues
+
+### LLM Calls
+*(none)*
+
+### Diagnostics
+*(none)*
+
+### Uncertainties
+- generic_capability_name: Capability 'Web Routes' (CAP-1) has a generic name. LLM analysis could produce a more specific business-oriented name.
+
 ## Stage: synthesize
-**Score:** 100.0 | **Duration:** 31331ms
+**Score:** 100.0 | **Duration:** 31970ms
 
 ### Deterministic Findings
 *(none)*

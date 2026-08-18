@@ -1,7 +1,7 @@
 # Pipeline Report: Src (pipeline)
 
-**Generated:** 2026-08-18T20:05:47Z
-**Total Duration:** 3907ms
+**Generated:** 2026-08-18T23:36:13Z
+**Total Duration:** 3958ms
 **Stages:** 7
 
 ## LLM Summary
@@ -12,20 +12,20 @@ No LLM calls — deterministic pipeline run
 
 | Stage | Score | Duration | LLM Calls |
 |-------|-------|----------|-----------|
-| observe | 100 | 3900ms | 0 |
+| observe | 100 | 3950ms | 0 |
 | infer | 100 | 0ms | 0 |
 | allocate | 57 | 1ms | 0 |
 | contract | 0 | 0ms | 0 |
-| relate | 100 | 6ms | 0 |
+| relate | 100 | 7ms | 0 |
 | specify | 50 | 0ms | 0 |
 | validate | 0 | 0ms | 0 |
 
 ## Stage: observe
-**Score:** 100 | **Duration:** 3900ms
+**Score:** 100 | **Duration:** 3950ms
 
 ### Deterministic Findings
 - Discovered 33 modules
-- 83 functions, 66 classes
+- 84 functions, 68 classes
 - 79 import edges
 
 ### LLM Calls
@@ -35,7 +35,7 @@ No LLM calls — deterministic pipeline run
 *(none)*
 
 ### Uncertainties
-- dynamic_import: Dynamic import in src/architecture_model/pipeline/cache.py:66
+- dynamic_import: Dynamic import in src/architecture_model/pipeline/cache.py:73
 
 ## Stage: infer
 **Score:** 100 | **Duration:** 0ms
@@ -78,7 +78,7 @@ No LLM calls — deterministic pipeline run
 *(none)*
 
 ## Stage: relate
-**Score:** 100 | **Duration:** 6ms
+**Score:** 100 | **Duration:** 7ms
 
 ### Deterministic Findings
 - 140 depends-on relationships

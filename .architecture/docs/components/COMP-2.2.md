@@ -23,6 +23,8 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-3.1 (Scanners) | depends-on | Observe stage uses scanners for code facts |
+| REQ-4 | satisfies | Infer stage produces all entity types |
+| REQ-24 | satisfies | Infer stage surfaces uncertainties |
 
 ### Dependents (incoming)
 

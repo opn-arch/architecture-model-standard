@@ -27,6 +27,8 @@
 | Target | Type | Description |
 |--------|------|-------------|
 | COMP-9 (Configuration) | depends-on | Scanners use config for exclusion patterns |
+| REQ-8 | satisfies | Scanners cover all Python files |
+| REQ-10 | satisfies | Multi-scanner supports Python/TS/Kotlin |
 
 ### Dependents (incoming)
 
