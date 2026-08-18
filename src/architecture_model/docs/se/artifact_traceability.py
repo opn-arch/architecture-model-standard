@@ -66,7 +66,13 @@ _ARTIFACT_FILES: list[tuple[str, str, str]] = [
 ]
 
 
-def generate_artifact_traceability(model: ArchitectureModel, manifest: object | None = None) -> str:
+def generate_artifact_traceability(
+    model: ArchitectureModel,
+    manifest: object | None = None,
+    *,
+    reviews: list | None = None,
+    enrichments: list | None = None,
+) -> str:
     lines: list[str] = []
     project = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
     lines.append(f"# Artifact Traceability Map: {project}")
@@ -209,6 +215,66 @@ def generate_artifact_traceability(model: ArchitectureModel, manifest: object | 
     lines.append("|------|---------|-------------|")
     for path, purpose, gen_by in _ARTIFACT_FILES:
         lines.append(f"| `{path}` | {purpose} | {gen_by} |")
+    lines.append("")
+
+    # --- Section 7: LLM Review Status ---
+    lines.append("## LLM Review Status")
+    lines.append("")
+    if reviews:
+        lines.append("| Artifact | Reviewed | Summary | Comments Count | Timestamp |")
+        lines.append("|----------|----------|---------|----------------|-----------|")
+        for rev in reviews:
+            lines.append(
+                f"| {rev.artifact_path} | Yes | {rev.review_summary} | {len(rev.comments)} | {rev.timestamp} |"
+            )
+    else:
+        lines.append("No LLM reviews available.")
+    lines.append("")
+
+    # --- Section 8: LLM Enrichment Provenance ---
+    lines.append("## LLM Enrichment Provenance")
+    lines.append("")
+    if enrichments:
+        lines.append("| Entity ID | Type | Stage | Old Value | New Value | Timestamp |")
+        lines.append("|-----------|------|-------|-----------|-----------|-----------|")
+        for enr in enrichments:
+            lines.append(
+                f"| {enr.entity_id} | {enr.entity_type} | {enr.stage} | {enr.old_value} | {enr.new_value} | {enr.timestamp} |"
+            )
+    else:
+        lines.append("No LLM enrichment records available.")
+    lines.append("")
+
+    # --- Section 9: Review Details ---
+    lines.append("## Review Details")
+    lines.append("")
+    if reviews:
+        for rev in reviews:
+            lines.append(f"### {rev.artifact_path}")
+            lines.append("")
+            lines.append(f"**Summary:** {rev.review_summary}")
+            lines.append("")
+            if rev.comments:
+                for c in rev.comments:
+                    lines.append(f"- {c}")
+                lines.append("")
+            lines.append("<details>")
+            lines.append("<summary>Prompt and response</summary>")
+            lines.append("")
+            lines.append("**Prompt sent:**")
+            lines.append("```")
+            lines.append(rev.prompt_sent)
+            lines.append("```")
+            lines.append("")
+            lines.append("**Response received:**")
+            lines.append("```")
+            lines.append(rev.response_received)
+            lines.append("```")
+            lines.append("")
+            lines.append("</details>")
+            lines.append("")
+    else:
+        lines.append("No review details available.")
     lines.append("")
 
     return "\n".join(lines)

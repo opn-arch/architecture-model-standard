@@ -3,6 +3,7 @@
 Serializes StageResult objects to JSON files in .architecture/pipeline-cache/
 so the MCP orchestrator can resume between stage invocations.
 """
+
 from __future__ import annotations
 
 import json
@@ -13,6 +14,8 @@ from typing import Any
 
 from architecture_model.pipeline.protocol import (
     Diagnostic,
+    EnrichmentRecord,
+    ArtifactReview,
     Evidence,
     LLMCallRecord,
     PipelineContext,
@@ -20,6 +23,9 @@ from architecture_model.pipeline.protocol import (
     StageResult,
     Uncertainty,
 )
+
+_enrichment_fields = {f.name for f in fields(EnrichmentRecord)}
+_review_fields = {f.name for f in fields(ArtifactReview)}
 
 
 def _serialize(obj: Any) -> Any:
@@ -63,6 +69,7 @@ def _get_output_class(stage_name: str) -> type | None:
     if not entry:
         return None
     import importlib
+
     mod = importlib.import_module(entry[0])
     return getattr(mod, entry[1], None)
 
@@ -126,15 +133,13 @@ def _deserialize_stage_result(data: dict, stage_name: str) -> StageResult:
 
     # Reconstruct diagnostics
     diagnostics = [
-        Diagnostic(**d) if isinstance(d, dict) and "__dataclass__" not in d
-        else _deserialize(d)
+        Diagnostic(**d) if isinstance(d, dict) and "__dataclass__" not in d else _deserialize(d)
         for d in data.get("diagnostics", [])
     ]
 
     # Reconstruct uncertainties
     uncertainties = [
-        Uncertainty(**u) if isinstance(u, dict) and "__dataclass__" not in u
-        else _deserialize(u)
+        Uncertainty(**u) if isinstance(u, dict) and "__dataclass__" not in u else _deserialize(u)
         for u in data.get("uncertainties", [])
     ]
 
@@ -223,10 +228,38 @@ class PipelineCache:
                 calls.append(LLMCallRecord(**clean))
         return calls
 
+    def save_enrichment_log(self, records: list[EnrichmentRecord]) -> None:
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        path = self.cache_dir / "enrichment_log.json"
+        path.write_text(json.dumps([_serialize(r) for r in records], indent=2))
+
+    def load_enrichment_log(self) -> list[EnrichmentRecord]:
+        path = self.cache_dir / "enrichment_log.json"
+        if not path.exists():
+            return []
+        data = json.loads(path.read_text())
+        return [
+            EnrichmentRecord(**{k: v for k, v in d.items() if k in _enrichment_fields})
+            for d in data
+        ]
+
+    def save_reviews(self, reviews: list[ArtifactReview]) -> None:
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        path = self.cache_dir / "reviews.json"
+        path.write_text(json.dumps([_serialize(r) for r in reviews], indent=2))
+
+    def load_reviews(self) -> list[ArtifactReview]:
+        path = self.cache_dir / "reviews.json"
+        if not path.exists():
+            return []
+        data = json.loads(path.read_text())
+        return [ArtifactReview(**{k: v for k, v in d.items() if k in _review_fields}) for d in data]
+
     def clear(self) -> None:
         """Remove all cached data."""
         if self.cache_dir.exists():
             import shutil
+
             shutil.rmtree(self.cache_dir)
 
     def _update_meta(self, stage_name: str) -> None:
@@ -251,4 +284,5 @@ class PipelineCache:
         for name, result in results.items():
             ctx.cache[name] = result
         ctx.llm_calls = self.load_llm_calls()
+        ctx.enrichment_log = self.load_enrichment_log()
         return list(results.keys())

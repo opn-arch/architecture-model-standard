@@ -129,6 +129,7 @@ class PipelineContext:
     global_learning: GlobalLearningStore | None = field(default=None, repr=False)
     calibration: dict[str, Any] = field(default_factory=dict)
     llm_calls: list[LLMCallRecord] = field(default_factory=list)
+    enrichment_log: list[EnrichmentRecord] = field(default_factory=list)
     # LLM enrichment callback: stages can call this for naming, classification, etc.
     # Signature: async (stage: str, prompt: str, context: dict) -> str
     # If None, stages use heuristic fallbacks (deterministic mode).
@@ -187,6 +188,38 @@ class LLMCallRecord:
     confidence: float = 0.0
     items_produced: int = 0
     notes: str = ""
+
+
+@dataclass
+class EnrichmentRecord:
+    """Record of a single LLM enrichment applied to an entity."""
+
+    entity_id: str
+    entity_type: str  # capability, component, etc.
+    stage: str
+    old_value: str
+    new_value: str
+    prompt: str
+    response: str
+    timestamp: str
+    model: str = ""
+    duration_ms: int = 0
+    context: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ArtifactReview:
+    """LLM review of a generated artifact."""
+
+    artifact_path: str
+    review_summary: str
+    comments: list[str]
+    prompt_sent: str
+    response_received: str
+    timestamp: str
+    model: str = ""
+    duration_ms: int = 0
+    token_count: int = 0
 
 
 class Stage(Protocol[T]):

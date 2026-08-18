@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from architecture_model.pipeline.emit_types import EmitResult
 from architecture_model.pipeline.protocol import (
+    ArtifactReview,
     Diagnostic,
     PipelineContext,
     QualityMetrics,
@@ -259,6 +262,49 @@ class EmitStage:
                 )
             )
 
+        # 10. LLM review pass on generated artifacts
+        try:
+            if ctx.llm_callback is not None:
+                reviews = asyncio.run(self._run_llm_reviews(out_dir, ctx.llm_callback))
+                inlined = _inline_reviews(out_dir, reviews)
+                ctx._artifact_reviews = reviews
+                diagnostics.append(
+                    Diagnostic(
+                        severity="info",
+                        code="LLM_REVIEWS",
+                        message=f"LLM reviewed {len(reviews)} artifacts, inlined into {inlined} docs",
+                    )
+                )
+                # Regenerate artifact traceability with review data
+                try:
+                    from architecture_model.docs.se.artifact_traceability import (
+                        generate_artifact_traceability,
+                    )
+                    from architecture_model.core.parser import load_model as _load_model
+
+                    sos_model_path = out_dir / ".architecture-model.yaml"
+                    if sos_model_path.exists():
+                        _model = _load_model(sos_model_path)
+                        trace_content = generate_artifact_traceability(
+                            _model,
+                            None,
+                            reviews=reviews,
+                            enrichments=getattr(ctx, "enrichment_log", None),
+                        )
+                        trace_path = out_dir / "docs" / "se" / "artifact-traceability.md"
+                        trace_path.parent.mkdir(parents=True, exist_ok=True)
+                        trace_path.write_text(trace_content)
+                except Exception:
+                    pass  # non-fatal
+        except Exception as exc:
+            diagnostics.append(
+                Diagnostic(
+                    severity="warning",
+                    code="LLM_REVIEW_FAILED",
+                    message=f"LLM review pass failed: {exc}",
+                )
+            )
+
         duration = int((time.monotonic() - t0) * 1000)
 
         if not result.written_paths:
@@ -345,6 +391,129 @@ class EmitStage:
                             message=f"SE doc generation failed for {sm.name}: {exc}",
                         )
                     )
+
+    async def _run_llm_reviews(self, out_dir: Path, llm_callback) -> list[ArtifactReview]:
+        """Send each reviewable artifact to LLM for review."""
+        _SKIP_NAMES = {"index.md", "pipeline-report.md", "lessons.md"}
+        reviews: list[ArtifactReview] = []
+
+        # Collect reviewable files
+        candidates: list[Path] = []
+        for pattern in ("**/*.md", "**/*.yaml"):
+            candidates.extend(out_dir.rglob(pattern.replace("**/", "")))
+
+        for fpath in sorted(candidates):
+            if fpath.name in _SKIP_NAMES:
+                continue
+            content = fpath.read_text(errors="replace")
+            if len(content) < 50:
+                continue
+
+            rel_path = str(fpath.relative_to(out_dir))
+            truncated = content[:8000]
+            prompt = (
+                f"Review the following architecture artifact '{rel_path}'.\n"
+                f"Respond ONLY in this format:\n"
+                f"SUMMARY: <one paragraph overall assessment>\n"
+                f"COMMENT: <specific observation>\n"
+                f"COMMENT: <another observation>\n\n"
+                f"---\n{truncated}\n---"
+            )
+
+            t0 = time.monotonic()
+            response = await llm_callback("review", prompt, {"artifact": rel_path})
+            duration_ms = int((time.monotonic() - t0) * 1000)
+
+            # Parse response
+            summary = ""
+            comments: list[str] = []
+            for line in response.splitlines():
+                line_s = line.strip()
+                if line_s.startswith("SUMMARY:"):
+                    summary = line_s[len("SUMMARY:") :].strip()
+                elif line_s.startswith("COMMENT:"):
+                    comments.append(line_s[len("COMMENT:") :].strip())
+
+            reviews.append(
+                ArtifactReview(
+                    artifact_path=rel_path,
+                    review_summary=summary,
+                    comments=comments,
+                    prompt_sent=prompt,
+                    response_received=response,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    duration_ms=duration_ms,
+                )
+            )
+
+        return reviews
+
+
+def _inline_reviews(out_dir: Path, reviews: list[ArtifactReview]) -> int:
+    """Append LLM Review sections to reviewed .md files. Returns count modified."""
+    count = 0
+    for rev in reviews:
+        if not rev.artifact_path.endswith(".md"):
+            continue
+        fpath = out_dir / rev.artifact_path
+        if not fpath.exists():
+            continue
+
+        content = fpath.read_text()
+
+        # Strip existing LLM Review section (idempotent)
+        marker = "## LLM Review"
+        idx = content.find(marker)
+        if idx != -1:
+            # Also strip a preceding horizontal rule if present
+            prefix = content[:idx].rstrip()
+            if prefix.endswith("---"):
+                prefix = prefix[:-3].rstrip()
+            content = prefix
+
+        # Build review section
+        prompt_preview = rev.prompt_sent[:500]
+        lines = [
+            "",
+            "---",
+            "",
+            "## LLM Review",
+            "",
+            f"*Reviewed: {rev.timestamp} | Duration: {rev.duration_ms}ms*",
+            "",
+            f"**Summary:** {rev.review_summary}",
+            "",
+        ]
+        if rev.comments:
+            for c in rev.comments:
+                lines.append(f"- {c}")
+            lines.append("")
+
+        lines.extend(
+            [
+                "<details>",
+                "<summary>Review details</summary>",
+                "",
+                "**Prompt sent (truncated):**",
+                "```",
+                prompt_preview,
+                "```",
+                "",
+                "**Full LLM response:**",
+                "```",
+                rev.response_received,
+                "```",
+                "",
+                "</details>",
+                "",
+            ]
+        )
+
+        content = content.rstrip() + "\n" + "\n".join(lines)
+        fpath.write_text(content)
+        count += 1
+
+    return count
 
 
 def _generate_system_interactions(synth: SynthesizeResult) -> str:

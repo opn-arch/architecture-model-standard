@@ -8,7 +8,12 @@ from typing import Any
 
 from architecture_model.pipeline.global_learning import GlobalLearningStore
 from architecture_model.pipeline.learning import LearningStore
-from architecture_model.pipeline.protocol import PipelineContext, Stage, StageResult
+from architecture_model.pipeline.protocol import (
+    EnrichmentRecord,
+    PipelineContext,
+    Stage,
+    StageResult,
+)
 
 
 class PipelineCoordinator:
@@ -216,6 +221,31 @@ class PipelineCoordinator:
                         old = cap.name
                         cap.name = new_name.strip().strip('"').strip("'")
                         changes.append(f"CAP {cap.id}: '{old}' → '{cap.name}'")
+                        import time as _time
+
+                        ctx.enrichment_log.append(
+                            EnrichmentRecord(
+                                entity_id=cap.id,
+                                entity_type="capability",
+                                stage="infer",
+                                old_value=old,
+                                new_value=cap.name,
+                                prompt=prompt,
+                                response=new_name.strip(),
+                                timestamp=_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                            )
+                        )
+
+            # Deduplicate capability names
+            seen_cap_names: dict[str, int] = {}
+            for cap in output.capabilities:
+                if cap.name in seen_cap_names:
+                    seen_cap_names[cap.name] += 1
+                    old = cap.name
+                    cap.name = f"{cap.name} ({seen_cap_names[cap.name]})"
+                    changes.append(f"DEDUP CAP {cap.id}: '{old}' → '{cap.name}'")
+                else:
+                    seen_cap_names[cap.name] = 1
 
         elif stage_name == "allocate":
             # Enrich component names
@@ -235,6 +265,31 @@ class PipelineCoordinator:
                         old = comp.name
                         comp.name = new_name.strip().strip('"').strip("'")
                         changes.append(f"COMP {comp.id}: '{old}' → '{comp.name}'")
+                        import time as _time
+
+                        ctx.enrichment_log.append(
+                            EnrichmentRecord(
+                                entity_id=comp.id,
+                                entity_type="component",
+                                stage="allocate",
+                                old_value=old,
+                                new_value=comp.name,
+                                prompt=prompt,
+                                response=new_name.strip(),
+                                timestamp=_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                            )
+                        )
+
+            # Deduplicate component names
+            seen_comp_names: dict[str, int] = {}
+            for comp in output.components:
+                if comp.name in seen_comp_names:
+                    seen_comp_names[comp.name] += 1
+                    old = comp.name
+                    comp.name = f"{comp.name} ({seen_comp_names[comp.name]})"
+                    changes.append(f"DEDUP COMP {comp.id}: '{old}' → '{comp.name}'")
+                else:
+                    seen_comp_names[comp.name] = 1
 
         elif stage_name == "relate":
             # Enrich ambiguous relationship descriptions
