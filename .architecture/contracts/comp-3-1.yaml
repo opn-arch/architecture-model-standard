@@ -1,4 +1,0 @@
-component: COMP-3-1
-contracts:
-- test_file: tests/test_compose_enriched.py
-  assertions: 0

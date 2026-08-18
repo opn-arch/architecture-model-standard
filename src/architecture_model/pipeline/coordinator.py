@@ -176,9 +176,35 @@ class PipelineCoordinator:
             # Enrich capability names that are too generic
             from .infer_types import InferenceResult
 
+            _GENERIC = {
+                "Web Routes",
+                "Domain Logic",
+                "CLI Commands",
+                "Core",
+                "Scripts",
+                "Src",
+                "CLI Main",
+                "CLI Runner",
+                "Utils",
+                "Helpers",
+                "Lib",
+                "App",
+                "Main",
+                "Services",
+                "Models",
+                "API",
+                "Tests",
+                "Config",
+                "Common",
+            }
+
             output: InferenceResult = result.output
             for cap in output.capabilities:
-                if cap.name in ("Web Routes", "Domain Logic", "CLI Commands", "Core"):
+                # Enrich if name is in generic set OR is very short (1-2 words, <=12 chars)
+                is_generic = cap.name in _GENERIC or (
+                    len(cap.name) <= 12 and len(cap.name.split()) <= 2
+                )
+                if is_generic:
                     prompt = (
                         f"Given a software component with these files: {cap.evidence_source}, "
                         f"suggest a specific, descriptive name (2-4 words) that captures its "
@@ -197,7 +223,7 @@ class PipelineCoordinator:
 
             output = result.output
             for comp in output.components:
-                if comp.name and len(comp.name) <= 3:  # Very short/generic names
+                if comp.name and len(comp.name) <= 10:  # Short/generic names
                     files_str = ", ".join(str(f) for f in comp.files[:5])
                     prompt = (
                         f"Given a software component containing files: [{files_str}], "

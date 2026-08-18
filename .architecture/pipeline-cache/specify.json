@@ -10,7 +10,7 @@
         "__module__": "architecture_model.pipeline.specify_types",
         "id": "IF-1",
         "name": "main CLI",
-        "component_id": "COMP-2-1",
+        "component_id": "COMP-4-7",
         "interface_type": "cli",
         "methods": [],
         "description": ""
@@ -19,18 +19,8 @@
         "__dataclass__": "InterfaceSpec",
         "__module__": "architecture_model.pipeline.specify_types",
         "id": "IF-2",
-        "name": "templates CLI",
-        "component_id": "COMP-3-6",
-        "interface_type": "cli",
-        "methods": [],
-        "description": ""
-      },
-      {
-        "__dataclass__": "InterfaceSpec",
-        "__module__": "architecture_model.pipeline.specify_types",
-        "id": "IF-3",
-        "name": "base CLI",
-        "component_id": "COMP-3-6",
+        "name": "runner CLI",
+        "component_id": "COMP-3-2",
         "interface_type": "cli",
         "methods": [],
         "description": ""
@@ -42,11 +32,11 @@
     "__module__": "architecture_model.pipeline.protocol",
     "score": 50,
     "sub_scores": {
-      "interface_count": 3.0,
+      "interface_count": 2.0,
       "rest_count": 0.0,
-      "cli_count": 3.0,
+      "cli_count": 2.0,
       "library_count": 0.0,
-      "component_coverage": 0.12
+      "component_coverage": 0.13
     },
     "thresholds": {},
     "llm_prompt": ""
@@ -54,6 +44,6 @@
   "diagnostics": [],
   "uncertainties": [],
   "input_hash": "18",
-  "duration_ms": 7,
+  "duration_ms": 0,
   "version": "1.0"
 }

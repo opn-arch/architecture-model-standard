@@ -1,4 +1,0 @@
-component: COMP-4-4
-contracts:
-- test_file: tests/test_config_loader.py
-  assertions: 0

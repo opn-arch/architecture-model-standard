@@ -284,6 +284,50 @@ def _build_sos_model(
                         {"from": sys_id, "to": rel.to_id, "type": "realizes"}
                     )
 
+    # Aggregate entities from sub-system models into the SoS model
+    # This ensures SE docs generated from the SoS model have real content
+    all_components: list[dict[str, Any]] = []
+    all_interfaces: list[dict[str, Any]] = []
+    all_constraints: list[dict[str, Any]] = []
+    all_layers: list[dict[str, Any]] = []
+    seen_layer_ids: set[str] = set()
+
+    for sm in systems:
+        if not sm.model_yaml:
+            continue
+        try:
+            sub_model = yaml.safe_load(sm.model_yaml)
+            sub_entities = sub_model.get("entities", {})
+            all_components.extend(sub_entities.get("components", []))
+            all_interfaces.extend(sub_entities.get("interfaces", []))
+            all_constraints.extend(sub_entities.get("constraints", []))
+            # Merge behaviors from sub-systems (supplement top-level inferred ones)
+            for beh in sub_entities.get("behaviors", []):
+                if not any(b["id"] == beh["id"] for b in behaviors):
+                    behaviors.append(beh)
+            # Deduplicate layers
+            for layer in sub_entities.get("layers", []):
+                if layer.get("id") not in seen_layer_ids:
+                    seen_layer_ids.add(layer.get("id", ""))
+                    all_layers.append(layer)
+            # Collect sub-system relationships into inter-system set
+            for rel in sub_model.get("relationships", []):
+                inter_system_interfaces.append(rel)
+        except Exception:
+            continue
+
+    # Also pull components from top-level allocate if available
+    alloc_result = top_results.get("allocate")
+    if alloc_result and alloc_result.output and hasattr(alloc_result.output, "components"):
+        for comp in alloc_result.output.components:
+            if not any(c.get("id") == comp.id for c in all_components):
+                comp_dict: dict[str, Any] = {"id": comp.id, "name": comp.name}
+                if hasattr(comp, "files") and comp.files:
+                    comp_dict["files"] = [str(f) for f in comp.files]
+                if hasattr(comp, "layer") and comp.layer:
+                    comp_dict["layer"] = comp.layer
+                all_components.append(comp_dict)
+
     # Build SoS YAML
     sos_dict: dict[str, Any] = {
         "meta": {
@@ -306,6 +350,16 @@ def _build_sos_model(
         sos_dict["entities"]["actors"] = actors
     if capabilities:
         sos_dict["entities"]["capabilities"] = capabilities
+    if behaviors:
+        sos_dict["entities"]["behaviors"] = behaviors
+    if all_components:
+        sos_dict["entities"]["components"] = all_components
+    if all_interfaces:
+        sos_dict["entities"]["interfaces"] = all_interfaces
+    if all_constraints:
+        sos_dict["entities"]["constraints"] = all_constraints
+    if all_layers:
+        sos_dict["entities"]["layers"] = all_layers
 
     # Add inline components
     if inlines:

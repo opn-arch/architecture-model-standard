@@ -39,6 +39,12 @@ STANDARD_DOCS: list[tuple[str, str, str, str]] = [
     ("use_cases", "use_cases", "Use Cases", "use-cases.md"),
     ("risk_assessment", "risk_assessment", "Risk Assessment", "risk-assessment.md"),
     ("interface_spec", "interface_spec", "Interface Specification", "interface-specification.md"),
+    (
+        "artifact_traceability",
+        "artifact_traceability",
+        "Artifact Traceability Map",
+        "artifact-traceability.md",
+    ),
 ]
 
 PROJECT_DOCS: dict[str, tuple[str, str, str]] = {

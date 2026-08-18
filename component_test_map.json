@@ -1,0 +1,450 @@
+{
+  "COMP-1": [
+    "tests/test_auto_behaviors.py",
+    "tests/test_auto_enrich.py",
+    "tests/test_auto_enrich_behaviors.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_block_context_enrich.py",
+    "tests/test_interface_contracts.py",
+    "tests/test_manifest_to_source_graph.py",
+    "tests/test_pattern_classification.py",
+    "tests/test_source_graph_enrichment.py"
+  ],
+  "COMP-10": [
+    "tests/test_naming_context.py"
+  ],
+  "COMP-11": [
+    "tests/test_full_enrichment_flow.py",
+    "tests/test_hierarchical_integration.py",
+    "tests/test_pipeline.py",
+    "tests/test_pipeline_compact.py"
+  ],
+  "COMP-12": [
+    "tests/test_trigger_detection.py"
+  ],
+  "COMP-13": [
+    "tests/test_use_case_inference.py"
+  ],
+  "COMP-15": [
+    "tests/test_cluster.py"
+  ],
+  "COMP-16": [
+    "tests/test_behavior_extraction.py",
+    "tests/test_pipeline_allocate.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_decompose.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "COMP-17": [
+    "tests/test_auto_behaviors.py",
+    "tests/test_auto_enrich.py",
+    "tests/test_auto_enrich_behaviors.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_behavior_decompose.py",
+    "tests/test_behavior_flows.py",
+    "tests/test_behavior_spec.py",
+    "tests/test_behavioral_fields.py",
+    "tests/test_block_context_enrich.py",
+    "tests/test_blocks_typed.py",
+    "tests/test_call_graph.py",
+    "tests/test_compression_stats.py",
+    "tests/test_create_components.py",
+    "tests/test_deepened_manifest.py",
+    "tests/test_development_gate.py",
+    "tests/test_event_chains.py",
+    "tests/test_function_id.py",
+    "tests/test_generator_typed.py",
+    "tests/test_hierarchical_repr.py",
+    "tests/test_interfaces_typed.py",
+    "tests/test_manifest.py",
+    "tests/test_manifest_method_details.py",
+    "tests/test_manifest_to_source_graph.py",
+    "tests/test_manifest_types.py",
+    "tests/test_metrics_typed.py",
+    "tests/test_module_grouping.py",
+    "tests/test_monitoring_checks.py",
+    "tests/test_pattern_classification.py",
+    "tests/test_recursive_decompose.py",
+    "tests/test_regex_fallback.py",
+    "tests/test_representativeness.py",
+    "tests/test_scanner_typed.py",
+    "tests/test_system_detector.py"
+  ],
+  "COMP-18": [
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_body_hints.py",
+    "tests/test_confidence_aggregate.py",
+    "tests/test_confidence_engine.py",
+    "tests/test_confidence_manifest.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_source_graph_enrichment.py"
+  ],
+  "COMP-19": [
+    "tests/test_behavior_flows.py",
+    "tests/test_behavior_spec.py",
+    "tests/test_call_graph.py",
+    "tests/test_corrections.py",
+    "tests/test_pipeline_cache.py",
+    "tests/test_trigger_detection.py"
+  ],
+  "COMP-2": [
+    "tests/test_behavior_decompose.py"
+  ],
+  "COMP-20": [
+    "tests/test_coverage.py",
+    "tests/test_dependency_diff.py",
+    "tests/test_event_chains.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_req_coverage.py"
+  ],
+  "COMP-21": [
+    "scripts/test_decomposed_round_trip.py",
+    "tests/test_core/test_decomposer.py",
+    "tests/test_core/test_test_affinity.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_system_detector.py"
+  ],
+  "COMP-22": [
+    "tests/test_behavioral_e2e.py",
+    "tests/test_manifest.py",
+    "tests/test_manifest_method_details.py"
+  ],
+  "COMP-23": [
+    "scripts/test_decomposed_round_trip.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_guided_round_trip.py",
+    "tests/test_auto_fblocks.py",
+    "tests/test_compose_enriched.py",
+    "tests/test_core/test_enrichment.py",
+    "tests/test_event_chains.py",
+    "tests/test_init_reexport_mapping.py",
+    "tests/test_merger.py",
+    "tests/test_pipeline_coordinator.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_recursive.py"
+  ],
+  "COMP-24": [
+    "scripts/test_decomposed_round_trip.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_httpx.py",
+    "scripts/test_integration.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_round_trip.py",
+    "scripts/test_sentry.py",
+    "tests/conftest.py",
+    "tests/test_confidence_auto.py",
+    "tests/test_core/test_schema_v12.py",
+    "tests/test_core/test_schema_v13.py",
+    "tests/test_core/test_types.py",
+    "tests/test_decompose.py",
+    "tests/test_hierarchical_integration.py",
+    "tests/test_interfaces_typed.py",
+    "tests/test_load_block_model.py",
+    "tests/test_parser.py",
+    "tests/test_parser_tolerance.py",
+    "tests/test_pipeline_compact.py",
+    "tests/test_pipeline_corrections.py",
+    "tests/test_profile_parsing.py",
+    "tests/test_profile_validation.py",
+    "tests/test_profiles/test_e2e_profiles.py",
+    "tests/test_requirements.py",
+    "tests/test_schema_extensions.py",
+    "tests/test_schema_v2.py",
+    "tests/test_slicer_sub_models.py"
+  ],
+  "COMP-25": [
+    "scripts/test_decomposed_round_trip.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_guided_round_trip.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_deepened_manifest.py",
+    "tests/test_enriched_scanner.py",
+    "tests/test_kt_scanner.py",
+    "tests/test_pipeline_decompose.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_pipeline_synthesize.py",
+    "tests/test_regen_readiness.py",
+    "tests/test_regex_fallback.py",
+    "tests/test_scan_cache.py",
+    "tests/test_scanner_behavioral.py"
+  ],
+  "COMP-26": [
+    "tests/test_hierarchical_repr.py",
+    "tests/test_representativeness.py",
+    "tests/test_representativeness_match.py"
+  ],
+  "COMP-27": [
+    "tests/test_hierarchical_integration.py",
+    "tests/test_multi_scanner.py",
+    "tests/test_pipeline_emit.py",
+    "tests/test_profiles/test_e2e_profiles.py",
+    "tests/test_schema_v2.py",
+    "tests/test_slicer.py",
+    "tests/test_slicer_sub_models.py"
+  ],
+  "COMP-28": [
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_round_trip.py",
+    "src/architecture_model/manifest/test_analyzer.py",
+    "tests/conftest.py",
+    "tests/test_authoring_parser.py",
+    "tests/test_auto_behaviors.py",
+    "tests/test_auto_enrich.py",
+    "tests/test_auto_enrich_behaviors.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_behavior_decompose.py",
+    "tests/test_behavior_flows.py",
+    "tests/test_behavior_spec.py",
+    "tests/test_block_context_enrich.py",
+    "tests/test_body_hints.py",
+    "tests/test_capability_hierarchy.py",
+    "tests/test_capability_inference.py",
+    "tests/test_compact_root.py",
+    "tests/test_compaction.py",
+    "tests/test_component_spec_rich.py",
+    "tests/test_compose_enriched.py",
+    "tests/test_confidence_aggregate.py",
+    "tests/test_confidence_auto.py",
+    "tests/test_confidence_engine.py",
+    "tests/test_confidence_field.py",
+    "tests/test_core/test_decomposer.py",
+    "tests/test_core/test_enrichment.py",
+    "tests/test_core/test_schema_v11.py",
+    "tests/test_core/test_schema_v12.py",
+    "tests/test_core/test_schema_v13.py",
+    "tests/test_core/test_types.py",
+    "tests/test_core/test_validator_regen.py",
+    "tests/test_corrections.py",
+    "tests/test_coverage.py",
+    "tests/test_decision_wiring.py",
+    "tests/test_decompose.py",
+    "tests/test_dependency_diff.py",
+    "tests/test_development_gate.py",
+    "tests/test_diagrams.py",
+    "tests/test_docs_gen.py",
+    "tests/test_enrich.py",
+    "tests/test_function_id.py",
+    "tests/test_hierarchical_repr.py",
+    "tests/test_improvement_checks.py",
+    "tests/test_integration_flows.py",
+    "tests/test_interface_contracts.py",
+    "tests/test_kt_scanner.py",
+    "tests/test_manifest_to_source_graph.py",
+    "tests/test_merger.py",
+    "tests/test_multi_scanner.py",
+    "tests/test_observability_contract.py",
+    "tests/test_open_enums.py",
+    "tests/test_parser.py",
+    "tests/test_pattern_contract_fields.py",
+    "tests/test_protocol.py",
+    "tests/test_recursive_model_aware.py",
+    "tests/test_regen_readiness.py",
+    "tests/test_representativeness.py",
+    "tests/test_req_coverage.py",
+    "tests/test_requirements.py",
+    "tests/test_schema_extensions.py",
+    "tests/test_schema_reconciliation.py",
+    "tests/test_schema_sync.py",
+    "tests/test_schema_v2.py",
+    "tests/test_slicer.py",
+    "tests/test_slicer_sub_models.py",
+    "tests/test_source_block_assign.py",
+    "tests/test_source_block_quality.py",
+    "tests/test_source_graph_enrichment.py",
+    "tests/test_system_design.py",
+    "tests/test_system_detector.py",
+    "tests/test_test_analyzer.py",
+    "tests/test_trigger_detection.py",
+    "tests/test_use_case_inference.py",
+    "tests/test_validator.py",
+    "tests/test_visualize.py",
+    "tests/test_vv_relations.py"
+  ],
+  "COMP-29": [
+    "tests/test_behavioral_e2e.py",
+    "tests/test_deep_decompose.py",
+    "tests/test_file_based_deps.py",
+    "tests/test_pipeline_corrections.py",
+    "tests/test_pipeline_global_learning.py",
+    "tests/test_pipeline_learning.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_recursive_model_aware.py",
+    "tests/test_recursive_override.py"
+  ],
+  "COMP-3": [
+    "tests/test_behavior_flows.py",
+    "tests/test_behavior_spec.py"
+  ],
+  "COMP-30": [
+    "scripts/test_httpx.py",
+    "scripts/test_integration.py",
+    "scripts/test_model_swap.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_sentry.py",
+    "tests/test_confidence_auto.py",
+    "tests/test_core/test_validator_regen.py",
+    "tests/test_decision_wiring.py",
+    "tests/test_improvement_checks.py",
+    "tests/test_pipeline_allocate.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_infer.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_profile_validation.py",
+    "tests/test_profiles/test_e2e_profiles.py",
+    "tests/test_scan_cache.py",
+    "tests/test_validator.py",
+    "tests/test_vv_relations.py"
+  ],
+  "COMP-31": [
+    "tests/test_visualize.py"
+  ],
+  "COMP-32": [
+    "tests/test_manifest.py"
+  ],
+  "COMP-33": [
+    "tests/test_pipeline_lessons.py",
+    "tests/test_ts_scanner.py"
+  ],
+  "COMP-34": [
+    "tests/test_pipeline_allocate.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_infer.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_observe.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "COMP-36": [
+    "tests/test_pipeline_allocate.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_cache.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_coordinator.py",
+    "tests/test_pipeline_corrections.py",
+    "tests/test_pipeline_decompose.py",
+    "tests/test_pipeline_emit.py",
+    "tests/test_pipeline_infer.py",
+    "tests/test_pipeline_learning.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_lessons.py",
+    "tests/test_pipeline_observe.py",
+    "tests/test_pipeline_protocol.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_report.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_pipeline_synthesize.py"
+  ],
+  "COMP-38": [
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_decompose.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "COMP-4": [
+    "tests/test_capability_hierarchy.py",
+    "tests/test_capability_inference.py"
+  ],
+  "COMP-4-1": [
+    "scripts/test_decomposed_round_trip.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_httpx.py",
+    "scripts/test_integration.py",
+    "scripts/test_model_swap.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_round_trip.py",
+    "scripts/test_sentry.py",
+    "tests/test_monitoring.py",
+    "tests/test_monitoring_checks.py",
+    "tests/test_monitoring_tier1.py",
+    "tests/test_monitoring_tier2.py",
+    "tests/test_patterns_catalog.py"
+  ],
+  "COMP-4-11": [
+    "tests/test_constraint_detector.py",
+    "tests/test_from_artifacts.py",
+    "tests/test_route_detector.py"
+  ],
+  "COMP-4-12": [
+    "tests/test_profiles/test_builtin_profiles.py",
+    "tests/test_profiles/test_profile_schema.py"
+  ],
+  "COMP-4-13": [
+    "tests/test_export.py"
+  ],
+  "COMP-4-4": [
+    "tests/test_config_loader.py",
+    "tests/test_discovery_report.py"
+  ],
+  "COMP-4-6": [
+    "src/architecture_model/core/test_affinity.py",
+    "tests/test_utils/test_discovery.py"
+  ],
+  "COMP-4-7": [
+    "tests/test_cli_author.py",
+    "tests/test_cli_learnings.py"
+  ],
+  "COMP-4-8": [
+    "tests/test_authoring_parser.py",
+    "tests/test_development_gate.py"
+  ],
+  "COMP-4-9": [
+    "tests/test_persistence.py"
+  ],
+  "COMP-40": [
+    "tests/test_pipeline_report.py"
+  ],
+  "COMP-42": [
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "COMP-44": [
+    "tests/test_pipeline_emit.py",
+    "tests/test_pipeline_synthesize.py"
+  ],
+  "COMP-46": [
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "COMP-5": [
+    "tests/test_compaction.py"
+  ],
+  "COMP-6": [
+    "tests/test_compact_root.py",
+    "tests/test_decompose.py"
+  ],
+  "COMP-7": [
+    "tests/test_deep_decompose.py",
+    "tests/test_enrichment_context.py",
+    "tests/test_naming_context.py",
+    "tests/test_recursive_decompose.py"
+  ],
+  "COMP-8": [
+    "tests/test_enrich.py"
+  ],
+  "COMP-9": [
+    "tests/test_enrichment_context.py",
+    "tests/test_full_enrichment_flow.py"
+  ]
+}

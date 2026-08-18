@@ -1,0 +1,2607 @@
+meta:
+  schema_version: '2.0'
+  system_of_systems: true
+entities:
+  systems:
+  - id: SYS-scripts-(core)
+    name: Scripts (core)
+    model_path: scripts-core/.architecture-model.yaml
+  - id: SYS-scripts-(dev_simulation)
+    name: Scripts (dev_simulation)
+    model_path: scripts-dev-simulation/.architecture-model.yaml
+  - id: SYS-src-(core)
+    name: Src (core)
+    model_path: src-core/.architecture-model.yaml
+  - id: SYS-src-(pipeline)
+    name: Src (pipeline)
+    model_path: src-pipeline/.architecture-model.yaml
+  - id: SYS-src-(core)
+    name: Src (core)
+    model_path: src-core/.architecture-model.yaml
+  - id: SYS-src-(manifest)
+    name: Src (manifest)
+    model_path: src-manifest/.architecture-model.yaml
+  - id: SYS-src-(orchestration)
+    name: Src (orchestration)
+    model_path: src-orchestration/.architecture-model.yaml
+  - id: SYS-src-(extract)
+    name: Src (extract)
+    model_path: src-extract/.architecture-model.yaml
+  - id: SYS-src-(config)
+    name: Src (config)
+    model_path: src-config/.architecture-model.yaml
+  - id: SYS-src-(utils)
+    name: Src (utils)
+    model_path: src-utils/.architecture-model.yaml
+  - id: SYS-src-(cli)
+    name: Src (cli)
+    model_path: src-cli/.architecture-model.yaml
+  - id: SYS-src-(authoring)
+    name: Src (authoring)
+    model_path: src-authoring/.architecture-model.yaml
+  - id: SYS-src-(persistence)
+    name: Src (persistence)
+    model_path: src-persistence/.architecture-model.yaml
+  - id: SYS-src-(profiles)
+    name: Src (profiles)
+    model_path: src-profiles/.architecture-model.yaml
+  - id: SYS-src-(export)
+    name: Src (export)
+    model_path: src-export/.architecture-model.yaml
+  actors:
+  - id: ACT-1
+    name: API Consumer
+  capabilities:
+  - id: CAP-1
+    name: HTTP Route Definitions
+  - id: CAP-2
+    name: gRPC Services
+  - id: CAP-3
+    name: Package Group Management
+  - id: CAP-4
+    name: Package Group Management
+  - id: CAP-5
+    name: Command Line Interface Handler
+  - id: CAP-6
+    name: Command Line Executor
+  behaviors:
+  - id: BEH-1
+    name: 'GET '
+  - id: BEH-2
+    name: GET bookmarklets/
+  - id: BEH-3
+    name: GET tags/
+  - id: BEH-4
+    name: GET filters/
+  - id: BEH-5
+    name: GET views/
+  - id: BEH-6
+    name: GET views/<view>/
+  - id: BEH-7
+    name: GET models/
+  - id: BEH-8
+    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+  - id: BEH-9
+    name: GET templates/<path:template>/
+  - id: BEH-10
+    name: GET login/
+  - id: BEH-11
+    name: GET logout/
+  - id: BEH-12
+    name: GET password_change/
+  - id: BEH-13
+    name: GET password_change/done/
+  - id: BEH-14
+    name: GET password_reset/
+  - id: BEH-15
+    name: GET password_reset/done/
+  - id: BEH-16
+    name: GET reset/<uidb64>/<token>/
+  - id: BEH-17
+    name: GET reset/done/
+  - id: BEH-18
+    name: GET <path:url>
+  - id: BEH-19
+    name: 'CLI: Test Guided Round Trip'
+  - id: BEH-20
+    name: 'CLI: Test Enriched Round Trip'
+  - id: BEH-21
+    name: 'CLI: Test Multi Repo'
+  - id: BEH-22
+    name: 'CLI: Test Round Trip'
+  - id: BEH-23
+    name: 'CLI: Test Decomposed Round Trip'
+  - id: BEH-24
+    name: 'CLI: Main'
+  - id: BEH-25
+    name: 'CLI: Runner'
+  components:
+  - id: scripts-dev-simulation-COMP-1
+    name: Checkout
+    files:
+    - scripts/dev_simulation/checkout.py
+  - id: scripts-dev-simulation-COMP-2
+    name: Cohesion
+    files:
+    - scripts/dev_simulation/cohesion.py
+  - id: scripts-dev-simulation-COMP-3
+    name: Drift Tracker
+    files:
+    - scripts/dev_simulation/drift_tracker.py
+  - id: scripts-dev-simulation-COMP-4
+    name: Extractor
+    files:
+    - scripts/dev_simulation/extractor.py
+  - id: scripts-dev-simulation-COMP-5
+    name: Llm Predictor
+    files:
+    - scripts/dev_simulation/llm_predictor.py
+  - id: scripts-dev-simulation-COMP-6
+    name: Regen Scorer
+    files:
+    - scripts/dev_simulation/regen_scorer.py
+  - id: scripts-dev-simulation-COMP-7
+    name: Report
+    files:
+    - scripts/dev_simulation/report.py
+  - id: scripts-dev-simulation-COMP-8
+    name: Runner
+    files:
+    - scripts/dev_simulation/runner.py
+  - id: scripts-dev-simulation-COMP-9
+    name: Slice Evaluator
+    files:
+    - scripts/dev_simulation/slice_evaluator.py
+  - id: scripts-dev-simulation-COMP-10
+    name: Infrastructure
+    files:
+    - scripts/dev_simulation/cli.py
+  - id: src-pipeline-COMP-16
+    name: Allocate
+    files:
+    - src/architecture_model/pipeline/allocate.py
+    - src/architecture_model/pipeline/allocate_types.py
+  - id: src-pipeline-COMP-18
+    name: Artifacts
+    files:
+    - src/architecture_model/pipeline/artifacts.py
+  - id: src-pipeline-COMP-19
+    name: Cache
+    files:
+    - src/architecture_model/pipeline/cache.py
+  - id: src-pipeline-COMP-20
+    name: Context Gen
+    files:
+    - src/architecture_model/pipeline/context_gen.py
+  - id: src-pipeline-COMP-21
+    name: Contract
+    files:
+    - src/architecture_model/pipeline/contract.py
+    - src/architecture_model/pipeline/contract_types.py
+  - id: src-pipeline-COMP-23
+    name: Coordinator
+    files:
+    - src/architecture_model/pipeline/coordinator.py
+  - id: src-pipeline-COMP-24
+    name: Corrections
+    files:
+    - src/architecture_model/pipeline/corrections.py
+  - id: src-pipeline-COMP-25
+    name: Decompose
+    files:
+    - src/architecture_model/pipeline/__init__.py
+    - src/architecture_model/pipeline/decompose.py
+    - src/architecture_model/pipeline/decompose_types.py
+  - id: src-pipeline-COMP-27
+    name: Emit
+    files:
+    - src/architecture_model/pipeline/emit.py
+    - src/architecture_model/pipeline/emit_types.py
+  - id: src-pipeline-COMP-29
+    name: Global Learning
+    files:
+    - src/architecture_model/pipeline/global_learning.py
+    - src/architecture_model/pipeline/learning.py
+  - id: src-pipeline-COMP-30
+    name: Infer
+    files:
+    - src/architecture_model/pipeline/infer.py
+    - src/architecture_model/pipeline/infer_types.py
+  - id: src-pipeline-COMP-33
+    name: Lessons
+    files:
+    - src/architecture_model/pipeline/lessons.py
+  - id: src-pipeline-COMP-34
+    name: Observe
+    files:
+    - src/architecture_model/pipeline/observe.py
+    - src/architecture_model/pipeline/observe_types.py
+  - id: src-pipeline-COMP-36
+    name: Protocol
+    files:
+    - src/architecture_model/pipeline/protocol.py
+  - id: src-pipeline-COMP-37
+    name: Regen Score
+    files:
+    - src/architecture_model/pipeline/regen_score.py
+  - id: src-pipeline-COMP-38
+    name: Relate
+    files:
+    - src/architecture_model/pipeline/relate.py
+    - src/architecture_model/pipeline/relate_types.py
+  - id: src-pipeline-COMP-40
+    name: Report
+    files:
+    - src/architecture_model/pipeline/report.py
+  - id: src-pipeline-COMP-41
+    name: Requirements Derive
+    files:
+    - src/architecture_model/pipeline/requirements_derive.py
+  - id: src-pipeline-COMP-42
+    name: Specify
+    files:
+    - src/architecture_model/pipeline/specify.py
+    - src/architecture_model/pipeline/specify_types.py
+  - id: src-pipeline-COMP-44
+    name: Synthesize
+    files:
+    - src/architecture_model/pipeline/synthesize.py
+    - src/architecture_model/pipeline/synthesize_types.py
+  - id: src-pipeline-COMP-46
+    name: Validate
+    files:
+    - src/architecture_model/pipeline/validate.py
+    - src/architecture_model/pipeline/validate_types.py
+  - id: src-core-COMP-15
+    name: Cluster
+    files:
+    - src/architecture_model/core/cluster.py
+  - id: src-core-COMP-16
+    name: Completeness
+    files:
+    - src/architecture_model/core/completeness.py
+  - id: src-core-COMP-17
+    name: Compression
+    files:
+    - src/architecture_model/core/compression.py
+  - id: src-core-COMP-18
+    name: Confidence
+    files:
+    - src/architecture_model/core/confidence.py
+  - id: src-core-COMP-19
+    name: Corrections
+    files:
+    - src/architecture_model/core/corrections.py
+  - id: src-core-COMP-20
+    name: Coverage
+    files:
+    - src/architecture_model/core/coverage.py
+  - id: src-core-COMP-21
+    name: Decomposer
+    files:
+    - src/architecture_model/core/decomposer.py
+  - id: src-core-COMP-22
+    name: Differ
+    files:
+    - src/architecture_model/core/differ.py
+  - id: src-core-COMP-23
+    name: Merger
+    files:
+    - src/architecture_model/core/merger.py
+  - id: src-core-COMP-24
+    name: Parser
+    files:
+    - src/architecture_model/core/parser.py
+  - id: src-core-COMP-25
+    name: Regen Readiness
+    files:
+    - src/architecture_model/core/regen_readiness.py
+  - id: src-core-COMP-26
+    name: Representativeness
+    files:
+    - src/architecture_model/core/representativeness.py
+  - id: src-core-COMP-27
+    name: Slicer
+    files:
+    - src/architecture_model/core/slicer.py
+  - id: src-core-COMP-28
+    name: Source Block Assign
+    files:
+    - src/architecture_model/core/source_block_assign.py
+    - src/architecture_model/core/source_block_quality.py
+    - src/architecture_model/core/types.py
+  - id: src-core-COMP-30
+    name: Validator
+    files:
+    - src/architecture_model/core/validator.py
+  - id: src-core-COMP-31
+    name: Visualize
+    files:
+    - src/architecture_model/core/visualize.py
+  - id: src-manifest-COMP-16
+    name: Behavior
+    files:
+    - src/architecture_model/manifest/behavior.py
+  - id: src-manifest-COMP-17
+    name: Blocks
+    files:
+    - src/architecture_model/manifest/__init__.py
+    - src/architecture_model/manifest/blocks.py
+    - src/architecture_model/manifest/types.py
+  - id: src-manifest-COMP-18
+    name: Body Hints
+    files:
+    - src/architecture_model/manifest/body_hints.py
+  - id: src-manifest-COMP-19
+    name: Call Graph
+    files:
+    - src/architecture_model/manifest/call_graph.py
+  - id: src-manifest-COMP-20
+    name: Chains
+    files:
+    - src/architecture_model/manifest/chains.py
+  - id: src-manifest-COMP-21
+    name: Display
+    files:
+    - src/architecture_model/manifest/display.py
+  - id: src-manifest-COMP-22
+    name: Generator
+    files:
+    - src/architecture_model/manifest/generator.py
+  - id: src-manifest-COMP-23
+    name: Grouping
+    files:
+    - src/architecture_model/manifest/grouping.py
+  - id: src-manifest-COMP-24
+    name: Interfaces
+    files:
+    - src/architecture_model/manifest/interfaces.py
+  - id: src-manifest-COMP-25
+    name: Kt Scanner
+    files:
+    - src/architecture_model/manifest/kt_scanner.py
+    - src/architecture_model/manifest/scanner.py
+  - id: src-manifest-COMP-26
+    name: Metrics
+    files:
+    - src/architecture_model/manifest/metrics.py
+  - id: src-manifest-COMP-27
+    name: Multi Scanner
+    files:
+    - src/architecture_model/manifest/multi_scanner.py
+  - id: src-manifest-COMP-28
+    name: Protocol
+    files:
+    - src/architecture_model/manifest/protocol.py
+  - id: src-manifest-COMP-29
+    name: Recursive
+    files:
+    - src/architecture_model/manifest/recursive.py
+  - id: src-manifest-COMP-30
+    name: Scan Cache
+    files:
+    - src/architecture_model/manifest/scan_cache.py
+  - id: src-manifest-COMP-32
+    name: Slicers
+    files:
+    - src/architecture_model/manifest/slicers.py
+  - id: src-manifest-COMP-33
+    name: Ts Scanner
+    files:
+    - src/architecture_model/manifest/ts_scanner.py
+  - id: src-orchestration-COMP-1
+    name: Auto Enrich
+    files:
+    - src/architecture_model/orchestration/auto_enrich.py
+  - id: src-orchestration-COMP-2
+    name: Behavior Decompose
+    files:
+    - src/architecture_model/orchestration/behavior_decompose.py
+  - id: src-orchestration-COMP-3
+    name: Behavior Flows
+    files:
+    - src/architecture_model/orchestration/behavior_flows.py
+  - id: src-orchestration-COMP-4
+    name: Capability Inference
+    files:
+    - src/architecture_model/orchestration/capability_inference.py
+  - id: src-orchestration-COMP-5
+    name: Compaction
+    files:
+    - src/architecture_model/orchestration/compaction.py
+  - id: src-orchestration-COMP-6
+    name: Decompose
+    files:
+    - src/architecture_model/orchestration/decompose.py
+  - id: src-orchestration-COMP-7
+    name: Deep Decompose
+    files:
+    - src/architecture_model/orchestration/deep_decompose.py
+  - id: src-orchestration-COMP-8
+    name: Enrich
+    files:
+    - src/architecture_model/orchestration/enrich.py
+  - id: src-orchestration-COMP-9
+    name: Enrichment Context
+    files:
+    - src/architecture_model/orchestration/enrichment_context.py
+  - id: src-orchestration-COMP-10
+    name: Naming Context
+    files:
+    - src/architecture_model/orchestration/naming_context.py
+  - id: src-orchestration-COMP-11
+    name: Pipeline
+    files:
+    - src/architecture_model/orchestration/pipeline.py
+  - id: src-orchestration-COMP-12
+    name: Trigger Detection
+    files:
+    - src/architecture_model/orchestration/trigger_detection.py
+  - id: src-orchestration-COMP-13
+    name: Use Case Inference
+    files:
+    - src/architecture_model/orchestration/use_case_inference.py
+  - id: COMP-3-1
+    name: Scripts (core)
+    files:
+    - scripts/add_sub_behaviors.py
+    - scripts/bench_enrichment.py
+    - scripts/enrich_sub_behaviors.py
+    - scripts/generate_models_pdf.py
+    - scripts/se_enrich.py
+    - scripts/strip_sub_behaviors.py
+    layer: data
+  - id: COMP-3-2
+    name: Scripts (dev_simulation)
+    files:
+    - scripts/dev_simulation/checkout.py
+    - scripts/dev_simulation/cli.py
+    - scripts/dev_simulation/cohesion.py
+    - scripts/dev_simulation/drift_tracker.py
+    - scripts/dev_simulation/extractor.py
+    - scripts/dev_simulation/llm_predictor.py
+    - scripts/dev_simulation/regen_scorer.py
+    - scripts/dev_simulation/report.py
+    - scripts/dev_simulation/runner.py
+    - scripts/dev_simulation/slice_evaluator.py
+    layer: data
+  - id: COMP-4-1
+    name: Architecture Model Monitoring
+    files:
+    - src/architecture_model/__init__.py
+    - src/architecture_model/__main__.py
+    - src/architecture_model/monitoring.py
+    - src/architecture_model/monitoring_checks.py
+    - src/architecture_model/patterns.py
+    layer: web
+  - id: COMP-4-2
+    name: Src (pipeline)
+    files:
+    - src/architecture_model/pipeline/__init__.py
+    - src/architecture_model/pipeline/allocate.py
+    - src/architecture_model/pipeline/allocate_types.py
+    - src/architecture_model/pipeline/artifacts.py
+    - src/architecture_model/pipeline/cache.py
+    - src/architecture_model/pipeline/context_gen.py
+    - src/architecture_model/pipeline/contract.py
+    - src/architecture_model/pipeline/contract_types.py
+    - src/architecture_model/pipeline/coordinator.py
+    - src/architecture_model/pipeline/corrections.py
+    - src/architecture_model/pipeline/decompose.py
+    - src/architecture_model/pipeline/decompose_types.py
+    - src/architecture_model/pipeline/emit.py
+    - src/architecture_model/pipeline/emit_types.py
+    - src/architecture_model/pipeline/global_learning.py
+    - src/architecture_model/pipeline/infer.py
+    - src/architecture_model/pipeline/infer_types.py
+    - src/architecture_model/pipeline/learning.py
+    - src/architecture_model/pipeline/lessons.py
+    - src/architecture_model/pipeline/observe.py
+    - src/architecture_model/pipeline/observe_types.py
+    - src/architecture_model/pipeline/protocol.py
+    - src/architecture_model/pipeline/regen_score.py
+    - src/architecture_model/pipeline/relate.py
+    - src/architecture_model/pipeline/relate_types.py
+    - src/architecture_model/pipeline/report.py
+    - src/architecture_model/pipeline/requirements_derive.py
+    - src/architecture_model/pipeline/specify.py
+    - src/architecture_model/pipeline/specify_types.py
+    - src/architecture_model/pipeline/synthesize.py
+    - src/architecture_model/pipeline/synthesize_types.py
+    - src/architecture_model/pipeline/validate.py
+    - src/architecture_model/pipeline/validate_types.py
+    layer: web
+  - id: COMP-4-3
+    name: Core Analysis Engine
+    files:
+    - src/architecture_model/core/cluster.py
+    - src/architecture_model/core/completeness.py
+    - src/architecture_model/core/compression.py
+    - src/architecture_model/core/confidence.py
+    - src/architecture_model/core/corrections.py
+    - src/architecture_model/core/coverage.py
+    - src/architecture_model/core/decomposer.py
+    - src/architecture_model/core/differ.py
+    - src/architecture_model/core/merger.py
+    - src/architecture_model/core/parser.py
+    - src/architecture_model/core/regen_readiness.py
+    - src/architecture_model/core/representativeness.py
+    - src/architecture_model/core/slicer.py
+    - src/architecture_model/core/source_block_assign.py
+    - src/architecture_model/core/source_block_quality.py
+    - src/architecture_model/core/types.py
+    - src/architecture_model/core/validator.py
+    - src/architecture_model/core/visualize.py
+    layer: web
+  - id: COMP-4-4
+    name: Src (config)
+    files:
+    - src/architecture_model/config/__init__.py
+    - src/architecture_model/config/loader.py
+    - src/architecture_model/config/schema.py
+    layer: web
+  - id: COMP-4-5
+    name: Src (manifest)
+    files:
+    - src/architecture_model/manifest/__init__.py
+    - src/architecture_model/manifest/behavior.py
+    - src/architecture_model/manifest/blocks.py
+    - src/architecture_model/manifest/body_hints.py
+    - src/architecture_model/manifest/call_graph.py
+    - src/architecture_model/manifest/chains.py
+    - src/architecture_model/manifest/display.py
+    - src/architecture_model/manifest/generator.py
+    - src/architecture_model/manifest/grouping.py
+    - src/architecture_model/manifest/interfaces.py
+    - src/architecture_model/manifest/kt_scanner.py
+    - src/architecture_model/manifest/metrics.py
+    - src/architecture_model/manifest/multi_scanner.py
+    - src/architecture_model/manifest/protocol.py
+    - src/architecture_model/manifest/recursive.py
+    - src/architecture_model/manifest/scan_cache.py
+    - src/architecture_model/manifest/scanner.py
+    - src/architecture_model/manifest/slicers.py
+    - src/architecture_model/manifest/ts_scanner.py
+    - src/architecture_model/manifest/types.py
+    layer: web
+  - id: COMP-4-6
+    name: Src (utils)
+    files:
+    - src/architecture_model/utils/discovery.py
+    layer: web
+  - id: COMP-4-7
+    name: CLI Interface Layer
+    files:
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/visualize.py
+    layer: web
+  - id: COMP-4-8
+    name: Src (authoring)
+    files:
+    - src/architecture_model/authoring/gate.py
+    - src/architecture_model/authoring/parser.py
+    layer: web
+  - id: COMP-4-9
+    name: Src (persistence)
+    files:
+    - src/architecture_model/persistence/__init__.py
+    - src/architecture_model/persistence/store.py
+    layer: web
+  - id: COMP-4-10
+    name: Src (orchestration)
+    files:
+    - src/architecture_model/orchestration/auto_enrich.py
+    - src/architecture_model/orchestration/behavior_decompose.py
+    - src/architecture_model/orchestration/behavior_flows.py
+    - src/architecture_model/orchestration/capability_inference.py
+    - src/architecture_model/orchestration/compaction.py
+    - src/architecture_model/orchestration/decompose.py
+    - src/architecture_model/orchestration/deep_decompose.py
+    - src/architecture_model/orchestration/enrich.py
+    - src/architecture_model/orchestration/enrichment_context.py
+    - src/architecture_model/orchestration/naming_context.py
+    - src/architecture_model/orchestration/pipeline.py
+    - src/architecture_model/orchestration/trigger_detection.py
+    - src/architecture_model/orchestration/use_case_inference.py
+    layer: web
+  - id: COMP-4-11
+    name: Src (extract)
+    files:
+    - src/architecture_model/extract/constraint_detector.py
+    - src/architecture_model/extract/from_artifacts.py
+    - src/architecture_model/extract/from_code.py
+    - src/architecture_model/extract/route_detector.py
+    - src/architecture_model/extract/table_parser.py
+    layer: web
+  - id: COMP-4-12
+    name: Src (profiles)
+    files:
+    - src/architecture_model/profiles/schema.py
+    layer: web
+  - id: COMP-4-13
+    name: Src (export)
+    files:
+    - src/architecture_model/export/flatfiles.py
+    - src/architecture_model/export/reference.py
+    layer: web
+  interfaces:
+  - id: IF-1
+    name: runner CLI
+    interface_type: cli
+    component_id: scripts-dev-simulation-COMP-8
+  layers:
+  - id: LAYER-infra
+    name: infra
+  - id: LAYER-data
+    name: data
+  inline_components:
+  - id: SYS-src-(config)
+    name: Src (config)
+    files:
+    - src/architecture_model/config/__init__.py
+    - src/architecture_model/config/loader.py
+    - src/architecture_model/config/schema.py
+  - id: SYS-src-(utils)
+    name: Src (utils)
+    files:
+    - src/architecture_model/utils/discovery.py
+  - id: SYS-src-(cli)
+    name: Src (cli)
+    files:
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/visualize.py
+  - id: SYS-src-(authoring)
+    name: Src (authoring)
+    files:
+    - src/architecture_model/authoring/gate.py
+    - src/architecture_model/authoring/parser.py
+  - id: SYS-src-(persistence)
+    name: Src (persistence)
+    files:
+    - src/architecture_model/persistence/__init__.py
+    - src/architecture_model/persistence/store.py
+  - id: SYS-src-(profiles)
+    name: Src (profiles)
+    files:
+    - src/architecture_model/profiles/schema.py
+  - id: SYS-src-(export)
+    name: Src (export)
+    files:
+    - src/architecture_model/export/flatfiles.py
+    - src/architecture_model/export/reference.py
+relationships:
+- from: SYS-src-(cli)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(authoring)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(profiles)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(cli)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(authoring)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(authoring)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(config)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(pipeline)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(config)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(orchestration)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(pipeline)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-scripts-(dev_simulation)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-scripts-(dev_simulation)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(utils)
+  type: uses
+- from: SYS-src-(orchestration)
+  to: SYS-src-(config)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(persistence)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(config)
+  to: SYS-src-(utils)
+  type: uses
+- from: SYS-src-(extract)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(orchestration)
+  type: depends-on
+- from: SYS-src-(config)
+  to: SYS-src-(profiles)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(utils)
+  type: uses
+- from: SYS-src-(orchestration)
+  to: SYS-src-(pipeline)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(orchestration)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: CAP-3
+  type: realizes
+- from: SYS-scripts-(dev_simulation)
+  to: CAP-3
+  type: realizes
+- from: SYS-src-(core)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(pipeline)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(core)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(config)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(manifest)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(utils)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(cli)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(authoring)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(persistence)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(orchestration)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(extract)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(profiles)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(export)
+  to: CAP-4
+  type: realizes
+- from: scripts-dev-simulation-COMP-1
+  to: CAP-15
+  type: realizes
+- from: scripts-dev-simulation-COMP-2
+  to: CAP-16
+  type: realizes
+- from: scripts-dev-simulation-COMP-3
+  to: CAP-17
+  type: realizes
+- from: scripts-dev-simulation-COMP-4
+  to: CAP-18
+  type: realizes
+- from: scripts-dev-simulation-COMP-5
+  to: CAP-19
+  type: realizes
+- from: scripts-dev-simulation-COMP-6
+  to: CAP-20
+  type: realizes
+- from: scripts-dev-simulation-COMP-7
+  to: CAP-21
+  type: realizes
+- from: scripts-dev-simulation-COMP-8
+  to: CAP-24
+  type: realizes
+- from: scripts-dev-simulation-COMP-9
+  to: CAP-23
+  type: realizes
+- from: scripts-dev-simulation-COMP-10
+  to: scripts-dev-simulation-COMP-8
+  type: depends-on
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-1
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-2
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-3
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-4
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-5
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-6
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-7
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-8
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-9
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-10
+  type: contains
+- from: src-pipeline-COMP-16
+  to: CAP-16
+  type: realizes
+- from: src-pipeline-COMP-18
+  to: CAP-18
+  type: realizes
+- from: src-pipeline-COMP-19
+  to: CAP-19
+  type: realizes
+- from: src-pipeline-COMP-20
+  to: CAP-20
+  type: realizes
+- from: src-pipeline-COMP-21
+  to: CAP-21
+  type: realizes
+- from: src-pipeline-COMP-23
+  to: CAP-23
+  type: realizes
+- from: src-pipeline-COMP-24
+  to: CAP-24
+  type: realizes
+- from: src-pipeline-COMP-25
+  to: CAP-25
+  type: realizes
+- from: src-pipeline-COMP-27
+  to: CAP-27
+  type: realizes
+- from: src-pipeline-COMP-29
+  to: CAP-29
+  type: realizes
+- from: src-pipeline-COMP-30
+  to: CAP-30
+  type: realizes
+- from: src-pipeline-COMP-33
+  to: CAP-33
+  type: realizes
+- from: src-pipeline-COMP-34
+  to: CAP-34
+  type: realizes
+- from: src-pipeline-COMP-36
+  to: CAP-36
+  type: realizes
+- from: src-pipeline-COMP-37
+  to: CAP-37
+  type: realizes
+- from: src-pipeline-COMP-38
+  to: CAP-38
+  type: realizes
+- from: src-pipeline-COMP-40
+  to: CAP-40
+  type: realizes
+- from: src-pipeline-COMP-41
+  to: CAP-41
+  type: realizes
+- from: src-pipeline-COMP-42
+  to: CAP-42
+  type: realizes
+- from: src-pipeline-COMP-44
+  to: CAP-44
+  type: realizes
+- from: src-pipeline-COMP-46
+  to: CAP-46
+  type: realizes
+- from: src-pipeline-COMP-20
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-33
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-37
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-33
+  type: depends-on
+- from: src-pipeline-COMP-38
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-21
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-20
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-30
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-40
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-42
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-33
+  type: depends-on
+- from: src-pipeline-COMP-38
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-29
+  type: depends-on
+- from: src-pipeline-COMP-21
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-20
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-40
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-20
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-42
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-21
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-16
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-44
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-33
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-46
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-46
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-24
+  type: depends-on
+- from: src-pipeline-COMP-20
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-19
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-24
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-25
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-41
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-40
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-18
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-42
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-23
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-20
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-24
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-41
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-18
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-23
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-46
+  type: depends-on
+- from: src-pipeline-COMP-46
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-27
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-16
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-37
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-18
+  type: depends-on
+- from: src-pipeline-COMP-46
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-34
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-16
+  to: src-pipeline-COMP-24
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-42
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-42
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-29
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-42
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-46
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-21
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-21
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-19
+  type: depends-on
+- from: src-pipeline-COMP-29
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-40
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-42
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-46
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-29
+  type: depends-on
+- from: src-pipeline-COMP-40
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-20
+  to: src-pipeline-COMP-46
+  type: depends-on
+- from: src-pipeline-COMP-16
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-46
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-46
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-20
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-21
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-37
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-44
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-25
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-24
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-27
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-44
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-37
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-41
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-18
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-33
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-23
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-20
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-19
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-40
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-42
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-29
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-33
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-44
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-38
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-42
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-16
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-21
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-29
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-25
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-19
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-34
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-21
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-41
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-18
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-25
+  type: depends-on
+- from: src-pipeline-COMP-18
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-41
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-46
+  type: depends-on
+- from: src-pipeline-COMP-30
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-24
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-27
+  type: depends-on
+- from: src-pipeline-COMP-38
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-23
+  type: depends-on
+- from: src-pipeline-COMP-30
+  to: src-pipeline-COMP-24
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-20
+  type: depends-on
+- from: src-pipeline-COMP-21
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-20
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-25
+  to: src-pipeline-COMP-37
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-27
+  type: depends-on
+- from: src-pipeline-COMP-27
+  to: src-pipeline-COMP-36
+  type: depends-on
+- from: src-pipeline-COMP-44
+  to: src-pipeline-COMP-38
+  type: depends-on
+- from: src-pipeline-COMP-23
+  to: src-pipeline-COMP-30
+  type: depends-on
+- from: src-pipeline-COMP-19
+  to: src-pipeline-COMP-37
+  type: depends-on
+- from: LAYER-DATA
+  to: src-pipeline-COMP-16
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-18
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-19
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-20
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-21
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-23
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-24
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-25
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-27
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-29
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-30
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-33
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-34
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-36
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-37
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-38
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-40
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-41
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-42
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-44
+  type: contains
+- from: LAYER-DATA
+  to: src-pipeline-COMP-46
+  type: contains
+- from: src-core-COMP-15
+  to: CAP-15
+  type: realizes
+- from: src-core-COMP-16
+  to: CAP-16
+  type: realizes
+- from: src-core-COMP-17
+  to: CAP-17
+  type: realizes
+- from: src-core-COMP-18
+  to: CAP-18
+  type: realizes
+- from: src-core-COMP-19
+  to: CAP-19
+  type: realizes
+- from: src-core-COMP-20
+  to: CAP-20
+  type: realizes
+- from: src-core-COMP-21
+  to: CAP-21
+  type: realizes
+- from: src-core-COMP-22
+  to: CAP-22
+  type: realizes
+- from: src-core-COMP-23
+  to: CAP-23
+  type: realizes
+- from: src-core-COMP-24
+  to: CAP-24
+  type: realizes
+- from: src-core-COMP-25
+  to: CAP-25
+  type: realizes
+- from: src-core-COMP-26
+  to: CAP-26
+  type: realizes
+- from: src-core-COMP-27
+  to: CAP-27
+  type: realizes
+- from: src-core-COMP-28
+  to: CAP-28
+  type: realizes
+- from: src-core-COMP-30
+  to: CAP-30
+  type: realizes
+- from: src-core-COMP-31
+  to: CAP-31
+  type: realizes
+- from: src-core-COMP-21
+  to: src-core-COMP-17
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-17
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-26
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-15
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-16
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-16
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-19
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-22
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-19
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-21
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-25
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-18
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-22
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-23
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-20
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-31
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-26
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-22
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-21
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-23
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-27
+  type: depends-on
+- from: src-core-COMP-30
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-25
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-22
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-20
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-18
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-23
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-30
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-20
+  type: depends-on
+- from: src-core-COMP-27
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-19
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-27
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-21
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-21
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-25
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-30
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-25
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-20
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-15
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-18
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-18
+  type: depends-on
+- from: src-core-COMP-22
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-23
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-24
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-23
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-22
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-20
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-23
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-27
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-27
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-27
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-17
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-30
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-15
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-16
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-24
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-30
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-15
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-30
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-16
+  type: depends-on
+- from: src-core-COMP-24
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-15
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-31
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-19
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-17
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-16
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-20
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-24
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-31
+  type: depends-on
+- from: src-core-COMP-26
+  to: src-core-COMP-19
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-26
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-24
+  type: depends-on
+- from: src-core-COMP-28
+  to: src-core-COMP-24
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-31
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-17
+  type: depends-on
+- from: src-core-COMP-18
+  to: src-core-COMP-26
+  type: depends-on
+- from: src-core-COMP-25
+  to: src-core-COMP-28
+  type: depends-on
+- from: src-core-COMP-21
+  to: src-core-COMP-31
+  type: depends-on
+- from: LAYER-DATA
+  to: src-core-COMP-15
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-16
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-17
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-18
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-19
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-20
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-21
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-22
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-23
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-24
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-25
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-26
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-27
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-28
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-30
+  type: contains
+- from: LAYER-DATA
+  to: src-core-COMP-31
+  type: contains
+- from: src-manifest-COMP-16
+  to: CAP-16
+  type: realizes
+- from: src-manifest-COMP-17
+  to: CAP-17
+  type: realizes
+- from: src-manifest-COMP-18
+  to: CAP-18
+  type: realizes
+- from: src-manifest-COMP-19
+  to: CAP-19
+  type: realizes
+- from: src-manifest-COMP-20
+  to: CAP-20
+  type: realizes
+- from: src-manifest-COMP-21
+  to: CAP-21
+  type: realizes
+- from: src-manifest-COMP-22
+  to: CAP-22
+  type: realizes
+- from: src-manifest-COMP-23
+  to: CAP-23
+  type: realizes
+- from: src-manifest-COMP-24
+  to: CAP-24
+  type: realizes
+- from: src-manifest-COMP-25
+  to: CAP-25
+  type: realizes
+- from: src-manifest-COMP-26
+  to: CAP-26
+  type: realizes
+- from: src-manifest-COMP-27
+  to: CAP-27
+  type: realizes
+- from: src-manifest-COMP-28
+  to: CAP-28
+  type: realizes
+- from: src-manifest-COMP-29
+  to: CAP-29
+  type: realizes
+- from: src-manifest-COMP-30
+  to: CAP-30
+  type: realizes
+- from: src-manifest-COMP-32
+  to: CAP-32
+  type: realizes
+- from: src-manifest-COMP-33
+  to: CAP-33
+  type: realizes
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-18
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: LAYER-DATA
+  to: src-manifest-COMP-16
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-17
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-18
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-19
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-20
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-21
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-22
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-23
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-24
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-25
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-26
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-27
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-28
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-29
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-30
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-32
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-33
+  type: contains
+- from: src-orchestration-COMP-1
+  to: CAP-15
+  type: realizes
+- from: src-orchestration-COMP-2
+  to: CAP-16
+  type: realizes
+- from: src-orchestration-COMP-3
+  to: CAP-17
+  type: realizes
+- from: src-orchestration-COMP-4
+  to: CAP-18
+  type: realizes
+- from: src-orchestration-COMP-5
+  to: CAP-19
+  type: realizes
+- from: src-orchestration-COMP-6
+  to: CAP-21
+  type: realizes
+- from: src-orchestration-COMP-7
+  to: CAP-21
+  type: realizes
+- from: src-orchestration-COMP-8
+  to: CAP-22
+  type: realizes
+- from: src-orchestration-COMP-9
+  to: CAP-23
+  type: realizes
+- from: src-orchestration-COMP-10
+  to: CAP-24
+  type: realizes
+- from: src-orchestration-COMP-11
+  to: CAP-25
+  type: realizes
+- from: src-orchestration-COMP-12
+  to: CAP-26
+  type: realizes
+- from: src-orchestration-COMP-13
+  to: CAP-27
+  type: realizes
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-9
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-9
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-7
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-2
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-5
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-5
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-13
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-10
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-5
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-13
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-11
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-2
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-7
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-7
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-11
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-13
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-2
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-10
+  type: depends-on
+- from: LAYER-DATA
+  to: src-orchestration-COMP-1
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-2
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-3
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-4
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-5
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-6
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-7
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-8
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-9
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-10
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-11
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-12
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-13
+  type: contains

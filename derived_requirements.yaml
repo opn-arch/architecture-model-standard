@@ -1,0 +1,976 @@
+derived_requirements:
+- id: REQ-T20
+  name: 'Python >=3.11: Project requires Python >=3.11'
+  category: technology
+  priority: must
+  source_file: config
+  source_signal: constraint::Python >=3.11
+  component_id: ''
+  evidence: Detected  constraint
+- id: REQ-O1
+  name: validate_model requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/validator.py
+  source_signal: decorator:@monitored
+  component_id: COMP-30
+  evidence: '@monitored on validate_model() in validator.py'
+- id: REQ-O10
+  name: slice_for_artifact requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/slicer.py
+  source_signal: decorator:@monitored
+  component_id: COMP-27
+  evidence: '@monitored on slice_for_artifact() in slicer.py'
+- id: REQ-O11
+  name: generate_recursive_manifests requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/manifest/recursive.py
+  source_signal: decorator:@monitored
+  component_id: COMP-29
+  evidence: '@monitored on generate_recursive_manifests() in recursive.py'
+- id: REQ-O12
+  name: compute_block_dependencies requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/manifest/recursive.py
+  source_signal: decorator:@monitored
+  component_id: COMP-29
+  evidence: '@monitored on compute_block_dependencies() in recursive.py'
+- id: REQ-O13
+  name: generate_manifest requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/manifest/generator.py
+  source_signal: decorator:@monitored
+  component_id: COMP-22
+  evidence: '@monitored on generate_manifest() in generator.py'
+- id: REQ-O14
+  name: enrich_from_manifest requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/auto_enrich.py
+  source_signal: decorator:@monitored
+  component_id: COMP-1
+  evidence: '@monitored on enrich_from_manifest() in auto_enrich.py'
+- id: REQ-O15
+  name: enrich_behaviors_from_manifest requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/auto_enrich.py
+  source_signal: decorator:@monitored
+  component_id: COMP-1
+  evidence: '@monitored on enrich_behaviors_from_manifest() in auto_enrich.py'
+- id: REQ-O16
+  name: enrich_with_block_context requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/auto_enrich.py
+  source_signal: decorator:@monitored
+  component_id: COMP-1
+  evidence: '@monitored on enrich_with_block_context() in auto_enrich.py'
+- id: REQ-O17
+  name: create_behaviors_from_manifest requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/auto_enrich.py
+  source_signal: decorator:@monitored
+  component_id: COMP-1
+  evidence: '@monitored on create_behaviors_from_manifest() in auto_enrich.py'
+- id: REQ-O18
+  name: decompose_model requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/decompose.py
+  source_signal: decorator:@monitored
+  component_id: COMP-6
+  evidence: '@monitored on decompose_model() in decompose.py'
+- id: REQ-O19
+  name: compact_root_model requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/decompose.py
+  source_signal: decorator:@monitored
+  component_id: COMP-6
+  evidence: '@monitored on compact_root_model() in decompose.py'
+- id: REQ-O2
+  name: compute_model_confidence requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/confidence.py
+  source_signal: decorator:@monitored
+  component_id: COMP-18
+  evidence: '@monitored on compute_model_confidence() in confidence.py'
+- id: REQ-O20
+  name: enrich_model requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/enrich.py
+  source_signal: decorator:@monitored
+  component_id: COMP-8
+  evidence: '@monitored on enrich_model() in enrich.py'
+- id: REQ-O21
+  name: format_enrichment_prompt requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/enrichment_context.py
+  source_signal: decorator:@monitored
+  component_id: COMP-9
+  evidence: '@monitored on format_enrichment_prompt() in enrichment_context.py'
+- id: REQ-O22
+  name: deep_decompose_block requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/deep_decompose.py
+  source_signal: decorator:@monitored
+  component_id: COMP-7
+  evidence: '@monitored on deep_decompose_block() in deep_decompose.py'
+- id: REQ-O23
+  name: iterative_decompose requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/deep_decompose.py
+  source_signal: decorator:@monitored
+  component_id: COMP-7
+  evidence: '@monitored on iterative_decompose() in deep_decompose.py'
+- id: REQ-O24
+  name: run_pipeline requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/orchestration/pipeline.py
+  source_signal: decorator:@monitored
+  component_id: COMP-11
+  evidence: '@monitored on run_pipeline() in pipeline.py'
+- id: REQ-O25
+  name: extract_from_code requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/extract/from_code.py
+  source_signal: decorator:@monitored
+  component_id: COMP-4-11
+  evidence: '@monitored on extract_from_code() in from_code.py'
+- id: REQ-O3
+  name: compute_representativeness requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/representativeness.py
+  source_signal: decorator:@monitored
+  component_id: COMP-26
+  evidence: '@monitored on compute_representativeness() in representativeness.py'
+- id: REQ-O4
+  name: diff_models requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/differ.py
+  source_signal: decorator:@monitored
+  component_id: COMP-22
+  evidence: '@monitored on diff_models() in differ.py'
+- id: REQ-O5
+  name: coverage_report requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/coverage.py
+  source_signal: decorator:@monitored
+  component_id: COMP-20
+  evidence: '@monitored on coverage_report() in coverage.py'
+- id: REQ-O6
+  name: cluster_modules requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/cluster.py
+  source_signal: decorator:@monitored
+  component_id: COMP-15
+  evidence: '@monitored on cluster_modules() in cluster.py'
+- id: REQ-O7
+  name: slice_by_source_block requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/slicer.py
+  source_signal: decorator:@monitored
+  component_id: COMP-27
+  evidence: '@monitored on slice_by_source_block() in slicer.py'
+- id: REQ-O8
+  name: slice_by_layer requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/slicer.py
+  source_signal: decorator:@monitored
+  component_id: COMP-27
+  evidence: '@monitored on slice_by_layer() in slicer.py'
+- id: REQ-O9
+  name: slice_by_status requires monitored
+  category: observability
+  priority: should
+  source_file: src/architecture_model/core/slicer.py
+  source_signal: decorator:@monitored
+  component_id: COMP-27
+  evidence: '@monitored on slice_by_status() in slicer.py'
+- id: REQ-Q1
+  name: Component COMP-28 has 82 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-28:82
+  component_id: COMP-28
+  evidence: 82 test files import this component's source
+- id: REQ-Q10
+  name: Component COMP-1 has 9 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-1:9
+  component_id: COMP-1
+  evidence: 9 test files import this component's source
+- id: REQ-Q11
+  name: Component COMP-34 has 8 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-34:8
+  component_id: COMP-34
+  evidence: 8 test files import this component's source
+- id: REQ-Q12
+  name: Component COMP-16 has 8 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-16:8
+  component_id: COMP-16
+  evidence: 8 test files import this component's source
+- id: REQ-Q13
+  name: Component COMP-27 has 8 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-27:8
+  component_id: COMP-27
+  evidence: 8 test files import this component's source
+- id: REQ-Q14
+  name: Component COMP-18 has 7 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-18:7
+  component_id: COMP-18
+  evidence: 7 test files import this component's source
+- id: REQ-Q15
+  name: Component COMP-21 has 7 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-21:7
+  component_id: COMP-21
+  evidence: 7 test files import this component's source
+- id: REQ-Q16
+  name: Component COMP-38 has 6 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-38:6
+  component_id: COMP-38
+  evidence: 6 test files import this component's source
+- id: REQ-Q17
+  name: Component COMP-19 has 6 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-19:6
+  component_id: COMP-19
+  evidence: 6 test files import this component's source
+- id: REQ-Q18
+  name: Component COMP-46 has 5 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-46:5
+  component_id: COMP-46
+  evidence: 5 test files import this component's source
+- id: REQ-Q19
+  name: Component COMP-20 has 5 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-20:5
+  component_id: COMP-20
+  evidence: 5 test files import this component's source
+- id: REQ-Q2
+  name: Component COMP-17 has 33 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-17:33
+  component_id: COMP-17
+  evidence: 33 test files import this component's source
+- id: REQ-Q20
+  name: Component COMP-7 has 4 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-7:4
+  component_id: COMP-7
+  evidence: 4 test files import this component's source
+- id: REQ-Q21
+  name: Component COMP-4-11 has 4 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-11:4
+  component_id: COMP-4-11
+  evidence: 4 test files import this component's source
+- id: REQ-Q22
+  name: Component COMP-11 has 4 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-11:4
+  component_id: COMP-11
+  evidence: 4 test files import this component's source
+- id: REQ-Q23
+  name: Component COMP-42 has 3 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-42:3
+  component_id: COMP-42
+  evidence: 3 test files import this component's source
+- id: REQ-Q24
+  name: Component COMP-22 has 3 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-22:3
+  component_id: COMP-22
+  evidence: 3 test files import this component's source
+- id: REQ-Q25
+  name: Component COMP-26 has 3 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-26:3
+  component_id: COMP-26
+  evidence: 3 test files import this component's source
+- id: REQ-Q26
+  name: Component COMP-44 has 3 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-44:3
+  component_id: COMP-44
+  evidence: 3 test files import this component's source
+- id: REQ-Q27
+  name: Component COMP-4-8 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-8:2
+  component_id: COMP-4-8
+  evidence: 2 test files import this component's source
+- id: REQ-Q28
+  name: Component COMP-3 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-3:2
+  component_id: COMP-3
+  evidence: 2 test files import this component's source
+- id: REQ-Q29
+  name: Component COMP-4 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4:2
+  component_id: COMP-4
+  evidence: 2 test files import this component's source
+- id: REQ-Q3
+  name: Component COMP-24 has 29 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-24:29
+  component_id: COMP-24
+  evidence: 29 test files import this component's source
+- id: REQ-Q30
+  name: Component COMP-33 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-33:2
+  component_id: COMP-33
+  evidence: 2 test files import this component's source
+- id: REQ-Q31
+  name: Component COMP-4-4 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-4:2
+  component_id: COMP-4-4
+  evidence: 2 test files import this component's source
+- id: REQ-Q32
+  name: Component COMP-9 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-9:2
+  component_id: COMP-9
+  evidence: 2 test files import this component's source
+- id: REQ-Q33
+  name: Component COMP-4-7 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-7:2
+  component_id: COMP-4-7
+  evidence: 2 test files import this component's source
+- id: REQ-Q34
+  name: Component COMP-6 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-6:2
+  component_id: COMP-6
+  evidence: 2 test files import this component's source
+- id: REQ-Q35
+  name: Component COMP-4-13 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-13:2
+  component_id: COMP-4-13
+  evidence: 2 test files import this component's source
+- id: REQ-Q36
+  name: Component COMP-4-6 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-6:2
+  component_id: COMP-4-6
+  evidence: 2 test files import this component's source
+- id: REQ-Q37
+  name: Component COMP-4-12 has 2 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-12:2
+  component_id: COMP-4-12
+  evidence: 2 test files import this component's source
+- id: REQ-Q38
+  name: Component COMP-10 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-10:1
+  component_id: COMP-10
+  evidence: 1 test files import this component's source
+- id: REQ-Q39
+  name: Component COMP-2 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-2:1
+  component_id: COMP-2
+  evidence: 1 test files import this component's source
+- id: REQ-Q4
+  name: Component COMP-30 has 22 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-30:22
+  component_id: COMP-30
+  evidence: 22 test files import this component's source
+- id: REQ-Q40
+  name: Component COMP-4-9 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-9:1
+  component_id: COMP-4-9
+  evidence: 1 test files import this component's source
+- id: REQ-Q41
+  name: Component COMP-5 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-5:1
+  component_id: COMP-5
+  evidence: 1 test files import this component's source
+- id: REQ-Q42
+  name: Component COMP-32 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-32:1
+  component_id: COMP-32
+  evidence: 1 test files import this component's source
+- id: REQ-Q43
+  name: Component COMP-15 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-15:1
+  component_id: COMP-15
+  evidence: 1 test files import this component's source
+- id: REQ-Q44
+  name: Component COMP-8 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-8:1
+  component_id: COMP-8
+  evidence: 1 test files import this component's source
+- id: REQ-Q45
+  name: Component COMP-31 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-31:1
+  component_id: COMP-31
+  evidence: 1 test files import this component's source
+- id: REQ-Q46
+  name: Component COMP-40 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-40:1
+  component_id: COMP-40
+  evidence: 1 test files import this component's source
+- id: REQ-Q47
+  name: Component COMP-12 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-12:1
+  component_id: COMP-12
+  evidence: 1 test files import this component's source
+- id: REQ-Q48
+  name: Component COMP-13 has 1 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-13:1
+  component_id: COMP-13
+  evidence: 1 test files import this component's source
+- id: REQ-Q5
+  name: Component COMP-36 has 18 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-36:18
+  component_id: COMP-36
+  evidence: 18 test files import this component's source
+- id: REQ-Q6
+  name: Component COMP-4-1 has 15 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-4-1:15
+  component_id: COMP-4-1
+  evidence: 15 test files import this component's source
+- id: REQ-Q7
+  name: Component COMP-25 has 15 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-25:15
+  component_id: COMP-25
+  evidence: 15 test files import this component's source
+- id: REQ-Q8
+  name: Component COMP-23 has 12 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-23:12
+  component_id: COMP-23
+  evidence: 12 test files import this component's source
+- id: REQ-Q9
+  name: Component COMP-29 has 9 test file(s) covering its source
+  category: quality
+  priority: should
+  source_file: ''
+  source_signal: test_coverage:COMP-29:9
+  component_id: COMP-29
+  evidence: 9 test files import this component's source
+- id: REQ-T1
+  name: 'CAP_RENAME = {''CAP-S1'': ''CAP-PARSE-VALIDATE'', ''CAP-S2'': ''CAP-MANIFEST'',
+    ''CAP-S3'': ''CAP-SLICE-DIFF'', ''CAP-S4'': ''CAP-CLI'', ''CAP-S5'': ''CAP-CONFIG'',
+    ''CAP-S6'': ''CAP-SCHEMA'', ''CAP-S7'': ''CAP-EXTRACT'', ''CAP-S8'': ''CAP-PROFILES'',
+    ''CAP-S9'': ''CAP-UTILS'', ''CAP-S10'': ''CAP-ENRICH''}'
+  category: technology
+  priority: should
+  source_file: scripts/se_enrich.py
+  source_signal: 'constant:CAP_RENAME={''CAP-S1'': ''CAP-PARSE-VALIDATE'', ''CAP-S2'':
+    ''CAP-MANIFEST'', ''CAP-S3'': ''CAP-SLICE-DIFF'', ''CAP-S4'': ''CAP-CLI'', ''CAP-S5'':
+    ''CAP-CONFIG'', ''CAP-S6'': ''CAP-SCHEMA'', ''CAP-S7'': ''CAP-EXTRACT'', ''CAP-S8'':
+    ''CAP-PROFILES'', ''CAP-S9'': ''CAP-UTILS'', ''CAP-S10'': ''CAP-ENRICH''}'
+  component_id: COMP-3-1
+  evidence: UPPER_CASE constant in se_enrich.py
+- id: REQ-T10
+  name: MAX_COMPONENT_FILES = 12
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/allocate.py
+  source_signal: constant:MAX_COMPONENT_FILES=12
+  component_id: COMP-16
+  evidence: UPPER_CASE constant in allocate.py
+- id: REQ-T11
+  name: _SCOPED_FILE_LIMIT = 15
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/allocate.py
+  source_signal: constant:_SCOPED_FILE_LIMIT=15
+  component_id: COMP-16
+  evidence: UPPER_CASE constant in allocate.py
+- id: REQ-T12
+  name: _OBSERVABILITY_IMPORTS = {'logging', 'structlog', 'loguru', 'sentry_sdk',
+    'opentelemetry', 'prometheus_client'}
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/requirements_derive.py
+  source_signal: constant:_OBSERVABILITY_IMPORTS={'logging', 'structlog', 'loguru',
+    'sentry_sdk', 'opentelemetry', 'prometheus_client'}
+  component_id: COMP-41
+  evidence: UPPER_CASE constant in requirements_derive.py
+- id: REQ-T13
+  name: _LARGE_REPO_MODULE_THRESHOLD = 50
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/infer.py
+  source_signal: constant:_LARGE_REPO_MODULE_THRESHOLD=50
+  component_id: COMP-30
+  evidence: UPPER_CASE constant in infer.py
+- id: REQ-T14
+  name: SYSTEM_THRESHOLD = 10.0
+  category: technology
+  priority: should
+  source_file: src/architecture_model/core/decomposer.py
+  source_signal: constant:SYSTEM_THRESHOLD=10.0
+  component_id: COMP-21
+  evidence: UPPER_CASE constant in decomposer.py
+- id: REQ-T15
+  name: _MAX_MEMBERS_PER_SYMBOL = 8
+  category: technology
+  priority: should
+  source_file: src/architecture_model/core/merger.py
+  source_signal: constant:_MAX_MEMBERS_PER_SYMBOL=8
+  component_id: COMP-23
+  evidence: UPPER_CASE constant in merger.py
+- id: REQ-T16
+  name: _MAX_FUNCTIONS_PER_COMPONENT = 12
+  category: technology
+  priority: should
+  source_file: src/architecture_model/core/merger.py
+  source_signal: constant:_MAX_FUNCTIONS_PER_COMPONENT=12
+  component_id: COMP-23
+  evidence: UPPER_CASE constant in merger.py
+- id: REQ-T17
+  name: _MAX_SYMBOLS_PER_COMPONENT = 6
+  category: technology
+  priority: should
+  source_file: src/architecture_model/core/merger.py
+  source_signal: constant:_MAX_SYMBOLS_PER_COMPONENT=6
+  component_id: COMP-23
+  evidence: UPPER_CASE constant in merger.py
+- id: REQ-T18
+  name: _ESCAPE_CODE_RE = re.compile('\\\\(?:033|x1b)\\[(\\d+)m')
+  category: technology
+  priority: should
+  source_file: src/architecture_model/manifest/test_analyzer.py
+  source_signal: constant:_ESCAPE_CODE_RE=re.compile('\\\\(?:033|x1b)\\[(\\d+)m')
+  component_id: ''
+  evidence: UPPER_CASE constant in test_analyzer.py
+- id: REQ-T19
+  name: _RE_IMPORT = re.compile('^(?:import\\s+([\\w.]+)|from\\s+([\\w.]+)\\s+import)',
+    re.MULTILINE)
+  category: technology
+  priority: should
+  source_file: src/architecture_model/manifest/scanner.py
+  source_signal: constant:_RE_IMPORT=re.compile('^(?:import\\s+([\\w.]+)|from\\s+([\\w.]+)\\s+import)',
+    re.MULTILINE)
+  component_id: COMP-25
+  evidence: UPPER_CASE constant in scanner.py
+- id: REQ-T2
+  name: 'SUB_CAPS = {''CAP-PARSE-VALIDATE'': [(''CAP-VALIDATE-STRUCTURAL'', ''Structural
+    Validation'', ''ID uniqueness, referential integrity, orphan detection''), (''CAP-VALIDATE-SEMANTIC'',
+    ''Semantic Validation'', ''Status consistency, v1.1 rules, capability realization''),
+    (''CAP-VALIDATE-QUALITY'', ''Quality Assessment'', ''Regen readiness scoring,
+    improvement suggestions'')], ''CAP-MANIFEST'': [(''CAP-MANIFEST-SCAN'', ''Source
+    Scanning'', ''AST parsing, function/class/import extraction''), (''CAP-MANIFEST-METRICS'',
+    ''Metrics Computation'', ''Line counts, complexity, body hints''), (''CAP-MANIFEST-TESTS'',
+    ''Test Analysis'', ''Test contract discovery and assertion extraction'')], ''CAP-SLICE-DIFF'':
+    [(''CAP-SLICE'', ''Model Slicing'', ''Extract sub-models by f-block, layer, status,
+    artifact''), (''CAP-DIFF'', ''Model Diffing'', ''Compare models, detect entity/relationship
+    changes''), (''CAP-MERGE'', ''Model Merging'', ''Compose enriched models, compact
+    for generation'')], ''CAP-CLI'': [(''CAP-CLI-CORE'', ''Core CLI Commands'', ''init,
+    validate, manifest''), (''CAP-CLI-ANALYSIS'', ''Analysis CLI Commands'', ''slice,
+    diff, stats, impact, coverage''), (''CAP-CLI-GENERATION'', ''Generation CLI Commands'',
+    ''decompose, visualize, enrich'')], ''CAP-ENRICH'': [(''CAP-ENRICH-SIGS'', ''Signature
+    Enrichment'', ''Extract function signatures from AST''), (''CAP-ENRICH-CONSTS'',
+    ''Constant Enrichment'', ''Extract module-level constants''), (''CAP-ENRICH-TESTS'',
+    ''Test Contract Enrichment'', ''Discover and extract test contracts'')]}'
+  category: technology
+  priority: should
+  source_file: scripts/se_enrich.py
+  source_signal: 'constant:SUB_CAPS={''CAP-PARSE-VALIDATE'': [(''CAP-VALIDATE-STRUCTURAL'',
+    ''Structural Validation'', ''ID uniqueness, referential integrity, orphan detection''),
+    (''CAP-VALIDATE-SEMANTIC'', ''Semantic Validation'', ''Status consistency, v1.1
+    rules, capability realization''), (''CAP-VALIDATE-QUALITY'', ''Quality Assessment'',
+    ''Regen readiness scoring, improvement suggestions'')], ''CAP-MANIFEST'': [(''CAP-MANIFEST-SCAN'',
+    ''Source Scanning'', ''AST parsing, function/class/import extraction''), (''CAP-MANIFEST-METRICS'',
+    ''Metrics Computation'', ''Line counts, complexity, body hints''), (''CAP-MANIFEST-TESTS'',
+    ''Test Analysis'', ''Test contract discovery and assertion extraction'')], ''CAP-SLICE-DIFF'':
+    [(''CAP-SLICE'', ''Model Slicing'', ''Extract sub-models by f-block, layer, status,
+    artifact''), (''CAP-DIFF'', ''Model Diffing'', ''Compare models, detect entity/relationship
+    changes''), (''CAP-MERGE'', ''Model Merging'', ''Compose enriched models, compact
+    for generation'')], ''CAP-CLI'': [(''CAP-CLI-CORE'', ''Core CLI Commands'', ''init,
+    validate, manifest''), (''CAP-CLI-ANALYSIS'', ''Analysis CLI Commands'', ''slice,
+    diff, stats, impact, coverage''), (''CAP-CLI-GENERATION'', ''Generation CLI Commands'',
+    ''decompose, visualize, enrich'')], ''CAP-ENRICH'': [(''CAP-ENRICH-SIGS'', ''Signature
+    Enrichment'', ''Extract function signatures from AST''), (''CAP-ENRICH-CONSTS'',
+    ''Constant Enrichment'', ''Extract module-level constants''), (''CAP-ENRICH-TESTS'',
+    ''Test Contract Enrichment'', ''Discover and extract test contracts'')]}'
+  component_id: COMP-3-1
+  evidence: UPPER_CASE constant in se_enrich.py
+- id: REQ-T21
+  name: 'CI/CD: GitHub Actions: Project uses GitHub Actions for CI/CD'
+  category: technology
+  priority: should
+  source_file: config
+  source_signal: 'constraint::CI/CD: GitHub Actions'
+  component_id: ''
+  evidence: Detected  constraint
+- id: REQ-T3
+  name: COPILOT_RELAY_URL = 'http://localhost:8400/chat'
+  category: technology
+  priority: should
+  source_file: scripts/test_oracle_learning.py
+  source_signal: constant:COPILOT_RELAY_URL='http://localhost:8400/chat'
+  component_id: ''
+  evidence: UPPER_CASE constant in test_oracle_learning.py
+- id: REQ-T4
+  name: COPILOT_RELAY_URL = 'http://localhost:8400/chat'
+  category: technology
+  priority: should
+  source_file: scripts/test_multi_repo.py
+  source_signal: constant:COPILOT_RELAY_URL='http://localhost:8400/chat'
+  component_id: ''
+  evidence: UPPER_CASE constant in test_multi_repo.py
+- id: REQ-T5
+  name: COPILOT_RELAY_URL = 'http://localhost:8400/chat'
+  category: technology
+  priority: should
+  source_file: scripts/test_round_trip.py
+  source_signal: constant:COPILOT_RELAY_URL='http://localhost:8400/chat'
+  component_id: ''
+  evidence: UPPER_CASE constant in test_round_trip.py
+- id: REQ-T6
+  name: FULL_SYSTEM_FILE_THRESHOLD = 5
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/decompose.py
+  source_signal: constant:FULL_SYSTEM_FILE_THRESHOLD=5
+  component_id: COMP-25
+  evidence: UPPER_CASE constant in decompose.py
+- id: REQ-T7
+  name: HIERARCHY_FILE_THRESHOLD = 8
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/decompose.py
+  source_signal: constant:HIERARCHY_FILE_THRESHOLD=8
+  component_id: COMP-25
+  evidence: UPPER_CASE constant in decompose.py
+- id: REQ-T8
+  name: MAX_SYSTEMS = 8
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/decompose.py
+  source_signal: constant:MAX_SYSTEMS=8
+  component_id: COMP-25
+  evidence: UPPER_CASE constant in decompose.py
+- id: REQ-T9
+  name: MERGE_COUPLING_THRESHOLD = 0.3
+  category: technology
+  priority: should
+  source_file: src/architecture_model/pipeline/decompose.py
+  source_signal: constant:MERGE_COUPLING_THRESHOLD=0.3
+  component_id: COMP-25
+  evidence: UPPER_CASE constant in decompose.py
+- id: REQ-E1
+  name: test_pattern_classification.py has 11 error-handling functions
+  category: error_handling
+  priority: could
+  source_file: tests/test_pattern_classification.py
+  source_signal: error_handling:11_functions
+  component_id: ''
+  evidence: 11 functions with try/except/raise patterns
+- id: REQ-E2
+  name: test_confidence_manifest.py has 3 error-handling functions
+  category: error_handling
+  priority: could
+  source_file: tests/test_confidence_manifest.py
+  source_signal: error_handling:3_functions
+  component_id: ''
+  evidence: 3 functions with try/except/raise patterns
+- id: REQ-E3
+  name: observe.py has 4 error-handling functions
+  category: error_handling
+  priority: could
+  source_file: src/architecture_model/pipeline/observe.py
+  source_signal: error_handling:4_functions
+  component_id: COMP-34
+  evidence: 4 functions with try/except/raise patterns
+- id: REQ-E4
+  name: scanner.py has 7 error-handling functions
+  category: error_handling
+  priority: could
+  source_file: src/architecture_model/manifest/scanner.py
+  source_signal: error_handling:7_functions
+  component_id: COMP-25
+  evidence: 7 functions with try/except/raise patterns
+- id: REQ-E5
+  name: enrich.py has 3 error-handling functions
+  category: error_handling
+  priority: could
+  source_file: src/architecture_model/orchestration/enrich.py
+  source_signal: error_handling:3_functions
+  component_id: COMP-8
+  evidence: 3 functions with try/except/raise patterns
+- id: REQ-O26
+  name: Component COMP-30 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/core/validator.py
+  source_signal: import:logging
+  component_id: COMP-30
+  evidence: Imports logging/structlog in validator.py
+- id: REQ-O27
+  name: Component COMP-4-4 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/config/loader.py
+  source_signal: import:logging
+  component_id: COMP-4-4
+  evidence: Imports logging/structlog in loader.py
+- id: REQ-O28
+  name: Component COMP-24 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/manifest/interfaces.py
+  source_signal: import:logging
+  component_id: COMP-24
+  evidence: Imports logging/structlog in interfaces.py
+- id: REQ-O29
+  name: Component COMP-26 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/manifest/metrics.py
+  source_signal: import:logging
+  component_id: COMP-26
+  evidence: Imports logging/structlog in metrics.py
+- id: REQ-O30
+  name: Component COMP-25 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/manifest/scanner.py
+  source_signal: import:logging
+  component_id: COMP-25
+  evidence: Imports logging/structlog in scanner.py
+- id: REQ-O31
+  name: Component COMP-32 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/manifest/slicers.py
+  source_signal: import:logging
+  component_id: COMP-32
+  evidence: Imports logging/structlog in slicers.py
+- id: REQ-O32
+  name: Component COMP-29 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/manifest/recursive.py
+  source_signal: import:logging
+  component_id: COMP-29
+  evidence: Imports logging/structlog in recursive.py
+- id: REQ-O33
+  name: Component COMP-17 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/manifest/types.py
+  source_signal: import:logging
+  component_id: COMP-17
+  evidence: Imports logging/structlog in types.py
+- id: REQ-O34
+  name: Component COMP-22 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/manifest/generator.py
+  source_signal: import:logging
+  component_id: COMP-22
+  evidence: Imports logging/structlog in generator.py
+- id: REQ-O35
+  name: Component COMP-4-6 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/utils/discovery.py
+  source_signal: import:logging
+  component_id: COMP-4-6
+  evidence: Imports logging/structlog in discovery.py
+- id: REQ-O36
+  name: Component COMP-4-9 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/persistence/store.py
+  source_signal: import:logging
+  component_id: COMP-4-9
+  evidence: Imports logging/structlog in store.py
+- id: REQ-O37
+  name: Component COMP-6 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/orchestration/decompose.py
+  source_signal: import:logging
+  component_id: COMP-6
+  evidence: Imports logging/structlog in decompose.py
+- id: REQ-O38
+  name: Component COMP-8 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/orchestration/enrich.py
+  source_signal: import:logging
+  component_id: COMP-8
+  evidence: Imports logging/structlog in enrich.py
+- id: REQ-O39
+  name: Component COMP-7 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/orchestration/deep_decompose.py
+  source_signal: import:logging
+  component_id: COMP-7
+  evidence: Imports logging/structlog in deep_decompose.py
+- id: REQ-O40
+  name: Component COMP-11 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/orchestration/pipeline.py
+  source_signal: import:logging
+  component_id: COMP-11
+  evidence: Imports logging/structlog in pipeline.py
+- id: REQ-O41
+  name: Component COMP-4-12 has logging instrumentation
+  category: observability
+  priority: could
+  source_file: src/architecture_model/profiles/schema.py
+  source_signal: import:logging
+  component_id: COMP-4-12
+  evidence: Imports logging/structlog in schema.py
+summary:
+  total: 115
+  by_priority:
+    must: 1
+    should: 93
+    could: 21
+  by_category:
+    error_handling: 5
+    observability: 41
+    quality: 48
+    technology: 21

@@ -1370,3 +1370,21 @@ relationships:
 - from: COMP-3
   to: IF-2
   type: exposes
+- from: COMP-1
+  to: REQ-O14
+  type: satisfies
+- from: COMP-1
+  to: REQ-O15
+  type: satisfies
+- from: COMP-1
+  to: REQ-O16
+  type: satisfies
+- from: COMP-1
+  to: REQ-O17
+  type: satisfies
+- from: COMP-6
+  to: REQ-O18
+  type: satisfies
+- from: COMP-6
+  to: REQ-O19
+  type: satisfies

@@ -1,8 +1,0 @@
-component: COMP-4-6
-contracts:
-- test_file: tests/test_config_discovery_typed.py
-  assertions: 0
-- test_file: tests/test_discovery_report.py
-  assertions: 0
-- test_file: tests/test_utils/test_discovery.py
-  assertions: 0

@@ -1,0 +1,560 @@
+{
+  "src/architecture_model/__init__.py": [
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_sentry.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_round_trip.py",
+    "scripts/test_decomposed_round_trip.py",
+    "scripts/test_integration.py",
+    "scripts/test_httpx.py",
+    "scripts/test_model_swap.py"
+  ],
+  "src/architecture_model/authoring/gate.py": [
+    "tests/test_development_gate.py"
+  ],
+  "src/architecture_model/authoring/parser.py": [
+    "tests/test_authoring_parser.py"
+  ],
+  "src/architecture_model/cli/main.py": [
+    "tests/test_cli_learnings.py",
+    "tests/test_cli_author.py"
+  ],
+  "src/architecture_model/config/loader.py": [
+    "tests/test_config_loader.py"
+  ],
+  "src/architecture_model/config/schema.py": [
+    "tests/test_discovery_report.py"
+  ],
+  "src/architecture_model/core/cluster.py": [
+    "tests/test_cluster.py"
+  ],
+  "src/architecture_model/core/compression.py": [
+    "tests/test_compression_stats.py"
+  ],
+  "src/architecture_model/core/confidence.py": [
+    "tests/test_confidence_engine.py",
+    "tests/test_source_graph_enrichment.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_confidence_aggregate.py",
+    "tests/test_confidence_manifest.py"
+  ],
+  "src/architecture_model/core/corrections.py": [
+    "tests/test_corrections.py"
+  ],
+  "src/architecture_model/core/coverage.py": [
+    "tests/test_req_coverage.py",
+    "tests/test_coverage.py",
+    "tests/test_dependency_diff.py"
+  ],
+  "src/architecture_model/core/decomposer.py": [
+    "tests/test_system_detector.py",
+    "scripts/test_decomposed_round_trip.py",
+    "tests/test_core/test_decomposer.py",
+    "tests/test_core/test_test_affinity.py"
+  ],
+  "src/architecture_model/core/merger.py": [
+    "tests/test_compose_enriched.py",
+    "tests/test_merger.py",
+    "tests/test_init_reexport_mapping.py",
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_decomposed_round_trip.py",
+    "tests/test_core/test_enrichment.py"
+  ],
+  "src/architecture_model/core/parser.py": [
+    "tests/test_parser.py",
+    "tests/test_schema_extensions.py",
+    "tests/conftest.py",
+    "tests/test_profile_validation.py",
+    "tests/test_confidence_auto.py",
+    "tests/test_profile_parsing.py",
+    "tests/test_load_block_model.py",
+    "tests/test_parser_tolerance.py",
+    "tests/test_hierarchical_integration.py",
+    "tests/test_requirements.py",
+    "tests/test_decompose.py",
+    "tests/test_pipeline_compact.py",
+    "tests/test_schema_v2.py",
+    "tests/test_slicer_sub_models.py",
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_sentry.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_round_trip.py",
+    "scripts/test_decomposed_round_trip.py",
+    "scripts/test_integration.py",
+    "scripts/test_httpx.py",
+    "tests/test_profiles/test_e2e_profiles.py",
+    "tests/test_core/test_schema_v13.py",
+    "tests/test_core/test_schema_v12.py",
+    "tests/test_core/test_types.py"
+  ],
+  "src/architecture_model/core/regen_readiness.py": [
+    "tests/test_regen_readiness.py"
+  ],
+  "src/architecture_model/core/representativeness.py": [
+    "tests/test_representativeness_match.py",
+    "tests/test_representativeness.py",
+    "tests/test_hierarchical_repr.py"
+  ],
+  "src/architecture_model/core/slicer.py": [
+    "tests/test_slicer.py",
+    "tests/test_hierarchical_integration.py",
+    "tests/test_schema_v2.py",
+    "tests/test_slicer_sub_models.py",
+    "tests/test_profiles/test_e2e_profiles.py"
+  ],
+  "src/architecture_model/core/source_block_assign.py": [
+    "tests/test_source_block_assign.py"
+  ],
+  "src/architecture_model/core/source_block_quality.py": [
+    "tests/test_source_block_quality.py"
+  ],
+  "src/architecture_model/core/types.py": [
+    "tests/test_vv_relations.py",
+    "tests/test_parser.py",
+    "tests/test_schema_extensions.py",
+    "tests/test_authoring_parser.py",
+    "tests/test_req_coverage.py",
+    "tests/test_behavior_flows.py",
+    "tests/test_capability_hierarchy.py",
+    "tests/test_body_hints.py",
+    "tests/conftest.py",
+    "tests/test_confidence_engine.py",
+    "tests/test_source_graph_enrichment.py",
+    "tests/test_behavior_spec.py",
+    "tests/test_improvement_checks.py",
+    "tests/test_schema_sync.py",
+    "tests/test_test_analyzer.py",
+    "tests/test_coverage.py",
+    "tests/test_open_enums.py",
+    "tests/test_behavior_decompose.py",
+    "tests/test_block_context_enrich.py",
+    "tests/test_confidence_auto.py",
+    "tests/test_source_block_quality.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_interface_contracts.py",
+    "tests/test_recursive_model_aware.py",
+    "tests/test_compose_enriched.py",
+    "tests/test_slicer.py",
+    "tests/test_compaction.py",
+    "tests/test_schema_reconciliation.py",
+    "tests/test_auto_enrich.py",
+    "tests/test_integration_flows.py",
+    "tests/test_merger.py",
+    "tests/test_requirements.py",
+    "tests/test_compact_root.py",
+    "tests/test_decompose.py",
+    "tests/test_observability_contract.py",
+    "tests/test_representativeness.py",
+    "tests/test_confidence_aggregate.py",
+    "tests/test_component_spec_rich.py",
+    "tests/test_confidence_field.py",
+    "tests/test_regen_readiness.py",
+    "tests/test_dependency_diff.py",
+    "tests/test_auto_behaviors.py",
+    "tests/test_validator.py",
+    "tests/test_function_id.py",
+    "tests/test_enrich.py",
+    "tests/test_decision_wiring.py",
+    "tests/test_visualize.py",
+    "tests/test_source_block_assign.py",
+    "tests/test_system_design.py",
+    "tests/test_capability_inference.py",
+    "tests/test_system_detector.py",
+    "tests/test_hierarchical_repr.py",
+    "tests/test_schema_v2.py",
+    "tests/test_corrections.py",
+    "tests/test_pattern_contract_fields.py",
+    "tests/test_diagrams.py",
+    "tests/test_auto_enrich_behaviors.py",
+    "tests/test_trigger_detection.py",
+    "tests/test_development_gate.py",
+    "tests/test_slicer_sub_models.py",
+    "tests/test_docs_gen.py",
+    "tests/test_use_case_inference.py",
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_round_trip.py",
+    "src/architecture_model/manifest/test_analyzer.py",
+    "tests/test_core/test_decomposer.py",
+    "tests/test_core/test_schema_v11.py",
+    "tests/test_core/test_schema_v13.py",
+    "tests/test_core/test_validator_regen.py",
+    "tests/test_core/test_enrichment.py",
+    "tests/test_core/test_schema_v12.py",
+    "tests/test_core/test_types.py"
+  ],
+  "src/architecture_model/core/validator.py": [
+    "tests/test_vv_relations.py",
+    "tests/test_improvement_checks.py",
+    "tests/test_profile_validation.py",
+    "tests/test_confidence_auto.py",
+    "tests/test_validator.py",
+    "tests/test_decision_wiring.py",
+    "scripts/test_oracle_learning.py",
+    "scripts/test_sentry.py",
+    "scripts/test_multi_repo.py",
+    "scripts/test_integration.py",
+    "scripts/test_httpx.py",
+    "scripts/test_model_swap.py",
+    "tests/test_profiles/test_e2e_profiles.py",
+    "tests/test_core/test_validator_regen.py"
+  ],
+  "src/architecture_model/core/visualize.py": [
+    "tests/test_visualize.py"
+  ],
+  "src/architecture_model/docs/behavior_spec.py": [
+    "tests/test_behavior_spec.py"
+  ],
+  "src/architecture_model/docs/component_spec.py": [
+    "tests/test_component_spec_rich.py",
+    "tests/test_docs_gen.py"
+  ],
+  "src/architecture_model/docs/diagrams.py": [
+    "tests/test_diagrams.py"
+  ],
+  "src/architecture_model/docs/generator.py": [
+    "tests/test_docs_gen.py"
+  ],
+  "src/architecture_model/docs/integration_flows.py": [
+    "tests/test_integration_flows.py"
+  ],
+  "src/architecture_model/docs/system_design.py": [
+    "tests/test_system_design.py"
+  ],
+  "src/architecture_model/export/flatfiles.py": [
+    "tests/test_export.py"
+  ],
+  "src/architecture_model/export/reference.py": [
+    "tests/test_export.py"
+  ],
+  "src/architecture_model/extract/constraint_detector.py": [
+    "tests/test_constraint_detector.py"
+  ],
+  "src/architecture_model/extract/from_artifacts.py": [
+    "tests/test_from_artifacts.py"
+  ],
+  "src/architecture_model/extract/route_detector.py": [
+    "tests/test_route_detector.py"
+  ],
+  "src/architecture_model/extract/table_parser.py": [
+    "tests/test_from_artifacts.py"
+  ],
+  "src/architecture_model/manifest/behavior.py": [
+    "tests/test_behavior_extraction.py"
+  ],
+  "src/architecture_model/manifest/blocks.py": [
+    "tests/test_manifest.py"
+  ],
+  "src/architecture_model/manifest/body_hints.py": [
+    "tests/test_body_hints.py"
+  ],
+  "src/architecture_model/manifest/call_graph.py": [
+    "tests/test_behavior_flows.py",
+    "tests/test_behavior_spec.py",
+    "tests/test_call_graph.py",
+    "tests/test_trigger_detection.py"
+  ],
+  "src/architecture_model/manifest/chains.py": [
+    "tests/test_event_chains.py"
+  ],
+  "src/architecture_model/manifest/generator.py": [
+    "tests/test_behavioral_e2e.py",
+    "tests/test_manifest_method_details.py",
+    "tests/test_manifest.py"
+  ],
+  "src/architecture_model/manifest/grouping.py": [
+    "tests/test_event_chains.py",
+    "tests/test_auto_fblocks.py"
+  ],
+  "src/architecture_model/manifest/interfaces.py": [
+    "tests/test_interfaces_typed.py"
+  ],
+  "src/architecture_model/manifest/kt_scanner.py": [
+    "tests/test_kt_scanner.py"
+  ],
+  "src/architecture_model/manifest/multi_scanner.py": [
+    "tests/test_multi_scanner.py"
+  ],
+  "src/architecture_model/manifest/protocol.py": [
+    "tests/test_source_graph_enrichment.py",
+    "tests/test_protocol.py",
+    "tests/test_kt_scanner.py",
+    "tests/test_interface_contracts.py",
+    "tests/test_multi_scanner.py",
+    "tests/test_manifest_to_source_graph.py"
+  ],
+  "src/architecture_model/manifest/recursive.py": [
+    "tests/test_behavioral_e2e.py",
+    "tests/test_deep_decompose.py",
+    "tests/test_recursive_model_aware.py",
+    "tests/test_recursive_override.py",
+    "tests/test_file_based_deps.py"
+  ],
+  "src/architecture_model/manifest/scan_cache.py": [
+    "tests/test_scan_cache.py"
+  ],
+  "src/architecture_model/manifest/scanner.py": [
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_scan_cache.py",
+    "tests/test_scanner_behavioral.py",
+    "tests/test_enriched_scanner.py",
+    "tests/test_regex_fallback.py",
+    "tests/test_deepened_manifest.py",
+    "scripts/test_guided_round_trip.py",
+    "scripts/test_enriched_round_trip.py",
+    "scripts/test_decomposed_round_trip.py"
+  ],
+  "src/architecture_model/manifest/slicers.py": [
+    "tests/test_manifest.py"
+  ],
+  "src/architecture_model/manifest/ts_scanner.py": [
+    "tests/test_ts_scanner.py"
+  ],
+  "src/architecture_model/manifest/types.py": [
+    "tests/test_behavior_flows.py",
+    "tests/test_scanner_typed.py",
+    "tests/test_recursive_decompose.py",
+    "tests/test_behavior_spec.py",
+    "tests/test_metrics_typed.py",
+    "tests/test_call_graph.py",
+    "tests/test_behavior_decompose.py",
+    "tests/test_event_chains.py",
+    "tests/test_module_grouping.py",
+    "tests/test_block_context_enrich.py",
+    "tests/test_manifest_method_details.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_monitoring_checks.py",
+    "tests/test_behavioral_fields.py",
+    "tests/test_auto_enrich.py",
+    "tests/test_pattern_classification.py",
+    "tests/test_interfaces_typed.py",
+    "tests/test_representativeness.py",
+    "tests/test_auto_behaviors.py",
+    "tests/test_blocks_typed.py",
+    "tests/test_function_id.py",
+    "tests/test_system_detector.py",
+    "tests/test_manifest_to_source_graph.py",
+    "tests/test_hierarchical_repr.py",
+    "tests/test_generator_typed.py",
+    "tests/test_regex_fallback.py",
+    "tests/test_create_components.py",
+    "tests/test_manifest_types.py",
+    "tests/test_deepened_manifest.py",
+    "tests/test_auto_enrich_behaviors.py",
+    "tests/test_development_gate.py"
+  ],
+  "src/architecture_model/monitoring.py": [
+    "tests/test_monitoring_tier2.py",
+    "tests/test_monitoring.py",
+    "tests/test_monitoring_tier1.py"
+  ],
+  "src/architecture_model/monitoring_checks.py": [
+    "tests/test_monitoring_checks.py"
+  ],
+  "src/architecture_model/orchestration/auto_enrich.py": [
+    "tests/test_source_graph_enrichment.py",
+    "tests/test_block_context_enrich.py",
+    "tests/test_auto_enrich_integration.py",
+    "tests/test_interface_contracts.py",
+    "tests/test_auto_enrich.py",
+    "tests/test_pattern_classification.py",
+    "tests/test_auto_behaviors.py",
+    "tests/test_manifest_to_source_graph.py",
+    "tests/test_auto_enrich_behaviors.py"
+  ],
+  "src/architecture_model/orchestration/behavior_decompose.py": [
+    "tests/test_behavior_decompose.py"
+  ],
+  "src/architecture_model/orchestration/behavior_flows.py": [
+    "tests/test_behavior_flows.py",
+    "tests/test_behavior_spec.py"
+  ],
+  "src/architecture_model/orchestration/capability_inference.py": [
+    "tests/test_capability_hierarchy.py",
+    "tests/test_capability_inference.py"
+  ],
+  "src/architecture_model/orchestration/compaction.py": [
+    "tests/test_compaction.py"
+  ],
+  "src/architecture_model/orchestration/decompose.py": [
+    "tests/test_compact_root.py",
+    "tests/test_decompose.py"
+  ],
+  "src/architecture_model/orchestration/deep_decompose.py": [
+    "tests/test_recursive_decompose.py",
+    "tests/test_naming_context.py",
+    "tests/test_deep_decompose.py",
+    "tests/test_enrichment_context.py"
+  ],
+  "src/architecture_model/orchestration/enrich.py": [
+    "tests/test_enrich.py"
+  ],
+  "src/architecture_model/orchestration/enrichment_context.py": [
+    "tests/test_full_enrichment_flow.py",
+    "tests/test_enrichment_context.py"
+  ],
+  "src/architecture_model/orchestration/naming_context.py": [
+    "tests/test_naming_context.py"
+  ],
+  "src/architecture_model/orchestration/pipeline.py": [
+    "tests/test_full_enrichment_flow.py",
+    "tests/test_hierarchical_integration.py",
+    "tests/test_pipeline_compact.py",
+    "tests/test_pipeline.py"
+  ],
+  "src/architecture_model/orchestration/trigger_detection.py": [
+    "tests/test_trigger_detection.py"
+  ],
+  "src/architecture_model/orchestration/use_case_inference.py": [
+    "tests/test_use_case_inference.py"
+  ],
+  "src/architecture_model/patterns.py": [
+    "tests/test_patterns_catalog.py"
+  ],
+  "src/architecture_model/persistence/store.py": [
+    "tests/test_persistence.py"
+  ],
+  "src/architecture_model/pipeline/allocate.py": [
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_pipeline_allocate.py"
+  ],
+  "src/architecture_model/pipeline/allocate_types.py": [
+    "tests/test_pipeline_decompose.py"
+  ],
+  "src/architecture_model/pipeline/artifacts.py": [
+    "tests/test_pipeline_artifacts.py"
+  ],
+  "src/architecture_model/pipeline/cache.py": [
+    "tests/test_pipeline_cache.py"
+  ],
+  "src/architecture_model/pipeline/context_gen.py": [
+    "tests/test_pipeline_context_gen.py"
+  ],
+  "src/architecture_model/pipeline/contract.py": [
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "src/architecture_model/pipeline/coordinator.py": [
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_coordinator.py"
+  ],
+  "src/architecture_model/pipeline/corrections.py": [
+    "tests/test_pipeline_corrections.py"
+  ],
+  "src/architecture_model/pipeline/decompose.py": [
+    "tests/test_pipeline_stages.py",
+    "tests/test_pipeline_decompose.py"
+  ],
+  "src/architecture_model/pipeline/decompose_types.py": [
+    "tests/test_pipeline_synthesize.py",
+    "tests/test_pipeline_decompose.py"
+  ],
+  "src/architecture_model/pipeline/emit.py": [
+    "tests/test_pipeline_emit.py"
+  ],
+  "src/architecture_model/pipeline/emit_types.py": [
+    "tests/test_pipeline_emit.py"
+  ],
+  "src/architecture_model/pipeline/global_learning.py": [
+    "tests/test_pipeline_global_learning.py"
+  ],
+  "src/architecture_model/pipeline/infer.py": [
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_infer.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_pipeline_allocate.py"
+  ],
+  "src/architecture_model/pipeline/learning.py": [
+    "tests/test_pipeline_corrections.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_learning.py"
+  ],
+  "src/architecture_model/pipeline/lessons.py": [
+    "tests/test_pipeline_lessons.py"
+  ],
+  "src/architecture_model/pipeline/observe.py": [
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_infer.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_observe.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_pipeline_allocate.py"
+  ],
+  "src/architecture_model/pipeline/protocol.py": [
+    "tests/test_pipeline_corrections.py",
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_infer.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_observe.py",
+    "tests/test_pipeline_learning.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_coordinator.py",
+    "tests/test_pipeline_stages.py",
+    "tests/test_pipeline_emit.py",
+    "tests/test_pipeline_cache.py",
+    "tests/test_pipeline_report.py",
+    "tests/test_pipeline_protocol.py",
+    "tests/test_pipeline_allocate.py",
+    "tests/test_pipeline_synthesize.py",
+    "tests/test_pipeline_decompose.py",
+    "tests/test_pipeline_lessons.py"
+  ],
+  "src/architecture_model/pipeline/relate.py": [
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "src/architecture_model/pipeline/relate_types.py": [
+    "tests/test_pipeline_decompose.py"
+  ],
+  "src/architecture_model/pipeline/report.py": [
+    "tests/test_pipeline_report.py"
+  ],
+  "src/architecture_model/pipeline/specify.py": [
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "src/architecture_model/pipeline/synthesize.py": [
+    "tests/test_pipeline_synthesize.py"
+  ],
+  "src/architecture_model/pipeline/synthesize_types.py": [
+    "tests/test_pipeline_emit.py",
+    "tests/test_pipeline_synthesize.py"
+  ],
+  "src/architecture_model/pipeline/validate.py": [
+    "tests/test_pipeline_learning_integration.py",
+    "tests/test_pipeline_artifacts.py",
+    "tests/test_pipeline_context_gen.py",
+    "tests/test_pipeline_recursive.py",
+    "tests/test_pipeline_stages.py"
+  ],
+  "src/architecture_model/profiles/schema.py": [
+    "tests/test_profiles/test_builtin_profiles.py",
+    "tests/test_profiles/test_profile_schema.py"
+  ],
+  "src/architecture_model/utils/discovery.py": [
+    "src/architecture_model/core/test_affinity.py",
+    "tests/test_utils/test_discovery.py"
+  ]
+}

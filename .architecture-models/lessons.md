@@ -1,7 +1,8 @@
-# Lessons: architecture-model-standard
+# Lessons: System-of-Systems
 
 ## Stage: observe
-- Dynamic import in src/architecture_model/pipeline/cache.py:66
+- Dynamic import required resolution (2 instances)
 
 ## Stage: infer
-- Ambiguous module required resolution (37 instances)
+- Ambiguous module required resolution (113 instances)
+- Complex behavior required resolution (4 instances)

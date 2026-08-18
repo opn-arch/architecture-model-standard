@@ -1,4 +1,0 @@
-component: COMP-4-7
-contracts:
-- test_file: tests/test_visualize.py
-  assertions: 0
