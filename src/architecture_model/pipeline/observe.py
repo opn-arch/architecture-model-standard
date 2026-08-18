@@ -3,6 +3,7 @@
 Wraps existing manifest generation, route detection, and constraint detection
 into the unified Stage protocol. Zero inference — only observable facts.
 """
+
 from __future__ import annotations
 
 import ast
@@ -67,11 +68,13 @@ class ObserveStage:
                 uncertainties.extend(mod_uncertainties)
             except SyntaxError as e:
                 parse_failures += 1
-                diagnostics.append(Diagnostic(
-                    severity="warning",
-                    code="parse-failed",
-                    message=f"Parse failed: {py_file.relative_to(ctx.repo_path)}: {e}",
-                ))
+                diagnostics.append(
+                    Diagnostic(
+                        severity="warning",
+                        code="parse-failed",
+                        message=f"Parse failed: {py_file.relative_to(ctx.repo_path)}: {e}",
+                    )
+                )
 
         # Routes
         routes = _detect_routes(ctx.repo_path)
@@ -102,10 +105,7 @@ class ObserveStage:
         parsed = total_files - parse_failures
         parse_rate = (parsed / total_files * 100) if total_files > 0 else 100.0
 
-        total_symbols = sum(
-            len(m.functions) + len(m.classes) + len(m.constants)
-            for m in modules
-        )
+        total_symbols = sum(len(m.functions) + len(m.classes) + len(m.constants) for m in modules)
         symbol_density = (total_symbols / parsed) if parsed > 0 else 0.0
 
         quality = QualityMetrics(
@@ -132,18 +132,58 @@ class ObserveStage:
 
 
 def _is_excluded(path: Path, root: Path) -> bool:
-    """Exclude common non-source directories."""
+    """Exclude common non-source directories and gitignored paths."""
     rel = path.relative_to(root)
     parts = rel.parts
-    excluded = {".git", "__pycache__", "node_modules", ".tox", "dist", "build", ".eggs",
-                "results", ".architecture-archive"}
+    excluded = {
+        ".git",
+        "__pycache__",
+        "node_modules",
+        ".tox",
+        "dist",
+        "build",
+        ".eggs",
+        "results",
+        ".architecture-archive",
+        ".worktrees",
+        "projects",
+    }
     if excluded.intersection(parts):
         return True
     # Exclude any venv-like directories (venv, .venv, .venv-1, etc.)
     for part in parts:
         if part == "venv" or part.startswith(".venv"):
             return True
+    # Respect .gitignore top-level directory entries
+    gitignore = root / ".gitignore"
+    if gitignore.exists():
+        try:
+            _load_gitignore_dirs(root)
+            if _gitignore_dirs_cache.get(root) and _gitignore_dirs_cache[root].intersection(parts):
+                return True
+        except Exception:
+            pass
     return False
+
+
+_gitignore_dirs_cache: dict[Path, set[str]] = {}
+
+
+def _load_gitignore_dirs(root: Path) -> None:
+    """Parse .gitignore for directory exclusions (cached)."""
+    if root in _gitignore_dirs_cache:
+        return
+    dirs: set[str] = set()
+    try:
+        for line in (root / ".gitignore").read_text().splitlines():
+            line = line.strip().rstrip("/")
+            if line and not line.startswith("#") and "/" not in line:
+                candidate = root / line
+                if candidate.is_dir():
+                    dirs.add(line)
+    except Exception:
+        pass
+    _gitignore_dirs_cache[root] = dirs
 
 
 def _scan_module(
@@ -173,23 +213,27 @@ def _scan_module(
         elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
             # Check for importlib usage
             if _is_dynamic_import(node.value):
-                uncertainties.append(Uncertainty(
-                    category="dynamic_import",
-                    description=f"Dynamic import in {py_file.relative_to(root)}:{node.lineno}",
-                    suggested_fallback="search",
-                    priority="informational",
-                ))
+                uncertainties.append(
+                    Uncertainty(
+                        category="dynamic_import",
+                        description=f"Dynamic import in {py_file.relative_to(root)}:{node.lineno}",
+                        suggested_fallback="search",
+                        priority="informational",
+                    )
+                )
 
     # Check body for dynamic imports in any statement
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and _is_dynamic_import(node):
             if not any(u.category == "dynamic_import" for u in uncertainties):
-                uncertainties.append(Uncertainty(
-                    category="dynamic_import",
-                    description=f"Dynamic import in {py_file.relative_to(root)}:{node.lineno}",
-                    suggested_fallback="search",
-                    priority="informational",
-                ))
+                uncertainties.append(
+                    Uncertainty(
+                        category="dynamic_import",
+                        description=f"Dynamic import in {py_file.relative_to(root)}:{node.lineno}",
+                        suggested_fallback="search",
+                        priority="informational",
+                    )
+                )
 
     # Module docstring
     docstring = ast.get_docstring(tree)
@@ -246,11 +290,13 @@ def _resolve_import_edges(modules: list[ModuleRecord]) -> list[ImportEdge]:
                     symbols = []
                     if "." in imp:
                         symbols = [imp.rsplit(".", 1)[-1]]
-                    edges.append(ImportEdge(
-                        source=source_path,
-                        target=target_path,
-                        symbols=symbols,
-                    ))
+                    edges.append(
+                        ImportEdge(
+                            source=source_path,
+                            target=target_path,
+                            symbols=symbols,
+                        )
+                    )
 
     return edges
 
@@ -409,6 +455,7 @@ def _detect_routes(root: Path) -> list[RouteRecord]:
     """Detect routes using the extract module."""
     try:
         from architecture_model.extract.route_detector import detect_routes, RouteInfo
+
         routes = detect_routes(root)
         return [
             RouteRecord(
@@ -430,13 +477,14 @@ def _detect_constraints(root: Path) -> list[ConstraintRecord]:
     """Detect constraints using the extract module."""
     try:
         from architecture_model.extract.constraint_detector import detect_constraints
+
         constraints = detect_constraints(root)
         return [
             ConstraintRecord(
                 name=c.name,
-                value=str(getattr(c, 'description', '')),
+                value=str(getattr(c, "description", "")),
                 source="config",
-                constraint_type=str(getattr(c, 'constraint_type', '')),
+                constraint_type=str(getattr(c, "constraint_type", "")),
             )
             for c in constraints
         ]

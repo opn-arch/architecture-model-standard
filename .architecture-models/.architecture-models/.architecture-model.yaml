@@ -3,1882 +3,742 @@ meta:
   system_of_systems: true
 entities:
   systems:
-  - id: SYS-monitoring-(manifest)
-    name: Monitoring (manifest)
-    model_path: monitoring-manifest/.architecture-model.yaml
-  - id: SYS-monitoring-(orchestration)
-    name: Monitoring (orchestration)
-    model_path: monitoring-orchestration/.architecture-model.yaml
-  - id: SYS-observe-types
-    name: Observe Types
-    model_path: observe-types/.architecture-model.yaml
-  - id: SYS-infrastructure
-    name: Infrastructure
-    model_path: infrastructure/.architecture-model.yaml
-  - id: SYS-monitoring-(architecture_model)
-    name: Monitoring (architecture_model)
-    model_path: monitoring-architecture-model/.architecture-model.yaml
-  - id: SYS-monitoring-(pipeline)
-    name: Monitoring (pipeline)
-    model_path: monitoring-pipeline/.architecture-model.yaml
-  - id: SYS-monitoring-(core)
-    name: Monitoring (core)
-    model_path: monitoring-core/.architecture-model.yaml
-  - id: SYS-monitoring-(authoring)
-    name: Monitoring (authoring)
-    model_path: monitoring-authoring/.architecture-model.yaml
-  - id: SYS-monitoring-(extract)
-    name: Monitoring (extract)
-    model_path: monitoring-extract/.architecture-model.yaml
-  - id: SYS-synthesize-types
-    name: Synthesize Types
-    model_path: synthesize-types/.architecture-model.yaml
-  - id: SYS-decompose-types
-    name: Decompose Types
-    model_path: decompose-types/.architecture-model.yaml
-  - id: SYS-contract-types
-    name: Contract Types
-    model_path: contract-types/.architecture-model.yaml
-  - id: SYS-allocate-types
-    name: Allocate Types
-    model_path: allocate-types/.architecture-model.yaml
-  - id: SYS-validate-types
-    name: Validate Types
-    model_path: validate-types/.architecture-model.yaml
-  - id: SYS-regen-score
-    name: Regen Score
-    model_path: regen-score/.architecture-model.yaml
-  - id: SYS-protocol
-    name: Protocol
-    model_path: protocol/.architecture-model.yaml
-  - id: SYS-specify-types
-    name: Specify Types
-    model_path: specify-types/.architecture-model.yaml
-  - id: SYS-relate-types
-    name: Relate Types
-    model_path: relate-types/.architecture-model.yaml
-  - id: SYS-learning
-    name: Learning
-    model_path: learning/.architecture-model.yaml
-  - id: SYS-infer-types
-    name: Infer Types
-    model_path: infer-types/.architecture-model.yaml
-  - id: SYS-validator
-    name: Validator
-    model_path: validator/.architecture-model.yaml
-  - id: SYS-confidence
-    name: Confidence
-    model_path: confidence/.architecture-model.yaml
-  - id: SYS-representativeness
-    name: Representativeness
-    model_path: representativeness/.architecture-model.yaml
-  - id: SYS-differ
-    name: Differ
-    model_path: differ/.architecture-model.yaml
-  - id: SYS-coverage
-    name: Coverage
-    model_path: coverage/.architecture-model.yaml
-  - id: SYS-visualize
-    name: Visualize
-    model_path: visualize/.architecture-model.yaml
-  - id: SYS-parser
-    name: Parser
-    model_path: parser/.architecture-model.yaml
-  - id: SYS-corrections
-    name: Corrections
-    model_path: corrections/.architecture-model.yaml
-  - id: SYS-decomposer
-    name: Decomposer
-    model_path: decomposer/.architecture-model.yaml
-  - id: SYS-slicer
-    name: Slicer
-    model_path: slicer/.architecture-model.yaml
-  - id: SYS-source-block-quality
-    name: Source Block Quality
-    model_path: source-block-quality/.architecture-model.yaml
-  - id: SYS-merger
-    name: Merger
-    model_path: merger/.architecture-model.yaml
-  - id: SYS-loader
-    name: Loader
-    model_path: loader/.architecture-model.yaml
-  - id: SYS-schema
-    name: Schema
-    model_path: schema/.architecture-model.yaml
-  - id: SYS-behavior
-    name: Behavior
-    model_path: behavior/.architecture-model.yaml
-  - id: SYS-grouping
-    name: Grouping
-    model_path: grouping/.architecture-model.yaml
-  - id: SYS-recursive
-    name: Recursive
-    model_path: recursive/.architecture-model.yaml
-  - id: SYS-call-graph
-    name: Call Graph
-    model_path: call-graph/.architecture-model.yaml
-  - id: SYS-body-hints
-    name: Body Hints
-    model_path: body-hints/.architecture-model.yaml
-  - id: SYS-discovery
-    name: Discovery
-    model_path: discovery/.architecture-model.yaml
-  - id: SYS-store
-    name: Store
-    model_path: store/.architecture-model.yaml
-  - id: SYS-auto-enrich
-    name: Auto Enrich
-    model_path: auto-enrich/.architecture-model.yaml
-  - id: SYS-deep-decompose
-    name: Deep Decompose
-    model_path: deep-decompose/.architecture-model.yaml
-  - id: SYS-table-parser
-    name: Table Parser
-    model_path: table-parser/.architecture-model.yaml
-  - id: SYS-flatfiles
-    name: Flatfiles
-    model_path: flatfiles/.architecture-model.yaml
-  - id: SYS-reference
-    name: Reference
-    model_path: reference/.architecture-model.yaml
-  - id: SYS-cli-main
-    name: CLI Main
-    model_path: cli-main/.architecture-model.yaml
+  - id: SYS-src-(src)
+    name: Src (src)
+    model_path: src-src/.architecture-model.yaml
+  - id: SYS-src-(projects)
+    name: Src (projects)
+    model_path: src-projects/.architecture-model.yaml
+  - id: SYS-projects-(templatetags)
+    name: Projects (templatetags)
+    model_path: projects-templatetags/.architecture-model.yaml
+  - id: SYS-projects-(middleware)
+    name: Projects (middleware)
+    model_path: projects-middleware/.architecture-model.yaml
+  - id: SYS-projects-(tasks)
+    name: Projects (tasks)
+    model_path: projects-tasks/.architecture-model.yaml
+  - id: SYS-projects-(forms)
+    name: Projects (forms)
+    model_path: projects-forms/.architecture-model.yaml
+  - id: SYS-projects-(core)
+    name: Projects (core)
+    model_path: projects-core/.architecture-model.yaml
+  - id: SYS-projects-(template)
+    name: Projects (template)
+    model_path: projects-template/.architecture-model.yaml
+  - id: SYS-projects-(utils)
+    name: Projects (utils)
+    model_path: projects-utils/.architecture-model.yaml
+  - id: SYS-projects-(urls)
+    name: Projects (urls)
+    model_path: projects-urls/.architecture-model.yaml
+  - id: SYS-projects-(db)
+    name: Projects (db)
+    model_path: projects-db/.architecture-model.yaml
+  - id: SYS-projects-(views)
+    name: Projects (views)
+    model_path: projects-views/.architecture-model.yaml
+  - id: SYS-projects-(conf)
+    name: Projects (conf)
+    model_path: projects-conf/.architecture-model.yaml
+  - id: SYS-projects-(core)
+    name: Projects (core)
+    model_path: projects-core/.architecture-model.yaml
+  - id: SYS-projects-(dispatch)
+    name: Projects (dispatch)
+    model_path: projects-dispatch/.architecture-model.yaml
+  - id: SYS-projects-(http)
+    name: Projects (http)
+    model_path: projects-http/.architecture-model.yaml
+  - id: SYS-projects-(apps)
+    name: Projects (apps)
+    model_path: projects-apps/.architecture-model.yaml
   actors:
   - id: ACT-1
-    name: CLI User
+    name: API Consumer
   capabilities:
   - id: CAP-1
-    name: Monitoring
+    name: Web Routes
   - id: CAP-2
-    name: Monitoring Checks
+    name: Src
   - id: CAP-3
-    name: Observe Types
+    name: Projects
   - id: CAP-4
-    name: Synthesize Types
+    name: CLI Main
   - id: CAP-5
-    name: Decompose Types
+    name: CLI Templates
   - id: CAP-6
-    name: Contract Types
+    name: CLI Base
   - id: CAP-7
-    name: Allocate Types
+    name: Database Migrations
   - id: CAP-8
-    name: Validate Types
-  - id: CAP-9
-    name: Regen Score
-  - id: CAP-10
-    name: Protocol
-  - id: CAP-11
-    name: Specify Types
-  - id: CAP-12
-    name: Relate Types
-  - id: CAP-13
-    name: Learning
-  - id: CAP-14
-    name: Infer Types
-  - id: CAP-15
-    name: Validator
-  - id: CAP-16
-    name: Regen Readiness
-  - id: CAP-17
-    name: Confidence
-  - id: CAP-18
-    name: Representativeness
-  - id: CAP-19
-    name: Differ
-  - id: CAP-20
-    name: Coverage
-  - id: CAP-21
-    name: Visualize
-  - id: CAP-22
-    name: Parser
-  - id: CAP-23
-    name: Corrections
-  - id: CAP-24
-    name: Decomposer
-  - id: CAP-25
-    name: Slicer
-  - id: CAP-26
-    name: Source Block Quality
-  - id: CAP-27
-    name: Merger
-  - id: CAP-28
-    name: Loader
-  - id: CAP-29
-    name: Schema
-  - id: CAP-30
-    name: Behavior
-  - id: CAP-31
-    name: Grouping
-  - id: CAP-32
-    name: Recursive
-  - id: CAP-33
-    name: Call Graph
-  - id: CAP-34
-    name: Body Hints
-  - id: CAP-35
-    name: Discovery
-  - id: CAP-36
-    name: Store
-  - id: CAP-37
-    name: Auto Enrich
-  - id: CAP-38
-    name: Decompose
-  - id: CAP-39
-    name: Deep Decompose
-  - id: CAP-40
-    name: Behavior Flows
-  - id: CAP-41
-    name: Table Parser
-  - id: CAP-42
-    name: Flatfiles
-  - id: CAP-43
-    name: Reference
-  - id: CAP-44
-    name: CLI Main
+    name: Configuration
   inline_components:
-  - id: SYS-monitoring-(architecture_model)
-    name: Monitoring (architecture_model)
+  - id: SYS-projects-(core)
+    name: Projects (core)
     files:
-    - src/architecture_model/monitoring.py
-    - src/architecture_model/monitoring_checks.py
-  - id: SYS-monitoring-(pipeline)
-    name: Monitoring (pipeline)
+    - projects/django/django/__main__.py
+    - projects/django/django/shortcuts.py
+  - id: SYS-projects-(dispatch)
+    name: Projects (dispatch)
     files:
-    - src/architecture_model/pipeline/coordinator.py
-    - src/architecture_model/pipeline/cache.py
-  - id: SYS-monitoring-(core)
-    name: Monitoring (core)
+    - projects/django/django/dispatch/dispatcher.py
+  - id: SYS-projects-(http)
+    name: Projects (http)
     files:
-    - src/architecture_model/core/cluster.py
-  - id: SYS-monitoring-(authoring)
-    name: Monitoring (authoring)
+    - projects/django/django/http/cookie.py
+    - projects/django/django/http/multipartparser.py
+    - projects/django/django/http/request.py
+    - projects/django/django/http/response.py
+  - id: SYS-projects-(apps)
+    name: Projects (apps)
     files:
-    - src/architecture_model/authoring/gate.py
-  - id: SYS-monitoring-(extract)
-    name: Monitoring (extract)
-    files:
-    - src/architecture_model/extract/from_code.py
-    - src/architecture_model/extract/from_artifacts.py
-    - src/architecture_model/extract/constraint_detector.py
-  - id: SYS-synthesize-types
-    name: Synthesize Types
-    files:
-    - src/architecture_model/pipeline/synthesize_types.py
-    - src/architecture_model/pipeline/synthesize.py
-  - id: SYS-decompose-types
-    name: Decompose Types
-    files:
-    - src/architecture_model/pipeline/decompose_types.py
-    - src/architecture_model/pipeline/decompose.py
-    - src/architecture_model/orchestration/decompose.py
-  - id: SYS-contract-types
-    name: Contract Types
-    files:
-    - src/architecture_model/pipeline/contract_types.py
-    - src/architecture_model/pipeline/contract.py
-  - id: SYS-allocate-types
-    name: Allocate Types
-    files:
-    - src/architecture_model/pipeline/allocate_types.py
-    - src/architecture_model/pipeline/allocate.py
-  - id: SYS-validate-types
-    name: Validate Types
-    files:
-    - src/architecture_model/pipeline/validate_types.py
-    - src/architecture_model/pipeline/validate.py
-  - id: SYS-regen-score
-    name: Regen Score
-    files:
-    - src/architecture_model/pipeline/regen_score.py
-    - src/architecture_model/core/regen_readiness.py
-  - id: SYS-protocol
-    name: Protocol
-    files:
-    - src/architecture_model/pipeline/protocol.py
-    - src/architecture_model/manifest/protocol.py
-    - src/architecture_model/pipeline/lessons.py
-    - src/architecture_model/pipeline/report.py
-  - id: SYS-specify-types
-    name: Specify Types
-    files:
-    - src/architecture_model/pipeline/specify_types.py
-    - src/architecture_model/pipeline/specify.py
-  - id: SYS-relate-types
-    name: Relate Types
-    files:
-    - src/architecture_model/pipeline/relate_types.py
-    - src/architecture_model/pipeline/relate.py
-  - id: SYS-learning
-    name: Learning
-    files:
-    - src/architecture_model/pipeline/learning.py
-  - id: SYS-infer-types
-    name: Infer Types
-    files:
-    - src/architecture_model/pipeline/infer.py
-    - src/architecture_model/pipeline/infer_types.py
-  - id: SYS-validator
-    name: Validator
-    files:
-    - src/architecture_model/core/validator.py
-  - id: SYS-confidence
-    name: Confidence
-    files:
-    - src/architecture_model/core/confidence.py
-  - id: SYS-representativeness
-    name: Representativeness
-    files:
-    - src/architecture_model/core/representativeness.py
-  - id: SYS-differ
-    name: Differ
-    files:
-    - src/architecture_model/core/differ.py
-  - id: SYS-coverage
-    name: Coverage
-    files:
-    - src/architecture_model/core/coverage.py
-  - id: SYS-visualize
-    name: Visualize
-    files:
-    - src/architecture_model/core/visualize.py
-    - src/architecture_model/cli/visualize.py
-  - id: SYS-parser
-    name: Parser
-    files:
-    - src/architecture_model/core/parser.py
-    - src/architecture_model/authoring/parser.py
-  - id: SYS-corrections
-    name: Corrections
-    files:
-    - src/architecture_model/pipeline/corrections.py
-    - src/architecture_model/core/corrections.py
-  - id: SYS-decomposer
-    name: Decomposer
-    files:
-    - src/architecture_model/core/decomposer.py
-  - id: SYS-slicer
-    name: Slicer
-    files:
-    - src/architecture_model/core/slicer.py
-  - id: SYS-source-block-quality
-    name: Source Block Quality
-    files:
-    - src/architecture_model/core/source_block_assign.py
-    - src/architecture_model/core/source_block_quality.py
-  - id: SYS-merger
-    name: Merger
-    files:
-    - src/architecture_model/core/merger.py
-  - id: SYS-loader
-    name: Loader
-    files:
-    - src/architecture_model/config/loader.py
-  - id: SYS-schema
-    name: Schema
-    files:
-    - src/architecture_model/config/schema.py
-    - src/architecture_model/profiles/schema.py
-  - id: SYS-behavior
-    name: Behavior
-    files:
-    - src/architecture_model/manifest/behavior.py
-    - src/architecture_model/orchestration/behavior_flows.py
-    - src/architecture_model/orchestration/behavior_decompose.py
-  - id: SYS-grouping
-    name: Grouping
-    files:
-    - src/architecture_model/manifest/grouping.py
-  - id: SYS-recursive
-    name: Recursive
-    files:
-    - src/architecture_model/manifest/recursive.py
-  - id: SYS-call-graph
-    name: Call Graph
-    files:
-    - src/architecture_model/manifest/call_graph.py
-  - id: SYS-body-hints
-    name: Body Hints
-    files:
-    - src/architecture_model/manifest/body_hints.py
-  - id: SYS-discovery
-    name: Discovery
-    files:
-    - src/architecture_model/utils/discovery.py
-  - id: SYS-store
-    name: Store
-    files:
-    - src/architecture_model/persistence/store.py
-  - id: SYS-auto-enrich
-    name: Auto Enrich
-    files:
-    - src/architecture_model/orchestration/auto_enrich.py
-    - src/architecture_model/orchestration/enrich.py
-  - id: SYS-deep-decompose
-    name: Deep Decompose
-    files:
-    - src/architecture_model/orchestration/deep_decompose.py
-  - id: SYS-table-parser
-    name: Table Parser
-    files:
-    - src/architecture_model/extract/table_parser.py
-  - id: SYS-flatfiles
-    name: Flatfiles
-    files:
-    - src/architecture_model/export/flatfiles.py
-  - id: SYS-reference
-    name: Reference
-    files:
-    - src/architecture_model/export/reference.py
-  - id: SYS-cli-main
-    name: CLI Main
-    files:
-    - src/architecture_model/__main__.py
-    - src/architecture_model/cli/main.py
+    - projects/django/django/apps/config.py
+    - projects/django/django/apps/registry.py
 relationships:
-- from: SYS-decomposer
-  to: SYS-cli-main
+- from: SYS-projects-(core)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-parser
+- from: SYS-projects-(template)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-learning
+- from: SYS-src-(src)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-regen-score
+- from: SYS-src-(projects)
+  to: SYS-projects-(dispatch)
   type: depends-on
-- from: SYS-recursive
-  to: SYS-call-graph
+- from: SYS-projects-(conf)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-recursive
-  to: SYS-loader
+- from: SYS-projects-(template)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-regen-score
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-specify-types
-  to: SYS-allocate-types
+- from: SYS-projects-(views)
+  to: SYS-projects-(apps)
   type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-observe-types
+- from: SYS-projects-(template)
+  to: SYS-projects-(http)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-decompose-types
+- from: SYS-projects-(utils)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-parser
+- from: SYS-projects-(conf)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-monitoring-(core)
-  to: SYS-infrastructure
+- from: SYS-src-(projects)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-synthesize-types
+- from: SYS-projects-(utils)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-protocol
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-confidence
-  to: SYS-merger
+- from: SYS-projects-(db)
+  to: SYS-projects-(dispatch)
   type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-cli-main
+- from: SYS-projects-(core)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-differ
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-projects-(forms)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-merger
+- from: SYS-projects-(utils)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-call-graph
+- from: SYS-projects-(views)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-call-graph
-  to: SYS-protocol
+- from: SYS-projects-(urls)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-decomposer
-  to: SYS-representativeness
+- from: SYS-projects-(urls)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-validator
-  to: SYS-cli-main
+- from: SYS-projects-(utils)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-parser
-  to: SYS-visualize
+- from: SYS-projects-(views)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-merger
+- from: SYS-projects-(utils)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-specify-types
+- from: SYS-projects-(forms)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-differ
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-monitoring-(core)
+- from: SYS-projects-(core)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-visualize
+- from: SYS-projects-(dispatch)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-merger
+- from: SYS-src-(src)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-discovery
+- from: SYS-projects-(urls)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-regen-score
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(templatetags)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-monitoring-(core)
+- from: SYS-projects-(forms)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-call-graph
+- from: SYS-projects-(forms)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-parser
-  to: SYS-infrastructure
+- from: SYS-projects-(core)
+  to: SYS-projects-(templatetags)
   type: depends-on
-- from: SYS-regen-score
-  to: SYS-protocol
+- from: SYS-projects-(views)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-source-block-quality
+- from: SYS-projects-(utils)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-confidence
-  to: SYS-differ
+- from: SYS-projects-(template)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-parser
-  to: SYS-decomposer
+- from: SYS-projects-(apps)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-decomposer
-  to: SYS-confidence
+- from: SYS-projects-(core)
+  to: SYS-projects-(dispatch)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-visualize
+- from: SYS-projects-(urls)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-differ
+- from: SYS-projects-(views)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-projects-(db)
+  to: SYS-projects-(apps)
   type: depends-on
-- from: SYS-confidence
-  to: SYS-cli-main
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-visualize
+- from: SYS-projects-(urls)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-observe-types
+- from: SYS-projects-(core)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-source-block-quality
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-cli-main
+- from: SYS-projects-(tasks)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-merger
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-projects-(utils)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-contract-types
+- from: SYS-projects-(forms)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-infer-types
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-loader
-  to: SYS-discovery
+- from: SYS-projects-(apps)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-differ
+- from: SYS-src-(projects)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-monitoring-(manifest)
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-infrastructure
+- from: SYS-src-(projects)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-decomposer
+- from: SYS-projects-(template)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-infrastructure
+- from: SYS-src-(src)
+  to: SYS-projects-(templatetags)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-table-parser
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(http)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-observe-types
+- from: SYS-projects-(forms)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-cli-main
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-parser
-  to: SYS-corrections
+- from: SYS-projects-(core)
+  to: SYS-projects-(http)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-differ
+- from: SYS-projects-(forms)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-monitoring-(manifest)
+- from: SYS-projects-(template)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-decomposer
+- from: SYS-projects-(apps)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-visualize
-  to: SYS-parser
+- from: SYS-projects-(template)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-visualize
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-confidence
+- from: SYS-projects-(conf)
+  to: SYS-projects-(templatetags)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-cli-main
+- from: SYS-projects-(core)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-recursive
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-corrections
+- from: SYS-projects-(http)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-slicer
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-corrections
+- from: SYS-projects-(apps)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-recursive
+- from: SYS-src-(projects)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-infrastructure
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-relate-types
-  to: SYS-allocate-types
+- from: SYS-projects-(http)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-decomposer
+- from: SYS-projects-(core)
+  to: SYS-projects-(apps)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-validator
+- from: SYS-projects-(template)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-corrections
+- from: SYS-projects-(http)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-slicer
+- from: SYS-projects-(conf)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-protocol
+- from: SYS-projects-(core)
+  to: SYS-projects-(http)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-behavior
+- from: SYS-projects-(db)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-confidence
+- from: SYS-projects-(conf)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-confidence
-  to: SYS-infrastructure
+- from: SYS-projects-(template)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-recursive
-  to: SYS-observe-types
+- from: SYS-projects-(db)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-confidence
-  to: SYS-decomposer
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(apps)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-infrastructure
+- from: SYS-projects-(db)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-decomposer
+- from: SYS-projects-(template)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-call-graph
-  to: SYS-behavior
+- from: SYS-projects-(urls)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-allocate-types
+- from: SYS-projects-(utils)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-representativeness
+- from: SYS-projects-(db)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-cli-main
+- from: SYS-projects-(core)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-confidence
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-infrastructure
+- from: SYS-projects-(middleware)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-body-hints
+- from: SYS-projects-(core)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-visualize
-  to: SYS-source-block-quality
+- from: SYS-projects-(views)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-decomposer
+- from: SYS-projects-(forms)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-behavior
+- from: SYS-projects-(views)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-infrastructure
+- from: SYS-projects-(views)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-regen-score
-  to: SYS-source-block-quality
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-confidence
+- from: SYS-projects-(templatetags)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-observe-types
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-specify-types
+- from: SYS-projects-(core)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-visualize
+- from: SYS-projects-(core)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-decomposer
-  to: SYS-monitoring-(core)
+- from: SYS-projects-(utils)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-recursive
-  to: SYS-discovery
+- from: SYS-projects-(apps)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-confidence
+- from: SYS-projects-(http)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-call-graph
-  to: SYS-observe-types
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-body-hints
+- from: SYS-projects-(core)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-visualize
+- from: SYS-projects-(core)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-validator
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-synthesize-types
+- from: SYS-projects-(http)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-coverage
+- from: SYS-projects-(middleware)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-infrastructure
+- from: SYS-projects-(urls)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-grouping
+- from: SYS-projects-(views)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-decomposer
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-recursive
-  to: SYS-body-hints
+- from: SYS-projects-(forms)
+  to: SYS-projects-(templatetags)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-observe-types
+- from: SYS-projects-(conf)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-protocol
+- from: SYS-projects-(template)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-slicer
+- from: SYS-projects-(urls)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-monitoring-(pipeline)
+- from: SYS-src-(src)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-protocol
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-infer-types
+- from: SYS-projects-(views)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-infrastructure
+- from: SYS-projects-(core)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-specify-types
-  to: SYS-observe-types
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-corrections
+- from: SYS-projects-(db)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-visualize
-  to: SYS-validator
+- from: SYS-projects-(http)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-loader
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-slicer
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-projects-(urls)
+  to: SYS-projects-(http)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-call-graph
+- from: SYS-projects-(templatetags)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-contract-types
-  to: SYS-allocate-types
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-coverage
+- from: SYS-src-(projects)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-differ
-  to: SYS-cli-main
+- from: SYS-projects-(core)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-src-(src)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-corrections
+- from: SYS-projects-(http)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-visualize
-  to: SYS-representativeness
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-coverage
-  to: SYS-observe-types
+- from: SYS-projects-(conf)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-regen-score
-  to: SYS-validator
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(dispatch)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-corrections
+- from: SYS-projects-(http)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-slicer
+- from: SYS-projects-(http)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-call-graph
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-projects-(db)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-regen-score
-  to: SYS-representativeness
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-parser
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-call-graph
+- from: SYS-projects-(apps)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-contract-types
+- from: SYS-src-(projects)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-contract-types
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-recursive
-  to: SYS-protocol
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-body-hints
+- from: SYS-projects-(http)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-confidence
-  to: SYS-monitoring-(core)
+- from: SYS-projects-(db)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-regen-score
+- from: SYS-src-(src)
+  to: SYS-projects-(apps)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-body-hints
+- from: SYS-projects-(template)
+  to: SYS-projects-(dispatch)
   type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-cli-main
+- from: SYS-projects-(apps)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-monitoring-(core)
+- from: SYS-projects-(db)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-regen-score
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-src-(projects)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-parser
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-allocate-types
-  to: SYS-infer-types
+- from: SYS-src-(projects)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-merger
-  to: SYS-cli-main
+- from: SYS-projects-(http)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-allocate-types
+- from: SYS-projects-(template)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-merger
+- from: SYS-projects-(http)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-recursive
+- from: SYS-projects-(urls)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-contract-types
-  to: SYS-protocol
+- from: SYS-projects-(urls)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-monitoring-(core)
+- from: SYS-projects-(views)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-coverage
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-projects-(core)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-differ
-  to: SYS-infrastructure
+- from: SYS-projects-(db)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-coverage
+- from: SYS-src-(src)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-grouping
-  to: SYS-monitoring-(core)
+- from: SYS-projects-(utils)
+  to: SYS-projects-(templatetags)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-source-block-quality
+- from: SYS-projects-(db)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-decomposer
-  to: SYS-visualize
+- from: SYS-projects-(dispatch)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-loader
-  to: SYS-schema
+- from: SYS-projects-(utils)
+  to: SYS-projects-(dispatch)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-protocol
+- from: SYS-projects-(core)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-monitoring-(pipeline)
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-allocate-types
-  to: SYS-corrections
+- from: SYS-projects-(core)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-merger
+- from: SYS-projects-(urls)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-protocol
+- from: SYS-projects-(template)
+  to: SYS-projects-(apps)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-monitoring-(orchestration)
+- from: SYS-projects-(utils)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-visualize
-  to: SYS-coverage
+- from: SYS-projects-(utils)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-decomposer
-  to: SYS-infrastructure
+- from: SYS-projects-(urls)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-protocol
+- from: SYS-projects-(utils)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-validate-types
-  to: SYS-infer-types
+- from: SYS-src-(src)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-call-graph
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-relate-types
-  to: SYS-infer-types
+- from: SYS-projects-(core)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-regen-score
+- from: SYS-projects-(forms)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-relate-types
-  to: SYS-observe-types
+- from: SYS-projects-(tasks)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-parser
-  to: SYS-observe-types
+- from: SYS-projects-(views)
+  to: SYS-projects-(templatetags)
   type: depends-on
-- from: SYS-regen-score
-  to: SYS-coverage
+- from: SYS-projects-(templatetags)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-schema
+- from: SYS-projects-(utils)
+  to: SYS-projects-(http)
   type: depends-on
-- from: SYS-specify-types
-  to: SYS-protocol
+- from: SYS-projects-(apps)
+  to: SYS-src-(src)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-parser
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-merger
-  to: SYS-infrastructure
+- from: SYS-projects-(core)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-regen-score
+- from: SYS-projects-(forms)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-observe-types
-  to: SYS-validate-types
+- from: SYS-projects-(conf)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-parser
-  to: SYS-validator
+- from: SYS-src-(projects)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-behavior
+- from: SYS-src-(src)
+  to: SYS-projects-(conf)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-differ
+- from: SYS-projects-(forms)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-decomposer
-  to: SYS-corrections
+- from: SYS-src-(src)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-observe-types
+- from: SYS-projects-(middleware)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-infer-types
+- from: SYS-projects-(http)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-observe-types
+- from: SYS-projects-(views)
+  to: SYS-projects-(template)
   type: depends-on
-- from: SYS-visualize
-  to: SYS-regen-score
+- from: SYS-projects-(core)
+  to: SYS-projects-(views)
   type: depends-on
-- from: SYS-body-hints
-  to: SYS-cli-main
+- from: SYS-projects-(template)
+  to: SYS-projects-(middleware)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-validator
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(urls)
   type: depends-on
-- from: SYS-parser
-  to: SYS-slicer
+- from: SYS-projects-(conf)
+  to: SYS-src-(projects)
   type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-parser
+- from: SYS-projects-(core)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-validator
-  to: SYS-infrastructure
+- from: SYS-projects-(utils)
+  to: SYS-projects-(apps)
   type: depends-on
-- from: SYS-recursive
-  to: SYS-behavior
+- from: SYS-projects-(views)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-grouping
+- from: SYS-projects-(apps)
+  to: SYS-projects-(tasks)
   type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-representativeness
+- from: SYS-src-(src)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-decompose-types
-  to: SYS-validator
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-representativeness
-  to: SYS-merger
+- from: SYS-projects-(tasks)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-contract-types
+- from: SYS-projects-(db)
+  to: SYS-projects-(utils)
   type: depends-on
-- from: SYS-behavior
-  to: SYS-validator
+- from: SYS-projects-(views)
+  to: SYS-projects-(http)
   type: depends-on
-- from: SYS-regen-score
-  to: SYS-parser
+- from: SYS-projects-(apps)
+  to: SYS-projects-(forms)
   type: depends-on
-- from: SYS-confidence
-  to: SYS-visualize
+- from: SYS-projects-(conf)
+  to: SYS-projects-(db)
   type: depends-on
-- from: SYS-parser
-  to: SYS-monitoring-(architecture_model)
+- from: SYS-src-(src)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-validate-types
-  to: SYS-allocate-types
+- from: SYS-projects-(dispatch)
+  to: SYS-projects-(core)
   type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-visualize
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-allocate-types
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-recursive
-  to: SYS-schema
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-validator
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-visualize
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-merger
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-merger
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-relate-types
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-differ
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-monitoring-(manifest)
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-visualize
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-merger
-  type: depends-on
-- from: SYS-slicer
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-allocate-types
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-behavior
-  type: depends-on
-- from: SYS-call-graph
-  to: SYS-monitoring-(manifest)
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-deep-decompose
-  type: depends-on
-- from: SYS-contract-types
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-call-graph
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-recursive
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-decomposer
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-differ
-  type: depends-on
-- from: SYS-call-graph
-  to: SYS-recursive
-  type: depends-on
-- from: SYS-parser
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-relate-types
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-differ
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-synthesize-types
-  type: depends-on
-- from: SYS-recursive
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-recursive
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-validator
-  type: depends-on
-- from: SYS-slicer
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-coverage
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-monitoring-(orchestration)
-  type: depends-on
-- from: SYS-parser
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-body-hints
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-validator
-  type: depends-on
-- from: SYS-learning
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-monitoring-(orchestration)
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-body-hints
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-validate-types
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-parser
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-decomposer
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-grouping
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-parser
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-decomposer
-  type: depends-on
-- from: SYS-parser
-  to: SYS-merger
-  type: depends-on
-- from: SYS-call-graph
-  to: SYS-grouping
-  type: depends-on
-- from: SYS-cli-main
-  to: SYS-visualize
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-allocate-types
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-learning
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-call-graph
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-parser
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-differ
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-parser
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-merger
-  type: depends-on
-- from: SYS-infer-types
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-call-graph
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-merger
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-decompose-types
-  type: depends-on
-- from: SYS-parser
-  to: SYS-differ
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-relate-types
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-relate-types
-  type: depends-on
-- from: SYS-parser
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-differ
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-parser
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-merger
-  type: depends-on
-- from: SYS-validate-types
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-infer-types
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-differ
-  type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-differ
-  type: depends-on
-- from: SYS-merger
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-monitoring-(manifest)
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-validator
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-monitoring-(pipeline)
-  type: depends-on
-- from: SYS-monitoring-(core)
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-schema
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-monitoring-(orchestration)
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-auto-enrich
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-specify-types
-  type: depends-on
-- from: SYS-parser
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-recursive
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-parser
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-monitoring-(manifest)
-  type: depends-on
-- from: SYS-validator
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-validate-types
-  type: depends-on
-- from: SYS-merger
-  to: SYS-discovery
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-recursive
-  to: SYS-monitoring-(manifest)
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-recursive
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-behavior
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-recursive
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-parser
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-body-hints
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-decomposer
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-behavior
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-merger
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-visualize
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-infer-types
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-validator
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-validator
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-validator
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-decomposer
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-differ
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-monitoring-(manifest)
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-relate-types
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-validator
-  type: depends-on
-- from: SYS-validate-types
-  to: SYS-protocol
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-differ
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-monitoring-(manifest)
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-learning
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-grouping
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-monitoring-(pipeline)
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-learning
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-validator
-  type: depends-on
-- from: SYS-recursive
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-body-hints
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-call-graph
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-specify-types
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-recursive
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-visualize
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-decompose-types
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-grouping
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-slicer
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-parser
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-representativeness
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-decomposer
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-recursive
-  to: SYS-grouping
-  type: depends-on
-- from: SYS-call-graph
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-infer-types
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-parser
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-visualize
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-monitoring-(pipeline)
-  to: SYS-validate-types
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-decomposer
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-monitoring-(extract)
-  to: SYS-loader
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-merger
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-observe-types
-  type: depends-on
-- from: SYS-decompose-types
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-confidence
-  type: depends-on
-- from: SYS-behavior
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-decompose-types
-  type: depends-on
-- from: SYS-synthesize-types
-  to: SYS-monitoring-(architecture_model)
-  type: depends-on
-- from: SYS-monitoring-(core)
-  to: SYS-cli-main
-  type: depends-on
-- from: SYS-monitoring-(orchestration)
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-coverage
-  to: SYS-infrastructure
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-source-block-quality
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-representativeness
-  to: SYS-body-hints
-  type: depends-on
-- from: SYS-validate-types
-  to: SYS-relate-types
-  type: depends-on
-- from: SYS-visualize
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-deep-decompose
-  to: SYS-grouping
-  type: depends-on
-- from: SYS-grouping
-  to: SYS-coverage
-  type: depends-on
-- from: SYS-monitoring-(authoring)
-  to: SYS-grouping
-  type: depends-on
-- from: SYS-monitoring-(manifest)
-  to: SYS-behavior
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-corrections
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-call-graph
-  to: SYS-body-hints
-  type: depends-on
-- from: SYS-observe-types
-  to: SYS-allocate-types
-  type: depends-on
-- from: SYS-regen-score
-  to: SYS-slicer
-  type: depends-on
-- from: SYS-auto-enrich
-  to: SYS-monitoring-(core)
-  type: depends-on
-- from: SYS-decomposer
-  to: SYS-differ
-  type: depends-on
-- from: SYS-source-block-quality
-  to: SYS-regen-score
-  type: depends-on
-- from: SYS-confidence
-  to: SYS-parser
+- from: SYS-src-(projects)
+  to: SYS-projects-(templatetags)
   type: depends-on

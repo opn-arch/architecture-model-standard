@@ -1,0 +1,41 @@
+timestamp: '2026-08-18T11:09:50.799283+00:00'
+scorecards:
+  logs-db:
+    system: logs-db
+    overall_score: 71
+    capability_count: 14
+    model_coverage_pct: 5.5
+    relationship_count: 0
+    requirements_count: 0
+    unsynced_findings: 1
+    devlog_entries: 10
+    stale_model: false
+    model_age_hours: 16.9
+  opencode-arch:
+    system: opencode-arch
+    overall_score: 50
+    capability_count: 0
+    model_coverage_pct: 0.0
+    relationship_count: 0
+    requirements_count: 0
+    unsynced_findings: 0
+    devlog_entries: 0
+    stale_model: false
+    model_age_hours: 16.9
+  architecture-model-standard:
+    system: architecture-model-standard
+    overall_score: 70
+    capability_count: 15
+    model_coverage_pct: 0.0
+    relationship_count: 0
+    requirements_count: 0
+    unsynced_findings: 0
+    devlog_entries: 0
+    stale_model: false
+    model_age_hours: 16.9
+overall_health: 63.7
+recommendations:
+- 'logs-db: Run architect_pipeline to improve model coverage (5.5%)'
+- 'opencode-arch: Run architect_pipeline to improve model coverage (0.0%)'
+- 'architecture-model-standard: Run architect_pipeline to improve model coverage (0.0%)'
+from_cache: false

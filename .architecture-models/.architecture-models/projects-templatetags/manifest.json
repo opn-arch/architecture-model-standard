@@ -1,0 +1,29 @@
+{
+  "modules": [
+    {
+      "file": "projects/django/django/templatetags/cache.py",
+      "functions": 1,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/templatetags/i18n.py",
+      "functions": 12,
+      "classes": 8
+    },
+    {
+      "file": "projects/django/django/templatetags/l10n.py",
+      "functions": 3,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/templatetags/static.py",
+      "functions": 4,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/templatetags/tz.py",
+      "functions": 6,
+      "classes": 4
+    }
+  ]
+}

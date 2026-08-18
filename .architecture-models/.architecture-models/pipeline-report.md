@@ -1,8 +1,8 @@
 # Pipeline Report: System-of-Systems
 
-**Generated:** 2026-08-11T17:18:22Z
-**Total Duration:** 3294ms
-**Stages:** 8
+**Generated:** 2026-08-18T12:32:25Z
+**Total Duration:** 33836ms
+**Stages:** 6
 
 ## LLM Summary
 
@@ -12,39 +12,49 @@ No LLM calls — deterministic pipeline run
 
 | Stage | Score | Duration | LLM Calls |
 |-------|-------|----------|-----------|
-| observe | 100 | 3108ms | 0 |
-| infer | 87 | 1ms | 0 |
-| allocate | 100 | 18ms | 0 |
-| contract | 76 | 1ms | 0 |
-| relate | 100 | 166ms | 0 |
-| specify | 50 | 0ms | 0 |
+| observe | 99 | 12457ms | 0 |
+| infer | 83 | 54ms | 0 |
+| allocate | 83 | 70ms | 0 |
+| relate | 100 | 21248ms | 0 |
+| specify | 50 | 7ms | 0 |
 | decompose | 100.0 | 0ms | 0 |
-| validate | 80 | 0ms | 0 |
 
 ## Stage: observe
-**Score:** 100 | **Duration:** 3108ms
+**Score:** 99 | **Duration:** 12457ms
 
 ### Deterministic Findings
-- Discovered 305 modules
-- 1132 functions, 457 classes
-- 0 import edges
+- Discovered 4256 modules
+- 5418 functions, 9456 classes
+- 13042 import edges
 
 ### LLM Calls
 *(none)*
 
 ### Diagnostics
-*(none)*
+- ⚠️ parse-failed: Parse failed: projects/django/tests/test_runner_apps/tagged/tests_syntax_error.py: invalid decimal literal (tests_syntax_error.py, line 11)
 
 ### Uncertainties
 - dynamic_import: Dynamic import in src/architecture_model/pipeline/cache.py:66
+- dynamic_import: Dynamic import in src/architecture_model/docs/se/generator.py:66
+- dynamic_import: Dynamic import in projects/django/django/test/utils.py:405
+- dynamic_import: Dynamic import in projects/django/django/conf/__init__.py:252
+- dynamic_import: Dynamic import in projects/django/django/db/migrations/questioner.py:45
+- dynamic_import: Dynamic import in projects/django/django/contrib/auth/hashers.py:230
+- dynamic_import: Dynamic import in projects/django/django/core/serializers/__init__.py:72
+- dynamic_import: Dynamic import in projects/django/tests/mail/test_deprecated.py:57
+- dynamic_import: Dynamic import in projects/django/tests/messages_tests/tests.py:78
+- dynamic_import: Dynamic import in projects/django/tests/admin_scripts/tests.py:114
+- dynamic_import: Dynamic import in projects/django/tests/view_tests/tests/test_debug.py:1162
+- dynamic_import: Dynamic import in projects/textual/src/textual/_import_app.py:111
+- dynamic_import: Dynamic import in projects/textual/src/textual/app.py:1578
 
 ## Stage: infer
-**Score:** 87 | **Duration:** 1ms
+**Score:** 83 | **Duration:** 54ms
 
 ### Deterministic Findings
-- Inferred 44 capabilities
+- Inferred 8 capabilities
 - 1 actors
-- 0 behaviors
+- 230 behaviors
 
 ### LLM Calls
 *(none)*
@@ -53,49 +63,826 @@ No LLM calls — deterministic pipeline run
 *(none)*
 
 ### Uncertainties
+- complex_behavior: BoundField in projects/django/django/forms/boundfield.py has 21 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseFormSet in projects/django/django/forms/formsets.py has 27 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseForm in projects/django/django/forms/forms.py has 19 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DiscoverRunner in projects/django/django/test/runner.py has 18 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: TimeFormat in projects/django/django/utils/dateformat.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DateFormat in projects/django/django/utils/dateformat.py has 24 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: HttpRequest in projects/django/django/http/request.py has 26 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: HttpResponseBase in projects/django/django/http/response.py has 21 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Apps in projects/django/django/apps/registry.py has 19 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: MigrationAutodetector in projects/django/django/db/migrations/autodetector.py has 33 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ProjectState in projects/django/django/db/migrations/state.py has 28 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Options in projects/django/django/db/models/options.py has 34 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: QuerySet in projects/django/django/db/models/query.py has 71 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseExpression in projects/django/django/db/models/expressions.py has 28 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Lookup in projects/django/django/db/models/lookups.py has 17 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Model in projects/django/django/db/models/base.py has 20 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: RelatedField in projects/django/django/db/models/fields/related.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ForeignObject in projects/django/django/db/models/fields/related.py has 22 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ForeignKey in projects/django/django/db/models/fields/related.py has 21 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ManyToManyField in projects/django/django/db/models/fields/related.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Field in projects/django/django/db/models/fields/__init__.py has 46 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ForeignObjectRel in projects/django/django/db/models/fields/reverse_related.py has 24 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: SQLCompiler in projects/django/django/db/models/sql/compiler.py has 28 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Query in projects/django/django/db/models/sql/query.py has 83 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: WhereNode in projects/django/django/db/models/sql/where.py has 19 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseOperations in projects/django/django/db/backends/postgresql/operations.py has 34 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseWrapper in projects/django/django/db/backends/postgresql/base.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseFeatures in projects/django/django/db/backends/oracle/features.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseOperations in projects/django/django/db/backends/oracle/operations.py has 47 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseOperations in projects/django/django/db/backends/sqlite3/operations.py has 33 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseFeatures in projects/django/django/db/backends/mysql/features.py has 23 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseOperations in projects/django/django/db/backends/mysql/operations.py has 31 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DatabaseWrapper in projects/django/django/db/backends/mysql/base.py has 17 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseDatabaseOperations in projects/django/django/db/backends/base/operations.py has 80 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseDatabaseWrapper in projects/django/django/db/backends/base/base.py has 50 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseDatabaseSchemaEditor in projects/django/django/db/backends/base/schema.py has 26 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: AnonymousUser in projects/django/django/contrib/auth/models.py has 21 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: AbstractBaseUser in projects/django/django/contrib/auth/base_user.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ModelBackend in projects/django/django/contrib/auth/backends.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseModelAdmin in projects/django/django/contrib/admin/options.py has 26 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ModelAdmin in projects/django/django/contrib/admin/options.py has 53 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: AdminSite in projects/django/django/contrib/admin/sites.py has 26 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: GEOSCoordSeq in projects/django/django/contrib/gis/geos/coordseq.py has 18 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: GEOSGeometryBase in projects/django/django/contrib/gis/geos/geometry.py has 64 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: SpatialReference in projects/django/django/contrib/gis/gdal/srs.py has 32 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: OGRGeometry in projects/django/django/contrib/gis/gdal/geometries.py has 49 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: PostGISOperations in projects/django/django/contrib/gis/db/backends/postgis/operations.py has 21 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: SpatiaLiteOperations in projects/django/django/contrib/gis/db/backends/spatialite/operations.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: SpatialRefSysMixin in projects/django/django/contrib/gis/db/backends/base/models.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseSpatialOperations in projects/django/django/contrib/gis/db/backends/base/operations.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: GDALRaster in projects/django/django/contrib/gis/gdal/raster/source.py has 22 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: SessionStore in projects/django/django/contrib/sessions/backends/db.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: SessionBase in projects/django/django/contrib/sessions/backends/base.py has 53 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ArrayField in projects/django/django/contrib/postgres/fields/array.py has 19 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: FileSystemStorage in projects/django/django/core/files/storage/filesystem.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Storage in projects/django/django/core/files/storage/base.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: BaseCache in projects/django/django/core/cache/backends/base.py has 36 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: URLPatternReverse in projects/django/tests/urlpatterns_reverse/tests.py has 26 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ConditionalGet in projects/django/tests/conditional_processing/tests.py has 26 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: QuerySetSupportsPythonIdioms in projects/django/tests/queries/tests.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: AdminViewListEditable in projects/django/tests/admin_views/tests.py has 22 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: ManageRunserver in projects/django/tests/admin_scripts/tests.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: CommandTypes in projects/django/tests/admin_scripts/tests.py has 41 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: StartProject in projects/django/tests/admin_scripts/tests.py has 25 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Screen in projects/textual/src/textual/screen.py has 40 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Worker in projects/textual/src/textual/worker.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: MessagePump in projects/textual/src/textual/message_pump.py has 23 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Color in projects/textual/src/textual/color.py has 25 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Widget in projects/textual/src/textual/widget.py has 171 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Style in projects/textual/src/textual/style.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: MouseEvent in projects/textual/src/textual/events.py has 19 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Compositor in projects/textual/src/textual/_compositor.py has 20 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Content in projects/textual/src/textual/content.py has 45 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Region in projects/textual/src/textual/geometry.py has 40 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: App in projects/textual/src/textual/app.py has 131 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Strip in projects/textual/src/textual/strip.py has 26 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Driver in projects/textual/src/textual/driver.py has 17 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DOMNode in projects/textual/src/textual/dom.py has 67 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DOMQuery in projects/textual/src/textual/css/query.py has 19 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: StylesBuilder in projects/textual/src/textual/css/_styles_builder.py has 57 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: StylesBase in projects/textual/src/textual/css/styles.py has 27 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: RenderStyles in projects/textual/src/textual/css/styles.py has 17 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Stylesheet in projects/textual/src/textual/css/stylesheet.py has 16 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DocumentNavigator in projects/textual/src/textual/document/_document_navigator.py has 18 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: OptionList in projects/textual/src/textual/widgets/_option_list.py has 35 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: TextArea in projects/textual/src/textual/widgets/_text_area.py has 81 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: MaskedInput in projects/textual/src/textual/widgets/_masked_input.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: DataTable in projects/textual/src/textual/widgets/_data_table.py has 64 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Input in projects/textual/src/textual/widgets/_input.py has 39 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Tabs in projects/textual/src/textual/widgets/_tabs.py has 15 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: TreeNode in projects/textual/src/textual/widgets/_tree.py has 28 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: Tree in projects/textual/src/textual/widgets/_tree.py has 38 public methods — needs LLM analysis to identify key workflows and use cases
+- complex_behavior: scripts/test_enriched_round_trip.py has 11 public functions with 9 cross-calls — likely contains workflow patterns
+- complex_behavior: scripts/test_round_trip.py has 14 public functions with 13 cross-calls — likely contains workflow patterns
+- complex_behavior: scripts/test_decomposed_round_trip.py has 10 public functions with 9 cross-calls — likely contains workflow patterns
+- complex_behavior: src/architecture_model/export/flatfiles.py has 11 public functions with 10 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/tests/runtests.py has 14 public functions with 15 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/test/runner.py has 10 public functions with 3 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/test/utils.py has 21 public functions with 7 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/template/defaultfilters.py has 58 public functions with 11 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/encoding.py has 12 public functions with 6 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/html.py has 13 public functions with 7 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/cache.py has 10 public functions with 3 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/inspect.py has 10 public functions with 3 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/http.py has 17 public functions with 3 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/formats.py has 11 public functions with 13 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/autoreload.py has 15 public functions with 7 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/timezone.py has 15 public functions with 14 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/urls/base.py has 10 public functions with 8 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/db/transaction.py has 16 public functions with 24 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/db/backends/utils.py has 10 public functions with 3 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/contrib/auth/__init__.py has 16 public functions with 8 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/contrib/auth/hashers.py has 12 public functions with 10 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/contrib/admin/utils.py has 20 public functions with 9 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/contrib/gis/gdal/prototypes/errcheck.py has 12 public functions with 6 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/contrib/admin/templatetags/admin_list.py has 17 public functions with 4 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/translation/trans_real.py has 22 public functions with 19 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/django/utils/translation/__init__.py has 23 public functions with 18 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/scripts/pr_quality/check_pr.py has 17 public functions with 22 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/tests/file_uploads/views.py has 15 public functions with 3 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/tests/view_tests/views.py has 34 public functions with 13 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/django/tests/serializers/test_data.py has 23 public functions with 4 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/textual/tests/test_collapsible.py has 16 public functions with 9 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/textual/tests/test_screen_modes.py has 11 public functions with 10 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/textual/tests/test_immutable_sequence_view.py has 10 public functions with 9 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/textual/tests/test_geometry.py has 88 public functions with 5 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/textual/tests/test_app.py has 25 public functions with 4 cross-calls — likely contains workflow patterns
+- complex_behavior: projects/textual/tests/css/test_screen_css.py has 12 public functions with 18 cross-calls — likely contains workflow patterns
 - ambiguous_module: src/architecture_model/patterns.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/monitoring.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/monitoring_checks.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/__main__.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/observe_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/synthesize_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/decompose_types.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/coordinator.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/global_learning.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/lessons.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/contract_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/decompose.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/allocate_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/validate_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/regen_score.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/allocate.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/protocol.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/cache.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/specify_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/specify.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/synthesize.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/context_gen.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/validate.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/observe.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/relate_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/corrections.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/emit_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/requirements_derive.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/infer.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/artifacts.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/relate.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/learning.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/emit.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/contract.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/pipeline/report.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/pipeline/infer_types.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/validator.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/regen_readiness.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/confidence.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/representativeness.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/core/compression.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/differ.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/coverage.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/visualize.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/parser.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/completeness.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/core/source_block_assign.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/core/cluster.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/corrections.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/decomposer.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/slicer.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/source_block_quality.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/core/merger.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/config/loader.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/interfaces.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/metrics.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/chains.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/scanner.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/slicers.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/manifest/behavior.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/multi_scanner.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/scan_cache.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/manifest/grouping.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/manifest/recursive.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/manifest/protocol.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/display.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/kt_scanner.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/generator.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/manifest/call_graph.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/manifest/body_hints.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/blocks.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/manifest/ts_scanner.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/utils/discovery.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/cli/visualize.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/authoring/parser.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/authoring/gate.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/persistence/store.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/orchestration/use_case_inference.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/orchestration/auto_enrich.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/orchestration/decompose.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/orchestration/enrich.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/orchestration/capability_inference.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/orchestration/enrichment_context.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/orchestration/trigger_detection.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/orchestration/deep_decompose.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/orchestration/pipeline.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/orchestration/compaction.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/orchestration/behavior_flows.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/orchestration/behavior_decompose.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/orchestration/naming_context.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/extract/from_code.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/extract/from_artifacts.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/extract/constraint_detector.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/extract/table_parser.py has no clear capability affiliation
 - ambiguous_module: src/architecture_model/extract/route_detector.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/export/flatfiles.py has no clear capability affiliation
+- ambiguous_module: src/architecture_model/export/reference.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/shortcuts.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/__main__.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/templatetags/l10n.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/templatetags/tz.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/templatetags/cache.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/templatetags/static.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/templatetags/i18n.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/middleware/clickjacking.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/middleware/gzip.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/middleware/csrf.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/middleware/security.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/middleware/cache.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/middleware/csp.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/middleware/locale.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/tasks/signals.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/tasks/checks.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/tasks/exceptions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/forms/models.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/forms/fields.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/forms/boundfield.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/forms/renderers.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/forms/widgets.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/forms/formsets.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/forms/forms.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/signing.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/signals.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/validators.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/asgi.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/paginator.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/exceptions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/wsgi.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/dispatch/dispatcher.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/library.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/response.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/smartif.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/context_processors.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/defaultfilters.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/engine.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/context.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/loader.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/loader_tags.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/exceptions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/autoreload.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/defaulttags.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/_os.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/termcolors.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/tree.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/hashable.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/version.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/encoding.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/log.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/deprecation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/timesince.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/warnings.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/numberformat.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/asyncio.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/html.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/duration.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/cache.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/csp.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/deconstruct.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/copy.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/connection.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/inspect.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/functional.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/crypto.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/lorem_ipsum.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/regex_helper.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/text.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/archive.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/safestring.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/dates.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/choices.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/feedgenerator.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/autoreload.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/datastructures.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/dateformat.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/timezone.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/ipv6.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/json.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/module_loading.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/dateparse.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/xmlutils.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/decorators.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/http/multipartparser.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/http/request.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/http/response.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/http/cookie.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/urls/resolvers.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/urls/exceptions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/urls/converters.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/transaction.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/csrf.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/debug.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/static.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/defaults.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/i18n.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/global_settings.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/apps/registry.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/urls/static.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/urls/i18n.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/sl/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/sk/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ug/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/uz/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/pl/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/fr_BE/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/vi/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/sq/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/de_CH/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/sv/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ga/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/he/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ms/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/km/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ar_DZ/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/nn/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/da/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/es_NI/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ky/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/mn/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/pt_BR/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/es_CO/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ja/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/el/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ig/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/lv/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/fy/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/it/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ca/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/is/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/cs/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/en_CA/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/te/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/zh_Hans/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ru/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/tk/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/zh_Hant/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/fr_CH/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/fr_CA/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ro/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ckb/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/pt/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/uk/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/sr/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/en_AU/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/en_GB/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/es_PR/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ml/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/es_MX/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/mk/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ht/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/kn/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/bs/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ar/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/gl/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/hr/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/hu/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/nl/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/bg/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/bn/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/es_AR/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/nb/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/hi/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ka/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/de/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/az/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/gd/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ko/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/fi/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/sr_Latn/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/eo/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/id/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/fr/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/es/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/et/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/en/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/fa/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/lt/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/cy/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/eu/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/en_IE/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/ta/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/th/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/tr/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/conf/locale/tg/formats.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/decorators/clickjacking.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/decorators/gzip.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/decorators/csrf.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/decorators/vary.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/decorators/cache.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/decorators/csp.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/decorators/debug.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/generic/list.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/generic/edit.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/generic/detail.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/views/generic/dates.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/questioner.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/graph.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/recorder.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/autodetector.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/loader.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/optimizer.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/serializer.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/exceptions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/writer.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/executor.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/state.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/signals.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/ddl_references.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/options.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/signals.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/enums.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/query.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/expressions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/lookups.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/indexes.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/aggregates.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/deletion.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/constraints.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fetch_modes.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/manager.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/query_utils.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/mixins.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/window.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/comparison.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/text.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/math.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/datetime.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/json.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/functions/uuid.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/related_descriptors.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/mixins.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/generated.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/related.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/tuple_lookups.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/proxy.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/composite.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/reverse_related.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/related_lookups.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/fields/json.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/sql/compiler.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/sql/query.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/sql/subqueries.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/sql/where.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/models/sql/datastructures.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/postgresql/compiler.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/postgresql/creation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/postgresql/client.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/postgresql/features.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/postgresql/operations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/postgresql/introspection.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/postgresql/psycopg_any.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/dummy/features.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/oracle/functions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/oracle/creation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/oracle/client.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/oracle/features.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/oracle/operations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/oracle/introspection.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/oracle/validation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/sqlite3/creation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/sqlite3/client.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/sqlite3/_functions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/sqlite3/features.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/sqlite3/operations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/sqlite3/introspection.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/mysql/compiler.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/mysql/creation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/mysql/client.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/mysql/features.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/mysql/operations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/mysql/introspection.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/mysql/validation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/base/creation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/base/client.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/base/features.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/base/operations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/base/introspection.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/backends/base/validation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/operations/models.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/operations/fields.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/db/migrations/operations/special.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/translation/trans_real.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/translation/reloader.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/utils/translation/trans_null.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/backends/jinja2.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/backends/dummy.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/loaders/filesystem.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/loaders/cached.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/loaders/app_directories.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/template/loaders/locmem.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/handler.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/deprecation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/message.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/exceptions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/mail.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/caches.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/registry.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/model_checks.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/translation.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/async_checks.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/messages.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/urls.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/color.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/sql.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/serializers/pyyaml.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/serializers/xml_serializer.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/serializers/jsonl.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/serializers/python.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/serializers/json.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/locks.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/uploadhandler.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/uploadedfile.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/images.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/move.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/handlers/exception.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/handlers/asgi.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/handlers/wsgi.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/servers/basehttp.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/storage/mixins.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/storage/handler.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/storage/memory.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/files/storage/filesystem.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/createcachetable.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/inspectdb.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/squashmigrations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/check.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/startapp.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/listurls.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/optimizemigration.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/sqlmigrate.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/makemigrations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/sqlflush.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/makemessages.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/shell.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/dumpdata.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/test.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/flush.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/loaddata.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/runserver.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/showmigrations.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/sqlsequencereset.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/dbshell.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/sendtestemail.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/startproject.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/migrate.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/compilemessages.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/diffsettings.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/management/commands/testserver.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/compatibility/django_4_0.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/security/sessions.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/checks/security/csrf.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/backends/console.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/backends/filebased.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/backends/smtp.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/backends/dummy.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/mail/backends/locmem.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/cache/backends/memcached.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/cache/backends/db.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/cache/backends/filebased.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/cache/backends/redis.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/cache/backends/dummy.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/core/cache/backends/locmem.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/tasks/backends/immediate.py has no clear capability affiliation
+- ambiguous_module: projects/django/django/tasks/backends/dummy.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/screen.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_path.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/worker.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/map_geometry.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_slug.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/pilot.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/logging.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/getters.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_border.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/fuzzy.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/message_pump.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_types.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_import_app.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/color.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/suggestions.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_text_area_theme.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/file_monitor.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widget.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/signal.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_on.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/theme.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/style.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_styles_cache.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_extrema.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/compose.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_resolve.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_wrap.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_line_split.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/suggester.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_callback.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/render.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_ansi_sequences.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_markup_playground.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_tree_sitter.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/await_complete.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_profile.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/events.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/layout.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/containers.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_binary_encode.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/timer.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_immutable_sequence_view.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/clock.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_auto_scroll.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_loop.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/await_remove.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_duration.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/reactive.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_spatial_map.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/design.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/cache.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/actions.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/features.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_queue.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/message.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_doc.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/keys.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/coordinate.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_keyboard_protocol.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_partition.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/markup.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/expand_tabs.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_files.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_parser.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_arrange.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_compositor.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_win_sleep.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_context.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/worker_manager.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_event_broker.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/pad.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/system_commands.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/walk.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/content.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_animator.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/box_model.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_xterm_parser.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_two_way_dict.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_easing.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_segment_tools.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/rlock.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/geometry.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/messages.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_cells.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/visual.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_opacity.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_wait.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/notifications.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/eta.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/case.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/filter.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/highlight.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/strip.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/errors.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/selection.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_debug.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_compat.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_box_drawing.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/lazy.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_sleep.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/driver.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/binding.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_dispatch_key.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_work_decorator.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_time.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/__main__.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_color_constants.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/canvas.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_log.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/scroll_view.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/dom.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_node_list.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_ansi_theme.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/scrollbar.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_layout_resolve.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/_widget_navigation.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/validation.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/gradient.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/text_opacity.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/_blend_colors.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/sparkline.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/background_screen.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/bar.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/tint.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/digits.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/styled.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/renderables/blank.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/_input_reader_linux.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/_input_reader_windows.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/_input_reader.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/_writer_thread.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/windows_driver.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/win32.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/headless_driver.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/linux_inline_driver.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/web_driver.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/linux_driver.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/drivers/_byte_stream.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/query.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/scalar_animation.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/_style_properties.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/scalar.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/transition.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/_help_text.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/tokenizer.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/_styles_builder.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/styles.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/errors.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/parse.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/stylesheet.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/tokenize.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/_error_tools.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/_help_renderables.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/css/match.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/document/_document_navigator.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/document/_wrapped_document.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/document/_edit.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/document/_document.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/document/_syntax_aware_document.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/document/_history.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/layouts/vertical.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/layouts/grid.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/layouts/horizontal.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/layouts/factory.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/layouts/stream.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/directory_tree.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/tree.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_list_item.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_placeholder.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/tabbed_content.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_tab.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_loading_indicator.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_tabbed_content.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_select.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_directory_tree.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_digits.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_static.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/collapsible.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_footer.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_collapsible.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_tooltip.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_button.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_key_panel.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_list_view.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_pretty.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_progress_bar.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_rule.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_switch.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_rich_log.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_markdown_viewer.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_option_list.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_text_area.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_masked_input.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/button.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_radio_button.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/rule.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/option_list.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_markdown.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/markdown.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_data_table.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/input.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_radio_set.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_tab_pane.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_label.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_input.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/text_area.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/data_table.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/select.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_checkbox.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_header.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_sparkline.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_selection_list.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_welcome.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_tabs.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_toast.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_help_panel.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/selection_list.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_link.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_toggle_button.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_log.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_tree.py has no clear capability affiliation
+- ambiguous_module: projects/textual/src/textual/widgets/_content_switcher.py has no clear capability affiliation
 
 ## Stage: allocate
-**Score:** 100 | **Duration:** 18ms
+**Score:** 83 | **Duration:** 70ms
 
 ### Deterministic Findings
-- 47 components
+- 17 components
 - File coverage: 10000%
 - 0 unallocated files
 
@@ -105,25 +892,13 @@ No LLM calls — deterministic pipeline run
 ### Diagnostics
 *(none)*
 
-## Stage: contract
-**Score:** 76 | **Duration:** 1ms
-
-### Deterministic Findings
-- 121 contracts
-
-### LLM Calls
-*(none)*
-
-### Diagnostics
-*(none)*
-
 ## Stage: relate
-**Score:** 100 | **Duration:** 166ms
+**Score:** 100 | **Duration:** 21248ms
 
 ### Deterministic Findings
-- 482 depends-on relationships
-- 47 contains relationships
-- 46 realizes relationships
+- 217 depends-on relationships
+- 17 realizes relationships
+- 17 contains relationships
 
 ### LLM Calls
 *(none)*
@@ -132,10 +907,10 @@ No LLM calls — deterministic pipeline run
 *(none)*
 
 ## Stage: specify
-**Score:** 50 | **Duration:** 0ms
+**Score:** 50 | **Duration:** 7ms
 
 ### Deterministic Findings
-- 13 interfaces
+- 3 interfaces
 
 ### LLM Calls
 *(none)*
@@ -147,22 +922,9 @@ No LLM calls — deterministic pipeline run
 **Score:** 100.0 | **Duration:** 0ms
 
 ### Deterministic Findings
-- 4 systems
-- 43 inline components
-- 482 inter-system edges
-
-### LLM Calls
-*(none)*
-
-### Diagnostics
-*(none)*
-
-## Stage: validate
-**Score:** 80 | **Duration:** 0ms
-
-### Deterministic Findings
-- Score: 80/100
-- 4 issues
+- 13 systems
+- 4 inline components
+- 215 inter-system edges
 
 ### LLM Calls
 *(none)*

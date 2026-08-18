@@ -8,21 +8,396 @@
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-monitoring-(manifest)",
-        "name": "Monitoring (manifest)",
+        "system_id": "SYS-src-(src)",
+        "name": "Src (src)",
         "component_ids": [
-          "COMP-1-4"
+          "COMP-2-1"
         ],
         "files": [
+          "src/architecture_model/__main__.py",
+          "src/architecture_model/authoring/gate.py",
+          "src/architecture_model/authoring/parser.py",
+          "src/architecture_model/cli/main.py",
+          "src/architecture_model/cli/visualize.py",
+          "src/architecture_model/config/loader.py",
+          "src/architecture_model/config/schema.py",
+          "src/architecture_model/core/cluster.py",
+          "src/architecture_model/core/completeness.py",
+          "src/architecture_model/core/compression.py",
+          "src/architecture_model/core/confidence.py",
+          "src/architecture_model/core/corrections.py",
+          "src/architecture_model/core/coverage.py",
+          "src/architecture_model/core/decomposer.py",
+          "src/architecture_model/core/differ.py",
+          "src/architecture_model/core/merger.py",
+          "src/architecture_model/core/parser.py",
+          "src/architecture_model/core/regen_readiness.py",
+          "src/architecture_model/core/representativeness.py",
+          "src/architecture_model/core/slicer.py",
+          "src/architecture_model/core/source_block_assign.py",
+          "src/architecture_model/core/source_block_quality.py",
+          "src/architecture_model/core/types.py",
+          "src/architecture_model/core/validator.py",
+          "src/architecture_model/core/visualize.py",
+          "src/architecture_model/export/flatfiles.py",
+          "src/architecture_model/export/reference.py",
+          "src/architecture_model/extract/constraint_detector.py",
+          "src/architecture_model/extract/from_artifacts.py",
+          "src/architecture_model/extract/from_code.py",
+          "src/architecture_model/extract/route_detector.py",
+          "src/architecture_model/extract/table_parser.py",
+          "src/architecture_model/manifest/behavior.py",
+          "src/architecture_model/manifest/blocks.py",
+          "src/architecture_model/manifest/body_hints.py",
+          "src/architecture_model/manifest/call_graph.py",
+          "src/architecture_model/manifest/chains.py",
+          "src/architecture_model/manifest/display.py",
+          "src/architecture_model/manifest/generator.py",
+          "src/architecture_model/manifest/grouping.py",
           "src/architecture_model/manifest/interfaces.py",
+          "src/architecture_model/manifest/kt_scanner.py",
           "src/architecture_model/manifest/metrics.py",
+          "src/architecture_model/manifest/multi_scanner.py",
+          "src/architecture_model/manifest/protocol.py",
+          "src/architecture_model/manifest/recursive.py",
+          "src/architecture_model/manifest/scan_cache.py",
           "src/architecture_model/manifest/scanner.py",
           "src/architecture_model/manifest/slicers.py",
-          "src/architecture_model/manifest/multi_scanner.py",
-          "src/architecture_model/manifest/scan_cache.py",
-          "src/architecture_model/manifest/kt_scanner.py",
-          "src/architecture_model/manifest/generator.py",
-          "src/architecture_model/manifest/blocks.py"
+          "src/architecture_model/manifest/ts_scanner.py",
+          "src/architecture_model/manifest/types.py",
+          "src/architecture_model/monitoring.py",
+          "src/architecture_model/monitoring_checks.py",
+          "src/architecture_model/orchestration/auto_enrich.py",
+          "src/architecture_model/orchestration/behavior_decompose.py",
+          "src/architecture_model/orchestration/behavior_flows.py",
+          "src/architecture_model/orchestration/capability_inference.py",
+          "src/architecture_model/orchestration/compaction.py",
+          "src/architecture_model/orchestration/decompose.py",
+          "src/architecture_model/orchestration/deep_decompose.py",
+          "src/architecture_model/orchestration/enrich.py",
+          "src/architecture_model/orchestration/enrichment_context.py",
+          "src/architecture_model/orchestration/naming_context.py",
+          "src/architecture_model/orchestration/pipeline.py",
+          "src/architecture_model/orchestration/trigger_detection.py",
+          "src/architecture_model/orchestration/use_case_inference.py",
+          "src/architecture_model/patterns.py",
+          "src/architecture_model/persistence/store.py",
+          "src/architecture_model/pipeline/allocate.py",
+          "src/architecture_model/pipeline/allocate_types.py",
+          "src/architecture_model/pipeline/artifacts.py",
+          "src/architecture_model/pipeline/cache.py",
+          "src/architecture_model/pipeline/context_gen.py",
+          "src/architecture_model/pipeline/contract.py",
+          "src/architecture_model/pipeline/contract_types.py",
+          "src/architecture_model/pipeline/coordinator.py",
+          "src/architecture_model/pipeline/corrections.py",
+          "src/architecture_model/pipeline/decompose.py",
+          "src/architecture_model/pipeline/decompose_types.py",
+          "src/architecture_model/pipeline/emit.py",
+          "src/architecture_model/pipeline/emit_types.py",
+          "src/architecture_model/pipeline/global_learning.py",
+          "src/architecture_model/pipeline/infer.py",
+          "src/architecture_model/pipeline/infer_types.py",
+          "src/architecture_model/pipeline/learning.py",
+          "src/architecture_model/pipeline/lessons.py",
+          "src/architecture_model/pipeline/observe.py",
+          "src/architecture_model/pipeline/observe_types.py",
+          "src/architecture_model/pipeline/protocol.py",
+          "src/architecture_model/pipeline/regen_score.py",
+          "src/architecture_model/pipeline/relate.py",
+          "src/architecture_model/pipeline/relate_types.py",
+          "src/architecture_model/pipeline/report.py",
+          "src/architecture_model/pipeline/requirements_derive.py",
+          "src/architecture_model/pipeline/specify.py",
+          "src/architecture_model/pipeline/specify_types.py",
+          "src/architecture_model/pipeline/synthesize.py",
+          "src/architecture_model/pipeline/synthesize_types.py",
+          "src/architecture_model/pipeline/validate.py",
+          "src/architecture_model/pipeline/validate_types.py",
+          "src/architecture_model/profiles/schema.py",
+          "src/architecture_model/utils/discovery.py"
+        ],
+        "complexity": 102.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-src-(projects)",
+        "name": "Src (projects)",
+        "component_ids": [
+          "COMP-2-2"
+        ],
+        "files": [
+          "projects/textual/src/textual/__main__.py",
+          "projects/textual/src/textual/_animator.py",
+          "projects/textual/src/textual/_ansi_sequences.py",
+          "projects/textual/src/textual/_ansi_theme.py",
+          "projects/textual/src/textual/_arrange.py",
+          "projects/textual/src/textual/_auto_scroll.py",
+          "projects/textual/src/textual/_binary_encode.py",
+          "projects/textual/src/textual/_border.py",
+          "projects/textual/src/textual/_box_drawing.py",
+          "projects/textual/src/textual/_callback.py",
+          "projects/textual/src/textual/_cells.py",
+          "projects/textual/src/textual/_color_constants.py",
+          "projects/textual/src/textual/_compat.py",
+          "projects/textual/src/textual/_compositor.py",
+          "projects/textual/src/textual/_context.py",
+          "projects/textual/src/textual/_debug.py",
+          "projects/textual/src/textual/_dispatch_key.py",
+          "projects/textual/src/textual/_doc.py",
+          "projects/textual/src/textual/_duration.py",
+          "projects/textual/src/textual/_easing.py",
+          "projects/textual/src/textual/_event_broker.py",
+          "projects/textual/src/textual/_extrema.py",
+          "projects/textual/src/textual/_files.py",
+          "projects/textual/src/textual/_immutable_sequence_view.py",
+          "projects/textual/src/textual/_import_app.py",
+          "projects/textual/src/textual/_keyboard_protocol.py",
+          "projects/textual/src/textual/_layout_resolve.py",
+          "projects/textual/src/textual/_line_split.py",
+          "projects/textual/src/textual/_log.py",
+          "projects/textual/src/textual/_loop.py",
+          "projects/textual/src/textual/_markup_playground.py",
+          "projects/textual/src/textual/_node_list.py",
+          "projects/textual/src/textual/_on.py",
+          "projects/textual/src/textual/_opacity.py",
+          "projects/textual/src/textual/_parser.py",
+          "projects/textual/src/textual/_partition.py",
+          "projects/textual/src/textual/_path.py",
+          "projects/textual/src/textual/_profile.py",
+          "projects/textual/src/textual/_queue.py",
+          "projects/textual/src/textual/_resolve.py",
+          "projects/textual/src/textual/_segment_tools.py",
+          "projects/textual/src/textual/_sleep.py",
+          "projects/textual/src/textual/_slug.py",
+          "projects/textual/src/textual/_spatial_map.py",
+          "projects/textual/src/textual/_styles_cache.py",
+          "projects/textual/src/textual/_text_area_theme.py",
+          "projects/textual/src/textual/_time.py",
+          "projects/textual/src/textual/_tree_sitter.py",
+          "projects/textual/src/textual/_two_way_dict.py",
+          "projects/textual/src/textual/_types.py",
+          "projects/textual/src/textual/_wait.py",
+          "projects/textual/src/textual/_widget_navigation.py",
+          "projects/textual/src/textual/_win_sleep.py",
+          "projects/textual/src/textual/_work_decorator.py",
+          "projects/textual/src/textual/_wrap.py",
+          "projects/textual/src/textual/_xterm_parser.py",
+          "projects/textual/src/textual/actions.py",
+          "projects/textual/src/textual/app.py",
+          "projects/textual/src/textual/await_complete.py",
+          "projects/textual/src/textual/await_remove.py",
+          "projects/textual/src/textual/binding.py",
+          "projects/textual/src/textual/box_model.py",
+          "projects/textual/src/textual/cache.py",
+          "projects/textual/src/textual/canvas.py",
+          "projects/textual/src/textual/case.py",
+          "projects/textual/src/textual/clock.py",
+          "projects/textual/src/textual/color.py",
+          "projects/textual/src/textual/command.py",
+          "projects/textual/src/textual/compose.py",
+          "projects/textual/src/textual/constants.py",
+          "projects/textual/src/textual/containers.py",
+          "projects/textual/src/textual/content.py",
+          "projects/textual/src/textual/coordinate.py",
+          "projects/textual/src/textual/css/_error_tools.py",
+          "projects/textual/src/textual/css/_help_renderables.py",
+          "projects/textual/src/textual/css/_help_text.py",
+          "projects/textual/src/textual/css/_style_properties.py",
+          "projects/textual/src/textual/css/_styles_builder.py",
+          "projects/textual/src/textual/css/constants.py",
+          "projects/textual/src/textual/css/errors.py",
+          "projects/textual/src/textual/css/match.py",
+          "projects/textual/src/textual/css/model.py",
+          "projects/textual/src/textual/css/parse.py",
+          "projects/textual/src/textual/css/query.py",
+          "projects/textual/src/textual/css/scalar.py",
+          "projects/textual/src/textual/css/scalar_animation.py",
+          "projects/textual/src/textual/css/styles.py",
+          "projects/textual/src/textual/css/stylesheet.py",
+          "projects/textual/src/textual/css/tokenize.py",
+          "projects/textual/src/textual/css/tokenizer.py",
+          "projects/textual/src/textual/css/transition.py",
+          "projects/textual/src/textual/css/types.py",
+          "projects/textual/src/textual/design.py",
+          "projects/textual/src/textual/document/_document.py",
+          "projects/textual/src/textual/document/_document_navigator.py",
+          "projects/textual/src/textual/document/_edit.py",
+          "projects/textual/src/textual/document/_history.py",
+          "projects/textual/src/textual/document/_syntax_aware_document.py",
+          "projects/textual/src/textual/document/_wrapped_document.py",
+          "projects/textual/src/textual/dom.py",
+          "projects/textual/src/textual/driver.py",
+          "projects/textual/src/textual/drivers/_byte_stream.py",
+          "projects/textual/src/textual/drivers/_input_reader.py",
+          "projects/textual/src/textual/drivers/_input_reader_linux.py",
+          "projects/textual/src/textual/drivers/_input_reader_windows.py",
+          "projects/textual/src/textual/drivers/_writer_thread.py",
+          "projects/textual/src/textual/drivers/headless_driver.py",
+          "projects/textual/src/textual/drivers/linux_driver.py",
+          "projects/textual/src/textual/drivers/linux_inline_driver.py",
+          "projects/textual/src/textual/drivers/web_driver.py",
+          "projects/textual/src/textual/drivers/win32.py",
+          "projects/textual/src/textual/drivers/windows_driver.py",
+          "projects/textual/src/textual/errors.py",
+          "projects/textual/src/textual/eta.py",
+          "projects/textual/src/textual/events.py",
+          "projects/textual/src/textual/expand_tabs.py",
+          "projects/textual/src/textual/features.py",
+          "projects/textual/src/textual/file_monitor.py",
+          "projects/textual/src/textual/filter.py",
+          "projects/textual/src/textual/fuzzy.py",
+          "projects/textual/src/textual/geometry.py",
+          "projects/textual/src/textual/getters.py",
+          "projects/textual/src/textual/highlight.py",
+          "projects/textual/src/textual/keys.py",
+          "projects/textual/src/textual/layout.py",
+          "projects/textual/src/textual/layouts/factory.py",
+          "projects/textual/src/textual/layouts/grid.py",
+          "projects/textual/src/textual/layouts/horizontal.py",
+          "projects/textual/src/textual/layouts/stream.py",
+          "projects/textual/src/textual/layouts/vertical.py",
+          "projects/textual/src/textual/lazy.py",
+          "projects/textual/src/textual/logging.py",
+          "projects/textual/src/textual/map_geometry.py",
+          "projects/textual/src/textual/markup.py",
+          "projects/textual/src/textual/message.py",
+          "projects/textual/src/textual/message_pump.py",
+          "projects/textual/src/textual/messages.py",
+          "projects/textual/src/textual/notifications.py",
+          "projects/textual/src/textual/pad.py",
+          "projects/textual/src/textual/pilot.py",
+          "projects/textual/src/textual/reactive.py",
+          "projects/textual/src/textual/render.py",
+          "projects/textual/src/textual/renderables/_blend_colors.py",
+          "projects/textual/src/textual/renderables/background_screen.py",
+          "projects/textual/src/textual/renderables/bar.py",
+          "projects/textual/src/textual/renderables/blank.py",
+          "projects/textual/src/textual/renderables/digits.py",
+          "projects/textual/src/textual/renderables/gradient.py",
+          "projects/textual/src/textual/renderables/sparkline.py",
+          "projects/textual/src/textual/renderables/styled.py",
+          "projects/textual/src/textual/renderables/text_opacity.py",
+          "projects/textual/src/textual/renderables/tint.py",
+          "projects/textual/src/textual/rlock.py",
+          "projects/textual/src/textual/screen.py",
+          "projects/textual/src/textual/scroll_view.py",
+          "projects/textual/src/textual/scrollbar.py",
+          "projects/textual/src/textual/selection.py",
+          "projects/textual/src/textual/signal.py",
+          "projects/textual/src/textual/strip.py",
+          "projects/textual/src/textual/style.py",
+          "projects/textual/src/textual/suggester.py",
+          "projects/textual/src/textual/suggestions.py",
+          "projects/textual/src/textual/system_commands.py",
+          "projects/textual/src/textual/theme.py",
+          "projects/textual/src/textual/timer.py",
+          "projects/textual/src/textual/types.py",
+          "projects/textual/src/textual/validation.py",
+          "projects/textual/src/textual/visual.py",
+          "projects/textual/src/textual/walk.py",
+          "projects/textual/src/textual/widget.py",
+          "projects/textual/src/textual/widgets/_button.py",
+          "projects/textual/src/textual/widgets/_checkbox.py",
+          "projects/textual/src/textual/widgets/_collapsible.py",
+          "projects/textual/src/textual/widgets/_content_switcher.py",
+          "projects/textual/src/textual/widgets/_data_table.py",
+          "projects/textual/src/textual/widgets/_digits.py",
+          "projects/textual/src/textual/widgets/_directory_tree.py",
+          "projects/textual/src/textual/widgets/_footer.py",
+          "projects/textual/src/textual/widgets/_header.py",
+          "projects/textual/src/textual/widgets/_help_panel.py",
+          "projects/textual/src/textual/widgets/_input.py",
+          "projects/textual/src/textual/widgets/_key_panel.py",
+          "projects/textual/src/textual/widgets/_label.py",
+          "projects/textual/src/textual/widgets/_link.py",
+          "projects/textual/src/textual/widgets/_list_item.py",
+          "projects/textual/src/textual/widgets/_list_view.py",
+          "projects/textual/src/textual/widgets/_loading_indicator.py",
+          "projects/textual/src/textual/widgets/_log.py",
+          "projects/textual/src/textual/widgets/_markdown.py",
+          "projects/textual/src/textual/widgets/_markdown_viewer.py",
+          "projects/textual/src/textual/widgets/_masked_input.py",
+          "projects/textual/src/textual/widgets/_option_list.py",
+          "projects/textual/src/textual/widgets/_placeholder.py",
+          "projects/textual/src/textual/widgets/_pretty.py",
+          "projects/textual/src/textual/widgets/_progress_bar.py",
+          "projects/textual/src/textual/widgets/_radio_button.py",
+          "projects/textual/src/textual/widgets/_radio_set.py",
+          "projects/textual/src/textual/widgets/_rich_log.py",
+          "projects/textual/src/textual/widgets/_rule.py",
+          "projects/textual/src/textual/widgets/_select.py",
+          "projects/textual/src/textual/widgets/_selection_list.py",
+          "projects/textual/src/textual/widgets/_sparkline.py",
+          "projects/textual/src/textual/widgets/_static.py",
+          "projects/textual/src/textual/widgets/_switch.py",
+          "projects/textual/src/textual/widgets/_tab.py",
+          "projects/textual/src/textual/widgets/_tab_pane.py",
+          "projects/textual/src/textual/widgets/_tabbed_content.py",
+          "projects/textual/src/textual/widgets/_tabs.py",
+          "projects/textual/src/textual/widgets/_text_area.py",
+          "projects/textual/src/textual/widgets/_toast.py",
+          "projects/textual/src/textual/widgets/_toggle_button.py",
+          "projects/textual/src/textual/widgets/_tooltip.py",
+          "projects/textual/src/textual/widgets/_tree.py",
+          "projects/textual/src/textual/widgets/_welcome.py",
+          "projects/textual/src/textual/widgets/button.py",
+          "projects/textual/src/textual/widgets/collapsible.py",
+          "projects/textual/src/textual/widgets/data_table.py",
+          "projects/textual/src/textual/widgets/directory_tree.py",
+          "projects/textual/src/textual/widgets/input.py",
+          "projects/textual/src/textual/widgets/markdown.py",
+          "projects/textual/src/textual/widgets/option_list.py",
+          "projects/textual/src/textual/widgets/rule.py",
+          "projects/textual/src/textual/widgets/select.py",
+          "projects/textual/src/textual/widgets/selection_list.py",
+          "projects/textual/src/textual/widgets/tabbed_content.py",
+          "projects/textual/src/textual/widgets/text_area.py",
+          "projects/textual/src/textual/widgets/tree.py",
+          "projects/textual/src/textual/worker.py",
+          "projects/textual/src/textual/worker_manager.py"
+        ],
+        "complexity": 229.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(templatetags)",
+        "name": "Projects (templatetags)",
+        "component_ids": [
+          "COMP-3-2"
+        ],
+        "files": [
+          "projects/django/django/templatetags/cache.py",
+          "projects/django/django/templatetags/i18n.py",
+          "projects/django/django/templatetags/l10n.py",
+          "projects/django/django/templatetags/static.py",
+          "projects/django/django/templatetags/tz.py"
+        ],
+        "complexity": 5.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(middleware)",
+        "name": "Projects (middleware)",
+        "component_ids": [
+          "COMP-3-3"
+        ],
+        "files": [
+          "projects/django/django/middleware/cache.py",
+          "projects/django/django/middleware/clickjacking.py",
+          "projects/django/django/middleware/common.py",
+          "projects/django/django/middleware/csp.py",
+          "projects/django/django/middleware/csrf.py",
+          "projects/django/django/middleware/gzip.py",
+          "projects/django/django/middleware/http.py",
+          "projects/django/django/middleware/locale.py",
+          "projects/django/django/middleware/security.py"
         ],
         "complexity": 9.0,
         "is_full_system": true
@@ -30,19 +405,19 @@
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-monitoring-(orchestration)",
-        "name": "Monitoring (orchestration)",
+        "system_id": "SYS-projects-(tasks)",
+        "name": "Projects (tasks)",
         "component_ids": [
-          "COMP-1-6"
+          "COMP-3-4"
         ],
         "files": [
-          "src/architecture_model/orchestration/use_case_inference.py",
-          "src/architecture_model/orchestration/capability_inference.py",
-          "src/architecture_model/orchestration/enrichment_context.py",
-          "src/architecture_model/orchestration/trigger_detection.py",
-          "src/architecture_model/orchestration/pipeline.py",
-          "src/architecture_model/orchestration/compaction.py",
-          "src/architecture_model/orchestration/naming_context.py"
+          "projects/django/django/tasks/backends/base.py",
+          "projects/django/django/tasks/backends/dummy.py",
+          "projects/django/django/tasks/backends/immediate.py",
+          "projects/django/django/tasks/base.py",
+          "projects/django/django/tasks/checks.py",
+          "projects/django/django/tasks/exceptions.py",
+          "projects/django/django/tasks/signals.py"
         ],
         "complexity": 7.0,
         "is_full_system": true
@@ -50,41 +425,502 @@
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-observe-types",
-        "name": "Observe Types",
+        "system_id": "SYS-projects-(forms)",
+        "name": "Projects (forms)",
         "component_ids": [
-          "COMP-3"
+          "COMP-3-5"
         ],
         "files": [
-          "src/architecture_model/pipeline/observe_types.py",
-          "src/architecture_model/pipeline/observe.py",
-          "src/architecture_model/core/types.py",
-          "src/architecture_model/manifest/types.py",
-          "src/architecture_model/pipeline/context_gen.py",
-          "src/architecture_model/pipeline/artifacts.py",
-          "src/architecture_model/pipeline/emit.py"
+          "projects/django/django/forms/boundfield.py",
+          "projects/django/django/forms/fields.py",
+          "projects/django/django/forms/forms.py",
+          "projects/django/django/forms/formsets.py",
+          "projects/django/django/forms/models.py",
+          "projects/django/django/forms/renderers.py",
+          "projects/django/django/forms/utils.py",
+          "projects/django/django/forms/widgets.py"
         ],
-        "complexity": 7.0,
+        "complexity": 8.0,
         "is_full_system": true
       },
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-infrastructure",
-        "name": "Infrastructure",
+        "system_id": "SYS-projects-(core)",
+        "name": "Projects (core)",
         "component_ids": [
-          "COMP-45"
+          "COMP-3-6"
         ],
         "files": [
-          "src/architecture_model/patterns.py",
-          "src/architecture_model/pipeline/emit_types.py",
-          "src/architecture_model/core/compression.py",
-          "src/architecture_model/manifest/chains.py",
-          "src/architecture_model/manifest/display.py",
-          "src/architecture_model/manifest/ts_scanner.py",
-          "src/architecture_model/extract/route_detector.py"
+          "projects/django/django/core/asgi.py",
+          "projects/django/django/core/cache/backends/base.py",
+          "projects/django/django/core/cache/backends/db.py",
+          "projects/django/django/core/cache/backends/dummy.py",
+          "projects/django/django/core/cache/backends/filebased.py",
+          "projects/django/django/core/cache/backends/locmem.py",
+          "projects/django/django/core/cache/backends/memcached.py",
+          "projects/django/django/core/cache/backends/redis.py",
+          "projects/django/django/core/cache/utils.py",
+          "projects/django/django/core/checks/async_checks.py",
+          "projects/django/django/core/checks/caches.py",
+          "projects/django/django/core/checks/commands.py",
+          "projects/django/django/core/checks/compatibility/django_4_0.py",
+          "projects/django/django/core/checks/database.py",
+          "projects/django/django/core/checks/files.py",
+          "projects/django/django/core/checks/mail.py",
+          "projects/django/django/core/checks/messages.py",
+          "projects/django/django/core/checks/model_checks.py",
+          "projects/django/django/core/checks/registry.py",
+          "projects/django/django/core/checks/security/base.py",
+          "projects/django/django/core/checks/security/csrf.py",
+          "projects/django/django/core/checks/security/sessions.py",
+          "projects/django/django/core/checks/templates.py",
+          "projects/django/django/core/checks/translation.py",
+          "projects/django/django/core/checks/urls.py",
+          "projects/django/django/core/exceptions.py",
+          "projects/django/django/core/files/base.py",
+          "projects/django/django/core/files/images.py",
+          "projects/django/django/core/files/locks.py",
+          "projects/django/django/core/files/move.py",
+          "projects/django/django/core/files/storage/base.py",
+          "projects/django/django/core/files/storage/filesystem.py",
+          "projects/django/django/core/files/storage/handler.py",
+          "projects/django/django/core/files/storage/memory.py",
+          "projects/django/django/core/files/storage/mixins.py",
+          "projects/django/django/core/files/temp.py",
+          "projects/django/django/core/files/uploadedfile.py",
+          "projects/django/django/core/files/uploadhandler.py",
+          "projects/django/django/core/files/utils.py",
+          "projects/django/django/core/handlers/asgi.py",
+          "projects/django/django/core/handlers/base.py",
+          "projects/django/django/core/handlers/exception.py",
+          "projects/django/django/core/handlers/wsgi.py",
+          "projects/django/django/core/mail/backends/base.py",
+          "projects/django/django/core/mail/backends/console.py",
+          "projects/django/django/core/mail/backends/dummy.py",
+          "projects/django/django/core/mail/backends/filebased.py",
+          "projects/django/django/core/mail/backends/locmem.py",
+          "projects/django/django/core/mail/backends/smtp.py",
+          "projects/django/django/core/mail/deprecation.py",
+          "projects/django/django/core/mail/exceptions.py",
+          "projects/django/django/core/mail/handler.py",
+          "projects/django/django/core/mail/message.py",
+          "projects/django/django/core/mail/utils.py",
+          "projects/django/django/core/management/base.py",
+          "projects/django/django/core/management/color.py",
+          "projects/django/django/core/management/commands/check.py",
+          "projects/django/django/core/management/commands/compilemessages.py",
+          "projects/django/django/core/management/commands/createcachetable.py",
+          "projects/django/django/core/management/commands/dbshell.py",
+          "projects/django/django/core/management/commands/diffsettings.py",
+          "projects/django/django/core/management/commands/dumpdata.py",
+          "projects/django/django/core/management/commands/flush.py",
+          "projects/django/django/core/management/commands/inspectdb.py",
+          "projects/django/django/core/management/commands/listurls.py",
+          "projects/django/django/core/management/commands/loaddata.py",
+          "projects/django/django/core/management/commands/makemessages.py",
+          "projects/django/django/core/management/commands/makemigrations.py",
+          "projects/django/django/core/management/commands/migrate.py",
+          "projects/django/django/core/management/commands/optimizemigration.py",
+          "projects/django/django/core/management/commands/runserver.py",
+          "projects/django/django/core/management/commands/sendtestemail.py",
+          "projects/django/django/core/management/commands/shell.py",
+          "projects/django/django/core/management/commands/showmigrations.py",
+          "projects/django/django/core/management/commands/sqlflush.py",
+          "projects/django/django/core/management/commands/sqlmigrate.py",
+          "projects/django/django/core/management/commands/sqlsequencereset.py",
+          "projects/django/django/core/management/commands/squashmigrations.py",
+          "projects/django/django/core/management/commands/startapp.py",
+          "projects/django/django/core/management/commands/startproject.py",
+          "projects/django/django/core/management/commands/test.py",
+          "projects/django/django/core/management/commands/testserver.py",
+          "projects/django/django/core/management/sql.py",
+          "projects/django/django/core/management/templates.py",
+          "projects/django/django/core/management/utils.py",
+          "projects/django/django/core/paginator.py",
+          "projects/django/django/core/serializers/base.py",
+          "projects/django/django/core/serializers/json.py",
+          "projects/django/django/core/serializers/jsonl.py",
+          "projects/django/django/core/serializers/python.py",
+          "projects/django/django/core/serializers/pyyaml.py",
+          "projects/django/django/core/serializers/xml_serializer.py",
+          "projects/django/django/core/servers/basehttp.py",
+          "projects/django/django/core/signals.py",
+          "projects/django/django/core/signing.py",
+          "projects/django/django/core/validators.py",
+          "projects/django/django/core/wsgi.py"
         ],
-        "complexity": 7.0,
+        "complexity": 97.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(template)",
+        "name": "Projects (template)",
+        "component_ids": [
+          "COMP-3-8"
+        ],
+        "files": [
+          "projects/django/django/template/autoreload.py",
+          "projects/django/django/template/backends/base.py",
+          "projects/django/django/template/backends/django.py",
+          "projects/django/django/template/backends/dummy.py",
+          "projects/django/django/template/backends/jinja2.py",
+          "projects/django/django/template/backends/utils.py",
+          "projects/django/django/template/base.py",
+          "projects/django/django/template/context.py",
+          "projects/django/django/template/context_processors.py",
+          "projects/django/django/template/defaultfilters.py",
+          "projects/django/django/template/defaulttags.py",
+          "projects/django/django/template/engine.py",
+          "projects/django/django/template/exceptions.py",
+          "projects/django/django/template/library.py",
+          "projects/django/django/template/loader.py",
+          "projects/django/django/template/loader_tags.py",
+          "projects/django/django/template/loaders/app_directories.py",
+          "projects/django/django/template/loaders/base.py",
+          "projects/django/django/template/loaders/cached.py",
+          "projects/django/django/template/loaders/filesystem.py",
+          "projects/django/django/template/loaders/locmem.py",
+          "projects/django/django/template/response.py",
+          "projects/django/django/template/smartif.py",
+          "projects/django/django/template/utils.py"
+        ],
+        "complexity": 24.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(utils)",
+        "name": "Projects (utils)",
+        "component_ids": [
+          "COMP-3-9"
+        ],
+        "files": [
+          "projects/django/django/utils/_os.py",
+          "projects/django/django/utils/archive.py",
+          "projects/django/django/utils/asyncio.py",
+          "projects/django/django/utils/autoreload.py",
+          "projects/django/django/utils/cache.py",
+          "projects/django/django/utils/choices.py",
+          "projects/django/django/utils/connection.py",
+          "projects/django/django/utils/copy.py",
+          "projects/django/django/utils/crypto.py",
+          "projects/django/django/utils/csp.py",
+          "projects/django/django/utils/datastructures.py",
+          "projects/django/django/utils/dateformat.py",
+          "projects/django/django/utils/dateparse.py",
+          "projects/django/django/utils/dates.py",
+          "projects/django/django/utils/deconstruct.py",
+          "projects/django/django/utils/decorators.py",
+          "projects/django/django/utils/deprecation.py",
+          "projects/django/django/utils/duration.py",
+          "projects/django/django/utils/encoding.py",
+          "projects/django/django/utils/feedgenerator.py",
+          "projects/django/django/utils/formats.py",
+          "projects/django/django/utils/functional.py",
+          "projects/django/django/utils/hashable.py",
+          "projects/django/django/utils/html.py",
+          "projects/django/django/utils/http.py",
+          "projects/django/django/utils/inspect.py",
+          "projects/django/django/utils/ipv6.py",
+          "projects/django/django/utils/json.py",
+          "projects/django/django/utils/log.py",
+          "projects/django/django/utils/lorem_ipsum.py",
+          "projects/django/django/utils/module_loading.py",
+          "projects/django/django/utils/numberformat.py",
+          "projects/django/django/utils/regex_helper.py",
+          "projects/django/django/utils/safestring.py",
+          "projects/django/django/utils/termcolors.py",
+          "projects/django/django/utils/text.py",
+          "projects/django/django/utils/timesince.py",
+          "projects/django/django/utils/timezone.py",
+          "projects/django/django/utils/translation/reloader.py",
+          "projects/django/django/utils/translation/template.py",
+          "projects/django/django/utils/translation/trans_null.py",
+          "projects/django/django/utils/translation/trans_real.py",
+          "projects/django/django/utils/tree.py",
+          "projects/django/django/utils/version.py",
+          "projects/django/django/utils/warnings.py",
+          "projects/django/django/utils/xmlutils.py"
+        ],
+        "complexity": 46.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(urls)",
+        "name": "Projects (urls)",
+        "component_ids": [
+          "COMP-3-11"
+        ],
+        "files": [
+          "projects/django/django/urls/base.py",
+          "projects/django/django/urls/conf.py",
+          "projects/django/django/urls/converters.py",
+          "projects/django/django/urls/exceptions.py",
+          "projects/django/django/urls/resolvers.py",
+          "projects/django/django/urls/utils.py"
+        ],
+        "complexity": 6.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(db)",
+        "name": "Projects (db)",
+        "component_ids": [
+          "COMP-3-12"
+        ],
+        "files": [
+          "projects/django/django/db/backends/base/base.py",
+          "projects/django/django/db/backends/base/client.py",
+          "projects/django/django/db/backends/base/creation.py",
+          "projects/django/django/db/backends/base/features.py",
+          "projects/django/django/db/backends/base/introspection.py",
+          "projects/django/django/db/backends/base/operations.py",
+          "projects/django/django/db/backends/base/schema.py",
+          "projects/django/django/db/backends/base/validation.py",
+          "projects/django/django/db/backends/ddl_references.py",
+          "projects/django/django/db/backends/dummy/base.py",
+          "projects/django/django/db/backends/dummy/features.py",
+          "projects/django/django/db/backends/mysql/base.py",
+          "projects/django/django/db/backends/mysql/client.py",
+          "projects/django/django/db/backends/mysql/compiler.py",
+          "projects/django/django/db/backends/mysql/creation.py",
+          "projects/django/django/db/backends/mysql/features.py",
+          "projects/django/django/db/backends/mysql/introspection.py",
+          "projects/django/django/db/backends/mysql/operations.py",
+          "projects/django/django/db/backends/mysql/schema.py",
+          "projects/django/django/db/backends/mysql/validation.py",
+          "projects/django/django/db/backends/oracle/base.py",
+          "projects/django/django/db/backends/oracle/client.py",
+          "projects/django/django/db/backends/oracle/creation.py",
+          "projects/django/django/db/backends/oracle/features.py",
+          "projects/django/django/db/backends/oracle/functions.py",
+          "projects/django/django/db/backends/oracle/introspection.py",
+          "projects/django/django/db/backends/oracle/operations.py",
+          "projects/django/django/db/backends/oracle/schema.py",
+          "projects/django/django/db/backends/oracle/utils.py",
+          "projects/django/django/db/backends/oracle/validation.py",
+          "projects/django/django/db/backends/postgresql/base.py",
+          "projects/django/django/db/backends/postgresql/client.py",
+          "projects/django/django/db/backends/postgresql/compiler.py",
+          "projects/django/django/db/backends/postgresql/creation.py",
+          "projects/django/django/db/backends/postgresql/features.py",
+          "projects/django/django/db/backends/postgresql/introspection.py",
+          "projects/django/django/db/backends/postgresql/operations.py",
+          "projects/django/django/db/backends/postgresql/psycopg_any.py",
+          "projects/django/django/db/backends/postgresql/schema.py",
+          "projects/django/django/db/backends/signals.py",
+          "projects/django/django/db/backends/sqlite3/_functions.py",
+          "projects/django/django/db/backends/sqlite3/base.py",
+          "projects/django/django/db/backends/sqlite3/client.py",
+          "projects/django/django/db/backends/sqlite3/creation.py",
+          "projects/django/django/db/backends/sqlite3/features.py",
+          "projects/django/django/db/backends/sqlite3/introspection.py",
+          "projects/django/django/db/backends/sqlite3/operations.py",
+          "projects/django/django/db/backends/sqlite3/schema.py",
+          "projects/django/django/db/backends/utils.py",
+          "projects/django/django/db/migrations/autodetector.py",
+          "projects/django/django/db/migrations/exceptions.py",
+          "projects/django/django/db/migrations/executor.py",
+          "projects/django/django/db/migrations/graph.py",
+          "projects/django/django/db/migrations/loader.py",
+          "projects/django/django/db/migrations/migration.py",
+          "projects/django/django/db/migrations/operations/base.py",
+          "projects/django/django/db/migrations/operations/fields.py",
+          "projects/django/django/db/migrations/operations/models.py",
+          "projects/django/django/db/migrations/operations/special.py",
+          "projects/django/django/db/migrations/optimizer.py",
+          "projects/django/django/db/migrations/questioner.py",
+          "projects/django/django/db/migrations/recorder.py",
+          "projects/django/django/db/migrations/serializer.py",
+          "projects/django/django/db/migrations/state.py",
+          "projects/django/django/db/migrations/utils.py",
+          "projects/django/django/db/migrations/writer.py",
+          "projects/django/django/db/models/aggregates.py",
+          "projects/django/django/db/models/base.py",
+          "projects/django/django/db/models/constants.py",
+          "projects/django/django/db/models/constraints.py",
+          "projects/django/django/db/models/deletion.py",
+          "projects/django/django/db/models/enums.py",
+          "projects/django/django/db/models/expressions.py",
+          "projects/django/django/db/models/fetch_modes.py",
+          "projects/django/django/db/models/fields/composite.py",
+          "projects/django/django/db/models/fields/files.py",
+          "projects/django/django/db/models/fields/generated.py",
+          "projects/django/django/db/models/fields/json.py",
+          "projects/django/django/db/models/fields/mixins.py",
+          "projects/django/django/db/models/fields/proxy.py",
+          "projects/django/django/db/models/fields/related.py",
+          "projects/django/django/db/models/fields/related_descriptors.py",
+          "projects/django/django/db/models/fields/related_lookups.py",
+          "projects/django/django/db/models/fields/reverse_related.py",
+          "projects/django/django/db/models/fields/tuple_lookups.py",
+          "projects/django/django/db/models/functions/comparison.py",
+          "projects/django/django/db/models/functions/datetime.py",
+          "projects/django/django/db/models/functions/json.py",
+          "projects/django/django/db/models/functions/math.py",
+          "projects/django/django/db/models/functions/mixins.py",
+          "projects/django/django/db/models/functions/text.py",
+          "projects/django/django/db/models/functions/uuid.py",
+          "projects/django/django/db/models/functions/window.py",
+          "projects/django/django/db/models/indexes.py",
+          "projects/django/django/db/models/lookups.py",
+          "projects/django/django/db/models/manager.py",
+          "projects/django/django/db/models/options.py",
+          "projects/django/django/db/models/query.py",
+          "projects/django/django/db/models/query_utils.py",
+          "projects/django/django/db/models/signals.py",
+          "projects/django/django/db/models/sql/compiler.py",
+          "projects/django/django/db/models/sql/constants.py",
+          "projects/django/django/db/models/sql/datastructures.py",
+          "projects/django/django/db/models/sql/query.py",
+          "projects/django/django/db/models/sql/subqueries.py",
+          "projects/django/django/db/models/sql/where.py",
+          "projects/django/django/db/models/utils.py",
+          "projects/django/django/db/transaction.py",
+          "projects/django/django/db/utils.py"
+        ],
+        "complexity": 109.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(views)",
+        "name": "Projects (views)",
+        "component_ids": [
+          "COMP-3-13"
+        ],
+        "files": [
+          "projects/django/django/views/csrf.py",
+          "projects/django/django/views/debug.py",
+          "projects/django/django/views/decorators/cache.py",
+          "projects/django/django/views/decorators/clickjacking.py",
+          "projects/django/django/views/decorators/common.py",
+          "projects/django/django/views/decorators/csp.py",
+          "projects/django/django/views/decorators/csrf.py",
+          "projects/django/django/views/decorators/debug.py",
+          "projects/django/django/views/decorators/gzip.py",
+          "projects/django/django/views/decorators/http.py",
+          "projects/django/django/views/decorators/vary.py",
+          "projects/django/django/views/defaults.py",
+          "projects/django/django/views/generic/base.py",
+          "projects/django/django/views/generic/dates.py",
+          "projects/django/django/views/generic/detail.py",
+          "projects/django/django/views/generic/edit.py",
+          "projects/django/django/views/generic/list.py",
+          "projects/django/django/views/i18n.py",
+          "projects/django/django/views/static.py"
+        ],
+        "complexity": 19.0,
+        "is_full_system": true
+      },
+      {
+        "__dataclass__": "SystemBoundary",
+        "__module__": "architecture_model.pipeline.decompose_types",
+        "system_id": "SYS-projects-(conf)",
+        "name": "Projects (conf)",
+        "component_ids": [
+          "COMP-3-14"
+        ],
+        "files": [
+          "projects/django/django/conf/global_settings.py",
+          "projects/django/django/conf/locale/ar/formats.py",
+          "projects/django/django/conf/locale/ar_DZ/formats.py",
+          "projects/django/django/conf/locale/az/formats.py",
+          "projects/django/django/conf/locale/bg/formats.py",
+          "projects/django/django/conf/locale/bn/formats.py",
+          "projects/django/django/conf/locale/bs/formats.py",
+          "projects/django/django/conf/locale/ca/formats.py",
+          "projects/django/django/conf/locale/ckb/formats.py",
+          "projects/django/django/conf/locale/cs/formats.py",
+          "projects/django/django/conf/locale/cy/formats.py",
+          "projects/django/django/conf/locale/da/formats.py",
+          "projects/django/django/conf/locale/de/formats.py",
+          "projects/django/django/conf/locale/de_CH/formats.py",
+          "projects/django/django/conf/locale/el/formats.py",
+          "projects/django/django/conf/locale/en/formats.py",
+          "projects/django/django/conf/locale/en_AU/formats.py",
+          "projects/django/django/conf/locale/en_CA/formats.py",
+          "projects/django/django/conf/locale/en_GB/formats.py",
+          "projects/django/django/conf/locale/en_IE/formats.py",
+          "projects/django/django/conf/locale/eo/formats.py",
+          "projects/django/django/conf/locale/es/formats.py",
+          "projects/django/django/conf/locale/es_AR/formats.py",
+          "projects/django/django/conf/locale/es_CO/formats.py",
+          "projects/django/django/conf/locale/es_MX/formats.py",
+          "projects/django/django/conf/locale/es_NI/formats.py",
+          "projects/django/django/conf/locale/es_PR/formats.py",
+          "projects/django/django/conf/locale/et/formats.py",
+          "projects/django/django/conf/locale/eu/formats.py",
+          "projects/django/django/conf/locale/fa/formats.py",
+          "projects/django/django/conf/locale/fi/formats.py",
+          "projects/django/django/conf/locale/fr/formats.py",
+          "projects/django/django/conf/locale/fr_BE/formats.py",
+          "projects/django/django/conf/locale/fr_CA/formats.py",
+          "projects/django/django/conf/locale/fr_CH/formats.py",
+          "projects/django/django/conf/locale/fy/formats.py",
+          "projects/django/django/conf/locale/ga/formats.py",
+          "projects/django/django/conf/locale/gd/formats.py",
+          "projects/django/django/conf/locale/gl/formats.py",
+          "projects/django/django/conf/locale/he/formats.py",
+          "projects/django/django/conf/locale/hi/formats.py",
+          "projects/django/django/conf/locale/hr/formats.py",
+          "projects/django/django/conf/locale/ht/formats.py",
+          "projects/django/django/conf/locale/hu/formats.py",
+          "projects/django/django/conf/locale/id/formats.py",
+          "projects/django/django/conf/locale/ig/formats.py",
+          "projects/django/django/conf/locale/is/formats.py",
+          "projects/django/django/conf/locale/it/formats.py",
+          "projects/django/django/conf/locale/ja/formats.py",
+          "projects/django/django/conf/locale/ka/formats.py",
+          "projects/django/django/conf/locale/km/formats.py",
+          "projects/django/django/conf/locale/kn/formats.py",
+          "projects/django/django/conf/locale/ko/formats.py",
+          "projects/django/django/conf/locale/ky/formats.py",
+          "projects/django/django/conf/locale/lt/formats.py",
+          "projects/django/django/conf/locale/lv/formats.py",
+          "projects/django/django/conf/locale/mk/formats.py",
+          "projects/django/django/conf/locale/ml/formats.py",
+          "projects/django/django/conf/locale/mn/formats.py",
+          "projects/django/django/conf/locale/ms/formats.py",
+          "projects/django/django/conf/locale/nb/formats.py",
+          "projects/django/django/conf/locale/nl/formats.py",
+          "projects/django/django/conf/locale/nn/formats.py",
+          "projects/django/django/conf/locale/pl/formats.py",
+          "projects/django/django/conf/locale/pt/formats.py",
+          "projects/django/django/conf/locale/pt_BR/formats.py",
+          "projects/django/django/conf/locale/ro/formats.py",
+          "projects/django/django/conf/locale/ru/formats.py",
+          "projects/django/django/conf/locale/sk/formats.py",
+          "projects/django/django/conf/locale/sl/formats.py",
+          "projects/django/django/conf/locale/sq/formats.py",
+          "projects/django/django/conf/locale/sr/formats.py",
+          "projects/django/django/conf/locale/sr_Latn/formats.py",
+          "projects/django/django/conf/locale/sv/formats.py",
+          "projects/django/django/conf/locale/ta/formats.py",
+          "projects/django/django/conf/locale/te/formats.py",
+          "projects/django/django/conf/locale/tg/formats.py",
+          "projects/django/django/conf/locale/th/formats.py",
+          "projects/django/django/conf/locale/tk/formats.py",
+          "projects/django/django/conf/locale/tr/formats.py",
+          "projects/django/django/conf/locale/ug/formats.py",
+          "projects/django/django/conf/locale/uk/formats.py",
+          "projects/django/django/conf/locale/uz/formats.py",
+          "projects/django/django/conf/locale/vi/formats.py",
+          "projects/django/django/conf/locale/zh_Hans/formats.py",
+          "projects/django/django/conf/locale/zh_Hant/formats.py",
+          "projects/django/django/conf/urls/i18n.py",
+          "projects/django/django/conf/urls/static.py"
+        ],
+        "complexity": 88.0,
         "is_full_system": true
       }
     ],
@@ -92,14 +928,14 @@
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-monitoring-(architecture_model)",
-        "name": "Monitoring (architecture_model)",
+        "system_id": "SYS-projects-(core)",
+        "name": "Projects (core)",
         "component_ids": [
-          "COMP-1-1"
+          "COMP-3-1"
         ],
         "files": [
-          "src/architecture_model/monitoring.py",
-          "src/architecture_model/monitoring_checks.py"
+          "projects/django/django/__main__.py",
+          "projects/django/django/shortcuts.py"
         ],
         "complexity": 2.0,
         "is_full_system": false
@@ -107,28 +943,13 @@
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-monitoring-(pipeline)",
-        "name": "Monitoring (pipeline)",
+        "system_id": "SYS-projects-(dispatch)",
+        "name": "Projects (dispatch)",
         "component_ids": [
-          "COMP-1-2"
+          "COMP-3-7"
         ],
         "files": [
-          "src/architecture_model/pipeline/coordinator.py",
-          "src/architecture_model/pipeline/cache.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-monitoring-(core)",
-        "name": "Monitoring (core)",
-        "component_ids": [
-          "COMP-1-3"
-        ],
-        "files": [
-          "src/architecture_model/core/cluster.py"
+          "projects/django/django/dispatch/dispatcher.py"
         ],
         "complexity": 1.0,
         "is_full_system": false
@@ -136,137 +957,16 @@
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-monitoring-(authoring)",
-        "name": "Monitoring (authoring)",
+        "system_id": "SYS-projects-(http)",
+        "name": "Projects (http)",
         "component_ids": [
-          "COMP-1-5"
+          "COMP-3-10"
         ],
         "files": [
-          "src/architecture_model/authoring/gate.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-monitoring-(extract)",
-        "name": "Monitoring (extract)",
-        "component_ids": [
-          "COMP-1-7"
-        ],
-        "files": [
-          "src/architecture_model/extract/from_code.py",
-          "src/architecture_model/extract/from_artifacts.py",
-          "src/architecture_model/extract/constraint_detector.py"
-        ],
-        "complexity": 3.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-synthesize-types",
-        "name": "Synthesize Types",
-        "component_ids": [
-          "COMP-4"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/synthesize_types.py",
-          "src/architecture_model/pipeline/synthesize.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-decompose-types",
-        "name": "Decompose Types",
-        "component_ids": [
-          "COMP-5"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/decompose_types.py",
-          "src/architecture_model/pipeline/decompose.py",
-          "src/architecture_model/orchestration/decompose.py"
-        ],
-        "complexity": 3.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-contract-types",
-        "name": "Contract Types",
-        "component_ids": [
-          "COMP-6"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/contract_types.py",
-          "src/architecture_model/pipeline/contract.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-allocate-types",
-        "name": "Allocate Types",
-        "component_ids": [
-          "COMP-7"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/allocate_types.py",
-          "src/architecture_model/pipeline/allocate.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-validate-types",
-        "name": "Validate Types",
-        "component_ids": [
-          "COMP-8"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/validate_types.py",
-          "src/architecture_model/pipeline/validate.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-regen-score",
-        "name": "Regen Score",
-        "component_ids": [
-          "COMP-9"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/regen_score.py",
-          "src/architecture_model/core/regen_readiness.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-protocol",
-        "name": "Protocol",
-        "component_ids": [
-          "COMP-10"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/protocol.py",
-          "src/architecture_model/manifest/protocol.py",
-          "src/architecture_model/pipeline/lessons.py",
-          "src/architecture_model/pipeline/report.py"
+          "projects/django/django/http/cookie.py",
+          "projects/django/django/http/multipartparser.py",
+          "projects/django/django/http/request.py",
+          "projects/django/django/http/response.py"
         ],
         "complexity": 4.0,
         "is_full_system": false
@@ -274,445 +974,14 @@
       {
         "__dataclass__": "SystemBoundary",
         "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-specify-types",
-        "name": "Specify Types",
+        "system_id": "SYS-projects-(apps)",
+        "name": "Projects (apps)",
         "component_ids": [
-          "COMP-11"
+          "COMP-3-15"
         ],
         "files": [
-          "src/architecture_model/pipeline/specify_types.py",
-          "src/architecture_model/pipeline/specify.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-relate-types",
-        "name": "Relate Types",
-        "component_ids": [
-          "COMP-12"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/relate_types.py",
-          "src/architecture_model/pipeline/relate.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-learning",
-        "name": "Learning",
-        "component_ids": [
-          "COMP-13"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/learning.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-infer-types",
-        "name": "Infer Types",
-        "component_ids": [
-          "COMP-14"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/infer.py",
-          "src/architecture_model/pipeline/infer_types.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-validator",
-        "name": "Validator",
-        "component_ids": [
-          "COMP-15"
-        ],
-        "files": [
-          "src/architecture_model/core/validator.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-confidence",
-        "name": "Confidence",
-        "component_ids": [
-          "COMP-17"
-        ],
-        "files": [
-          "src/architecture_model/core/confidence.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-representativeness",
-        "name": "Representativeness",
-        "component_ids": [
-          "COMP-18"
-        ],
-        "files": [
-          "src/architecture_model/core/representativeness.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-differ",
-        "name": "Differ",
-        "component_ids": [
-          "COMP-19"
-        ],
-        "files": [
-          "src/architecture_model/core/differ.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-coverage",
-        "name": "Coverage",
-        "component_ids": [
-          "COMP-20"
-        ],
-        "files": [
-          "src/architecture_model/core/coverage.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-visualize",
-        "name": "Visualize",
-        "component_ids": [
-          "COMP-21"
-        ],
-        "files": [
-          "src/architecture_model/core/visualize.py",
-          "src/architecture_model/cli/visualize.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-parser",
-        "name": "Parser",
-        "component_ids": [
-          "COMP-22"
-        ],
-        "files": [
-          "src/architecture_model/core/parser.py",
-          "src/architecture_model/authoring/parser.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-corrections",
-        "name": "Corrections",
-        "component_ids": [
-          "COMP-23"
-        ],
-        "files": [
-          "src/architecture_model/pipeline/corrections.py",
-          "src/architecture_model/core/corrections.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-decomposer",
-        "name": "Decomposer",
-        "component_ids": [
-          "COMP-24"
-        ],
-        "files": [
-          "src/architecture_model/core/decomposer.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-slicer",
-        "name": "Slicer",
-        "component_ids": [
-          "COMP-25"
-        ],
-        "files": [
-          "src/architecture_model/core/slicer.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-source-block-quality",
-        "name": "Source Block Quality",
-        "component_ids": [
-          "COMP-26"
-        ],
-        "files": [
-          "src/architecture_model/core/source_block_assign.py",
-          "src/architecture_model/core/source_block_quality.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-merger",
-        "name": "Merger",
-        "component_ids": [
-          "COMP-27"
-        ],
-        "files": [
-          "src/architecture_model/core/merger.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-loader",
-        "name": "Loader",
-        "component_ids": [
-          "COMP-28"
-        ],
-        "files": [
-          "src/architecture_model/config/loader.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-schema",
-        "name": "Schema",
-        "component_ids": [
-          "COMP-29"
-        ],
-        "files": [
-          "src/architecture_model/config/schema.py",
-          "src/architecture_model/profiles/schema.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-behavior",
-        "name": "Behavior",
-        "component_ids": [
-          "COMP-30"
-        ],
-        "files": [
-          "src/architecture_model/manifest/behavior.py",
-          "src/architecture_model/orchestration/behavior_flows.py",
-          "src/architecture_model/orchestration/behavior_decompose.py"
-        ],
-        "complexity": 3.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-grouping",
-        "name": "Grouping",
-        "component_ids": [
-          "COMP-31"
-        ],
-        "files": [
-          "src/architecture_model/manifest/grouping.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-recursive",
-        "name": "Recursive",
-        "component_ids": [
-          "COMP-32"
-        ],
-        "files": [
-          "src/architecture_model/manifest/recursive.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-call-graph",
-        "name": "Call Graph",
-        "component_ids": [
-          "COMP-33"
-        ],
-        "files": [
-          "src/architecture_model/manifest/call_graph.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-body-hints",
-        "name": "Body Hints",
-        "component_ids": [
-          "COMP-34"
-        ],
-        "files": [
-          "src/architecture_model/manifest/body_hints.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-discovery",
-        "name": "Discovery",
-        "component_ids": [
-          "COMP-35"
-        ],
-        "files": [
-          "src/architecture_model/utils/discovery.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-store",
-        "name": "Store",
-        "component_ids": [
-          "COMP-36"
-        ],
-        "files": [
-          "src/architecture_model/persistence/store.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-auto-enrich",
-        "name": "Auto Enrich",
-        "component_ids": [
-          "COMP-37"
-        ],
-        "files": [
-          "src/architecture_model/orchestration/auto_enrich.py",
-          "src/architecture_model/orchestration/enrich.py"
-        ],
-        "complexity": 2.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-deep-decompose",
-        "name": "Deep Decompose",
-        "component_ids": [
-          "COMP-39"
-        ],
-        "files": [
-          "src/architecture_model/orchestration/deep_decompose.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-table-parser",
-        "name": "Table Parser",
-        "component_ids": [
-          "COMP-41"
-        ],
-        "files": [
-          "src/architecture_model/extract/table_parser.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-flatfiles",
-        "name": "Flatfiles",
-        "component_ids": [
-          "COMP-42"
-        ],
-        "files": [
-          "src/architecture_model/export/flatfiles.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-reference",
-        "name": "Reference",
-        "component_ids": [
-          "COMP-43"
-        ],
-        "files": [
-          "src/architecture_model/export/reference.py"
-        ],
-        "complexity": 1.0,
-        "is_full_system": false
-      },
-      {
-        "__dataclass__": "SystemBoundary",
-        "__module__": "architecture_model.pipeline.decompose_types",
-        "system_id": "SYS-cli-main",
-        "name": "CLI Main",
-        "component_ids": [
-          "COMP-44"
-        ],
-        "files": [
-          "src/architecture_model/__main__.py",
-          "src/architecture_model/cli/main.py"
+          "projects/django/django/apps/config.py",
+          "projects/django/django/apps/registry.py"
         ],
         "complexity": 2.0,
         "is_full_system": false
@@ -720,2413 +989,1078 @@
     ],
     "inter_system_edges": [
       [
-        "SYS-decomposer",
-        "SYS-cli-main",
+        "SYS-projects-(core)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-parser",
+        "SYS-projects-(template)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-learning",
+        "SYS-src-(src)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-regen-score",
+        "SYS-src-(projects)",
+        "SYS-projects-(dispatch)",
         "depends-on"
       ],
       [
-        "SYS-recursive",
-        "SYS-call-graph",
+        "SYS-projects-(conf)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-recursive",
-        "SYS-loader",
+        "SYS-projects-(template)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-regen-score",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-specify-types",
-        "SYS-allocate-types",
+        "SYS-projects-(views)",
+        "SYS-projects-(apps)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(manifest)",
-        "SYS-observe-types",
+        "SYS-projects-(template)",
+        "SYS-projects-(http)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-decompose-types",
+        "SYS-projects-(utils)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-parser",
+        "SYS-projects-(conf)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(core)",
-        "SYS-infrastructure",
+        "SYS-src-(projects)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-synthesize-types",
+        "SYS-projects-(utils)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-protocol",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-confidence",
-        "SYS-merger",
+        "SYS-projects-(db)",
+        "SYS-projects-(dispatch)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(pipeline)",
-        "SYS-cli-main",
+        "SYS-projects-(core)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-differ",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-projects-(forms)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-merger",
+        "SYS-projects-(utils)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-call-graph",
+        "SYS-projects-(views)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-call-graph",
-        "SYS-protocol",
+        "SYS-projects-(urls)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-decomposer",
-        "SYS-representativeness",
+        "SYS-projects-(urls)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-validator",
-        "SYS-cli-main",
+        "SYS-projects-(utils)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-visualize",
+        "SYS-projects-(views)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-merger",
+        "SYS-projects-(utils)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(pipeline)",
-        "SYS-specify-types",
+        "SYS-projects-(forms)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-differ",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-monitoring-(core)",
+        "SYS-projects-(core)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-visualize",
+        "SYS-projects-(dispatch)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-merger",
+        "SYS-src-(src)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(manifest)",
-        "SYS-discovery",
+        "SYS-projects-(urls)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-regen-score",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-monitoring-(core)",
+        "SYS-projects-(forms)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-call-graph",
+        "SYS-projects-(forms)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-infrastructure",
+        "SYS-projects-(core)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ],
       [
-        "SYS-regen-score",
-        "SYS-protocol",
+        "SYS-projects-(views)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-source-block-quality",
+        "SYS-projects-(utils)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-confidence",
-        "SYS-differ",
+        "SYS-projects-(template)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-decomposer",
+        "SYS-projects-(apps)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-decomposer",
-        "SYS-confidence",
+        "SYS-projects-(core)",
+        "SYS-projects-(dispatch)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-visualize",
+        "SYS-projects-(urls)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-differ",
+        "SYS-projects-(views)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(manifest)",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-projects-(db)",
+        "SYS-projects-(apps)",
         "depends-on"
       ],
       [
-        "SYS-confidence",
-        "SYS-cli-main",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-visualize",
+        "SYS-projects-(urls)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-observe-types",
+        "SYS-projects-(core)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-source-block-quality",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-cli-main",
+        "SYS-projects-(tasks)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-merger",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-projects-(utils)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-contract-types",
+        "SYS-projects-(forms)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-infer-types",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-loader",
-        "SYS-discovery",
+        "SYS-projects-(apps)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-differ",
+        "SYS-src-(projects)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-monitoring-(manifest)",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-infrastructure",
+        "SYS-src-(projects)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-decomposer",
+        "SYS-projects-(template)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(pipeline)",
-        "SYS-infrastructure",
+        "SYS-src-(src)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-table-parser",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(http)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-observe-types",
+        "SYS-projects-(forms)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-cli-main",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-corrections",
+        "SYS-projects-(core)",
+        "SYS-projects-(http)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-differ",
+        "SYS-projects-(forms)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-monitoring-(manifest)",
+        "SYS-projects-(template)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-decomposer",
+        "SYS-projects-(apps)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-visualize",
-        "SYS-parser",
+        "SYS-projects-(template)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-visualize",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-confidence",
+        "SYS-projects-(conf)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-cli-main",
+        "SYS-projects-(core)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-recursive",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-corrections",
+        "SYS-projects-(http)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-slicer",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-corrections",
+        "SYS-projects-(apps)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-recursive",
+        "SYS-src-(projects)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-infrastructure",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-relate-types",
-        "SYS-allocate-types",
+        "SYS-projects-(http)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-decomposer",
+        "SYS-projects-(core)",
+        "SYS-projects-(apps)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-validator",
+        "SYS-projects-(template)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-corrections",
+        "SYS-projects-(http)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-slicer",
+        "SYS-projects-(conf)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(manifest)",
-        "SYS-protocol",
+        "SYS-projects-(core)",
+        "SYS-projects-(http)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-behavior",
+        "SYS-projects-(db)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-confidence",
+        "SYS-projects-(conf)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-confidence",
-        "SYS-infrastructure",
+        "SYS-projects-(template)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-recursive",
-        "SYS-observe-types",
+        "SYS-projects-(db)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-confidence",
-        "SYS-decomposer",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(apps)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-infrastructure",
+        "SYS-projects-(db)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-decomposer",
+        "SYS-projects-(template)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-call-graph",
-        "SYS-behavior",
+        "SYS-projects-(urls)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-allocate-types",
+        "SYS-projects-(utils)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-representativeness",
+        "SYS-projects-(db)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-cli-main",
+        "SYS-projects-(core)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-confidence",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-infrastructure",
+        "SYS-projects-(middleware)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-body-hints",
+        "SYS-projects-(core)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-visualize",
-        "SYS-source-block-quality",
+        "SYS-projects-(views)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-decomposer",
+        "SYS-projects-(forms)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-behavior",
+        "SYS-projects-(views)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-infrastructure",
+        "SYS-projects-(views)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-regen-score",
-        "SYS-source-block-quality",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-confidence",
+        "SYS-projects-(templatetags)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-observe-types",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-specify-types",
+        "SYS-projects-(core)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-visualize",
+        "SYS-projects-(core)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-decomposer",
-        "SYS-monitoring-(core)",
+        "SYS-projects-(utils)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-recursive",
-        "SYS-discovery",
+        "SYS-projects-(apps)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-confidence",
+        "SYS-projects-(http)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-call-graph",
-        "SYS-observe-types",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-body-hints",
+        "SYS-projects-(core)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-visualize",
+        "SYS-projects-(core)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-validator",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-synthesize-types",
+        "SYS-projects-(http)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-coverage",
+        "SYS-projects-(middleware)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-infrastructure",
+        "SYS-projects-(urls)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-grouping",
+        "SYS-projects-(views)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-decomposer",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-recursive",
-        "SYS-body-hints",
+        "SYS-projects-(forms)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-observe-types",
+        "SYS-projects-(conf)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-protocol",
+        "SYS-projects-(template)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-slicer",
+        "SYS-projects-(urls)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-monitoring-(pipeline)",
+        "SYS-src-(src)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-protocol",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-infer-types",
+        "SYS-projects-(views)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-infrastructure",
+        "SYS-projects-(core)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-specify-types",
-        "SYS-observe-types",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-corrections",
+        "SYS-projects-(db)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-visualize",
-        "SYS-validator",
+        "SYS-projects-(http)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-loader",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-slicer",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-projects-(urls)",
+        "SYS-projects-(http)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-call-graph",
+        "SYS-projects-(templatetags)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-contract-types",
-        "SYS-allocate-types",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-coverage",
+        "SYS-src-(projects)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-differ",
-        "SYS-cli-main",
+        "SYS-projects-(core)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-src-(src)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-corrections",
+        "SYS-projects-(http)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-visualize",
-        "SYS-representativeness",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-coverage",
-        "SYS-observe-types",
+        "SYS-projects-(conf)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-regen-score",
-        "SYS-validator",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(dispatch)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-corrections",
+        "SYS-projects-(http)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-slicer",
+        "SYS-projects-(http)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-call-graph",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-projects-(db)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-regen-score",
-        "SYS-representativeness",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-parser",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-call-graph",
+        "SYS-projects-(apps)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-contract-types",
+        "SYS-src-(projects)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(pipeline)",
-        "SYS-contract-types",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-recursive",
-        "SYS-protocol",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-body-hints",
+        "SYS-projects-(http)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-confidence",
-        "SYS-monitoring-(core)",
+        "SYS-projects-(db)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-regen-score",
+        "SYS-src-(src)",
+        "SYS-projects-(apps)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-body-hints",
+        "SYS-projects-(template)",
+        "SYS-projects-(dispatch)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(manifest)",
-        "SYS-cli-main",
+        "SYS-projects-(apps)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-source-block-quality",
-        "SYS-monitoring-(core)",
+        "SYS-projects-(db)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-regen-score",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-src-(projects)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-parser",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-allocate-types",
-        "SYS-infer-types",
+        "SYS-src-(projects)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-merger",
-        "SYS-cli-main",
+        "SYS-projects-(http)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-allocate-types",
+        "SYS-projects-(template)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-merger",
+        "SYS-projects-(http)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(manifest)",
-        "SYS-recursive",
+        "SYS-projects-(urls)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-contract-types",
-        "SYS-protocol",
+        "SYS-projects-(urls)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(orchestration)",
-        "SYS-monitoring-(core)",
+        "SYS-projects-(views)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-coverage",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-projects-(core)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-differ",
-        "SYS-infrastructure",
+        "SYS-projects-(db)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-coverage",
+        "SYS-src-(src)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-grouping",
-        "SYS-monitoring-(core)",
+        "SYS-projects-(utils)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-source-block-quality",
+        "SYS-projects-(db)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-decomposer",
-        "SYS-visualize",
+        "SYS-projects-(dispatch)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-loader",
-        "SYS-schema",
+        "SYS-projects-(utils)",
+        "SYS-projects-(dispatch)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-protocol",
+        "SYS-projects-(core)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-monitoring-(pipeline)",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-allocate-types",
-        "SYS-corrections",
+        "SYS-projects-(core)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-merger",
+        "SYS-projects-(urls)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-protocol",
+        "SYS-projects-(template)",
+        "SYS-projects-(apps)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-monitoring-(orchestration)",
+        "SYS-projects-(utils)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-visualize",
-        "SYS-coverage",
+        "SYS-projects-(utils)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-decomposer",
-        "SYS-infrastructure",
+        "SYS-projects-(urls)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-protocol",
+        "SYS-projects-(utils)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-validate-types",
-        "SYS-infer-types",
+        "SYS-src-(src)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-deep-decompose",
-        "SYS-call-graph",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-relate-types",
-        "SYS-infer-types",
+        "SYS-projects-(core)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-regen-score",
+        "SYS-projects-(forms)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-relate-types",
-        "SYS-observe-types",
+        "SYS-projects-(tasks)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-observe-types",
+        "SYS-projects-(views)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ],
       [
-        "SYS-regen-score",
-        "SYS-coverage",
+        "SYS-projects-(templatetags)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-schema",
+        "SYS-projects-(utils)",
+        "SYS-projects-(http)",
         "depends-on"
       ],
       [
-        "SYS-specify-types",
-        "SYS-protocol",
+        "SYS-projects-(apps)",
+        "SYS-src-(src)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-parser",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-merger",
-        "SYS-infrastructure",
+        "SYS-projects-(core)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-regen-score",
+        "SYS-projects-(forms)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-observe-types",
-        "SYS-validate-types",
+        "SYS-projects-(conf)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-validator",
+        "SYS-src-(projects)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-behavior",
+        "SYS-src-(src)",
+        "SYS-projects-(conf)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-differ",
+        "SYS-projects-(forms)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-decomposer",
-        "SYS-corrections",
+        "SYS-src-(src)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-observe-types",
+        "SYS-projects-(middleware)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(pipeline)",
-        "SYS-infer-types",
+        "SYS-projects-(http)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(pipeline)",
-        "SYS-observe-types",
+        "SYS-projects-(views)",
+        "SYS-projects-(template)",
         "depends-on"
       ],
       [
-        "SYS-visualize",
-        "SYS-regen-score",
+        "SYS-projects-(core)",
+        "SYS-projects-(views)",
         "depends-on"
       ],
       [
-        "SYS-body-hints",
-        "SYS-cli-main",
+        "SYS-projects-(template)",
+        "SYS-projects-(middleware)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-validator",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(urls)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-slicer",
+        "SYS-projects-(conf)",
+        "SYS-src-(projects)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(authoring)",
-        "SYS-parser",
+        "SYS-projects-(core)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-validator",
-        "SYS-infrastructure",
+        "SYS-projects-(utils)",
+        "SYS-projects-(apps)",
         "depends-on"
       ],
       [
-        "SYS-recursive",
-        "SYS-behavior",
+        "SYS-projects-(views)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(manifest)",
-        "SYS-grouping",
+        "SYS-projects-(apps)",
+        "SYS-projects-(tasks)",
         "depends-on"
       ],
       [
-        "SYS-monitoring-(extract)",
-        "SYS-representativeness",
+        "SYS-src-(src)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-decompose-types",
-        "SYS-validator",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-representativeness",
-        "SYS-merger",
+        "SYS-projects-(tasks)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-synthesize-types",
-        "SYS-contract-types",
+        "SYS-projects-(db)",
+        "SYS-projects-(utils)",
         "depends-on"
       ],
       [
-        "SYS-behavior",
-        "SYS-validator",
+        "SYS-projects-(views)",
+        "SYS-projects-(http)",
         "depends-on"
       ],
       [
-        "SYS-regen-score",
-        "SYS-parser",
+        "SYS-projects-(apps)",
+        "SYS-projects-(forms)",
         "depends-on"
       ],
       [
-        "SYS-confidence",
-        "SYS-visualize",
+        "SYS-projects-(conf)",
+        "SYS-projects-(db)",
         "depends-on"
       ],
       [
-        "SYS-parser",
-        "SYS-monitoring-(architecture_model)",
+        "SYS-src-(src)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-validate-types",
-        "SYS-allocate-types",
+        "SYS-projects-(dispatch)",
+        "SYS-projects-(core)",
         "depends-on"
       ],
       [
-        "SYS-auto-enrich",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-visualize",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-allocate-types",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-recursive",
-        "SYS-schema",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-visualize",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-relate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-monitoring-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-visualize",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-slicer",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-allocate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-behavior",
-        "depends-on"
-      ],
-      [
-        "SYS-call-graph",
-        "SYS-monitoring-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-deep-decompose",
-        "depends-on"
-      ],
-      [
-        "SYS-contract-types",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-call-graph",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-recursive",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-decomposer",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-call-graph",
-        "SYS-recursive",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-relate-types",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-synthesize-types",
-        "depends-on"
-      ],
-      [
-        "SYS-recursive",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-recursive",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-slicer",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-coverage",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-monitoring-(orchestration)",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-body-hints",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-learning",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-monitoring-(orchestration)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-body-hints",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-validate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-parser",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-decomposer",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-grouping",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-parser",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-decomposer",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-call-graph",
-        "SYS-grouping",
-        "depends-on"
-      ],
-      [
-        "SYS-cli-main",
-        "SYS-visualize",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-allocate-types",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-learning",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-call-graph",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-parser",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-differ",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-infer-types",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-call-graph",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-decompose-types",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-relate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-relate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-parser",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-validate-types",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-infer-types",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(manifest)",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-merger",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-monitoring-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-monitoring-(pipeline)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(core)",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-schema",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-monitoring-(orchestration)",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-auto-enrich",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-specify-types",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-recursive",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-parser",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-monitoring-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-validator",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-validate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-merger",
-        "SYS-discovery",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-recursive",
-        "SYS-monitoring-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-recursive",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-behavior",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-recursive",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(manifest)",
-        "SYS-body-hints",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-decomposer",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-behavior",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-visualize",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-infer-types",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-validator",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-decomposer",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-monitoring-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-relate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-validate-types",
-        "SYS-protocol",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-monitoring-(manifest)",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-learning",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-grouping",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(manifest)",
-        "SYS-monitoring-(pipeline)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-learning",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-validator",
-        "depends-on"
-      ],
-      [
-        "SYS-recursive",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-body-hints",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(manifest)",
-        "SYS-call-graph",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-specify-types",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-recursive",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-visualize",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-decompose-types",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-grouping",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-slicer",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-parser",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-representativeness",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-decomposer",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-recursive",
-        "SYS-grouping",
-        "depends-on"
-      ],
-      [
-        "SYS-call-graph",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-infer-types",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-parser",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-visualize",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(pipeline)",
-        "SYS-validate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-decomposer",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(extract)",
-        "SYS-loader",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-merger",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-observe-types",
-        "depends-on"
-      ],
-      [
-        "SYS-decompose-types",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-confidence",
-        "depends-on"
-      ],
-      [
-        "SYS-behavior",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-decompose-types",
-        "depends-on"
-      ],
-      [
-        "SYS-synthesize-types",
-        "SYS-monitoring-(architecture_model)",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(core)",
-        "SYS-cli-main",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(orchestration)",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-coverage",
-        "SYS-infrastructure",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-source-block-quality",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-representativeness",
-        "SYS-body-hints",
-        "depends-on"
-      ],
-      [
-        "SYS-validate-types",
-        "SYS-relate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-visualize",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-deep-decompose",
-        "SYS-grouping",
-        "depends-on"
-      ],
-      [
-        "SYS-grouping",
-        "SYS-coverage",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(authoring)",
-        "SYS-grouping",
-        "depends-on"
-      ],
-      [
-        "SYS-monitoring-(manifest)",
-        "SYS-behavior",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-corrections",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-call-graph",
-        "SYS-body-hints",
-        "depends-on"
-      ],
-      [
-        "SYS-observe-types",
-        "SYS-allocate-types",
-        "depends-on"
-      ],
-      [
-        "SYS-regen-score",
-        "SYS-slicer",
-        "depends-on"
-      ],
-      [
-        "SYS-auto-enrich",
-        "SYS-monitoring-(core)",
-        "depends-on"
-      ],
-      [
-        "SYS-decomposer",
-        "SYS-differ",
-        "depends-on"
-      ],
-      [
-        "SYS-source-block-quality",
-        "SYS-regen-score",
-        "depends-on"
-      ],
-      [
-        "SYS-confidence",
-        "SYS-parser",
+        "SYS-src-(projects)",
+        "SYS-projects-(templatetags)",
         "depends-on"
       ]
     ]
@@ -3136,8 +2070,8 @@
     "__module__": "architecture_model.pipeline.protocol",
     "score": 100.0,
     "sub_scores": {
-      "system_count": 4.0,
-      "inline_count": 43.0
+      "system_count": 13.0,
+      "inline_count": 4.0
     },
     "thresholds": {},
     "llm_prompt": ""

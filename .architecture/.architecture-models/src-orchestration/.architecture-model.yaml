@@ -1,0 +1,417 @@
+meta:
+  schema_version: '2.0'
+  system: Src (orchestration)
+  system_id: SYS-src-(orchestration)
+entities:
+  components:
+  - id: src-orchestration-COMP-1
+    name: Auto Enrich
+    files:
+    - src/architecture_model/orchestration/auto_enrich.py
+  - id: src-orchestration-COMP-2
+    name: Behavior Decompose
+    files:
+    - src/architecture_model/orchestration/behavior_decompose.py
+  - id: src-orchestration-COMP-3
+    name: Behavior Flows
+    files:
+    - src/architecture_model/orchestration/behavior_flows.py
+  - id: src-orchestration-COMP-4
+    name: Capability Inference
+    files:
+    - src/architecture_model/orchestration/capability_inference.py
+  - id: src-orchestration-COMP-5
+    name: Compaction
+    files:
+    - src/architecture_model/orchestration/compaction.py
+  - id: src-orchestration-COMP-6
+    name: Decompose
+    files:
+    - src/architecture_model/orchestration/decompose.py
+  - id: src-orchestration-COMP-7
+    name: Deep Decompose
+    files:
+    - src/architecture_model/orchestration/deep_decompose.py
+  - id: src-orchestration-COMP-8
+    name: Enrich
+    files:
+    - src/architecture_model/orchestration/enrich.py
+  - id: src-orchestration-COMP-9
+    name: Enrichment Context
+    files:
+    - src/architecture_model/orchestration/enrichment_context.py
+  - id: src-orchestration-COMP-10
+    name: Naming Context
+    files:
+    - src/architecture_model/orchestration/naming_context.py
+  - id: src-orchestration-COMP-11
+    name: Pipeline
+    files:
+    - src/architecture_model/orchestration/pipeline.py
+  - id: src-orchestration-COMP-12
+    name: Trigger Detection
+    files:
+    - src/architecture_model/orchestration/trigger_detection.py
+  - id: src-orchestration-COMP-13
+    name: Use Case Inference
+    files:
+    - src/architecture_model/orchestration/use_case_inference.py
+  capabilities:
+  - id: CAP-1
+    name: Root Management
+  - id: CAP-2
+    name: Bookmarklet Management
+  - id: CAP-3
+    name: Tag Management
+  - id: CAP-4
+    name: Filter Management
+  - id: CAP-5
+    name: View Management
+  - id: CAP-6
+    name: Model Management
+  - id: CAP-7
+    name: ^Model Management
+  - id: CAP-8
+    name: Template Management
+  - id: CAP-9
+    name: Login Management
+  - id: CAP-10
+    name: Logout Management
+  - id: CAP-11
+    name: Password Change Management
+  - id: CAP-12
+    name: Password Reset Management
+  - id: CAP-13
+    name: Reset Management
+  - id: CAP-14
+    name: <Path:Url> Management
+  - id: CAP-15
+    name: Auto Enrich
+  - id: CAP-16
+    name: Behavior Decompose
+  - id: CAP-17
+    name: Behavior Flows
+  - id: CAP-18
+    name: Capability Inference
+  - id: CAP-19
+    name: Compaction
+  - id: CAP-20
+    name: Decompose
+  - id: CAP-21
+    name: Deep Decompose
+  - id: CAP-22
+    name: Enrich
+  - id: CAP-23
+    name: Enrichment Context
+  - id: CAP-24
+    name: Naming Context
+  - id: CAP-25
+    name: Pipeline
+  - id: CAP-26
+    name: Trigger Detection
+  - id: CAP-27
+    name: Use Case Inference
+  behaviors:
+  - id: BEH-1
+    name: 'GET '
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-2
+    name: GET bookmarklets/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-3
+    name: GET tags/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-4
+    name: GET filters/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-5
+    name: GET views/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-6
+    name: GET views/<view>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-7
+    name: GET models/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-8
+    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-9
+    name: GET templates/<path:template>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-12
+    name: GET password_change/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-13
+    name: GET password_change/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-14
+    name: GET password_reset/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-15
+    name: GET password_reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-10
+    name: GET login/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-11
+    name: GET logout/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-16
+    name: GET reset/<uidb64>/<token>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-17
+    name: GET reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-18
+    name: GET <path:url>
+    behavior_type: route_handler
+    steps:
+    - flatpage
+    actor_id: ACT-1
+  actors:
+  - id: ACT-1
+    name: API Consumer
+    actor_type: system
+    evidence_source: routes
+  layers:
+  - id: LAYER-data
+    name: data
+relationships:
+- from: src-orchestration-COMP-1
+  to: CAP-15
+  type: realizes
+- from: src-orchestration-COMP-2
+  to: CAP-16
+  type: realizes
+- from: src-orchestration-COMP-3
+  to: CAP-17
+  type: realizes
+- from: src-orchestration-COMP-4
+  to: CAP-18
+  type: realizes
+- from: src-orchestration-COMP-5
+  to: CAP-19
+  type: realizes
+- from: src-orchestration-COMP-6
+  to: CAP-21
+  type: realizes
+- from: src-orchestration-COMP-7
+  to: CAP-21
+  type: realizes
+- from: src-orchestration-COMP-8
+  to: CAP-22
+  type: realizes
+- from: src-orchestration-COMP-9
+  to: CAP-23
+  type: realizes
+- from: src-orchestration-COMP-10
+  to: CAP-24
+  type: realizes
+- from: src-orchestration-COMP-11
+  to: CAP-25
+  type: realizes
+- from: src-orchestration-COMP-12
+  to: CAP-26
+  type: realizes
+- from: src-orchestration-COMP-13
+  to: CAP-27
+  type: realizes
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-2
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-9
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-13
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-5
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-2
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-3
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-11
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-7
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-5
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-10
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-8
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-11
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-7
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-5
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-13
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-9
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-1
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-4
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-7
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-12
+  type: depends-on
+- from: src-orchestration-COMP-9
+  to: src-orchestration-COMP-2
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-10
+  type: depends-on
+- from: src-orchestration-COMP-11
+  to: src-orchestration-COMP-6
+  type: depends-on
+- from: src-orchestration-COMP-10
+  to: src-orchestration-COMP-13
+  type: depends-on
+- from: LAYER-DATA
+  to: src-orchestration-COMP-1
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-2
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-3
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-4
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-5
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-6
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-7
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-8
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-9
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-10
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-11
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-12
+  type: contains
+- from: LAYER-DATA
+  to: src-orchestration-COMP-13
+  type: contains

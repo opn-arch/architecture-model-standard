@@ -1,0 +1,169 @@
+{
+  "modules": [
+    {
+      "file": "src/architecture_model/pipeline/__init__.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/pipeline/allocate.py",
+      "functions": 9,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/allocate_types.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "src/architecture_model/pipeline/artifacts.py",
+      "functions": 9,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/pipeline/cache.py",
+      "functions": 5,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/context_gen.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/pipeline/contract.py",
+      "functions": 2,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/contract_types.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "src/architecture_model/pipeline/coordinator.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/corrections.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "src/architecture_model/pipeline/decompose.py",
+      "functions": 3,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/decompose_types.py",
+      "functions": 0,
+      "classes": 3
+    },
+    {
+      "file": "src/architecture_model/pipeline/emit.py",
+      "functions": 7,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/emit_types.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/global_learning.py",
+      "functions": 0,
+      "classes": 4
+    },
+    {
+      "file": "src/architecture_model/pipeline/infer.py",
+      "functions": 13,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/infer_types.py",
+      "functions": 0,
+      "classes": 4
+    },
+    {
+      "file": "src/architecture_model/pipeline/learning.py",
+      "functions": 0,
+      "classes": 5
+    },
+    {
+      "file": "src/architecture_model/pipeline/lessons.py",
+      "functions": 1,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/observe.py",
+      "functions": 18,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/observe_types.py",
+      "functions": 0,
+      "classes": 10
+    },
+    {
+      "file": "src/architecture_model/pipeline/protocol.py",
+      "functions": 0,
+      "classes": 9
+    },
+    {
+      "file": "src/architecture_model/pipeline/regen_score.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "src/architecture_model/pipeline/relate.py",
+      "functions": 2,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/relate_types.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "src/architecture_model/pipeline/report.py",
+      "functions": 2,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/requirements_derive.py",
+      "functions": 3,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/specify.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/specify_types.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "src/architecture_model/pipeline/synthesize.py",
+      "functions": 6,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/synthesize_types.py",
+      "functions": 0,
+      "classes": 3
+    },
+    {
+      "file": "src/architecture_model/pipeline/validate.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "src/architecture_model/pipeline/validate_types.py",
+      "functions": 0,
+      "classes": 2
+    }
+  ]
+}

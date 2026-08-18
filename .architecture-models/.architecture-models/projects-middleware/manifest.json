@@ -1,0 +1,49 @@
+{
+  "modules": [
+    {
+      "file": "projects/django/django/middleware/cache.py",
+      "functions": 0,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/middleware/clickjacking.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/middleware/common.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/middleware/csp.py",
+      "functions": 1,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/middleware/csrf.py",
+      "functions": 9,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/middleware/gzip.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/middleware/http.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/middleware/locale.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/middleware/security.py",
+      "functions": 0,
+      "classes": 1
+    }
+  ]
+}

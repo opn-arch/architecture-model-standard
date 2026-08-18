@@ -48,6 +48,9 @@ class ValidationIssue:
 @dataclass
 class ValidationResult:
     issues: list[ValidationIssue] = field(default_factory=list)
+    completeness_grade: str = ""  # A-F semantic completeness grade
+    completeness_score: float = 0.0  # 0-100 completeness percentage
+    completeness_gaps: list[str] = field(default_factory=list)
 
     @property
     def error_count(self) -> int:
@@ -73,9 +76,15 @@ class ValidationResult:
         return max(0, 100 - penalty)
 
     def summary(self) -> str:
+        completeness = (
+            f" | Completeness: {self.completeness_grade} ({self.completeness_score:.0f}%)"
+            if self.completeness_grade
+            else ""
+        )
         return (
             f"Score: {self.score}/100 | "
             f"Errors: {self.error_count}, Warnings: {self.warning_count}, Info: {self.info_count}"
+            f"{completeness}"
         )
 
 
@@ -140,6 +149,17 @@ def validate_model(
     from architecture_model.core.confidence import compute_model_confidence
 
     compute_model_confidence(model)
+
+    # Compute semantic completeness grade
+    try:
+        from architecture_model.core.completeness import compute_completeness
+
+        completeness = compute_completeness(model)
+        result.completeness_grade = completeness.grade
+        result.completeness_score = completeness.score
+        result.completeness_gaps = completeness.gaps
+    except Exception:
+        pass  # Non-fatal — completeness is advisory
 
     return result
 

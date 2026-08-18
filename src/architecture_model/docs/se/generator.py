@@ -1,4 +1,5 @@
 """SE document generation orchestrator."""
+
 from __future__ import annotations
 import hashlib
 from pathlib import Path
@@ -15,9 +16,24 @@ if TYPE_CHECKING:
 STANDARD_DOCS: list[tuple[str, str, str, str]] = [
     ("conops", "conops", "ConOps", "conops.md"),
     ("functional_analysis", "functional_analysis", "Functional Analysis", "functional-analysis.md"),
-    ("logical_architecture", "logical_architecture", "Logical Architecture", "logical-architecture.md"),
-    ("requirements_analysis", "requirements_analysis", "Requirements Analysis", "requirements-analysis.md"),
-    ("verification_validation", "verification_validation", "Verification & Validation", "verification-validation.md"),
+    (
+        "logical_architecture",
+        "logical_architecture",
+        "Logical Architecture",
+        "logical-architecture.md",
+    ),
+    (
+        "requirements_analysis",
+        "requirements_analysis",
+        "Requirements Analysis",
+        "requirements-analysis.md",
+    ),
+    (
+        "verification_validation",
+        "verification_validation",
+        "Verification & Validation",
+        "verification-validation.md",
+    ),
     ("operations_manual", "operations_manual", "Operations Manual", "operations-manual.md"),
     ("maintenance_manual", "maintenance_manual", "Maintenance Manual", "maintenance-manual.md"),
     ("use_cases", "use_cases", "Use Cases", "use-cases.md"),
@@ -46,6 +62,7 @@ def _model_hash(model: ArchitectureModel) -> str:
 def _import_generator(module_name: str):
     """Dynamically import a generator function."""
     import importlib
+
     mod = importlib.import_module(f"architecture_model.docs.se.{module_name}")
     # Convention: generate_<module_name>
     func_name = f"generate_{module_name}"
@@ -76,7 +93,9 @@ def generate_se_docs(
     changelog = Changelog(output_dir / "changelog.yaml")
     mhash = _model_hash(model)
 
-    system_name = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
+    system_name = (
+        getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
+    )
     system_id = getattr(model.meta, "system_id", "") or "SYS-unknown"
 
     result: dict[str, Any] = {"generated": [], "skipped": [], "preserved_edits": [], "errors": []}
@@ -99,6 +118,23 @@ def generate_se_docs(
             to_generate.append((pkey, mod, display, fname))
 
     # Generate each document
+    # Compute completeness for diagnostic banners
+    _completeness_banner = ""
+    try:
+        from architecture_model.core.completeness import compute_completeness
+
+        _comp_result = compute_completeness(model)
+        if _comp_result.grade in ("D", "F"):
+            gap_lines = "\n".join(f"> - {g}" for g in _comp_result.gaps[:4])
+            _completeness_banner = (
+                f"> **Model Completeness: {_comp_result.grade} ({_comp_result.score:.0f}%)**\n"
+                f"> Some sections may be empty due to missing model entities.\n"
+                f"{gap_lines}\n"
+                f"> Run the extraction pipeline or manually add behaviors/interfaces/constraints.\n\n"
+            )
+    except Exception:
+        pass
+
     for key, mod_name, display_name, filename in to_generate:
         try:
             gen_func = _import_generator(mod_name)
@@ -111,6 +147,10 @@ def generate_se_docs(
         except Exception as e:
             result["errors"].append(f"{key}: {e}")
             continue
+
+        # Prepend completeness banner if model is semantically thin
+        if _completeness_banner and md_content:
+            md_content = _completeness_banner + md_content
 
         out_path = output_dir / filename
 
@@ -128,8 +168,7 @@ def generate_se_docs(
                 merged = _merge_sections(existing_body, md_content, edited_sections)
                 md_content = merged
                 preserved = edited_sections
-                result["preserved_edits"].extend(
-                    [f"{filename}:{s}" for s in edited_sections])
+                result["preserved_edits"].extend([f"{filename}:{s}" for s in edited_sections])
 
         # Determine edition number
         cl_data = changelog.load()
@@ -138,8 +177,11 @@ def generate_se_docs(
 
         # Add frontmatter
         fm = generate_frontmatter(
-            document=display_name, system=system_name, system_id=system_id,
-            model_hash=mhash, edition=edition,
+            document=display_name,
+            system=system_name,
+            system_id=system_id,
+            model_hash=mhash,
+            edition=edition,
         )
         full_doc = fm + "\n\n" + md_content
 
@@ -149,12 +191,17 @@ def generate_se_docs(
         # Update changelog
         section_hashes = extract_section_hashes(md_content)
         if doc_entry:
-            changelog.record_regeneration(filename, author=author, model_hash=mhash,
-                                          preserved_sections=preserved,
-                                          section_hashes=section_hashes)
+            changelog.record_regeneration(
+                filename,
+                author=author,
+                model_hash=mhash,
+                preserved_sections=preserved,
+                section_hashes=section_hashes,
+            )
         else:
-            changelog.record_generation(filename, author=author, model_hash=mhash,
-                                        section_hashes=section_hashes)
+            changelog.record_generation(
+                filename, author=author, model_hash=mhash, section_hashes=section_hashes
+            )
 
     # Generate index
     _write_index(output_dir, to_generate, detected, result)
@@ -206,16 +253,25 @@ def _split_sections(text: str) -> dict[str, str]:
     return sections
 
 
-def _write_index(output_dir: Path, generated: list[tuple], detected: list[str],
-                 result: dict) -> None:
+def _write_index(
+    output_dir: Path, generated: list[tuple], detected: list[str], result: dict
+) -> None:
     """Write SE docs index file."""
     lines = ["# Systems Engineering Documents", ""]
     lines.append("## Standard SE Documents")
     lines.append("")
     for key, _, display, fname in generated:
-        if key not in [d for d, *_ in [("api_reference",), ("data_model",),
-                                        ("deployment_guide",), ("security_analysis",),
-                                        ("cli_reference",), ("plugin_guide",)]]:
+        if key not in [
+            d
+            for d, *_ in [
+                ("api_reference",),
+                ("data_model",),
+                ("deployment_guide",),
+                ("security_analysis",),
+                ("cli_reference",),
+                ("plugin_guide",),
+            ]
+        ]:
             status = "generated" if str(output_dir / fname) in result["generated"] else "skipped"
             icon = "+" if status == "generated" else "-"
             lines.append(f"- [{icon}] [{display}]({fname})")

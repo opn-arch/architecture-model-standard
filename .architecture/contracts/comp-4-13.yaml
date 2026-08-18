@@ -1,0 +1,6 @@
+component: COMP-4-13
+contracts:
+- test_file: src/architecture_model/core/test_affinity.py
+  assertions: 0
+- test_file: src/architecture_model/manifest/test_analyzer.py
+  assertions: 0

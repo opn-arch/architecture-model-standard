@@ -1,0 +1,444 @@
+{
+  "modules": [
+    {
+      "file": "projects/django/django/conf/global_settings.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ar/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ar_DZ/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/az/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/bg/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/bn/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/bs/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ca/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ckb/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/cs/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/cy/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/da/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/de/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/de_CH/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/el/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/en/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/en_AU/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/en_CA/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/en_GB/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/en_IE/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/eo/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/es/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/es_AR/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/es_CO/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/es_MX/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/es_NI/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/es_PR/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/et/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/eu/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/fa/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/fi/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/fr/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/fr_BE/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/fr_CA/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/fr_CH/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/fy/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ga/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/gd/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/gl/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/he/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/hi/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/hr/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ht/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/hu/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/id/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ig/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/is/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/it/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ja/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ka/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/km/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/kn/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ko/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ky/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/lt/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/lv/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/mk/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ml/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/mn/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ms/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/nb/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/nl/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/nn/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/pl/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/pt/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/pt_BR/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ro/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ru/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/sk/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/sl/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/sq/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/sr/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/sr_Latn/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/sv/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ta/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/te/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/tg/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/th/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/tk/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/tr/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/ug/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/uk/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/uz/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/vi/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/zh_Hans/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/locale/zh_Hant/formats.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/urls/i18n.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/conf/urls/static.py",
+      "functions": 1,
+      "classes": 0
+    }
+  ]
+}

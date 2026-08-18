@@ -1,0 +1,124 @@
+{
+  "modules": [
+    {
+      "file": "projects/django/django/template/autoreload.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/template/backends/base.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/template/backends/django.py",
+      "functions": 5,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/template/backends/dummy.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/template/backends/jinja2.py",
+      "functions": 1,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/template/backends/utils.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/template/base.py",
+      "functions": 3,
+      "classes": 15
+    },
+    {
+      "file": "projects/django/django/template/context.py",
+      "functions": 1,
+      "classes": 6
+    },
+    {
+      "file": "projects/django/django/template/context_processors.py",
+      "functions": 8,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/template/defaultfilters.py",
+      "functions": 60,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/template/defaulttags.py",
+      "functions": 27,
+      "classes": 25
+    },
+    {
+      "file": "projects/django/django/template/engine.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/template/exceptions.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/template/library.py",
+      "functions": 2,
+      "classes": 6
+    },
+    {
+      "file": "projects/django/django/template/loader.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/template/loader_tags.py",
+      "functions": 4,
+      "classes": 4
+    },
+    {
+      "file": "projects/django/django/template/loaders/app_directories.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/template/loaders/base.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/template/loaders/cached.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/template/loaders/filesystem.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/template/loaders/locmem.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/template/response.py",
+      "functions": 0,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/template/smartif.py",
+      "functions": 3,
+      "classes": 4
+    },
+    {
+      "file": "projects/django/django/template/utils.py",
+      "functions": 1,
+      "classes": 2
+    }
+  ]
+}

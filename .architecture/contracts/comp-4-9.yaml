@@ -1,0 +1,14 @@
+component: COMP-4-9
+contracts:
+- test_file: tests/__init__.py
+  assertions: 0
+- test_file: tests/test_integration/__init__.py
+  assertions: 0
+- test_file: tests/test_utils/__init__.py
+  assertions: 0
+- test_file: tests/test_profiles/__init__.py
+  assertions: 0
+- test_file: tests/test_cli/__init__.py
+  assertions: 0
+- test_file: tests/test_core/__init__.py
+  assertions: 0

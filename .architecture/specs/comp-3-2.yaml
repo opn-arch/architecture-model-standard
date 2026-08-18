@@ -1,0 +1,6 @@
+component: COMP-3-2
+interfaces:
+- id: IF-2
+  name: runner CLI
+  type: cli
+  methods: []

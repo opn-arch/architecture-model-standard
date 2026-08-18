@@ -1,0 +1,12 @@
+component: COMP-4-1
+contracts:
+- test_file: tests/test_monitoring_tier2.py
+  assertions: 0
+- test_file: tests/test_monitoring_checks.py
+  assertions: 0
+- test_file: tests/test_monitoring.py
+  assertions: 0
+- test_file: tests/test_patterns_catalog.py
+  assertions: 0
+- test_file: tests/test_monitoring_tier1.py
+  assertions: 0

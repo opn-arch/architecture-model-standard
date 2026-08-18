@@ -1,0 +1,99 @@
+{
+  "modules": [
+    {
+      "file": "projects/django/django/views/csrf.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/debug.py",
+      "functions": 8,
+      "classes": 4
+    },
+    {
+      "file": "projects/django/django/views/decorators/cache.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/decorators/clickjacking.py",
+      "functions": 3,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/decorators/common.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/decorators/csp.py",
+      "functions": 3,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/decorators/csrf.py",
+      "functions": 1,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/views/decorators/debug.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/decorators/gzip.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/decorators/http.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/decorators/vary.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/defaults.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/views/generic/base.py",
+      "functions": 0,
+      "classes": 5
+    },
+    {
+      "file": "projects/django/django/views/generic/dates.py",
+      "functions": 3,
+      "classes": 20
+    },
+    {
+      "file": "projects/django/django/views/generic/detail.py",
+      "functions": 0,
+      "classes": 4
+    },
+    {
+      "file": "projects/django/django/views/generic/edit.py",
+      "functions": 0,
+      "classes": 12
+    },
+    {
+      "file": "projects/django/django/views/generic/list.py",
+      "functions": 0,
+      "classes": 4
+    },
+    {
+      "file": "projects/django/django/views/i18n.py",
+      "functions": 3,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/views/static.py",
+      "functions": 4,
+      "classes": 0
+    }
+  ]
+}

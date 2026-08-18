@@ -1,0 +1,895 @@
+meta:
+  schema_version: '2.0'
+  system: Src (manifest)
+  system_id: SYS-src-(manifest)
+entities:
+  components:
+  - id: src-manifest-COMP-16
+    name: Behavior
+    files:
+    - src/architecture_model/manifest/behavior.py
+  - id: src-manifest-COMP-17
+    name: Blocks
+    files:
+    - src/architecture_model/manifest/__init__.py
+    - src/architecture_model/manifest/blocks.py
+    - src/architecture_model/manifest/types.py
+  - id: src-manifest-COMP-18
+    name: Body Hints
+    files:
+    - src/architecture_model/manifest/body_hints.py
+  - id: src-manifest-COMP-19
+    name: Call Graph
+    files:
+    - src/architecture_model/manifest/call_graph.py
+  - id: src-manifest-COMP-20
+    name: Chains
+    files:
+    - src/architecture_model/manifest/chains.py
+  - id: src-manifest-COMP-21
+    name: Display
+    files:
+    - src/architecture_model/manifest/display.py
+  - id: src-manifest-COMP-22
+    name: Generator
+    files:
+    - src/architecture_model/manifest/generator.py
+  - id: src-manifest-COMP-23
+    name: Grouping
+    files:
+    - src/architecture_model/manifest/grouping.py
+  - id: src-manifest-COMP-24
+    name: Interfaces
+    files:
+    - src/architecture_model/manifest/interfaces.py
+  - id: src-manifest-COMP-25
+    name: Kt Scanner
+    files:
+    - src/architecture_model/manifest/kt_scanner.py
+    - src/architecture_model/manifest/scanner.py
+  - id: src-manifest-COMP-26
+    name: Metrics
+    files:
+    - src/architecture_model/manifest/metrics.py
+  - id: src-manifest-COMP-27
+    name: Multi Scanner
+    files:
+    - src/architecture_model/manifest/multi_scanner.py
+  - id: src-manifest-COMP-28
+    name: Protocol
+    files:
+    - src/architecture_model/manifest/protocol.py
+  - id: src-manifest-COMP-29
+    name: Recursive
+    files:
+    - src/architecture_model/manifest/recursive.py
+  - id: src-manifest-COMP-30
+    name: Scan Cache
+    files:
+    - src/architecture_model/manifest/scan_cache.py
+  - id: src-manifest-COMP-32
+    name: Slicers
+    files:
+    - src/architecture_model/manifest/slicers.py
+  - id: src-manifest-COMP-33
+    name: Ts Scanner
+    files:
+    - src/architecture_model/manifest/ts_scanner.py
+  capabilities:
+  - id: CAP-1
+    name: Root Management
+  - id: CAP-2
+    name: Bookmarklet Management
+  - id: CAP-3
+    name: Tag Management
+  - id: CAP-4
+    name: Filter Management
+  - id: CAP-5
+    name: View Management
+  - id: CAP-6
+    name: Model Management
+  - id: CAP-7
+    name: ^Model Management
+  - id: CAP-8
+    name: Template Management
+  - id: CAP-9
+    name: Login Management
+  - id: CAP-10
+    name: Logout Management
+  - id: CAP-11
+    name: Password Change Management
+  - id: CAP-12
+    name: Password Reset Management
+  - id: CAP-13
+    name: Reset Management
+  - id: CAP-14
+    name: <Path:Url> Management
+  - id: CAP-15
+    name: gRPC Services
+  - id: CAP-16
+    name: Behavior
+  - id: CAP-17
+    name: Blocks
+  - id: CAP-18
+    name: Body Hints
+  - id: CAP-19
+    name: Call Graph
+  - id: CAP-20
+    name: Chains
+  - id: CAP-21
+    name: Display
+  - id: CAP-22
+    name: Generator
+  - id: CAP-23
+    name: Grouping
+  - id: CAP-24
+    name: Interfaces
+  - id: CAP-25
+    name: Kt Scanner
+  - id: CAP-26
+    name: Metrics
+  - id: CAP-27
+    name: Multi Scanner
+  - id: CAP-28
+    name: Protocol
+  - id: CAP-29
+    name: Recursive
+  - id: CAP-30
+    name: Scan Cache
+  - id: CAP-31
+    name: Scanner
+  - id: CAP-32
+    name: Slicers
+  - id: CAP-33
+    name: Ts Scanner
+  behaviors:
+  - id: BEH-1
+    name: 'GET '
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-2
+    name: GET bookmarklets/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-3
+    name: GET tags/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-4
+    name: GET filters/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-5
+    name: GET views/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-6
+    name: GET views/<view>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-7
+    name: GET models/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-8
+    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-9
+    name: GET templates/<path:template>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-12
+    name: GET password_change/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-13
+    name: GET password_change/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-14
+    name: GET password_reset/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-15
+    name: GET password_reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-10
+    name: GET login/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-11
+    name: GET logout/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-16
+    name: GET reset/<uidb64>/<token>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-17
+    name: GET reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-18
+    name: GET <path:url>
+    behavior_type: route_handler
+    steps:
+    - flatpage
+    actor_id: ACT-1
+  actors:
+  - id: ACT-1
+    name: API Consumer
+    actor_type: system
+    evidence_source: routes
+  layers:
+  - id: LAYER-data
+    name: data
+relationships:
+- from: src-manifest-COMP-16
+  to: CAP-16
+  type: realizes
+- from: src-manifest-COMP-17
+  to: CAP-17
+  type: realizes
+- from: src-manifest-COMP-18
+  to: CAP-18
+  type: realizes
+- from: src-manifest-COMP-19
+  to: CAP-19
+  type: realizes
+- from: src-manifest-COMP-20
+  to: CAP-20
+  type: realizes
+- from: src-manifest-COMP-21
+  to: CAP-21
+  type: realizes
+- from: src-manifest-COMP-22
+  to: CAP-22
+  type: realizes
+- from: src-manifest-COMP-23
+  to: CAP-23
+  type: realizes
+- from: src-manifest-COMP-24
+  to: CAP-24
+  type: realizes
+- from: src-manifest-COMP-25
+  to: CAP-25
+  type: realizes
+- from: src-manifest-COMP-26
+  to: CAP-26
+  type: realizes
+- from: src-manifest-COMP-27
+  to: CAP-27
+  type: realizes
+- from: src-manifest-COMP-28
+  to: CAP-28
+  type: realizes
+- from: src-manifest-COMP-29
+  to: CAP-29
+  type: realizes
+- from: src-manifest-COMP-30
+  to: CAP-30
+  type: realizes
+- from: src-manifest-COMP-32
+  to: CAP-32
+  type: realizes
+- from: src-manifest-COMP-33
+  to: CAP-33
+  type: realizes
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-18
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-22
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-17
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-30
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-23
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-24
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-26
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-24
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-29
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-16
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-33
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-19
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-19
+  type: depends-on
+- from: src-manifest-COMP-32
+  to: src-manifest-COMP-22
+  type: depends-on
+- from: src-manifest-COMP-25
+  to: src-manifest-COMP-23
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-21
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-20
+  type: depends-on
+- from: src-manifest-COMP-29
+  to: src-manifest-COMP-25
+  type: depends-on
+- from: src-manifest-COMP-30
+  to: src-manifest-COMP-32
+  type: depends-on
+- from: src-manifest-COMP-26
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-27
+  type: depends-on
+- from: src-manifest-COMP-17
+  to: src-manifest-COMP-28
+  type: depends-on
+- from: src-manifest-COMP-27
+  to: src-manifest-COMP-18
+  type: depends-on
+- from: LAYER-DATA
+  to: src-manifest-COMP-16
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-17
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-18
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-19
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-20
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-21
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-22
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-23
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-24
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-25
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-26
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-27
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-28
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-29
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-30
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-32
+  type: contains
+- from: LAYER-DATA
+  to: src-manifest-COMP-33
+  type: contains

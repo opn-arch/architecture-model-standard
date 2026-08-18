@@ -1,0 +1,260 @@
+documents:
+  conops.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      System Overview: e92f0226c5a55204e1ea7f6baaa1e80b
+      Stakeholders: 88b7a47168202e27b806857afaaa0cb8
+      Operational Scenarios: 119e452a592de673550f1bbfc923b6cc
+      System Context: 6702ce3a94d7b2f8c27d4a1142af2448
+      Operational Constraints: 284d0ddd3d4a7fd7fb5b607cb14f0624
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  functional-analysis.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Capability Inventory: 923ed069b1774a6f16fa618caa6ceec3
+      Functional Decomposition: 45ced9b83459b75c75e1025c6e665a83
+      Capability-Component Mapping: 412e045a505b0f9b5be79ca5ff106cf6
+      Behavioral Coverage: ae98847fc32cd625c607d19229eda60d
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  logical-architecture.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Layer Structure: f25ef33f0e5dbd91c6c948a6c494f4e1
+      Component Allocation: 954f579b082ecbd7f310bbc2623664d0
+      Inter-Component Interfaces: 489b8b241aec65a44804687c0b1fcce0
+      Dependency Graph: 7dee70b898a5b99d17004aeedd687bed
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  requirements-analysis.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Constraint Inventory: 3e4668f282d4e65235c02f51d7ed6cd1
+      Capability-Derived Requirements: 243e3147e2cb6a03ac08dd92cdac0066
+      Requirements Traceability: 24e506ed0b49d809bed14220e43355d5
+      Constraint Allocation: d41d8cd98f00b204e9800998ecf8427e
+      Coverage Gaps: 0d91b82ed3c688458f6d794580d9f725
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  verification-validation.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Verification Matrix: 1dede29b259421565622cfaaa660b79c
+      Validation Coverage: e5f73223259329dc3978f45ddb79d67a
+      Behavior Validation: 0d1fb32cda79d7988663b968f22ae910
+      Unverified Items: 89115d66fa8c64ce7a2d2e036ea74bae
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  operations-manual.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Interface Catalog: 489b8b241aec65a44804687c0b1fcce0
+      Operational Workflows: c0911d86d2a19384d95af0b5be3c7ab3
+      Configuration & Constraints: 2e1c32f482f05e81139409b8939c3d38
+      Error Handling: f161dc2640bb2e46dfc606cc555db20d
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  maintenance-manual.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Component Inventory: 56a9f8f7411342e532f520f928bc6c3c
+      Dependency Impact Analysis: e4bc6c58104ab8597e2ec53e5b275289
+      Modification Procedures: e613ac3fcdac79278d847d7c5b446cd2
+      Known Constraints: 4f88a2d16953d01136f241dbb5f17729
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  use-cases.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Actor-Goal Matrix: e90c63d55fb975853be02c7a6f981758
+      Use Case Specifications: 3bff0cf81b7539bb2b525f79f24a1b1b
+      Use Case Diagram: abeef1946443d6dbb499dc1648d221fd
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  risk-assessment.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Risk Register: 1097a0e8625e53efece3f36779231e7e
+      Dependency Risks: 5205e35e9bc6ec6d1ce33bfadc998004
+      Constraint Risks: 3e4668f282d4e65235c02f51d7ed6cd1
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+  interface-specification.md:
+    created: '2026-08-18T12:27:22Z'
+    created_by: architect_pipeline
+    model_version: 7f71c642a524
+    section_hashes:
+      Interface Inventory: 6702ce3a94d7b2f8c27d4a1142af2448
+      Interface Details: a5b78585152412d1a662e96b1283be3c
+      Component-Level Interfaces: e573fd1fbabbad21a1b9aad2d65f82de
+    editions:
+    - timestamp: '2026-08-18T12:27:22Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+    - timestamp: '2026-08-18T12:29:08Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []
+    - timestamp: '2026-08-18T12:32:30Z'
+      author: architect_pipeline
+      type: regenerated
+      summary: Model updated
+      preserved_sections: []
+      conflicts: []

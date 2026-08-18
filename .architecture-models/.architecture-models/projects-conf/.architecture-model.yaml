@@ -1,0 +1,791 @@
+meta:
+  schema_version: '2.0'
+  system: Projects (conf)
+  system_id: SYS-projects-(conf)
+entities:
+  components:
+  - id: COMP-2
+    name: Global Settings
+    files:
+    - projects/django/django/conf/global_settings.py
+  - id: COMP-3
+    name: I18N
+    files:
+    - projects/django/django/conf/urls/i18n.py
+  - id: COMP-4
+    name: Static
+    files:
+    - projects/django/django/conf/urls/static.py
+  - id: COMP-5-1
+    name: Infrastructure (ar)
+    files:
+    - projects/django/django/conf/locale/ar/formats.py
+  - id: COMP-5-2
+    name: Infrastructure (ar_DZ)
+    files:
+    - projects/django/django/conf/locale/ar_DZ/formats.py
+  - id: COMP-5-3
+    name: Infrastructure (az)
+    files:
+    - projects/django/django/conf/locale/az/formats.py
+  - id: COMP-5-4
+    name: Infrastructure (bg)
+    files:
+    - projects/django/django/conf/locale/bg/formats.py
+  - id: COMP-5-5
+    name: Infrastructure (bn)
+    files:
+    - projects/django/django/conf/locale/bn/formats.py
+  - id: COMP-5-6
+    name: Infrastructure (bs)
+    files:
+    - projects/django/django/conf/locale/bs/formats.py
+  - id: COMP-5-7
+    name: Infrastructure (ca)
+    files:
+    - projects/django/django/conf/locale/ca/formats.py
+  - id: COMP-5-8
+    name: Infrastructure (ckb)
+    files:
+    - projects/django/django/conf/locale/ckb/formats.py
+  - id: COMP-5-9
+    name: Infrastructure (cs)
+    files:
+    - projects/django/django/conf/locale/cs/formats.py
+  - id: COMP-5-10
+    name: Infrastructure (cy)
+    files:
+    - projects/django/django/conf/locale/cy/formats.py
+  - id: COMP-5-11
+    name: Infrastructure (da)
+    files:
+    - projects/django/django/conf/locale/da/formats.py
+  - id: COMP-5-12
+    name: Infrastructure (de)
+    files:
+    - projects/django/django/conf/locale/de/formats.py
+  - id: COMP-5-13
+    name: Infrastructure (de_CH)
+    files:
+    - projects/django/django/conf/locale/de_CH/formats.py
+  - id: COMP-5-14
+    name: Infrastructure (el)
+    files:
+    - projects/django/django/conf/locale/el/formats.py
+  - id: COMP-5-15
+    name: Infrastructure (en)
+    files:
+    - projects/django/django/conf/locale/en/formats.py
+  - id: COMP-5-16
+    name: Infrastructure (en_AU)
+    files:
+    - projects/django/django/conf/locale/en_AU/formats.py
+  - id: COMP-5-17
+    name: Infrastructure (en_CA)
+    files:
+    - projects/django/django/conf/locale/en_CA/formats.py
+  - id: COMP-5-18
+    name: Infrastructure (en_GB)
+    files:
+    - projects/django/django/conf/locale/en_GB/formats.py
+  - id: COMP-5-19
+    name: Infrastructure (en_IE)
+    files:
+    - projects/django/django/conf/locale/en_IE/formats.py
+  - id: COMP-5-20
+    name: Infrastructure (eo)
+    files:
+    - projects/django/django/conf/locale/eo/formats.py
+  - id: COMP-5-21
+    name: Infrastructure (es)
+    files:
+    - projects/django/django/conf/locale/es/formats.py
+  - id: COMP-5-22
+    name: Infrastructure (es_AR)
+    files:
+    - projects/django/django/conf/locale/es_AR/formats.py
+  - id: COMP-5-23
+    name: Infrastructure (es_CO)
+    files:
+    - projects/django/django/conf/locale/es_CO/formats.py
+  - id: COMP-5-24
+    name: Infrastructure (es_MX)
+    files:
+    - projects/django/django/conf/locale/es_MX/formats.py
+  - id: COMP-5-25
+    name: Infrastructure (es_NI)
+    files:
+    - projects/django/django/conf/locale/es_NI/formats.py
+  - id: COMP-5-26
+    name: Infrastructure (es_PR)
+    files:
+    - projects/django/django/conf/locale/es_PR/formats.py
+  - id: COMP-5-27
+    name: Infrastructure (et)
+    files:
+    - projects/django/django/conf/locale/et/formats.py
+  - id: COMP-5-28
+    name: Infrastructure (eu)
+    files:
+    - projects/django/django/conf/locale/eu/formats.py
+  - id: COMP-5-29
+    name: Infrastructure (fa)
+    files:
+    - projects/django/django/conf/locale/fa/formats.py
+  - id: COMP-5-30
+    name: Infrastructure (fi)
+    files:
+    - projects/django/django/conf/locale/fi/formats.py
+  - id: COMP-5-31
+    name: Infrastructure (fr)
+    files:
+    - projects/django/django/conf/locale/fr/formats.py
+  - id: COMP-5-32
+    name: Infrastructure (fr_BE)
+    files:
+    - projects/django/django/conf/locale/fr_BE/formats.py
+  - id: COMP-5-33
+    name: Infrastructure (fr_CA)
+    files:
+    - projects/django/django/conf/locale/fr_CA/formats.py
+  - id: COMP-5-34
+    name: Infrastructure (fr_CH)
+    files:
+    - projects/django/django/conf/locale/fr_CH/formats.py
+  - id: COMP-5-35
+    name: Infrastructure (fy)
+    files:
+    - projects/django/django/conf/locale/fy/formats.py
+  - id: COMP-5-36
+    name: Infrastructure (ga)
+    files:
+    - projects/django/django/conf/locale/ga/formats.py
+  - id: COMP-5-37
+    name: Infrastructure (gd)
+    files:
+    - projects/django/django/conf/locale/gd/formats.py
+  - id: COMP-5-38
+    name: Infrastructure (gl)
+    files:
+    - projects/django/django/conf/locale/gl/formats.py
+  - id: COMP-5-39
+    name: Infrastructure (he)
+    files:
+    - projects/django/django/conf/locale/he/formats.py
+  - id: COMP-5-40
+    name: Infrastructure (hi)
+    files:
+    - projects/django/django/conf/locale/hi/formats.py
+  - id: COMP-5-41
+    name: Infrastructure (hr)
+    files:
+    - projects/django/django/conf/locale/hr/formats.py
+  - id: COMP-5-42
+    name: Infrastructure (ht)
+    files:
+    - projects/django/django/conf/locale/ht/formats.py
+  - id: COMP-5-43
+    name: Infrastructure (hu)
+    files:
+    - projects/django/django/conf/locale/hu/formats.py
+  - id: COMP-5-44
+    name: Infrastructure (id)
+    files:
+    - projects/django/django/conf/locale/id/formats.py
+  - id: COMP-5-45
+    name: Infrastructure (ig)
+    files:
+    - projects/django/django/conf/locale/ig/formats.py
+  - id: COMP-5-46
+    name: Infrastructure (is)
+    files:
+    - projects/django/django/conf/locale/is/formats.py
+  - id: COMP-5-47
+    name: Infrastructure (it)
+    files:
+    - projects/django/django/conf/locale/it/formats.py
+  - id: COMP-5-48
+    name: Infrastructure (ja)
+    files:
+    - projects/django/django/conf/locale/ja/formats.py
+  - id: COMP-5-49
+    name: Infrastructure (ka)
+    files:
+    - projects/django/django/conf/locale/ka/formats.py
+  - id: COMP-5-50
+    name: Infrastructure (km)
+    files:
+    - projects/django/django/conf/locale/km/formats.py
+  - id: COMP-5-51
+    name: Infrastructure (kn)
+    files:
+    - projects/django/django/conf/locale/kn/formats.py
+  - id: COMP-5-52
+    name: Infrastructure (ko)
+    files:
+    - projects/django/django/conf/locale/ko/formats.py
+  - id: COMP-5-53
+    name: Infrastructure (ky)
+    files:
+    - projects/django/django/conf/locale/ky/formats.py
+  - id: COMP-5-54
+    name: Infrastructure (lt)
+    files:
+    - projects/django/django/conf/locale/lt/formats.py
+  - id: COMP-5-55
+    name: Infrastructure (lv)
+    files:
+    - projects/django/django/conf/locale/lv/formats.py
+  - id: COMP-5-56
+    name: Infrastructure (mk)
+    files:
+    - projects/django/django/conf/locale/mk/formats.py
+  - id: COMP-5-57
+    name: Infrastructure (ml)
+    files:
+    - projects/django/django/conf/locale/ml/formats.py
+  - id: COMP-5-58
+    name: Infrastructure (mn)
+    files:
+    - projects/django/django/conf/locale/mn/formats.py
+  - id: COMP-5-59
+    name: Infrastructure (ms)
+    files:
+    - projects/django/django/conf/locale/ms/formats.py
+  - id: COMP-5-60
+    name: Infrastructure (nb)
+    files:
+    - projects/django/django/conf/locale/nb/formats.py
+  - id: COMP-5-61
+    name: Infrastructure (nl)
+    files:
+    - projects/django/django/conf/locale/nl/formats.py
+  - id: COMP-5-62
+    name: Infrastructure (nn)
+    files:
+    - projects/django/django/conf/locale/nn/formats.py
+  - id: COMP-5-63
+    name: Infrastructure (pl)
+    files:
+    - projects/django/django/conf/locale/pl/formats.py
+  - id: COMP-5-64
+    name: Infrastructure (pt)
+    files:
+    - projects/django/django/conf/locale/pt/formats.py
+  - id: COMP-5-65
+    name: Infrastructure (pt_BR)
+    files:
+    - projects/django/django/conf/locale/pt_BR/formats.py
+  - id: COMP-5-66
+    name: Infrastructure (ro)
+    files:
+    - projects/django/django/conf/locale/ro/formats.py
+  - id: COMP-5-67
+    name: Infrastructure (ru)
+    files:
+    - projects/django/django/conf/locale/ru/formats.py
+  - id: COMP-5-68
+    name: Infrastructure (sk)
+    files:
+    - projects/django/django/conf/locale/sk/formats.py
+  - id: COMP-5-69
+    name: Infrastructure (sl)
+    files:
+    - projects/django/django/conf/locale/sl/formats.py
+  - id: COMP-5-70
+    name: Infrastructure (sq)
+    files:
+    - projects/django/django/conf/locale/sq/formats.py
+  - id: COMP-5-71
+    name: Infrastructure (sr)
+    files:
+    - projects/django/django/conf/locale/sr/formats.py
+  - id: COMP-5-72
+    name: Infrastructure (sr_Latn)
+    files:
+    - projects/django/django/conf/locale/sr_Latn/formats.py
+  - id: COMP-5-73
+    name: Infrastructure (sv)
+    files:
+    - projects/django/django/conf/locale/sv/formats.py
+  - id: COMP-5-74
+    name: Infrastructure (ta)
+    files:
+    - projects/django/django/conf/locale/ta/formats.py
+  - id: COMP-5-75
+    name: Infrastructure (te)
+    files:
+    - projects/django/django/conf/locale/te/formats.py
+  - id: COMP-5-76
+    name: Infrastructure (tg)
+    files:
+    - projects/django/django/conf/locale/tg/formats.py
+  - id: COMP-5-77
+    name: Infrastructure (th)
+    files:
+    - projects/django/django/conf/locale/th/formats.py
+  - id: COMP-5-78
+    name: Infrastructure (tk)
+    files:
+    - projects/django/django/conf/locale/tk/formats.py
+  - id: COMP-5-79
+    name: Infrastructure (tr)
+    files:
+    - projects/django/django/conf/locale/tr/formats.py
+  - id: COMP-5-80
+    name: Infrastructure (ug)
+    files:
+    - projects/django/django/conf/locale/ug/formats.py
+  - id: COMP-5-81
+    name: Infrastructure (uk)
+    files:
+    - projects/django/django/conf/locale/uk/formats.py
+  - id: COMP-5-82
+    name: Infrastructure (uz)
+    files:
+    - projects/django/django/conf/locale/uz/formats.py
+  - id: COMP-5-83
+    name: Infrastructure (vi)
+    files:
+    - projects/django/django/conf/locale/vi/formats.py
+  - id: COMP-5-84
+    name: Infrastructure (zh_Hans)
+    files:
+    - projects/django/django/conf/locale/zh_Hans/formats.py
+  - id: COMP-5-85
+    name: Infrastructure (zh_Hant)
+    files:
+    - projects/django/django/conf/locale/zh_Hant/formats.py
+  capabilities:
+  - id: CAP-1
+    name: Web Routes
+  - id: CAP-2
+    name: Global Settings
+  - id: CAP-3
+    name: I18N
+  - id: CAP-4
+    name: Static
+  behaviors:
+  - id: BEH-1
+    name: 'GET '
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-2
+    name: GET bookmarklets/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-3
+    name: GET tags/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-4
+    name: GET filters/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-5
+    name: GET views/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-6
+    name: GET views/<view>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-7
+    name: GET models/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-8
+    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-9
+    name: GET templates/<path:template>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-10
+    name: GET login/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-11
+    name: GET logout/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-12
+    name: GET password_change/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-13
+    name: GET password_change/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-14
+    name: GET password_reset/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-15
+    name: GET password_reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-16
+    name: GET reset/<uidb64>/<token>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-17
+    name: GET reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-18
+    name: GET <path:url>
+    behavior_type: route_handler
+    steps:
+    - flatpage
+    actor_id: ACT-1
+  actors:
+  - id: ACT-1
+    name: API Consumer
+    actor_type: system
+    evidence_source: routes
+  layers:
+  - id: LAYER-infra
+    name: infra
+relationships:
+- from: COMP-2
+  to: CAP-2
+  type: realizes
+- from: COMP-3
+  to: CAP-3
+  type: realizes
+- from: COMP-4
+  to: CAP-4
+  type: realizes
+- from: COMP-3
+  to: COMP-4
+  type: depends-on
+- from: COMP-4
+  to: COMP-3
+  type: depends-on
+- from: COMP-4
+  to: COMP-2
+  type: depends-on
+- from: COMP-3
+  to: COMP-5-48
+  type: depends-on
+- from: COMP-4
+  to: COMP-5-83
+  type: depends-on
+- from: COMP-4
+  to: COMP-5-64
+  type: depends-on
+- from: COMP-4
+  to: COMP-5-74
+  type: depends-on
+- from: COMP-3
+  to: COMP-5-83
+  type: depends-on
+- from: COMP-4
+  to: COMP-5-48
+  type: depends-on
+- from: COMP-4
+  to: COMP-5-1
+  type: depends-on
+- from: COMP-3
+  to: COMP-2
+  type: depends-on
+- from: LAYER-INFRA
+  to: COMP-2
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-3
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-4
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-1
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-2
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-3
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-4
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-5
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-6
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-7
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-8
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-9
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-10
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-11
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-12
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-13
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-14
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-15
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-16
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-17
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-18
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-19
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-20
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-21
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-22
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-23
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-24
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-25
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-26
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-27
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-28
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-29
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-30
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-31
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-32
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-33
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-34
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-35
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-36
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-37
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-38
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-39
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-40
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-41
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-42
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-43
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-44
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-45
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-46
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-47
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-48
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-49
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-50
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-51
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-52
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-53
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-54
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-55
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-56
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-57
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-58
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-59
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-60
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-61
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-62
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-63
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-64
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-65
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-66
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-67
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-68
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-69
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-70
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-71
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-72
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-73
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-74
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-75
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-76
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-77
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-78
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-79
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-80
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-81
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-82
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-83
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-84
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-5-85
+  type: contains

@@ -1,0 +1,34 @@
+{
+  "modules": [
+    {
+      "file": "projects/django/django/urls/base.py",
+      "functions": 10,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/urls/conf.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/urls/converters.py",
+      "functions": 2,
+      "classes": 5
+    },
+    {
+      "file": "projects/django/django/urls/exceptions.py",
+      "functions": 0,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/urls/resolvers.py",
+      "functions": 4,
+      "classes": 9
+    },
+    {
+      "file": "projects/django/django/urls/utils.py",
+      "functions": 11,
+      "classes": 0
+    }
+  ]
+}

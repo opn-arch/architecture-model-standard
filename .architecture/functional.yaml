@@ -1,0 +1,131 @@
+capabilities:
+- id: CAP-1
+  name: Web Routes
+  description: HTTP routing (18 endpoints)
+  evidence: routes
+- id: CAP-2
+  name: gRPC Services
+  description: gRPC service definitions and handlers
+  evidence: grpc_pattern
+- id: CAP-3
+  name: Scripts
+  description: Package group with 16 modules
+  evidence: package_group
+- id: CAP-4
+  name: Src
+  description: Package group with 105 modules
+  evidence: package_group
+- id: CAP-5
+  name: CLI Main
+  description: CLI commands in src/architecture_model/cli/main.py
+  evidence: cli_pattern
+- id: CAP-6
+  name: CLI Runner
+  description: CLI commands in scripts/dev_simulation/runner.py
+  evidence: cli_pattern
+actors:
+- id: ACT-1
+  name: API Consumer
+  type: system
+  evidence: routes
+behaviors:
+- id: BEH-1
+  name: 'GET '
+  actor: ACT-1
+  capability: ''
+- id: BEH-2
+  name: GET bookmarklets/
+  actor: ACT-1
+  capability: ''
+- id: BEH-3
+  name: GET tags/
+  actor: ACT-1
+  capability: ''
+- id: BEH-4
+  name: GET filters/
+  actor: ACT-1
+  capability: ''
+- id: BEH-5
+  name: GET views/
+  actor: ACT-1
+  capability: ''
+- id: BEH-6
+  name: GET views/<view>/
+  actor: ACT-1
+  capability: ''
+- id: BEH-7
+  name: GET models/
+  actor: ACT-1
+  capability: ''
+- id: BEH-8
+  name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+  actor: ACT-1
+  capability: ''
+- id: BEH-9
+  name: GET templates/<path:template>/
+  actor: ACT-1
+  capability: ''
+- id: BEH-10
+  name: GET login/
+  actor: ACT-1
+  capability: ''
+- id: BEH-11
+  name: GET logout/
+  actor: ACT-1
+  capability: ''
+- id: BEH-12
+  name: GET password_change/
+  actor: ACT-1
+  capability: ''
+- id: BEH-13
+  name: GET password_change/done/
+  actor: ACT-1
+  capability: ''
+- id: BEH-14
+  name: GET password_reset/
+  actor: ACT-1
+  capability: ''
+- id: BEH-15
+  name: GET password_reset/done/
+  actor: ACT-1
+  capability: ''
+- id: BEH-16
+  name: GET reset/<uidb64>/<token>/
+  actor: ACT-1
+  capability: ''
+- id: BEH-17
+  name: GET reset/done/
+  actor: ACT-1
+  capability: ''
+- id: BEH-18
+  name: GET <path:url>
+  actor: ACT-1
+  capability: ''
+- id: BEH-19
+  name: 'CLI: Test Guided Round Trip'
+  actor: ACT-1
+  capability: ''
+- id: BEH-20
+  name: 'CLI: Test Enriched Round Trip'
+  actor: ACT-1
+  capability: ''
+- id: BEH-21
+  name: 'CLI: Test Multi Repo'
+  actor: ACT-1
+  capability: ''
+- id: BEH-22
+  name: 'CLI: Test Round Trip'
+  actor: ACT-1
+  capability: ''
+- id: BEH-23
+  name: 'CLI: Test Decomposed Round Trip'
+  actor: ACT-1
+  capability: ''
+- id: BEH-24
+  name: 'CLI: Main'
+  actor: ACT-1
+  capability: ''
+- id: BEH-25
+  name: 'CLI: Runner'
+  actor: ACT-1
+  capability: ''

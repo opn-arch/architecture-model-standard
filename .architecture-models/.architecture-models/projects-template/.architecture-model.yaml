@@ -1,0 +1,698 @@
+meta:
+  schema_version: '2.0'
+  system: Projects (template)
+  system_id: SYS-projects-(template)
+entities:
+  components:
+  - id: COMP-15
+    name: Autoreload
+    files:
+    - projects/django/django/template/autoreload.py
+  - id: COMP-16
+    name: Django
+    files:
+    - projects/django/django/template/backends/base.py
+    - projects/django/django/template/backends/django.py
+    - projects/django/django/template/backends/utils.py
+    - projects/django/django/template/base.py
+    - projects/django/django/template/loaders/base.py
+    - projects/django/django/template/utils.py
+  - id: COMP-17
+    name: Dummy
+    files:
+    - projects/django/django/template/backends/dummy.py
+  - id: COMP-18
+    name: Jinja2
+    files:
+    - projects/django/django/template/backends/jinja2.py
+  - id: COMP-19
+    name: Context
+    files:
+    - projects/django/django/template/context.py
+    - projects/django/django/template/context_processors.py
+  - id: COMP-21
+    name: Defaultfilters
+    files:
+    - projects/django/django/template/defaultfilters.py
+  - id: COMP-22
+    name: Defaulttags
+    files:
+    - projects/django/django/template/defaulttags.py
+  - id: COMP-23
+    name: Engine
+    files:
+    - projects/django/django/template/engine.py
+  - id: COMP-24
+    name: Exceptions
+    files:
+    - projects/django/django/template/exceptions.py
+  - id: COMP-25
+    name: Library
+    files:
+    - projects/django/django/template/library.py
+  - id: COMP-26
+    name: Loader
+    files:
+    - projects/django/django/template/loader.py
+    - projects/django/django/template/loader_tags.py
+  - id: COMP-28
+    name: App Directories
+    files:
+    - projects/django/django/template/loaders/app_directories.py
+  - id: COMP-29
+    name: Cached
+    files:
+    - projects/django/django/template/loaders/cached.py
+  - id: COMP-30
+    name: Filesystem
+    files:
+    - projects/django/django/template/loaders/filesystem.py
+  - id: COMP-31
+    name: Locmem
+    files:
+    - projects/django/django/template/loaders/locmem.py
+  - id: COMP-32
+    name: Response
+    files:
+    - projects/django/django/template/response.py
+  - id: COMP-33
+    name: Smartif
+    files:
+    - projects/django/django/template/smartif.py
+  capabilities:
+  - id: CAP-1
+    name: Root Management
+  - id: CAP-2
+    name: Bookmarklet Management
+  - id: CAP-3
+    name: Tag Management
+  - id: CAP-4
+    name: Filter Management
+  - id: CAP-5
+    name: View Management
+  - id: CAP-6
+    name: Model Management
+  - id: CAP-7
+    name: ^Model Management
+  - id: CAP-8
+    name: Template Management
+  - id: CAP-9
+    name: Login Management
+  - id: CAP-10
+    name: Logout Management
+  - id: CAP-11
+    name: Password Change Management
+  - id: CAP-12
+    name: Password Reset Management
+  - id: CAP-13
+    name: Reset Management
+  - id: CAP-14
+    name: <Path:Url> Management
+  - id: CAP-15
+    name: Autoreload
+  - id: CAP-16
+    name: Django
+  - id: CAP-17
+    name: Dummy
+  - id: CAP-18
+    name: Jinja2
+  - id: CAP-19
+    name: Context
+  - id: CAP-20
+    name: Context Processors
+  - id: CAP-21
+    name: Defaultfilters
+  - id: CAP-22
+    name: Defaulttags
+  - id: CAP-23
+    name: Engine
+  - id: CAP-24
+    name: Exceptions
+  - id: CAP-25
+    name: Library
+  - id: CAP-26
+    name: Loader
+  - id: CAP-27
+    name: Loader Tags
+  - id: CAP-28
+    name: App Directories
+  - id: CAP-29
+    name: Cached
+  - id: CAP-30
+    name: Filesystem
+  - id: CAP-31
+    name: Locmem
+  - id: CAP-32
+    name: Response
+  - id: CAP-33
+    name: Smartif
+  behaviors:
+  - id: BEH-1
+    name: 'GET '
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-2
+    name: GET bookmarklets/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-3
+    name: GET tags/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-4
+    name: GET filters/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-5
+    name: GET views/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-6
+    name: GET views/<view>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-7
+    name: GET models/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-8
+    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-9
+    name: GET templates/<path:template>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-10
+    name: GET login/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-11
+    name: GET logout/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-12
+    name: GET password_change/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-13
+    name: GET password_change/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-14
+    name: GET password_reset/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-15
+    name: GET password_reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-16
+    name: GET reset/<uidb64>/<token>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-17
+    name: GET reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-18
+    name: GET <path:url>
+    behavior_type: route_handler
+    steps:
+    - flatpage
+    actor_id: ACT-1
+  actors:
+  - id: ACT-1
+    name: API Consumer
+    actor_type: system
+    evidence_source: routes
+  layers:
+  - id: LAYER-infra
+    name: infra
+relationships:
+- from: COMP-15
+  to: CAP-15
+  type: realizes
+- from: COMP-16
+  to: CAP-16
+  type: realizes
+- from: COMP-17
+  to: CAP-17
+  type: realizes
+- from: COMP-18
+  to: CAP-18
+  type: realizes
+- from: COMP-19
+  to: CAP-19
+  type: realizes
+- from: COMP-21
+  to: CAP-21
+  type: realizes
+- from: COMP-22
+  to: CAP-22
+  type: realizes
+- from: COMP-23
+  to: CAP-23
+  type: realizes
+- from: COMP-24
+  to: CAP-24
+  type: realizes
+- from: COMP-25
+  to: CAP-25
+  type: realizes
+- from: COMP-26
+  to: CAP-26
+  type: realizes
+- from: COMP-28
+  to: CAP-28
+  type: realizes
+- from: COMP-29
+  to: CAP-29
+  type: realizes
+- from: COMP-30
+  to: CAP-30
+  type: realizes
+- from: COMP-31
+  to: CAP-31
+  type: realizes
+- from: COMP-32
+  to: CAP-32
+  type: realizes
+- from: COMP-33
+  to: CAP-33
+  type: realizes
+- from: COMP-28
+  to: COMP-25
+  type: depends-on
+- from: COMP-15
+  to: COMP-18
+  type: depends-on
+- from: COMP-29
+  to: COMP-17
+  type: depends-on
+- from: COMP-15
+  to: COMP-25
+  type: depends-on
+- from: COMP-23
+  to: COMP-19
+  type: depends-on
+- from: COMP-15
+  to: COMP-21
+  type: depends-on
+- from: COMP-23
+  to: COMP-25
+  type: depends-on
+- from: COMP-30
+  to: COMP-21
+  type: depends-on
+- from: COMP-16
+  to: COMP-21
+  type: depends-on
+- from: COMP-29
+  to: COMP-16
+  type: depends-on
+- from: COMP-21
+  to: COMP-16
+  type: depends-on
+- from: COMP-31
+  to: COMP-15
+  type: depends-on
+- from: COMP-28
+  to: COMP-33
+  type: depends-on
+- from: COMP-29
+  to: COMP-15
+  type: depends-on
+- from: COMP-29
+  to: COMP-23
+  type: depends-on
+- from: COMP-28
+  to: COMP-24
+  type: depends-on
+- from: COMP-26
+  to: COMP-25
+  type: depends-on
+- from: COMP-28
+  to: COMP-22
+  type: depends-on
+- from: COMP-23
+  to: COMP-24
+  type: depends-on
+- from: COMP-22
+  to: COMP-19
+  type: depends-on
+- from: COMP-25
+  to: COMP-16
+  type: depends-on
+- from: COMP-31
+  to: COMP-32
+  type: depends-on
+- from: COMP-22
+  to: COMP-16
+  type: depends-on
+- from: COMP-29
+  to: COMP-19
+  type: depends-on
+- from: COMP-28
+  to: COMP-21
+  type: depends-on
+- from: COMP-22
+  to: COMP-33
+  type: depends-on
+- from: COMP-21
+  to: COMP-25
+  type: depends-on
+- from: COMP-30
+  to: COMP-15
+  type: depends-on
+- from: COMP-30
+  to: COMP-23
+  type: depends-on
+- from: COMP-31
+  to: COMP-16
+  type: depends-on
+- from: COMP-18
+  to: COMP-32
+  type: depends-on
+- from: COMP-16
+  to: COMP-15
+  type: depends-on
+- from: COMP-16
+  to: COMP-23
+  type: depends-on
+- from: COMP-19
+  to: COMP-16
+  type: depends-on
+- from: COMP-31
+  to: COMP-23
+  type: depends-on
+- from: COMP-29
+  to: COMP-33
+  type: depends-on
+- from: COMP-17
+  to: COMP-32
+  type: depends-on
+- from: COMP-29
+  to: COMP-24
+  type: depends-on
+- from: COMP-18
+  to: COMP-16
+  type: depends-on
+- from: COMP-29
+  to: COMP-22
+  type: depends-on
+- from: COMP-15
+  to: COMP-32
+  type: depends-on
+- from: COMP-31
+  to: COMP-26
+  type: depends-on
+- from: COMP-32
+  to: COMP-16
+  type: depends-on
+- from: COMP-30
+  to: COMP-32
+  type: depends-on
+- from: COMP-29
+  to: COMP-26
+  type: depends-on
+- from: COMP-16
+  to: COMP-32
+  type: depends-on
+- from: COMP-18
+  to: COMP-15
+  type: depends-on
+- from: COMP-18
+  to: COMP-23
+  type: depends-on
+- from: COMP-22
+  to: COMP-25
+  type: depends-on
+- from: COMP-15
+  to: COMP-17
+  type: depends-on
+- from: COMP-17
+  to: COMP-16
+  type: depends-on
+- from: COMP-16
+  to: COMP-19
+  type: depends-on
+- from: COMP-31
+  to: COMP-19
+  type: depends-on
+- from: COMP-17
+  to: COMP-15
+  type: depends-on
+- from: COMP-17
+  to: COMP-23
+  type: depends-on
+- from: COMP-29
+  to: COMP-18
+  type: depends-on
+- from: COMP-15
+  to: COMP-16
+  type: depends-on
+- from: COMP-31
+  to: COMP-25
+  type: depends-on
+- from: COMP-30
+  to: COMP-16
+  type: depends-on
+- from: COMP-29
+  to: COMP-25
+  type: depends-on
+- from: COMP-18
+  to: COMP-26
+  type: depends-on
+- from: COMP-25
+  to: COMP-24
+  type: depends-on
+- from: COMP-28
+  to: COMP-15
+  type: depends-on
+- from: COMP-29
+  to: COMP-21
+  type: depends-on
+- from: COMP-15
+  to: COMP-23
+  type: depends-on
+- from: COMP-16
+  to: COMP-33
+  type: depends-on
+- from: COMP-17
+  to: COMP-26
+  type: depends-on
+- from: COMP-16
+  to: COMP-24
+  type: depends-on
+- from: COMP-31
+  to: COMP-33
+  type: depends-on
+- from: COMP-18
+  to: COMP-19
+  type: depends-on
+- from: COMP-31
+  to: COMP-24
+  type: depends-on
+- from: COMP-16
+  to: COMP-22
+  type: depends-on
+- from: COMP-26
+  to: COMP-16
+  type: depends-on
+- from: COMP-30
+  to: COMP-26
+  type: depends-on
+- from: COMP-16
+  to: COMP-26
+  type: depends-on
+- from: COMP-31
+  to: COMP-22
+  type: depends-on
+- from: COMP-28
+  to: COMP-32
+  type: depends-on
+- from: COMP-17
+  to: COMP-19
+  type: depends-on
+- from: COMP-17
+  to: COMP-25
+  type: depends-on
+- from: COMP-18
+  to: COMP-33
+  type: depends-on
+- from: COMP-15
+  to: COMP-19
+  type: depends-on
+- from: COMP-30
+  to: COMP-19
+  type: depends-on
+- from: COMP-22
+  to: COMP-21
+  type: depends-on
+- from: COMP-18
+  to: COMP-24
+  type: depends-on
+- from: COMP-30
+  to: COMP-25
+  type: depends-on
+- from: COMP-16
+  to: COMP-25
+  type: depends-on
+- from: COMP-28
+  to: COMP-16
+  type: depends-on
+- from: COMP-18
+  to: COMP-22
+  type: depends-on
+- from: COMP-17
+  to: COMP-33
+  type: depends-on
+- from: COMP-31
+  to: COMP-21
+  type: depends-on
+- from: COMP-17
+  to: COMP-24
+  type: depends-on
+- from: COMP-23
+  to: COMP-16
+  type: depends-on
+- from: COMP-28
+  to: COMP-23
+  type: depends-on
+- from: COMP-32
+  to: COMP-26
+  type: depends-on
+- from: COMP-15
+  to: COMP-33
+  type: depends-on
+- from: COMP-17
+  to: COMP-22
+  type: depends-on
+- from: COMP-30
+  to: COMP-33
+  type: depends-on
+- from: COMP-15
+  to: COMP-24
+  type: depends-on
+- from: COMP-30
+  to: COMP-24
+  type: depends-on
+- from: COMP-15
+  to: COMP-22
+  type: depends-on
+- from: COMP-30
+  to: COMP-22
+  type: depends-on
+- from: COMP-18
+  to: COMP-25
+  type: depends-on
+- from: COMP-28
+  to: COMP-26
+  type: depends-on
+- from: COMP-15
+  to: COMP-26
+  type: depends-on
+- from: COMP-18
+  to: COMP-21
+  type: depends-on
+- from: COMP-26
+  to: COMP-24
+  type: depends-on
+- from: COMP-29
+  to: COMP-32
+  type: depends-on
+- from: COMP-28
+  to: COMP-30
+  type: depends-on
+- from: COMP-17
+  to: COMP-21
+  type: depends-on
+- from: COMP-28
+  to: COMP-19
+  type: depends-on
+- from: LAYER-INFRA
+  to: COMP-15
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-16
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-17
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-18
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-19
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-21
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-22
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-23
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-24
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-25
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-26
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-28
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-29
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-30
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-31
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-32
+  type: contains
+- from: LAYER-INFRA
+  to: COMP-33
+  type: contains

@@ -1,0 +1,234 @@
+{
+  "modules": [
+    {
+      "file": "projects/django/django/utils/_os.py",
+      "functions": 5,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/archive.py",
+      "functions": 1,
+      "classes": 6
+    },
+    {
+      "file": "projects/django/django/utils/asyncio.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/autoreload.py",
+      "functions": 15,
+      "classes": 4
+    },
+    {
+      "file": "projects/django/django/utils/cache.py",
+      "functions": 20,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/choices.py",
+      "functions": 2,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/utils/connection.py",
+      "functions": 0,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/utils/copy.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/crypto.py",
+      "functions": 4,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/utils/csp.py",
+      "functions": 3,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/utils/datastructures.py",
+      "functions": 0,
+      "classes": 7
+    },
+    {
+      "file": "projects/django/django/utils/dateformat.py",
+      "functions": 2,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/utils/dateparse.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/dates.py",
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/deconstruct.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/decorators.py",
+      "functions": 9,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/utils/deprecation.py",
+      "functions": 4,
+      "classes": 4
+    },
+    {
+      "file": "projects/django/django/utils/duration.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/encoding.py",
+      "functions": 12,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/utils/feedgenerator.py",
+      "functions": 4,
+      "classes": 7
+    },
+    {
+      "file": "projects/django/django/utils/formats.py",
+      "functions": 11,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/functional.py",
+      "functions": 8,
+      "classes": 5
+    },
+    {
+      "file": "projects/django/django/utils/hashable.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/html.py",
+      "functions": 14,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/utils/http.py",
+      "functions": 19,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/inspect.py",
+      "functions": 12,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/ipv6.py",
+      "functions": 3,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/json.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/log.py",
+      "functions": 3,
+      "classes": 5
+    },
+    {
+      "file": "projects/django/django/utils/lorem_ipsum.py",
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/module_loading.py",
+      "functions": 5,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/numberformat.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/regex_helper.py",
+      "functions": 7,
+      "classes": 3
+    },
+    {
+      "file": "projects/django/django/utils/safestring.py",
+      "functions": 2,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/utils/termcolors.py",
+      "functions": 3,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/text.py",
+      "functions": 17,
+      "classes": 5
+    },
+    {
+      "file": "projects/django/django/utils/timesince.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/timezone.py",
+      "functions": 17,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/utils/translation/reloader.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/translation/template.py",
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/translation/trans_null.py",
+      "functions": 12,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/translation/trans_real.py",
+      "functions": 23,
+      "classes": 2
+    },
+    {
+      "file": "projects/django/django/utils/tree.py",
+      "functions": 0,
+      "classes": 1
+    },
+    {
+      "file": "projects/django/django/utils/version.py",
+      "functions": 6,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/warnings.py",
+      "functions": 1,
+      "classes": 0
+    },
+    {
+      "file": "projects/django/django/utils/xmlutils.py",
+      "functions": 0,
+      "classes": 2
+    }
+  ]
+}

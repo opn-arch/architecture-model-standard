@@ -1,0 +1,287 @@
+meta:
+  schema_version: '2.0'
+  system: Scripts (dev_simulation)
+  system_id: SYS-scripts-(dev_simulation)
+entities:
+  components:
+  - id: scripts-dev-simulation-COMP-1
+    name: Checkout
+    files:
+    - scripts/dev_simulation/checkout.py
+  - id: scripts-dev-simulation-COMP-2
+    name: Cohesion
+    files:
+    - scripts/dev_simulation/cohesion.py
+  - id: scripts-dev-simulation-COMP-3
+    name: Drift Tracker
+    files:
+    - scripts/dev_simulation/drift_tracker.py
+  - id: scripts-dev-simulation-COMP-4
+    name: Extractor
+    files:
+    - scripts/dev_simulation/extractor.py
+  - id: scripts-dev-simulation-COMP-5
+    name: Llm Predictor
+    files:
+    - scripts/dev_simulation/llm_predictor.py
+  - id: scripts-dev-simulation-COMP-6
+    name: Regen Scorer
+    files:
+    - scripts/dev_simulation/regen_scorer.py
+  - id: scripts-dev-simulation-COMP-7
+    name: Report
+    files:
+    - scripts/dev_simulation/report.py
+  - id: scripts-dev-simulation-COMP-8
+    name: Runner
+    files:
+    - scripts/dev_simulation/runner.py
+  - id: scripts-dev-simulation-COMP-9
+    name: Slice Evaluator
+    files:
+    - scripts/dev_simulation/slice_evaluator.py
+  - id: scripts-dev-simulation-COMP-10
+    name: Infrastructure
+    files:
+    - scripts/dev_simulation/cli.py
+  capabilities:
+  - id: CAP-1
+    name: Root Management
+  - id: CAP-2
+    name: Bookmarklet Management
+  - id: CAP-3
+    name: Tag Management
+  - id: CAP-4
+    name: Filter Management
+  - id: CAP-5
+    name: View Management
+  - id: CAP-6
+    name: Model Management
+  - id: CAP-7
+    name: ^Model Management
+  - id: CAP-8
+    name: Template Management
+  - id: CAP-9
+    name: Login Management
+  - id: CAP-10
+    name: Logout Management
+  - id: CAP-11
+    name: Password Change Management
+  - id: CAP-12
+    name: Password Reset Management
+  - id: CAP-13
+    name: Reset Management
+  - id: CAP-14
+    name: <Path:Url> Management
+  - id: CAP-15
+    name: Checkout
+  - id: CAP-16
+    name: Cohesion
+  - id: CAP-17
+    name: Drift Tracker
+  - id: CAP-18
+    name: Extractor
+  - id: CAP-19
+    name: Llm Predictor
+  - id: CAP-20
+    name: Regen Scorer
+  - id: CAP-21
+    name: Report
+  - id: CAP-22
+    name: Runner
+  - id: CAP-23
+    name: Slice Evaluator
+  - id: CAP-24
+    name: CLI Runner
+  behaviors:
+  - id: BEH-1
+    name: 'GET '
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-2
+    name: GET bookmarklets/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-3
+    name: GET tags/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-4
+    name: GET filters/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-5
+    name: GET views/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-6
+    name: GET views/<view>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-7
+    name: GET models/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-8
+    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-9
+    name: GET templates/<path:template>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-12
+    name: GET password_change/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-13
+    name: GET password_change/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-14
+    name: GET password_reset/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-15
+    name: GET password_reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-19
+    name: 'CLI: Runner'
+    behavior_type: use_case
+    steps:
+    - ArgumentParser
+    - add_argument
+    - parse_args
+    - run_benchmark
+    actor_id: ACT-1
+  - id: BEH-10
+    name: GET login/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-11
+    name: GET logout/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-16
+    name: GET reset/<uidb64>/<token>/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-17
+    name: GET reset/done/
+    behavior_type: route_handler
+    steps:
+    - ''
+    actor_id: ACT-1
+  - id: BEH-18
+    name: GET <path:url>
+    behavior_type: route_handler
+    steps:
+    - flatpage
+    actor_id: ACT-1
+  actors:
+  - id: ACT-1
+    name: API Consumer
+    actor_type: system
+    evidence_source: routes
+  interfaces:
+  - id: IF-1
+    name: runner CLI
+    interface_type: cli
+    component_id: scripts-dev-simulation-COMP-8
+  layers:
+  - id: LAYER-infra
+    name: infra
+relationships:
+- from: scripts-dev-simulation-COMP-1
+  to: CAP-15
+  type: realizes
+- from: scripts-dev-simulation-COMP-2
+  to: CAP-16
+  type: realizes
+- from: scripts-dev-simulation-COMP-3
+  to: CAP-17
+  type: realizes
+- from: scripts-dev-simulation-COMP-4
+  to: CAP-18
+  type: realizes
+- from: scripts-dev-simulation-COMP-5
+  to: CAP-19
+  type: realizes
+- from: scripts-dev-simulation-COMP-6
+  to: CAP-20
+  type: realizes
+- from: scripts-dev-simulation-COMP-7
+  to: CAP-21
+  type: realizes
+- from: scripts-dev-simulation-COMP-8
+  to: CAP-24
+  type: realizes
+- from: scripts-dev-simulation-COMP-9
+  to: CAP-23
+  type: realizes
+- from: scripts-dev-simulation-COMP-10
+  to: scripts-dev-simulation-COMP-8
+  type: depends-on
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-1
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-2
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-3
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-4
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-5
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-6
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-7
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-8
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-9
+  type: contains
+- from: LAYER-INFRA
+  to: scripts-dev-simulation-COMP-10
+  type: contains

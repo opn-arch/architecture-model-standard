@@ -1,0 +1,30 @@
+{
+  "score": 80,
+  "is_valid": true,
+  "issues": [
+    {
+      "severity": "warning",
+      "message": "Capability Web Routes (CAP-1) has no realizing component",
+      "entity_id": "CAP-1",
+      "rule": "capability_realization"
+    },
+    {
+      "severity": "warning",
+      "message": "Capability gRPC Services (CAP-2) has no realizing component",
+      "entity_id": "CAP-2",
+      "rule": "capability_realization"
+    },
+    {
+      "severity": "warning",
+      "message": "Capability CLI Main (CAP-5) has no realizing component",
+      "entity_id": "CAP-5",
+      "rule": "capability_realization"
+    },
+    {
+      "severity": "warning",
+      "message": "Capability CLI Runner (CAP-6) has no realizing component",
+      "entity_id": "CAP-6",
+      "rule": "capability_realization"
+    }
+  ]
+}
