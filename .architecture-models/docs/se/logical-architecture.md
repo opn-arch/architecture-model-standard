@@ -1,138 +1,116 @@
 ---
 document: Logical Architecture
-system: System
+system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
+generated_at: 2026-08-19T16:59:51Z
 generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
+model_hash: 435262313fec
+edition: 8
 ---
 
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - No interfaces defined on components → interface-spec doc empty
-> - No requirements defined
-> - Actors defined but missing goals/descriptions
-> - 92/92 components missing description/responsibilities
-> Run the extraction pipeline or manually add behaviors/interfaces/constraints.
-
-# Logical Architecture: System
+# Logical Architecture: architecture-model-standard
 ## Layer Structure
-| Order | Layer | Technologies | Directories |
-|-------|-------|-------------|-------------|
-| 0 | infra | — | — |
-| 0 | data | — | — |
+*No layers defined.*
 ## Component Allocation
-### data
+### application
 
 | Component | Kind | Files | Responsibilities |
 |-----------|------|-------|------------------|
-| Scripts (core) (COMP-3-1) | service | 6 files | — |
-| Scripts (dev_simulation) (COMP-3-2) | service | 10 files | — |
+| Documentation (COMP-4) | library | 1 files | — |
+| Core Doc Generators (COMP-4.1) | library | 11 files | — |
+| SE Document Suite (COMP-4.2) | library | 21 files | — |
+| Orchestration (COMP-5) | service | 1 files | — |
+| Enrichment (COMP-5.1) | service | 7 files | — |
+| Decomposition (COMP-5.2) | service | 6 files | — |
+| Authoring (COMP-7) | library | 3 files | — |
+| Export (COMP-10) | library | 3 files | — |
 
-### unassigned
-
-| Component | Kind | Files | Responsibilities |
-|-----------|------|-------|------------------|
-| Checkout (scripts-dev-simulation-COMP-1) | service | 1 files | — |
-| Cohesion (scripts-dev-simulation-COMP-2) | service | 1 files | — |
-| Drift Tracker (scripts-dev-simulation-COMP-3) | service | 1 files | — |
-| Extractor (scripts-dev-simulation-COMP-4) | service | 1 files | — |
-| Llm Predictor (scripts-dev-simulation-COMP-5) | service | 1 files | — |
-| Regen Scorer (scripts-dev-simulation-COMP-6) | service | 1 files | — |
-| Report (scripts-dev-simulation-COMP-7) | service | 1 files | — |
-| Runner (scripts-dev-simulation-COMP-8) | service | 1 files | — |
-| Slice Evaluator (scripts-dev-simulation-COMP-9) | service | 1 files | — |
-| Infrastructure (scripts-dev-simulation-COMP-10) | service | 1 files | — |
-| Allocate (src-pipeline-COMP-16) | service | 2 files | — |
-| Artifacts (src-pipeline-COMP-18) | service | 1 files | — |
-| Cache (src-pipeline-COMP-19) | service | 1 files | — |
-| Context Gen (src-pipeline-COMP-20) | service | 1 files | — |
-| Contract (src-pipeline-COMP-21) | service | 2 files | — |
-| Coordinator (src-pipeline-COMP-23) | service | 1 files | — |
-| Corrections (src-pipeline-COMP-24) | service | 1 files | — |
-| Decompose (src-pipeline-COMP-25) | service | 3 files | — |
-| Emit (src-pipeline-COMP-27) | service | 2 files | — |
-| Global Learning (src-pipeline-COMP-29) | service | 2 files | — |
-| Infer (src-pipeline-COMP-30) | service | 2 files | — |
-| Lessons (src-pipeline-COMP-33) | service | 1 files | — |
-| Observe (src-pipeline-COMP-34) | service | 2 files | — |
-| Protocol (src-pipeline-COMP-36) | service | 1 files | — |
-| Regen Score (src-pipeline-COMP-37) | service | 1 files | — |
-| Relate (src-pipeline-COMP-38) | service | 2 files | — |
-| Report (src-pipeline-COMP-40) | service | 1 files | — |
-| Requirements Derive (src-pipeline-COMP-41) | service | 1 files | — |
-| Specify (src-pipeline-COMP-42) | service | 2 files | — |
-| Synthesize (src-pipeline-COMP-44) | service | 2 files | — |
-| Validate (src-pipeline-COMP-46) | service | 2 files | — |
-| Cluster (src-core-COMP-15) | service | 1 files | — |
-| Completeness (src-core-COMP-16) | service | 1 files | — |
-| Compression (src-core-COMP-17) | service | 1 files | — |
-| Confidence (src-core-COMP-18) | service | 1 files | — |
-| Corrections (src-core-COMP-19) | service | 1 files | — |
-| Coverage (src-core-COMP-20) | service | 1 files | — |
-| Decomposer (src-core-COMP-21) | service | 1 files | — |
-| Differ (src-core-COMP-22) | service | 1 files | — |
-| Merger (src-core-COMP-23) | service | 1 files | — |
-| Parser (src-core-COMP-24) | service | 1 files | — |
-| Regen Readiness (src-core-COMP-25) | service | 1 files | — |
-| Representativeness (src-core-COMP-26) | service | 1 files | — |
-| Slicer (src-core-COMP-27) | service | 1 files | — |
-| Source Block Assign (src-core-COMP-28) | service | 3 files | — |
-| Validator (src-core-COMP-30) | service | 1 files | — |
-| Visualize (src-core-COMP-31) | service | 1 files | — |
-| Behavior (src-manifest-COMP-16) | service | 1 files | — |
-| Blocks (src-manifest-COMP-17) | service | 3 files | — |
-| Body Hints (src-manifest-COMP-18) | service | 1 files | — |
-| Call Graph (src-manifest-COMP-19) | service | 1 files | — |
-| Chains (src-manifest-COMP-20) | service | 1 files | — |
-| Display (src-manifest-COMP-21) | service | 1 files | — |
-| Generator (src-manifest-COMP-22) | service | 1 files | — |
-| Grouping (src-manifest-COMP-23) | service | 1 files | — |
-| Interfaces (src-manifest-COMP-24) | service | 1 files | — |
-| Kt Scanner (src-manifest-COMP-25) | service | 2 files | — |
-| Metrics (src-manifest-COMP-26) | service | 1 files | — |
-| Multi Scanner (src-manifest-COMP-27) | service | 1 files | — |
-| Protocol (src-manifest-COMP-28) | service | 1 files | — |
-| Recursive (src-manifest-COMP-29) | service | 1 files | — |
-| Scan Cache (src-manifest-COMP-30) | service | 1 files | — |
-| Slicers (src-manifest-COMP-32) | service | 1 files | — |
-| Ts Scanner (src-manifest-COMP-33) | service | 1 files | — |
-| Auto Enrich (src-orchestration-COMP-1) | service | 1 files | — |
-| Behavior Decompose (src-orchestration-COMP-2) | service | 1 files | — |
-| Behavior Flows (src-orchestration-COMP-3) | service | 1 files | — |
-| Capability Inference (src-orchestration-COMP-4) | service | 1 files | — |
-| Compaction (src-orchestration-COMP-5) | service | 1 files | — |
-| Decompose (src-orchestration-COMP-6) | service | 1 files | — |
-| Deep Decompose (src-orchestration-COMP-7) | service | 1 files | — |
-| Enrich (src-orchestration-COMP-8) | service | 1 files | — |
-| Enrichment Context (src-orchestration-COMP-9) | service | 1 files | — |
-| Naming Context (src-orchestration-COMP-10) | service | 1 files | — |
-| Pipeline (src-orchestration-COMP-11) | service | 1 files | — |
-| Trigger Detection (src-orchestration-COMP-12) | service | 1 files | — |
-| Use Case Inference (src-orchestration-COMP-13) | service | 1 files | — |
-
-### web
+### domain
 
 | Component | Kind | Files | Responsibilities |
 |-----------|------|-------|------------------|
-| Architecture Model Monitoring (COMP-4-1) | service | 5 files | — |
-| Src (pipeline) (COMP-4-2) | service | 33 files | — |
-| Core Analysis Engine (COMP-4-3) | service | 18 files | — |
-| Src (config) (COMP-4-4) | service | 3 files | — |
-| Src (manifest) (COMP-4-5) | service | 20 files | — |
-| Src (utils) (COMP-4-6) | service | 1 files | — |
-| CLI Interface Layer (COMP-4-7) | service | 2 files | — |
-| Src (authoring) (COMP-4-8) | service | 2 files | — |
-| Src (persistence) (COMP-4-9) | service | 2 files | — |
-| Src (orchestration) (COMP-4-10) | service | 13 files | — |
-| Src (extract) (COMP-4-11) | service | 5 files | — |
-| Src (profiles) (COMP-4-12) | service | 1 files | — |
-| Src (export) (COMP-4-13) | service | 2 files | — |
+| Pipeline (COMP-2) | service | 1 files | — |
+| Pipeline Coordination (COMP-2.1) | service | 7 files | — |
+| Observation Stages (COMP-2.2) | service | 4 files | — |
+| Allocation & Relation Stages (COMP-2.3) | service | 4 files | — |
+| Specification & Contract Stages (COMP-2.4) | service | 6 files | — |
+| Synthesis & Emit Stages (COMP-2.5) | service | 7 files | — |
+| Manifest (COMP-3) | library | 2 files | — |
+| Scanners (COMP-3.1) | library | 8 files | — |
+| Graph & Analysis (COMP-3.2) | library | 5 files | — |
+| Grouping & Generation (COMP-3.3) | library | 6 files | — |
+| Extract (COMP-6) | library | 5 files | — |
+| Pipeline Learning (COMP-11) | library | 3 files | — |
+
+### foundation
+
+| Component | Kind | Files | Responsibilities |
+|-----------|------|-------|------------------|
+| Core (COMP-1) | library | 1 files | — |
+| Type System (COMP-1.1) | library | 1 files | — |
+| Validation (COMP-1.2) | library | 2 files | — |
+| Parser & Persistence (COMP-1.3) | library | 5 files | — |
+| Model Operations (COMP-1.4) | library | 8 files | — |
+| Quality Metrics (COMP-1.5) | library | 5 files | — |
+
+### infrastructure
+
+| Component | Kind | Files | Responsibilities |
+|-----------|------|-------|------------------|
+| Configuration (COMP-9) | library | 6 files | — |
+| Utilities (COMP-12) | library | 6 files | — |
+
+### interface
+
+| Component | Kind | Files | Responsibilities |
+|-----------|------|-------|------------------|
+| CLI (COMP-8) | service | 5 files | — |
 ## Inter-Component Interfaces
 | Interface | Type | Protocol | Provider | Consumer |
 |-----------|------|----------|----------|----------|
+| main CLI | internal | — | — | — |
 | runner CLI | internal | — | — | — |
+| COMP-4-7 Library API | internal | — | — | — |
+| COMP-3-1 Library API | internal | — | — | — |
+| COMP-4-1 Library API | internal | — | — | — |
+| COMP-4-2 Library API | internal | — | — | — |
+| COMP-4-3 Library API | internal | — | — | — |
+| COMP-4-4 Library API | internal | — | — | — |
+| COMP-4-5 Library API | internal | — | — | — |
+| COMP-4-6 Library API | internal | — | — | — |
+| COMP-4-8 Library API | internal | — | — | — |
+| COMP-4-9 Library API | internal | — | — | — |
+| COMP-4-10 Library API | internal | — | — | — |
+| COMP-4-11 Library API | internal | — | — | — |
+| COMP-4-12 Library API | internal | — | — | — |
+| COMP-4-13 Library API | internal | — | — | — |
+| Core API | internal | — | — | — |
+| Type System API | internal | — | — | — |
+| Validation API | internal | — | — | — |
+| Parser & Persistence API | internal | — | — | — |
+| Model Operations API | internal | — | — | — |
+| Quality Metrics API | internal | — | — | — |
+| Pipeline API | internal | — | — | — |
+| Pipeline Coordination API | internal | — | — | — |
+| Observation Stages API | internal | — | — | — |
+| Allocation & Relation Stages API | internal | — | — | — |
+| Specification & Contract Stages API | internal | — | — | — |
+| Synthesis & Emit Stages API | internal | — | — | — |
+| Scanners API | internal | — | — | — |
+| Graph & Analysis API | internal | — | — | — |
+| Grouping & Generation API | internal | — | — | — |
+| Core Doc Generators API | internal | — | — | — |
+| SE Document Suite API | internal | — | — | — |
+| Orchestration API | internal | — | — | — |
+| Enrichment API | internal | — | — | — |
+| Decomposition API | internal | — | — | — |
+| Extract API | internal | — | — | — |
+| Authoring API | internal | — | — | — |
+| CLI API | internal | — | — | — |
+| Configuration API | internal | — | — | — |
+| Export API | internal | — | — | — |
+| Pipeline Learning API | internal | — | — | — |
+| Utilities API | internal | — | — | — |
 ## Dependency Graph
 ```mermaid
 graph TD
@@ -645,56 +623,3 @@ graph TD
 ---
 
 ---
-
-## LLM Review
-
-*Reviewed: 2026-08-18T23:37:20.844165+00:00 | Duration: 9048ms*
-
-**Summary:** This logical architecture document is at a very early, auto-generated stage (14% completeness) with 92 components lacking descriptions, responsibilities, interfaces, and requirements—rendering it nearly useless as an architectural reference for decision-making or onboarding.
-
-- The overwhelming majority of components (92/92) are dumped into "unassigned" with no layer allocation, indicating the extraction pipeline produced a flat file inventory rather than a meaningful logical decomposition.
-- Every component is labeled as kind "service" regardless of its actual nature (e.g., Parser, Slicer, Differ are clearly libraries/utilities), suggesting the classifier is defaulting rather than inferring component kinds.
-- The dependency graph is truncated mid-line (`src-pi`), indicating either a generation bug or a rendering limit that leaves the architecture's most valuable structural information incomplete.
-- The layer structure defines "infra" and "data" layers with no technologies or directories, yet components are allocated to "web" and "unassigned" layers not listed in the layer table—an internal inconsistency.
-
-<details>
-<summary>Review details</summary>
-
-**Prompt sent (truncated):**
-```
-Review the following architecture artifact 'docs/se/logical-architecture.md'.
-Respond ONLY in this format:
-SUMMARY: <one paragraph overall assessment>
-COMMENT: <specific observation>
-COMMENT: <another observation>
-
----
----
-document: Logical Architecture
-system: System
-system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
-generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
----
-
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - No interf
-```
-
-**Full LLM response:**
-```
-SUMMARY: This logical architecture document is at a very early, auto-generated stage (14% completeness) with 92 components lacking descriptions, responsibilities, interfaces, and requirements—rendering it nearly useless as an architectural reference for decision-making or onboarding.
-
-COMMENT: The overwhelming majority of components (92/92) are dumped into "unassigned" with no layer allocation, indicating the extraction pipeline produced a flat file inventory rather than a meaningful logical decomposition.
-
-COMMENT: Every component is labeled as kind "service" regardless of its actual nature (e.g., Parser, Slicer, Differ are clearly libraries/utilities), suggesting the classifier is defaulting rather than inferring component kinds.
-
-COMMENT: The dependency graph is truncated mid-line (`src-pi`), indicating either a generation bug or a rendering limit that leaves the architecture's most valuable structural information incomplete.
-
-COMMENT: The layer structure defines "infra" and "data" layers with no technologies or directories, yet components are allocated to "web" and "unassigned" layers not listed in the layer table—an internal inconsistency.
-```
-
-</details>

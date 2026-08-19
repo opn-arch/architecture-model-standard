@@ -59,6 +59,10 @@
     "tests/test_export.py"
   ],
   "COMP-4-2": [
+    "tests/test_artifact_traceability_review.py",
+    "tests/test_cache_reviews.py",
+    "tests/test_coordinator_enrichment.py",
+    "tests/test_emit_review.py",
     "tests/test_pipeline_allocate.py",
     "tests/test_pipeline_artifacts.py",
     "tests/test_pipeline_cache.py",
@@ -77,7 +81,8 @@
     "tests/test_pipeline_recursive.py",
     "tests/test_pipeline_report.py",
     "tests/test_pipeline_stages.py",
-    "tests/test_pipeline_synthesize.py"
+    "tests/test_pipeline_synthesize.py",
+    "tests/test_protocol_review.py"
   ],
   "COMP-4-3": [
     "scripts/test_decomposed_round_trip.py",
@@ -92,6 +97,7 @@
     "scripts/test_sentry.py",
     "src/architecture_model/manifest/test_analyzer.py",
     "tests/conftest.py",
+    "tests/test_artifact_traceability_review.py",
     "tests/test_authoring_parser.py",
     "tests/test_auto_behaviors.py",
     "tests/test_auto_enrich.py",

@@ -208,13 +208,13 @@ derived_requirements:
   component_id: COMP-4-3
   evidence: '@monitored on slice_by_status() in slicer.py'
 - id: REQ-Q1
-  name: Component COMP-4-3 has 149 test file(s) covering its source
+  name: Component COMP-4-3 has 150 test file(s) covering its source
   category: quality
   priority: should
   source_file: ''
-  source_signal: test_coverage:COMP-4-3:149
+  source_signal: test_coverage:COMP-4-3:150
   component_id: COMP-4-3
-  evidence: 149 test files import this component's source
+  evidence: 150 test files import this component's source
 - id: REQ-Q10
   name: Component COMP-4-13 has 2 test file(s) covering its source
   category: quality
@@ -248,13 +248,13 @@ derived_requirements:
   component_id: COMP-4-9
   evidence: 1 test files import this component's source
 - id: REQ-Q2
-  name: Component COMP-4-2 has 79 test file(s) covering its source
+  name: Component COMP-4-2 has 86 test file(s) covering its source
   category: quality
   priority: should
   source_file: ''
-  source_signal: test_coverage:COMP-4-2:79
+  source_signal: test_coverage:COMP-4-2:86
   component_id: COMP-4-2
-  evidence: 79 test files import this component's source
+  evidence: 86 test files import this component's source
 - id: REQ-Q3
   name: Component COMP-4-5 has 70 test file(s) covering its source
   category: quality

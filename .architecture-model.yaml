@@ -979,6 +979,396 @@ entities:
     name: runner CLI
     interface_type: cli
     component_id: COMP-3-2
+  - id: IF-3
+    name: COMP-4-7 Library API
+    interface_type: library
+    component_id: COMP-4-7
+    methods:
+    - 'main: def main(argv: list[str] | None=None) -> int'
+    description: 1 public symbols consumed by other components
+  - id: IF-4
+    name: COMP-3-1 Library API
+    interface_type: library
+    component_id: COMP-3-1
+    methods:
+    - 'extract_behavior_detail: def extract_behavior_detail(source_file: str, function_name:
+      str) -> dict'
+    - 'find_caller: def find_caller(tree, function_name: str) -> str'
+    - 'find_function: def find_function(tree, function_name: str)'
+    - 'main: def main()'
+    - 'summarize_statement: def summarize_statement(stmt) -> str | None'
+    description: 5 public symbols exported
+  - id: IF-5
+    name: COMP-4-1 Library API
+    interface_type: library
+    component_id: COMP-4-1
+    methods:
+    - 'ConsistencyResult: class ConsistencyResult'
+    - 'FunctionMetrics: class FunctionMetrics'
+    - 'MetricsCollector: class MetricsCollector'
+    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges:
+      list[tuple[str, str]], perturbations: int=5) -> ConsistencyResult'
+    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id:
+      str, block_name: str, runs: int=3) -> ConsistencyResult'
+    - 'check_pattern_indicators: def check_pattern_indicators(pattern_name: str, file_contents:
+      dict[str, str]) -> ConsistencyResult'
+    - 'get_collector: def get_collector() -> MetricsCollector'
+    - 'get_pattern: def get_pattern(name: str) -> dict[str, Any] | None'
+    - 'load_patterns: def load_patterns() -> dict[str, Any]'
+    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str,
+      Any]] | None=None, inputs: Callable[[tuple, dict], dict[str, Any]] | None=None,
+      outputs: Callable[[Any], dict[str, Any]] | None=None) -> Callable'
+    description: 10 public symbols exported
+  - id: IF-6
+    name: COMP-4-2 Library API
+    interface_type: library
+    component_id: COMP-4-2
+    methods:
+    - 'ClassRecord: class ClassRecord'
+    - 'ConstantRecord: class ConstantRecord'
+    - 'ConstraintRecord: class ConstraintRecord'
+    - 'DocRecord: class DocRecord'
+    - 'FunctionRecord: class FunctionRecord'
+    - 'ImportEdge: class ImportEdge'
+    - 'Inventory: class Inventory'
+    - 'ModuleRecord: class ModuleRecord'
+    - 'RouteRecord: class RouteRecord'
+    - 'TestFileRecord: class TestFileRecord'
+    description: 77 public symbols exported
+  - id: IF-7
+    name: COMP-4-3 Library API
+    interface_type: library
+    component_id: COMP-4-3
+    methods:
+    - 'ComponentReadiness: class ComponentReadiness'
+    - 'FunctionReadiness: class FunctionReadiness'
+    - 'RegenReadiness: class RegenReadiness'
+    - 'Severity: class Severity'
+    - 'ValidationIssue: class ValidationIssue'
+    - 'ValidationResult: class ValidationResult'
+    - 'compute_component_readiness: def compute_component_readiness(component: Component)
+      -> ComponentReadiness'
+    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature,
+      test_contracts: list[TestContract]) -> FunctionReadiness'
+    - 'compute_regen_readiness: def compute_regen_readiness(model: ArchitectureModel)
+      -> RegenReadiness'
+    - 'validate_model: def validate_model(model: ArchitectureModel, strict: bool=False,
+      raw_dict: dict | None=None) -> ValidationResult'
+    description: 121 public symbols exported
+  - id: IF-8
+    name: COMP-4-4 Library API
+    interface_type: library
+    component_id: COMP-4-4
+    methods:
+    - 'FunctionalBlockConfig: class FunctionalBlockConfig'
+    - 'LayerConfig: class LayerConfig'
+    - 'MetricConfig: class MetricConfig'
+    - 'OutputConfig: class OutputConfig'
+    - 'ResolvedOutputConfig: class ResolvedOutputConfig'
+    - 'SubBlockConfig: class SubBlockConfig'
+    - 'discover_config: def discover_config(root: Path) -> tuple[ProjectConfig, DiscoveryReport]'
+    - 'get_config: def get_config(root: Path) -> ProjectConfig'
+    - 'load_config: def load_config(root: Path) -> ProjectConfig'
+    - 'write_config: def write_config(config: ProjectConfig, root: Path | None=None)
+      -> Path'
+    description: 13 public symbols exported
+  - id: IF-9
+    name: COMP-4-5 Library API
+    interface_type: library
+    component_id: COMP-4-5
+    methods:
+    - 'EventChain: class EventChain'
+    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups:
+      list[''ModuleGroup''], block_id: str) -> list[EventChain]'
+    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests:
+      dict[str, ''RecursiveManifest''], block_groups: dict[str, list[''ModuleGroup'']])
+      -> list[EventChain]'
+    - 'compute_metrics: def compute_metrics(root: Path, config: Optional[Any]=None)
+      -> MetricsResult'
+    - 'derive_interfaces: def derive_interfaces(modules: list[ModuleInfo], root: Path)
+      -> list[InterfaceEdge]'
+    - 'extract_call_order: def extract_call_order(func_node: Union[ast.FunctionDef,
+      ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_control_flow: def extract_control_flow(func_node: Union[ast.FunctionDef,
+      ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_guards: def extract_guards(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef])
+      -> list[str]'
+    - 'get_manifest_slice: def get_manifest_slice(manifest: Manifest | dict[str, Any],
+      artifact_name: str) -> str'
+    - 'scan_file: def scan_file(root: Path, filepath: Path, cache=None) -> ModuleInfo'
+    description: 54 public symbols exported
+  - id: IF-10
+    name: COMP-4-6 Library API
+    interface_type: library
+    component_id: COMP-4-6
+    methods:
+    - 'collect_py_files: def collect_py_files(directory: Path, recursive: bool=True,
+      exclude_init: bool=False) -> list[Path]'
+    - 'discover_source_files: def discover_source_files(project_root: Path) -> list[Path]'
+    - 'discover_test_files: def discover_test_files(project_root: Path) -> list[Path]'
+    - 'is_excluded_dir: def is_excluded_dir(path: Path) -> bool'
+    description: 4 public symbols exported
+  - id: IF-11
+    name: COMP-4-8 Library API
+    interface_type: library
+    component_id: COMP-4-8
+    methods:
+    - 'GateResult: class GateResult'
+    - 'check_development_gate: def check_development_gate(model: ArchitectureModel,
+      manifest: Manifest, phase: str | None=None) -> GateResult'
+    - 'parse_requirements_doc: def parse_requirements_doc(text: str) -> ArchitectureModel'
+    description: 3 public symbols exported
+  - id: IF-12
+    name: COMP-4-9 Library API
+    interface_type: library
+    component_id: COMP-4-9
+    methods:
+    - 'ProjectSnapshot: class ProjectSnapshot'
+    - 'load_project: def load_project(root: Path) -> ProjectSnapshot'
+    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest:
+      Any, representativeness: Any | None=None) -> Path'
+    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness:
+      Any | None=None, telemetry: dict | None=None) -> Path'
+    description: 4 public symbols exported
+  - id: IF-13
+    name: COMP-4-10 Library API
+    interface_type: library
+    component_id: COMP-4-10
+    methods:
+    - 'compact_root_model: def compact_root_model(model, *, block_ids: list[str])
+      -> None'
+    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any,
+      manifest: Manifest) -> tuple[list[Behavior], list[Relationship]]'
+    - 'decompose_model: def decompose_model(project_root, *, model_path=None)'
+    - 'enrich_behaviors_from_manifest: def enrich_behaviors_from_manifest(model: Any,
+      manifest: Manifest) -> None'
+    - 'enrich_from_manifest: def enrich_from_manifest(model: Any, manifest: Manifest)
+      -> None'
+    - 'enrich_from_source_graph: def enrich_from_source_graph(model: Any, graph: ''SourceGraph'')
+      -> None'
+    - 'enrich_with_block_context: def enrich_with_block_context(model: Any, recursive_manifests:
+      dict) -> None'
+    - 'extract_component_interfaces: def extract_component_interfaces(model: Any,
+      graph: ''SourceGraph'') -> int'
+    - 'infer_composite_behaviors: def infer_composite_behaviors(model: ArchitectureModel)
+      -> ArchitectureModel'
+    - 'manifest_to_source_graph: def manifest_to_source_graph(manifest: Any, model:
+      Any) -> ''SourceGraph'''
+    description: 35 public symbols exported
+  - id: IF-14
+    name: COMP-4-11 Library API
+    interface_type: library
+    component_id: COMP-4-11
+    methods:
+    - 'RouteInfo: class RouteInfo'
+    - 'detect_constraints: def detect_constraints(project_root: Path) -> list[Constraint]'
+    - 'detect_routes: def detect_routes(project_root: Path, web_layer_dirs: list[str]
+      | None=None) -> list[RouteInfo]'
+    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path,
+      project: str='''', system: str='''') -> ArchitectureModel'
+    - 'extract_from_code: def extract_from_code(project_root: str | Path, config:
+      ProjectConfig | None=None, manifest: dict | None=None) -> ArchitectureModel'
+    - 'extract_list_items: def extract_list_items(text: str) -> list[str]'
+    - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str,
+      str]'
+    - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern:
+      str) -> list[dict[str, str]]'
+    - 'main: def main()'
+    - 'parse_tables: def parse_tables(markdown: str) -> list[list[dict[str, str]]]'
+    description: 10 public symbols exported
+  - id: IF-15
+    name: COMP-4-12 Library API
+    interface_type: library
+    component_id: COMP-4-12
+    methods:
+    - 'ConditionalRule: class ConditionalRule'
+    - 'DomainProfile: class DomainProfile'
+    - 'EntityExtension: class EntityExtension'
+    - 'EnumExtension: class EnumExtension'
+    - 'load_profile: def load_profile(name_or_path: str) -> DomainProfile'
+    description: 5 public symbols exported
+  - id: IF-16
+    name: COMP-4-13 Library API
+    interface_type: library
+    component_id: COMP-4-13
+    methods:
+    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None,
+      include_manifests: bool=True, include_module_specs: bool=True) -> ExportResult'
+    - 'concat_behavior_specs: def concat_behavior_specs(repo_path: Path) -> str |
+      None'
+    - 'concat_behavior_submodels: def concat_behavior_submodels(repo_path: Path) ->
+      str | None'
+    - 'concat_component_models: def concat_component_models(repo_path: Path) -> str
+      | None'
+    - 'concat_diagrams: def concat_diagrams(repo_path: Path) -> str | None'
+    - 'concat_docs: def concat_docs(repo_path: Path) -> str | None'
+    - 'concat_module_specs: def concat_module_specs(repo_path: Path) -> str | None'
+    - 'concat_skills: def concat_skills(repo_path: Path) -> str | None'
+    - 'concat_submodels: def concat_submodels(repo_path: Path) -> str | None'
+    - 'derive_prefix: def derive_prefix(repo_name: str) -> str'
+    description: 16 public symbols exported
+  - id: IF-auto-COMP-1
+    name: Core API
+    interface_type: library
+    component_id: COMP-1
+    methods:
+    - core_api
+  - id: IF-auto-COMP-1.1
+    name: Type System API
+    interface_type: library
+    component_id: COMP-1.1
+    methods:
+    - type_system_api
+  - id: IF-auto-COMP-1.2
+    name: Validation API
+    interface_type: library
+    component_id: COMP-1.2
+    methods:
+    - validation_api
+  - id: IF-auto-COMP-1.3
+    name: Parser & Persistence API
+    interface_type: library
+    component_id: COMP-1.3
+    methods:
+    - parser_&_persistence_api
+  - id: IF-auto-COMP-1.4
+    name: Model Operations API
+    interface_type: library
+    component_id: COMP-1.4
+    methods:
+    - model_operations_api
+  - id: IF-auto-COMP-1.5
+    name: Quality Metrics API
+    interface_type: library
+    component_id: COMP-1.5
+    methods:
+    - quality_metrics_api
+  - id: IF-auto-COMP-2
+    name: Pipeline API
+    interface_type: library
+    component_id: COMP-2
+    methods:
+    - pipeline_api
+  - id: IF-auto-COMP-2.1
+    name: Pipeline Coordination API
+    interface_type: library
+    component_id: COMP-2.1
+    methods:
+    - pipeline_coordination_api
+  - id: IF-auto-COMP-2.2
+    name: Observation Stages API
+    interface_type: library
+    component_id: COMP-2.2
+    methods:
+    - observation_stages_api
+  - id: IF-auto-COMP-2.3
+    name: Allocation & Relation Stages API
+    interface_type: library
+    component_id: COMP-2.3
+    methods:
+    - allocation_&_relation_stages_api
+  - id: IF-auto-COMP-2.4
+    name: Specification & Contract Stages API
+    interface_type: library
+    component_id: COMP-2.4
+    methods:
+    - specification_&_contract_stages_api
+  - id: IF-auto-COMP-2.5
+    name: Synthesis & Emit Stages API
+    interface_type: library
+    component_id: COMP-2.5
+    methods:
+    - synthesis_&_emit_stages_api
+  - id: IF-auto-COMP-3.1
+    name: Scanners API
+    interface_type: library
+    component_id: COMP-3.1
+    methods:
+    - scanners_api
+  - id: IF-auto-COMP-3.2
+    name: Graph & Analysis API
+    interface_type: library
+    component_id: COMP-3.2
+    methods:
+    - graph_&_analysis_api
+  - id: IF-auto-COMP-3.3
+    name: Grouping & Generation API
+    interface_type: library
+    component_id: COMP-3.3
+    methods:
+    - grouping_&_generation_api
+  - id: IF-auto-COMP-4.1
+    name: Core Doc Generators API
+    interface_type: library
+    component_id: COMP-4.1
+    methods:
+    - core_doc_generators_api
+  - id: IF-auto-COMP-4.2
+    name: SE Document Suite API
+    interface_type: library
+    component_id: COMP-4.2
+    methods:
+    - se_document_suite_api
+  - id: IF-auto-COMP-5
+    name: Orchestration API
+    interface_type: library
+    component_id: COMP-5
+    methods:
+    - orchestration_api
+  - id: IF-auto-COMP-5.1
+    name: Enrichment API
+    interface_type: library
+    component_id: COMP-5.1
+    methods:
+    - enrichment_api
+  - id: IF-auto-COMP-5.2
+    name: Decomposition API
+    interface_type: library
+    component_id: COMP-5.2
+    methods:
+    - decomposition_api
+  - id: IF-auto-COMP-6
+    name: Extract API
+    interface_type: library
+    component_id: COMP-6
+    methods:
+    - extract_api
+  - id: IF-auto-COMP-7
+    name: Authoring API
+    interface_type: library
+    component_id: COMP-7
+    methods:
+    - authoring_api
+  - id: IF-auto-COMP-8
+    name: CLI API
+    interface_type: library
+    component_id: COMP-8
+    methods:
+    - cli_api
+  - id: IF-auto-COMP-9
+    name: Configuration API
+    interface_type: library
+    component_id: COMP-9
+    methods:
+    - configuration_api
+  - id: IF-auto-COMP-10
+    name: Export API
+    interface_type: library
+    component_id: COMP-10
+    methods:
+    - export_api
+  - id: IF-auto-COMP-11
+    name: Pipeline Learning API
+    interface_type: library
+    component_id: COMP-11
+    methods:
+    - pipeline_learning_api
+  - id: IF-auto-COMP-12
+    name: Utilities API
+    interface_type: library
+    component_id: COMP-12
+    methods:
+    - utilities_api
   constraints:
   - id: CON-1
     name: Python >=3.11
@@ -1388,3 +1778,126 @@ relationships:
 - from: COMP-6
   to: REQ-O19
   type: satisfies
+- from: COMP-4
+  to: IF-3
+  type: exposes
+- from: COMP-3
+  to: IF-4
+  type: exposes
+- from: COMP-4
+  to: IF-5
+  type: exposes
+- from: COMP-4
+  to: IF-6
+  type: exposes
+- from: COMP-4
+  to: IF-7
+  type: exposes
+- from: COMP-4
+  to: IF-8
+  type: exposes
+- from: COMP-4
+  to: IF-9
+  type: exposes
+- from: COMP-4
+  to: IF-10
+  type: exposes
+- from: COMP-4
+  to: IF-11
+  type: exposes
+- from: COMP-4
+  to: IF-12
+  type: exposes
+- from: COMP-4
+  to: IF-13
+  type: exposes
+- from: COMP-4
+  to: IF-14
+  type: exposes
+- from: COMP-4
+  to: IF-15
+  type: exposes
+- from: COMP-4
+  to: IF-16
+  type: exposes
+- from: COMP-1
+  to: IF-auto-COMP-1
+  type: exposes
+- from: COMP-1.1
+  to: IF-auto-COMP-1.1
+  type: exposes
+- from: COMP-1.2
+  to: IF-auto-COMP-1.2
+  type: exposes
+- from: COMP-1.3
+  to: IF-auto-COMP-1.3
+  type: exposes
+- from: COMP-1.4
+  to: IF-auto-COMP-1.4
+  type: exposes
+- from: COMP-1.5
+  to: IF-auto-COMP-1.5
+  type: exposes
+- from: COMP-2
+  to: IF-auto-COMP-2
+  type: exposes
+- from: COMP-2.1
+  to: IF-auto-COMP-2.1
+  type: exposes
+- from: COMP-2.2
+  to: IF-auto-COMP-2.2
+  type: exposes
+- from: COMP-2.3
+  to: IF-auto-COMP-2.3
+  type: exposes
+- from: COMP-2.4
+  to: IF-auto-COMP-2.4
+  type: exposes
+- from: COMP-2.5
+  to: IF-auto-COMP-2.5
+  type: exposes
+- from: COMP-3.1
+  to: IF-auto-COMP-3.1
+  type: exposes
+- from: COMP-3.2
+  to: IF-auto-COMP-3.2
+  type: exposes
+- from: COMP-3.3
+  to: IF-auto-COMP-3.3
+  type: exposes
+- from: COMP-4.1
+  to: IF-auto-COMP-4.1
+  type: exposes
+- from: COMP-4.2
+  to: IF-auto-COMP-4.2
+  type: exposes
+- from: COMP-5
+  to: IF-auto-COMP-5
+  type: exposes
+- from: COMP-5.1
+  to: IF-auto-COMP-5.1
+  type: exposes
+- from: COMP-5.2
+  to: IF-auto-COMP-5.2
+  type: exposes
+- from: COMP-6
+  to: IF-auto-COMP-6
+  type: exposes
+- from: COMP-7
+  to: IF-auto-COMP-7
+  type: exposes
+- from: COMP-8
+  to: IF-auto-COMP-8
+  type: exposes
+- from: COMP-9
+  to: IF-auto-COMP-9
+  type: exposes
+- from: COMP-10
+  to: IF-auto-COMP-10
+  type: exposes
+- from: COMP-11
+  to: IF-auto-COMP-11
+  type: exposes
+- from: COMP-12
+  to: IF-auto-COMP-12
+  type: exposes

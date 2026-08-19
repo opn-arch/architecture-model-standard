@@ -1,4 +1,5 @@
 """Tests for relate, specify, contract, and validate pipeline stages."""
+
 import pytest
 from pathlib import Path
 from architecture_model.pipeline.observe import ObserveStage
@@ -39,13 +40,13 @@ def get_current_user(token: str):
 def hash_password(pwd: str) -> str:
     pass
 ''')
-    (tmp_path / "test_users.py").write_text('''
+    (tmp_path / "test_users.py").write_text("""
 def test_list_users():
     pass
 
 def test_create_user():
     pass
-''')
+""")
     return tmp_path
 
 
@@ -101,14 +102,20 @@ class TestSpecifyStage:
     def test_specify_library_interface(self, tmp_path):
         """Component with public functions consumed by another gets a library interface."""
         from architecture_model.pipeline.observe_types import (
-            Inventory, ModuleRecord, FunctionRecord,
+            Inventory,
+            ModuleRecord,
+            FunctionRecord,
         )
         from architecture_model.pipeline.allocate_types import (
-            AllocationResult, ComponentAllocation,
+            AllocationResult,
+            ComponentAllocation,
         )
         from architecture_model.pipeline.protocol import (
-            PipelineContext, StageResult, QualityMetrics,
+            PipelineContext,
+            StageResult,
+            QualityMetrics,
         )
+
         # Two components: auth (3 public funcs) and users (imports from auth)
         auth_path = Path("auth/core.py")
         users_path = Path("users/views.py")
@@ -132,36 +139,55 @@ class TestSpecifyStage:
                 ),
             ],
         )
-        allocation = AllocationResult(components=[
-            ComponentAllocation(id="COMP-AUTH", name="Auth", files=[auth_path]),
-            ComponentAllocation(id="COMP-USERS", name="Users", files=[users_path]),
-        ])
+        allocation = AllocationResult(
+            components=[
+                ComponentAllocation(id="COMP-AUTH", name="Auth", files=[auth_path]),
+                ComponentAllocation(id="COMP-USERS", name="Users", files=[users_path]),
+            ]
+        )
         ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
         ctx.cache["observe"] = StageResult(
-            output=inventory, quality=QualityMetrics(score=100),
-            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+            output=inventory,
+            quality=QualityMetrics(score=100),
+            diagnostics=[],
+            uncertainties=[],
+            input_hash="",
+            duration_ms=0,
+            version="1.0",
         )
         ctx.cache["allocate"] = StageResult(
-            output=allocation, quality=QualityMetrics(score=100),
-            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+            output=allocation,
+            quality=QualityMetrics(score=100),
+            diagnostics=[],
+            uncertainties=[],
+            input_hash="",
+            duration_ms=0,
+            version="1.0",
         )
         result = SpecifyStage().run(ctx)
         lib = [i for i in result.output.interfaces if i.interface_type == "library"]
-        assert len(lib) == 1
-        assert lib[0].component_id == "COMP-AUTH"
-        assert any("authenticate" in m for m in lib[0].methods)
+        assert len(lib) == 2  # COMP-AUTH via consumption + COMP-USERS via fallback
+        auth_lib = [i for i in lib if i.component_id == "COMP-AUTH"]
+        assert len(auth_lib) == 1
+        assert any("authenticate" in m for m in auth_lib[0].methods)
 
     def test_specify_quality_score_library_only(self, tmp_path):
         """Quality score reflects component coverage when only library interfaces exist."""
         from architecture_model.pipeline.observe_types import (
-            Inventory, ModuleRecord, FunctionRecord,
+            Inventory,
+            ModuleRecord,
+            FunctionRecord,
         )
         from architecture_model.pipeline.allocate_types import (
-            AllocationResult, ComponentAllocation,
+            AllocationResult,
+            ComponentAllocation,
         )
         from architecture_model.pipeline.protocol import (
-            PipelineContext, StageResult, QualityMetrics,
+            PipelineContext,
+            StageResult,
+            QualityMetrics,
         )
+
         auth_path = Path("auth/core.py")
         users_path = Path("users/views.py")
         inventory = Inventory(
@@ -184,18 +210,30 @@ class TestSpecifyStage:
                 ),
             ],
         )
-        allocation = AllocationResult(components=[
-            ComponentAllocation(id="COMP-AUTH", name="Auth", files=[auth_path]),
-            ComponentAllocation(id="COMP-USERS", name="Users", files=[users_path]),
-        ])
+        allocation = AllocationResult(
+            components=[
+                ComponentAllocation(id="COMP-AUTH", name="Auth", files=[auth_path]),
+                ComponentAllocation(id="COMP-USERS", name="Users", files=[users_path]),
+            ]
+        )
         ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
         ctx.cache["observe"] = StageResult(
-            output=inventory, quality=QualityMetrics(score=100),
-            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+            output=inventory,
+            quality=QualityMetrics(score=100),
+            diagnostics=[],
+            uncertainties=[],
+            input_hash="",
+            duration_ms=0,
+            version="1.0",
         )
         ctx.cache["allocate"] = StageResult(
-            output=allocation, quality=QualityMetrics(score=100),
-            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+            output=allocation,
+            quality=QualityMetrics(score=100),
+            diagnostics=[],
+            uncertainties=[],
+            input_hash="",
+            duration_ms=0,
+            version="1.0",
         )
         result = SpecifyStage().run(ctx)
         assert result.quality.score >= 50
@@ -322,6 +360,7 @@ relationships: []
 def test_validate_depends_on_specify_and_contract():
     """Validate should depend on specify and contract so all entities are available."""
     from architecture_model.pipeline.validate import ValidateStage
+
     stage = ValidateStage()
     assert "specify" in stage.requires
     assert "contract" in stage.requires
@@ -356,9 +395,7 @@ def test_infer_groups_by_package_for_large_repos(tmp_path):
         pkg_dir.mkdir(parents=True)
         (pkg_dir / "__init__.py").write_text("")
         for i in range(15):
-            funcs = "\n".join(
-                f"def func_{j}():\n    pass\n" for j in range(5)
-            )
+            funcs = "\n".join(f"def func_{j}():\n    pass\n" for j in range(5))
             (pkg_dir / f"mod_{i}.py").write_text(funcs)
 
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
@@ -407,8 +444,12 @@ def test_full_pipeline_large_repo_produces_sensible_systems(tmp_path):
 
     # Create 6 packages with varying module counts (83 total)
     packages = {
-        "db": 20, "core": 18, "template": 12,
-        "forms": 10, "views": 15, "utils": 8,
+        "db": 20,
+        "core": 18,
+        "template": 12,
+        "forms": 10,
+        "views": 15,
+        "utils": 8,
     }
     for pkg, count in packages.items():
         pkg_dir = tmp_path / pkg
@@ -453,7 +494,9 @@ def test_infer_cli_use_cases(tmp_path):
     """CLI commands should produce use-case behaviors."""
     from architecture_model.pipeline.infer import InferStage
     from architecture_model.pipeline.observe_types import (
-        Inventory, ModuleRecord, FunctionRecord,
+        Inventory,
+        ModuleRecord,
+        FunctionRecord,
     )
     from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
 
@@ -475,14 +518,19 @@ def test_infer_cli_use_cases(tmp_path):
         line_count=50,
         docstring="Management command for migrations",
     )
-    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
-                          test_files=[], docs=[])
+    inventory = Inventory(
+        modules=[mod], edges=[], routes=[], constraints=[], test_files=[], docs=[]
+    )
 
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture-models")
     ctx.cache["observe"] = StageResult(
-        output=inventory, quality=QualityMetrics(score=100),
-        diagnostics=[], uncertainties=[], input_hash="1",
-        duration_ms=0, version="1.0",
+        output=inventory,
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
     )
 
     stage = InferStage()
@@ -496,7 +544,9 @@ def test_infer_middleware_workflow(tmp_path):
     """Middleware classes should produce workflow behaviors."""
     from architecture_model.pipeline.infer import InferStage
     from architecture_model.pipeline.observe_types import (
-        Inventory, ModuleRecord, ClassRecord,
+        Inventory,
+        ModuleRecord,
+        ClassRecord,
     )
     from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
 
@@ -519,14 +569,19 @@ def test_infer_middleware_workflow(tmp_path):
         line_count=100,
         docstring="",
     )
-    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
-                          test_files=[], docs=[])
+    inventory = Inventory(
+        modules=[mod], edges=[], routes=[], constraints=[], test_files=[], docs=[]
+    )
 
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture-models")
     ctx.cache["observe"] = StageResult(
-        output=inventory, quality=QualityMetrics(score=100),
-        diagnostics=[], uncertainties=[], input_hash="1",
-        duration_ms=0, version="1.0",
+        output=inventory,
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
     )
 
     stage = InferStage()
@@ -545,7 +600,10 @@ def test_synthesize_propagates_all_entities():
     from architecture_model.pipeline.protocol import StageResult, QualityMetrics
     from architecture_model.pipeline.observe_types import Inventory, ConstraintRecord
     from architecture_model.pipeline.infer_types import (
-        InferenceResult, InferredCapability, InferredActor, InferredBehavior,
+        InferenceResult,
+        InferredCapability,
+        InferredActor,
+        InferredBehavior,
     )
     from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
     from architecture_model.pipeline.relate_types import RelateResult, DerivedRelationship
@@ -561,43 +619,108 @@ def test_synthesize_propagates_all_entities():
 
     def _sr(output):
         return StageResult(
-            output=output, quality=QualityMetrics(score=100),
-            diagnostics=[], uncertainties=[], input_hash="", duration_ms=0, version="1.0",
+            output=output,
+            quality=QualityMetrics(score=100),
+            diagnostics=[],
+            uncertainties=[],
+            input_hash="",
+            duration_ms=0,
+            version="1.0",
         )
 
     results = {
-        "observe": _sr(Inventory(
-            modules=[],
-            constraints=[
-                ConstraintRecord(name="python", value=">=3.10", source="src/core/parser.py", constraint_type="version"),
-                ConstraintRecord(name="timeout", value="30s", source="src/other/unrelated.py", constraint_type="timeout"),
-            ],
-        )),
-        "infer": _sr(InferenceResult(
-            capabilities=[
-                InferredCapability(id="CAP-1", name="Parsing"),
-                InferredCapability(id="CAP-2", name="Validation"),
-            ],
-            actors=[
-                InferredActor(id="ACT-1", name="Developer", actor_type="human", evidence_source="cli"),
-            ],
-            behaviors=[
-                InferredBehavior(id="BEH-1", name="Parse File", capability_id="CAP-1", behavior_type="use_case", steps=["read", "parse"]),
-                InferredBehavior(id="BEH-2", name="Unrelated", capability_id="CAP-99", behavior_type="workflow"),
-                InferredBehavior(id="BEH-3", name="Global", capability_id="", behavior_type="use_case"),
-            ],
-        )),
-        "allocate": _sr(AllocationResult(components=[
-            ComponentAllocation(id="COMP-1", name="Parser", files=[Path("src/core/parser.py")], layer="service"),
-            ComponentAllocation(id="COMP-2", name="Validator", files=[Path("src/core/validator.py")], layer="service"),
-        ])),
-        "relate": _sr(RelateResult(relationships=[
-            DerivedRelationship(from_id="COMP-1", to_id="CAP-1", rel_type="realizes"),
-        ])),
-        "specify": _sr(SpecifyResult(interfaces=[
-            InterfaceSpec(id="IF-1", name="ParserAPI", component_id="COMP-1", interface_type="library", methods=["parse"], description="Parser interface"),
-            InterfaceSpec(id="IF-2", name="OtherAPI", component_id="COMP-OTHER", interface_type="rest"),
-        ])),
+        "observe": _sr(
+            Inventory(
+                modules=[],
+                constraints=[
+                    ConstraintRecord(
+                        name="python",
+                        value=">=3.10",
+                        source="src/core/parser.py",
+                        constraint_type="version",
+                    ),
+                    ConstraintRecord(
+                        name="timeout",
+                        value="30s",
+                        source="src/other/unrelated.py",
+                        constraint_type="timeout",
+                    ),
+                ],
+            )
+        ),
+        "infer": _sr(
+            InferenceResult(
+                capabilities=[
+                    InferredCapability(id="CAP-1", name="Parsing"),
+                    InferredCapability(id="CAP-2", name="Validation"),
+                ],
+                actors=[
+                    InferredActor(
+                        id="ACT-1", name="Developer", actor_type="human", evidence_source="cli"
+                    ),
+                ],
+                behaviors=[
+                    InferredBehavior(
+                        id="BEH-1",
+                        name="Parse File",
+                        capability_id="CAP-1",
+                        behavior_type="use_case",
+                        steps=["read", "parse"],
+                    ),
+                    InferredBehavior(
+                        id="BEH-2",
+                        name="Unrelated",
+                        capability_id="CAP-99",
+                        behavior_type="workflow",
+                    ),
+                    InferredBehavior(
+                        id="BEH-3", name="Global", capability_id="", behavior_type="use_case"
+                    ),
+                ],
+            )
+        ),
+        "allocate": _sr(
+            AllocationResult(
+                components=[
+                    ComponentAllocation(
+                        id="COMP-1",
+                        name="Parser",
+                        files=[Path("src/core/parser.py")],
+                        layer="service",
+                    ),
+                    ComponentAllocation(
+                        id="COMP-2",
+                        name="Validator",
+                        files=[Path("src/core/validator.py")],
+                        layer="service",
+                    ),
+                ]
+            )
+        ),
+        "relate": _sr(
+            RelateResult(
+                relationships=[
+                    DerivedRelationship(from_id="COMP-1", to_id="CAP-1", rel_type="realizes"),
+                ]
+            )
+        ),
+        "specify": _sr(
+            SpecifyResult(
+                interfaces=[
+                    InterfaceSpec(
+                        id="IF-1",
+                        name="ParserAPI",
+                        component_id="COMP-1",
+                        interface_type="library",
+                        methods=["parse"],
+                        description="Parser interface",
+                    ),
+                    InterfaceSpec(
+                        id="IF-2", name="OtherAPI", component_id="COMP-OTHER", interface_type="rest"
+                    ),
+                ]
+            )
+        ),
     }
 
     yaml_str = _build_system_model_yaml(boundary, results)
@@ -637,39 +760,77 @@ def test_infer_flags_complex_behavior_uncertainty(tmp_path):
     """Complex classes should flag uncertainties for LLM enrichment."""
     from architecture_model.pipeline.infer import InferStage
     from architecture_model.pipeline.observe_types import (
-        Inventory, ModuleRecord, ClassRecord,
+        Inventory,
+        ModuleRecord,
+        ClassRecord,
     )
     from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
 
     mod = ModuleRecord(
         path=Path("django/db/models/query.py"),
         functions=[],
-        classes=[ClassRecord(
-            name="QuerySet",
-            bases=["object"],
-            methods=["filter", "exclude", "annotate", "aggregate", "values",
-                     "order_by", "distinct", "union", "intersection", "difference",
-                     "select_related", "prefetch_related", "defer", "only",
-                     "using", "all", "none", "get", "create", "update", "delete",
-                     "count", "exists", "first", "last", "earliest", "latest"],
-            method_details=[], attributes={}, decorators=[], is_abstract=False,
-        )],
-        imports=[], constants=[], line_count=2000, docstring="",
+        classes=[
+            ClassRecord(
+                name="QuerySet",
+                bases=["object"],
+                methods=[
+                    "filter",
+                    "exclude",
+                    "annotate",
+                    "aggregate",
+                    "values",
+                    "order_by",
+                    "distinct",
+                    "union",
+                    "intersection",
+                    "difference",
+                    "select_related",
+                    "prefetch_related",
+                    "defer",
+                    "only",
+                    "using",
+                    "all",
+                    "none",
+                    "get",
+                    "create",
+                    "update",
+                    "delete",
+                    "count",
+                    "exists",
+                    "first",
+                    "last",
+                    "earliest",
+                    "latest",
+                ],
+                method_details=[],
+                attributes={},
+                decorators=[],
+                is_abstract=False,
+            )
+        ],
+        imports=[],
+        constants=[],
+        line_count=2000,
+        docstring="",
     )
-    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
-                          test_files=[], docs=[])
+    inventory = Inventory(
+        modules=[mod], edges=[], routes=[], constraints=[], test_files=[], docs=[]
+    )
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path)
     ctx.cache["observe"] = StageResult(
-        output=inventory, quality=QualityMetrics(score=100),
-        diagnostics=[], uncertainties=[], input_hash="1",
-        duration_ms=0, version="1.0",
+        output=inventory,
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
     )
 
     stage = InferStage()
     result = stage.run(ctx)
 
-    complex_unc = [u for u in result.uncertainties
-                   if u.category == "complex_behavior"]
+    complex_unc = [u for u in result.uncertainties if u.category == "complex_behavior"]
     assert len(complex_unc) >= 1
     assert "QuerySet" in complex_unc[0].description
 
@@ -678,34 +839,64 @@ def test_relate_produces_constrained_by(tmp_path):
     """Constraints should produce constrained-by relationships."""
     from architecture_model.pipeline.relate import RelateStage
     from architecture_model.pipeline.observe_types import (
-        Inventory, ModuleRecord, ConstraintRecord,
+        Inventory,
+        ModuleRecord,
+        ConstraintRecord,
     )
     from architecture_model.pipeline.infer_types import InferenceResult, InferredCapability
     from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
     from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
 
-    mod = ModuleRecord(path=Path("app/main.py"), functions=[], classes=[],
-                       imports=[], constants=[], line_count=50, docstring="")
-    constraint = ConstraintRecord(name="python", value=">=3.10",
-                                  source="pyproject.toml", constraint_type="TECHNOLOGY")
-    inventory = Inventory(modules=[mod], edges=[], routes=[],
-                          constraints=[constraint], test_files=[], docs=[])
+    mod = ModuleRecord(
+        path=Path("app/main.py"),
+        functions=[],
+        classes=[],
+        imports=[],
+        constants=[],
+        line_count=50,
+        docstring="",
+    )
+    constraint = ConstraintRecord(
+        name="python", value=">=3.10", source="pyproject.toml", constraint_type="TECHNOLOGY"
+    )
+    inventory = Inventory(
+        modules=[mod], edges=[], routes=[], constraints=[constraint], test_files=[], docs=[]
+    )
 
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
-    ctx.cache["observe"] = StageResult(output=inventory, quality=QualityMetrics(score=100),
-                                        diagnostics=[], uncertainties=[], input_hash="1",
-                                        duration_ms=0, version="1.0")
+    ctx.cache["observe"] = StageResult(
+        output=inventory,
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
+    )
     ctx.cache["infer"] = StageResult(
         output=InferenceResult(capabilities=[InferredCapability(id="CAP-1", name="App")]),
-        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
-        input_hash="1", duration_ms=0, version="1.0")
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
+    )
     ctx.cache["allocate"] = StageResult(
-        output=AllocationResult(components=[
-            ComponentAllocation(id="COMP-1", name="App", capability_id="CAP-1",
-                              files=[Path("app/main.py")])
-        ]),
-        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
-        input_hash="1", duration_ms=0, version="1.0")
+        output=AllocationResult(
+            components=[
+                ComponentAllocation(
+                    id="COMP-1", name="App", capability_id="CAP-1", files=[Path("app/main.py")]
+                )
+            ]
+        ),
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
+    )
 
     stage = RelateStage()
     result = stage.run(ctx)
@@ -722,26 +913,57 @@ def test_relate_produces_layer_entities(tmp_path):
     from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
     from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
 
-    mod = ModuleRecord(path=Path("app/main.py"), functions=[], classes=[],
-                       imports=[], constants=[], line_count=50, docstring="")
-    inventory = Inventory(modules=[mod], edges=[], routes=[], constraints=[],
-                          test_files=[], docs=[])
+    mod = ModuleRecord(
+        path=Path("app/main.py"),
+        functions=[],
+        classes=[],
+        imports=[],
+        constants=[],
+        line_count=50,
+        docstring="",
+    )
+    inventory = Inventory(
+        modules=[mod], edges=[], routes=[], constraints=[], test_files=[], docs=[]
+    )
 
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
-    ctx.cache["observe"] = StageResult(output=inventory, quality=QualityMetrics(score=100),
-                                        diagnostics=[], uncertainties=[], input_hash="1",
-                                        duration_ms=0, version="1.0")
+    ctx.cache["observe"] = StageResult(
+        output=inventory,
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
+    )
     ctx.cache["infer"] = StageResult(
         output=InferenceResult(capabilities=[InferredCapability(id="CAP-1", name="App")]),
-        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
-        input_hash="1", duration_ms=0, version="1.0")
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
+    )
     ctx.cache["allocate"] = StageResult(
-        output=AllocationResult(components=[
-            ComponentAllocation(id="COMP-1", name="App", capability_id="CAP-1",
-                              files=[Path("app/main.py")], layer="service")
-        ]),
-        quality=QualityMetrics(score=100), diagnostics=[], uncertainties=[],
-        input_hash="1", duration_ms=0, version="1.0")
+        output=AllocationResult(
+            components=[
+                ComponentAllocation(
+                    id="COMP-1",
+                    name="App",
+                    capability_id="CAP-1",
+                    files=[Path("app/main.py")],
+                    layer="service",
+                )
+            ]
+        ),
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
+    )
 
     stage = RelateStage()
     result = stage.run(ctx)
@@ -753,8 +975,12 @@ def test_full_pipeline_produces_all_entity_types(tmp_path):
     """A complete pipeline should produce all 7 entity types in model YAML."""
     import yaml
     from architecture_model.pipeline.observe_types import (
-        Inventory, ModuleRecord, FunctionRecord, ClassRecord,
-        RouteRecord, ConstraintRecord,
+        Inventory,
+        ModuleRecord,
+        FunctionRecord,
+        ClassRecord,
+        RouteRecord,
+        ConstraintRecord,
     )
     from architecture_model.pipeline.synthesize import _build_system_model_yaml
     from architecture_model.pipeline.decompose_types import SystemBoundary
@@ -763,65 +989,125 @@ def test_full_pipeline_produces_all_entity_types(tmp_path):
     # Build a Django-like inventory with routes, CLI, middleware, models
     modules = [
         ModuleRecord(
-            path=Path("myapp/views.py"), language="python",
+            path=Path("myapp/views.py"),
+            language="python",
             functions=[
-                FunctionRecord(name="list_items", signature="(request)", body_hint="return JsonResponse(...)",
-                               calls=["get_queryset", "serialize"], decorators=[], docstring="List all items"),
+                FunctionRecord(
+                    name="list_items",
+                    signature="(request)",
+                    body_hint="return JsonResponse(...)",
+                    calls=["get_queryset", "serialize"],
+                    decorators=[],
+                    docstring="List all items",
+                ),
             ],
-            classes=[], constants=[], imports=["django.http"], line_count=100, docstring="Views",
+            classes=[],
+            constants=[],
+            imports=["django.http"],
+            line_count=100,
+            docstring="Views",
         ),
         ModuleRecord(
-            path=Path("myapp/management/commands/sync.py"), language="python",
+            path=Path("myapp/management/commands/sync.py"),
+            language="python",
             functions=[
-                FunctionRecord(name="handle", signature="(self, *args, **options)", body_hint="...",
-                               calls=["sync_data", "log_result"], decorators=[], docstring="Sync external data"),
+                FunctionRecord(
+                    name="handle",
+                    signature="(self, *args, **options)",
+                    body_hint="...",
+                    calls=["sync_data", "log_result"],
+                    decorators=[],
+                    docstring="Sync external data",
+                ),
             ],
-            classes=[], constants=[], imports=["click"], line_count=50, docstring="Sync command",
+            classes=[],
+            constants=[],
+            imports=["click"],
+            line_count=50,
+            docstring="Sync command",
         ),
         ModuleRecord(
-            path=Path("myapp/middleware.py"), language="python",
+            path=Path("myapp/middleware.py"),
+            language="python",
             functions=[],
             classes=[
                 ClassRecord(
-                    name="AuthMiddleware", bases=["MiddlewareMixin"],
+                    name="AuthMiddleware",
+                    bases=["MiddlewareMixin"],
                     methods=["process_request", "process_response"],
-                    method_details=[], attributes={}, decorators=[], is_abstract=False,
+                    method_details=[],
+                    attributes={},
+                    decorators=[],
+                    is_abstract=False,
                 ),
             ],
-            constants=[], imports=["django.utils.deprecation"], line_count=80, docstring="",
+            constants=[],
+            imports=["django.utils.deprecation"],
+            line_count=80,
+            docstring="",
         ),
         ModuleRecord(
-            path=Path("myapp/models.py"), language="python",
+            path=Path("myapp/models.py"),
+            language="python",
             functions=[],
             classes=[
-                ClassRecord(name="Item", bases=["Model"], methods=["save", "clean"],
-                            method_details=[], attributes={}, decorators=[], is_abstract=False),
+                ClassRecord(
+                    name="Item",
+                    bases=["Model"],
+                    methods=["save", "clean"],
+                    method_details=[],
+                    attributes={},
+                    decorators=[],
+                    is_abstract=False,
+                ),
             ],
-            constants=[], imports=["django.db"], line_count=120, docstring="Data models",
+            constants=[],
+            imports=["django.db"],
+            line_count=120,
+            docstring="Data models",
         ),
     ]
 
     routes = [
-        RouteRecord(method="GET", path="/api/items", function_name="list_items",
-                    file=Path("myapp/views.py"), docstring="List items", is_authenticated=False, framework="django"),
+        RouteRecord(
+            method="GET",
+            path="/api/items",
+            function_name="list_items",
+            file=Path("myapp/views.py"),
+            docstring="List items",
+            is_authenticated=False,
+            framework="django",
+        ),
     ]
 
     constraints = [
-        ConstraintRecord(name="python", value=">=3.10", source="pyproject.toml", constraint_type="TECHNOLOGY"),
-        ConstraintRecord(name="django", value=">=4.2", source="requirements.txt", constraint_type="TECHNOLOGY"),
+        ConstraintRecord(
+            name="python", value=">=3.10", source="pyproject.toml", constraint_type="TECHNOLOGY"
+        ),
+        ConstraintRecord(
+            name="django", value=">=4.2", source="requirements.txt", constraint_type="TECHNOLOGY"
+        ),
     ]
 
     inventory = Inventory(
-        modules=modules, edges=[], routes=routes, constraints=constraints,
-        test_files=[], docs=[],
+        modules=modules,
+        edges=[],
+        routes=routes,
+        constraints=constraints,
+        test_files=[],
+        docs=[],
     )
 
     # Run stages sequentially
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
     ctx.cache["observe"] = StageResult(
-        output=inventory, quality=QualityMetrics(score=100),
-        diagnostics=[], uncertainties=[], input_hash="1",
-        duration_ms=0, version="1.0",
+        output=inventory,
+        quality=QualityMetrics(score=100),
+        diagnostics=[],
+        uncertainties=[],
+        input_hash="1",
+        duration_ms=0,
+        version="1.0",
     )
 
     infer_result = InferStage().run(ctx)
@@ -838,7 +1124,8 @@ def test_full_pipeline_produces_all_entity_types(tmp_path):
 
     # Build system model YAML
     boundary = SystemBoundary(
-        system_id="SYS-MYAPP", name="MyApp",
+        system_id="SYS-MYAPP",
+        name="MyApp",
         files=[str(m.path) for m in modules],
         is_full_system=True,
     )

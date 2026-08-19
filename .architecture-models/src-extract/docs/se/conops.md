@@ -2,10 +2,10 @@
 document: ConOps
 system: Src (extract)
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:35Z
+generated_at: 2026-08-19T17:00:15Z
 generator_version: 0.3.0
 model_hash: ef39ecd21e5d
-edition: 6
+edition: 7
 ---
 
 > **Model Completeness: F (0%)**

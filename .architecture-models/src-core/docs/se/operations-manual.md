@@ -2,10 +2,10 @@
 document: Operations Manual
 system: Src (core)
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:33Z
+generated_at: 2026-08-19T17:00:07Z
 generator_version: 0.3.0
 model_hash: 65254bb02f54
-edition: 12
+edition: 14
 ---
 
 > **Model Completeness: F (25%)**

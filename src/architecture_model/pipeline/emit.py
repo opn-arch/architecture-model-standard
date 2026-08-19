@@ -146,7 +146,7 @@ class EmitStage:
             result.doc_count += 1
 
         # 6. Generate SE docs (non-fatal)
-        self._generate_se_docs(out_dir, synth, result, diagnostics)
+        self._generate_se_docs(out_dir, synth, result, diagnostics, repo_root=ctx.repo_path)
 
         # 7. Build file→component map (shared by test map and requirements)
         test_map: dict[str, list[str]] = {}
@@ -262,6 +262,34 @@ class EmitStage:
                 )
             )
 
+        # 9b. Enrich SoS model with same pipeline-derived data
+        try:
+            sos_path = out_dir / ".architecture-model.yaml"
+            if sos_path.exists():
+                sos_enrichment = _enrich_top_model(
+                    ctx,
+                    synth,
+                    reqs if "reqs" in dir() else [],
+                    top_reqs if "top_reqs" in dir() else [],
+                    target_path=sos_path,
+                )
+                if sos_enrichment:
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="info",
+                            code="SOS_MODEL_ENRICHED",
+                            message=sos_enrichment,
+                        )
+                    )
+        except Exception as exc:
+            diagnostics.append(
+                Diagnostic(
+                    severity="warning",
+                    code="SOS_ENRICH_FAILED",
+                    message=f"SoS model enrichment failed: {exc}",
+                )
+            )
+
         # 10. LLM review pass on generated artifacts
         try:
             if ctx.llm_callback is not None:
@@ -290,6 +318,7 @@ class EmitStage:
                             None,
                             reviews=reviews,
                             enrichments=getattr(ctx, "enrichment_log", None),
+                            repo_root=ctx.repo_path,
                         )
                         trace_path = out_dir / "docs" / "se" / "artifact-traceability.md"
                         trace_path.parent.mkdir(parents=True, exist_ok=True)
@@ -339,6 +368,7 @@ class EmitStage:
         synth: SynthesizeResult,
         result: EmitResult,
         diagnostics: list[Diagnostic],
+        repo_root: Path | None = None,
     ) -> None:
         """Generate SE docs for top-level and subsystem models (non-fatal)."""
         try:
@@ -354,13 +384,34 @@ class EmitStage:
             )
             return
 
-        # Top-level SoS model
+        # Top-level SoS model — prefer richer model (root vs SoS)
         sos_model_path = out_dir / ".architecture-model.yaml"
-        if sos_model_path.exists():
+        root_model_path = repo_root / ".architecture-model.yaml" if repo_root else None
+        best_model_path = sos_model_path  # default
+
+        if root_model_path and root_model_path.exists() and sos_model_path.exists():
             try:
-                model = load_model(sos_model_path)
+                root_m = load_model(root_model_path)
+                sos_m = load_model(sos_model_path)
+                root_count = root_m.entity_count
+                sos_count = sos_m.entity_count
+                if root_count > sos_count:
+                    best_model_path = root_model_path
+                    diagnostics.append(
+                        Diagnostic(
+                            severity="info",
+                            code="RICHER_MODEL_SELECTED",
+                            message=f"Using root model ({root_count} entities) over SoS ({sos_count}) for SE docs",
+                        )
+                    )
+            except Exception:
+                pass  # fall through to default
+
+        if best_model_path.exists():
+            try:
+                model = load_model(best_model_path)
                 se_dir = out_dir / "docs" / "se"
-                se_result = generate_se_docs(model, se_dir)
+                se_result = generate_se_docs(model, se_dir, repo_root=repo_root)
                 for doc_name in se_result.get("generated", []):
                     result.doc_count += 1
             except Exception as exc:
@@ -380,7 +431,7 @@ class EmitStage:
                 try:
                     model = load_model(sys_model_path)
                     se_dir = sys_dir / "docs" / "se"
-                    se_result = generate_se_docs(model, se_dir)
+                    se_result = generate_se_docs(model, se_dir, repo_root=repo_root)
                     for doc_name in se_result.get("generated", []):
                         result.doc_count += 1
                 except Exception as exc:
@@ -559,22 +610,42 @@ def _enrich_top_model(
     synth: SynthesizeResult,
     all_reqs: list,
     top_reqs: list,
+    target_path: Path | None = None,
 ) -> str:
-    """Enrich the repo's top-level .architecture-model.yaml with pipeline-derived entities.
+    """Enrich an architecture model YAML with pipeline-derived entities.
 
     Merges behaviors, interfaces, actors, constraints, requirements, and
     component descriptions from pipeline stages into the existing model YAML.
     Only adds entities that don't already exist (by ID).
+
+    Args:
+        target_path: Model YAML to enrich. Defaults to repo root model.
     """
     import yaml
 
-    model_path = ctx.repo_path / ".architecture-model.yaml"
+    model_path = target_path or (ctx.repo_path / ".architecture-model.yaml")
     if not model_path.exists():
         return ""
 
     model_dict = yaml.safe_load(model_path.read_text()) or {}
     entities = model_dict.setdefault("entities", {})
     relationships = model_dict.setdefault("relationships", [])
+
+    # For SoS models, build mapping from root comp IDs to SoS comp IDs
+    # SoS components have prefixed IDs like "sys-slug-COMP-3" while pipeline uses "COMP-3"
+    is_sos = target_path is not None
+    root_to_sos_comp: dict[str, str] = {}
+    if is_sos:
+        for comp in entities.get("components", []):
+            if isinstance(comp, dict):
+                sos_id = comp.get("id", "")
+                # Extract the COMP-N suffix
+                import re as _re
+
+                match = _re.search(r"(COMP-\d+(?:-\d+)?)", sos_id)
+                if match:
+                    root_id = match.group(1)
+                    root_to_sos_comp[root_id] = sos_id
 
     existing_ids: set[str] = set()
     for etype in entities.values():
@@ -646,7 +717,12 @@ def _enrich_top_model(
                     "interface_type": iface.interface_type,
                 }
                 if iface.component_id:
-                    iface_dict["component_id"] = iface.component_id
+                    mapped_cid = (
+                        root_to_sos_comp.get(iface.component_id, iface.component_id)
+                        if is_sos
+                        else iface.component_id
+                    )
+                    iface_dict["component_id"] = mapped_cid
                 if iface.methods:
                     iface_dict["methods"] = iface.methods
                 if iface.description:
@@ -768,10 +844,16 @@ def _enrich_top_model(
         """Resolve a sub-component ID to a known comp_id (strip suffix if needed)."""
         if cid in comp_ids:
             return cid
+        # For SoS: map root COMP-N to SoS prefixed ID
+        if is_sos and cid in root_to_sos_comp:
+            return root_to_sos_comp[cid]
         # Try parent: COMP-5-1 → COMP-5
         parts = cid.rsplit("-", 1)
         if len(parts) == 2 and parts[0] in comp_ids:
             return parts[0]
+        # For SoS: try parent mapping too
+        if is_sos and len(parts) == 2 and parts[0] in root_to_sos_comp:
+            return root_to_sos_comp[parts[0]]
         return ""
 
     # 7. Create linking relationships
@@ -864,10 +946,83 @@ def _enrich_top_model(
     if rel_count:
         added["relationships"] = rel_count
 
+    # 8. Auto-generate library interfaces for uncovered components
+    comps_with_iface: set[str] = set()
+    for rel in relationships:
+        if isinstance(rel, dict) and rel.get("type") == "exposes":
+            comps_with_iface.add(rel.get("from", ""))
+    # Also check interface component_id directly
+    for iface in entities.get("interfaces", []):
+        if isinstance(iface, dict) and iface.get("component_id"):
+            comps_with_iface.add(iface["component_id"])
+
+    interfaces = entities.setdefault("interfaces", [])
+    contract_result = ctx.get("contract") if ctx.has("contract") else None
+    auto_iface_count = 0
+    for comp in entities.get("components", []):
+        if not isinstance(comp, dict):
+            continue
+        cid = comp.get("id", "")
+        if not cid or cid in comps_with_iface:
+            continue
+        iface_id = f"IF-auto-{cid}"
+        if iface_id in existing_ids:
+            continue
+        # Build method list from contract stage if available
+        methods: list[str] = []
+        if contract_result and hasattr(contract_result, "output") and contract_result.output:
+            for contract in getattr(contract_result.output, "contracts", []):
+                if getattr(contract, "component_id", "") == cid:
+                    methods = list(getattr(contract, "exports", []))[:10]
+                    break
+        if not methods:
+            name = comp.get("name", cid).lower().replace(" ", "_")
+            methods = [f"{name}_api"]
+        interfaces.append(
+            {
+                "id": iface_id,
+                "name": f"{comp.get('name', cid)} API",
+                "interface_type": "library",
+                "component_id": cid,
+                "methods": methods,
+            }
+        )
+        relationships.append({"from": cid, "to": iface_id, "type": "exposes"})
+        existing_ids.add(iface_id)
+        existing_rel_keys.add((cid, iface_id, "exposes"))
+        auto_iface_count += 1
+        # Also handle children
+        for child in comp.get("children", []):
+            if not isinstance(child, dict):
+                continue
+            child_id = child.get("id", "")
+            if not child_id or child_id in comps_with_iface:
+                continue
+            child_iface_id = f"IF-auto-{child_id}"
+            if child_iface_id in existing_ids:
+                continue
+            child_name = child.get("name", child_id).lower().replace(" ", "_")
+            interfaces.append(
+                {
+                    "id": child_iface_id,
+                    "name": f"{child.get('name', child_id)} API",
+                    "interface_type": "library",
+                    "component_id": child_id,
+                    "methods": [f"{child_name}_api"],
+                }
+            )
+            relationships.append({"from": child_id, "to": child_iface_id, "type": "exposes"})
+            existing_ids.add(child_iface_id)
+            existing_rel_keys.add((child_id, child_iface_id, "exposes"))
+            auto_iface_count += 1
+    if auto_iface_count:
+        added["auto_interfaces"] = auto_iface_count
+
     if not added:
         return ""
 
     # Write enriched model
     model_path.write_text(yaml.dump(model_dict, default_flow_style=False, sort_keys=False))
+    label = "SoS model" if target_path else "Top-level model"
     parts = [f"{k}: +{v}" for k, v in sorted(added.items())]
-    return f"Top-level model enriched: {', '.join(parts)}"
+    return f"{label} enriched: {', '.join(parts)}"

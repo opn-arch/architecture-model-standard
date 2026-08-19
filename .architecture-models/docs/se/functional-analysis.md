@@ -1,48 +1,69 @@
 ---
 document: Functional Analysis
-system: System
+system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
+generated_at: 2026-08-19T16:59:51Z
 generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
+model_hash: 435262313fec
+edition: 8
 ---
 
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - No interfaces defined on components → interface-spec doc empty
-> - No requirements defined
-> - Actors defined but missing goals/descriptions
-> - 92/92 components missing description/responsibilities
-> Run the extraction pipeline or manually add behaviors/interfaces/constraints.
-
-# Functional Analysis: System
+# Functional Analysis: architecture-model-standard
 ## Capability Inventory
 | ID | Capability | Priority | Status | Description |
 |----|-----------|----------|--------|-------------|
-| CAP-1 | HTTP Route Definitions | medium | ACTIVE | — |
-| CAP-2 | gRPC Services | medium | ACTIVE | — |
-| CAP-3 | Build Configuration Scripts | medium | ACTIVE | — |
-| CAP-4 | Package Group Management | medium | ACTIVE | — |
-| CAP-5 | Command Line Interface Entry Point | medium | ACTIVE | — |
-| CAP-6 | Command Line Executor | medium | ACTIVE | — |
+| CAP-1 | Validate Architecture Models | medium | ACTIVE | Check model correctness, completeness, hierarchy consistency, and domain rules |
+| CAP-2 | Extract Architecture from Code | medium | ACTIVE | Scan source code AST and derive components, relationships, behaviors automatically |
+| CAP-3 | Run Modular Extraction Pipeline | medium | ACTIVE | Execute 10-stage pipeline (observe→infer→allocate→relate→specify→contract→validate→decompose→synthesize→emit) |
+| CAP-4 | Generate Reality Manifest | medium | ACTIVE | Scan source files to produce structural facts (functions, imports, classes, routes, tests) |
+| CAP-5 | Generate SE Documentation | medium | ACTIVE | Produce functional analysis, logical architecture, use cases, requirements, V&V, operations docs |
+| CAP-6 | Author Model from Requirements | medium | ACTIVE | Parse requirements document into a concept-phase architecture model |
+| CAP-7 | Slice and Query Models | medium | ACTIVE | Filter model by block, layer, status, artifact for focused context delivery |
+| CAP-8 | Diff Model Versions | medium | ACTIVE | Compare two model versions showing additions, removals, and changes |
+| CAP-9 | Decompose Models Hierarchically | medium | ACTIVE | Break coarse models into per-system sub-models with parent/child relationships |
+| CAP-10 | Enrich Models with Code Intelligence | medium | ACTIVE | Auto-populate signatures, constants, test contracts, behaviors from source |
+| CAP-11 | Assess Regen Readiness | medium | ACTIVE | Score how well a model captures enough detail to regenerate code |
+| CAP-12 | Check Development Gate | medium | ACTIVE | Verify code reality is tracking toward authored architecture intent |
+| CAP-13 | Detect and Fix Model Drift | medium | ACTIVE | Compare model against current code, report coverage gaps |
+| CAP-14 | Manage Global Learnings | medium | ACTIVE | Store, retrieve, and apply heuristics/archetypes/workflows across pipeline runs |
+| CAP-15 | Export for AI Consumption | medium | ACTIVE | Produce flat-file exports optimized for token-limited AI environments |
 ## Functional Decomposition
 ```mermaid
 graph TD
-    CAP-1["HTTP Route Definitions"]
-    CAP-2["gRPC Services"]
-    CAP-3["Build Configuration Scripts"]
-    CAP-4["Package Group Management"]
-    CAP-5["Command Line Interface Entry Point"]
-    CAP-6["Command Line Executor"]
+    CAP-1["Validate Architecture Models"]
+    CAP-2["Extract Architecture from Code"]
+    CAP-3["Run Modular Extraction Pipeline"]
+    CAP-4["Generate Reality Manifest"]
+    CAP-5["Generate SE Documentation"]
+    CAP-6["Author Model from Requirements"]
+    CAP-7["Slice and Query Models"]
+    CAP-8["Diff Model Versions"]
+    CAP-9["Decompose Models Hierarchically"]
+    CAP-10["Enrich Models with Code Intelligence"]
+    CAP-11["Assess Regen Readiness"]
+    CAP-12["Check Development Gate"]
+    CAP-13["Detect and Fix Model Drift"]
+    CAP-14["Manage Global Learnings"]
+    CAP-15["Export for AI Consumption"]
 ```
 ## Capability-Component Mapping
 | Capability | Realized By | Component Kind |
 |-----------|------------|----------------|
-| HTTP Route Definitions | *unrealized* | — |
-| gRPC Services | *unrealized* | — |
-| Command Line Interface Entry Point | *unrealized* | — |
-| Command Line Executor | *unrealized* | — |
+| Validate Architecture Models | Validation (COMP-1.2) | library |
+| Extract Architecture from Code | Extract (COMP-6) | library |
+| Run Modular Extraction Pipeline | Pipeline (COMP-2) | service |
+| Generate Reality Manifest | Manifest (COMP-3) | library |
+| Generate SE Documentation | SE Document Suite (COMP-4.2) | library |
+| Author Model from Requirements | Authoring (COMP-7) | library |
+| Slice and Query Models | Model Operations (COMP-1.4) | library |
+| Diff Model Versions | Model Operations (COMP-1.4) | library |
+| Decompose Models Hierarchically | Decomposition (COMP-5.2) | service |
+| Enrich Models with Code Intelligence | Enrichment (COMP-5.1) | service |
+| Assess Regen Readiness | Quality Metrics (COMP-1.5) | library |
+| Check Development Gate | Authoring (COMP-7) | library |
+| Detect and Fix Model Drift | Model Operations (COMP-1.4) | library |
+| Manage Global Learnings | Pipeline Learning (COMP-11) | library |
+| Export for AI Consumption | Export (COMP-10) | library |
 ## Behavioral Coverage
 Total behaviors: 25
 
@@ -62,48 +83,3 @@ Total behaviors: 25
 ---
 
 ---
-
-## LLM Review
-
-*Reviewed: 2026-08-18T23:37:06.459880+00:00 | Duration: 6019ms*
-
-**Summary:** This functional analysis is at a very early stage (14% completeness) with all capabilities unrealized, no component mappings, no requirements, and 25 untraced behaviors, making it largely unusable for architectural decision-making in its current form.
-
-- All four non-build capabilities are marked "unrealized" with no component mapping, indicating the model extraction pipeline has not linked source code components to the identified capabilities.
-- The 25 untraced behaviors (HTTP routes, gRPC calls, CLI commands) suggest the system has significant functionality that is completely disconnected from the capability and component model, creating a traceability gap.
-
-<details>
-<summary>Review details</summary>
-
-**Prompt sent (truncated):**
-```
-Review the following architecture artifact 'docs/se/functional-analysis.md'.
-Respond ONLY in this format:
-SUMMARY: <one paragraph overall assessment>
-COMMENT: <specific observation>
-COMMENT: <another observation>
-
----
----
-document: Functional Analysis
-system: System
-system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
-generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
----
-
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - No interfac
-```
-
-**Full LLM response:**
-```
-SUMMARY: This functional analysis is at a very early stage (14% completeness) with all capabilities unrealized, no component mappings, no requirements, and 25 untraced behaviors, making it largely unusable for architectural decision-making in its current form.
-COMMENT: All four non-build capabilities are marked "unrealized" with no component mapping, indicating the model extraction pipeline has not linked source code components to the identified capabilities.
-COMMENT: The 25 untraced behaviors (HTTP routes, gRPC calls, CLI commands) suggest the system has significant functionality that is completely disconnected from the capability and component model, creating a traceability gap.
-```
-
-</details>

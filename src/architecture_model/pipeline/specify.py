@@ -1,4 +1,5 @@
 """Specify pipeline stage — derives interface specifications from routes and exports."""
+
 from __future__ import annotations
 
 import time
@@ -56,28 +57,34 @@ class SpecifyStage:
         for comp_id, routes in comp_routes.items():
             iface_counter += 1
             methods = [f"{r.method} {r.path}" for r in routes]
-            interfaces.append(InterfaceSpec(
-                id=f"IF-{iface_counter}",
-                name=f"{comp_id} REST API",
-                component_id=comp_id,
-                interface_type="rest",
-                methods=methods,
-                description=f"{len(routes)} endpoints",
-            ))
+            interfaces.append(
+                InterfaceSpec(
+                    id=f"IF-{iface_counter}",
+                    name=f"{comp_id} REST API",
+                    component_id=comp_id,
+                    interface_type="rest",
+                    methods=methods,
+                    description=f"{len(routes)} endpoints",
+                )
+            )
 
         # CLI interfaces
         for mod in inventory.modules:
-            has_cli = any("click" in imp or "typer" in imp or "argparse" in imp for imp in mod.imports)
+            has_cli = any(
+                "click" in imp or "typer" in imp or "argparse" in imp for imp in mod.imports
+            )
             if has_cli:
                 comp_id = file_to_comp.get(mod.path, "")
                 if comp_id:
                     iface_counter += 1
-                    interfaces.append(InterfaceSpec(
-                        id=f"IF-{iface_counter}",
-                        name=f"{mod.path.stem} CLI",
-                        component_id=comp_id,
-                        interface_type="cli",
-                    ))
+                    interfaces.append(
+                        InterfaceSpec(
+                            id=f"IF-{iface_counter}",
+                            name=f"{mod.path.stem} CLI",
+                            component_id=comp_id,
+                            interface_type="cli",
+                        )
+                    )
 
         # Library API interfaces — detect public symbols consumed cross-component
         # Build per-component public symbols: comp_id -> {symbol_name: signature}
@@ -142,23 +149,42 @@ class SpecifyStage:
                         for sym in comp_public.get(tgt_comp, {}):
                             comp_consumed[tgt_comp].add(sym)
 
-        # Emit one library interface per component with >=3 consumed public symbols
+        # Emit one library interface per component with >=1 consumed public symbols
         for comp_id, consumed in comp_consumed.items():
-            if len(consumed) >= 3:
+            if len(consumed) >= 1:
                 iface_counter += 1
                 methods = sorted(
                     f"{sym}: {comp_public[comp_id][sym]}"
                     for sym in consumed
                     if sym in comp_public[comp_id]
                 )
-                interfaces.append(InterfaceSpec(
-                    id=f"IF-{iface_counter}",
-                    name=f"{comp_id} Library API",
-                    component_id=comp_id,
-                    interface_type="library",
-                    methods=methods,
-                    description=f"{len(consumed)} public symbols consumed by other components",
-                ))
+                interfaces.append(
+                    InterfaceSpec(
+                        id=f"IF-{iface_counter}",
+                        name=f"{comp_id} Library API",
+                        component_id=comp_id,
+                        interface_type="library",
+                        methods=methods,
+                        description=f"{len(consumed)} public symbols consumed by other components",
+                    )
+                )
+
+        # Fallback: components with public exports but no interface yet
+        comps_with_iface_so_far = {i.component_id for i in interfaces}
+        for comp_id, symbols in comp_public.items():
+            if comp_id not in comps_with_iface_so_far and symbols:
+                iface_counter += 1
+                methods = sorted(f"{sym}: {sig}" for sym, sig in list(symbols.items())[:10])
+                interfaces.append(
+                    InterfaceSpec(
+                        id=f"IF-{iface_counter}",
+                        name=f"{comp_id} Library API",
+                        component_id=comp_id,
+                        interface_type="library",
+                        methods=methods,
+                        description=f"{len(symbols)} public symbols exported",
+                    )
+                )
 
         result = SpecifyResult(interfaces=interfaces)
 

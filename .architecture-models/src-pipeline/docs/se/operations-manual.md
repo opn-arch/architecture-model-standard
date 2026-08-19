@@ -2,10 +2,10 @@
 document: Operations Manual
 system: Src (pipeline)
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:32Z
+generated_at: 2026-08-19T17:00:04Z
 generator_version: 0.3.0
 model_hash: ccd998005d8e
-edition: 6
+edition: 7
 ---
 
 > **Model Completeness: F (25%)**

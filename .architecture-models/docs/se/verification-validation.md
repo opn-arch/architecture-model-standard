@@ -1,34 +1,29 @@
 ---
 document: Verification & Validation
-system: System
+system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
+generated_at: 2026-08-19T16:59:51Z
 generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
+model_hash: 435262313fec
+edition: 8
 ---
 
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - No interfaces defined on components → interface-spec doc empty
-> - No requirements defined
-> - Actors defined but missing goals/descriptions
-> - 92/92 components missing description/responsibilities
-> Run the extraction pipeline or manually add behaviors/interfaces/constraints.
-
-# Verification & Validation: System
+# Verification & Validation: architecture-model-standard
 ## Verification Matrix
 *No test contracts found on components.*
 ## Validation Coverage
-- **Components with tests:** 0/92 (0%)
+- **Components with tests:** 0/29 (0%)
 - **Total test contracts:** 0
 
 ### Constraint Verification Status
 
-*No constraints to verify.*
+| Constraint | Type | Verified? |
+|-----------|------|-----------|
+| Python >=3.11 | technology | No |
+| CI/CD: GitHub Actions | technology | No |
 ## Behavior Validation
 - **Total behaviors:** 25
-- **Behaviors with defined steps:** 0
+- **Behaviors with defined steps:** 25
 - **Behaviors with preconditions:** 0
 - **Behaviors with postconditions:** 0
 ## Unverified Items
@@ -128,53 +123,3 @@ edition: 7
 ---
 
 ---
-
-## LLM Review
-
-*Reviewed: 2026-08-18T23:38:07.386920+00:00 | Duration: 7750ms*
-
-**Summary:** This V&V artifact reveals a system with zero test coverage across all 92 components, no requirements defined, no constraints, and no behavioral specifications with steps/pre/postconditions—indicating the project is in a very early or purely exploratory phase with no formal verification infrastructure in place.
-
-- 0% test contract coverage across 92 components represents a critical gap; even for an early-stage system, high-risk components like Validator, Coordinator, and Pipeline should have at least stub test contracts to establish the verification framework.
-- The 25 behaviors with zero defined steps, preconditions, or postconditions means there is no basis for behavioral validation—these need to be formalized before any meaningful V&V can occur.
-- Duplicate component names across subsystems (e.g., "Report," "Corrections," "Decompose," "Protocol") without clear namespace differentiation could cause traceability confusion in a future verification matrix.
-
-<details>
-<summary>Review details</summary>
-
-**Prompt sent (truncated):**
-```
-Review the following architecture artifact 'docs/se/verification-validation.md'.
-Respond ONLY in this format:
-SUMMARY: <one paragraph overall assessment>
-COMMENT: <specific observation>
-COMMENT: <another observation>
-
----
----
-document: Verification & Validation
-system: System
-system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
-generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
----
-
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - N
-```
-
-**Full LLM response:**
-```
-SUMMARY: This V&V artifact reveals a system with zero test coverage across all 92 components, no requirements defined, no constraints, and no behavioral specifications with steps/pre/postconditions—indicating the project is in a very early or purely exploratory phase with no formal verification infrastructure in place.
-
-COMMENT: 0% test contract coverage across 92 components represents a critical gap; even for an early-stage system, high-risk components like Validator, Coordinator, and Pipeline should have at least stub test contracts to establish the verification framework.
-
-COMMENT: The 25 behaviors with zero defined steps, preconditions, or postconditions means there is no basis for behavioral validation—these need to be formalized before any meaningful V&V can occur.
-
-COMMENT: Duplicate component names across subsystems (e.g., "Report," "Corrections," "Decompose," "Protocol") without clear namespace differentiation could cause traceability confusion in a future verification matrix.
-```
-
-</details>

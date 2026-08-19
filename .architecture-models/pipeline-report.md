@@ -1,39 +1,32 @@
-# Pipeline Report: architecture-model-standard
+# Pipeline Report: System-of-Systems
 
-**Generated:** 2026-08-18T23:36:29Z
-**Total Duration:** 39206ms
-**Stages:** 9
+**Generated:** 2026-08-19T16:59:51Z
+**Total Duration:** 6937ms
+**Stages:** 8
 
 ## LLM Summary
 
-| Metric | Value |
-|--------|-------|
-| Total Calls | 8 |
-| Total Tokens | 0 (prompt: 0, completion: 0) |
-| Models Used | unknown |
-| Cache Hits | 0/8 |
-| Total LLM Duration | 17,977ms |
+No LLM calls — deterministic pipeline run
 
 ## Stage Scores
 
 | Stage | Score | Duration | LLM Calls |
 |-------|-------|----------|-----------|
-| observe | 100 | 6998ms | 0 |
-| infer | 67 | 2ms | 5 |
-| allocate | 75 | 0ms | 3 |
+| observe | 100 | 6693ms | 0 |
+| infer | 67 | 2ms | 0 |
+| allocate | 75 | 0ms | 0 |
 | contract | 100 | 1ms | 0 |
-| relate | 100 | 235ms | 0 |
-| specify | 50 | 0ms | 0 |
+| relate | 100 | 241ms | 0 |
+| specify | 100 | 0ms | 0 |
 | decompose | 100.0 | 0ms | 0 |
 | validate | 80 | 0ms | 0 |
-| synthesize | 100.0 | 31970ms | 0 |
 
 ## Stage: observe
-**Score:** 100 | **Duration:** 6998ms
+**Score:** 100 | **Duration:** 6693ms
 
 ### Deterministic Findings
 - Discovered 348 modules
-- 1274 functions, 504 classes
+- 1277 functions, 504 classes
 - 635 import edges
 
 ### LLM Calls
@@ -54,27 +47,8 @@
 - 1 actors
 - 25 behaviors
 
-### LLM Calls (5)
-
-#### 1. Given a software component with these files: routes, suggest a specific, descriptive name (2-4 words (2,116ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
-
-#### 2. Given a software component with these files: package_group, suggest a specific, descriptive name (2- (2,109ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
-
-#### 3. Given a software component with these files: package_group, suggest a specific, descriptive name (2- (2,322ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
-
-#### 4. Given a software component with these files: cli_pattern, suggest a specific, descriptive name (2-4  (2,019ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
-
-#### 5. Given a software component with these files: cli_pattern, suggest a specific, descriptive name (2-4  (2,068ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
+### LLM Calls
+*(none)*
 
 ### Diagnostics
 *(none)*
@@ -206,19 +180,8 @@
 - File coverage: 10000%
 - 0 unallocated files
 
-### LLM Calls (3)
-
-#### 1. Given a software component containing files: [src/architecture_model/__init__.py, src/architecture_m (3,196ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
-
-#### 2. Given a software component containing files: [src/architecture_model/core/cluster.py, src/architectu (2,162ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
-
-#### 3. Given a software component containing files: [src/architecture_model/cli/main.py, src/architecture_m (1,985ms)
-- **Tokens:** 0 prompt (0 context) → 0 completion = 0 total
-- **Result:** 1 items produced (confidence: 0.70)
+### LLM Calls
+*(none)*
 
 ### Diagnostics
 *(none)*
@@ -236,7 +199,7 @@
 *(none)*
 
 ## Stage: relate
-**Score:** 100 | **Duration:** 235ms
+**Score:** 100 | **Duration:** 241ms
 
 ### Deterministic Findings
 - 41 depends-on relationships
@@ -251,10 +214,10 @@
 *(none)*
 
 ## Stage: specify
-**Score:** 50 | **Duration:** 0ms
+**Score:** 100 | **Duration:** 0ms
 
 ### Deterministic Findings
-- 2 interfaces
+- 16 interfaces
 
 ### LLM Calls
 *(none)*
@@ -291,15 +254,3 @@
 
 ### Uncertainties
 - generic_capability_name: Capability 'Web Routes' (CAP-1) has a generic name. LLM analysis could produce a more specific business-oriented name.
-
-## Stage: synthesize
-**Score:** 100.0 | **Duration:** 31970ms
-
-### Deterministic Findings
-*(none)*
-
-### LLM Calls
-*(none)*
-
-### Diagnostics
-*(none)*

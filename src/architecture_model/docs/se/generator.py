@@ -84,6 +84,7 @@ def generate_se_docs(
     author: str = "architect_pipeline",
     reviews: list | None = None,
     enrichments: list | None = None,
+    repo_root: Path | None = None,
 ) -> dict[str, Any]:
     """Generate SE documents for a model.
 
@@ -152,7 +153,13 @@ def generate_se_docs(
 
         try:
             if mod_name == "artifact_traceability":
-                md_content = gen_func(model, manifest, reviews=reviews, enrichments=enrichments)
+                md_content = gen_func(
+                    model,
+                    manifest,
+                    reviews=reviews,
+                    enrichments=enrichments,
+                    repo_root=repo_root,
+                )
             else:
                 md_content = gen_func(model, manifest)
         except Exception as e:

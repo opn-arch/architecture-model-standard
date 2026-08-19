@@ -2,10 +2,10 @@
 document: Interface Specification
 system: Src (orchestration)
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:35Z
+generated_at: 2026-08-19T17:00:13Z
 generator_version: 0.3.0
 model_hash: 1390e5be5ea9
-edition: 6
+edition: 7
 ---
 
 > **Model Completeness: F (25%)**

@@ -1,72 +1,119 @@
 ---
 document: ConOps
-system: System
+system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
+generated_at: 2026-08-19T16:59:51Z
 generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
+model_hash: 435262313fec
+edition: 8
 ---
 
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - No interfaces defined on components → interface-spec doc empty
-> - No requirements defined
-> - Actors defined but missing goals/descriptions
-> - 92/92 components missing description/responsibilities
-> Run the extraction pipeline or manually add behaviors/interfaces/constraints.
-
-# Concept of Operations: System
+# Concept of Operations: architecture-model-standard
 ## System Overview
-System provides 6 capabilities implemented across 92 components.
+architecture-model-standard provides 15 capabilities implemented across 29 components.
 
 **Core Capabilities:**
 
-- **HTTP Route Definitions**
-- **gRPC Services**
-- **Build Configuration Scripts**
-- **Package Group Management**
-- **Command Line Interface Entry Point**
-- **Command Line Executor**
+- **Validate Architecture Models** - Check model correctness, completeness, hierarchy consistency, and domain rules
+- **Extract Architecture from Code** - Scan source code AST and derive components, relationships, behaviors automatically
+- **Run Modular Extraction Pipeline** - Execute 10-stage pipeline (observe→infer→allocate→relate→specify→contract→validate→decompose→synthesize→emit)
+- **Generate Reality Manifest** - Scan source files to produce structural facts (functions, imports, classes, routes, tests)
+- **Generate SE Documentation** - Produce functional analysis, logical architecture, use cases, requirements, V&V, operations docs
+- **Author Model from Requirements** - Parse requirements document into a concept-phase architecture model
+- **Slice and Query Models** - Filter model by block, layer, status, artifact for focused context delivery
+- **Diff Model Versions** - Compare two model versions showing additions, removals, and changes
+- **Decompose Models Hierarchically** - Break coarse models into per-system sub-models with parent/child relationships
+- **Enrich Models with Code Intelligence** - Auto-populate signatures, constants, test contracts, behaviors from source
+- **Assess Regen Readiness** - Score how well a model captures enough detail to regenerate code
+- **Check Development Gate** - Verify code reality is tracking toward authored architecture intent
+- **Detect and Fix Model Drift** - Compare model against current code, report coverage gaps
+- **Manage Global Learnings** - Store, retrieve, and apply heuristics/archetypes/workflows across pipeline runs
+- **Export for AI Consumption** - Produce flat-file exports optimized for token-limited AI environments
 ## Stakeholders
 | Actor | Type | Goals |
 |-------|------|-------|
-| API Consumer | human | — |
+| AI Agent (MCP Client) | human | — |
+| Developer | human | — |
+| CI/CD Pipeline | human | — |
 ## Operational Scenarios
 ### System Workflows
 
-- **GET **: —
-- **GET bookmarklets/**: —
-- **GET tags/**: —
-- **GET filters/**: —
-- **GET views/**: —
-- **GET views/<view>/**: —
-- **GET models/**: —
-- **GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$**: —
-- **GET templates/<path:template>/**: —
-- **GET login/**: —
-- **GET logout/**: —
-- **GET password_change/**: —
-- **GET password_change/done/**: —
-- **GET password_reset/**: —
-- **GET password_reset/done/**: —
-- **GET reset/<uidb64>/<token>/**: —
-- **GET reset/done/**: —
-- **GET <path:url>**: —
-- **CLI: Test Guided Round Trip**: —
-- **CLI: Test Enriched Round Trip**: —
+- **GET **: 
+- **GET bookmarklets/**: 
+- **GET tags/**: 
+- **GET filters/**: 
+- **GET views/**: 
+- **GET views/<view>/**: 
+- **GET models/**: 
+- **GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$**: 
+- **GET templates/<path:template>/**: 
+- **GET login/**: 
+- **GET logout/**: 
+- **GET password_change/**: 
+- **GET password_change/done/**: 
+- **GET password_reset/**: 
+- **GET password_reset/done/**: 
+- **GET reset/<uidb64>/<token>/**: 
+- **GET reset/done/**: 
+- **GET <path:url>**: flatpage
+- **CLI: Test Guided Round Trip**: ArgumentParser -> add_argument -> parse_args -> run -> run_test_guided
+- **CLI: Test Enriched Round Trip**: ArgumentParser -> add_argument -> parse_args -> list -> len
 - *...and 5 more workflows*
 ## System Context
 ### External Interfaces
 
 | Interface | Type | Provider | Consumer |
 |-----------|------|----------|----------|
+| main CLI | internal | — | — |
 | runner CLI | internal | — | — |
+| COMP-4-7 Library API | internal | — | — |
+| COMP-3-1 Library API | internal | — | — |
+| COMP-4-1 Library API | internal | — | — |
+| COMP-4-2 Library API | internal | — | — |
+| COMP-4-3 Library API | internal | — | — |
+| COMP-4-4 Library API | internal | — | — |
+| COMP-4-5 Library API | internal | — | — |
+| COMP-4-6 Library API | internal | — | — |
+| COMP-4-8 Library API | internal | — | — |
+| COMP-4-9 Library API | internal | — | — |
+| COMP-4-10 Library API | internal | — | — |
+| COMP-4-11 Library API | internal | — | — |
+| COMP-4-12 Library API | internal | — | — |
+| COMP-4-13 Library API | internal | — | — |
+| Core API | internal | — | — |
+| Type System API | internal | — | — |
+| Validation API | internal | — | — |
+| Parser & Persistence API | internal | — | — |
+| Model Operations API | internal | — | — |
+| Quality Metrics API | internal | — | — |
+| Pipeline API | internal | — | — |
+| Pipeline Coordination API | internal | — | — |
+| Observation Stages API | internal | — | — |
+| Allocation & Relation Stages API | internal | — | — |
+| Specification & Contract Stages API | internal | — | — |
+| Synthesis & Emit Stages API | internal | — | — |
+| Scanners API | internal | — | — |
+| Graph & Analysis API | internal | — | — |
+| Grouping & Generation API | internal | — | — |
+| Core Doc Generators API | internal | — | — |
+| SE Document Suite API | internal | — | — |
+| Orchestration API | internal | — | — |
+| Enrichment API | internal | — | — |
+| Decomposition API | internal | — | — |
+| Extract API | internal | — | — |
+| Authoring API | internal | — | — |
+| CLI API | internal | — | — |
+| Configuration API | internal | — | — |
+| Export API | internal | — | — |
+| Pipeline Learning API | internal | — | — |
+| Utilities API | internal | — | — |
 
 ```mermaid
 graph LR
-    ACT-1["API Consumer"]
-    SYS["System"]
+    ACT-1["AI Agent (MCP Client)"]
+    ACT-2["Developer"]
+    ACT-3["CI/CD Pipeline"]
+    SYS["architecture-model-standard"]
 ```
 ## Operational Constraints
 *No constraints defined in the model.*
@@ -74,50 +121,3 @@ graph LR
 ---
 
 ---
-
-## LLM Review
-
-*Reviewed: 2026-08-18T23:36:54.951635+00:00 | Duration: 6874ms*
-
-**Summary:** This ConOps is essentially empty scaffolding—14% complete with no meaningful descriptions, no requirements, no interface details, and no scenario descriptions filled in. It provides almost no architectural value in its current state.
-
-- The 92 components all lack descriptions and responsibilities, making it impossible to understand system decomposition or rationale.
-- Operational scenarios list URL routes and CLI commands with no descriptions, offering no insight into user workflows or expected system behavior.
-- The system context diagram shows a single actor with no connections to the system, indicating missing interaction modeling.
-
-<details>
-<summary>Review details</summary>
-
-**Prompt sent (truncated):**
-```
-Review the following architecture artifact 'docs/se/conops.md'.
-Respond ONLY in this format:
-SUMMARY: <one paragraph overall assessment>
-COMMENT: <specific observation>
-COMMENT: <another observation>
-
----
----
-document: ConOps
-system: System
-system_id: SYS-unknown
-generated_at: 2026-08-18T23:36:29Z
-generator_version: 0.3.0
-model_hash: 41fb0d4bec16
-edition: 7
----
-
-> **Model Completeness: F (14%)**
-> Some sections may be empty due to missing model entities.
-> - No interfaces defined on components →
-```
-
-**Full LLM response:**
-```
-SUMMARY: This ConOps is essentially empty scaffolding—14% complete with no meaningful descriptions, no requirements, no interface details, and no scenario descriptions filled in. It provides almost no architectural value in its current state.
-COMMENT: The 92 components all lack descriptions and responsibilities, making it impossible to understand system decomposition or rationale.
-COMMENT: Operational scenarios list URL routes and CLI commands with no descriptions, offering no insight into user workflows or expected system behavior.
-COMMENT: The system context diagram shows a single actor with no connections to the system, indicating missing interaction modeling.
-```
-
-</details>

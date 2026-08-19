@@ -1,0 +1,917 @@
+meta:
+  schema_version: '2.0'
+  system_of_systems: true
+entities:
+  systems:
+  - id: SYS-scripts-(core)
+    name: Scripts (core)
+    model_path: scripts-core/.architecture-model.yaml
+  - id: SYS-scripts-(dev_simulation)
+    name: Scripts (dev_simulation)
+    model_path: scripts-dev-simulation/.architecture-model.yaml
+  - id: SYS-src-(core)
+    name: Src (core)
+    model_path: src-core/.architecture-model.yaml
+  - id: SYS-src-(pipeline)
+    name: Src (pipeline)
+    model_path: src-pipeline/.architecture-model.yaml
+  - id: SYS-src-(core)
+    name: Src (core)
+    model_path: src-core/.architecture-model.yaml
+  - id: SYS-src-(manifest)
+    name: Src (manifest)
+    model_path: src-manifest/.architecture-model.yaml
+  - id: SYS-src-(orchestration)
+    name: Src (orchestration)
+    model_path: src-orchestration/.architecture-model.yaml
+  - id: SYS-src-(extract)
+    name: Src (extract)
+    model_path: src-extract/.architecture-model.yaml
+  - id: SYS-src-(config)
+    name: Src (config)
+    model_path: src-config/.architecture-model.yaml
+  - id: SYS-src-(utils)
+    name: Src (utils)
+    model_path: src-utils/.architecture-model.yaml
+  - id: SYS-src-(cli)
+    name: Src (cli)
+    model_path: src-cli/.architecture-model.yaml
+  - id: SYS-src-(authoring)
+    name: Src (authoring)
+    model_path: src-authoring/.architecture-model.yaml
+  - id: SYS-src-(persistence)
+    name: Src (persistence)
+    model_path: src-persistence/.architecture-model.yaml
+  - id: SYS-src-(profiles)
+    name: Src (profiles)
+    model_path: src-profiles/.architecture-model.yaml
+  - id: SYS-src-(export)
+    name: Src (export)
+    model_path: src-export/.architecture-model.yaml
+  actors:
+  - id: ACT-1
+    name: API Consumer
+    goals:
+    - Interact with architecture-model-standard
+  capabilities:
+  - id: CAP-1
+    name: Web Routes
+  - id: CAP-2
+    name: gRPC Services
+  - id: CAP-3
+    name: Scripts
+  - id: CAP-4
+    name: Src
+  - id: CAP-5
+    name: CLI Main
+  - id: CAP-6
+    name: CLI Runner
+  behaviors:
+  - id: BEH-1
+    name: 'GET '
+  - id: BEH-2
+    name: GET bookmarklets/
+  - id: BEH-3
+    name: GET tags/
+  - id: BEH-4
+    name: GET filters/
+  - id: BEH-5
+    name: GET views/
+  - id: BEH-6
+    name: GET views/<view>/
+  - id: BEH-7
+    name: GET models/
+  - id: BEH-8
+    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
+  - id: BEH-9
+    name: GET templates/<path:template>/
+  - id: BEH-10
+    name: GET login/
+  - id: BEH-11
+    name: GET logout/
+  - id: BEH-12
+    name: GET password_change/
+  - id: BEH-13
+    name: GET password_change/done/
+  - id: BEH-14
+    name: GET password_reset/
+  - id: BEH-15
+    name: GET password_reset/done/
+  - id: BEH-16
+    name: GET reset/<uidb64>/<token>/
+  - id: BEH-17
+    name: GET reset/done/
+  - id: BEH-18
+    name: GET <path:url>
+  - id: BEH-19
+    name: 'CLI: Test Guided Round Trip'
+  - id: BEH-20
+    name: 'CLI: Test Enriched Round Trip'
+  - id: BEH-21
+    name: 'CLI: Test Multi Repo'
+  - id: BEH-22
+    name: 'CLI: Test Round Trip'
+  - id: BEH-23
+    name: 'CLI: Test Decomposed Round Trip'
+  - id: BEH-24
+    name: 'CLI: Main'
+  - id: BEH-25
+    name: 'CLI: Runner'
+  components:
+  - id: COMP-3-1
+    name: Scripts (core)
+    files:
+    - scripts/add_sub_behaviors.py
+    - scripts/bench_enrichment.py
+    - scripts/enrich_sub_behaviors.py
+    - scripts/generate_models_pdf.py
+    - scripts/se_enrich.py
+    - scripts/strip_sub_behaviors.py
+    layer: data
+    description: Source in scripts (6 files)
+  - id: COMP-3-2
+    name: Scripts (dev_simulation)
+    files:
+    - scripts/dev_simulation/checkout.py
+    - scripts/dev_simulation/cli.py
+    - scripts/dev_simulation/cohesion.py
+    - scripts/dev_simulation/drift_tracker.py
+    - scripts/dev_simulation/extractor.py
+    - scripts/dev_simulation/llm_predictor.py
+    - scripts/dev_simulation/regen_scorer.py
+    - scripts/dev_simulation/report.py
+    - scripts/dev_simulation/runner.py
+    - scripts/dev_simulation/slice_evaluator.py
+    layer: data
+    description: Source in scripts/dev_simulation (10 files)
+  - id: COMP-4-1
+    name: Src (core)
+    files:
+    - src/architecture_model/__init__.py
+    - src/architecture_model/__main__.py
+    - src/architecture_model/monitoring.py
+    - src/architecture_model/monitoring_checks.py
+    - src/architecture_model/patterns.py
+    layer: web
+    description: Source in src/architecture_model (5 files)
+  - id: COMP-4-2
+    name: Src (pipeline)
+    files:
+    - src/architecture_model/pipeline/__init__.py
+    - src/architecture_model/pipeline/allocate.py
+    - src/architecture_model/pipeline/allocate_types.py
+    - src/architecture_model/pipeline/artifacts.py
+    - src/architecture_model/pipeline/cache.py
+    - src/architecture_model/pipeline/context_gen.py
+    - src/architecture_model/pipeline/contract.py
+    - src/architecture_model/pipeline/contract_types.py
+    - src/architecture_model/pipeline/coordinator.py
+    - src/architecture_model/pipeline/corrections.py
+    - src/architecture_model/pipeline/decompose.py
+    - src/architecture_model/pipeline/decompose_types.py
+    - src/architecture_model/pipeline/emit.py
+    - src/architecture_model/pipeline/emit_types.py
+    - src/architecture_model/pipeline/global_learning.py
+    - src/architecture_model/pipeline/infer.py
+    - src/architecture_model/pipeline/infer_types.py
+    - src/architecture_model/pipeline/learning.py
+    - src/architecture_model/pipeline/lessons.py
+    - src/architecture_model/pipeline/observe.py
+    - src/architecture_model/pipeline/observe_types.py
+    - src/architecture_model/pipeline/protocol.py
+    - src/architecture_model/pipeline/regen_score.py
+    - src/architecture_model/pipeline/relate.py
+    - src/architecture_model/pipeline/relate_types.py
+    - src/architecture_model/pipeline/report.py
+    - src/architecture_model/pipeline/requirements_derive.py
+    - src/architecture_model/pipeline/specify.py
+    - src/architecture_model/pipeline/specify_types.py
+    - src/architecture_model/pipeline/synthesize.py
+    - src/architecture_model/pipeline/synthesize_types.py
+    - src/architecture_model/pipeline/validate.py
+    - src/architecture_model/pipeline/validate_types.py
+    layer: web
+    description: Source in src/architecture_model/pipeline (33 files)
+  - id: COMP-4-3
+    name: Src (core)
+    files:
+    - src/architecture_model/core/cluster.py
+    - src/architecture_model/core/completeness.py
+    - src/architecture_model/core/compression.py
+    - src/architecture_model/core/confidence.py
+    - src/architecture_model/core/corrections.py
+    - src/architecture_model/core/coverage.py
+    - src/architecture_model/core/decomposer.py
+    - src/architecture_model/core/differ.py
+    - src/architecture_model/core/merger.py
+    - src/architecture_model/core/parser.py
+    - src/architecture_model/core/regen_readiness.py
+    - src/architecture_model/core/representativeness.py
+    - src/architecture_model/core/slicer.py
+    - src/architecture_model/core/source_block_assign.py
+    - src/architecture_model/core/source_block_quality.py
+    - src/architecture_model/core/types.py
+    - src/architecture_model/core/validator.py
+    - src/architecture_model/core/visualize.py
+    layer: web
+    description: Source in src/architecture_model/core (18 files)
+  - id: COMP-4-4
+    name: Src (config)
+    files:
+    - src/architecture_model/config/__init__.py
+    - src/architecture_model/config/loader.py
+    - src/architecture_model/config/schema.py
+    layer: web
+    description: Source in src/architecture_model/config (3 files)
+  - id: COMP-4-5
+    name: Src (manifest)
+    files:
+    - src/architecture_model/manifest/__init__.py
+    - src/architecture_model/manifest/behavior.py
+    - src/architecture_model/manifest/blocks.py
+    - src/architecture_model/manifest/body_hints.py
+    - src/architecture_model/manifest/call_graph.py
+    - src/architecture_model/manifest/chains.py
+    - src/architecture_model/manifest/display.py
+    - src/architecture_model/manifest/generator.py
+    - src/architecture_model/manifest/grouping.py
+    - src/architecture_model/manifest/interfaces.py
+    - src/architecture_model/manifest/kt_scanner.py
+    - src/architecture_model/manifest/metrics.py
+    - src/architecture_model/manifest/multi_scanner.py
+    - src/architecture_model/manifest/protocol.py
+    - src/architecture_model/manifest/recursive.py
+    - src/architecture_model/manifest/scan_cache.py
+    - src/architecture_model/manifest/scanner.py
+    - src/architecture_model/manifest/slicers.py
+    - src/architecture_model/manifest/ts_scanner.py
+    - src/architecture_model/manifest/types.py
+    layer: web
+    description: Source in src/architecture_model/manifest (20 files)
+  - id: COMP-4-6
+    name: Src (utils)
+    files:
+    - src/architecture_model/utils/discovery.py
+    layer: web
+    description: Source in src/architecture_model/utils (1 files)
+  - id: COMP-4-7
+    name: Src (cli)
+    files:
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/visualize.py
+    layer: web
+    description: Source in src/architecture_model/cli (2 files)
+  - id: COMP-4-8
+    name: Src (authoring)
+    files:
+    - src/architecture_model/authoring/gate.py
+    - src/architecture_model/authoring/parser.py
+    layer: web
+    description: Source in src/architecture_model/authoring (2 files)
+  - id: COMP-4-9
+    name: Src (persistence)
+    files:
+    - src/architecture_model/persistence/__init__.py
+    - src/architecture_model/persistence/store.py
+    layer: web
+    description: Source in src/architecture_model/persistence (2 files)
+  - id: COMP-4-10
+    name: Src (orchestration)
+    files:
+    - src/architecture_model/orchestration/auto_enrich.py
+    - src/architecture_model/orchestration/behavior_decompose.py
+    - src/architecture_model/orchestration/behavior_flows.py
+    - src/architecture_model/orchestration/capability_inference.py
+    - src/architecture_model/orchestration/compaction.py
+    - src/architecture_model/orchestration/decompose.py
+    - src/architecture_model/orchestration/deep_decompose.py
+    - src/architecture_model/orchestration/enrich.py
+    - src/architecture_model/orchestration/enrichment_context.py
+    - src/architecture_model/orchestration/naming_context.py
+    - src/architecture_model/orchestration/pipeline.py
+    - src/architecture_model/orchestration/trigger_detection.py
+    - src/architecture_model/orchestration/use_case_inference.py
+    layer: web
+    description: Source in src/architecture_model/orchestration (13 files)
+  - id: COMP-4-11
+    name: Src (extract)
+    files:
+    - src/architecture_model/extract/constraint_detector.py
+    - src/architecture_model/extract/from_artifacts.py
+    - src/architecture_model/extract/from_code.py
+    - src/architecture_model/extract/route_detector.py
+    - src/architecture_model/extract/table_parser.py
+    layer: web
+    description: Source in src/architecture_model/extract (5 files)
+  - id: COMP-4-12
+    name: Src (profiles)
+    files:
+    - src/architecture_model/profiles/schema.py
+    layer: web
+    description: Source in src/architecture_model/profiles (1 files)
+  - id: COMP-4-13
+    name: Src (export)
+    files:
+    - src/architecture_model/export/flatfiles.py
+    - src/architecture_model/export/reference.py
+    layer: web
+    description: Source in src/architecture_model/export (2 files)
+  inline_components:
+  - id: SYS-src-(config)
+    name: Src (config)
+    files:
+    - src/architecture_model/config/__init__.py
+    - src/architecture_model/config/loader.py
+    - src/architecture_model/config/schema.py
+  - id: SYS-src-(utils)
+    name: Src (utils)
+    files:
+    - src/architecture_model/utils/discovery.py
+  - id: SYS-src-(cli)
+    name: Src (cli)
+    files:
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/visualize.py
+  - id: SYS-src-(authoring)
+    name: Src (authoring)
+    files:
+    - src/architecture_model/authoring/gate.py
+    - src/architecture_model/authoring/parser.py
+  - id: SYS-src-(persistence)
+    name: Src (persistence)
+    files:
+    - src/architecture_model/persistence/__init__.py
+    - src/architecture_model/persistence/store.py
+  - id: SYS-src-(profiles)
+    name: Src (profiles)
+    files:
+    - src/architecture_model/profiles/schema.py
+  - id: SYS-src-(export)
+    name: Src (export)
+    files:
+    - src/architecture_model/export/flatfiles.py
+    - src/architecture_model/export/reference.py
+  interfaces:
+  - id: IF-1
+    name: main CLI
+    interface_type: cli
+    component_id: COMP-4-7
+  - id: IF-2
+    name: runner CLI
+    interface_type: cli
+    component_id: COMP-3-2
+  - id: IF-3
+    name: COMP-4-7 Library API
+    interface_type: library
+    component_id: COMP-4-7
+    methods:
+    - 'main: def main(argv: list[str] | None=None) -> int'
+    description: 1 public symbols consumed by other components
+  - id: IF-4
+    name: COMP-3-1 Library API
+    interface_type: library
+    component_id: COMP-3-1
+    methods:
+    - 'extract_behavior_detail: def extract_behavior_detail(source_file: str, function_name:
+      str) -> dict'
+    - 'find_caller: def find_caller(tree, function_name: str) -> str'
+    - 'find_function: def find_function(tree, function_name: str)'
+    - 'main: def main()'
+    - 'summarize_statement: def summarize_statement(stmt) -> str | None'
+    description: 5 public symbols exported
+  - id: IF-5
+    name: COMP-4-1 Library API
+    interface_type: library
+    component_id: COMP-4-1
+    methods:
+    - 'ConsistencyResult: class ConsistencyResult'
+    - 'FunctionMetrics: class FunctionMetrics'
+    - 'MetricsCollector: class MetricsCollector'
+    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges:
+      list[tuple[str, str]], perturbations: int=5) -> ConsistencyResult'
+    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id:
+      str, block_name: str, runs: int=3) -> ConsistencyResult'
+    - 'check_pattern_indicators: def check_pattern_indicators(pattern_name: str, file_contents:
+      dict[str, str]) -> ConsistencyResult'
+    - 'get_collector: def get_collector() -> MetricsCollector'
+    - 'get_pattern: def get_pattern(name: str) -> dict[str, Any] | None'
+    - 'load_patterns: def load_patterns() -> dict[str, Any]'
+    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str,
+      Any]] | None=None, inputs: Callable[[tuple, dict], dict[str, Any]] | None=None,
+      outputs: Callable[[Any], dict[str, Any]] | None=None) -> Callable'
+    description: 10 public symbols exported
+  - id: IF-6
+    name: COMP-4-2 Library API
+    interface_type: library
+    component_id: COMP-4-2
+    methods:
+    - 'ClassRecord: class ClassRecord'
+    - 'ConstantRecord: class ConstantRecord'
+    - 'ConstraintRecord: class ConstraintRecord'
+    - 'DocRecord: class DocRecord'
+    - 'FunctionRecord: class FunctionRecord'
+    - 'ImportEdge: class ImportEdge'
+    - 'Inventory: class Inventory'
+    - 'ModuleRecord: class ModuleRecord'
+    - 'RouteRecord: class RouteRecord'
+    - 'TestFileRecord: class TestFileRecord'
+    description: 77 public symbols exported
+  - id: IF-7
+    name: COMP-4-3 Library API
+    interface_type: library
+    component_id: COMP-4-3
+    methods:
+    - 'ComponentReadiness: class ComponentReadiness'
+    - 'FunctionReadiness: class FunctionReadiness'
+    - 'RegenReadiness: class RegenReadiness'
+    - 'Severity: class Severity'
+    - 'ValidationIssue: class ValidationIssue'
+    - 'ValidationResult: class ValidationResult'
+    - 'compute_component_readiness: def compute_component_readiness(component: Component)
+      -> ComponentReadiness'
+    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature,
+      test_contracts: list[TestContract]) -> FunctionReadiness'
+    - 'compute_regen_readiness: def compute_regen_readiness(model: ArchitectureModel)
+      -> RegenReadiness'
+    - 'validate_model: def validate_model(model: ArchitectureModel, strict: bool=False,
+      raw_dict: dict | None=None) -> ValidationResult'
+    description: 121 public symbols exported
+  - id: IF-8
+    name: COMP-4-4 Library API
+    interface_type: library
+    component_id: COMP-4-4
+    methods:
+    - 'FunctionalBlockConfig: class FunctionalBlockConfig'
+    - 'LayerConfig: class LayerConfig'
+    - 'MetricConfig: class MetricConfig'
+    - 'OutputConfig: class OutputConfig'
+    - 'ResolvedOutputConfig: class ResolvedOutputConfig'
+    - 'SubBlockConfig: class SubBlockConfig'
+    - 'discover_config: def discover_config(root: Path) -> tuple[ProjectConfig, DiscoveryReport]'
+    - 'get_config: def get_config(root: Path) -> ProjectConfig'
+    - 'load_config: def load_config(root: Path) -> ProjectConfig'
+    - 'write_config: def write_config(config: ProjectConfig, root: Path | None=None)
+      -> Path'
+    description: 13 public symbols exported
+  - id: IF-9
+    name: COMP-4-5 Library API
+    interface_type: library
+    component_id: COMP-4-5
+    methods:
+    - 'EventChain: class EventChain'
+    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups:
+      list[''ModuleGroup''], block_id: str) -> list[EventChain]'
+    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests:
+      dict[str, ''RecursiveManifest''], block_groups: dict[str, list[''ModuleGroup'']])
+      -> list[EventChain]'
+    - 'compute_metrics: def compute_metrics(root: Path, config: Optional[Any]=None)
+      -> MetricsResult'
+    - 'derive_interfaces: def derive_interfaces(modules: list[ModuleInfo], root: Path)
+      -> list[InterfaceEdge]'
+    - 'extract_call_order: def extract_call_order(func_node: Union[ast.FunctionDef,
+      ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_control_flow: def extract_control_flow(func_node: Union[ast.FunctionDef,
+      ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_guards: def extract_guards(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef])
+      -> list[str]'
+    - 'get_manifest_slice: def get_manifest_slice(manifest: Manifest | dict[str, Any],
+      artifact_name: str) -> str'
+    - 'scan_file: def scan_file(root: Path, filepath: Path, cache=None) -> ModuleInfo'
+    description: 54 public symbols exported
+  - id: IF-10
+    name: COMP-4-6 Library API
+    interface_type: library
+    component_id: COMP-4-6
+    methods:
+    - 'collect_py_files: def collect_py_files(directory: Path, recursive: bool=True,
+      exclude_init: bool=False) -> list[Path]'
+    - 'discover_source_files: def discover_source_files(project_root: Path) -> list[Path]'
+    - 'discover_test_files: def discover_test_files(project_root: Path) -> list[Path]'
+    - 'is_excluded_dir: def is_excluded_dir(path: Path) -> bool'
+    description: 4 public symbols exported
+  - id: IF-11
+    name: COMP-4-8 Library API
+    interface_type: library
+    component_id: COMP-4-8
+    methods:
+    - 'GateResult: class GateResult'
+    - 'check_development_gate: def check_development_gate(model: ArchitectureModel,
+      manifest: Manifest, phase: str | None=None) -> GateResult'
+    - 'parse_requirements_doc: def parse_requirements_doc(text: str) -> ArchitectureModel'
+    description: 3 public symbols exported
+  - id: IF-12
+    name: COMP-4-9 Library API
+    interface_type: library
+    component_id: COMP-4-9
+    methods:
+    - 'ProjectSnapshot: class ProjectSnapshot'
+    - 'load_project: def load_project(root: Path) -> ProjectSnapshot'
+    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest:
+      Any, representativeness: Any | None=None) -> Path'
+    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness:
+      Any | None=None, telemetry: dict | None=None) -> Path'
+    description: 4 public symbols exported
+  - id: IF-13
+    name: COMP-4-10 Library API
+    interface_type: library
+    component_id: COMP-4-10
+    methods:
+    - 'compact_root_model: def compact_root_model(model, *, block_ids: list[str])
+      -> None'
+    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any,
+      manifest: Manifest) -> tuple[list[Behavior], list[Relationship]]'
+    - 'decompose_model: def decompose_model(project_root, *, model_path=None)'
+    - 'enrich_behaviors_from_manifest: def enrich_behaviors_from_manifest(model: Any,
+      manifest: Manifest) -> None'
+    - 'enrich_from_manifest: def enrich_from_manifest(model: Any, manifest: Manifest)
+      -> None'
+    - 'enrich_from_source_graph: def enrich_from_source_graph(model: Any, graph: ''SourceGraph'')
+      -> None'
+    - 'enrich_with_block_context: def enrich_with_block_context(model: Any, recursive_manifests:
+      dict) -> None'
+    - 'extract_component_interfaces: def extract_component_interfaces(model: Any,
+      graph: ''SourceGraph'') -> int'
+    - 'infer_composite_behaviors: def infer_composite_behaviors(model: ArchitectureModel)
+      -> ArchitectureModel'
+    - 'manifest_to_source_graph: def manifest_to_source_graph(manifest: Any, model:
+      Any) -> ''SourceGraph'''
+    description: 35 public symbols exported
+  - id: IF-14
+    name: COMP-4-11 Library API
+    interface_type: library
+    component_id: COMP-4-11
+    methods:
+    - 'RouteInfo: class RouteInfo'
+    - 'detect_constraints: def detect_constraints(project_root: Path) -> list[Constraint]'
+    - 'detect_routes: def detect_routes(project_root: Path, web_layer_dirs: list[str]
+      | None=None) -> list[RouteInfo]'
+    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path,
+      project: str='''', system: str='''') -> ArchitectureModel'
+    - 'extract_from_code: def extract_from_code(project_root: str | Path, config:
+      ProjectConfig | None=None, manifest: dict | None=None) -> ArchitectureModel'
+    - 'extract_list_items: def extract_list_items(text: str) -> list[str]'
+    - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str,
+      str]'
+    - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern:
+      str) -> list[dict[str, str]]'
+    - 'main: def main()'
+    - 'parse_tables: def parse_tables(markdown: str) -> list[list[dict[str, str]]]'
+    description: 10 public symbols exported
+  - id: IF-15
+    name: COMP-4-12 Library API
+    interface_type: library
+    component_id: COMP-4-12
+    methods:
+    - 'ConditionalRule: class ConditionalRule'
+    - 'DomainProfile: class DomainProfile'
+    - 'EntityExtension: class EntityExtension'
+    - 'EnumExtension: class EnumExtension'
+    - 'load_profile: def load_profile(name_or_path: str) -> DomainProfile'
+    description: 5 public symbols exported
+  - id: IF-16
+    name: COMP-4-13 Library API
+    interface_type: library
+    component_id: COMP-4-13
+    methods:
+    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None,
+      include_manifests: bool=True, include_module_specs: bool=True) -> ExportResult'
+    - 'concat_behavior_specs: def concat_behavior_specs(repo_path: Path) -> str |
+      None'
+    - 'concat_behavior_submodels: def concat_behavior_submodels(repo_path: Path) ->
+      str | None'
+    - 'concat_component_models: def concat_component_models(repo_path: Path) -> str
+      | None'
+    - 'concat_diagrams: def concat_diagrams(repo_path: Path) -> str | None'
+    - 'concat_docs: def concat_docs(repo_path: Path) -> str | None'
+    - 'concat_module_specs: def concat_module_specs(repo_path: Path) -> str | None'
+    - 'concat_skills: def concat_skills(repo_path: Path) -> str | None'
+    - 'concat_submodels: def concat_submodels(repo_path: Path) -> str | None'
+    - 'derive_prefix: def derive_prefix(repo_name: str) -> str'
+    description: 16 public symbols exported
+  constraints:
+  - id: CON-1
+    name: Python >=3.11
+    value: Project requires Python >=3.11
+  - id: CON-2
+    name: 'CI/CD: GitHub Actions'
+    value: Project uses GitHub Actions for CI/CD
+  requirements:
+  - id: REQ-E1
+    name: test_pattern_classification.py has 11 error-handling functions
+    category: error_handling
+    priority: could
+  - id: REQ-O1
+    name: validate_model requires monitored
+    category: observability
+    priority: should
+  - id: REQ-Q1
+    name: Component COMP-4-3 has 150 test file(s) covering its source
+    category: quality
+    priority: should
+  - id: REQ-T20
+    name: 'Python >=3.11: Project requires Python >=3.11'
+    category: technology
+    priority: must
+  - id: REQ-O10
+    name: slice_for_artifact requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O11
+    name: generate_recursive_manifests requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O12
+    name: compute_block_dependencies requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O13
+    name: generate_manifest requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O14
+    name: enrich_from_manifest requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O15
+    name: enrich_behaviors_from_manifest requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O16
+    name: enrich_with_block_context requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O17
+    name: create_behaviors_from_manifest requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O18
+    name: decompose_model requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O19
+    name: compact_root_model requires monitored
+    category: observability
+    priority: should
+  - id: REQ-O2
+    name: compute_model_confidence requires monitored
+    category: observability
+    priority: should
+relationships:
+- from: SYS-scripts-(core)
+  to: SYS-src-(orchestration)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(pipeline)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(orchestration)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-scripts-(dev_simulation)
+  type: depends-on
+- from: SYS-src-(cli)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(authoring)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(persistence)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(authoring)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(utils)
+  type: uses
+- from: SYS-src-(extract)
+  to: SYS-src-(config)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(profiles)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(orchestration)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-scripts-(dev_simulation)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(cli)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(config)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(utils)
+  type: uses
+- from: SYS-src-(extract)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-src-(pipeline)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(config)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(pipeline)
+  type: depends-on
+- from: SYS-src-(authoring)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(core)
+  to: SYS-src-(manifest)
+  type: depends-on
+- from: SYS-src-(extract)
+  to: SYS-src-(authoring)
+  type: depends-on
+- from: SYS-src-(manifest)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(orchestration)
+  to: SYS-src-(pipeline)
+  type: depends-on
+- from: SYS-src-(config)
+  to: SYS-src-(utils)
+  type: uses
+- from: SYS-src-(orchestration)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: SYS-src-(core)
+  type: depends-on
+- from: SYS-src-(config)
+  to: SYS-src-(profiles)
+  type: depends-on
+- from: SYS-scripts-(core)
+  to: CAP-3
+  type: realizes
+- from: SYS-scripts-(dev_simulation)
+  to: CAP-3
+  type: realizes
+- from: SYS-src-(core)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(pipeline)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(core)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(config)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(manifest)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(utils)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(cli)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(authoring)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(persistence)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(orchestration)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(extract)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(profiles)
+  to: CAP-4
+  type: realizes
+- from: SYS-src-(export)
+  to: CAP-4
+  type: realizes
+- from: COMP-4-3
+  to: REQ-O1
+  type: satisfies
+- from: COMP-4-3
+  to: REQ-Q1
+  type: satisfies
+- from: COMP-4-3
+  to: REQ-O10
+  type: satisfies
+- from: COMP-4-5
+  to: REQ-O11
+  type: satisfies
+- from: COMP-4-5
+  to: REQ-O12
+  type: satisfies
+- from: COMP-4-5
+  to: REQ-O13
+  type: satisfies
+- from: COMP-4-10
+  to: REQ-O14
+  type: satisfies
+- from: COMP-4-10
+  to: REQ-O15
+  type: satisfies
+- from: COMP-4-10
+  to: REQ-O16
+  type: satisfies
+- from: COMP-4-10
+  to: REQ-O17
+  type: satisfies
+- from: COMP-4-10
+  to: REQ-O18
+  type: satisfies
+- from: COMP-4-10
+  to: REQ-O19
+  type: satisfies
+- from: COMP-4-3
+  to: REQ-O2
+  type: satisfies
+- from: COMP-4-7
+  to: IF-1
+  type: exposes
+- from: COMP-3-2
+  to: IF-2
+  type: exposes
+- from: COMP-4-7
+  to: IF-3
+  type: exposes
+- from: COMP-3-1
+  to: IF-4
+  type: exposes
+- from: COMP-4-1
+  to: IF-5
+  type: exposes
+- from: COMP-4-2
+  to: IF-6
+  type: exposes
+- from: COMP-4-3
+  to: IF-7
+  type: exposes
+- from: COMP-4-4
+  to: IF-8
+  type: exposes
+- from: COMP-4-5
+  to: IF-9
+  type: exposes
+- from: COMP-4-6
+  to: IF-10
+  type: exposes
+- from: COMP-4-8
+  to: IF-11
+  type: exposes
+- from: COMP-4-9
+  to: IF-12
+  type: exposes
+- from: COMP-4-10
+  to: IF-13
+  type: exposes
+- from: COMP-4-11
+  to: IF-14
+  type: exposes
+- from: COMP-4-12
+  to: IF-15
+  type: exposes
+- from: COMP-4-13
+  to: IF-16
+  type: exposes

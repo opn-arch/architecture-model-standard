@@ -77,6 +77,7 @@
     "tests/test_decompose.py",
     "tests/test_pipeline_compact.py",
     "tests/test_schema_v2.py",
+    "tests/test_artifact_traceability_review.py",
     "tests/test_slicer_sub_models.py",
     "scripts/test_guided_round_trip.py",
     "scripts/test_oracle_learning.py",
@@ -435,7 +436,8 @@
     "tests/test_pipeline_artifacts.py"
   ],
   "src/architecture_model/pipeline/cache.py": [
-    "tests/test_pipeline_cache.py"
+    "tests/test_pipeline_cache.py",
+    "tests/test_cache_reviews.py"
   ],
   "src/architecture_model/pipeline/context_gen.py": [
     "tests/test_pipeline_context_gen.py"
@@ -447,6 +449,7 @@
   ],
   "src/architecture_model/pipeline/coordinator.py": [
     "tests/test_pipeline_learning_integration.py",
+    "tests/test_coordinator_enrichment.py",
     "tests/test_pipeline_recursive.py",
     "tests/test_pipeline_coordinator.py"
   ],
@@ -503,8 +506,11 @@
     "tests/test_pipeline_artifacts.py",
     "tests/test_pipeline_infer.py",
     "tests/test_pipeline_context_gen.py",
+    "tests/test_protocol_review.py",
+    "tests/test_emit_review.py",
     "tests/test_pipeline_observe.py",
     "tests/test_pipeline_learning.py",
+    "tests/test_coordinator_enrichment.py",
     "tests/test_pipeline_recursive.py",
     "tests/test_pipeline_coordinator.py",
     "tests/test_pipeline_stages.py",
@@ -515,7 +521,9 @@
     "tests/test_pipeline_allocate.py",
     "tests/test_pipeline_synthesize.py",
     "tests/test_pipeline_decompose.py",
-    "tests/test_pipeline_lessons.py"
+    "tests/test_artifact_traceability_review.py",
+    "tests/test_pipeline_lessons.py",
+    "tests/test_cache_reviews.py"
   ],
   "src/architecture_model/pipeline/relate.py": [
     "tests/test_pipeline_learning_integration.py",
