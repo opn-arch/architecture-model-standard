@@ -296,6 +296,7 @@ class BaseEntity:
     source_line: Optional[int] = None
     extensions: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.0
+    intent: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -314,6 +315,7 @@ class Capability(BaseEntity):
     source_block: str = ""
     priority: Priority = Priority.MEDIUM
     requirements: list[str] = field(default_factory=list)
+    moes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -377,6 +379,7 @@ class Interface(BaseEntity):
     data_format: str = ""
     endpoints: list[dict] = field(default_factory=list)
     schema: str = ""
+    contract: str = ""
 
 
 @dataclass
@@ -497,6 +500,10 @@ class Component(BaseEntity):
     technology_stack: list[str] = field(default_factory=list)
     operations: dict[str, Any] = field(default_factory=dict)
     external_dependencies: list[dict[str, Any]] = field(default_factory=list)
+    goals: list[str] = field(default_factory=list)
+    moes: list[str] = field(default_factory=list)
+    trade_offs: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
     parent_id: Optional[str] = None
     children: list[str] = field(default_factory=list)
 
@@ -610,6 +617,9 @@ class Requirement(BaseEntity):
     source_doc: str = ""
     source_anchor: str = ""
     content_hash: str = ""
+    rationale: str = ""
+    priority: str = ""
+    moe: str = ""
 
 
 # ---------------------------------------------------------------------------
