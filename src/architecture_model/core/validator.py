@@ -134,6 +134,7 @@ def validate_model(
     _check_dependency_cycles(model, result)
     _check_operational_fields(model, result)
     _check_hierarchy_consistency(model, result)
+    _check_semantic_completeness(model, result)
 
     # Lifecycle-gated: skip verification checks in concept phase
     lifecycle_phase = getattr(model.meta, "lifecycle_phase", "production")
@@ -886,3 +887,61 @@ def _check_hierarchy_consistency(model: ArchitectureModel, result: ValidationRes
                         entity_id=comp.id,
                     )
                 )
+
+
+def _check_semantic_completeness(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Flag entities missing semantic SE fields (INFO-level only)."""
+    for comp in model.entities.components:
+        status = comp.status.value if hasattr(comp.status, "value") else str(comp.status)
+        if status != "ACTIVE":
+            continue
+        if not comp.intent:
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="SEMANTIC_MISSING_INTENT",
+                    message=f"Component '{comp.name}' has no intent — consider adding a purpose statement",
+                    entity_id=comp.id,
+                )
+            )
+        if not comp.responsibilities:
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="SEMANTIC_MISSING_RESPONSIBILITIES",
+                    message=f"Component '{comp.name}' has no responsibilities — consider listing key duties",
+                    entity_id=comp.id,
+                )
+            )
+        if not comp.goals:
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="SEMANTIC_MISSING_GOALS",
+                    message=f"Component '{comp.name}' has no goals",
+                    entity_id=comp.id,
+                )
+            )
+
+    for cap in model.entities.capabilities:
+        status = cap.status.value if hasattr(cap.status, "value") else str(cap.status)
+        if status != "ACTIVE":
+            continue
+        if not cap.intent:
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="SEMANTIC_MISSING_INTENT",
+                    message=f"Capability '{cap.name}' has no intent",
+                    entity_id=cap.id,
+                )
+            )
+        if not cap.moes:
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.INFO,
+                    code="SEMANTIC_MISSING_MOES",
+                    message=f"Capability '{cap.name}' has no measures of effectiveness",
+                    entity_id=cap.id,
+                )
+            )
