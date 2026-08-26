@@ -85,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
     p_docs.add_argument("--se", action="store_true", help="Generate SE documents (ConOps, V&V, etc.)")
     p_docs.add_argument("--se-only", action="store_true", help="Generate only SE documents")
     p_docs.add_argument("--formats", help="Comma-separated doc types (e.g. conops,use_cases,se_all)")
+    p_docs.add_argument("--pdf", action="store_true", help="Also generate PDF output from markdown docs")
 
     # --- visualize ---
     p_visualize = subparsers.add_parser("visualize", help="Generate Mermaid diagrams from architecture model")
@@ -629,6 +630,25 @@ def _cmd_docs(args) -> int:
     print(f"Generated docs in {output_dir}/")
     for f in sorted(output_dir.rglob("*.md")):
         print(f"  {f.relative_to(output_dir)}")
+
+    if getattr(args, "pdf", False):
+        try:
+            import subprocess
+            md_files = sorted(output_dir.rglob("*.md"))
+            if md_files:
+                pdf_path = output_dir / "architecture-docs.pdf"
+                # Try pandoc first, fall back to simple concatenation message
+                try:
+                    cmd = ["pandoc", "-o", str(pdf_path)] + [str(f) for f in md_files]
+                    subprocess.run(cmd, check=True, capture_output=True)
+                    print(f"Generated PDF: {pdf_path}")
+                except FileNotFoundError:
+                    print("WARNING: pandoc not found. Install pandoc to generate PDF output.")
+                    print("  brew install pandoc  # or apt-get install pandoc")
+                    return 1
+        except Exception as e:
+            print(f"PDF generation failed: {e}")
+            return 1
 
     return 0
 
