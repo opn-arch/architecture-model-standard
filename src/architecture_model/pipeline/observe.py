@@ -128,6 +128,7 @@ class ObserveStage:
             input_hash=str(len(py_files)),
             duration_ms=duration_ms,
             version="1.0",
+            summary=f"Observed {len(modules)} modules with {len(edges)} import edges from {total_files} files.",
         )
 
 

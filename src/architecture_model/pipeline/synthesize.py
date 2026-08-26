@@ -563,4 +563,5 @@ class SynthesizeStage:
             diagnostics=diagnostics,
             uncertainties=[],
             duration_ms=duration,
+            summary=f"Ran {len(system_models)} sub-pipelines and produced system-of-systems model.",
         )

@@ -172,6 +172,7 @@ class AllocateStage:
             input_hash=str(total_files),
             duration_ms=duration_ms,
             version="1.0",
+            summary=f"Allocated {allocated_count} files to {len(components)} components ({file_coverage:.0f}% coverage).",
         )
 
 

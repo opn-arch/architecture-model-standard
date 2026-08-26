@@ -100,6 +100,7 @@ class ContractStage:
             input_hash=str(len(inventory.test_files)),
             duration_ms=duration_ms,
             version="1.0",
+            summary=f"Extracted {len(contracts)} contracts from {len(inventory.test_files)} test files.",
         )
 
 

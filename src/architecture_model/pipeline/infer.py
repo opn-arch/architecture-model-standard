@@ -258,6 +258,7 @@ class InferStage:
             input_hash=str(len(inventory.modules)),
             duration_ms=duration_ms,
             version="1.0",
+            summary=f"Inferred {len(capabilities)} capabilities, {len(actors)} actors, and {len(behaviors)} behaviors.",
         )
 
 

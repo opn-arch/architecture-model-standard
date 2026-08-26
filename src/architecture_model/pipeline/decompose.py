@@ -255,4 +255,5 @@ class DecomposeStage:
             diagnostics=diagnostics,
             uncertainties=[],
             duration_ms=duration,
+            summary=f"Identified {len(systems)} autonomous systems and {len(inlines)} inline components.",
         )

@@ -216,4 +216,5 @@ class SpecifyStage:
             input_hash=str(len(inventory.routes)),
             duration_ms=duration_ms,
             version="1.0",
+            summary=f"Specified {len(interfaces)} interfaces ({coverage:.0f}% component coverage).",
         )

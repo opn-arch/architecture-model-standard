@@ -111,6 +111,7 @@ class StageResult(Generic[T]):
     input_hash: str = ""
     duration_ms: int = 0
     version: str = "1.0"
+    summary: str = ""
 
 
 @dataclass

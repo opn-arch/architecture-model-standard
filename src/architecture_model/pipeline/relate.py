@@ -230,6 +230,7 @@ class RelateStage:
             input_hash=str(len(allocation.components)),
             duration_ms=duration_ms,
             version="1.0",
+            summary=f"Derived {len(relationships)} relationships across {len(layers_seen)} layers.",
         )
 
 
