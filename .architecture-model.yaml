@@ -19,9 +19,7 @@ entities:
   - id: CAP-3
     name: Run Modular Extraction Pipeline
     status: ACTIVE
-    description: "Execute 10-stage pipeline (observe\u2192infer\u2192allocate\u2192\
-      relate\u2192specify\u2192contract\u2192validate\u2192decompose\u2192synthesize\u2192\
-      emit)"
+    description: Execute 10-stage pipeline (observe→infer→allocate→relate→specify→contract→validate→decompose→synthesize→emit)
   - id: CAP-4
     name: Generate Reality Manifest
     status: ACTIVE
@@ -106,16 +104,16 @@ entities:
   - id: COMP-1.2
     name: Validation
     status: ACTIVE
-    description: "Model validation \u2014 JSON schema, referential integrity, hierarchy,\
-      \ cycles, domain rules"
+    description: Model validation — JSON schema, referential integrity, hierarchy,
+      cycles, domain rules
     layer: foundation
     kind: library
     parent_id: COMP-1
     files:
     - src/architecture_model/core/validator.py
     - src/architecture_model/spec/__init__.py
-    contract: "validate_model() \u2192 ValidationResult with scored issues (100 -\
-      \ 10*errors - 2*warnings)"
+    contract: validate_model() → ValidationResult with scored issues (100 - 10*errors
+      - 2*warnings)
   - id: COMP-1.3
     name: Parser & Persistence
     status: ACTIVE
@@ -129,8 +127,7 @@ entities:
     - src/architecture_model/core/merger.py
     - src/architecture_model/persistence/__init__.py
     - src/architecture_model/persistence/store.py
-    contract: "load_model(path) \u2192 ArchitectureModel, dump_model(model, path),\
-      \ compact_for_storage()"
+    contract: load_model(path) → ArchitectureModel, dump_model(model, path), compact_for_storage()
   - id: COMP-1.4
     name: Model Operations
     status: ACTIVE
@@ -206,8 +203,8 @@ entities:
     - src/architecture_model/pipeline/observe_types.py
     - src/architecture_model/pipeline/infer.py
     - src/architecture_model/pipeline/infer_types.py
-    contract: "observe() \u2192 ObserveResult, infer() \u2192 InferResult with components\
-      \ and behaviors"
+    contract: observe() → ObserveResult, infer() → InferResult with components and
+      behaviors
   - id: COMP-2.3
     name: Allocation & Relation Stages
     status: ACTIVE
@@ -220,8 +217,7 @@ entities:
     - src/architecture_model/pipeline/allocate_types.py
     - src/architecture_model/pipeline/relate.py
     - src/architecture_model/pipeline/relate_types.py
-    contract: "allocate() \u2192 AllocateResult, relate() \u2192 RelateResult with\
-      \ typed edges"
+    contract: allocate() → AllocateResult, relate() → RelateResult with typed edges
   - id: COMP-2.4
     name: Specification & Contract Stages
     status: ACTIVE
@@ -236,8 +232,8 @@ entities:
     - src/architecture_model/pipeline/contract_types.py
     - src/architecture_model/pipeline/validate.py
     - src/architecture_model/pipeline/validate_types.py
-    contract: "specify() \u2192 SpecifyResult, contract() \u2192 ContractResult, validate()\
-      \ \u2192 ValidateResult"
+    contract: specify() → SpecifyResult, contract() → ContractResult, validate() →
+      ValidateResult
   - id: COMP-2.5
     name: Synthesis & Emit Stages
     status: ACTIVE
@@ -253,12 +249,11 @@ entities:
     - src/architecture_model/pipeline/emit.py
     - src/architecture_model/pipeline/emit_types.py
     - src/architecture_model/pipeline/regen_score.py
-    contract: "decompose() \u2192 systems, synthesize() \u2192 merged model, emit()\
-      \ \u2192 final YAML"
+    contract: decompose() → systems, synthesize() → merged model, emit() → final YAML
   - id: COMP-3
     name: Manifest
     status: ACTIVE
-    description: "Source code scanning \u2014 AST analysis, import resolution, grouping"
+    description: Source code scanning — AST analysis, import resolution, grouping
     layer: domain
     kind: library
     children:
@@ -284,8 +279,7 @@ entities:
     - src/architecture_model/manifest/metrics.py
     - src/architecture_model/manifest/scan_cache.py
     - src/architecture_model/manifest/protocol.py
-    contract: "scan_module(path) \u2192 ModuleInfo with functions, classes, imports,\
-      \ metrics"
+    contract: scan_module(path) → ModuleInfo with functions, classes, imports, metrics
   - id: COMP-3.2
     name: Graph & Analysis
     status: ACTIVE
@@ -299,7 +293,7 @@ entities:
     - src/architecture_model/manifest/behavior.py
     - src/architecture_model/manifest/chains.py
     - src/architecture_model/manifest/test_analyzer.py
-    contract: "resolve_imports() \u2192 edges, extract_interfaces() \u2192 InterfaceInfo"
+    contract: resolve_imports() → edges, extract_interfaces() → InterfaceInfo
   - id: COMP-3.3
     name: Grouping & Generation
     status: ACTIVE
@@ -314,13 +308,13 @@ entities:
     - src/architecture_model/manifest/blocks.py
     - src/architecture_model/manifest/slicers.py
     - src/architecture_model/manifest/display.py
-    contract: "group_modules() \u2192 component assignments, generate_manifest() \u2192\
-      \ full manifest"
+    contract: group_modules() → component assignments, generate_manifest() → full
+      manifest
   - id: COMP-4
     name: Documentation
     status: ACTIVE
-    description: "Architecture documentation generation \u2014 component specs, SE\
-      \ docs, diagrams"
+    description: Architecture documentation generation — component specs, SE docs,
+      diagrams
     layer: application
     kind: library
     children:
@@ -347,8 +341,7 @@ entities:
     - src/architecture_model/docs/behavior_spec.py
     - src/architecture_model/docs/integration_flows.py
     - src/architecture_model/docs/system_design.py
-    contract: "generate_docs(model, formats) \u2192 dict of doc_type \u2192 markdown\
-      \ content"
+    contract: generate_docs(model, formats) → dict of doc_type → markdown content
   - id: COMP-4.2
     name: SE Document Suite
     status: ACTIVE
@@ -378,12 +371,11 @@ entities:
     - src/architecture_model/docs/se/cli_reference.py
     - src/architecture_model/docs/se/changelog.py
     - src/architecture_model/docs/se/plugin_guide.py
-    contract: "generate_se_docs(model, manifest) \u2192 15 SE document types as markdown"
+    contract: generate_se_docs(model, manifest) → 15 SE document types as markdown
   - id: COMP-5
     name: Orchestration
     status: ACTIVE
-    description: "High-level workflows \u2014 enrichment, decomposition, behavior\
-      \ analysis"
+    description: High-level workflows — enrichment, decomposition, behavior analysis
     layer: application
     kind: service
     children:
@@ -406,8 +398,7 @@ entities:
     - src/architecture_model/orchestration/trigger_detection.py
     - src/architecture_model/orchestration/use_case_inference.py
     - src/architecture_model/orchestration/naming_context.py
-    contract: "enrich_model(model, manifest) \u2192 enriched model with populated\
-      \ signatures/contracts"
+    contract: enrich_model(model, manifest) → enriched model with populated signatures/contracts
   - id: COMP-5.2
     name: Decomposition
     status: ACTIVE
@@ -422,12 +413,12 @@ entities:
     - src/architecture_model/orchestration/behavior_flows.py
     - src/architecture_model/orchestration/compaction.py
     - src/architecture_model/orchestration/pipeline.py
-    contract: "decompose_model() \u2192 per-system sub-models, compact_for_storage()"
+    contract: decompose_model() → per-system sub-models, compact_for_storage()
   - id: COMP-6
     name: Extract
     status: ACTIVE
-    description: "Code-to-model extraction \u2014 route detection, constraint detection,\
-      \ artifact parsing"
+    description: Code-to-model extraction — route detection, constraint detection,
+      artifact parsing
     layer: domain
     kind: library
     files:
@@ -436,8 +427,7 @@ entities:
     - src/architecture_model/extract/route_detector.py
     - src/architecture_model/extract/constraint_detector.py
     - src/architecture_model/extract/table_parser.py
-    contract: "extract_from_code(path) \u2192 partial model, detect_routes() \u2192\
-      \ route info"
+    contract: extract_from_code(path) → partial model, detect_routes() → route info
   - id: COMP-7
     name: Authoring
     status: ACTIVE
@@ -448,12 +438,12 @@ entities:
     - src/architecture_model/authoring/__init__.py
     - src/architecture_model/authoring/parser.py
     - src/architecture_model/authoring/gate.py
-    contract: "parse_requirements_doc(text) \u2192 ArchitectureModel, check_development_gate(model,\
-      \ manifest)"
+    contract: parse_requirements_doc(text) → ArchitectureModel, check_development_gate(model,
+      manifest)
   - id: COMP-8
     name: CLI
     status: ACTIVE
-    description: "Command-line interface \u2014 all user-facing commands"
+    description: Command-line interface — all user-facing commands
     layer: interface
     kind: service
     files:
@@ -477,8 +467,7 @@ entities:
     - src/architecture_model/profiles/__init__.py
     - src/architecture_model/profiles/builtins/__init__.py
     - src/architecture_model/profiles/schema.py
-    contract: "load_config(repo_path) \u2192 ProjectConfig with profile and domain\
-      \ settings"
+    contract: load_config(repo_path) → ProjectConfig with profile and domain settings
   - id: COMP-10
     name: Export
     status: ACTIVE
@@ -489,7 +478,7 @@ entities:
     - src/architecture_model/export/__init__.py
     - src/architecture_model/export/flatfiles.py
     - src/architecture_model/export/reference.py
-    contract: "export_flat_files(model, output_dir) \u2192 portable architecture package"
+    contract: export_flat_files(model, output_dir) → portable architecture package
   - id: COMP-11
     name: Pipeline Learning
     status: ACTIVE
@@ -501,7 +490,7 @@ entities:
     - src/architecture_model/pipeline/global_learning.py
     - src/architecture_model/pipeline/learning.py
     - src/architecture_model/pipeline/lessons.py
-    contract: "GlobalLearningStore \u2014 persist and retrieve heuristics/archetypes/workflows"
+    contract: GlobalLearningStore — persist and retrieve heuristics/archetypes/workflows
   - id: COMP-12
     name: Utilities
     status: ACTIVE
@@ -521,14 +510,32 @@ entities:
     name: AI Agent (MCP Client)
     status: ACTIVE
     description: LLM-based coding agent that invokes architecture tools via MCP protocol
+    intent: Consume compressed architecture context to generate, validate, and update
+      models
+    goals:
+    - Load and query architecture models
+    - Validate model correctness
+    - Propose model updates
+    - Trace change impact
   - id: ACT-2
     name: Developer
     status: ACTIVE
     description: Human developer using CLI or integrating the library directly
+    intent: Author and maintain architecture models for software projects
+    goals:
+    - Define system architecture
+    - Validate models against code
+    - Generate documentation
+    - Track architectural drift
   - id: ACT-3
     name: CI/CD Pipeline
     status: ACTIVE
     description: Automated pipeline running validation and doc generation on commits
+    intent: Automate architecture validation and documentation generation in pipelines
+    goals:
+    - Run validation checks on PRs
+    - Generate architecture docs
+    - Detect model drift
   requirements:
   - id: REQ-1
     name: Model validation score threshold
@@ -748,7 +755,7 @@ entities:
   - id: SYS-1
     name: Model Foundation
     status: ACTIVE
-    description: "Core types, validation, parsing \u2014 everything depends on this"
+    description: Core types, validation, parsing — everything depends on this
     component_ids:
     - COMP-1
     - COMP-1.1
@@ -793,114 +800,6 @@ entities:
     - COMP-7
     - COMP-8
   behaviors:
-  - id: BEH-1
-    name: 'GET '
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-2
-    name: GET bookmarklets/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-3
-    name: GET tags/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-4
-    name: GET filters/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-5
-    name: GET views/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-6
-    name: GET views/<view>/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-7
-    name: GET models/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-8
-    name: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-9
-    name: GET templates/<path:template>/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-10
-    name: GET login/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-11
-    name: GET logout/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-12
-    name: GET password_change/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-13
-    name: GET password_change/done/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-14
-    name: GET password_reset/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-15
-    name: GET password_reset/done/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-16
-    name: GET reset/<uidb64>/<token>/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-17
-    name: GET reset/done/
-    behavior_type: route_handler
-    steps:
-    - ''
-    actor_id: ACT-1
-  - id: BEH-18
-    name: GET <path:url>
-    behavior_type: route_handler
-    steps:
-    - flatpage
-    actor_id: ACT-1
   - id: BEH-19
     name: 'CLI: Test Guided Round Trip'
     behavior_type: use_case
