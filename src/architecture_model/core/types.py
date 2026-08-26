@@ -836,6 +836,8 @@ class ArchitectureModel:
             d["source_line"] = entity.source_line
         if entity.extensions:
             d["extensions"] = entity.extensions
+        if entity.intent:
+            d["intent"] = entity.intent
         return d
 
     @classmethod
@@ -855,6 +857,8 @@ class ArchitectureModel:
             d["priority"] = c.priority.value
         if c.requirements:
             d["requirements"] = c.requirements
+        if c.moes:
+            d["moes"] = c.moes
         return d
 
     @classmethod
@@ -900,6 +904,8 @@ class ArchitectureModel:
             d["endpoints"] = i.endpoints
         if i.schema:
             d["schema"] = i.schema
+        if i.contract:
+            d["contract"] = i.contract
         return d
 
     @classmethod
@@ -997,6 +1003,14 @@ class ArchitectureModel:
             d["operations"] = c.operations
         if c.external_dependencies:
             d["external_dependencies"] = c.external_dependencies
+        if c.goals:
+            d["goals"] = c.goals
+        if c.moes:
+            d["moes"] = c.moes
+        if c.trade_offs:
+            d["trade_offs"] = c.trade_offs
+        if c.failure_modes:
+            d["failure_modes"] = c.failure_modes
         return d
 
     @classmethod
@@ -1133,6 +1147,12 @@ class ArchitectureModel:
             d["source_anchor"] = req.source_anchor
         if req.content_hash:
             d["content_hash"] = req.content_hash
+        if req.rationale:
+            d["rationale"] = req.rationale
+        if req.priority:
+            d["priority"] = req.priority
+        if req.moe:
+            d["moe"] = req.moe
         return d
 
     @classmethod

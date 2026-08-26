@@ -232,6 +232,7 @@ def _parse_base(d: dict) -> dict:
         "source_line": d.get("source_line"),
         "extensions": d.get("extensions", {}),
         "confidence": float(d.get("confidence", 0.0)),
+        "intent": d.get("intent", ""),
     }
 
 
@@ -251,6 +252,7 @@ def _parse_capability(d: dict) -> Capability:
         source_block=d.get("source_block", "") or d.get("f_block", ""),
         priority=_parse_priority(d.get("priority")),
         requirements=d.get("requirements", []),
+        moes=d.get("moes", []),
     )
 
 
@@ -313,6 +315,7 @@ def _parse_interface(d: dict) -> Interface:
         data_format=d.get("data_format", ""),
         endpoints=d.get("endpoints", []),
         schema=d.get("schema", ""),
+        contract=d.get("contract", ""),
     )
 
 
@@ -441,6 +444,10 @@ def _parse_component(d: dict) -> Component:
         test_contracts=test_contracts,
         observability=observability,
         interfaces=interfaces,
+        goals=d.get("goals", []),
+        moes=d.get("moes", []),
+        trade_offs=d.get("trade_offs", []),
+        failure_modes=d.get("failure_modes", []),
     )
 
 
@@ -494,7 +501,7 @@ def _parse_lifecycle(d: dict) -> Lifecycle:
 
 def _parse_requirement(d: dict) -> Requirement:
     base = _parse_base(d)
-    return Requirement(**base, text=d.get("text",""), source_doc=d.get("source_doc",""), source_anchor=d.get("source_anchor",""), content_hash=d.get("content_hash",""))
+    return Requirement(**base, text=d.get("text",""), source_doc=d.get("source_doc",""), source_anchor=d.get("source_anchor",""), content_hash=d.get("content_hash",""), rationale=d.get("rationale",""), priority=d.get("priority",""), moe=d.get("moe",""))
 
 
 def _parse_relationship(d: dict) -> Relationship:
