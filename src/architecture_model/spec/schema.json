@@ -1,27 +1,55 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://architecture-model-standard.dev/schema/v2.0.0/model.json",
+  "$id": "https://architecture-model-standard.dev/schema/v2.1.0/model.json",
   "title": "Architecture Model",
   "description": "Universal machine-readable architecture model for LLM-driven system engineering",
   "type": "object",
-  "required": ["meta", "entities", "relationships"],
+  "required": [
+    "meta",
+    "entities",
+    "relationships"
+  ],
   "properties": {
     "meta": {
       "type": "object",
-      "required": ["schema_version", "project", "generated_at"],
+      "required": [
+        "schema_version",
+        "project",
+        "generated_at"
+      ],
       "properties": {
-        "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
-        "project": { "type": "string" },
-        "system": { "type": "string" },
-        "generated_at": { "type": "string", "format": "date-time" },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "project": {
+          "type": "string"
+        },
+        "system": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
         "source_artifacts": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
-        "manifest_hash": { "type": "string" },
-        "source_language": { "type": "string" },
-        "parent_model": { "type": "string" },
-        "refines_component": { "type": "string" }
+        "manifest_hash": {
+          "type": "string"
+        },
+        "source_language": {
+          "type": "string"
+        },
+        "parent_model": {
+          "type": "string"
+        },
+        "refines_component": {
+          "type": "string"
+        }
       }
     },
     "entities": {
@@ -29,76 +57,119 @@
       "properties": {
         "actors": {
           "type": "array",
-          "items": { "$ref": "#/$defs/actor" }
+          "items": {
+            "$ref": "#/$defs/actor"
+          }
         },
         "capabilities": {
           "type": "array",
-          "items": { "$ref": "#/$defs/capability" }
+          "items": {
+            "$ref": "#/$defs/capability"
+          }
         },
         "behaviors": {
           "type": "array",
-          "items": { "$ref": "#/$defs/behavior" }
+          "items": {
+            "$ref": "#/$defs/behavior"
+          }
         },
         "interfaces": {
           "type": "array",
-          "items": { "$ref": "#/$defs/interface" }
+          "items": {
+            "$ref": "#/$defs/interface"
+          }
         },
         "constraints": {
           "type": "array",
-          "items": { "$ref": "#/$defs/constraint" }
+          "items": {
+            "$ref": "#/$defs/constraint"
+          }
         },
         "layers": {
           "type": "array",
-          "items": { "$ref": "#/$defs/layer" }
+          "items": {
+            "$ref": "#/$defs/layer"
+          }
         },
         "components": {
           "type": "array",
-          "items": { "$ref": "#/$defs/component" }
+          "items": {
+            "$ref": "#/$defs/component"
+          }
         },
         "systems": {
           "type": "array",
-          "items": { "$ref": "#/$defs/system" }
+          "items": {
+            "$ref": "#/$defs/system"
+          }
         },
         "data": {
           "type": "array",
-          "items": { "$ref": "#/$defs/data" }
+          "items": {
+            "$ref": "#/$defs/data"
+          }
         },
         "events": {
           "type": "array",
-          "items": { "$ref": "#/$defs/event" }
+          "items": {
+            "$ref": "#/$defs/event"
+          }
         },
         "resources": {
           "type": "array",
-          "items": { "$ref": "#/$defs/resource" }
+          "items": {
+            "$ref": "#/$defs/resource"
+          }
         },
         "environments": {
           "type": "array",
-          "items": { "$ref": "#/$defs/environment" }
+          "items": {
+            "$ref": "#/$defs/environment"
+          }
         },
         "quality_attributes": {
           "type": "array",
-          "items": { "$ref": "#/$defs/quality_attribute" }
+          "items": {
+            "$ref": "#/$defs/quality_attribute"
+          }
         },
         "decisions": {
           "type": "array",
-          "items": { "$ref": "#/$defs/decision" }
+          "items": {
+            "$ref": "#/$defs/decision"
+          }
         },
         "lifecycles": {
           "type": "array",
-          "items": { "$ref": "#/$defs/lifecycle" }
+          "items": {
+            "$ref": "#/$defs/lifecycle"
+          }
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requirement"
+          }
         }
       },
       "additionalProperties": false
     },
     "relationships": {
       "type": "array",
-      "items": { "$ref": "#/$defs/relationship" }
+      "items": {
+        "$ref": "#/$defs/relationship"
+      }
     }
   },
   "$defs": {
     "status": {
       "type": "string",
-      "enum": ["ACTIVE", "PLANNED", "DORMANT", "DEPRECATED"]
+      "enum": [
+        "ACTIVE",
+        "PLANNED",
+        "DORMANT",
+        "DEPRECATED"
+      ]
     },
     "extensions": {
       "type": "object",
@@ -109,70 +180,207 @@
     },
     "base_entity": {
       "type": "object",
-      "required": ["id", "name", "status"],
+      "required": [
+        "id",
+        "name",
+        "status"
+      ],
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Z]+-[A-Z]?-?\\d+$|^[a-z][a-z0-9-]+$" },
-        "name": { "type": "string", "minLength": 1 },
-        "description": { "type": "string" },
-        "status": { "$ref": "#/$defs/status" },
-        "tags": { "type": "array", "items": { "type": "string" } },
-        "source_file": { "type": "string" },
-        "source_line": { "type": "integer", "minimum": 0 }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z]+-[A-Z]?-?\\d+$|^[a-z][a-z0-9-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_file": {
+          "type": "string"
+        },
+        "source_line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "intent": {
+          "type": "string"
+        }
       }
     },
     "actor": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "type": { "type": "string", "enum": ["human", "system", "external-service"] },
-        "goals": { "type": "array", "items": { "type": "string" } },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "type": {
+          "type": "string",
+          "enum": [
+            "human",
+            "system",
+            "external-service"
+          ]
+        },
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "capability": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "source_block": { "type": "string" },
-        "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
-        "requirements": { "type": "array", "items": { "type": "string" } },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "source_block": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "moes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "behavior": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "trigger": { "type": "string" },
-        "actor": { "type": "string" },
-        "preconditions": { "type": "array", "items": { "type": "string" } },
-        "postconditions": { "type": "array", "items": { "type": "string" } },
-        "steps": { "type": "array", "items": { "type": "string" } },
-        "frequency": { "type": "string" },
-        "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "trigger": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "postconditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "frequency": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        },
         "pattern": {
           "type": "string",
-          "enum": ["sequential", "event-driven", "state-machine", "saga", "pipeline", "parallel"]
+          "enum": [
+            "sequential",
+            "event-driven",
+            "state-machine",
+            "saga",
+            "pipeline",
+            "parallel"
+          ]
         },
         "states": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
               "transitions": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "to": { "type": "string" },
-                    "trigger": { "type": "string" }
+                    "to": {
+                      "type": "string"
+                    },
+                    "trigger": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -183,127 +391,330 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["step", "compensate"],
+            "required": [
+              "step",
+              "compensate"
+            ],
             "properties": {
-              "step": { "type": "string" },
-              "compensate": { "type": "string" }
+              "step": {
+                "type": "string"
+              },
+              "compensate": {
+                "type": "string"
+              }
             }
           }
         },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "interface": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "type": { "type": "string", "enum": ["REST", "WebSocket", "database", "file", "message-queue", "internal", "external"] },
-        "protocol": { "type": "string" },
-        "provider": { "type": "string" },
-        "consumer": { "type": "string" },
-        "data_format": { "type": "string" },
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "type": {
+          "type": "string",
+          "enum": [
+            "REST",
+            "WebSocket",
+            "database",
+            "file",
+            "message-queue",
+            "internal",
+            "external"
+          ]
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "consumer": {
+          "type": "string"
+        },
+        "data_format": {
+          "type": "string"
+        },
         "endpoints": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "method": { "type": "string" },
-              "path": { "type": "string" },
-              "description": { "type": "string" },
-              "request_schema": { "type": "string" },
-              "response_schema": { "type": "string" }
+              "method": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "request_schema": {
+                "type": "string"
+              },
+              "response_schema": {
+                "type": "string"
+              }
             }
           }
         },
-        "schema": { "type": "string" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "schema": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "contract": {
+          "type": "string"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "constraint": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "type": { "type": "string", "enum": ["performance", "security", "reliability", "scalability", "regulatory", "technology", "operational", "failure-mode"] },
-        "metric": { "type": "string" },
-        "threshold": { "type": "string" },
-        "rationale": { "type": "string" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "type": {
+          "type": "string",
+          "enum": [
+            "performance",
+            "security",
+            "reliability",
+            "scalability",
+            "regulatory",
+            "technology",
+            "operational",
+            "failure-mode"
+          ]
+        },
+        "metric": {
+          "type": "string"
+        },
+        "threshold": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "layer": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "order": { "type": "integer", "minimum": 0 },
-        "technology": { "type": "array", "items": { "type": "string" } },
-        "directories": { "type": "array", "items": { "type": "string" } },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "technology": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "directories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "component": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "layer": { "type": "string" },
-        "source_block": { "type": "string" },
-        "technology": { "type": "string" },
-        "files": { "type": "array", "items": { "type": "string" } },
-        "responsibilities": { "type": "array", "items": { "type": "string" } },
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "layer": {
+          "type": "string"
+        },
+        "source_block": {
+          "type": "string"
+        },
+        "technology": {
+          "type": "string"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "responsibilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "kind": {
           "type": "string",
-          "enum": ["module", "package", "service", "library", "cli", "data-model", "data-store", "infrastructure", "framework", "ui", "pipeline"]
+          "enum": [
+            "module",
+            "package",
+            "service",
+            "library",
+            "cli",
+            "data-model",
+            "data-store",
+            "infrastructure",
+            "framework",
+            "ui",
+            "pipeline"
+          ]
         },
         "fields": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "type": { "type": "string" },
-              "required": { "type": "boolean" },
-              "description": { "type": "string" }
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string"
+              }
             }
           }
         },
-        "region": { "type": "string" },
-        "replicas": { "type": "integer", "minimum": 0 },
+        "region": {
+          "type": "string"
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 0
+        },
         "symbols": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": { "type": "string" },
+              "name": {
+                "type": "string"
+              },
               "kind": {
                 "type": "string",
-                "enum": ["class", "dataclass", "exception", "protocol", "struct", "interface", "enum", "trait", "type-alias"]
+                "enum": [
+                  "class",
+                  "dataclass",
+                  "exception",
+                  "protocol",
+                  "struct",
+                  "interface",
+                  "enum",
+                  "trait",
+                  "type-alias"
+                ]
               },
-              "members": { "type": "array", "items": { "type": "string" } },
-              "supers": { "type": "array", "items": { "type": "string" } }
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "supers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
             },
             "additionalProperties": false
           }
         },
-        "functions": { "type": "array", "items": { "type": "string" } },
+        "functions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "constants": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name", "value"],
+            "required": [
+              "name",
+              "value"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "value": { "type": "string" },
-              "type": { "type": "string" },
-              "context": { "type": "string" }
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "context": {
+                "type": "string"
+              }
             },
             "additionalProperties": false
           }
@@ -312,14 +723,40 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name", "params"],
+            "required": [
+              "name",
+              "params"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "params": { "type": "array", "items": { "type": "string" } },
-              "returns": { "type": "string" },
-              "body_hint": { "type": "string" },
-              "complexity": { "type": "string", "enum": ["TRIVIAL", "SHORT", "COMPLEX"] },
-              "decorators": { "type": "array", "items": { "type": "string" } }
+              "name": {
+                "type": "string"
+              },
+              "params": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "returns": {
+                "type": "string"
+              },
+              "body_hint": {
+                "type": "string"
+              },
+              "complexity": {
+                "type": "string",
+                "enum": [
+                  "TRIVIAL",
+                  "SHORT",
+                  "COMPLEX"
+                ]
+              },
+              "decorators": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
             },
             "additionalProperties": false
           }
@@ -328,13 +765,30 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["assertion", "contract_type", "test_method"],
+            "required": [
+              "assertion",
+              "contract_type",
+              "test_method"
+            ],
             "properties": {
-              "assertion": { "type": "string" },
-              "contract_type": { "type": "string" },
-              "test_method": { "type": "string" },
-              "required_imports": { "type": "array", "items": { "type": "string" } },
-              "test_file": { "type": "string" }
+              "assertion": {
+                "type": "string"
+              },
+              "contract_type": {
+                "type": "string"
+              },
+              "test_method": {
+                "type": "string"
+              },
+              "required_imports": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "test_file": {
+                "type": "string"
+              }
             },
             "additionalProperties": false
           }
@@ -343,161 +797,545 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["function", "log_level"],
+            "required": [
+              "function",
+              "log_level"
+            ],
             "properties": {
-              "function": { "type": "string" },
-              "log_level": { "type": "string", "enum": ["DEBUG", "INFO", "WARNING", "ERROR"] },
-              "emits_metric": { "type": "string" },
-              "on_error": { "type": "string" },
-              "on_success": { "type": "string" }
+              "function": {
+                "type": "string"
+              },
+              "log_level": {
+                "type": "string",
+                "enum": [
+                  "DEBUG",
+                  "INFO",
+                  "WARNING",
+                  "ERROR"
+                ]
+              },
+              "emits_metric": {
+                "type": "string"
+              },
+              "on_error": {
+                "type": "string"
+              },
+              "on_success": {
+                "type": "string"
+              }
             },
             "additionalProperties": false
           }
         },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "moes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trade_offs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failure_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "system": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "layer": { "type": "string" },
-        "source_block": { "type": "string" },
-        "complexity_score": { "type": "number", "minimum": 0 },
-        "sub_model_ref": { "type": "string" },
-        "component_ids": { "type": "array", "items": { "type": "string" } },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "layer": {
+          "type": "string"
+        },
+        "source_block": {
+          "type": "string"
+        },
+        "complexity_score": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sub_model_ref": {
+          "type": "string"
+        },
+        "component_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "data": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "schema_def": { "type": "string" },
-        "format": { "type": "string" },
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "schema_def": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
         "fields": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
-              "name": { "type": "string" },
-              "type": { "type": "string" },
-              "required": { "type": "boolean" },
-              "description": { "type": "string" }
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string"
+              }
             }
           }
         },
-        "owner": { "type": "string" },
-        "sensitivity": { "type": "string" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "owner": {
+          "type": "string"
+        },
+        "sensitivity": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "event": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "kind": { "type": "string", "enum": ["message", "signal", "command", "notification", "alarm"] },
-        "source": { "type": "string" },
-        "target": { "type": "string" },
-        "payload": { "type": "string" },
-        "frequency": { "type": "string" },
-        "reliability": { "type": "string" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "kind": {
+          "type": "string",
+          "enum": [
+            "message",
+            "signal",
+            "command",
+            "notification",
+            "alarm"
+          ]
+        },
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "string"
+        },
+        "frequency": {
+          "type": "string"
+        },
+        "reliability": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "resource": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "kind": { "type": "string", "enum": ["database", "api", "hardware", "storage", "compute", "sensor", "actuator"] },
-        "provider": { "type": "string" },
-        "location": { "type": "string" },
-        "sla": { "type": "string" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "kind": {
+          "type": "string",
+          "enum": [
+            "database",
+            "api",
+            "hardware",
+            "storage",
+            "compute",
+            "sensor",
+            "actuator"
+          ]
+        },
+        "provider": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "sla": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "environment": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "kind": { "type": "string", "enum": ["development", "staging", "production", "test", "field", "laboratory"] },
-        "infrastructure": { "type": "array", "items": { "type": "string" } },
-        "constraints": { "type": "array", "items": { "type": "string" } },
-        "region": { "type": "string" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "kind": {
+          "type": "string",
+          "enum": [
+            "development",
+            "staging",
+            "production",
+            "test",
+            "field",
+            "laboratory"
+          ]
+        },
+        "infrastructure": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "region": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "quality_attribute": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "metric": { "type": "string" },
-        "target": { "type": "string" },
-        "current": { "type": "string" },
-        "measurement_method": { "type": "string" },
-        "applies_to": { "type": "array", "items": { "type": "string" } },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "metric": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "current": {
+          "type": "string"
+        },
+        "measurement_method": {
+          "type": "string"
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "decision": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "decision_status": { "type": "string", "enum": ["proposed", "accepted", "deprecated", "superseded"] },
-        "context": { "type": "string" },
-        "options": { "type": "array", "items": { "type": "string" } },
-        "rationale": { "type": "string" },
-        "consequences": { "type": "array", "items": { "type": "string" } },
-        "supersedes": { "type": "string" },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "decision_status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "accepted",
+            "deprecated",
+            "superseded"
+          ]
+        },
+        "context": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "consequences": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "supersedes": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "lifecycle": {
-      "allOf": [{ "$ref": "#/$defs/base_entity" }],
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
       "properties": {
-        "id": true, "name": true, "description": true, "status": true,
-        "tags": true, "source_file": true, "source_line": true,
-        "phase": { "type": "string", "enum": ["concept", "design", "prototype", "development", "testing", "production", "maintenance", "end-of-life"] },
-        "version": { "type": "string" },
-        "start_date": { "type": "string" },
-        "end_date": { "type": "string" },
-        "migration_from": { "type": "string" },
-        "migration_to": { "type": "string" },
-        "milestones": { "type": "array", "items": { "type": "string" } },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "phase": {
+          "type": "string",
+          "enum": [
+            "concept",
+            "design",
+            "prototype",
+            "development",
+            "testing",
+            "production",
+            "maintenance",
+            "end-of-life"
+          ]
+        },
+        "version": {
+          "type": "string"
+        },
+        "start_date": {
+          "type": "string"
+        },
+        "end_date": {
+          "type": "string"
+        },
+        "migration_from": {
+          "type": "string"
+        },
+        "migration_to": {
+          "type": "string"
+        },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "intent": true
       },
       "additionalProperties": false
     },
     "relationship": {
       "type": "object",
-      "required": ["type", "from", "to"],
+      "required": [
+        "type",
+        "from",
+        "to"
+      ],
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["realizes", "contains", "depends-on", "exposes", "consumes", "traces-to", "allocated-to", "constrained-by", "mounted-on", "connected-at", "routed-through", "produces", "subscribes-to", "transforms", "supersedes", "migrates-to", "triggers", "satisfies", "derives-from", "verifies", "resolves", "affects"]
+          "enum": [
+            "realizes",
+            "contains",
+            "depends-on",
+            "exposes",
+            "consumes",
+            "traces-to",
+            "allocated-to",
+            "constrained-by",
+            "mounted-on",
+            "connected-at",
+            "routed-through",
+            "produces",
+            "subscribes-to",
+            "transforms",
+            "supersedes",
+            "migrates-to",
+            "triggers",
+            "satisfies",
+            "derives-from",
+            "verifies",
+            "resolves",
+            "affects"
+          ]
         },
-        "from": { "type": "string" },
-        "to": { "type": "string" },
-        "description": { "type": "string" },
-        "strength": { "type": "string", "enum": ["strong", "moderate", "weak"] },
-        "imports": { "type": "array", "items": { "type": "string" } },
-        "extensions": { "$ref": "#/$defs/extensions" }
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "strength": {
+          "type": "string",
+          "enum": [
+            "strong",
+            "moderate",
+            "weak"
+          ]
+        },
+        "imports": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "requirement": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
+      "properties": {
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "intent": true,
+        "text": {
+          "type": "string"
+        },
+        "source_doc": {
+          "type": "string"
+        },
+        "source_anchor": {
+          "type": "string"
+        },
+        "content_hash": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "moe": {
+          "type": "string"
+        },
+        "extensions": true
       },
       "additionalProperties": false
     }
