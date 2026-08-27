@@ -1150,3 +1150,46 @@ def test_full_pipeline_produces_all_entity_types(tmp_path):
     rels = model.get("relationships", [])
     rel_types = {r["type"] for r in rels}
     assert "realizes" in rel_types, f"Missing realizes. Got: {rel_types}"
+
+
+
+class TestPerComponentQualityPropagation:
+    """Tests that relate, specify, and contract propagate per-component quality."""
+
+    def _run_to(self, tmp_path, stage_name):
+        _setup_project(tmp_path)
+        ctx = _run_full_pipeline(tmp_path)
+        return ctx
+
+    def test_relate_has_component_scores(self, tmp_path):
+        ctx = self._run_to(tmp_path, "relate")
+        result = ctx.cache["relate"]
+        assert isinstance(result.quality.component_scores, dict)
+
+    def test_specify_has_component_scores(self, tmp_path):
+        ctx = self._run_to(tmp_path, "specify")
+        result = ctx.cache["specify"]
+        assert isinstance(result.quality.component_scores, dict)
+
+    def test_contract_has_component_scores(self, tmp_path):
+        ctx = self._run_to(tmp_path, "contract")
+        result = ctx.cache["contract"]
+        assert isinstance(result.quality.component_scores, dict)
+
+    def test_relate_component_has_relationship_count(self, tmp_path):
+        ctx = self._run_to(tmp_path, "relate")
+        result = ctx.cache["relate"]
+        for cid, cq in result.quality.component_scores.items():
+            assert "relationship_count" in cq.sub_scores
+
+    def test_specify_component_has_interface_count(self, tmp_path):
+        ctx = self._run_to(tmp_path, "specify")
+        result = ctx.cache["specify"]
+        for cid, cq in result.quality.component_scores.items():
+            assert "interface_count" in cq.sub_scores
+
+    def test_contract_component_has_test_flag(self, tmp_path):
+        ctx = self._run_to(tmp_path, "contract")
+        result = ctx.cache["contract"]
+        for cid, cq in result.quality.component_scores.items():
+            assert "has_tests" in cq.sub_scores

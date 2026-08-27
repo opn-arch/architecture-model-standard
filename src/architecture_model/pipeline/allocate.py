@@ -152,6 +152,29 @@ class AllocateStage:
             boundary_coherence=boundary_coherence,
         )
 
+        # Per-component quality aggregation from observe's per-module scores
+        comp_quality: dict[str, QualityMetrics] = {}
+        module_quality = observe_result.quality.component_scores if observe_result else {}
+        if module_quality:
+            for comp in components:
+                comp_mod_scores: list[float] = []
+                comp_mod_details: dict[str, QualityMetrics] = {}
+                for f in comp.files:
+                    key = str(f)
+                    if key in module_quality:
+                        comp_mod_scores.append(module_quality[key].score)
+                        comp_mod_details[key] = module_quality[key]
+                if comp_mod_scores:
+                    comp_quality[comp.id] = QualityMetrics(
+                        score=sum(comp_mod_scores) / len(comp_mod_scores),
+                        sub_scores={
+                            "module_count": float(len(comp.files)),
+                            "worst_module": min(comp_mod_scores),
+                            "best_module": max(comp_mod_scores),
+                        },
+                        component_scores=comp_mod_details,
+                    )
+
         quality = QualityMetrics(
             score=int((file_coverage + boundary_coherence) / 2),
             sub_scores={
@@ -160,6 +183,7 @@ class AllocateStage:
                 "component_count": float(len(components)),
             },
             thresholds={"file_coverage": 95.0, "boundary_coherence": 50.0},
+            component_scores=comp_quality,
         )
 
         duration_ms = int((time.time() - start) * 1000)

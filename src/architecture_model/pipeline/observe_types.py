@@ -88,6 +88,7 @@ class ModuleRecord:
     imports: list[str] = field(default_factory=list)
     line_count: int = 0
     docstring: str | None = None
+    quality_score: int = 0  # 0-100 from code_review.analyze_source
 
 
 @dataclass

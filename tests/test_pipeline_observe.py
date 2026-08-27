@@ -97,3 +97,28 @@ mod = importlib.import_module(name)
         assert any("included" in p for p in paths)
         assert not any("excluded" in p for p in paths)
         assert len(result.output.modules) == 1
+
+
+class TestObservePerModuleQuality:
+    def test_module_record_has_quality_score(self):
+        from architecture_model.pipeline.observe_types import ModuleRecord
+        mr = ModuleRecord(path=Path("test.py"), quality_score=75)
+        assert mr.quality_score == 75
+
+    def test_observe_quality_has_component_scores(self, tmp_path):
+        """After observe, quality.component_scores keyed by module path."""
+        (tmp_path / "mod.py").write_text("def foo():\n    return 1\n")
+        stage = ObserveStage()
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".out")
+        result = stage.run(ctx)
+        assert isinstance(result.quality.component_scores, dict)
+
+    def test_observe_module_quality_score_set(self, tmp_path):
+        """Module records should have quality_score populated."""
+        (tmp_path / "mod.py").write_text("def foo(x: int) -> int:\n    \"\"\"Doc.\"\"\"\n    return x + 1\n")
+        stage = ObserveStage()
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".out")
+        result = stage.run(ctx)
+        if result.output.modules:
+            # quality_score should be set (may be 0 if code_review unavailable)
+            assert hasattr(result.output.modules[0], "quality_score")

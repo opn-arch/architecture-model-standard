@@ -108,21 +108,31 @@ class ObserveStage:
         total_symbols = sum(len(m.functions) + len(m.classes) + len(m.constants) for m in modules)
         symbol_density = (total_symbols / parsed) if parsed > 0 else 0.0
 
-        # Code quality scoring (lightweight — reuses existing AST data)
+        # Code quality scoring — per-module with component_scores
         code_quality_avg = 0.0
+        module_scores: dict[str, QualityMetrics] = {}
         try:
             from architecture_model.quality.code_review import analyze_source
-            quality_scores = []
             for mod in modules:
                 try:
-                    mod_path = Path(mod.file) if not isinstance(mod.file, Path) else mod.file
+                    mod_path = mod.path if mod.path.is_absolute() else ctx.repo_path / mod.path
                     if mod_path.exists():
                         analysis = analyze_source(mod_path.read_text(), filename=str(mod_path))
-                        quality_scores.append(analysis.score)
+                        mod.quality_score = analysis.score
+                        fn_count = max(len(analysis.functions), 1)
+                        module_scores[str(mod.path)] = QualityMetrics(
+                            score=analysis.score,
+                            sub_scores={
+                                "complexity_avg": sum(f.complexity for f in analysis.functions) / fn_count,
+                                "docstring_coverage": sum(1 for f in analysis.functions if f.has_docstring) / fn_count * 100,
+                                "type_hint_coverage": sum(1 for f in analysis.functions if f.has_type_hints) / fn_count * 100,
+                                "issue_count": float(len(analysis.issues)),
+                            },
+                        )
                 except Exception:
                     pass
-            if quality_scores:
-                code_quality_avg = sum(quality_scores) / len(quality_scores)
+            if module_scores:
+                code_quality_avg = sum(qm.score for qm in module_scores.values()) / len(module_scores)
         except ImportError:
             pass
 
@@ -135,6 +145,7 @@ class ObserveStage:
                 "code_quality_avg": code_quality_avg,
             },
             thresholds={"parse_success_rate": 90.0},
+            component_scores=module_scores,
         )
 
         duration_ms = int((time.time() - start) * 1000)

@@ -81,6 +81,21 @@ class ContractStage:
             coverage_ratio=coverage_ratio,
         )
 
+        # Per-component quality: test coverage per component
+        alloc_quality = ctx.get("allocate")
+        comp_quality: dict[str, QualityMetrics] = {}
+        if alloc_quality:
+            base_scores = alloc_quality.quality.component_scores
+            for comp in allocation.components:
+                base = base_scores.get(comp.id)
+                sub = dict(base.sub_scores) if base else {}
+                sub["has_tests"] = 1.0 if comp.id in components_with_tests else 0.0
+                comp_quality[comp.id] = QualityMetrics(
+                    score=base.score if base else 50.0,
+                    sub_scores=sub,
+                    component_scores=base.component_scores if base else {},
+                )
+
         quality = QualityMetrics(
             score=int(coverage_ratio),
             sub_scores={
@@ -88,6 +103,7 @@ class ContractStage:
                 "contract_count": float(len(contracts)),
             },
             thresholds={"test_coverage_ratio": 50.0},
+            component_scores=comp_quality,
         )
 
         duration_ms = int((time.time() - start) * 1000)

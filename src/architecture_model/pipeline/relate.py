@@ -204,6 +204,27 @@ class RelateStage:
             ],
         )
 
+        # Per-component quality: relationship counts per component
+        alloc_quality = ctx.get("allocate")
+        comp_quality: dict[str, QualityMetrics] = {}
+        if alloc_quality:
+            base_scores = alloc_quality.quality.component_scores
+            rel_per_comp: dict[str, int] = {}
+            for r in relationships:
+                for cid in (r.from_id, r.to_id):
+                    if cid.startswith("COMP-"):
+                        rel_per_comp[cid] = rel_per_comp.get(cid, 0) + 1
+            for comp in allocation.components:
+                base = base_scores.get(comp.id)
+                rel_count = rel_per_comp.get(comp.id, 0)
+                sub = dict(base.sub_scores) if base else {}
+                sub["relationship_count"] = float(rel_count)
+                comp_quality[comp.id] = QualityMetrics(
+                    score=base.score if base else 50.0,
+                    sub_scores=sub,
+                    component_scores=base.component_scores if base else {},
+                )
+
         quality = QualityMetrics(
             score=min(100, int(len(relationships) / max(len(allocation.components), 1) * 25)),
             sub_scores={
@@ -218,6 +239,7 @@ class RelateStage:
                 "layer_count": float(len(layers_seen)),
             },
             thresholds={},
+            component_scores=comp_quality,
         )
 
         duration_ms = int((time.time() - start) * 1000)

@@ -194,6 +194,24 @@ class SpecifyStage:
         coverage = len(comps_with_iface) / max(len(comp_ids), 1)
         score = max(50, int(coverage * 100))
 
+        # Per-component quality: interface counts per component
+        alloc_quality = ctx.get("allocate")
+        comp_quality: dict[str, QualityMetrics] = {}
+        if alloc_quality:
+            base_scores = alloc_quality.quality.component_scores
+            iface_per_comp: dict[str, int] = {}
+            for i in interfaces:
+                iface_per_comp[i.component_id] = iface_per_comp.get(i.component_id, 0) + 1
+            for comp in allocation.components:
+                base = base_scores.get(comp.id)
+                sub = dict(base.sub_scores) if base else {}
+                sub["interface_count"] = float(iface_per_comp.get(comp.id, 0))
+                comp_quality[comp.id] = QualityMetrics(
+                    score=base.score if base else 50.0,
+                    sub_scores=sub,
+                    component_scores=base.component_scores if base else {},
+                )
+
         quality = QualityMetrics(
             score=score,
             sub_scores={
@@ -204,6 +222,7 @@ class SpecifyStage:
                 "component_coverage": round(coverage, 2),
             },
             thresholds={},
+            component_scores=comp_quality,
         )
 
         duration_ms = int((time.time() - start) * 1000)
