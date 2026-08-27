@@ -240,6 +240,29 @@ class DecomposeStage:
                 )
             )
 
+        # Per-subsystem quality rollup from validate's per-component scores
+        subsystem_quality: dict[str, QualityMetrics] = {}
+        validate_result = ctx.get("validate")
+        comp_scores = validate_result.quality.component_scores if validate_result else {}
+        for sys in systems:
+            sys_comp_scores: list[float] = []
+            sys_details: dict[str, QualityMetrics] = {}
+            for cid in sys.component_ids:
+                if cid in comp_scores:
+                    sys_comp_scores.append(comp_scores[cid].score)
+                    sys_details[cid] = comp_scores[cid]
+            for sub in sys.sub_components:
+                sub_id = sub.get("id", "") if isinstance(sub, dict) else getattr(sub, "id", "")
+                if sub_id and sub_id in comp_scores:
+                    sys_comp_scores.append(comp_scores[sub_id].score)
+                    sys_details[sub_id] = comp_scores[sub_id]
+            if sys_comp_scores:
+                subsystem_quality[sys.system_id] = QualityMetrics(
+                    score=sum(sys_comp_scores) / len(sys_comp_scores),
+                    sub_scores={"component_count": float(len(sys_comp_scores))},
+                    component_scores=sys_details,
+                )
+
         quality = QualityMetrics(
             score=100.0 if systems else 50.0,
             sub_scores={
@@ -247,6 +270,7 @@ class DecomposeStage:
                 "inline_count": float(len(inlines)),
                 "sub_component_count": float(total_subs),
             },
+            component_scores=subsystem_quality,
         )
 
         return StageResult(

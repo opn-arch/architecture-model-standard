@@ -548,6 +548,12 @@ class SynthesizeStage:
             all_llm_calls=all_llm_calls,
         )
 
+        # Per-subsystem quality from decompose
+        decompose_result = ctx.get("decompose")
+        subsys_quality: dict[str, QualityMetrics] = {}
+        if decompose_result:
+            subsys_quality = dict(decompose_result.quality.component_scores)
+
         duration = int((time.monotonic() - t0) * 1000)
         quality = QualityMetrics(
             score=100.0 if system_models else 50.0,
@@ -555,6 +561,7 @@ class SynthesizeStage:
                 "system_count": float(len([s for s in system_models if s.model_yaml])),
                 "sos_complete": 100.0 if sos.model_yaml else 0.0,
             },
+            component_scores=subsys_quality,
         )
 
         return StageResult(

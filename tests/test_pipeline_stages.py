@@ -1193,3 +1193,15 @@ class TestPerComponentQualityPropagation:
         result = ctx.cache["contract"]
         for cid, cq in result.quality.component_scores.items():
             assert "has_tests" in cq.sub_scores
+
+    def test_validate_has_component_scores(self, tmp_path):
+        ctx = self._run_to(tmp_path, "validate")
+        result = ctx.cache["validate"]
+        assert isinstance(result.quality.component_scores, dict)
+
+    def test_validate_component_has_issue_count(self, tmp_path):
+        ctx = self._run_to(tmp_path, "validate")
+        result = ctx.cache["validate"]
+        for cid, cq in result.quality.component_scores.items():
+            assert "issue_count" in cq.sub_scores
+            assert "error_count" in cq.sub_scores

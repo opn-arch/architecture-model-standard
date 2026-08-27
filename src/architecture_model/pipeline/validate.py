@@ -139,6 +139,31 @@ class ValidateStage:
 
         result = ValidateResult(score=score, issues=issues, is_valid=is_valid)
 
+        # Per-component validation issue tracking
+        comp_quality: dict[str, QualityMetrics] = {}
+        alloc_quality = ctx.get("allocate")
+        base_scores = alloc_quality.quality.component_scores if alloc_quality else {}
+        issue_per_comp: dict[str, list[str]] = {}
+        for issue in issues:
+            eid = issue.entity_id or ""
+            if eid.startswith("COMP-"):
+                issue_per_comp.setdefault(eid, []).append(issue.severity)
+        for comp in allocation.components:
+            base = base_scores.get(comp.id)
+            sub = dict(base.sub_scores) if base else {}
+            comp_issues = issue_per_comp.get(comp.id, [])
+            sub["issue_count"] = float(len(comp_issues))
+            sub["error_count"] = float(comp_issues.count("error"))
+            sub["warning_count"] = float(comp_issues.count("warning"))
+            comp_score = base.score if base else 50.0
+            # Penalize: -20 per error, -5 per warning
+            comp_score = max(0, comp_score - comp_issues.count("error") * 20 - comp_issues.count("warning") * 5)
+            comp_quality[comp.id] = QualityMetrics(
+                score=comp_score,
+                sub_scores=sub,
+                component_scores=base.component_scores if base else {},
+            )
+
         quality = QualityMetrics(
             score=score,
             sub_scores={
@@ -147,6 +172,7 @@ class ValidateStage:
                 "info_count": float(sum(1 for i in issues if i.severity == "info")),
             },
             thresholds={"error_count": 0.0},
+            component_scores=comp_quality,
         )
 
         duration_ms = int((time.time() - start) * 1000)
