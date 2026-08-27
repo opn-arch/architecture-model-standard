@@ -20,6 +20,7 @@ class QualityReport:
     code_quality_score: int  # 0-100 from static analysis
     overall_score: int  # 0-100 weighted composite
     grade: str  # A-F
+    pipeline_quality: dict[str, float] | None = None  # stage_name -> score
 
     def to_markdown(self) -> str:
         lines = [
@@ -55,6 +56,15 @@ class QualityReport:
             lines.append(f"| {level} | {count} |")
 
         return "\n".join(lines)
+
+
+@dataclass
+class PipelineStageQuality:
+    """Quality summary for a single pipeline stage."""
+    stage: str
+    score: float
+    gate_passed: bool
+    suggestions: list[str] = field(default_factory=list)
 
 
 def _compute_semantic_completeness(model: ArchitectureModel) -> dict[str, str]:
@@ -108,7 +118,13 @@ def _grade(score: int) -> str:
 
 
 @monitored("quality.dashboard", quality=lambda r: {"overall": r.overall_score, "grade": r.grade})
-def quality_report(model: ArchitectureModel, *, manifest=None) -> QualityReport:
+def quality_report(
+    model: ArchitectureModel,
+    *,
+    manifest=None,
+    pipeline_results: dict | None = None,
+    review_log: list | None = None,
+) -> QualityReport:
     """Generate a unified quality report aggregating all dimensions."""
     # Validation
     val_result = validate_model(model)
@@ -164,6 +180,11 @@ def quality_report(model: ArchitectureModel, *, manifest=None) -> QualityReport:
     )
     overall = min(100, max(0, overall))
 
+    # Pipeline quality integration
+    pipe_quality = None
+    if pipeline_results:
+        pipe_quality = {name: r.quality.score for name, r in pipeline_results.items()}
+
     return QualityReport(
         project=model.meta.project,
         validation_score=val_score,
@@ -175,4 +196,5 @@ def quality_report(model: ArchitectureModel, *, manifest=None) -> QualityReport:
         code_quality_score=code_quality,
         overall_score=overall,
         grade=_grade(overall),
+        pipeline_quality=pipe_quality,
     )

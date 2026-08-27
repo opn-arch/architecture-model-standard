@@ -63,3 +63,27 @@ class TestQualityReport:
         md = report.to_markdown()
         assert "# Quality Report" in md
         assert report.grade in md
+
+
+    def test_dashboard_with_pipeline_results(self):
+        from architecture_model.pipeline.protocol import StageResult, QualityMetrics as PQM
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.1", project="test", generated_at="2026-01-01"),
+            entities=Entities(), relationships=[],
+        )
+        pipeline_results = {
+            "observe": StageResult(output=None, quality=PQM(score=90)),
+            "allocate": StageResult(output=None, quality=PQM(score=85)),
+        }
+        report = quality_report(model, pipeline_results=pipeline_results)
+        assert report.pipeline_quality is not None
+        assert report.pipeline_quality["observe"] == 90
+        assert report.pipeline_quality["allocate"] == 85
+
+    def test_dashboard_without_pipeline_results(self):
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.1", project="test", generated_at="2026-01-01"),
+            entities=Entities(), relationships=[],
+        )
+        report = quality_report(model)
+        assert report.pipeline_quality is None

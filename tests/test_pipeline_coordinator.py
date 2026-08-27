@@ -7,6 +7,7 @@ import pytest
 from architecture_model.pipeline.coordinator import PipelineCoordinator
 from architecture_model.pipeline.protocol import (
     PipelineContext,
+    QualityGateError,
     QualityMetrics,
     StageResult,
 )
@@ -24,7 +25,15 @@ class FakeStage:
         self.run_count += 1
         context.cache[self.name] = StageResult(
             output=self._output,
-            quality=QualityMetrics(score=90, sub_scores={}, thresholds={}),
+            quality=QualityMetrics(score=90, sub_scores={
+                "parse_success_rate": 100.0,
+                "code_quality_avg": 80.0,
+                "file_coverage": 100.0,
+                "boundary_coherence": 80.0,
+                "capability_coverage": 80.0,
+                "test_coverage_ratio": 80.0,
+                "error_count": 0.0,
+            }),
         )
         return context.cache[self.name]
 
@@ -140,3 +149,56 @@ class TestPipelineCoordinator:
         ctx = make_ctx(tmp_path)
         with pytest.raises(RuntimeError):
             coord.run_all(ctx)
+
+
+class TestCoordinatorQualityGates:
+    def test_hard_gate_failure_raises(self, tmp_path):
+        """A hard gate failure should raise QualityGateError."""
+        # observe has a hard gate: parse_success_rate >= 90
+        class FailingObserve:
+            name = "observe"
+            version = "1.0"
+            requires = []
+            def run(self, ctx):
+                return StageResult(
+                    output=None,
+                    quality=QualityMetrics(score=50, sub_scores={"parse_success_rate": 50.0}),
+                )
+            def can_run(self, ctx): return True
+            def output_path(self, ctx): return ctx.output_dir / "observe.json"
+
+        coord = PipelineCoordinator({"observe": FailingObserve()})
+        ctx = make_ctx(tmp_path)
+        with pytest.raises(QualityGateError) as exc_info:
+            coord.run_all(ctx)
+        assert "observe" in str(exc_info.value)
+
+    def test_soft_gate_failure_continues(self, tmp_path):
+        """A soft gate failure should log a review but continue."""
+        # observe with good parse rate but low code quality (soft gate)
+        class SoftFailObserve:
+            name = "observe"
+            version = "1.0"
+            requires = []
+            def run(self, ctx):
+                return StageResult(
+                    output=None,
+                    quality=QualityMetrics(score=95, sub_scores={"parse_success_rate": 95.0, "code_quality_avg": 10.0}),
+                )
+            def can_run(self, ctx): return True
+            def output_path(self, ctx): return ctx.output_dir / "observe.json"
+
+        coord = PipelineCoordinator({"observe": SoftFailObserve()})
+        ctx = make_ctx(tmp_path)
+        results = coord.run_all(ctx)
+        assert "observe" in results
+        assert len(ctx.review_log) == 1
+        assert any(not gr.passed for gr in ctx.review_log[0].gate_results)
+
+    def test_gate_results_in_review_log(self, tmp_path):
+        """After each stage, gate results appear in ctx.review_log."""
+        stages = make_dag()
+        coord = PipelineCoordinator(stages)
+        ctx = make_ctx(tmp_path)
+        coord.run_all(ctx)
+        assert len(ctx.review_log) == len(stages)

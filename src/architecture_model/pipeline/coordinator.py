@@ -11,8 +11,10 @@ from architecture_model.pipeline.learning import LearningStore
 from architecture_model.pipeline.protocol import (
     EnrichmentRecord,
     PipelineContext,
+    QualityGateError,
     Stage,
     StageResult,
+    StageQualityReview,
 )
 
 
@@ -86,6 +88,7 @@ class PipelineCoordinator:
             result = stage.run(ctx)
             ctx.cache[name] = result
             results[name] = result
+            self._evaluate_gates(name, result, ctx)
         return results
 
     def run_stage(self, stage_name: str, ctx: PipelineContext) -> StageResult:
@@ -125,6 +128,7 @@ class PipelineCoordinator:
             result = stage.run(ctx)
             ctx.cache[name] = result
             results[name] = result
+            self._evaluate_gates(name, result, ctx)
 
         # Record quality history
         self._record_quality(results)
@@ -137,6 +141,52 @@ class PipelineCoordinator:
             return
         scores = {name: float(r.quality.score) for name, r in results.items()}
         self._learning.record_run(datetime.now().isoformat()[:10], scores)
+
+    def _evaluate_gates(self, stage_name: str, result: StageResult, ctx: PipelineContext) -> None:
+        """Evaluate quality gates and optionally run LLM review for a completed stage."""
+        from .gates import get_gates_for_stage
+
+        gates = get_gates_for_stage(stage_name)
+        gate_results = [g.evaluate(result.quality) for g in gates]
+
+        # LLM review if callback available
+        llm_review = ""
+        suggestions: list[str] = []
+        if ctx.llm_callback is not None:
+            try:
+                from .stage_review import build_review_prompt, parse_review_response
+                import asyncio
+                prompt = build_review_prompt(stage_name, result.quality, summary=result.summary)
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Can't await in running loop — skip
+                    pass
+                else:
+                    response = loop.run_until_complete(
+                        ctx.llm_enrich(stage_name, prompt, {"purpose": "stage_review"})
+                    )
+                    if response:
+                        parsed = parse_review_response(response)
+                        llm_review = response
+                        suggestions = parsed.suggestions
+            except Exception:
+                pass
+
+        review = StageQualityReview(
+            stage=stage_name,
+            quality=result.quality,
+            gate_results=gate_results,
+            llm_review=llm_review,
+            suggestions=suggestions,
+        )
+        ctx.review_log.append(review)
+
+        blockers = [gr for gr in gate_results if gr.blocks]
+        if blockers:
+            raise QualityGateError(
+                f"Stage '{stage_name}' blocked: " + "; ".join(gr.message for gr in blockers),
+                gate_results=blockers,
+            )
 
     def get_prior_evidence(self) -> list:
         """Get corrections from learning store as prior evidence for stages."""
