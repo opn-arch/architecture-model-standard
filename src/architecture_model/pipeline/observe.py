@@ -108,17 +108,38 @@ class ObserveStage:
         total_symbols = sum(len(m.functions) + len(m.classes) + len(m.constants) for m in modules)
         symbol_density = (total_symbols / parsed) if parsed > 0 else 0.0
 
+        # Code quality scoring (lightweight — reuses existing AST data)
+        code_quality_avg = 0.0
+        try:
+            from architecture_model.quality.code_review import analyze_source
+            quality_scores = []
+            for mod in modules:
+                try:
+                    mod_path = Path(mod.file) if not isinstance(mod.file, Path) else mod.file
+                    if mod_path.exists():
+                        analysis = analyze_source(mod_path.read_text(), filename=str(mod_path))
+                        quality_scores.append(analysis.score)
+                except Exception:
+                    pass
+            if quality_scores:
+                code_quality_avg = sum(quality_scores) / len(quality_scores)
+        except ImportError:
+            pass
+
         quality = QualityMetrics(
             score=int(parse_rate),
             sub_scores={
                 "parse_success_rate": parse_rate,
                 "symbol_density": symbol_density,
                 "file_count": float(total_files),
+                "code_quality_avg": code_quality_avg,
             },
             thresholds={"parse_success_rate": 90.0},
         )
 
         duration_ms = int((time.time() - start) * 1000)
+
+        code_quality_note = f" Code quality: {code_quality_avg:.0f}/100 avg." if code_quality_avg > 0 else ""
 
         return StageResult(
             output=inventory,
@@ -128,7 +149,7 @@ class ObserveStage:
             input_hash=str(len(py_files)),
             duration_ms=duration_ms,
             version="1.0",
-            summary=f"Observed {len(modules)} modules with {len(edges)} import edges from {total_files} files.",
+            summary=f"Observed {len(modules)} modules with {len(edges)} import edges from {total_files} files.{code_quality_note}",
         )
 
 
