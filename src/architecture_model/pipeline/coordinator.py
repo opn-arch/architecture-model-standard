@@ -143,30 +143,38 @@ class PipelineCoordinator:
         self._learning.record_run(datetime.now().isoformat()[:10], scores)
 
     def _evaluate_gates(self, stage_name: str, result: StageResult, ctx: PipelineContext) -> None:
-        """Evaluate quality gates and optionally run LLM review for a completed stage."""
+        """Evaluate quality gates and optionally run LLM review with auto-corrections."""
         from .gates import get_gates_for_stage
 
         gates = get_gates_for_stage(stage_name)
         gate_results = [g.evaluate(result.quality) for g in gates]
 
-        # LLM review if callback available
+        # Enhanced LLM review if callback available
         llm_review = ""
         suggestions: list[str] = []
+        component_reviews: dict[str, str] = {}
         if ctx.llm_callback is not None:
             try:
-                from .stage_review import build_review_prompt, parse_review_response
+                from .stage_review import build_semantic_review_prompt, parse_correction_response
                 import asyncio
-                prompt = build_review_prompt(stage_name, result.quality, summary=result.summary)
+
+                components = self._extract_component_data(result, ctx)
+                modules = self._extract_module_data(result, ctx)
+
+                prompt = build_semantic_review_prompt(
+                    stage_name, result.quality, gate_results,
+                    components, modules, summary=result.summary,
+                )
+
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    # Can't await in running loop — skip
                     pass
                 else:
                     response = loop.run_until_complete(
-                        ctx.llm_enrich(stage_name, prompt, {"purpose": "stage_review"})
+                        ctx.llm_enrich(stage_name, prompt, {"purpose": "semantic_review"})
                     )
                     if response:
-                        parsed = parse_review_response(response)
+                        parsed = parse_correction_response(response)
                         llm_review = response
                         suggestions = parsed.suggestions
             except Exception:
@@ -178,6 +186,7 @@ class PipelineCoordinator:
             gate_results=gate_results,
             llm_review=llm_review,
             suggestions=suggestions,
+            component_reviews=component_reviews,
         )
         ctx.review_log.append(review)
 
@@ -187,6 +196,32 @@ class PipelineCoordinator:
                 f"Stage '{stage_name}' blocked: " + "; ".join(gr.message for gr in blockers),
                 gate_results=blockers,
             )
+
+    def _extract_component_data(self, result: StageResult, ctx: PipelineContext) -> list[dict]:
+        """Extract component info from stage result for review prompt."""
+        components = []
+        for comp_id, comp_q in result.quality.component_scores.items():
+            components.append({
+                "id": comp_id, "name": comp_id, "intent": "",
+                "file_count": 0, "quality": comp_q.score,
+            })
+        return components
+
+    def _extract_module_data(self, result: StageResult, ctx: PipelineContext) -> list[dict]:
+        """Extract module info from stage result for review prompt."""
+        modules = []
+        if hasattr(result.output, '__iter__') and not isinstance(result.output, (str, dict)):
+            try:
+                for item in result.output:
+                    if hasattr(item, 'path') and hasattr(item, 'quality_score'):
+                        modules.append({
+                            "path": str(item.path),
+                            "functions": len(getattr(item, 'functions', [])),
+                            "quality": item.quality_score,
+                        })
+            except TypeError:
+                pass
+        return modules
 
     def get_prior_evidence(self) -> list:
         """Get corrections from learning store as prior evidence for stages."""
