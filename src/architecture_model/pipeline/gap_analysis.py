@@ -172,9 +172,47 @@ def diff_stage_outputs(stage: str, det: dict, llm: dict) -> StageGap:
                     renamed.append({"det": det_name, "llm": llm_name, "similarity": sim, "id": eid})
 
         # Unmatched
+        unmatched_det = {eid: e for eid, e in det_by_id.items() if eid not in matched_det_ids}
+        unmatched_llm_no_id = [e for e in llm_list if isinstance(e, dict) and not e.get("id")]
+        unmatched_llm_with_id = {eid: e for eid, e in llm_by_id.items() if eid not in matched_llm_ids}
+        all_unmatched_llm = list(unmatched_llm_with_id.values()) + unmatched_llm_no_id
+
+        # --- Name-similarity fallback for entities without matching IDs ---
+        used_llm: set[int] = set()
+        if unmatched_det and all_unmatched_llm:
+            for det_id, det_e in list(unmatched_det.items()):
+                det_name = det_e.get("name", "")
+                if not det_name:
+                    continue
+                best_idx, best_sim, best_llm = -1, 0.0, None
+                for i, llm_e in enumerate(all_unmatched_llm):
+                    if i in used_llm:
+                        continue
+                    llm_name = llm_e.get("name", "")
+                    if not llm_name:
+                        continue
+                    sim = SequenceMatcher(None, det_name.lower(), llm_name.lower()).ratio()
+                    if det_name.lower() in llm_name.lower() or llm_name.lower() in det_name.lower():
+                        sim = max(sim, 0.5)
+                    if sim > best_sim:
+                        best_sim = sim
+                        best_idx = i
+                        best_llm = llm_e
+                if best_sim >= 0.3 and best_llm is not None:
+                    renamed.append({"det": det_name, "llm": best_llm.get("name", ""), "similarity": best_sim, "id": det_id})
+                    matched_det_ids.add(det_id)
+                    used_llm.add(best_idx)
+
+        # Unmatched LLM (with id)
         for eid, e in llm_by_id.items():
             if eid not in matched_llm_ids:
                 added.append(e)
+        # Unmatched LLM (no id) — only those not matched by name
+        n_with_id = len(list(unmatched_llm_with_id.values()))
+        for i, e in enumerate(unmatched_llm_no_id):
+            if (i + n_with_id) not in used_llm:
+                added.append(e)
+        # Unmatched det
         for eid, e in det_by_id.items():
             if eid not in matched_det_ids:
                 removed.append(e)

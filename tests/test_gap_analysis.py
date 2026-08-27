@@ -148,3 +148,33 @@ def test_extract_stage_data_relate_has_type():
 
     data = extract_stage_data("relate", FakeOutput())
     assert data["relationships"][0]["type"] == "realizes"
+
+
+def test_diff_matches_by_name_similarity():
+    """Entities without IDs should match by name similarity."""
+    from architecture_model.pipeline.gap_analysis import diff_stage_outputs
+
+    det = {"capabilities": [
+        {"id": "CAP-1", "name": "Ansitowin32"},
+        {"id": "CAP-2", "name": "Ansi"},
+    ]}
+    llm = {"capabilities": [
+        {"name": "ANSI-to-Win32 Conversion"},
+        {"name": "ANSI Code Generation"},
+    ]}
+    gap = diff_stage_outputs("infer", det, llm)
+    assert len(gap.renamed) == 2
+    assert len(gap.added) == 0
+    assert len(gap.removed) == 0
+
+
+def test_diff_name_match_threshold():
+    """Names below similarity threshold stay as added/removed."""
+    from architecture_model.pipeline.gap_analysis import diff_stage_outputs
+
+    det = {"capabilities": [{"id": "CAP-1", "name": "Parser"}]}
+    llm = {"capabilities": [{"name": "Completely Unrelated Widget"}]}
+    gap = diff_stage_outputs("infer", det, llm)
+    assert len(gap.renamed) == 0
+    assert len(gap.added) == 1
+    assert len(gap.removed) == 1
