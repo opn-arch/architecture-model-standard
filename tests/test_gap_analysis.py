@@ -178,3 +178,28 @@ def test_diff_name_match_threshold():
     assert len(gap.renamed) == 0
     assert len(gap.added) == 1
     assert len(gap.removed) == 1
+
+
+def test_adaptive_threshold_large_entity_count():
+    """Large entity counts should use higher similarity threshold."""
+    from architecture_model.pipeline.gap_analysis import diff_stage_outputs
+
+    det_caps = [{"id": f"C-{i}", "name": f"Component {i}"} for i in range(50)]
+    det_caps.append({"id": "C-special", "name": "Create Llm Callback"})
+    llm_caps = [{"id": f"L-{i}", "name": f"Capability {i}"} for i in range(50)]
+    llm_caps.append({"id": "L-special", "name": "Cross-Repo Consistency Check"})
+    det = {"capabilities": det_caps}
+    llm = {"capabilities": llm_caps}
+    gap = diff_stage_outputs("infer", det, llm)
+    renamed_names = {r["det"] for r in gap.renamed}
+    assert "Create Llm Callback" not in renamed_names
+
+
+def test_adaptive_threshold_small_entity_count():
+    """Small entity counts should still match at lower similarity."""
+    from architecture_model.pipeline.gap_analysis import diff_stage_outputs
+
+    det = {"capabilities": [{"id": "C-1", "name": "Parser"}]}
+    llm = {"capabilities": [{"id": "L-1", "name": "Parsing"}]}
+    gap = diff_stage_outputs("infer", det, llm)
+    assert len(gap.renamed) == 1 or len(gap.removed) == 0

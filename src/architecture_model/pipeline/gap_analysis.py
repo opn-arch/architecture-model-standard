@@ -135,6 +135,16 @@ def extract_stage_data(stage_name: str, output: Any) -> dict:
 
 # --- Diff engine ---
 
+
+def _adaptive_threshold(entity_count: int) -> float:
+    """Higher threshold for larger entity sets to reduce false matches."""
+    if entity_count <= 10:
+        return 0.30
+    if entity_count <= 30:
+        return 0.40
+    return 0.50
+
+
 def _find_entity_lists(data: dict) -> list[tuple[str, list[dict]]]:
     """Return (key, list) pairs for all entity-list values in data."""
     return [(k, v) for k, v in data.items() if isinstance(v, list)]
@@ -178,6 +188,7 @@ def diff_stage_outputs(stage: str, det: dict, llm: dict) -> StageGap:
         all_unmatched_llm = list(unmatched_llm_with_id.values()) + unmatched_llm_no_id
 
         # --- Name-similarity fallback for entities without matching IDs ---
+        threshold = _adaptive_threshold(len(det_list) + len(llm_list))
         used_llm: set[int] = set()
         if unmatched_det and all_unmatched_llm:
             for det_id, det_e in list(unmatched_det.items()):
@@ -198,7 +209,7 @@ def diff_stage_outputs(stage: str, det: dict, llm: dict) -> StageGap:
                         best_sim = sim
                         best_idx = i
                         best_llm = llm_e
-                if best_sim >= 0.3 and best_llm is not None:
+                if best_sim >= threshold and best_llm is not None:
                     renamed.append({"det": det_name, "llm": best_llm.get("name", ""), "similarity": best_sim, "id": det_id})
                     matched_det_ids.add(det_id)
                     used_llm.add(best_idx)
