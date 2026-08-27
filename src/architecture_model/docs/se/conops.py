@@ -35,6 +35,12 @@ def generate_conops(model: ArchitectureModel, manifest: object | None = None) ->
         for cap in model.entities.capabilities:
             desc = f" - {cap.description}" if cap.description else ""
             lines.append(f"- **{cap.name}**{desc}")
+            if getattr(cap, 'intent', None):
+                lines.append(f"  - *Intent:* {cap.intent}")
+            if getattr(cap, 'moes', None):
+                lines.append(f"  - *Measures of Effectiveness:*")
+                for moe in cap.moes:
+                    lines.append(f"    - {moe}")
         lines.append("")
 
     # --- Stakeholders / Actors ---
@@ -47,6 +53,10 @@ def generate_conops(model: ArchitectureModel, manifest: object | None = None) ->
             atype = actor.type.value if hasattr(actor.type, "value") else str(actor.type)
             goals = "; ".join(actor.goals) if actor.goals else "—"
             lines.append(f"| {actor.name} | {atype} | {goals} |")
+            if getattr(actor, 'intent', None):
+                lines.append(f"")
+                lines.append(f"*{actor.name} Intent:* {actor.intent}")
+                lines.append(f"")
     else:
         lines.append("*No actors defined in the model.*")
     lines.append("")
@@ -121,6 +131,18 @@ def generate_conops(model: ArchitectureModel, manifest: object | None = None) ->
     else:
         lines.append("*No interfaces defined in the model.*")
         lines.append("")
+
+    # --- Degraded Operations & Failure Modes ---
+    failure_comps = [(c.name, c.failure_modes) for c in model.entities.components
+                     if getattr(c, 'failure_modes', None)]
+    if failure_comps:
+        lines.append("## Degraded Operations & Failure Modes")
+        lines.append("")
+        for comp_name, modes in failure_comps:
+            lines.append(f"### {comp_name}")
+            for mode in modes:
+                lines.append(f"- {mode}")
+            lines.append("")
 
     # --- Operational Constraints ---
     lines.append("## Operational Constraints")
