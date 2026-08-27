@@ -1,5 +1,5 @@
 meta:
-  schema_version: '2.0'
+  schema_version: '2.1'
   project: architecture-model-standard/Core
   system: Core
   generated_at: '2026-08-10T22:13:51.810713+00:00'
@@ -12,22 +12,47 @@ entities:
     name: Model Parsing
     status: ACTIVE
     description: Parse YAML into typed ArchitectureModel, serialize back to YAML
+    intent: Enable round-trip conversion between YAML files and typed Python objects so all other subsystems operate on a validated in-memory model rather than raw dicts.
+    moes:
+    - All 7 entity types and 17 relationship types parse without data loss
+    - Round-trip serialize/deserialize produces byte-identical YAML output
+    - Invalid YAML raises structured errors with line numbers
   - id: CAP-VALIDATE
     name: Model Validation
     status: ACTIVE
     description: Check model structural correctness (ID uniqueness, referential integrity, orphan detection)
+    intent: Guarantee every persisted model satisfies structural invariants before downstream consumers (slicer, docs, LLM context) process it.
+    moes:
+    - Detects 100% of duplicate entity IDs across all entity types
+    - Identifies all dangling relationship references (from/to IDs that don't exist)
+    - Produces a 0-100 score that monotonically improves as issues are fixed
   - id: CAP-SLICE
     name: Model Slicing
     status: ACTIVE
     description: Extract subsets by F-block, layer, status, or artifact type
+    intent: Provide focused model views so LLM agents receive only the context relevant to their current task, reducing token usage and improving accuracy.
+    moes:
+    - Sliced model contains only entities reachable from the slice criterion
+    - All internal relationships between retained entities are preserved
+    - Sliced model independently passes validation
   - id: CAP-DIFF
     name: Model Diffing
     status: ACTIVE
     description: Compare two model versions, produce structured change report
+    intent: Detect architectural drift between model versions so staleness can be quantified and targeted re-extraction triggered.
+    moes:
+    - Reports all added, removed, and modified entities with field-level detail
+    - Reports all added and removed relationships
+    - Diff of identical models produces zero changes
   - id: CAP-COVERAGE
     name: Coverage Analysis
     status: ACTIVE
     description: Compare model against code reality, compute file/relationship/boundary coverage
+    intent: Measure how faithfully the architecture model represents the actual codebase so gaps between model claims and code reality are surfaced.
+    moes:
+    - File coverage percentage reflects ratio of modeled files to discovered files
+    - Relationship accuracy detects import edges missing from the model
+    - Boundary coherence flags files assigned to wrong components
   behaviors:
   - id: BEH-REGEN-SCORE
     name: Regen Score Computation
@@ -76,6 +101,23 @@ entities:
     - src/architecture_model/core/test_affinity.py
     - src/architecture_model/core/visualize.py
     kind: library
+    intent: Provide the foundational type system and deterministic operations that every other subsystem depends on, ensuring a single source of truth for model structure and semantics.
+    goals:
+    - Define all architecture entity types and relationships as typed Python dataclasses with full enum coverage
+    - Provide lossless round-trip parsing between YAML and in-memory model objects
+    - Enable model subsetting, comparison, and quality measurement without LLM or network dependencies
+    moes:
+    - All 8 dependent subsystems (CLI, Pipeline, Orchestration, Extract, Docs, Export, Integrations, Authoring) can operate using only Core's public API
+    - Validation score of 86+ on self-referential model (the architecture-model-standard's own model)
+    - Zero runtime dependencies beyond PyYAML and standard library
+    trade_offs:
+    - Richness vs. parse speed — 1186-line types.py covers all schema variants but increases import time
+    - Strict typing vs. extensibility — dataclass fields enforce schema but make adding new entity types a multi-file change
+    - Determinism vs. intelligence — no LLM calls means coverage/confidence metrics are heuristic-based approximations
+    failure_modes:
+    - Schema drift — types.py diverges from spec/schema.json, causing silent data loss on parse
+    - Validator false negatives — missing validation rules allow structurally invalid models to score 100
+    - Slicer relationship leakage — slice includes relationships referencing entities outside the slice boundary
 relationships:
 - type: realizes
   from: COMP-CORE

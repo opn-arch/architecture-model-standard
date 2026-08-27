@@ -1,5 +1,5 @@
 meta:
-  schema_version: '2.0'
+  schema_version: '2.1'
   project: architecture-model-standard/Manifest
   system: Manifest
   generated_at: '2026-08-10T22:13:51.810713+00:00'
@@ -12,6 +12,11 @@ entities:
     name: Reality Manifest Generation
     status: ACTIVE
     description: AST-scan source code to produce ground-truth inventory (modules, functions, classes, imports)
+    intent: Provide a deterministic, AST-derived ground-truth representation of a codebase so that architecture models can be validated against code reality rather than relying on human-maintained documentation.
+    moes:
+    - Parses 100% of syntactically valid Python files without crash or silent data loss
+    - Produces identical manifest output for identical source input (deterministic)
+    - Extracts all public functions, classes, imports, and module-level constants from scanned files
   interfaces:
   - id: IF-MANIFEST-JSON
     name: Manifest JSON
@@ -53,6 +58,23 @@ entities:
     - src/architecture_model/manifest/ts_scanner.py
     - src/architecture_model/manifest/multi_scanner.py
     kind: library
+    intent: Serve as the single source of AST-derived truth about a codebase, enabling downstream tools (pipeline, validator, enricher) to reason about code structure without re-parsing source files.
+    goals:
+    - Extract complete structural metadata (functions, classes, imports, constants, decorators) from every source file via AST parsing
+    - Derive inter-module dependency edges from import analysis to map the real dependency graph
+    - Group modules into logical components using subdirectory, name-prefix, and import-affinity signals
+    moes:
+    - Zero silent data loss — every parseable file produces a ModuleInfo with correct function/class counts
+    - Interface edges match actual import statements with no false positives from external dependencies
+    - Module grouping produces coherent components where >80% of intra-group imports stay within the group
+    trade_offs:
+    - AST-only analysis (no type inference or runtime introspection) — fast and deterministic but misses dynamic patterns like monkey-patching or metaclass-generated APIs
+    - Single-pass file scanning vs. multi-pass — keeps memory usage low and speed high but cannot resolve circular import semantics
+    - Behavioral extraction is lightweight (call_order, guards) vs. full dataflow — provides useful signals for model enrichment without the complexity of inter-procedural analysis
+    failure_modes:
+    - Syntax errors in source files cause per-file scan failure (gracefully skipped but module is marked as parse-failed, reducing coverage)
+    - Relative import resolution fails when project root is misconfigured, producing missing or incorrect interface edges
+    - Very large files (>10K lines) may cause slow AST parsing and high memory usage during call graph construction
 relationships:
 - type: realizes
   from: COMP-MANIFEST

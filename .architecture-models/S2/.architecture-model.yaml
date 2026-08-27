@@ -1,5 +1,5 @@
 meta:
-  schema_version: '2.0'
+  schema_version: '2.1'
   project: architecture-model-standard/Cli
   system: Cli
   generated_at: '2026-08-10T22:13:51.810713+00:00'
@@ -24,6 +24,16 @@ entities:
     status: ACTIVE
     description: architecture-model command with subcommands (init, validate, slice, enrich, etc.)
     type: cli
+  capabilities:
+  - id: CAP-CLI
+    name: Command-Line Operations
+    status: ACTIVE
+    description: Expose all architecture-model operations as CLI subcommands
+    intent: Provide a unified argparse-based entry point so users and CI pipelines can validate, slice, diff, enrich, and run the extraction pipeline from the terminal
+    moes:
+    - Every core operation (validate, slice, diff, stats, pipeline, manifest, enrich, impact) is accessible as a subcommand
+    - Exit codes reflect success (0) or failure (non-zero) for CI integration
+    - Help text is auto-generated and accurate for all subcommands
   components:
   - id: COMP-CLI
     name: CLI
@@ -35,6 +45,22 @@ entities:
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
     kind: application
+    intent: Wire argparse subcommands to core library functions (parser, validator, slicer, differ, pipeline coordinator) and format their output for terminal consumption
+    goals:
+    - Thin dispatch layer — each handler delegates to core APIs, no business logic in CLI
+    - Consistent error handling with informative messages and proper exit codes
+    - Support both interactive use (colored output, summaries) and scripted use (JSON output, exit codes)
+    moes:
+    - main() returns 0 on success, 1 on validation failure, 2 on argument error
+    - All subcommands load models via core.parser.load_model, not ad-hoc YAML parsing
+    - Visualization subcommand generates valid Mermaid diagram files
+    trade_offs:
+    - Uses stdlib argparse rather than click/typer, keeping zero external CLI dependencies but sacrificing richer UX features (auto-completion, colored help)
+    - Monolithic main.py (~900 lines) trades modularity for single-file simplicity and easy grep-ability
+    failure_modes:
+    - Invalid model YAML causes unhandled yaml.YAMLError if not wrapped in try/except
+    - Large models produce terminal output exceeding buffer limits when not piped
+    - Missing optional dependencies (e.g., visualization libraries) cause ImportError at subcommand runtime rather than at startup
 relationships:
 - type: depends-on
   from: COMP-CLI
@@ -57,3 +83,6 @@ relationships:
 - type: traces-to
   from: COMP-CLI
   to: BEH-INIT
+- type: realizes
+  from: COMP-CLI
+  to: CAP-CLI

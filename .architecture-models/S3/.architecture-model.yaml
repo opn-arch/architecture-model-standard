@@ -1,5 +1,5 @@
 meta:
-  schema_version: '2.0'
+  schema_version: '2.1'
   project: architecture-model-standard/Config
   system: Config
   generated_at: '2026-08-10T22:13:51.810713+00:00'
@@ -12,6 +12,11 @@ entities:
     name: Auto-Configuration
     status: ACTIVE
     description: Self-bootstrapping project discovery and configuration
+    intent: Eliminate manual setup by auto-discovering project structure, source roots, and functional blocks from directory layout and import analysis
+    moes:
+    - Projects with no .architecture-model.yaml produce valid ProjectConfig via get_config()
+    - Discovered functional blocks match actual directory structure
+    - Config round-trips through YAML without data loss
   components:
   - id: COMP-CONFIG
     name: Config
@@ -23,6 +28,22 @@ entities:
     - src/architecture_model/config/loader.py
     - src/architecture_model/config/schema.py
     kind: library
+    intent: Provide a single entry point (get_config/load_config) that returns a fully-populated ProjectConfig dataclass tree, either from an existing YAML file or by scanning the filesystem
+    goals:
+    - Zero-config bootstrap for any Python project directory
+    - Typed dataclass schema (ProjectConfig, LayerConfig, FunctionalBlockConfig) replacing all hardcoded project knowledge
+    - Support both explicit YAML config and auto-discovery fallback
+    moes:
+    - load_config raises FileNotFoundError when no config file exists
+    - get_config returns valid ProjectConfig for arbitrary project directories
+    - All config fields have sensible defaults via dataclass field defaults
+    trade_offs:
+    - Auto-discovery uses heuristics (directory naming, import patterns) that may misclassify unconventional project layouts
+    - Schema dataclasses are flat rather than validated with pydantic, trading runtime validation for simplicity and zero extra dependencies
+    failure_modes:
+    - Circular imports in scanned project cause discovery to hang or produce incomplete functional blocks
+    - Non-UTF-8 source files cause yaml.safe_load or read_text to raise encoding errors
+    - Symlink loops in project directory tree cause infinite recursion during discovery
 relationships:
 - type: realizes
   from: COMP-CONFIG

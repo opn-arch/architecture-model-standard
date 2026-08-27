@@ -1,5 +1,5 @@
 meta:
-  schema_version: '2.0'
+  schema_version: '2.1'
   project: architecture-model-standard/Extract
   system: Extract
   generated_at: '2026-08-10T22:13:51.810713+00:00'
@@ -12,6 +12,11 @@ entities:
     name: Code Extraction
     status: ACTIVE
     description: Extract architecture model directly from source code analysis
+    intent: Enable backward-pass model derivation from code reality so that architecture models can be generated without manual authoring or markdown artifacts
+    moes:
+    - Produces valid ArchitectureModel from arbitrary Python repo with score >= 90/100
+    - Detects routes, constraints, imports, and layers from AST analysis
+    - Extraction completes within 60 seconds for repos under 200 modules
   components:
   - id: COMP-EXTRACT
     name: Extract
@@ -26,6 +31,24 @@ entities:
     - src/architecture_model/extract/constraint_detector.py
     - src/architecture_model/extract/table_parser.py
     kind: library
+    intent: Provide the code-to-model backward pass that derives architecture entities and relationships from AST scanning, import graphs, and project configuration
+    goals:
+    - Extract complete entity sets (actors, capabilities, components, layers, interfaces, constraints) from source code
+    - Detect HTTP/CLI routes and map them to interfaces automatically
+    - Identify constraints (security, performance, compatibility) from code patterns and comments
+    - Parse tier-1 markdown artifacts as fallback extraction source
+    moes:
+    - Generated models pass validation with score >= 86/100
+    - All source files in scanned repo are allocated to components
+    - Route detection covers Flask, FastAPI, and Click patterns
+    trade_offs:
+    - AST-only analysis misses runtime-dynamic registrations vs. static completeness is simpler and faster
+    - Single-pass extraction vs. iterative refinement — speed over precision for initial model
+    - Python-only AST support vs. multi-language — focused quality over broad coverage
+    failure_modes:
+    - Malformed or syntax-error Python files cause AST parse failures, skipping those modules silently
+    - Circular imports between extracted modules may produce duplicate relationship entries
+    - Projects with no clear package structure yield flat component graphs with poor layer allocation
 relationships:
 - type: realizes
   from: COMP-EXTRACT

@@ -1,5 +1,5 @@
 meta:
-  schema_version: '2.0'
+  schema_version: '2.1'
   project: architecture-model-standard/Pipeline
   system: Pipeline
   generated_at: '2026-08-10T22:13:51.810713+00:00'
@@ -12,10 +12,20 @@ entities:
     name: Modular Extraction Pipeline
     status: ACTIVE
     description: 7-stage deterministic pipeline (observe, infer, allocate, relate, specify, contract, validate)
+    intent: Enable fully automated architecture model extraction from arbitrary codebases without manual configuration or LLM calls in the core path.
+    moes:
+    - All 7 stages complete without error on repos up to 500 files
+    - Extracted models score >= 90/100 on structural validation
+    - Full pipeline completes in <5s for repos under 100 files
   - id: CAP-REGEN
     name: Regen Readiness Scoring
     status: ACTIVE
     description: Predict regeneration success from enriched model data
+    intent: Provide a quantitative signal indicating whether an enriched model contains enough detail (signatures, body_hints, constants, test_contracts) to regenerate passing code.
+    moes:
+    - Regen score correlates with actual blind-regeneration fidelity (r > 0.7)
+    - Scores distinguish A-grade (>90% fidelity) from D-grade (<60%) subsystems
+    - Score computation completes in <100ms per subsystem
   behaviors:
   - id: BEH-PIPELINE
     name: Pipeline Execution
@@ -97,6 +107,23 @@ entities:
     - src/architecture_model/pipeline/corrections.py
     - src/architecture_model/pipeline/regen_score.py
     kind: library
+    intent: Provide a deterministic, stage-by-stage architecture extraction engine that transforms raw source code into a validated architecture model through a DAG of composable stages.
+    goals:
+    - Extract architecture models from arbitrary Python repos without configuration
+    - Support incremental execution via stage caching and DAG dependency resolution
+    - Enable recursive decomposition of large systems into autonomous subsystem models
+    moes:
+    - Pipeline produces valid models (score >= 86/100) for repos of 10-500 files
+    - Each stage is independently testable and produces typed StageResult outputs
+    - Cached stages skip re-execution, reducing repeat runs to <1s for unchanged stages
+    trade_offs:
+    - Determinism vs. accuracy — no LLM calls means heuristic-based inference may miss nuanced patterns
+    - Monolithic component vs. per-stage components — all 22 files in one component simplifies dependency tracking but reduces granularity
+    - Threshold-based splitting/merging — fixed constants (MAX_COMPONENT_FILES=12, MIN_COMPONENT_FILES=2) work for most repos but may misfit extreme cases
+    failure_modes:
+    - Observe stage fails on non-UTF-8 or syntax-invalid Python files, producing incomplete inventory
+    - Allocate stage assigns files to wrong components when import graphs are sparse or circular
+    - Decompose stage over-fragments or under-merges systems at boundary thresholds (5-file cutoff)
 relationships:
 - type: realizes
   from: COMP-PIPELINE

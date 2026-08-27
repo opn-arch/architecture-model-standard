@@ -1,5 +1,5 @@
 meta:
-  schema_version: '2.0'
+  schema_version: '2.1'
   project: architecture-model-standard/Orchestration
   system: Orchestration
   generated_at: '2026-08-10T22:13:51.810713+00:00'
@@ -12,10 +12,20 @@ entities:
     name: Model Enrichment
     status: ACTIVE
     description: Enrich model with signatures, body_hints, constants, test_contracts from manifest
+    intent: Bridge the gap between abstract architecture models and regeneration-ready models by populating AST-level detail onto components
+    moes:
+    - All active components with files receive signatures, constants, and test_contracts after enrichment
+    - Body hint coverage >= 50% for trivial functions
+    - Enriched model passes validation without score regression
   - id: CAP-DECOMPOSE
     name: Model Decomposition
     status: ACTIVE
     description: Split model into per-F-block sub-models with recursive manifests
+    intent: Enable independent per-subsystem reasoning and regeneration by producing self-contained sub-models from the monolithic parent
+    moes:
+    - Each F-block with >= 5 files produces its own .architecture-model.yaml and manifest.json
+    - Sub-models contain all transitively reachable entities via relationship tracing
+    - Round-trip merge of all sub-models reconstructs the parent model's entity set
   behaviors:
   - id: BEH-ENRICH
     name: Model Enrichment
@@ -43,6 +53,23 @@ entities:
     status: ACTIVE
     description: 'High-level workflows: enrichment, decomposition, behavior flows, capability inference'
     layer: LYR-ORCHESTRATION
+    intent: Provide the top-level coordination layer that chains manifest generation, model decomposition, enrichment, and deep decomposition into repeatable automated workflows
+    goals:
+    - Automate the full model lifecycle from scan through enriched sub-models in a single pipeline call
+    - Keep orchestration logic decoupled from core parsing/validation so each can evolve independently
+    - Support both shallow (relationship-tracing) and deep (LLM-driven) decomposition modes
+    moes:
+    - run_pipeline produces PipelineResult with zero errors for well-formed inputs
+    - All sub-models written to .architecture-models/<block_id>/ with matching manifests
+    - Enrichment populates signatures and test_contracts on every active component with source files
+    trade_offs:
+    - Convenience of single pipeline entry point vs flexibility of calling enrich/decompose independently
+    - Deep decomposition adds LLM cost but produces richer sub-models than shallow relationship tracing
+    - Monolithic COMP-ORCHESTRATION component covers 15 files — could be split but cohesion is high
+    failure_modes:
+    - Missing or malformed parent model causes decompose_model to return empty sub-models silently
+    - Broken test file discovery (wrong naming convention) leads to zero test_contracts on components
+    - Circular relationship tracing in decompose could over-include entities in sub-models
     files:
     - src/architecture_model/orchestration/__init__.py
     - src/architecture_model/orchestration/auto_enrich.py
