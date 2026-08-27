@@ -118,6 +118,16 @@ def main(argv: list[str] | None = None) -> int:
     p_quality.add_argument("repo", help="Repository root path")
     p_quality.add_argument("--markdown", action="store_true", help="Output as markdown")
 
+    # --- review ---
+    p_review = subparsers.add_parser("review", help="Analyze and improve code quality")
+    p_review.add_argument("path", help="File or directory to review")
+    p_review.add_argument("--auto", action="store_true", help="Auto-apply safe changes")
+    p_review.add_argument("--target-score", type=int, default=80, help="Target quality score")
+    p_review.add_argument("--compare", nargs=2, metavar=("FILE_A", "FILE_B"),
+                           help="Compare two implementations")
+    p_review.add_argument("--feedback", action="store_true",
+                           help="Generate model feedback from code analysis")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -142,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         "pipeline": _cmd_pipeline,
         "learnings": _cmd_learnings,
         "quality": _cmd_quality,
+        "review": _cmd_review,
     }
     return handlers[args.command](args)
 
@@ -897,6 +908,67 @@ def _cmd_quality(args) -> int:
         for k, v in report.semantic_completeness.items():
             print(f"    {k}: {v}")
     return 0
+
+
+def _cmd_review(args) -> int:
+    """Analyze and improve code quality."""
+    from ..quality.code_review import analyze_file, analyze_component
+    from ..quality.code_prompts import compare_prompt
+
+    path = Path(args.path).resolve()
+
+    if args.compare:
+        file_a, file_b = args.compare
+        with open(file_a) as f:
+            src_a = f.read()
+        with open(file_b) as f:
+            src_b = f.read()
+        prompt = compare_prompt(src_a, src_b)
+        print("Comparison prompt generated. Send to LLM:")
+        print(prompt)
+        return 0
+
+    if path.is_file():
+        analysis = analyze_file(str(path))
+        print(f"File: {analysis.filename}")
+        print(f"Score: {analysis.score}/100")
+        print(f"Functions: {len(analysis.functions)}")
+        print(f"Issues: {len(analysis.issues)}")
+        for issue in analysis.issues:
+            fixable = " [FIXABLE]" if issue.fixable else ""
+            print(f"  [{issue.severity.value}] {issue.code}: {issue.message}{fixable}")
+
+        if getattr(args, "feedback", False):
+            from ..quality.model_feedback import code_to_model_feedback
+            from ..core.types import Component, Status
+            comp = Component(id="REVIEW", name=path.stem, status=Status.ACTIVE,
+                             files=[str(path)])
+            feedback = code_to_model_feedback(comp, [analysis])
+            if feedback.suggested_failure_modes:
+                print("\nSuggested failure_modes:")
+                for fm in feedback.suggested_failure_modes:
+                    print(f"  - {fm}")
+            if feedback.suggested_trade_offs:
+                print("\nSuggested trade_offs:")
+                for to in feedback.suggested_trade_offs:
+                    print(f"  - {to}")
+        return 0
+
+    elif path.is_dir():
+        files = [str(f) for f in path.rglob("*.py") if not f.name.startswith("test_")]
+        results = analyze_component(files)
+        total_score = sum(r.score for r in results) // max(len(results), 1)
+        total_issues = sum(len(r.issues) for r in results)
+        print(f"Directory: {path}")
+        print(f"Files: {len(results)}")
+        print(f"Average Score: {total_score}/100")
+        print(f"Total Issues: {total_issues}")
+        for r in sorted(results, key=lambda x: x.score):
+            print(f"  {r.filename}: {r.score}/100 ({len(r.issues)} issues)")
+        return 0
+
+    print(f"ERROR: {path} not found")
+    return 1
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ class QualityReport:
     detail_level_distribution: dict[str, int]  # L0..L4 -> count
     regen_readiness_score: float  # 0-100
     confidence_score: float  # 0.0-1.0
+    code_quality_score: int  # 0-100 from static analysis
     overall_score: int  # 0-100 weighted composite
     grade: str  # A-F
 
@@ -32,6 +33,7 @@ class QualityReport:
             f"|-----------|-------|",
             f"| Validation | {self.validation_score}/100 ({self.validation_issues} issues) |",
             f"| Regen Readiness | {self.regen_readiness_score:.0f}/100 |",
+            f"| Code Quality | {self.code_quality_score}/100 |",
             f"| Confidence | {self.confidence_score:.1%} |",
             "",
             "## Semantic Completeness",
@@ -136,10 +138,30 @@ def quality_report(model: ArchitectureModel, *, manifest=None) -> QualityReport:
     except Exception:
         pass
 
-    # Weighted composite: validation 30%, regen 25%, confidence 20%, semantic 25%
+    # Code quality (optional — needs source files)
+    code_quality = 0
+    try:
+        from architecture_model.quality.code_review import analyze_source
+        import pathlib
+        source_files = []
+        for comp in model.entities.components:
+            for f in (comp.files or []):
+                p = pathlib.Path(f)
+                if p.suffix == ".py" and p.exists():
+                    source_files.append(p)
+        if source_files:
+            scores = [analyze_source(f.read_text(), str(f)).score for f in source_files[:20]]
+            code_quality = int(sum(scores) / len(scores)) if scores else 0
+    except Exception:
+        pass
+
+    # Weighted composite: validation 25%, regen 20%, confidence 15%, semantic 20%, code quality 20%
     sem_parts = semantic.get("intent_coverage", "0/1").split("/")
     sem_ratio = int(sem_parts[0]) / max(int(sem_parts[1]), 1) if len(sem_parts) == 2 else 0
-    overall = int(val_score * 0.30 + regen_score * 0.25 + conf_score * 100 * 0.20 + sem_ratio * 100 * 0.25)
+    overall = int(
+        val_score * 0.25 + regen_score * 0.20 + conf_score * 100 * 0.15
+        + sem_ratio * 100 * 0.20 + code_quality * 0.20
+    )
     overall = min(100, max(0, overall))
 
     return QualityReport(
@@ -150,6 +172,7 @@ def quality_report(model: ArchitectureModel, *, manifest=None) -> QualityReport:
         detail_level_distribution=detail_dist,
         regen_readiness_score=regen_score,
         confidence_score=conf_score,
+        code_quality_score=code_quality,
         overall_score=overall,
         grade=_grade(overall),
     )
