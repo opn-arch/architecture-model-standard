@@ -56,6 +56,16 @@ PROJECT_DOCS: dict[str, tuple[str, str, str]] = {
     "plugin_guide": ("plugin_guide", "Plugin / Extension Guide", "plugin-guide.md"),
 }
 
+# Maps ModelDiff.affected_artifacts() names → STANDARD_DOCS keys
+ARTIFACT_TO_DOC_KEY: dict[str, str | None] = {
+    "use-cases": "use_cases",
+    "functional-architecture": "functional_analysis",
+    "logical-architecture": "logical_architecture",
+    "icd": "interface_spec",
+    "requirements-analysis": "requirements_analysis",
+    "readme": None,  # Not an SE doc
+}
+
 
 def _model_hash(model: ArchitectureModel) -> str:
     """Compute a hash representing the model's current state."""
@@ -306,3 +316,64 @@ def _write_index(
 
     (output_dir / "index.md").write_text("\n".join(lines))
     result["generated"].append(str(output_dir / "index.md"))
+
+
+def regenerate_affected(
+    old_model: "ArchitectureModel",
+    new_model: "ArchitectureModel",
+    output_dir: Path,
+    *,
+    manifest: Any | None = None,
+    author: str = "diff_regen",
+) -> dict[str, Any]:
+    """Regenerate only the SE docs affected by model changes.
+
+    Uses ModelDiff.affected_artifacts() to determine which docs are stale,
+    then calls generate_se_docs() with a doc_filter.
+
+    Returns:
+        Dict with 'generated', 'affected_artifacts', 'reason', plus standard generate_se_docs keys.
+    """
+    from architecture_model.core.differ import diff_models
+
+    diff = diff_models(old_model, new_model)
+
+    if not diff.has_changes:
+        return {
+            "generated": [],
+            "skipped": [],
+            "preserved_edits": [],
+            "errors": [],
+            "affected_artifacts": [],
+            "reason": "no_changes",
+        }
+
+    affected = diff.affected_artifacts()
+
+    # Map artifact names to doc keys
+    doc_keys = set()
+    for artifact_name in affected:
+        mapped = ARTIFACT_TO_DOC_KEY.get(artifact_name)
+        if mapped is not None:
+            doc_keys.add(mapped)
+
+    if not doc_keys:
+        return {
+            "generated": [],
+            "skipped": [],
+            "preserved_edits": [],
+            "errors": [],
+            "affected_artifacts": sorted(affected),
+            "reason": "no_mappable_docs",
+        }
+
+    result = generate_se_docs(
+        new_model,
+        output_dir,
+        manifest=manifest,
+        doc_filter=list(doc_keys),
+        author=author,
+    )
+    result["affected_artifacts"] = sorted(affected)
+    result["reason"] = "diff_triggered"
+    return result
