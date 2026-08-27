@@ -2,21 +2,27 @@
 document: Requirements Analysis
 system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-19T16:59:51Z
+generated_at: 2026-08-27T14:23:21Z
 generator_version: 0.3.0
-model_hash: 435262313fec
-edition: 8
+model_hash: 08abc716587d
+edition: 9
 ---
 
 # Requirements Analysis: architecture-model-standard
+
 ## Constraint Inventory
+
 | ID | Constraint | Type | Metric | Threshold | Rationale |
 |----|-----------|------|--------|-----------|-----------|
 | CON-1 | Python >=3.11 | technology | — | — | — |
 | CON-2 | CI/CD: GitHub Actions | technology | — | — | — |
+
 ## Capability-Derived Requirements
+
 *No explicit requirements on capabilities.*
+
 ## Requirements Traceability
+
 | From | Relationship | To | Description |
 |------|-------------|-----|-------------|
 | Validation | satisfies | REQ-1 | Validator enforces score >= 80 |
@@ -68,14 +74,11 @@ edition: 8
 | Core | satisfies | REQ-O17 | — |
 | Extract | satisfies | REQ-O18 | — |
 | Extract | satisfies | REQ-O19 | — |
+
 ## Constraint Allocation
 
+
 ## Coverage Gaps
-- Capability **Web Routes** (CAP-1) has no realizing component
-- Capability **gRPC Services** (CAP-2) has no realizing component
-- Capability **CLI Main** (CAP-5) has no realizing component
-- Capability **CLI Runner** (CAP-6) has no realizing component
 
----
-
----
+- Constraint **Python >=3.11** (CON-1) is not allocated to any component
+- Constraint **CI/CD: GitHub Actions** (CON-2) is not allocated to any component

@@ -2,14 +2,16 @@
 document: Maintenance Manual
 system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-19T16:59:52Z
+generated_at: 2026-08-27T14:23:21Z
 generator_version: 0.3.0
-model_hash: 435262313fec
-edition: 8
+model_hash: 08abc716587d
+edition: 9
 ---
 
 # Maintenance Manual: architecture-model-standard
+
 ## Component Inventory
+
 | Component | Kind | Layer | Files | Signatures | Test Contracts |
 |-----------|------|-------|-------|-----------|----------------|
 | Core (COMP-1) | library | foundation | 1 | 0 | 0 |
@@ -41,7 +43,9 @@ edition: 8
 | Export (COMP-10) | library | application | 3 | 0 | 0 |
 | Pipeline Learning (COMP-11) | library | domain | 3 | 0 | 0 |
 | Utilities (COMP-12) | library | infrastructure | 6 | 0 | 0 |
+
 ## Dependency Impact Analysis
+
 | Component | Depends On (fan-out) | Depended By (fan-in) | Impact Risk |
 |-----------|---------------------|---------------------|-------------|
 | Core | — | CLI | LOW |
@@ -73,7 +77,9 @@ edition: 8
 | Export | Parser & Persistence | — | LOW |
 | Pipeline Learning | Configuration | — | LOW |
 | Utilities | Configuration | — | LOW |
+
 ## Modification Procedures
+
 For each component, the following files and dependencies must be considered:
 
 ### Core (COMP-1)
@@ -355,9 +361,7 @@ For each component, the following files and dependencies must be considered:
 - `src/architecture_model/monitoring_checks.py`
 - `src/architecture_model/patterns.py`
 - `src/architecture_model/data/__init__.py`
+
 ## Known Constraints
+
 *No constraint allocations defined.*
-
----
-
----

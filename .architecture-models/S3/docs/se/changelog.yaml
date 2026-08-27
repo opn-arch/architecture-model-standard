@@ -1,0 +1,161 @@
+documents:
+  conops.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      System Overview: 7e063a14de232a2de037f5872bbbf74b
+      Stakeholders: 119e7d0f883c7427bb25e195a0689c24
+      Operational Scenarios: 11cbdcbc9875fac80f058f50a4bd5a8b
+      System Context: 6702ce3a94d7b2f8c27d4a1142af2448
+      Degraded Operations & Failure Modes: 20c59a965cad97b5e670e41f6c3dc797
+      Operational Constraints: 284d0ddd3d4a7fd7fb5b607cb14f0624
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  functional-analysis.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Capability Inventory: 882c60537a1e15f59c968cce4e1a8c8a
+      Measures of Effectiveness: 95ad7cda7350ad9d5684023c7e30f68c
+      Functional Decomposition: 4e84a311b321c4cdfff9d1bb56ccfec4
+      Capability-Component Mapping: 8c1594e10756e94b21f61776d3b142fb
+      Behavioral Coverage: 9ba2fb2b669ef111a0ac80fa48b27760
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  logical-architecture.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Layer Structure: 94f247c1834e0fbab87deab7021f086b
+      Component Allocation: 0bf1c4d1c5d09ee6472e0ea30856377b
+      Inter-Component Interfaces: 489b8b241aec65a44804687c0b1fcce0
+      Dependency Graph: 4502426fca8aa37bbb8387acf799c2c9
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  requirements-analysis.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Constraint Inventory: 3e4668f282d4e65235c02f51d7ed6cd1
+      Capability-Derived Requirements: 243e3147e2cb6a03ac08dd92cdac0066
+      Requirements Traceability: 24e506ed0b49d809bed14220e43355d5
+      Constraint Allocation: d41d8cd98f00b204e9800998ecf8427e
+      Coverage Gaps: 2d98b85dde3927306a5401dc692a98fb
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  verification-validation.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Verification Matrix: 1dede29b259421565622cfaaa660b79c
+      Validation Coverage: 0af07c3ace1c2c2f249b723c1c7ac960
+      Behavior Validation: 9ba2fb2b669ef111a0ac80fa48b27760
+      Unverified Items: b17f170ec64a193c1fe8eebc29b0b8a6
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  operations-manual.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Interface Catalog: 489b8b241aec65a44804687c0b1fcce0
+      Operational Workflows: 1f16512868b71a29eb1e85a9b787d9ca
+      Configuration & Constraints: 2e1c32f482f05e81139409b8939c3d38
+      Error Handling: f161dc2640bb2e46dfc606cc555db20d
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  maintenance-manual.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Component Inventory: 27015cc6f84e8420191f3f0bff75d785
+      Dependency Impact Analysis: 07e81514962e092284049bd36a6831f5
+      Modification Procedures: 6b11420f9ae3b8800541a102d1d2ef8c
+      Known Constraints: 4f88a2d16953d01136f241dbb5f17729
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  use-cases.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Actor-Goal Matrix: 79d01c4eccd5e087d6da98ab17bdc573
+      Use Case Specifications: 036df1273f57af83255b59254858c176
+      Use Case Diagram: 22abfbff2448055b17524dbc56c95ddb
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  risk-assessment.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Risk Register: 97d0824c617a4271f77bdab7f6744bbb
+      Dependency Risks: 87199b6bad413c8cb5c69c7099094c8c
+      Constraint Risks: 3e4668f282d4e65235c02f51d7ed6cd1
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  interface-specification.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      Interface Inventory: 6702ce3a94d7b2f8c27d4a1142af2448
+      Interface Details: a5b78585152412d1a662e96b1283be3c
+      Component-Level Interfaces: e573fd1fbabbad21a1b9aad2d65f82de
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model
+  artifact-traceability.md:
+    created: '2026-08-27T14:23:22Z'
+    created_by: v2.1-regen
+    model_version: 557cf0f551ce
+    section_hashes:
+      1. Entity Inventory: 558f25c7aef219ca921b1ac37c47458b
+      2. Artifact Dependency Graph: e41ce844a52844469d7f3b072c3633cd
+      3. Entity-to-Artifact Traceability Matrix: ca466eb13afeb4f02fd9ea30db79279a
+      4. Relationship Distribution: 1f4e2db8154960d06728db1361f42702
+      5. Traceability Gaps: 30d0ce82b5ae87903d231476196a9806
+      6. Architecture File Map: 5d6f9964c4b0c1513e89e3084a890a31
+      LLM Review Status: a9515666abfc62ba7457085183c516fd
+      LLM Enrichment Provenance: 67e6f20cd2f443eeb432cf76edecef7e
+      Review Details: da7342beb6395b70076b757affd78c93
+    editions:
+    - timestamp: '2026-08-27T14:23:22Z'
+      author: v2.1-regen
+      type: generated
+      summary: Initial generation from model

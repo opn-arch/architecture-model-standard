@@ -2,127 +2,23 @@
 document: Use Cases
 system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-19T16:59:52Z
+generated_at: 2026-08-27T14:23:21Z
 generator_version: 0.3.0
-model_hash: 435262313fec
-edition: 8
+model_hash: 08abc716587d
+edition: 9
 ---
 
 # Use Cases: architecture-model-standard
+
 ## Actor-Goal Matrix
+
 | Actor | Goals |
 |-------|-------|
-| AI Agent (MCP Client) | — |
-| Developer | — |
-| CI/CD Pipeline | — |
+| AI Agent (MCP Client) | Load and query architecture models; Validate model correctness; Propose model updates; Trace change impact |
+| Developer | Define system architecture; Validate models against code; Generate documentation; Track architectural drift |
+| CI/CD Pipeline | Run validation checks on PRs; Generate architecture docs; Detect model drift |
+
 ## Use Case Specifications
-### UC: GET 
-
-**ID:** BEH-1
-**Main Flow:**
-  1. 
-
-### UC: GET bookmarklets/
-
-**ID:** BEH-2
-**Main Flow:**
-  1. 
-
-### UC: GET tags/
-
-**ID:** BEH-3
-**Main Flow:**
-  1. 
-
-### UC: GET filters/
-
-**ID:** BEH-4
-**Main Flow:**
-  1. 
-
-### UC: GET views/
-
-**ID:** BEH-5
-**Main Flow:**
-  1. 
-
-### UC: GET views/<view>/
-
-**ID:** BEH-6
-**Main Flow:**
-  1. 
-
-### UC: GET models/
-
-**ID:** BEH-7
-**Main Flow:**
-  1. 
-
-### UC: GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
-
-**ID:** BEH-8
-**Main Flow:**
-  1. 
-
-### UC: GET templates/<path:template>/
-
-**ID:** BEH-9
-**Main Flow:**
-  1. 
-
-### UC: GET login/
-
-**ID:** BEH-10
-**Main Flow:**
-  1. 
-
-### UC: GET logout/
-
-**ID:** BEH-11
-**Main Flow:**
-  1. 
-
-### UC: GET password_change/
-
-**ID:** BEH-12
-**Main Flow:**
-  1. 
-
-### UC: GET password_change/done/
-
-**ID:** BEH-13
-**Main Flow:**
-  1. 
-
-### UC: GET password_reset/
-
-**ID:** BEH-14
-**Main Flow:**
-  1. 
-
-### UC: GET password_reset/done/
-
-**ID:** BEH-15
-**Main Flow:**
-  1. 
-
-### UC: GET reset/<uidb64>/<token>/
-
-**ID:** BEH-16
-**Main Flow:**
-  1. 
-
-### UC: GET reset/done/
-
-**ID:** BEH-17
-**Main Flow:**
-  1. 
-
-### UC: GET <path:url>
-
-**ID:** BEH-18
-**Main Flow:**
-  1. flatpage
 
 ### UC: CLI: Test Guided Round Trip
 
@@ -143,27 +39,68 @@ edition: 8
   3. parse_args
   4. list
   5. len
+
+### UC: CLI: Test Multi Repo
+
+**ID:** BEH-21
+**Main Flow:**
+  1. ArgumentParser
+  2. add_argument
+  3. parse_args
+  4. print
+  5. mkdir
+
+### UC: CLI: Test Round Trip
+
+**ID:** BEH-22
+**Main Flow:**
+  1. ArgumentParser
+  2. add_argument
+  3. parse_args
+  4. print
+  5. load_training_examples
+
+### UC: CLI: Test Decomposed Round Trip
+
+**ID:** BEH-23
+**Main Flow:**
+  1. ArgumentParser
+  2. add_argument
+  3. parse_args
+  4. list
+  5. len
+
+### UC: CLI: Main
+
+**ID:** BEH-24
+**Main Flow:**
+  1. ArgumentParser
+  2. add_subparsers
+  3. add_parser
+  4. add_argument
+  5. parse_args
+
+### UC: CLI: Runner
+
+**ID:** BEH-25
+**Main Flow:**
+  1. ArgumentParser
+  2. add_argument
+  3. parse_args
+  4. run_benchmark
+
 ## Use Case Diagram
+
 ```mermaid
 graph LR
-    ACT-1(("API Consumer"))
-    BEH-1["GET "]
-    BEH-2["GET bookmarklets/"]
-    BEH-3["GET tags/"]
-    BEH-4["GET filters/"]
-    BEH-5["GET views/"]
-    BEH-6["GET views/<view>/"]
-    BEH-7["GET models/"]
-    BEH-8["GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$"]
-    BEH-9["GET templates/<path:template>/"]
-    BEH-10["GET login/"]
-    BEH-11["GET logout/"]
-    BEH-12["GET password_change/"]
-    BEH-13["GET password_change/done/"]
-    BEH-14["GET password_reset/"]
-    BEH-15["GET password_reset/done/"]
+    ACT-1(("AI Agent (MCP Client)"))
+    ACT-2(("Developer"))
+    ACT-3(("CI/CD Pipeline"))
+    BEH-19["CLI: Test Guided Round Trip"]
+    BEH-20["CLI: Test Enriched Round Trip"]
+    BEH-21["CLI: Test Multi Repo"]
+    BEH-22["CLI: Test Round Trip"]
+    BEH-23["CLI: Test Decomposed Round Trip"]
+    BEH-24["CLI: Main"]
+    BEH-25["CLI: Runner"]
 ```
-
----
-
----

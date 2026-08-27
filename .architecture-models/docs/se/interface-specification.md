@@ -2,14 +2,16 @@
 document: Interface Specification
 system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-19T16:59:52Z
+generated_at: 2026-08-27T14:23:21Z
 generator_version: 0.3.0
-model_hash: 435262313fec
-edition: 8
+model_hash: 08abc716587d
+edition: 9
 ---
 
 # Interface Specification: architecture-model-standard
+
 ## Interface Inventory
+
 | ID | Interface | Type | Protocol | Provider | Consumer |
 |----|-----------|------|----------|----------|----------|
 | IF-1 | main CLI | internal | — | — | — |
@@ -55,7 +57,9 @@ edition: 8
 | IF-auto-COMP-10 | Export API | internal | — | — | — |
 | IF-auto-COMP-11 | Pipeline Learning API | internal | — | — | — |
 | IF-auto-COMP-12 | Utilities API | internal | — | — | — |
+
 ## Interface Details
+
 ### main CLI
 
 - **ID:** IF-1
@@ -270,9 +274,7 @@ edition: 8
 
 - **ID:** IF-auto-COMP-12
 - **Type:** internal
+
 ## Component-Level Interfaces
+
 *No component-level interfaces defined.*
-
----
-
----

@@ -2,14 +2,16 @@
 document: Operations Manual
 system: architecture-model-standard
 system_id: SYS-unknown
-generated_at: 2026-08-19T16:59:52Z
+generated_at: 2026-08-27T14:23:21Z
 generator_version: 0.3.0
-model_hash: 435262313fec
-edition: 8
+model_hash: 08abc716587d
+edition: 9
 ---
 
 # Operations Manual: architecture-model-standard
+
 ## Interface Catalog
+
 ### main CLI (internal)
 
 
@@ -137,78 +139,9 @@ edition: 8
 
 
 ### Utilities API (internal)
+
+
 ## Operational Workflows
-### GET 
-
-1. 
-
-### GET bookmarklets/
-
-1. 
-
-### GET tags/
-
-1. 
-
-### GET filters/
-
-1. 
-
-### GET views/
-
-1. 
-
-### GET views/<view>/
-
-1. 
-
-### GET models/
-
-1. 
-
-### GET ^models/(?P<app_label>[^.]+)\.(?P<model_name>[^/]+)/$
-
-1. 
-
-### GET templates/<path:template>/
-
-1. 
-
-### GET login/
-
-1. 
-
-### GET logout/
-
-1. 
-
-### GET password_change/
-
-1. 
-
-### GET password_change/done/
-
-1. 
-
-### GET password_reset/
-
-1. 
-
-### GET password_reset/done/
-
-1. 
-
-### GET reset/<uidb64>/<token>/
-
-1. 
-
-### GET reset/done/
-
-1. 
-
-### GET <path:url>
-
-1. flatpage
 
 ### CLI: Test Guided Round Trip
 
@@ -226,13 +159,50 @@ edition: 8
 4. list
 5. len
 
-*...and 5 more workflows.*
+### CLI: Test Multi Repo
+
+1. ArgumentParser
+2. add_argument
+3. parse_args
+4. print
+5. mkdir
+
+### CLI: Test Round Trip
+
+1. ArgumentParser
+2. add_argument
+3. parse_args
+4. print
+5. load_training_examples
+
+### CLI: Test Decomposed Round Trip
+
+1. ArgumentParser
+2. add_argument
+3. parse_args
+4. list
+5. len
+
+### CLI: Main
+
+1. ArgumentParser
+2. add_subparsers
+3. add_parser
+4. add_argument
+5. parse_args
+
+### CLI: Runner
+
+1. ArgumentParser
+2. add_argument
+3. parse_args
+4. run_benchmark
+
 ## Configuration & Constraints
+
 - **Python >=3.11** [technology]
 - **CI/CD: GitHub Actions** [technology]
+
 ## Error Handling
+
 *No explicit error handling behaviors defined.*
-
----
-
----
