@@ -1,8 +1,10 @@
 """Propagate enrichment data from sub-models to root model."""
 import copy
 from architecture_model.core.types import ArchitectureModel
+from architecture_model.monitoring import monitored
 
 
+@monitored("core.propagation")
 def propagate_enrichment(root: ArchitectureModel, sub_models: list[ArchitectureModel]) -> ArchitectureModel:
     """Copy signatures, constants, test_contracts from sub-model components to root."""
     updated = copy.deepcopy(root)

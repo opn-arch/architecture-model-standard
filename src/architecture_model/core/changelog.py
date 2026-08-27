@@ -1,7 +1,9 @@
 """Model changelog — human-readable diff between model versions."""
 from architecture_model.core.types import ArchitectureModel
+from architecture_model.monitoring import monitored
 
 
+@monitored("core.changelog")
 def generate_changelog(old: ArchitectureModel, new: ArchitectureModel) -> str:
     """Generate human-readable changelog between two model versions."""
     sections = []

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from architecture_model.core.types import ArchitectureModel
+from architecture_model.monitoring import monitored
 
 
 @dataclass
@@ -15,6 +16,7 @@ class ConsistencyIssue:
         return f"[{self.severity.upper()}] {self.message}"
 
 
+@monitored("core.cross_repo")
 def check_consistency(models: list[ArchitectureModel]) -> list[ConsistencyIssue]:
     """Check consistency across multiple architecture models.
 

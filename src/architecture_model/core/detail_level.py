@@ -10,6 +10,7 @@ Levels:
 from enum import IntEnum
 
 from architecture_model.core.types import BaseEntity, Component, Capability, Behavior, Interface
+from architecture_model.monitoring import monitored
 
 
 class DetailLevel(IntEnum):
@@ -20,6 +21,7 @@ class DetailLevel(IntEnum):
     L4_REVIEWED = 4
 
 
+@monitored("core.detail_level")
 def compute_detail_level(entity: BaseEntity) -> DetailLevel:
     """Compute detail level from field population. Not stored - always derived."""
     if entity.extensions.get("_llm_review"):

@@ -3,8 +3,10 @@ import copy
 from datetime import datetime, timezone
 from architecture_model.core.types import BaseEntity, Component, Capability
 from architecture_model.core.detail_level import compute_detail_level
+from architecture_model.monitoring import monitored
 
 
+@monitored("core.review")
 def prepare_review_prompt(entity: BaseEntity) -> str:
     """Generate a prompt asking LLM to review and fill missing fields."""
     level = compute_detail_level(entity)
@@ -30,6 +32,7 @@ def prepare_review_prompt(entity: BaseEntity) -> str:
     return prompt
 
 
+@monitored("core.review")
 def apply_review(entity: BaseEntity, review_data: dict) -> BaseEntity:
     """Apply LLM review results back to entity."""
     updated = copy.deepcopy(entity)

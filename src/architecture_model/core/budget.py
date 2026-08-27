@@ -1,14 +1,17 @@
 """Token estimation and budget-aware model reduction."""
 import copy
 from architecture_model.core.types import ArchitectureModel
+from architecture_model.monitoring import monitored
 
 
+@monitored("core.budget")
 def estimate_tokens(model: ArchitectureModel) -> int:
     """Estimate token count from YAML serialization. ~4 chars per token."""
     yaml_str = model.to_yaml()
     return len(yaml_str) // 4
 
 
+@monitored("core.budget")
 def reduce_to_budget(model: ArchitectureModel, max_tokens: int) -> ArchitectureModel:
     """Progressively reduce model detail to fit within token budget.
 
