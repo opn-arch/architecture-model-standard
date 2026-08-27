@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
@@ -88,16 +89,79 @@ class Diagnostic:
 
 @dataclass
 class QualityMetrics:
-    """Per-stage quality scores."""
+    """Per-stage quality scores with optional per-component breakdown."""
 
     score: float
     sub_scores: dict[str, float] = field(default_factory=dict)
     thresholds: dict[str, float] = field(default_factory=dict)
+    component_scores: dict[str, "QualityMetrics"] = field(default_factory=dict)
     llm_prompt: str = ""
 
     @property
     def passes(self) -> bool:
         return all(self.sub_scores.get(k, 0.0) >= v for k, v in self.thresholds.items())
+
+    @property
+    def worst_component(self) -> tuple[str, float] | None:
+        if not self.component_scores:
+            return None
+        worst = min(self.component_scores.items(), key=lambda kv: kv[1].score)
+        return (worst[0], worst[1].score)
+
+
+class GateSeverity(Enum):
+    SOFT = "soft"    # warn and continue
+    HARD = "hard"    # block pipeline progression
+
+
+@dataclass
+class GateResult:
+    passed: bool
+    blocks: bool
+    message: str
+    metric: str
+    actual: float
+    threshold: float
+
+
+@dataclass
+class QualityGate:
+    metric: str
+    threshold: float
+    severity: GateSeverity = GateSeverity.SOFT
+    direction: str = "gte"  # "gte" = actual >= threshold; "lte" = actual <= threshold
+
+    def evaluate(self, quality: QualityMetrics) -> GateResult:
+        actual = quality.sub_scores.get(self.metric, 0.0)
+        if self.direction == "lte":
+            passed = actual <= self.threshold
+        else:
+            passed = actual >= self.threshold
+        blocks = (not passed) and (self.severity == GateSeverity.HARD)
+        verb = "PASS" if passed else ("BLOCKED" if blocks else "WARN")
+        message = f"{verb}: {self.metric} = {actual:.1f} (threshold: {self.threshold:.1f})"
+        return GateResult(
+            passed=passed, blocks=blocks, message=message,
+            metric=self.metric, actual=actual, threshold=self.threshold,
+        )
+
+
+class QualityGateError(Exception):
+    """Raised when a hard quality gate blocks pipeline progression."""
+    def __init__(self, message: str, gate_results: list[GateResult] | None = None):
+        super().__init__(message)
+        self.gate_results = gate_results or []
+
+
+@dataclass
+class StageQualityReview:
+    """Record of quality review after a stage completes."""
+    stage: str
+    quality: QualityMetrics
+    gate_results: list[GateResult]
+    llm_review: str = ""
+    suggestions: list[str] = field(default_factory=list)
+    component_reviews: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -131,6 +195,7 @@ class PipelineContext:
     calibration: dict[str, Any] = field(default_factory=dict)
     llm_calls: list[LLMCallRecord] = field(default_factory=list)
     enrichment_log: list[EnrichmentRecord] = field(default_factory=list)
+    review_log: list[StageQualityReview] = field(default_factory=list)
     # LLM enrichment callback: stages can call this for naming, classification, etc.
     # Signature: async (stage: str, prompt: str, context: dict) -> str
     # If None, stages use heuristic fallbacks (deterministic mode).

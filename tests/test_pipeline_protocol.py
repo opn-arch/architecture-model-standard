@@ -166,6 +166,112 @@ class TestPipelineContext:
         assert ctx.domain == "electrical"
 
 
+class TestHierarchicalQuality:
+    def test_component_scores_default_empty(self):
+        qm = QualityMetrics(score=90)
+        assert qm.component_scores == {}
+
+    def test_component_scores_nested(self):
+        child = QualityMetrics(score=85, sub_scores={"complexity": 3.0})
+        qm = QualityMetrics(score=90, component_scores={"COMP-1": child})
+        assert qm.component_scores["COMP-1"].score == 85
+        assert qm.component_scores["COMP-1"].sub_scores["complexity"] == 3.0
+
+    def test_passes_ignores_component_scores(self):
+        """Top-level passes only checks top-level thresholds."""
+        child = QualityMetrics(score=10, sub_scores={"x": 5}, thresholds={"x": 50})
+        qm = QualityMetrics(score=90, thresholds={"y": 80}, sub_scores={"y": 90},
+                            component_scores={"COMP-1": child})
+        assert qm.passes  # parent passes even though child fails
+
+    def test_worst_component_score(self):
+        qm = QualityMetrics(
+            score=90,
+            component_scores={
+                "COMP-1": QualityMetrics(score=85),
+                "COMP-2": QualityMetrics(score=60),
+            },
+        )
+        assert qm.worst_component == ("COMP-2", 60)
+
+    def test_worst_component_empty(self):
+        qm = QualityMetrics(score=90)
+        assert qm.worst_component is None
+
+
+class TestQualityGate:
+    def test_soft_gate_warns_on_failure(self):
+        from architecture_model.pipeline.protocol import QualityGate, GateSeverity
+        gate = QualityGate(
+            metric="parse_success_rate",
+            threshold=90.0,
+            severity=GateSeverity.SOFT,
+        )
+        qm = QualityMetrics(score=50, sub_scores={"parse_success_rate": 70.0})
+        result = gate.evaluate(qm)
+        assert result.passed is False
+        assert result.blocks is False
+        assert "parse_success_rate" in result.message
+
+    def test_hard_gate_blocks_on_failure(self):
+        from architecture_model.pipeline.protocol import QualityGate, GateSeverity
+        gate = QualityGate(
+            metric="parse_success_rate",
+            threshold=90.0,
+            severity=GateSeverity.HARD,
+        )
+        qm = QualityMetrics(score=50, sub_scores={"parse_success_rate": 70.0})
+        result = gate.evaluate(qm)
+        assert result.passed is False
+        assert result.blocks is True
+
+    def test_gate_passes(self):
+        from architecture_model.pipeline.protocol import QualityGate, GateSeverity
+        gate = QualityGate(
+            metric="parse_success_rate",
+            threshold=90.0,
+            severity=GateSeverity.HARD,
+        )
+        qm = QualityMetrics(score=95, sub_scores={"parse_success_rate": 95.0})
+        result = gate.evaluate(qm)
+        assert result.passed is True
+        assert result.blocks is False
+
+    def test_gate_missing_metric_fails(self):
+        from architecture_model.pipeline.protocol import QualityGate, GateSeverity
+        gate = QualityGate(metric="unknown", threshold=50.0, severity=GateSeverity.HARD)
+        qm = QualityMetrics(score=90)
+        result = gate.evaluate(qm)
+        assert result.passed is False
+        assert result.blocks is True
+
+    def test_lte_direction(self):
+        from architecture_model.pipeline.protocol import QualityGate, GateSeverity
+        gate = QualityGate(metric="error_count", threshold=0.0, severity=GateSeverity.HARD, direction="lte")
+        qm_good = QualityMetrics(score=90, sub_scores={"error_count": 0.0})
+        qm_bad = QualityMetrics(score=50, sub_scores={"error_count": 3.0})
+        assert gate.evaluate(qm_good).passed is True
+        assert gate.evaluate(qm_bad).blocks is True
+
+
+class TestStageQualityReview:
+    def test_review_dataclass(self):
+        from architecture_model.pipeline.protocol import StageQualityReview, GateResult
+        review = StageQualityReview(
+            stage="observe",
+            quality=QualityMetrics(score=90),
+            gate_results=[],
+            llm_review="Looks good",
+            suggestions=["Add docstrings"],
+        )
+        assert review.stage == "observe"
+        assert review.llm_review == "Looks good"
+
+    def test_pipeline_context_has_review_log(self):
+        ctx = PipelineContext(repo_path=Path("."), output_dir=Path("."))
+        assert ctx.review_log == []
+
+
 class TestSourceWeights:
     def test_ast_weight(self):
         assert SOURCE_WEIGHTS["ast"] == 1.0
