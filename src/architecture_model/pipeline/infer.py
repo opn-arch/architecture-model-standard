@@ -417,12 +417,14 @@ def _infer_from_domain_modules(
     return capabilities
 
 
+_GENERIC_PACKAGE_NAMES = {"src", "lib", "app", "pkg", "source", "sources", "code"}
+
+
 def _infer_capabilities_by_package(
     source_modules: list[ModuleRecord],
     existing_names: set[str],
 ) -> list[InferredCapability]:
-    """Group modules by top-level package directory for large repos."""
-    # Find common path prefix
+    """Group modules by package, using deepest meaningful directory name."""
     all_parts = [mod.path.parts for mod in source_modules]
     if not all_parts:
         return []
@@ -434,36 +436,50 @@ def _infer_capabilities_by_package(
         else:
             break
 
-    # Group by directory immediately after common prefix
     groups: dict[str, list[ModuleRecord]] = defaultdict(list)
     for mod in source_modules:
-        parts = mod.path.parts
-        if len(parts) > prefix_len:
-            group_key = parts[prefix_len]
-            # If it's a file (not a directory), put in root
-            if group_key.endswith(".py"):
-                group_key = "(root)"
-        else:
-            group_key = "(root)"
-        groups[group_key].append(mod)
+        parts = mod.path.parts[prefix_len:]
+        group_name = "(root)"
+        for part in parts[:-1]:  # skip filename
+            if part.lower() not in _GENERIC_PACKAGE_NAMES and len(part) > 1:
+                group_name = part
+                break
+        if group_name == "(root)" and len(parts) >= 2:
+            candidate = parts[-2]
+            if candidate.lower() not in _GENERIC_PACKAGE_NAMES:
+                group_name = candidate
+        groups[group_name].append(mod)
 
-    capabilities = []
-    for group_name, mods in groups.items():
+    # If everything lands in one group, fall back to per-module stem naming
+    if len(groups) == 1 and "(root)" in groups:
+        caps = []
+        for mod in groups["(root)"]:
+            stem = mod.path.stem
+            name = stem.lstrip("_").replace("_", " ").title()
+            if name.lower() not in existing_names:
+                caps.append(InferredCapability(
+                    id="",
+                    name=name,
+                    description=f"Module-level capability from {stem}",
+                    evidence_source="package_group",
+                ))
+                existing_names.add(name.lower())
+        return caps
+
+    caps: list[InferredCapability] = []
+    for group_name, mods in sorted(groups.items()):
         if group_name == "(root)" and len(mods) < 3:
             continue
-        cap_name = group_name.replace("_", " ").title()
+        cap_name = group_name.lstrip("_").replace("_", " ").title()
         if cap_name.lower() not in existing_names:
-            capabilities.append(
-                InferredCapability(
-                    id="",
-                    name=cap_name,
-                    description=f"Package group with {len(mods)} modules",
-                    evidence_source="package_group",
-                )
-            )
+            caps.append(InferredCapability(
+                id="",
+                name=cap_name,
+                description=f"Package group with {len(mods)} modules",
+                evidence_source="package_group",
+            ))
             existing_names.add(cap_name.lower())
-
-    return capabilities
+    return caps
 
 
 def _infer_from_triggers(modules: list[ModuleRecord]) -> list[InferredCapability]:

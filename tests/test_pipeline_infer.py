@@ -1,7 +1,7 @@
 """Tests for the infer pipeline stage."""
 import pytest
 from pathlib import Path
-from architecture_model.pipeline.infer import InferStage, _infer_library_behaviors
+from architecture_model.pipeline.infer import InferStage, _infer_library_behaviors, _infer_capabilities_by_package
 from architecture_model.pipeline.observe import ObserveStage
 from architecture_model.pipeline.observe_types import ModuleRecord, FunctionRecord, ClassRecord
 from architecture_model.pipeline.infer_types import InferredCapability, InferredBehavior
@@ -241,3 +241,45 @@ def shutdown():
 ''')
         result = _run_observe_then_infer(tmp_path)
         assert len(result.output.behaviors) >= 1
+
+
+def _make_module(path: str, funcs: list[str] | None = None) -> ModuleRecord:
+    """Create a minimal ModuleRecord for testing."""
+    fn_records = [FunctionRecord(name=f, signature="", body_hint="") for f in (funcs or [])]
+    return ModuleRecord(path=Path(path), functions=fn_records)
+
+
+class TestInferCapabilitiesByPackageNaming:
+    """Tests for meaningful capability naming in large repos."""
+
+    def test_subpackage_names_used_over_toplevel(self):
+        """Sub-package names should be preferred over generic top-level."""
+        modules = []
+        for i in range(4):
+            modules.append(_make_module(
+                f"src/myapp/core/mod{i}.py",
+                funcs=[f"func{j}" for j in range(3)],
+            ))
+        for i in range(4):
+            modules.append(_make_module(
+                f"src/myapp/api/mod{i}.py",
+                funcs=[f"func{j}" for j in range(3)],
+            ))
+        result = _infer_capabilities_by_package(modules, set())
+        names = {cap.name for cap in result}
+        assert "Src" not in names
+        assert "Myapp" not in names
+        assert any("Core" in n for n in names)
+        assert any("Api" in n for n in names)
+
+    def test_single_package_falls_back_to_module_stems(self):
+        """When all modules are in one package, use module stem themes."""
+        modules = [
+            _make_module("src/myapp/parser.py", funcs=["parse_a", "parse_b", "parse_c"]),
+            _make_module("src/myapp/tokenizer.py", funcs=["tokenize_a", "tokenize_b"]),
+            _make_module("src/myapp/formatter.py", funcs=["format_a", "format_b"]),
+        ]
+        result = _infer_capabilities_by_package(modules, set())
+        assert len(result) >= 1
+        names = {cap.name for cap in result}
+        assert "Myapp" not in names
