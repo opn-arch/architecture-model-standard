@@ -113,6 +113,11 @@ def main(argv: list[str] | None = None) -> int:
 
     subparsers.add_parser("learnings", help="Show global learnings (heuristics, archetypes, workflows)")
 
+    # --- quality ---
+    p_quality = subparsers.add_parser("quality", help="Generate unified quality report")
+    p_quality.add_argument("repo", help="Repository root path")
+    p_quality.add_argument("--markdown", action="store_true", help="Output as markdown")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -136,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         "regen-score": _cmd_regen_score,
         "pipeline": _cmd_pipeline,
         "learnings": _cmd_learnings,
+        "quality": _cmd_quality,
     }
     return handlers[args.command](args)
 
@@ -863,6 +869,33 @@ def _cmd_learnings(args) -> int:
             print(f"         fix: {w.fix_applied}")
             print(f"         result: {w.validation}")
 
+    return 0
+
+
+def _cmd_quality(args) -> int:
+    """Generate unified quality report."""
+    from ..core.parser import load_model
+    from ..quality.dashboard import quality_report
+
+    repo = Path(args.repo).resolve()
+    model_path = repo / ".architecture-model.yaml"
+    if not model_path.exists():
+        print(f"ERROR: No architecture model found in {repo}")
+        return 1
+
+    model = load_model(model_path)
+    report = quality_report(model)
+
+    if getattr(args, "markdown", False):
+        print(report.to_markdown())
+    else:
+        print(f"Quality Report: {report.project}")
+        print(f"  Grade: {report.grade} ({report.overall_score}/100)")
+        print(f"  Validation: {report.validation_score}/100 ({report.validation_issues} issues)")
+        print(f"  Regen Readiness: {report.regen_readiness_score:.0f}/100")
+        print(f"  Semantic Completeness:")
+        for k, v in report.semantic_completeness.items():
+            print(f"    {k}: {v}")
     return 0
 
 
