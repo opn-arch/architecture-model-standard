@@ -27,3 +27,11 @@ class TestReviewCLI:
             capture_output=True, text=True,
         )
         assert "--compare" in (result.stdout + result.stderr)
+
+    def test_pipeline_llm_review_flag(self):
+        """Verify --llm-review argument is accepted."""
+        result = subprocess.run(
+            [sys.executable, "-m", "architecture_model.cli.main", "pipeline", "--help"],
+            capture_output=True, text=True,
+        )
+        assert "--llm-review" in result.stdout

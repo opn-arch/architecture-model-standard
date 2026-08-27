@@ -110,6 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     p_pipeline.add_argument("--recursive", action="store_true", help="Recurse into large components")
     p_pipeline.add_argument("--max-depth", type=int, default=3, help="Max recursion depth")
     p_pipeline.add_argument("-o", "--output", help="Output directory (default: .architecture/)")
+    p_pipeline.add_argument("--llm-review", action="store_true", help="Enable LLM review of stage outputs")
 
     subparsers.add_parser("learnings", help="Show global learnings (heuristics, archetypes, workflows)")
 
@@ -819,6 +820,15 @@ def _cmd_pipeline(args) -> int:
     ctx = PipelineContext(repo_path=root, output_dir=output_dir)
     ctx.config["coordinator"] = coord  # synthesize stage needs this
 
+    if getattr(args, "llm_review", False):
+        from ..pipeline.llm_provider import create_llm_callback
+        callback = create_llm_callback()
+        if callback:
+            ctx.llm_callback = callback
+            print("LLM review enabled")
+        else:
+            print("WARNING: --llm-review specified but no LLM provider available")
+
     if args.stage:
         print(f"Running pipeline to stage: {args.stage}")
         results = coord.run_to(args.stage, ctx)
@@ -844,6 +854,18 @@ def _cmd_pipeline(args) -> int:
         print(f"  {name:12s} score={score:3d}  uncertainties={uncertainties}  {duration}ms  [{status}]")
 
     print(f"\nArtifacts written to: {output_dir}")
+
+    # Save reviews if any
+    if ctx.review_log:
+        from ..pipeline.review_store import save_reviews
+        review_path = save_reviews(output_dir / "reviews", ctx.review_log)
+        print(f"Reviews saved to: {review_path}")
+        for review in ctx.review_log:
+            if review.suggestions:
+                print(f"\n  {review.stage} suggestions:")
+                for s in review.suggestions[:3]:
+                    print(f"    - {s}")
+
     return 0
 
 
