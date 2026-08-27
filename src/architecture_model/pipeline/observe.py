@@ -85,6 +85,12 @@ class ObserveStage:
         # Test files
         test_files = _find_test_files(py_files, ctx.repo_path)
 
+        # In scoped mode, also discover test files from common test directories
+        # that target the scoped source files (flat test layouts like tests/test_ansi.py)
+        if ctx.scope_files and not test_files:
+            scope_stems = {f.stem for f in py_files if f.suffix == ".py"}
+            test_files = _find_tests_for_scope(ctx.repo_path, scope_stems)
+
         # Docs
         docs = _find_docs(ctx.repo_path)
 
@@ -536,6 +542,28 @@ def _find_test_files(py_files: list[Path], root: Path) -> list[TestFileRecord]:
             target = name.removeprefix("test_").removesuffix("_test")
             test_files.append(TestFileRecord(path=rel, targets=[target] if target else []))
     return test_files
+
+
+def _find_tests_for_scope(
+    root: Path, scope_stems: set[str],
+) -> list[TestFileRecord]:
+    """Discover test files targeting scoped source stems in flat test layouts.
+
+    Scans common test directories (tests/, test/) for files matching
+    test_<stem>.py or <stem>_test.py where <stem> is a scoped source file.
+    """
+    results: list[TestFileRecord] = []
+    for test_dir_name in ("tests", "test"):
+        test_dir = root / test_dir_name
+        if not test_dir.is_dir():
+            continue
+        for tf in test_dir.rglob("*.py"):
+            name = tf.stem
+            target = name.removeprefix("test_").removesuffix("_test")
+            if target and target != name and target in scope_stems:
+                rel = tf.relative_to(root)
+                results.append(TestFileRecord(path=rel, targets=[target]))
+    return results
 
 
 def _find_docs(root: Path) -> list[DocRecord]:
