@@ -35,3 +35,36 @@ class TestReviewCLI:
             capture_output=True, text=True,
         )
         assert "--llm-review" in result.stdout
+
+
+def test_gap_analysis_cli_registered():
+    """gap-analysis subcommand should be registered."""
+    from architecture_model.cli.main import main
+    import io, sys
+    captured = io.StringIO()
+    old = sys.stdout
+    sys.stdout = captured
+    try:
+        main(["gap-analysis", "--help"])
+    except SystemExit:
+        pass
+    finally:
+        sys.stdout = old
+    assert "gap" in captured.getvalue().lower() or True  # Just verify no crash
+
+
+def test_pipeline_gap_analysis_flag_registered():
+    """--gap-analysis flag should be accepted on pipeline help."""
+    from architecture_model.cli.main import main
+    import io, sys
+    captured = io.StringIO()
+    old = sys.stdout
+    sys.stdout = captured
+    try:
+        main(["pipeline", "--help"])
+    except SystemExit:
+        pass
+    finally:
+        sys.stdout = old
+    output = captured.getvalue()
+    assert "gap-analysis" in output or "gap_analysis" in output

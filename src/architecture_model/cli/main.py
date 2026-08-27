@@ -111,6 +111,12 @@ def main(argv: list[str] | None = None) -> int:
     p_pipeline.add_argument("--max-depth", type=int, default=3, help="Max recursion depth")
     p_pipeline.add_argument("-o", "--output", help="Output directory (default: .architecture/)")
     p_pipeline.add_argument("--llm-review", action="store_true", help="Enable LLM review of stage outputs")
+    p_pipeline.add_argument("--gap-analysis", action="store_true", help="Run gap analysis after pipeline")
+
+    # --- gap-analysis ---
+    p_gap = subparsers.add_parser("gap-analysis", help="Run gap analysis: deterministic vs LLM pipeline comparison")
+    p_gap.add_argument("path", nargs="?", default=".", help="Project root directory")
+    p_gap.add_argument("-o", "--output", help="Output directory for report")
 
     subparsers.add_parser("learnings", help="Show global learnings (heuristics, archetypes, workflows)")
 
@@ -154,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         "learnings": _cmd_learnings,
         "quality": _cmd_quality,
         "review": _cmd_review,
+        "gap-analysis": _cmd_gap_analysis,
     }
     return handlers[args.command](args)
 
@@ -865,6 +872,100 @@ def _cmd_pipeline(args) -> int:
                 print(f"\n  {review.stage} suggestions:")
                 for s in review.suggestions[:3]:
                     print(f"    - {s}")
+
+    if getattr(args, "gap_analysis", False):
+        from ..pipeline.gap_analysis import extract_stage_data, diff_stage_outputs, build_naming_chains, trace_propagation, GapAnalysisResult
+        from ..pipeline.gap_report import render_gap_report
+        from ..pipeline.gap_prompts import build_reinfer_prompt, parse_reinfer_response
+
+        print("\nRunning gap analysis...")
+        if ctx.llm_callback is None:
+            from ..pipeline.llm_provider import create_llm_callback
+            callback = create_llm_callback()
+            if callback:
+                ctx.llm_callback = callback
+
+        if ctx.llm_callback is not None:
+            import asyncio
+            stage_gaps = []
+            det_data = {}
+            llm_data = {}
+            reviewable = ["infer", "allocate", "relate", "specify", "contract", "validate"]
+            for stage_name in reviewable:
+                if stage_name not in results:
+                    continue
+                stage_result = results[stage_name]
+                det = extract_stage_data(stage_name, stage_result.output)
+                det_data[stage_name] = det
+
+                prompt = build_reinfer_prompt(stage_name, **det)
+                try:
+                    loop = asyncio.get_event_loop()
+                    response = loop.run_until_complete(ctx.llm_callback(stage_name, prompt, {}))
+                    llm = parse_reinfer_response(stage_name, response)
+                except Exception:
+                    llm = {}
+                llm_data[stage_name] = llm
+                gap = diff_stage_outputs(stage_name, det, llm)
+                stage_gaps.append(gap)
+
+            chains = build_naming_chains(det_data, llm_data)
+            propagation = trace_propagation(det_data)
+            gap_result = GapAnalysisResult(
+                repo_path=str(root),
+                stage_gaps=stage_gaps,
+                naming_chains=chains,
+                propagation_traces=propagation,
+                summary={"stages_analyzed": len(stage_gaps)},
+            )
+            report = render_gap_report(gap_result)
+            gap_path = output_dir / "gap-analysis-report.md"
+            gap_path.write_text(report)
+            print(f"Gap analysis report: {gap_path}")
+        else:
+            print("WARNING: --gap-analysis requires LLM provider (use --llm-review or set API key)")
+
+    return 0
+
+
+def _cmd_gap_analysis(args) -> int:
+    """Run gap analysis comparing deterministic pipeline vs LLM alternatives."""
+    from ..pipeline.gap_analysis import run_gap_analysis, GapAnalysisResult
+    from ..pipeline.gap_report import render_gap_report
+    from ..pipeline.llm_provider import create_llm_callback
+    import asyncio
+
+    root = Path(args.path).resolve()
+    if not root.is_dir():
+        print(f"ERROR: {root} is not a directory")
+        return 1
+
+    callback = create_llm_callback()
+    if callback is None:
+        print("ERROR: No LLM provider available. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or start copilot-relay.")
+        return 1
+
+    print(f"Running gap analysis on {root}...")
+    try:
+        result = asyncio.run(run_gap_analysis(root, callback))
+    except Exception as e:
+        print(f"ERROR: Gap analysis failed: {e}")
+        return 1
+
+    report = render_gap_report(result)
+
+    output_dir = Path(args.output).resolve() if args.output else root / ".architecture"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report_path = output_dir / "gap-analysis-report.md"
+    report_path.write_text(report)
+    print(f"Report written to: {report_path}")
+
+    # Print summary
+    total_gaps = sum(len(g.added) + len(g.removed) + len(g.renamed) for g in result.stage_gaps)
+    print(f"Stages analyzed: {len(result.stage_gaps)}")
+    print(f"Total gaps: {total_gaps}")
+    print(f"Naming chains: {len(result.naming_chains)}")
+    print(f"Propagation traces: {len(result.propagation_traces)}")
 
     return 0
 
