@@ -18,6 +18,20 @@ def generate_use_cases(model: ArchitectureModel, manifest: object | None = None)
     lines.append("")
 
     actor_map = {a.id: a for a in model.entities.actors}
+
+    # Build relationship lookup maps for v2.1 fields
+    beh_to_comps: dict[str, list[str]] = {}
+    comp_to_caps: dict[str, list[str]] = {}
+    for r in model.relationships:
+        rt = _rel_type_str(r.type)
+        if rt == "traces-to":
+            beh_to_comps.setdefault(r.from_id, []).append(r.to_id)
+        elif rt == "realizes":
+            comp_to_caps.setdefault(r.from_id, []).append(r.to_id)
+
+    comp_map = {c.id: c for c in model.entities.components}
+    cap_map = {c.id: c for c in model.entities.capabilities}
+
     use_case_behaviors = [b for b in model.entities.behaviors if getattr(b, "actor", None)]
     other_behaviors = [b for b in model.entities.behaviors if not getattr(b, "actor", None)]
 
@@ -78,6 +92,38 @@ def generate_use_cases(model: ArchitectureModel, manifest: object | None = None)
             for t in triggers:
                 target = beh_map.get(t.to_id)
                 lines.append(f"- {target.name if target else t.to_id}")
+
+        # v2.1: Success criteria from MOEs via relationship chain
+        linked_comps = beh_to_comps.get(beh.id, [])
+        linked_caps: set[str] = set()
+        for comp_id in linked_comps:
+            for cap_id in comp_to_caps.get(comp_id, []):
+                linked_caps.add(cap_id)
+
+        moes: list[str] = []
+        for cap_id in linked_caps:
+            cap = cap_map.get(cap_id)
+            if cap and getattr(cap, 'moes', None):
+                moes.extend(cap.moes)
+
+        failure_modes: list[str] = []
+        for comp_id in linked_comps:
+            comp = comp_map.get(comp_id)
+            if comp and getattr(comp, 'failure_modes', None):
+                failure_modes.extend(comp.failure_modes)
+
+        if moes:
+            lines.append("")
+            lines.append("**Success Criteria:**")
+            for moe in moes:
+                lines.append(f"- {moe}")
+
+        if failure_modes:
+            lines.append("")
+            lines.append("**Failure Modes:**")
+            for fm in failure_modes:
+                lines.append(f"- {fm}")
+
         lines.append("")
 
     if not all_ucs:

@@ -50,6 +50,15 @@ def generate_logical_architecture(model: ArchitectureModel, manifest: object | N
             files = len(comp.files) if comp.files else 0
             resps = "; ".join(comp.responsibilities[:3]) if comp.responsibilities else "—"
             lines.append(f"| {comp.name} ({comp.id}) | {kind} | {files} files | {resps} |")
+            if getattr(comp, 'intent', None):
+                lines.append(f"")
+                lines.append(f"*Intent:* {comp.intent}")
+            if getattr(comp, 'trade_offs', None):
+                lines.append(f"")
+                lines.append(f"*Trade-offs:*")
+                for t in comp.trade_offs:
+                    lines.append(f"- {t}")
+                lines.append(f"")
         lines.append("")
 
     # --- Inter-Component Interfaces ---
@@ -61,6 +70,10 @@ def generate_logical_architecture(model: ArchitectureModel, manifest: object | N
         for iface in model.entities.interfaces:
             itype = iface.type.value if hasattr(iface.type, "value") else str(iface.type)
             lines.append(f"| {iface.name} | {itype} | {iface.protocol or '—'} | {iface.provider or '—'} | {iface.consumer or '—'} |")
+            if getattr(iface, 'contract', None):
+                lines.append(f"")
+                lines.append(f"*Contract:* {iface.contract}")
+                lines.append(f"")
     else:
         lines.append("*No interfaces defined.*")
     lines.append("")

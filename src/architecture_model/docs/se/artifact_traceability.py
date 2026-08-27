@@ -345,6 +345,44 @@ def generate_artifact_traceability(
         lines.append("All entity types populated. Full traceability achieved.")
     lines.append("")
 
+    # --- Section 5b: Semantic Completeness Gaps ---
+    lines.append("### Semantic Completeness Gaps")
+    lines.append("")
+
+    # MOE gaps
+    caps_without_moes = [c for c in model.entities.capabilities if not getattr(c, 'moes', None)]
+    if caps_without_moes:
+        lines.append(f"**Capabilities without MOEs:** {len(caps_without_moes)}")
+        for c in caps_without_moes:
+            lines.append(f"- {c.id}: {c.name} — missing MOE definition")
+        lines.append("")
+
+    # Contract gaps
+    ifaces_without_contract = [i for i in model.entities.interfaces if not getattr(i, 'contract', None)]
+    if ifaces_without_contract:
+        lines.append(f"**Interfaces without contract:** {len(ifaces_without_contract)}")
+        for i in ifaces_without_contract:
+            lines.append(f"- {i.id}: {i.name} — missing contract (pre/post/invariant)")
+        lines.append("")
+
+    # Intent gaps
+    entities_without_intent: list[str] = []
+    for c in model.entities.components:
+        if not getattr(c, 'intent', None):
+            entities_without_intent.append(f"{c.id}: {c.name} (component)")
+    for c in model.entities.capabilities:
+        if not getattr(c, 'intent', None):
+            entities_without_intent.append(f"{c.id}: {c.name} (capability)")
+    if entities_without_intent:
+        lines.append(f"**Entities without intent:** {len(entities_without_intent)}")
+        for e in entities_without_intent:
+            lines.append(f"- {e}")
+        lines.append("")
+
+    if not caps_without_moes and not ifaces_without_contract and not entities_without_intent:
+        lines.append("All semantic fields populated.")
+        lines.append("")
+
     # --- Section 6: Architecture Artifact Inventory ---
     if repo_root:
         lines.extend(_render_dynamic_inventory(repo_root, reviews=reviews))

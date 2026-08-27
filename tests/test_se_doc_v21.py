@@ -82,3 +82,57 @@ class TestFunctionalAnalysisV21:
         model = make_model()
         result = generate_functional_analysis(model, manifest=None)
         assert "Strict validation vs permissive parsing" in result
+
+
+class TestLogicalArchitectureV21:
+    def test_component_intent_rendered(self):
+        from architecture_model.docs.se.logical_architecture import generate_logical_architecture
+        model = make_model()
+        result = generate_logical_architecture(model, manifest=None)
+        assert "Single source of truth" in result
+
+    def test_interface_contract_rendered(self):
+        from architecture_model.docs.se.logical_architecture import generate_logical_architecture
+        model = make_model()
+        result = generate_logical_architecture(model, manifest=None)
+        assert "Pre: model is parsed" in result or "idempotent" in result
+
+    def test_trade_offs_rendered(self):
+        from architecture_model.docs.se.logical_architecture import generate_logical_architecture
+        model = make_model()
+        result = generate_logical_architecture(model, manifest=None)
+        assert "Strict validation vs permissive parsing" in result
+
+
+class TestUseCasesV21:
+    def test_success_criteria_from_moes(self):
+        from architecture_model.docs.se.use_cases import generate_use_cases
+        model = make_model()
+        result = generate_use_cases(model, manifest=None)
+        # BEH-1 traces-to COMP-1, COMP-1 realizes CAP-1, CAP-1 has MOEs
+        assert "Success Criteria" in result or "Validation score >= 80/100" in result
+
+    def test_failure_modes_rendered(self):
+        from architecture_model.docs.se.use_cases import generate_use_cases
+        model = make_model()
+        result = generate_use_cases(model, manifest=None)
+        # COMP-1 has failure_modes, linked via traces-to from BEH-1
+        assert "Failure Modes" in result or "Silent acceptance" in result
+
+
+class TestArtifactTraceabilityV21:
+    def test_moe_gap_detection(self):
+        from architecture_model.docs.se.artifact_traceability import generate_artifact_traceability
+        model = make_model()
+        # Remove MOEs from CAP-2 to create a gap
+        model.entities.capabilities[1].moes = []
+        result = generate_artifact_traceability(model, manifest=None)
+        assert "without moe" in result.lower() or "missing moe" in result.lower()
+
+    def test_contract_gap_detection(self):
+        from architecture_model.docs.se.artifact_traceability import generate_artifact_traceability
+        model = make_model()
+        # Clear contract to create a gap
+        model.entities.interfaces[0].contract = ""
+        result = generate_artifact_traceability(model, manifest=None)
+        assert "without contract" in result.lower() or "missing contract" in result.lower()
