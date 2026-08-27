@@ -120,7 +120,7 @@ def extract_stage_data(stage_name: str, output: Any) -> dict:
     if stage_name == "contract":
         contracts = []
         for c in getattr(output, "contracts", []):
-            contracts.append(_obj_to_dict(c, ["test_file", "component_id"]))
+            contracts.append(_obj_to_dict(c, ["test_file", "target_component"], renames={"target_component": "component_id"}))
         return {"contracts": contracts}
 
     if stage_name == "validate":
