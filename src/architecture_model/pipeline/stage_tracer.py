@@ -252,7 +252,7 @@ def trace_relate(inventory, relate_output: dict, alloc_data: dict, infer_data: d
     for rel in rels:
         frm = rel.get("from", "")
         to = rel.get("to", "")
-        rtype = rel.get("type", "")
+        rtype = rel.get("type") or ""
 
         if frm.startswith("COMP") and to.startswith("CAP"):
             created_by = "realizes_derivation"

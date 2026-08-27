@@ -107,7 +107,7 @@ def extract_stage_data(stage_name: str, output: Any) -> dict:
             rels.append({
                 "from": getattr(r, "from_id", None),
                 "to": getattr(r, "to_id", None),
-                "type": getattr(r, "type", None),
+                "type": getattr(r, "rel_type", None) or getattr(r, "type", None),
             })
         return {"relationships": rels}
 

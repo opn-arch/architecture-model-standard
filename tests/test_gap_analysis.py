@@ -132,3 +132,19 @@ def test_generic_name_detection():
     assert is_generic_name("Helper")
     assert not is_generic_name("Environment Loading")
     assert not is_generic_name("Dotenv Parser")
+
+
+def test_extract_stage_data_relate_has_type():
+    """Relationship type must be extracted (not None)."""
+    from architecture_model.pipeline.gap_analysis import extract_stage_data
+
+    class FakeRel:
+        from_id = "COMP-1"
+        to_id = "CAP-1"
+        rel_type = "realizes"
+
+    class FakeOutput:
+        relationships = [FakeRel()]
+
+    data = extract_stage_data("relate", FakeOutput())
+    assert data["relationships"][0]["type"] == "realizes"
