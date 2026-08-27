@@ -472,17 +472,38 @@ def _detect_project_type(modules: list[ModuleRecord]) -> str:
     return "library"
 
 
+_LAYER_KEYWORDS: dict[str, list[str]] = {
+    "web": ["api", "route", "view", "handler", "endpoint"],
+    "data": ["model", "schema", "db", "repository", "migration"],
+    "service": ["service", "usecase", "domain", "logic"],
+    "core": ["core", "engine", "kernel"],
+    "infra": ["util", "helper", "common", "compat"],
+}
+
+
 def _infer_layer(files: list[Path], project_type: str = "library") -> str:
-    """Guess architectural layer from file paths."""
-    paths_str = " ".join(str(f) for f in files).lower()
-    if any(w in paths_str for w in ("api", "route", "view", "handler", "endpoint")):
-        return "web"
-    if any(w in paths_str for w in ("model", "schema", "db", "repository", "migration")):
-        return "data"
-    if any(w in paths_str for w in ("service", "usecase", "domain", "logic")):
-        return "service"
-    if any(w in paths_str for w in ("core", "engine", "kernel")):
-        return "core"
-    if any(w in paths_str for w in ("util", "helper", "common", "compat")):
-        return "infra"
-    return "library" if project_type == "library" else "infra"
+    """Guess architectural layer from file paths using per-file majority voting."""
+    default = "library" if project_type == "library" else "infra"
+    if not files:
+        return default
+
+    votes: dict[str, int] = {}
+    for f in files:
+        path_str = str(f).lower()
+        matched = False
+        for layer, keywords in _LAYER_KEYWORDS.items():
+            if any(kw in path_str for kw in keywords):
+                votes[layer] = votes.get(layer, 0) + 1
+                matched = True
+                break
+        if not matched:
+            votes[default] = votes.get(default, 0) + 1
+
+    if not votes:
+        return default
+
+    max_count = max(votes.values())
+    for layer in _LAYER_KEYWORDS:
+        if votes.get(layer, 0) == max_count:
+            return layer
+    return default

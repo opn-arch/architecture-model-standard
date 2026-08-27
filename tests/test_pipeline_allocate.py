@@ -110,6 +110,37 @@ class TestInferLayerEnhancements:
         from architecture_model.pipeline.allocate import _infer_layer
         assert _infer_layer([Path("colorama/ansi.py")], project_type="web_app") == "infra"
 
+    def test_one_handler_file_does_not_infect_layer(self):
+        """One file with 'handler' should not make the whole component 'web'."""
+        from architecture_model.pipeline.allocate import _infer_layer
+        files = [
+            Path("src/mylib/core/parser.py"),
+            Path("src/mylib/core/types.py"),
+            Path("src/mylib/core/validator.py"),
+            Path("src/mylib/core/handler.py"),
+        ]
+        result = _infer_layer(files, "library")
+        assert result != "web"
+
+    def test_majority_web_files_get_web_layer(self):
+        """When most files ARE web-related, should get web layer."""
+        from architecture_model.pipeline.allocate import _infer_layer
+        files = [
+            Path("src/app/api/routes.py"),
+            Path("src/app/api/views.py"),
+            Path("src/app/api/handlers.py"),
+            Path("src/app/api/utils.py"),
+        ]
+        result = _infer_layer(files, "web_app")
+        assert result == "web"
+
+    def test_single_file_uses_direct_match(self):
+        """Single file should use direct keyword match."""
+        from architecture_model.pipeline.allocate import _infer_layer
+        files = [Path("src/app/handler.py")]
+        result = _infer_layer(files, "web_app")
+        assert result == "web"
+
 
 class TestDetectProjectType:
     def test_detect_project_type_library(self):
