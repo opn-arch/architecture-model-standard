@@ -20,16 +20,30 @@ def generate_functional_analysis(model: ArchitectureModel, manifest: object | No
     lines.append("## Capability Inventory")
     lines.append("")
     if model.entities.capabilities:
-        lines.append("| ID | Capability | Priority | Status | Description |")
-        lines.append("|----|-----------|----------|--------|-------------|")
+        lines.append("| ID | Capability | Priority | Status | Description | Intent |")
+        lines.append("|----|-----------|----------|--------|-------------|--------|")
         for cap in model.entities.capabilities:
             prio = cap.priority.value if hasattr(cap.priority, "value") else str(cap.priority) if cap.priority else "—"
             desc = cap.description or "—"
             status = cap.status.value if hasattr(cap.status, "value") else str(cap.status)
-            lines.append(f"| {cap.id} | {cap.name} | {prio} | {status} | {desc} |")
+            intent_col = getattr(cap, 'intent', None) or "—"
+            lines.append(f"| {cap.id} | {cap.name} | {prio} | {status} | {desc} | {intent_col} |")
     else:
         lines.append("*No capabilities defined.*")
     lines.append("")
+
+    # --- Measures of Effectiveness ---
+    caps_with_moes = [(c.id, c.name, c.moes) for c in model.entities.capabilities
+                      if getattr(c, 'moes', None)]
+    if caps_with_moes:
+        lines.append("## Measures of Effectiveness")
+        lines.append("")
+        lines.append("| Capability | MOE |")
+        lines.append("|---|---|")
+        for cid, cname, moes in caps_with_moes:
+            for moe in moes:
+                lines.append(f"| {cname} ({cid}) | {moe} |")
+        lines.append("")
 
     # --- Functional Decomposition ---
     lines.append("## Functional Decomposition")
@@ -79,6 +93,18 @@ def generate_functional_analysis(model: ArchitectureModel, manifest: object | No
     else:
         lines.append("*No realizes relationships defined.*")
     lines.append("")
+
+    # --- Design Trade-offs ---
+    comps_with_tradeoffs = [(c.id, c.name, c.trade_offs) for c in model.entities.components
+                            if getattr(c, 'trade_offs', None)]
+    if comps_with_tradeoffs:
+        lines.append("### Design Trade-offs")
+        lines.append("")
+        for cid, cname, toffs in comps_with_tradeoffs:
+            lines.append(f"**{cname}** ({cid}):")
+            for t in toffs:
+                lines.append(f"- {t}")
+            lines.append("")
 
     # --- Behavioral Coverage ---
     lines.append("## Behavioral Coverage")
