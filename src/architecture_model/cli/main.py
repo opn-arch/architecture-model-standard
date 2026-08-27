@@ -875,7 +875,7 @@ def _cmd_pipeline(args) -> int:
 
     if getattr(args, "gap_analysis", False):
         from ..pipeline.gap_analysis import extract_stage_data, diff_stage_outputs, build_naming_chains, trace_propagation, GapAnalysisResult
-        from ..pipeline.gap_report import render_gap_report
+        from ..pipeline.gap_report import render_gap_report, render_deep_gap_report
         from ..pipeline.gap_prompts import build_reinfer_prompt, parse_reinfer_response
 
         print("\nRunning gap analysis...")
@@ -911,14 +911,25 @@ def _cmd_pipeline(args) -> int:
 
             chains = build_naming_chains(det_data, llm_data)
             propagation = trace_propagation(det_data)
+
+            # Build stage traces
+            from ..pipeline.stage_tracer import trace_stage as _trace_stage
+            inventory = results["observe"].output if "observe" in results else None
+            traces = {}
+            for sn in reviewable:
+                if sn in det_data:
+                    prior = {k: v for k, v in det_data.items() if k != sn}
+                    traces[sn] = _trace_stage(sn, inventory, det_data[sn], prior, llm_data.get(sn, {}))
+
             gap_result = GapAnalysisResult(
                 repo_path=str(root),
                 stage_gaps=stage_gaps,
                 naming_chains=chains,
                 propagation_traces=propagation,
                 summary={"stages_analyzed": len(stage_gaps)},
+                traces=traces,
             )
-            report = render_gap_report(gap_result)
+            report = render_deep_gap_report(gap_result, traces)
             gap_path = output_dir / "gap-analysis-report.md"
             gap_path.write_text(report)
             print(f"Gap analysis report: {gap_path}")
@@ -931,7 +942,7 @@ def _cmd_pipeline(args) -> int:
 def _cmd_gap_analysis(args) -> int:
     """Run gap analysis comparing deterministic pipeline vs LLM alternatives."""
     from ..pipeline.gap_analysis import run_gap_analysis, GapAnalysisResult
-    from ..pipeline.gap_report import render_gap_report
+    from ..pipeline.gap_report import render_gap_report, render_deep_gap_report
     from ..pipeline.llm_provider import create_llm_callback
     import asyncio
 
@@ -952,7 +963,10 @@ def _cmd_gap_analysis(args) -> int:
         print(f"ERROR: Gap analysis failed: {e}")
         return 1
 
-    report = render_gap_report(result)
+    if result.traces:
+        report = render_deep_gap_report(result, result.traces)
+    else:
+        report = render_gap_report(result)
 
     output_dir = Path(args.output).resolve() if args.output else root / ".architecture"
     output_dir.mkdir(parents=True, exist_ok=True)

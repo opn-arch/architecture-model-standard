@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-
 from .gap_analysis import GapAnalysisResult
+from .stage_tracer import StageTrace
 
 
 def render_gap_report(result: GapAnalysisResult) -> str:
@@ -108,5 +108,74 @@ def render_gap_report(result: GapAnalysisResult) -> str:
     for i, rec in enumerate(recommendations[:3], 1):
         lines.append(f"{i}. {rec}")
     lines.append("")
+
+    return "\n".join(lines)
+
+
+def render_deep_gap_report(
+    result: GapAnalysisResult,
+    traces: dict[str, StageTrace],
+) -> str:
+    """Render a deep gap report with per-function decision chains and entity provenance."""
+    lines: list[str] = []
+
+    lines.append("# Deep Gap Analysis Report")
+    lines.append("")
+    lines.append(f"**Repository:** {result.repo_path}")
+    lines.append(f"**Generated:** {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    lines.append("")
+
+    for gap in result.stage_gaps:
+        stage = gap.stage
+        lines.append(f"## Stage: {stage}")
+        lines.append("")
+
+        trace = traces.get(stage)
+        if not trace:
+            lines.append("*No trace data available for this stage.*")
+            lines.append("")
+            continue
+
+        # Stage summary
+        if trace.summary:
+            lines.append("### Summary")
+            lines.append("")
+            lines.append("| Metric | Value |")
+            lines.append("|--------|------:|")
+            for k, v in trace.summary.items():
+                lines.append(f"| {k} | {v} |")
+            lines.append("")
+
+        # Decision chain
+        if trace.decisions:
+            lines.append("### Decision Chain")
+            lines.append("")
+            for i, step in enumerate(trace.decisions, 1):
+                lines.append(f"#### {i}. `{step.function_name}` ({step.line_ref})")
+                lines.append("")
+                lines.append(f"**Checks:** {step.what_it_checks}")
+                lines.append(f"**Result:** {step.result}")
+                lines.append(f"**Assessment:** {step.assessment}")
+                if step.entities_created:
+                    names = ", ".join(e.get("name", "?") for e in step.entities_created)
+                    lines.append(f"**Entities created:** {names}")
+                lines.append("")
+
+        # Entity provenance
+        if trace.entities:
+            lines.append("### Entity Provenance")
+            lines.append("")
+            lines.append("| Entity | Type | Created By | Naming Heuristic | Pipeline Name | LLM Alternative |")
+            lines.append("|--------|------|-----------|-----------------|--------------|----------------|")
+            for ep in trace.entities:
+                nh = ep.naming_heuristic or "—"
+                llm_alt = ep.llm_alternative or "—"
+                lines.append(f"| {ep.entity_name} | {ep.entity_type} | `{ep.created_by}` | `{nh}` | {ep.output_value or ep.entity_name} | {llm_alt} |")
+            lines.append("")
+
+    # Include shallow report sections
+    lines.append("---")
+    lines.append("")
+    lines.append(render_gap_report(result))
 
     return "\n".join(lines)

@@ -85,6 +85,74 @@ def test_render_report_includes_renamed_table():
     assert "Environment Loading" in md
 
 
+def test_render_deep_report_has_decision_chain():
+    from architecture_model.pipeline.gap_report import render_deep_gap_report
+    from architecture_model.pipeline.gap_analysis import GapAnalysisResult, StageGap
+    from architecture_model.pipeline.stage_tracer import StageTrace, DecisionStep, EntityProvenance
+
+    gap = StageGap(stage="infer", deterministic={}, llm_alternative={},
+                   added=[], removed=[], renamed=[], quality_delta=0.0)
+    result = GapAnalysisResult(repo_path="/tmp/test", stage_gaps=[gap],
+                               naming_chains=[], propagation_traces=[], summary={})
+    traces = {
+        "infer": StageTrace(
+            stage="infer",
+            decisions=[DecisionStep(
+                function_name="_infer_from_domain_modules",
+                line_ref="infer.py:180",
+                what_it_checks="Transform module stems into capabilities",
+                result="4 capabilities created",
+                entities_created=[{"name": "Main"}],
+                assessment="✅ Correct",
+            )],
+            entities=[EntityProvenance(
+                entity_id="CAP-1", entity_name="Main", entity_type="capability",
+                created_by="_infer_from_domain_modules",
+                naming_heuristic="stem.title()", input_value="main", output_value="Main",
+                llm_alternative="Environment Loading",
+            )],
+            summary={"pipeline_caps": 4, "llm_caps": 7},
+        ),
+    }
+    md = render_deep_gap_report(result, traces)
+    assert "# Deep Gap Analysis Report" in md
+    assert "_infer_from_domain_modules" in md
+    assert "stem.title()" in md
+    assert "Environment Loading" in md
+    assert "Pipeline" in md and "LLM" in md
+
+
+def test_render_deep_report_empty_traces():
+    from architecture_model.pipeline.gap_report import render_deep_gap_report
+    from architecture_model.pipeline.gap_analysis import GapAnalysisResult, StageGap
+
+    gap = StageGap(stage="infer", deterministic={}, llm_alternative={},
+                   added=[], removed=[], renamed=[], quality_delta=0.0)
+    result = GapAnalysisResult(repo_path="/tmp/test", stage_gaps=[gap],
+                               naming_chains=[], propagation_traces=[], summary={})
+    md = render_deep_gap_report(result, {})
+    assert "# Deep Gap Analysis Report" in md
+
+
+def test_render_deep_report_stage_summary_table():
+    from architecture_model.pipeline.gap_report import render_deep_gap_report
+    from architecture_model.pipeline.gap_analysis import GapAnalysisResult, StageGap
+    from architecture_model.pipeline.stage_tracer import StageTrace
+
+    gap = StageGap(stage="allocate", deterministic={}, llm_alternative={},
+                   added=[], removed=[], renamed=[], quality_delta=0.0)
+    result = GapAnalysisResult(repo_path="/tmp/test", stage_gaps=[gap],
+                               naming_chains=[], propagation_traces=[], summary={})
+    traces = {
+        "allocate": StageTrace(
+            stage="allocate", decisions=[], entities=[],
+            summary={"pipeline_components": 4, "llm_components": 5, "all_infra": True},
+        ),
+    }
+    md = render_deep_gap_report(result, traces)
+    assert "pipeline_components" in md or "Pipeline" in md
+
+
 def test_render_report_recommendations():
     from architecture_model.pipeline.gap_report import render_gap_report
     from architecture_model.pipeline.gap_analysis import (

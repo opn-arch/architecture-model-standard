@@ -64,6 +64,7 @@ class GapAnalysisResult:
     naming_chains: list[NamingChain] = field(default_factory=list)
     propagation_traces: list[PropagationTrace] = field(default_factory=list)
     summary: dict = field(default_factory=dict)
+    traces: dict = field(default_factory=dict)  # stage_name -> StageTrace
 
 
 # --- Stage data extraction ---
@@ -438,6 +439,18 @@ async def run_gap_analysis(
     chains = build_naming_chains(det_data, llm_data)
     propagation = trace_propagation(det_data)
 
+    # Build stage traces
+    from .stage_tracer import trace_stage
+    inventory = results["observe"].output if "observe" in results else None
+    traces: dict = {}
+    for stage_name in reviewable:
+        if stage_name not in det_data:
+            continue
+        prior = {k: v for k, v in det_data.items() if k != stage_name}
+        traces[stage_name] = trace_stage(
+            stage_name, inventory, det_data[stage_name], prior, llm_data.get(stage_name, {}),
+        )
+
     total_gaps = sum(len(g.added) + len(g.removed) + len(g.renamed) for g in stage_gaps)
 
     return GapAnalysisResult(
@@ -451,4 +464,5 @@ async def run_gap_analysis(
             "naming_chains": len(chains),
             "propagation_traces": len(propagation),
         },
+        traces=traces,
     )

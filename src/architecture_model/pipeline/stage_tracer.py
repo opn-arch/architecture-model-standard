@@ -285,18 +285,21 @@ def trace_specify(inventory, specify_output: dict, alloc_data: dict, llm_data: d
 
         if name.endswith("REST API"):
             created_by = "rest_pattern"
+            nh = ""
         elif name.endswith("CLI"):
             created_by = "cli_pattern"
+            nh = ""
         elif name.endswith("Library API"):
             created_by = "library_api_fallback"
-            naming_heuristic = 'f"{comp_id} Library API"'
+            nh = 'f"{comp_id} Library API"'
         else:
             created_by = "unknown"
+            nh = ""
 
         prov = EntityProvenance(
             entity_id=comp_id, entity_name=name, entity_type="interface",
             created_by=created_by,
-            naming_heuristic=naming_heuristic if created_by == "library_api_fallback" else "",
+            naming_heuristic=nh,
         )
 
         # LLM alternative by component_id
