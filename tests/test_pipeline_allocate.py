@@ -87,3 +87,45 @@ class TestAllocatePerComponentQuality:
         if obs_quality.component_scores:
             # allocate should have component_scores too
             assert len(result.quality.component_scores) >= 0  # may be 0 if no mapping
+
+
+class TestInferLayerEnhancements:
+    def test_infer_layer_library_default(self):
+        from architecture_model.pipeline.allocate import _infer_layer
+        assert _infer_layer([Path("colorama/ansi.py")], project_type="library") == "library"
+
+    def test_infer_layer_core(self):
+        from architecture_model.pipeline.allocate import _infer_layer
+        assert _infer_layer([Path("mylib/core/engine.py")]) == "core"
+
+    def test_infer_layer_still_detects_web(self):
+        from architecture_model.pipeline.allocate import _infer_layer
+        assert _infer_layer([Path("mylib/api/routes.py")], project_type="library") == "web"
+
+    def test_infer_layer_util_returns_infra(self):
+        from architecture_model.pipeline.allocate import _infer_layer
+        assert _infer_layer([Path("mylib/utils/helper.py")]) == "infra"
+
+    def test_infer_layer_non_library_default(self):
+        from architecture_model.pipeline.allocate import _infer_layer
+        assert _infer_layer([Path("colorama/ansi.py")], project_type="web_app") == "infra"
+
+
+class TestDetectProjectType:
+    def test_detect_project_type_library(self):
+        from architecture_model.pipeline.allocate import _detect_project_type
+        from architecture_model.pipeline.observe_types import ModuleRecord
+        mods = [ModuleRecord(path=Path("mylib/core.py"), imports=["os", "sys"], line_count=50)]
+        assert _detect_project_type(mods) == "library"
+
+    def test_detect_project_type_web(self):
+        from architecture_model.pipeline.allocate import _detect_project_type
+        from architecture_model.pipeline.observe_types import ModuleRecord
+        mods = [ModuleRecord(path=Path("app/main.py"), imports=["flask"], line_count=50)]
+        assert _detect_project_type(mods) == "web_app"
+
+    def test_detect_project_type_cli(self):
+        from architecture_model.pipeline.allocate import _detect_project_type
+        from architecture_model.pipeline.observe_types import ModuleRecord
+        mods = [ModuleRecord(path=Path("app/main.py"), imports=["click"], line_count=50)]
+        assert _detect_project_type(mods) == "cli_tool"

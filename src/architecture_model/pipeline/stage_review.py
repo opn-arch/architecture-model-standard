@@ -140,6 +140,17 @@ def build_semantic_review_prompt(
         for c in components:
             intent = c.get("intent", "—")
             lines.append(f"| {c['id']} | {c['name']} | {intent} | {c.get('file_count', '?')} | {c.get('quality', '?')} |")
+        # Layer validation for allocate stage
+        if stage_name == "allocate":
+            lines.append("\n## LAYER VALIDATION")
+            lines.append("For each component, verify the layer assignment is correct.")
+            lines.append("If all components share the same layer, this likely indicates the layer classifier missed domain-specific patterns.")
+            lines.append("Components:")
+            for c in components:
+                layer = c.get("layer", "unknown")
+                files = c.get("files", [])
+                lines.append(f"- {c['name']}: layer={layer}, files={files}")
+            lines.append('Reply with corrections: {"corrections": [{"entity_id": "...", "field": "layer", "old": "...", "new": "..."}]}')
     if modules:
         lines.append("\n## Modules")
         lines.append("| Path | Functions | Quality |")
@@ -161,7 +172,7 @@ def build_semantic_review_prompt(
         "```",
         "",
         "Correction actions: improve, add, fix, remove.",
-        "Fields: intent, moes, failure_modes, status, trade_offs.",
+        "Fields: intent, moes, failure_modes, status, trade_offs, layer.",
         "Set confidence >= 0.8 for corrections you are certain about.",
         "Return ONLY the JSON object, no other text.",
     ])
