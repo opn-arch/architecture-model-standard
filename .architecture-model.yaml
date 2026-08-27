@@ -1,5 +1,5 @@
 meta:
-  schema_version: '1.3'
+  schema_version: '2.1'
   project: architecture-model-standard
   generated_at: '2026-08-16'
   lifecycle_phase: production
@@ -11,74 +11,162 @@ entities:
     status: ACTIVE
     description: Check model correctness, completeness, hierarchy consistency, and
       domain rules
+    intent: Ensure architecture models are structurally sound and internally consistent before downstream consumption
+    moes:
+    - Validation score >= 80 on well-formed models
+    - Zero false-positive errors on valid models
+    - All referential integrity violations detected
   - id: CAP-2
     name: Extract Architecture from Code
     status: ACTIVE
     description: Scan source code AST and derive components, relationships, behaviors
       automatically
+    intent: Bootstrap architecture models from existing codebases without manual authoring
+    moes:
+    - Extraction produces valid models scoring >= 90 on arbitrary Python repos
+    - All non-trivial source files represented in the model
+    - Relationship types correctly inferred from import analysis
   - id: CAP-3
     name: Run Modular Extraction Pipeline
     status: ACTIVE
     description: Execute 10-stage pipeline (observe→infer→allocate→relate→specify→contract→validate→decompose→synthesize→emit)
+    intent: Provide a repeatable, cacheable, stage-by-stage process for producing architecture models from code
+    moes:
+    - All 10 stages complete without error on repos with >200 files
+    - Each stage independently runnable with cached predecessors
+    - Deterministic output for identical input
   - id: CAP-4
     name: Generate Reality Manifest
     status: ACTIVE
     description: Scan source files to produce structural facts (functions, imports,
       classes, routes, tests)
+    intent: Establish ground-truth code inventory so architecture claims can be verified against reality
+    moes:
+    - All non-trivial Python files scanned with function/class extraction
+    - Import edges resolved with >95% accuracy
+    - Manifest generation completes in <10s for repos with 200 files
   - id: CAP-5
     name: Generate SE Documentation
     status: ACTIVE
     description: Produce functional analysis, logical architecture, use cases, requirements,
       V&V, operations docs
+    intent: Auto-generate standards-compliant systems engineering documentation from architecture models
+    moes:
+    - Generate at least 15 SE document types from a single model
+    - Core docs (health, functional-analysis) regenerate in <1s without LLM
+    - User-edited sections preserved across regeneration
   - id: CAP-6
     name: Author Model from Requirements
     status: ACTIVE
     description: Parse requirements document into a concept-phase architecture model
+    intent: Enable forward-engineering by converting stakeholder requirements into architecture before code exists
+    moes:
+    - Parse markdown requirements into valid ArchitectureModel
+    - Actors, capabilities, and constraints correctly extracted
+    - Generated model passes validation with score >= 80
   - id: CAP-7
     name: Slice and Query Models
     status: ACTIVE
     description: Filter model by block, layer, status, artifact for focused context
       delivery
+    intent: Deliver only relevant architecture context to token-limited AI agents and focused human queries
+    moes:
+    - Sliced output fits within 4000-token budget
+    - Slice preserves all relationships touching included entities
+    - Query response time <100ms for any slice operation
   - id: CAP-8
     name: Diff Model Versions
     status: ACTIVE
     description: Compare two model versions showing additions, removals, and changes
+    intent: Track architectural evolution over time and detect unintended structural changes
+    moes:
+    - All added, removed, and changed entities detected
+    - Diff output human-readable and machine-parseable
+    - Diff completes in <1s for models with 100+ entities
   - id: CAP-9
     name: Decompose Models Hierarchically
     status: ACTIVE
     description: Break coarse models into per-system sub-models with parent/child
       relationships
+    intent: Enable scalable architecture management by splitting large models into focused, self-contained subsystems
+    moes:
+    - Components with >=5 files produce autonomous sub-models
+    - Each sub-model is independently valid
+    - Parent model correctly references all child systems
   - id: CAP-10
     name: Enrich Models with Code Intelligence
     status: ACTIVE
     description: Auto-populate signatures, constants, test contracts, behaviors from
       source
+    intent: Bridge the gap between abstract architecture and concrete code to enable faithful code regeneration
+    moes:
+    - Signatures populated for >90% of public functions
+    - Body hints cover trivial functions (one-liners)
+    - Test contracts extracted for all test files with assertions
   - id: CAP-11
     name: Assess Regen Readiness
     status: ACTIVE
     description: Score how well a model captures enough detail to regenerate code
+    intent: Quantify whether a model contains sufficient information for an AI agent to regenerate working code
+    moes:
+    - Regen score correlates with actual test pass rate (r > 0.8)
+    - Per-component scores with actionable blocker list
+    - Grade scale (A-F) matches blind regeneration fidelity
   - id: CAP-12
     name: Check Development Gate
     status: ACTIVE
     description: Verify code reality is tracking toward authored architecture intent
+    intent: Prevent architectural drift by gating development milestones on model-to-code alignment
+    moes:
+    - Gate check reports coverage percentage of authored capabilities
+    - Unimplemented capabilities clearly flagged
+    - Gate result includes pass/fail with actionable gaps
   - id: CAP-13
     name: Detect and Fix Model Drift
     status: ACTIVE
     description: Compare model against current code, report coverage gaps
+    intent: Keep architecture models synchronized with evolving codebases by detecting and reporting divergence
+    moes:
+    - File coverage reported as percentage of source files modeled
+    - Orphan components (no matching files) detected
+    - Drift report generated in <5s
   - id: CAP-14
     name: Manage Global Learnings
     status: ACTIVE
     description: Store, retrieve, and apply heuristics/archetypes/workflows across
       pipeline runs
+    intent: Improve pipeline accuracy over time by accumulating and reusing extraction patterns
+    moes:
+    - Learnings persisted across pipeline runs
+    - Pattern lookup returns relevant heuristics in <100ms
+    - Duplicate learnings deduplicated by content hash
   - id: CAP-15
     name: Export for AI Consumption
     status: ACTIVE
     description: Produce flat-file exports optimized for token-limited AI environments
+    intent: Make architecture models portable and consumable by AI agents that cannot access the repository directly
+    moes:
+    - Export includes model, sub-models, docs, manifests, and diagrams
+    - Exported package is self-contained (no external dependencies)
+    - Total export size fits within reasonable token budgets for frontier models
   components:
   - id: COMP-1
     name: Core
     status: ACTIVE
     description: Foundation types, validation, parsing, and model operations
+    intent: Provide the canonical type system and fundamental operations that all other subsystems depend on
+    goals:
+    - Define a complete, extensible type system for architecture entities
+    - Validate models with scored, actionable feedback
+    - Support lossless YAML round-trip parsing
+    trade_offs:
+    - Rich type system vs. schema simplicity for external consumers
+    - Strict validation vs. permissive parsing for backward compatibility
+    - Monolithic core vs. fine-grained packages (chose monolithic for import simplicity)
+    failure_modes:
+    - Type system changes break downstream parsers and MCP tools
+    - Validation false positives block valid models from progressing
+    - Parser loses data on round-trip due to YAML serialization edge cases
     layer: foundation
     kind: library
     children:
@@ -164,6 +252,19 @@ entities:
     name: Pipeline
     status: ACTIVE
     description: Modular 10-stage extraction pipeline with coordination and caching
+    intent: Automate the entire code-to-model extraction process as a repeatable, cacheable pipeline
+    goals:
+    - Execute all 10 stages in dependency order with error recovery
+    - Cache intermediate results for incremental re-runs
+    - Surface uncertainties for human or LLM resolution between stages
+    trade_offs:
+    - Stage granularity (10 stages) vs. simpler monolithic extraction
+    - Cache correctness vs. cache invalidation complexity
+    - Determinism vs. allowing LLM enrichment between stages
+    failure_modes:
+    - Cache staleness causes pipeline to emit outdated models
+    - Stage failure cascades prevent partial results from being usable
+    - Uncertainty accumulation across stages produces low-confidence models
     layer: domain
     kind: service
     children:
@@ -254,6 +355,19 @@ entities:
     name: Manifest
     status: ACTIVE
     description: Source code scanning — AST analysis, import resolution, grouping
+    intent: Produce ground-truth code inventories via AST scanning so architecture claims can be verified
+    goals:
+    - Scan all source files and extract functions, classes, imports, and metrics
+    - Resolve import edges to build accurate dependency graphs
+    - Group modules into logical components by affinity signals
+    trade_offs:
+    - AST-only analysis (fast, deterministic) vs. runtime analysis (more accurate)
+    - Language-specific scanners vs. universal parsing (chose per-language for accuracy)
+    - Scan depth vs. performance on large repos
+    failure_modes:
+    - Dynamic imports or metaprogramming invisible to AST scanning
+    - Import resolution fails on namespace packages or conditional imports
+    - Grouping algorithm produces incoherent component boundaries
     layer: domain
     kind: library
     children:
@@ -315,6 +429,19 @@ entities:
     status: ACTIVE
     description: Architecture documentation generation — component specs, SE docs,
       diagrams
+    intent: Generate human-readable and AI-consumable architecture documentation from models automatically
+    goals:
+    - Produce component specs, ICDs, and dependency matrices from model data
+    - Generate 15+ SE document types following standards-based templates
+    - Create Mermaid diagrams for visual architecture communication
+    trade_offs:
+    - Template-based generation (fast, consistent) vs. LLM-generated prose (richer)
+    - Document completeness vs. generation speed
+    - Preserving user edits vs. full regeneration freshness
+    failure_modes:
+    - Generated docs become stale if not regenerated after model changes
+    - User edits lost on regeneration if preservation logic fails
+    - Diagram complexity makes large systems unreadable
     layer: application
     kind: library
     children:
@@ -376,6 +503,19 @@ entities:
     name: Orchestration
     status: ACTIVE
     description: High-level workflows — enrichment, decomposition, behavior analysis
+    intent: Compose lower-level operations into complete workflows that transform models end-to-end
+    goals:
+    - Enrich models with signatures, constants, and test contracts from manifests
+    - Decompose models into hierarchical per-system sub-models
+    - Detect and wire cross-component behavior flows
+    trade_offs:
+    - Automated enrichment (convenient) vs. manual curation (precise)
+    - Aggressive decomposition vs. keeping small systems inline
+    - Behavior cap (40 per component) vs. complete behavioral coverage
+    failure_modes:
+    - Enrichment overwrites manually curated model data
+    - Decomposition creates too many tiny sub-models that fragment context
+    - Behavior inference produces spurious flows from coincidental call patterns
     layer: application
     kind: service
     children:
@@ -419,6 +559,19 @@ entities:
     status: ACTIVE
     description: Code-to-model extraction — route detection, constraint detection,
       artifact parsing
+    intent: Convert raw code artifacts into structured architecture model entities
+    goals:
+    - Detect web routes, API endpoints, and framework patterns
+    - Extract constraints from configuration and code annotations
+    - Parse existing architecture artifacts (markdown tables, specs) into model entities
+    trade_offs:
+    - Framework-specific detection (accurate) vs. generic heuristics (portable)
+    - Extracting from code vs. from documentation (chose both with priority on code)
+    - Precision vs. recall in constraint detection
+    failure_modes:
+    - Framework-specific extractors miss custom or unconventional patterns
+    - Artifact parser misinterprets markdown table structure
+    - Constraint detection produces false positives from comments or dead code
     layer: domain
     kind: library
     files:
@@ -432,6 +585,19 @@ entities:
     name: Authoring
     status: ACTIVE
     description: Forward-author models from requirements, check development gates
+    intent: Enable architecture-first development by creating models before code and gating progress against them
+    goals:
+    - Parse freeform requirements documents into concept-phase models
+    - Gate development milestones on architecture coverage
+    - Bridge the gap between stakeholder intent and technical architecture
+    trade_offs:
+    - Structured parsing (reliable) vs. LLM-based understanding (flexible)
+    - Strict gate enforcement vs. advisory-only feedback
+    - Requirements granularity vs. model abstraction level
+    failure_modes:
+    - Requirements parser misinterprets ambiguous natural language
+    - Gate check produces false failures due to naming mismatches
+    - Authored model diverges from implementation reality over time
     layer: application
     kind: library
     files:
@@ -444,6 +610,19 @@ entities:
     name: CLI
     status: ACTIVE
     description: Command-line interface — all user-facing commands
+    intent: Expose all architecture operations as CLI commands for developers and CI/CD pipelines
+    goals:
+    - Provide commands for validate, slice, diff, manifest, enrich, decompose, and docs
+    - Support both interactive developer use and headless CI/CD execution
+    - Serve as the MCP-wrappable surface for AI agent integration
+    trade_offs:
+    - Single monolithic CLI vs. per-subsystem CLIs (chose monolithic for discoverability)
+    - Rich interactive output vs. machine-parseable output (support both via flags)
+    - Exposing all operations vs. curating a minimal command set
+    failure_modes:
+    - CLI argument parsing errors give unhelpful messages
+    - Command fails silently instead of returning non-zero exit code
+    - Breaking CLI changes disrupt MCP server wrappers
     layer: interface
     kind: service
     files:
@@ -458,6 +637,19 @@ entities:
     name: Configuration
     status: ACTIVE
     description: Configuration loading, domain profiles, schema definitions
+    intent: Provide discoverable, zero-config project settings with extensibility via domain profiles
+    goals:
+    - Auto-discover project configuration from directory structure
+    - Support domain profiles (software, controls, mechanical, electrical)
+    - Define schema rules that the validator enforces
+    trade_offs:
+    - Convention-over-configuration (easy start) vs. explicit config (predictable)
+    - Built-in profiles vs. user-defined profiles (support both)
+    - Schema strictness vs. forward compatibility with new fields
+    failure_modes:
+    - Auto-discovery misidentifies project root or source directories
+    - Profile loading fails silently and falls back to wrong defaults
+    - Schema definition conflicts with validator implementation
     layer: infrastructure
     kind: library
     files:
@@ -472,6 +664,19 @@ entities:
     name: Export
     status: ACTIVE
     description: Flat-file export for AI consumption, reference doc generation
+    intent: Package architecture models into portable, self-contained bundles for token-limited AI environments
+    goals:
+    - Export model, sub-models, docs, manifests, and diagrams as flat files
+    - Generate reference documentation for offline consumption
+    - Produce exports that are self-contained without repository access
+    trade_offs:
+    - Complete export (large) vs. minimal export (fits token budgets)
+    - Directory-based export vs. single archive (support both)
+    - Including all artifacts vs. selective export based on use case
+    failure_modes:
+    - Export produces files too large for target AI context window
+    - Missing sub-models or manifests make export incomplete
+    - File path references in export break when moved to different location
     layer: application
     kind: library
     files:
@@ -495,6 +700,19 @@ entities:
     name: Utilities
     status: ACTIVE
     description: Shared utilities, monitoring, patterns, data loading
+    intent: Provide cross-cutting utilities that prevent duplication across subsystems
+    goals:
+    - Centralize file discovery and exclusion pattern logic
+    - Provide monitoring and observability hooks for key operations
+    - Share common patterns and data loading utilities
+    trade_offs:
+    - Shared utilities (DRY) vs. subsystem autonomy (decoupled)
+    - Monitoring overhead vs. operational visibility
+    - General-purpose utilities vs. domain-specific helpers
+    failure_modes:
+    - Utility changes silently break multiple dependent subsystems
+    - Monitoring hooks add latency to critical-path operations
+    - Exclusion patterns miss new file types or directory conventions
     layer: infrastructure
     kind: library
     files:
