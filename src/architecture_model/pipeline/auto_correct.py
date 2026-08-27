@@ -6,7 +6,7 @@ from typing import Any
 
 from .stage_review import Correction
 
-SAFE_FIELDS = {"intent", "moes", "failure_modes", "trade_offs", "status", "goals"}
+SAFE_FIELDS = {"intent", "moes", "failure_modes", "trade_offs", "status", "goals", "layer"}
 STRUCTURAL_FIELDS = {"name", "id", "files", "relationships"}
 CONFIDENCE_THRESHOLD = 0.8
 

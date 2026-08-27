@@ -1,8 +1,10 @@
 """Tests for the infer pipeline stage."""
 import pytest
 from pathlib import Path
-from architecture_model.pipeline.infer import InferStage
+from architecture_model.pipeline.infer import InferStage, _infer_library_behaviors
 from architecture_model.pipeline.observe import ObserveStage
+from architecture_model.pipeline.observe_types import ModuleRecord, FunctionRecord, ClassRecord
+from architecture_model.pipeline.infer_types import InferredCapability, InferredBehavior
 from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
 
 
@@ -108,3 +110,134 @@ def validate_card():
         result = _run_observe_then_infer(tmp_path)
         cap_names = [c.name.lower() for c in result.output.capabilities]
         assert any("payment" in n for n in cap_names)
+
+
+class TestInferLibraryBehaviors:
+    """Tests for _infer_library_behaviors() — detecting behaviors in pure libraries."""
+
+    def test_infer_library_behaviors_from_public_api(self):
+        """Module with init/deinit/reinit → at least 1 behavior with 'init' in name."""
+        modules = [
+            ModuleRecord(
+                path=Path("mylib/core.py"),
+                functions=[
+                    FunctionRecord(name="init", signature="def init()", body_hint=""),
+                    FunctionRecord(name="deinit", signature="def deinit()", body_hint=""),
+                    FunctionRecord(name="reinit", signature="def reinit()", body_hint=""),
+                    FunctionRecord(name="_private", signature="def _private()", body_hint=""),
+                ],
+            ),
+        ]
+        caps = [InferredCapability(id="CAP-1", name="Core", description="Domain logic in mylib/core.py")]
+        behaviors = _infer_library_behaviors(modules, caps, [])
+        assert len(behaviors) >= 1
+        names_lower = [b.name.lower() for b in behaviors]
+        assert any("init" in n for n in names_lower)
+        assert all(b.id.startswith("BEH-LIB-") for b in behaviors)
+
+    def test_infer_library_behaviors_context_manager(self):
+        """Class with __enter__/__exit__ → behavior with 'context' in name."""
+        modules = [
+            ModuleRecord(
+                path=Path("mylib/resource.py"),
+                classes=[
+                    ClassRecord(
+                        name="Connection",
+                        methods=["__enter__", "__exit__", "query"],
+                    ),
+                ],
+            ),
+        ]
+        caps = [InferredCapability(id="CAP-1", name="Resource", description="Domain logic in mylib/resource.py")]
+        behaviors = _infer_library_behaviors(modules, caps, [])
+        assert len(behaviors) >= 1
+        names_lower = [b.name.lower() for b in behaviors]
+        assert any("context" in n for n in names_lower)
+
+    def test_infer_library_behaviors_lifecycle(self):
+        """Class with open/close → behavior with 'lifecycle' in name."""
+        modules = [
+            ModuleRecord(
+                path=Path("mylib/client.py"),
+                classes=[
+                    ClassRecord(
+                        name="Client",
+                        methods=["open", "close", "send", "receive"],
+                    ),
+                ],
+            ),
+        ]
+        caps = [InferredCapability(id="CAP-1", name="Client", description="Domain logic in mylib/client.py")]
+        behaviors = _infer_library_behaviors(modules, caps, [])
+        assert len(behaviors) >= 1
+        names_lower = [b.name.lower() for b in behaviors]
+        assert any("lifecycle" in n for n in names_lower)
+
+    def test_infer_library_behaviors_processing_chain(self):
+        """Module with parse/validate/apply → at least 1 behavior."""
+        modules = [
+            ModuleRecord(
+                path=Path("mylib/processor.py"),
+                functions=[
+                    FunctionRecord(name="parse", signature="def parse(data)", body_hint=""),
+                    FunctionRecord(name="validate", signature="def validate(parsed)", body_hint=""),
+                    FunctionRecord(name="apply", signature="def apply(validated)", body_hint=""),
+                ],
+            ),
+        ]
+        caps = [InferredCapability(id="CAP-1", name="Processor", description="Domain logic in mylib/processor.py")]
+        behaviors = _infer_library_behaviors(modules, caps, [])
+        assert len(behaviors) >= 1
+        names_lower = [b.name.lower() for b in behaviors]
+        assert any("pipeline" in n or "processing" in n for n in names_lower)
+
+    def test_infer_library_behaviors_factory(self):
+        """Functions named create_* or classes with Factory → behavior."""
+        modules = [
+            ModuleRecord(
+                path=Path("mylib/factory.py"),
+                functions=[
+                    FunctionRecord(name="create_widget", signature="def create_widget()", body_hint=""),
+                    FunctionRecord(name="create_gadget", signature="def create_gadget()", body_hint=""),
+                ],
+                classes=[
+                    ClassRecord(name="ConnectionFactory", methods=["build"]),
+                ],
+            ),
+        ]
+        caps = [InferredCapability(id="CAP-1", name="Factory", description="Domain logic in mylib/factory.py")]
+        behaviors = _infer_library_behaviors(modules, caps, [])
+        assert len(behaviors) >= 1
+        names_lower = [b.name.lower() for b in behaviors]
+        assert any("create" in n for n in names_lower)
+
+    def test_infer_library_behaviors_skips_non_source(self):
+        """Test/init modules should be skipped."""
+        modules = [
+            ModuleRecord(
+                path=Path("tests/test_core.py"),
+                functions=[
+                    FunctionRecord(name="setup", signature="def setup()", body_hint=""),
+                ],
+            ),
+        ]
+        behaviors = _infer_library_behaviors(modules, [], [])
+        assert len(behaviors) == 0
+
+    def test_library_behaviors_integrated(self, tmp_path):
+        """Integration: pure library with init/close gets behaviors via full pipeline."""
+        (tmp_path / "mylib.py").write_text('''
+def init():
+    """Initialize the library."""
+    pass
+
+def configure(options):
+    """Configure settings."""
+    pass
+
+def shutdown():
+    """Shut down cleanly."""
+    pass
+''')
+        result = _run_observe_then_infer(tmp_path)
+        assert len(result.output.behaviors) >= 1

@@ -18,6 +18,26 @@ from .protocol import (
 from .specify_types import InterfaceSpec, SpecifyResult
 
 
+def _name_library_interface(
+    comp_id: str, comp_name: str,
+    public_symbols: dict[str, str], module_stems: list[str],
+) -> str:
+    """Generate a descriptive interface name from component metadata."""
+    # Strategy 1: Single dominant class
+    classes = [name for name, sig in public_symbols.items() if sig.startswith("class ")]
+    if len(classes) == 1:
+        return f"{classes[0]} API"
+    # Strategy 2: Use component name
+    if comp_name and comp_name != comp_id:
+        return f"{comp_name} API"
+    # Strategy 3: Use module stem
+    if module_stems:
+        stem = module_stems[0].replace("_", " ").title()
+        return f"{stem} API"
+    # Fallback
+    return f"{comp_id} Library API"
+
+
 class SpecifyStage:
     """Derives interface specifications from observed routes and module exports."""
 
@@ -40,9 +60,13 @@ class SpecifyStage:
         interfaces: list[InterfaceSpec] = []
         iface_counter = 0
 
-        # Build file→comp map
+        # Build file→comp map and name/stems lookups
         file_to_comp: dict[Path, str] = {}
+        comp_id_to_name: dict[str, str] = {}
+        comp_id_to_stems: dict[str, list[str]] = {}
         for comp in allocation.components:
+            comp_id_to_name[comp.id] = comp.name
+            comp_id_to_stems[comp.id] = [f.stem for f in comp.files]
             for f in comp.files:
                 file_to_comp[f] = comp.id
 
@@ -158,10 +182,14 @@ class SpecifyStage:
                     for sym in consumed
                     if sym in comp_public[comp_id]
                 )
+                iface_name = _name_library_interface(
+                    comp_id, comp_id_to_name.get(comp_id, comp_id),
+                    comp_public.get(comp_id, {}), comp_id_to_stems.get(comp_id, []),
+                )
                 interfaces.append(
                     InterfaceSpec(
                         id=f"IF-{iface_counter}",
-                        name=f"{comp_id} Library API",
+                        name=iface_name,
                         component_id=comp_id,
                         interface_type="library",
                         methods=methods,
@@ -175,10 +203,14 @@ class SpecifyStage:
             if comp_id not in comps_with_iface_so_far and symbols:
                 iface_counter += 1
                 methods = sorted(f"{sym}: {sig}" for sym, sig in list(symbols.items())[:10])
+                iface_name = _name_library_interface(
+                    comp_id, comp_id_to_name.get(comp_id, comp_id),
+                    symbols, comp_id_to_stems.get(comp_id, []),
+                )
                 interfaces.append(
                     InterfaceSpec(
                         id=f"IF-{iface_counter}",
-                        name=f"{comp_id} Library API",
+                        name=iface_name,
                         component_id=comp_id,
                         interface_type="library",
                         methods=methods,

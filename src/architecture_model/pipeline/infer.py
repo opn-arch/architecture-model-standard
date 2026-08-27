@@ -192,6 +192,15 @@ class InferStage:
         behaviors, behavior_uncertainties = _infer_behaviors(inventory, capabilities, actors)
         uncertainties.extend(behavior_uncertainties)
 
+        # --- Library behaviors: for capabilities without existing behaviors ---
+        caps_with_behaviors = {b.capability_id for b in behaviors if b.capability_id}
+        lib_modules = [m for m in inventory.modules if not _is_non_source_module(m)]
+        lib_behaviors = _infer_library_behaviors(lib_modules, capabilities, actors)
+        # Only add library behaviors for capabilities not already covered
+        for lb in lib_behaviors:
+            if not lb.capability_id or lb.capability_id not in caps_with_behaviors:
+                behaviors.append(lb)
+
         # --- Uncertainties for ambiguous modules ---
         for mod in inventory.modules:
             if not _module_has_clear_purpose(mod, capabilities):
@@ -837,6 +846,158 @@ def _infer_infrastructure_capabilities(
         )
 
     return capabilities
+
+
+# ---------------------------------------------------------------------------
+# Library behavior inference — detects behaviors in pure libraries
+# ---------------------------------------------------------------------------
+
+_API_ENTRY_VERBS = frozenset({
+    "init", "setup", "configure", "create", "build", "connect", "open", "close",
+    "load", "run", "start", "stop", "deinit", "shutdown", "teardown", "destroy",
+    "reset",
+})
+
+_LIFECYCLE_PAIRS = [
+    ("open", "close"), ("connect", "disconnect"), ("start", "stop"),
+    ("acquire", "release"), ("lock", "unlock"), ("setup", "teardown"),
+    ("init", "deinit"), ("begin", "end"),
+]
+
+_PROCESSING_CHAINS = [
+    ["parse", "validate", "apply"],
+    ["read", "process", "write"],
+    ["load", "transform", "save"],
+    ["encode", "decode"],
+    ["serialize", "deserialize"],
+    ["compress", "decompress"],
+    ["encrypt", "decrypt"],
+    ["pack", "unpack"],
+    ["marshal", "unmarshal"],
+    ["tokenize", "parse"],
+]
+
+
+def _infer_library_behaviors(
+    source_modules: list[ModuleRecord],
+    capabilities: list[InferredCapability],
+    actors: list,
+) -> list[InferredBehavior]:
+    """Infer behaviors from pure-library patterns (no routes/CLI needed)."""
+    behaviors: list[InferredBehavior] = []
+    counter = 0
+
+    # Build cap lookup: module stem → capability id
+    cap_by_mod: dict[str, str] = {}
+    for cap in capabilities:
+        # Match by module stem in description or name
+        for mod in source_modules:
+            stem = mod.path.stem
+            if stem.lower() in cap.description.lower() or stem.lower() in cap.name.lower():
+                cap_by_mod[stem] = cap.id
+
+    for mod in source_modules:
+        if _is_non_source_module(mod):
+            continue
+
+        stem = mod.path.stem
+        mod_label = stem.replace("_", " ").title()
+        cap_id = cap_by_mod.get(stem, "")
+
+        public_funcs = [f for f in mod.functions if not f.name.startswith("_")]
+        func_names = {f.name for f in public_funcs}
+
+        # 1. API entry points
+        for func in public_funcs:
+            base = func.name.split("_")[0] if "_" in func.name else func.name
+            if base in _API_ENTRY_VERBS or func.name in _API_ENTRY_VERBS:
+                verb = func.name.replace("_", " ").title()
+                counter += 1
+                behaviors.append(InferredBehavior(
+                    id=f"BEH-LIB-{counter}",
+                    name=f"{verb} {mod_label}",
+                    capability_id=cap_id,
+                    steps=[func.name],
+                    behavior_type="library_api",
+                ))
+
+        # 2. Context managers
+        for cls in mod.classes:
+            if cls.name.startswith("_"):
+                continue
+            methods = set(cls.methods)
+            if "__enter__" in methods and "__exit__" in methods:
+                counter += 1
+                behaviors.append(InferredBehavior(
+                    id=f"BEH-LIB-{counter}",
+                    name=f"{cls.name} context management",
+                    capability_id=cap_id,
+                    steps=["__enter__", "__exit__"],
+                    behavior_type="use_case",
+                ))
+
+        # 3. Lifecycle pairs
+        for cls in mod.classes:
+            if cls.name.startswith("_"):
+                continue
+            methods = set(cls.methods)
+            for a, b in _LIFECYCLE_PAIRS:
+                if a in methods and b in methods:
+                    counter += 1
+                    behaviors.append(InferredBehavior(
+                        id=f"BEH-LIB-{counter}",
+                        name=f"{cls.name} lifecycle",
+                        capability_id=cap_id,
+                        steps=[a, b],
+                        behavior_type="workflow",
+                    ))
+                    break  # one lifecycle behavior per class
+
+        # 4. Processing chains
+        if len(public_funcs) >= 2:
+            for chain in _PROCESSING_CHAINS:
+                matched = [name for name in chain if name in func_names]
+                if len(matched) >= 2:
+                    counter += 1
+                    behaviors.append(InferredBehavior(
+                        id=f"BEH-LIB-{counter}",
+                        name=f"{mod_label} processing pipeline",
+                        capability_id=cap_id,
+                        steps=matched,
+                        behavior_type="workflow",
+                    ))
+                    break  # one chain per module
+
+        # 5. Factory/builder
+        for func in public_funcs:
+            if func.name.startswith(("create_", "make_", "build_")):
+                obj = func.name.split("_", 1)[1].replace("_", " ").title()
+                counter += 1
+                behaviors.append(InferredBehavior(
+                    id=f"BEH-LIB-{counter}",
+                    name=f"Create {obj}",
+                    capability_id=cap_id,
+                    steps=[func.name],
+                    behavior_type="use_case",
+                ))
+
+        for cls in mod.classes:
+            if cls.name.startswith("_"):
+                continue
+            if "Factory" in cls.name or "Builder" in cls.name:
+                obj = cls.name.replace("Factory", "").replace("Builder", "").strip()
+                if not obj:
+                    obj = mod_label
+                counter += 1
+                behaviors.append(InferredBehavior(
+                    id=f"BEH-LIB-{counter}",
+                    name=f"Create {obj}",
+                    capability_id=cap_id,
+                    steps=[m for m in cls.methods if not m.startswith("_")][:5],
+                    behavior_type="use_case",
+                ))
+
+    return behaviors
 
 
 def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapability]) -> bool:

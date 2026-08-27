@@ -56,14 +56,15 @@ class AllocateStage:
         # All source modules (exclude tests, examples, benchmarks, etc.)
         source_modules = [m for m in inventory.modules if not _is_non_source_module(m)]
 
+        project_type = _detect_project_type(source_modules)
         is_scoped = bool(ctx.scope_files)
 
         # Scoped small context: one component per substantive file
         if is_scoped and len(source_modules) <= _SCOPED_FILE_LIMIT:
-            components = _allocate_per_file(source_modules, inference.capabilities)
+            components = _allocate_per_file(source_modules, inference.capabilities, project_type=project_type)
         else:
             # Step 1: Seed components from capabilities
-            components = _seed_from_capabilities(inference.capabilities, source_modules)
+            components = _seed_from_capabilities(inference.capabilities, source_modules, project_type=project_type)
 
             # Step 2: Assign unallocated files by import affinity
             allocated_files = {f for c in components for f in c.files}
@@ -201,7 +202,8 @@ class AllocateStage:
 
 
 def _allocate_per_file(
-    modules: list[ModuleRecord], capabilities: list[InferredCapability]
+    modules: list[ModuleRecord], capabilities: list[InferredCapability],
+    project_type: str = "library",
 ) -> list[ComponentAllocation]:
     """One component per substantive file for small scoped contexts.
 
@@ -238,7 +240,7 @@ def _allocate_per_file(
                 name=stem.lstrip("_").replace("_", " ").title(),
                 capability_id=cap_id,
                 files=[mod.path],
-                layer=_infer_layer([mod.path]),
+                layer=_infer_layer([mod.path], project_type=project_type),
             )
         )
 
@@ -258,7 +260,8 @@ def _allocate_per_file(
 
 
 def _seed_from_capabilities(
-    capabilities: list[InferredCapability], modules: list[ModuleRecord]
+    capabilities: list[InferredCapability], modules: list[ModuleRecord],
+    project_type: str = "library",
 ) -> list[ComponentAllocation]:
     """Create one component per capability, seed files by name matching.
 
@@ -306,7 +309,7 @@ def _seed_from_capabilities(
             name=cap.name.replace(" Management", ""),
             capability_id=cap.id,
             files=matched_files,
-            layer=_infer_layer(matched_files),
+            layer=_infer_layer(matched_files, project_type=project_type),
         )
         components.append(comp)
 
@@ -451,7 +454,25 @@ def _compute_boundary_coherence(
     return (internal / total * 100) if total > 0 else 100.0
 
 
-def _infer_layer(files: list[Path]) -> str:
+_WEB_FRAMEWORKS = {"flask", "django", "fastapi", "starlette", "tornado", "aiohttp", "sanic", "bottle", "pyramid", "quart"}
+_CLI_FRAMEWORKS = {"click", "typer"}
+
+
+def _detect_project_type(modules: list[ModuleRecord]) -> str:
+    """Detect whether the project is a web app, CLI tool, or library."""
+    all_imports: set[str] = set()
+    for mod in modules:
+        for imp in mod.imports:
+            root = imp.split(".")[0].lower()
+            all_imports.add(root)
+    if all_imports & _WEB_FRAMEWORKS:
+        return "web_app"
+    if all_imports & _CLI_FRAMEWORKS:
+        return "cli_tool"
+    return "library"
+
+
+def _infer_layer(files: list[Path], project_type: str = "library") -> str:
     """Guess architectural layer from file paths."""
     paths_str = " ".join(str(f) for f in files).lower()
     if any(w in paths_str for w in ("api", "route", "view", "handler", "endpoint")):
@@ -460,4 +481,8 @@ def _infer_layer(files: list[Path]) -> str:
         return "data"
     if any(w in paths_str for w in ("service", "usecase", "domain", "logic")):
         return "service"
-    return "infra"
+    if any(w in paths_str for w in ("core", "engine", "kernel")):
+        return "core"
+    if any(w in paths_str for w in ("util", "helper", "common", "compat")):
+        return "infra"
+    return "library" if project_type == "library" else "infra"
