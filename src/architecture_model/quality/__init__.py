@@ -23,6 +23,8 @@ def __getattr__(name: str):
         "SafetyLevel": ("architecture_model.quality.code_safety", "SafetyLevel"),
         "code_to_model_feedback": ("architecture_model.quality.model_feedback", "code_to_model_feedback"),
         "ModelFeedback": ("architecture_model.quality.model_feedback", "ModelFeedback"),
+        "quality_loop": ("architecture_model.quality.orchestrator", "quality_loop"),
+        "QualityLoopResult": ("architecture_model.quality.orchestrator", "QualityLoopResult"),
     }
     if name in _lazy:
         import importlib
@@ -51,4 +53,6 @@ __all__ = [
     "classify_suggestion", "SafetyLevel",
     # Model feedback
     "code_to_model_feedback", "ModelFeedback",
+    # Orchestrator
+    "quality_loop", "QualityLoopResult",
 ]
