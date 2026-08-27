@@ -84,7 +84,7 @@ def extract_stage_data(stage_name: str, output: Any) -> dict:
         caps = []
         for c in getattr(output, "capabilities", []):
             d = _obj_to_dict(c, ["id", "name"])
-            d["source_files"] = getattr(c, "module_sources", [])
+            d["source_files"] = [str(s) for s in getattr(c, "module_sources", [])]
             caps.append(d)
         return {
             "capabilities": caps,
@@ -95,7 +95,9 @@ def extract_stage_data(stage_name: str, output: Any) -> dict:
     if stage_name == "allocate":
         comps = []
         for c in getattr(output, "components", []):
-            comps.append(_obj_to_dict(c, ["id", "name", "files", "layer", "capability_id"]))
+            d = _obj_to_dict(c, ["id", "name", "layer", "capability_id"])
+            d["files"] = [str(f) for f in getattr(c, "files", [])]
+            comps.append(d)
         return {"components": comps}
 
     if stage_name == "relate":
@@ -201,7 +203,7 @@ def build_naming_chains(det_data: dict[str, dict], llm_data: dict[str, dict]) ->
         cid = c.get("id", "")
         sf = c.get("source_file") or (c.get("source_files", [None]) or [None])[0]
         if sf:
-            cap_source[cid] = sf
+            cap_source[cid] = str(sf)
         cap_name[cid] = c.get("name", "")
 
     alloc = det_data.get("allocate", {})
@@ -209,6 +211,9 @@ def build_naming_chains(det_data: dict[str, dict], llm_data: dict[str, dict]) ->
         cid = comp.get("capability_id", "")
         if cid:
             comp_by_cap[cid] = comp
+            # If no source_file on capability, use first file from component
+            if cid not in cap_source and comp.get("files"):
+                cap_source[cid] = str(comp["files"][0])
         comp_by_id[comp.get("id", "")] = comp
 
     specify = det_data.get("specify", {})
@@ -324,7 +329,126 @@ async def run_gap_analysis(
     repo_path: Path,
     llm_callback: Callable,
 ) -> GapAnalysisResult:
-    """Run full gap analysis: pipeline stages, LLM alternatives, diff, trace."""
-    # This is the high-level orchestrator - tested at integration level
-    # Placeholder for now; wired up when LLM integration is ready
-    return GapAnalysisResult(repo_path=str(repo_path))
+    """Run full gap analysis: pipeline stages, LLM alternatives, diff, trace.
+
+    1. Runs the deterministic pipeline (observe→validate)
+    2. For each reviewable stage, asks LLM to re-infer from same inputs
+    3. Diffs deterministic vs LLM outputs
+    4. Builds naming chains and propagation traces
+    """
+    from .observe import ObserveStage
+    from .infer import InferStage
+    from .allocate import AllocateStage
+    from .relate import RelateStage
+    from .specify import SpecifyStage
+    from .contract import ContractStage
+    from .validate import ValidateStage
+    from .coordinator import PipelineCoordinator
+    from .protocol import PipelineContext
+    from .gap_prompts import build_reinfer_prompt, parse_reinfer_response
+
+    # Run deterministic pipeline
+    stages = {
+        "observe": ObserveStage(),
+        "infer": InferStage(),
+        "allocate": AllocateStage(),
+        "relate": RelateStage(),
+        "specify": SpecifyStage(),
+        "contract": ContractStage(),
+        "validate": ValidateStage(),
+    }
+    coord = PipelineCoordinator(stages)
+    ctx = PipelineContext(repo_path=repo_path, output_dir=repo_path / ".architecture")
+
+    try:
+        results = coord.run_all(ctx)
+    except Exception as e:
+        return GapAnalysisResult(
+            repo_path=str(repo_path),
+            summary={"error": str(e)},
+        )
+
+    # Extract structured data from each stage's output
+    reviewable = ["infer", "allocate", "relate", "specify", "contract", "validate"]
+    stage_gaps: list[StageGap] = []
+    det_data: dict[str, dict] = {}
+    llm_data: dict[str, dict] = {}
+
+    for stage_name in reviewable:
+        if stage_name not in results:
+            continue
+        stage_result = results[stage_name]
+        det = extract_stage_data(stage_name, stage_result.output)
+        det_data[stage_name] = det
+
+    # Extract observe data for building prompts
+    observe_modules: list[dict] = []
+    observe_imports: list[dict] = []
+    observe_test_files: list[str] = []
+    if "observe" in results:
+        obs = results["observe"].output
+        for m in getattr(obs, "modules", []):
+            funcs = [f.name if hasattr(f, "name") else str(f) for f in getattr(m, "functions", [])]
+            classes = [c.name if hasattr(c, "name") else str(c) for c in getattr(m, "classes", [])]
+            observe_modules.append({"path": str(getattr(m, "path", "")), "functions": funcs, "classes": classes})
+        for e in getattr(obs, "import_edges", []):
+            observe_imports.append({"source": str(getattr(e, "source", "")), "target": str(getattr(e, "target", ""))})
+        observe_test_files = [str(t) for t in getattr(obs, "test_files", [])]
+
+    # For each stage, build the right INPUT context and call LLM
+    for stage_name in reviewable:
+        if stage_name not in det_data:
+            continue
+        det = det_data[stage_name]
+
+        # Build prompt kwargs: what each stage needs as INPUT
+        prompt_kwargs: dict[str, Any] = {}
+        if stage_name == "infer":
+            prompt_kwargs["modules"] = observe_modules
+        elif stage_name == "allocate":
+            prompt_kwargs["modules"] = observe_modules
+            prompt_kwargs["capabilities"] = det_data.get("infer", {}).get("capabilities", [])
+        elif stage_name == "relate":
+            prompt_kwargs["components"] = det_data.get("allocate", {}).get("components", [])
+            prompt_kwargs["capabilities"] = det_data.get("infer", {}).get("capabilities", [])
+            prompt_kwargs["imports"] = observe_imports
+        elif stage_name == "specify":
+            prompt_kwargs["components"] = det_data.get("allocate", {}).get("components", [])
+        elif stage_name == "contract":
+            prompt_kwargs["components"] = det_data.get("allocate", {}).get("components", [])
+            prompt_kwargs["test_files"] = observe_test_files
+        elif stage_name == "validate":
+            prompt_kwargs["model_summary"] = {
+                "components": len(det_data.get("allocate", {}).get("components", [])),
+                "capabilities": len(det_data.get("infer", {}).get("capabilities", [])),
+                "relationships": len(det_data.get("relate", {}).get("relationships", [])),
+            }
+
+        prompt = build_reinfer_prompt(stage_name, **prompt_kwargs)
+        try:
+            response = await llm_callback(stage_name, prompt, {})
+            llm = parse_reinfer_response(stage_name, response)
+        except Exception:
+            llm = {}
+        llm_data[stage_name] = llm
+
+        gap = diff_stage_outputs(stage_name, det, llm)
+        stage_gaps.append(gap)
+
+    chains = build_naming_chains(det_data, llm_data)
+    propagation = trace_propagation(det_data)
+
+    total_gaps = sum(len(g.added) + len(g.removed) + len(g.renamed) for g in stage_gaps)
+
+    return GapAnalysisResult(
+        repo_path=str(repo_path),
+        stage_gaps=stage_gaps,
+        naming_chains=chains,
+        propagation_traces=propagation,
+        summary={
+            "stages_analyzed": len(stage_gaps),
+            "total_gaps": total_gaps,
+            "naming_chains": len(chains),
+            "propagation_traces": len(propagation),
+        },
+    )
