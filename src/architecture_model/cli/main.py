@@ -858,7 +858,7 @@ def _cmd_pipeline(args) -> int:
         uncertainties = len(result.uncertainties)
         duration = result.duration_ms
         status = "PASS" if score >= 50 else "WARN"
-        print(f"  {name:12s} score={score:3d}  uncertainties={uncertainties}  {duration}ms  [{status}]")
+        print(f"  {name:12s} score={int(score):3d}  uncertainties={uncertainties}  {duration}ms  [{status}]")
 
     print(f"\nArtifacts written to: {output_dir}")
 
