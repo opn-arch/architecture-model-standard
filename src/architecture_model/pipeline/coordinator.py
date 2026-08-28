@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from architecture_model.pipeline.global_learning import GlobalLearningStore
 from architecture_model.pipeline.learning import LearningStore
+from architecture_model.pipeline.llm_refine import refine_with_llm, _LLM_REFINABLE_STAGES
 from architecture_model.pipeline.protocol import (
     EnrichmentRecord,
     PipelineContext,
@@ -86,6 +88,7 @@ class PipelineCoordinator:
                 continue
             stage = self._stages[name]
             result = stage.run(ctx)
+            result = self._maybe_refine(name, result, ctx)
             ctx.cache[name] = result
             results[name] = result
             self._evaluate_gates(name, result, ctx)
@@ -126,6 +129,7 @@ class PipelineCoordinator:
                 continue
             stage = self._stages[name]
             result = stage.run(ctx)
+            result = self._maybe_refine(name, result, ctx)
             ctx.cache[name] = result
             results[name] = result
             self._evaluate_gates(name, result, ctx)
@@ -142,6 +146,65 @@ class PipelineCoordinator:
         scores = {name: float(r.quality.score) for name, r in results.items()}
         self._learning.record_run(datetime.now().isoformat()[:10], scores)
 
+    def _maybe_refine(self, stage_name: str, result: StageResult, ctx: PipelineContext) -> StageResult:
+        """Run LLM refinement on heuristic output if applicable."""
+        if ctx.llm_callback is None or stage_name not in _LLM_REFINABLE_STAGES:
+            return result
+
+        inputs = self._build_refinement_inputs(stage_name, ctx)
+        coro = refine_with_llm(ctx, stage_name, inputs, result)
+
+        try:
+            loop = asyncio.get_running_loop()
+            # Already in async context — run in thread to avoid nested loop
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                refined_result, log = pool.submit(asyncio.run, coro).result()
+        except RuntimeError:
+            refined_result, log = asyncio.run(coro)
+
+        if log is not None:
+            ctx.refinement_logs.append(log)
+
+        return refined_result
+
+    def _build_refinement_inputs(self, stage_name: str, ctx: PipelineContext) -> dict:
+        """Build inputs dict for refine_with_llm from cached stage results."""
+        inputs: dict[str, Any] = {}
+
+        observe_result = ctx.get("observe")
+        infer_result = ctx.get("infer")
+        allocate_result = ctx.get("allocate")
+
+        if observe_result is not None:
+            modules = getattr(observe_result.output, "modules", [])
+            inputs["modules"] = [
+                {"path": str(getattr(m, "path", "")), "functions": [f.name for f in getattr(m, "functions", [])]}
+                for m in modules
+            ]
+            imports = []
+            for m in modules:
+                for imp in getattr(m, "imports", []):
+                    imports.append({"source": str(getattr(m, "path", "")), "target": str(imp)})
+            inputs["imports"] = imports
+
+        if infer_result is not None:
+            caps = getattr(infer_result.output, "capabilities", [])
+            inputs["capabilities"] = [
+                {"id": getattr(c, "id", ""), "name": getattr(c, "name", "")}
+                for c in caps
+            ]
+
+        if allocate_result is not None:
+            comps = getattr(allocate_result.output, "components", [])
+            inputs["components"] = [
+                {"id": getattr(c, "id", ""), "name": getattr(c, "name", ""),
+                 "layer": getattr(c, "layer", ""), "files": [str(f) for f in getattr(c, "files", [])]}
+                for c in comps
+            ]
+
+        return inputs
+
     def _evaluate_gates(self, stage_name: str, result: StageResult, ctx: PipelineContext) -> None:
         """Evaluate quality gates and optionally run LLM review with auto-corrections."""
         from .gates import get_gates_for_stage
@@ -149,11 +212,11 @@ class PipelineCoordinator:
         gates = get_gates_for_stage(stage_name)
         gate_results = [g.evaluate(result.quality) for g in gates]
 
-        # Enhanced LLM review if callback available
+        # Enhanced LLM review if callback available (skip for refined stages — redundant)
         llm_review = ""
         suggestions: list[str] = []
         component_reviews: dict[str, str] = {}
-        if ctx.llm_callback is not None:
+        if ctx.llm_callback is not None and stage_name not in _LLM_REFINABLE_STAGES:
             try:
                 from .stage_review import build_semantic_review_prompt, parse_correction_response
                 import asyncio
