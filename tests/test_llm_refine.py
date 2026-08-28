@@ -1,21 +1,29 @@
 """Tests for llm_refine module."""
 
+import asyncio
+import json
+
 import pytest
 
 from architecture_model.pipeline.llm_refine import (
+    RefinementLog,
+    _LLM_REFINABLE_STAGES,
     apply_additions_infer,
     apply_additions_relate,
     apply_layer_corrections,
     apply_renames,
     normalize_llm_output,
+    refine_with_llm,
 )
 from architecture_model.pipeline.infer_types import (
     InferenceResult,
     InferredBehavior,
     InferredCapability,
 )
-from architecture_model.pipeline.allocate_types import ComponentAllocation
+from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
 from architecture_model.pipeline.relate_types import DerivedRelationship, RelateResult
+from architecture_model.pipeline.specify_types import InterfaceSpec, SpecifyResult
+from architecture_model.pipeline.protocol import QualityMetrics, StageResult
 
 
 # ── normalize_llm_output ────────────────────────────────────────────────
@@ -197,3 +205,142 @@ class TestApplyAdditionsRelate:
         log = apply_additions_relate(result, [{"from": "", "to": "B", "type": "x"}])
         assert len(result.relationships) == 0
         assert log == []
+
+
+# ── refine_with_llm ──────────────────────────────────────────────────────
+
+
+def _make_stage_result(output):
+    return StageResult(output=output, quality=QualityMetrics(score=0.8))
+
+
+class _MockCtx:
+    """Minimal mock for PipelineContext with llm_enrich."""
+
+    def __init__(self, response=None, error=False):
+        self._response = response
+        self._error = error
+
+    async def llm_enrich(self, stage, prompt, context=None):
+        if self._error:
+            return None
+        return self._response
+
+
+class TestRefineWithLlm:
+    def test_non_refinable_stage_returns_original(self):
+        ctx = _MockCtx()
+        result = _make_stage_result("whatever")
+        out, log = asyncio.run(refine_with_llm(ctx, "observe", {}, result))
+        assert out is result
+        assert log is None
+
+    def test_llm_failure_returns_original(self):
+        ctx = _MockCtx(error=True)
+        infer_output = InferenceResult(
+            capabilities=[InferredCapability(id="CAP-F1", name="old")],
+        )
+        result = _make_stage_result(infer_output)
+        inputs = {"modules": [{"path": "x.py", "functions": [], "classes": []}]}
+        out, log = asyncio.run(refine_with_llm(ctx, "infer", inputs, result))
+        assert out is result
+        assert log is None
+        assert out.output.capabilities[0].name == "old"
+
+    def test_json_parse_failure_returns_original(self):
+        ctx = _MockCtx(response="not json at all {{{}}")
+        infer_output = InferenceResult(
+            capabilities=[InferredCapability(id="CAP-F1", name="old")],
+        )
+        result = _make_stage_result(infer_output)
+        inputs = {"modules": [{"path": "x.py", "functions": [], "classes": []}]}
+        out, log = asyncio.run(refine_with_llm(ctx, "infer", inputs, result))
+        assert out is result
+        assert log is None
+
+    def test_infer_renames_capabilities(self):
+        llm_response = json.dumps({
+            "capabilities": [
+                {"name": "Authentication Management", "source_file": "auth.py"},
+            ],
+            "behaviors": [],
+        })
+        ctx = _MockCtx(response=llm_response)
+        infer_output = InferenceResult(
+            capabilities=[InferredCapability(id="CAP-F1", name="auth", evidence_source="ast")],
+        )
+        result = _make_stage_result(infer_output)
+        modules = [{"path": "auth.py", "functions": ["login"], "classes": []}]
+        out, log = asyncio.run(refine_with_llm(ctx, "infer", {"modules": modules}, result))
+        assert log is not None
+        assert log.stage == "infer"
+        assert log.duration_ms >= 0
+
+    def test_allocate_corrects_layers(self):
+        llm_response = json.dumps({
+            "components": [
+                {"name": "Web Controller", "files": ["web.py"], "layer": "web", "capability_id": "CAP-F1"},
+            ],
+        })
+        ctx = _MockCtx(response=llm_response)
+        alloc_output = AllocationResult(
+            components=[ComponentAllocation(id="COMP-1", name="Web Controller", layer="infra")],
+        )
+        result = _make_stage_result(alloc_output)
+        inputs = {"modules": [], "capabilities": []}
+        out, log = asyncio.run(refine_with_llm(ctx, "allocate", inputs, result))
+        assert log is not None
+        assert log.stage == "allocate"
+        # Layer should be corrected
+        assert out.output.components[0].layer == "web"
+        assert len(log.layer_corrections) == 1
+
+    def test_relate_adds_relationships(self):
+        llm_response = json.dumps({
+            "relationships": [
+                {"from": "COMP-1", "to": "CAP-F1", "type": "realizes"},
+                {"from": "COMP-2", "to": "COMP-1", "type": "depends-on"},
+            ],
+        })
+        ctx = _MockCtx(response=llm_response)
+        relate_output = RelateResult(relationships=[
+            DerivedRelationship(from_id="COMP-1", to_id="CAP-F1", rel_type="realizes"),
+        ])
+        result = _make_stage_result(relate_output)
+        inputs = {"components": [], "capabilities": [], "imports": []}
+        out, log = asyncio.run(refine_with_llm(ctx, "relate", inputs, result))
+        assert log is not None
+        assert log.stage == "relate"
+        # The new relationship should be added
+        assert len(out.output.relationships) == 2
+
+    def test_specify_renames_interfaces(self):
+        llm_response = json.dumps({
+            "interfaces": [
+                {"name": "REST API Gateway", "type": "rest", "component_id": "COMP-1"},
+            ],
+        })
+        ctx = _MockCtx(response=llm_response)
+        specify_output = SpecifyResult(interfaces=[
+            InterfaceSpec(id="IF-1", name="REST API Gateway", component_id="COMP-1"),
+        ])
+        result = _make_stage_result(specify_output)
+        inputs = {"components": []}
+        out, log = asyncio.run(refine_with_llm(ctx, "specify", inputs, result))
+        assert log is not None
+        assert log.stage == "specify"
+
+    def test_returns_refinement_log_with_timing(self):
+        llm_response = json.dumps({
+            "capabilities": [{"name": "Better Name", "source_file": "x.py"}],
+            "behaviors": [],
+        })
+        ctx = _MockCtx(response=llm_response)
+        infer_output = InferenceResult(
+            capabilities=[InferredCapability(id="CAP-F1", name="old")],
+        )
+        result = _make_stage_result(infer_output)
+        inputs = {"modules": [{"path": "x.py", "functions": [], "classes": []}]}
+        out, log = asyncio.run(refine_with_llm(ctx, "infer", inputs, result))
+        assert isinstance(log, RefinementLog)
+        assert log.duration_ms >= 0

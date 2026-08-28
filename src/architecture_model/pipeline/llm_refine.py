@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from typing import Any
 
@@ -239,3 +241,120 @@ def apply_additions_relate(
         existing.add((from_id, to_id))
         log.append({"from_id": from_id, "to_id": to_id, "rel_type": rel_type})
     return log
+
+
+# ---------------------------------------------------------------------------
+# 3. Orchestrator — refine_with_llm
+# ---------------------------------------------------------------------------
+
+@dataclass
+class RefinementLog:
+    """Record of what was refined in a stage."""
+    stage: str
+    renames: list[dict] = field(default_factory=list)
+    additions: list[dict] = field(default_factory=list)
+    layer_corrections: list[dict] = field(default_factory=list)
+    duration_ms: int = 0
+
+
+_LLM_REFINABLE_STAGES = {"infer", "allocate", "relate", "specify"}
+
+# Maps stage → key in extract_stage_data output for diffing
+_STAGE_ENTITY_KEY = {
+    "infer": "capabilities",
+    "allocate": "components",
+    "relate": "relationships",
+    "specify": "interfaces",
+}
+
+# Maps stage → keys needed from inputs for build_reinfer_prompt
+_STAGE_INPUT_KEYS = {
+    "infer": ("modules",),
+    "allocate": ("modules", "capabilities"),
+    "relate": ("components", "capabilities", "imports"),
+    "specify": ("components",),
+}
+
+
+async def refine_with_llm(
+    ctx: Any,  # PipelineContext
+    stage_name: str,
+    inputs: dict,
+    result: Any,  # StageResult
+) -> tuple[Any, RefinementLog | None]:
+    """Refine heuristic stage output using LLM re-inference.
+
+    Returns (result, log) — result may be the same object if refinement
+    failed or produced no changes. log is None if LLM call failed.
+    """
+    from .gap_prompts import build_reinfer_prompt, parse_reinfer_response
+    from .gap_analysis import extract_stage_data, diff_stage_outputs
+
+    if stage_name not in _LLM_REFINABLE_STAGES:
+        return result, None
+
+    start = time.time()
+
+    # 1. Build prompt from inputs
+    keys = _STAGE_INPUT_KEYS.get(stage_name, ())
+    prompt_kwargs: dict[str, Any] = {}
+    for k in keys:
+        if k in inputs:
+            prompt_kwargs[k] = inputs[k]
+    prompt = build_reinfer_prompt(stage_name, **prompt_kwargs)
+
+    # 2. Call LLM
+    response = await ctx.llm_enrich(stage_name, prompt, {"purpose": "refinement"})
+    if response is None:
+        return result, None
+
+    # 3. Parse JSON
+    parsed = parse_reinfer_response(stage_name, response)
+    if not parsed:
+        return result, None
+
+    # 4. Normalize LLM output
+    llm_data = normalize_llm_output(stage_name, parsed)
+
+    # 5. Extract heuristic data
+    det_data = extract_stage_data(stage_name, result.output)
+
+    # 6. Diff
+    gap = diff_stage_outputs(stage_name, det_data, llm_data)
+
+    # 7. Apply refinements
+    log = RefinementLog(stage=stage_name)
+
+    if stage_name == "infer":
+        rename_log = apply_renames(
+            result.output.capabilities, gap.renamed, threshold=0.5,
+        )
+        log.renames = rename_log
+        add_log = apply_additions_infer(
+            result.output, gap.added,
+            id_counter=len(result.output.capabilities) + len(result.output.behaviors) + 1,
+        )
+        log.additions = add_log
+
+    elif stage_name == "allocate":
+        rename_log = apply_renames(
+            result.output.components, gap.renamed, threshold=0.5,
+        )
+        log.renames = rename_log
+        layer_log = apply_layer_corrections(
+            result.output.components, llm_data.get("components", []),
+        )
+        log.layer_corrections = layer_log
+
+    elif stage_name == "relate":
+        add_log = apply_additions_relate(result.output, gap.added)
+        log.additions = add_log
+
+    elif stage_name == "specify":
+        rename_log = apply_renames(
+            result.output.interfaces, gap.renamed, threshold=0.5,
+        )
+        log.renames = rename_log
+
+    log.duration_ms = int((time.time() - start) * 1000)
+    return result, log
