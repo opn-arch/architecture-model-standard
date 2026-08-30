@@ -587,6 +587,179 @@ def generate_decomposition_diagram(model: "ArchitectureModel") -> str:
     return "\n".join(lines)
 
 
+def generate_component_detail_diagram(model: "ArchitectureModel", component_id: str) -> str:
+    """Generate a detail diagram for a single component.
+
+    Shows the component's capabilities, interfaces, behaviors,
+    dependencies, source files, and containing layer.
+    """
+    # Find the component
+    comp = None
+    for c in model.entities.components:
+        if c.id == component_id:
+            comp = c
+            break
+    if comp is None:
+        return f"flowchart TB\n    not_found[Component {_label(component_id)} not found]"
+
+    lines = ["flowchart TB"]
+    class_assignments: list[str] = []
+
+    # Central component node
+    lines.append(f"    {shape('component', comp.id, comp.name)}")
+    class_assignments.append(_apply_class(comp.id, "component"))
+
+    # Build lookup maps
+    entity_map: dict[str, tuple[str, str]] = {}  # id -> (type, name)
+    for c in model.entities.components:
+        entity_map[c.id] = ("component", c.name)
+    for c in model.entities.capabilities:
+        entity_map[c.id] = ("capability", c.name)
+    for i in model.entities.interfaces:
+        entity_map[i.id] = ("interface", i.name)
+    for b in model.entities.behaviors:
+        entity_map[b.id] = ("behavior", b.name)
+    for la in model.entities.layers:
+        entity_map[la.id] = ("layer", la.name)
+
+    # Containing layer
+    for rel in model.relationships:
+        rt = _rel_type(rel)
+        if rt == "contains" and rel.to_id == component_id and rel.from_id in entity_map:
+            etype, ename = entity_map[rel.from_id]
+            if etype == "layer":
+                lines.append(f"    {shape('layer', rel.from_id, ename)}")
+                class_assignments.append(_apply_class(rel.from_id, "layer"))
+                lines.append(f"    {_sid(rel.from_id)} {edge_style('contains')} {_sid(comp.id)}")
+
+    # Realized capabilities
+    caps = [(rel.to_id, entity_map[rel.to_id]) for rel in model.relationships
+            if rel.from_id == component_id and _rel_type(rel) == "realizes" and rel.to_id in entity_map]
+    if caps:
+        lines.append(f"    subgraph caps[Capabilities]")
+        for cid, (etype, ename) in caps:
+            lines.append(f"        {shape('capability', cid, ename)}")
+            class_assignments.append(_apply_class(cid, "capability"))
+        lines.append(f"    end")
+        for cid, _ in caps:
+            lines.append(f"    {_sid(comp.id)} {edge_style('realizes')} {_sid(cid)}")
+
+    # Exposed interfaces
+    ifaces = [(rel.to_id, entity_map[rel.to_id]) for rel in model.relationships
+              if rel.from_id == component_id and _rel_type(rel) == "exposes" and rel.to_id in entity_map]
+    if ifaces:
+        lines.append(f"    subgraph ifaces[Interfaces]")
+        for iid, (etype, ename) in ifaces:
+            lines.append(f"        {shape('interface', iid, ename)}")
+            class_assignments.append(_apply_class(iid, "interface"))
+        lines.append(f"    end")
+        for iid, _ in ifaces:
+            lines.append(f"    {_sid(comp.id)} {edge_style('exposes')} {_sid(iid)}")
+
+    # Traced behaviors
+    behs = [(rel.to_id, entity_map[rel.to_id]) for rel in model.relationships
+            if rel.from_id == component_id and _rel_type(rel) == "traces-to" and rel.to_id in entity_map]
+    if behs:
+        lines.append(f"    subgraph behs[Behaviors]")
+        for bid, (etype, ename) in behs:
+            lines.append(f"        {shape('behavior', bid, ename)}")
+            class_assignments.append(_apply_class(bid, "behavior"))
+        lines.append(f"    end")
+        for bid, _ in behs:
+            lines.append(f"    {_sid(comp.id)} {edge_style('traces-to')} {_sid(bid)}")
+            lines.append(f"    click {_sid(bid)} \"use-case-{bid}.mmd\"")
+
+    # Dependencies
+    deps = [(rel.to_id, entity_map[rel.to_id]) for rel in model.relationships
+            if rel.from_id == component_id and _rel_type(rel) == "depends-on" and rel.to_id in entity_map]
+    for did, (etype, ename) in deps:
+        lines.append(f"    {shape('component', did, ename)}")
+        class_assignments.append(_apply_class(did, "component"))
+        lines.append(f"    {_sid(comp.id)} {edge_style('depends-on')} {_sid(did)}")
+        lines.append(f"    click {_sid(did)} \"component-{did}.mmd\"")
+
+    # Source files
+    source_files = getattr(comp, "files", None) or []
+    if source_files:
+        lines.append(f"    subgraph files[Source Files]")
+        for sf in source_files:
+            fid = _sid(f"file_{sf}")
+            lines.append(f"        {shape('module', fid, sf)}")
+            class_assignments.append(_apply_class(fid, "module"))
+        lines.append(f"    end")
+        lines.append(f"    {_sid(comp.id)} -.-> files")
+
+    lines.extend(css_classes())
+    lines.extend(a for a in class_assignments if a)
+    return "\n".join(lines)
+
+
+def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> str:
+    """Generate a use-case diagram for a single behavior.
+
+    Shows the behavior's sub-behaviors, implementing components,
+    and trigger relationships.
+    """
+    # Find the behavior
+    beh = None
+    for b in model.entities.behaviors:
+        if b.id == behavior_id:
+            beh = b
+            break
+    if beh is None:
+        return f"flowchart TB\n    not_found[Behavior {_label(behavior_id)} not found]"
+
+    lines = ["flowchart TB"]
+    class_assignments: list[str] = []
+
+    # Central behavior node
+    lines.append(f"    {shape('behavior', beh.id, beh.name)}")
+    class_assignments.append(_apply_class(beh.id, "behavior"))
+
+    # Build entity maps
+    comp_map = {c.id: c.name for c in model.entities.components}
+    beh_map = {b.id: b.name for b in model.entities.behaviors}
+
+    # Implementing components (reverse traces-to)
+    for rel in model.relationships:
+        if _rel_type(rel) == "traces-to" and rel.to_id == behavior_id and rel.from_id in comp_map:
+            lines.append(f"    {shape('component', rel.from_id, comp_map[rel.from_id])}")
+            class_assignments.append(_apply_class(rel.from_id, "component"))
+            lines.append(f"    {_sid(rel.from_id)} {edge_style('traces-to')} {_sid(beh.id)}")
+            lines.append(f"    click {_sid(rel.from_id)} \"component-{rel.from_id}.mmd\"")
+
+    # Sub-behaviors
+    sub_behs = [(rel.to_id, beh_map[rel.to_id]) for rel in model.relationships
+                if rel.from_id == behavior_id and _rel_type(rel) == "contains" and rel.to_id in beh_map]
+    if sub_behs:
+        lines.append(f"    subgraph sub[Sub-behaviors]")
+        for sid, sname in sub_behs:
+            lines.append(f"        {shape('behavior', sid, sname)}")
+            class_assignments.append(_apply_class(sid, "behavior"))
+        lines.append(f"    end")
+        for sid, sname in sub_behs:
+            lines.append(f"    {_sid(beh.id)} {edge_style('contains')} {_sid(sid)}")
+            lines.append(f"    click {_sid(sid)} \"use-case-{sid}.mmd\"")
+
+    # Triggered-by (other behaviors that trigger this one)
+    for rel in model.relationships:
+        if _rel_type(rel) == "triggers" and rel.to_id == behavior_id and rel.from_id in beh_map:
+            lines.append(f"    {shape('behavior', rel.from_id, beh_map[rel.from_id])}")
+            class_assignments.append(_apply_class(rel.from_id, "behavior"))
+            lines.append(f"    {_sid(rel.from_id)} {edge_style('triggers')} {_sid(beh.id)}")
+
+    # Triggers (behaviors this one triggers)
+    for rel in model.relationships:
+        if _rel_type(rel) == "triggers" and rel.from_id == behavior_id and rel.to_id in beh_map:
+            lines.append(f"    {shape('behavior', rel.to_id, beh_map[rel.to_id])}")
+            class_assignments.append(_apply_class(rel.to_id, "behavior"))
+            lines.append(f"    {_sid(beh.id)} {edge_style('triggers')} {_sid(rel.to_id)}")
+
+    lines.extend(css_classes())
+    lines.extend(a for a in class_assignments if a)
+    return "\n".join(lines)
+
+
 def generate_all_diagrams(model: "ArchitectureModel", output_dir: Path) -> dict[str, Path]:
     """Generate all 10 standard diagrams and write to output_dir.
 
