@@ -177,6 +177,29 @@ class TestApplyAdditionsInfer:
         assert len(result.capabilities) == 0
         assert log == []
 
+    def test_dedup_skips_similar(self):
+        result = InferenceResult(
+            capabilities=[InferredCapability(id="CAP-F1", name="MCP Server")],
+        )
+        added = [{"name": "Mcp Server Management"}]
+        log = apply_additions_infer(result, added, id_counter=2)
+        # Should not add — too similar
+        assert len(result.capabilities) == 1
+        # Log should contain a skipped_duplicates entry
+        skipped_entries = [e for e in log if "skipped_duplicates" in e]
+        assert len(skipped_entries) == 1
+        assert skipped_entries[0]["skipped_duplicates"][0]["similar_to"] == "MCP Server"
+
+    def test_dedup_allows_different(self):
+        result = InferenceResult(
+            capabilities=[InferredCapability(id="CAP-F1", name="MCP Server")],
+        )
+        added = [{"name": "Data Pipeline"}]
+        log = apply_additions_infer(result, added, id_counter=2)
+        assert len(result.capabilities) == 2
+        assert result.capabilities[1].name == "Data Pipeline"
+        assert any(e.get("entity_type") == "capability" for e in log)
+
 
 # ── apply_additions_relate ───────────────────────────────────────────────
 
@@ -344,3 +367,100 @@ class TestRefineWithLlm:
         out, log = asyncio.run(refine_with_llm(ctx, "infer", inputs, result))
         assert isinstance(log, RefinementLog)
         assert log.duration_ms >= 0
+
+
+# ── RefinementLog summary & total_changes ────────────────────────────────
+
+
+class TestRefinementLogSummary:
+    def test_summary_mixed(self):
+        log = RefinementLog(
+            stage="infer",
+            renames=[{"entity_id": "C1", "old_name": "a", "new_name": "b", "confidence": 0.8}],
+            additions=[{"entity_type": "capability", "name": "X", "new_id": "CAP-F2"}],
+            layer_corrections=[{"component_id": "C1", "old_layer": "x", "new_layer": "y"}],
+        )
+        s = log.summary()
+        assert "1 renames" in s
+        assert "1 additions" in s
+        assert "1 layer corrections" in s
+
+    def test_summary_relate(self):
+        log = RefinementLog(
+            stage="relate",
+            additions=[{"from_id": "COMP-1", "to_id": "CAP-F1", "rel_type": "realizes"}],
+        )
+        s = log.summary()
+        assert "COMP-1" in s
+        assert "CAP-F1" in s
+        assert "\u2192" in s
+
+    def test_summary_empty(self):
+        log = RefinementLog(stage="infer")
+        assert log.summary() == "no changes"
+
+    def test_total_changes(self):
+        log = RefinementLog(
+            stage="allocate",
+            renames=[{"a": 1}, {"b": 2}],
+            additions=[{"c": 3}],
+            layer_corrections=[{"d": 4}, {"e": 5}, {"f": 6}],
+        )
+        assert log.total_changes == 6
+
+
+# ── Mega-capability filtering ──────────────────────────────────────────
+
+
+class TestMegaCapabilityReplacement:
+    """When heuristic produces ≤3 caps and LLM produces ≥5, all LLM caps
+    should be added directly (skipping diff/rename)."""
+
+    def _make_result(self, cap_names: list[str]) -> StageResult:
+        caps = [
+            InferredCapability(id=f"CAP-F{i+1}", name=n)
+            for i, n in enumerate(cap_names)
+        ]
+        infer = InferenceResult(capabilities=caps, actors=[], behaviors=[])
+        return StageResult(
+            output=infer,
+            quality=QualityMetrics(score=80),
+        )
+
+    def test_mega_capability_replacement(self):
+        """Heuristic has 1 cap, LLM has 6 → all 6 LLM caps added."""
+        result = self._make_result(["Opencode Arch"])
+        llm_caps = [
+            {"name": n, "source_files": []}
+            for n in ["Authentication", "Data Storage", "Logging", "Routing", "Validation", "Export"]
+        ]
+        llm_data = {"capabilities": llm_caps, "actors": [], "behaviors": []}
+
+        # Import internals needed
+        from architecture_model.pipeline.llm_refine import apply_additions_infer
+
+        heuristic_cap_count = len(result.output.capabilities)
+        llm_cap_count = len(llm_data.get("capabilities", []))
+        assert heuristic_cap_count <= 3
+        assert llm_cap_count >= 5
+
+        all_llm_additions = llm_data["capabilities"] + llm_data["behaviors"]
+        add_log = apply_additions_infer(
+            result.output, all_llm_additions,
+            id_counter=heuristic_cap_count + len(result.output.behaviors) + 1,
+        )
+        # All 6 should be added (none similar to "Opencode Arch")
+        assert len(add_log) == 6
+        # Total caps = 1 original + 6 added
+        assert len(result.output.capabilities) == 7
+
+    def test_normal_capability_no_replacement(self):
+        """Heuristic has 5 caps, LLM has 7 → mega-cap path NOT triggered."""
+        result = self._make_result([f"Cap {i}" for i in range(5)])
+        llm_caps = [{"name": f"LLM Cap {i}", "source_files": []} for i in range(7)]
+        llm_data = {"capabilities": llm_caps, "actors": [], "behaviors": []}
+
+        heuristic_cap_count = len(result.output.capabilities)
+        llm_cap_count = len(llm_data.get("capabilities", []))
+        # Should NOT trigger mega-cap path
+        assert not (heuristic_cap_count <= 3 and llm_cap_count >= 5)

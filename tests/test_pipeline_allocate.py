@@ -160,3 +160,15 @@ class TestDetectProjectType:
         from architecture_model.pipeline.observe_types import ModuleRecord
         mods = [ModuleRecord(path=Path("app/main.py"), imports=["click"], line_count=50)]
         assert _detect_project_type(mods) == "cli_tool"
+
+    def test_infer_layer_api_in_filename_not_web(self):
+        """api_wrapper.py should NOT get 'web' layer — 'api' alone is not enough."""
+        from architecture_model.pipeline.allocate import _infer_layer
+        result = _infer_layer([Path("src/tools/api_wrapper.py")], "library")
+        assert result != "web"
+
+    def test_infer_layer_route_file_is_web(self):
+        """src/routes/users.py SHOULD get 'web' layer."""
+        from architecture_model.pipeline.allocate import _infer_layer
+        result = _infer_layer([Path("src/routes/users.py")], "library")
+        assert result == "web"

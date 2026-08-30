@@ -135,8 +135,16 @@ class ObserveStage:
                                 "issue_count": float(len(analysis.issues)),
                             },
                         )
-                except Exception:
-                    pass
+                    else:
+                        import logging as _logging
+                        _logging.getLogger(__name__).debug(
+                            "quality: path not found: %s (resolved: %s)", mod.path, mod_path,
+                        )
+                except Exception as exc:
+                    import logging as _logging
+                    _logging.getLogger(__name__).debug(
+                        "quality: analyze_source failed for %s: %s", mod.path, exc,
+                    )
             if module_scores:
                 code_quality_avg = sum(qm.score for qm in module_scores.values()) / len(module_scores)
         except ImportError:

@@ -183,6 +183,7 @@ def apply_additions_infer(
     Returns list of ``{entity_type, name, new_id}`` for logging.
     """
     log: list[dict] = []
+    skipped: list[dict] = []
     counter = id_counter
     for item in added:
         name = item.get("name", "")
@@ -190,15 +191,24 @@ def apply_additions_infer(
             continue
         # Determine type from item content or default to capability
         beh_type = item.get("type") or item.get("behavior_type")
-        if beh_type:
-            new_id = f"BEH-{counter}"
-            result.behaviors.append(InferredBehavior(
-                id=new_id,
-                name=name,
-                behavior_type=beh_type,
-            ))
-            log.append({"entity_type": "behavior", "name": name, "new_id": new_id})
-        else:
+        if not beh_type:
+            # Dedup check: skip if too similar to any existing capability
+            dominated = False
+            for existing_cap in result.capabilities:
+                sim = SequenceMatcher(
+                    None, name.lower(), existing_cap.name.lower(),
+                ).ratio()
+                if sim > 0.6:
+                    skipped.append({
+                        "entity_type": "capability",
+                        "name": name,
+                        "similar_to": existing_cap.name,
+                        "similarity": round(sim, 3),
+                    })
+                    dominated = True
+                    break
+            if dominated:
+                continue
             new_id = f"CAP-F{counter}"
             result.capabilities.append(InferredCapability(
                 id=new_id,
@@ -206,7 +216,17 @@ def apply_additions_infer(
                 evidence_source="llm",
             ))
             log.append({"entity_type": "capability", "name": name, "new_id": new_id})
+        else:
+            new_id = f"BEH-{counter}"
+            result.behaviors.append(InferredBehavior(
+                id=new_id,
+                name=name,
+                behavior_type=beh_type,
+            ))
+            log.append({"entity_type": "behavior", "name": name, "new_id": new_id})
         counter += 1
+    if skipped:
+        log.append({"skipped_duplicates": skipped})
     return log
 
 
@@ -255,6 +275,26 @@ class RefinementLog:
     additions: list[dict] = field(default_factory=list)
     layer_corrections: list[dict] = field(default_factory=list)
     duration_ms: int = 0
+
+    @property
+    def total_changes(self) -> int:
+        return len(self.renames) + len(self.additions) + len(self.layer_corrections)
+
+    def summary(self) -> str:
+        parts: list[str] = []
+        if self.renames:
+            parts.append(f"{len(self.renames)} renames")
+        if self.additions:
+            if self.stage == "relate":
+                for a in self.additions:
+                    f_id = a.get("from_id", "?")
+                    t_id = a.get("to_id", "?")
+                    parts.append(f"1 relationship ({f_id}\u2192{t_id})")
+            else:
+                parts.append(f"{len(self.additions)} additions")
+        if self.layer_corrections:
+            parts.append(f"{len(self.layer_corrections)} layer corrections")
+        return ", ".join(parts) if parts else "no changes"
 
 
 _LLM_REFINABLE_STAGES = {"infer", "allocate", "relate", "specify"}
@@ -326,15 +366,31 @@ async def refine_with_llm(
     log = RefinementLog(stage=stage_name)
 
     if stage_name == "infer":
-        rename_log = apply_renames(
-            result.output.capabilities, gap.renamed, threshold=0.5,
-        )
-        log.renames = rename_log
-        add_log = apply_additions_infer(
-            result.output, gap.added,
-            id_counter=len(result.output.capabilities) + len(result.output.behaviors) + 1,
-        )
-        log.additions = add_log
+        heuristic_cap_count = len(result.output.capabilities)
+        llm_cap_count = len(llm_data.get("capabilities", []))
+        if heuristic_cap_count <= 3 and llm_cap_count >= 5:
+            # Mega-capability scenario: heuristic produced too few coarse
+            # capabilities. Treat ALL LLM capabilities+behaviors as additions,
+            # skipping the diff/rename step (heuristic output is too coarse
+            # to meaningfully match). Dedup in apply_additions_infer handles
+            # any exact overlaps.
+            all_llm_additions = llm_data.get("capabilities", []) + llm_data.get("behaviors", [])
+            add_log = apply_additions_infer(
+                result.output, all_llm_additions,
+                id_counter=heuristic_cap_count + len(result.output.behaviors) + 1,
+            )
+            log.additions = add_log
+        else:
+            # Normal path: apply renames from diff + additions
+            rename_log = apply_renames(
+                result.output.capabilities, gap.renamed, threshold=0.5,
+            )
+            log.renames = rename_log
+            add_log = apply_additions_infer(
+                result.output, gap.added,
+                id_counter=len(result.output.capabilities) + len(result.output.behaviors) + 1,
+            )
+            log.additions = add_log
 
     elif stage_name == "allocate":
         rename_log = apply_renames(

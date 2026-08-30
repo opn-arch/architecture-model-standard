@@ -473,7 +473,7 @@ def _detect_project_type(modules: list[ModuleRecord]) -> str:
 
 
 _LAYER_KEYWORDS: dict[str, list[str]] = {
-    "web": ["api", "route", "view", "handler", "endpoint"],
+    "web": ["route", "view", "handler", "endpoint", "controller", "server"],
     "data": ["model", "schema", "db", "repository", "migration"],
     "service": ["service", "usecase", "domain", "logic"],
     "core": ["core", "engine", "kernel"],
