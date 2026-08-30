@@ -100,8 +100,8 @@ class TestContextDiagram:
 
     def test_person_actor_shape(self):
         diagram = generate_context_diagram(_make_model())
-        # Human actors get trapezoid shape
-        assert "ACT_1[/" in diagram
+        # Human actors now use standardized stadium shape
+        assert "ACT_1([" in diagram
 
     def test_no_interfaces_fallback(self):
         model = _make_model()
