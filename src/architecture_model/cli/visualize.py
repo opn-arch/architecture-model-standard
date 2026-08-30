@@ -23,6 +23,7 @@ from ..core.visualize import (
     generate_decomposition_diagram,
     generate_component_detail_diagram,
     generate_use_case_diagram,
+    generate_html_viewer,
 )
 
 __all__ = [
@@ -33,5 +34,6 @@ __all__ = [
     "generate_data_flow_diagram", "generate_constraint_map_diagram",
     "generate_traceability_diagram", "generate_decomposition_diagram",
     "generate_component_detail_diagram", "generate_use_case_diagram",
+    "generate_html_viewer",
     "generate_all_diagrams",
 ]

@@ -15,6 +15,7 @@ Produces 10 standard views:
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -761,6 +762,181 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     lines.extend(css_classes())
     lines.extend(a for a in class_assignments if a)
     return "\n".join(lines)
+
+
+def _convert_clicks_to_anchors(mermaid_content: str) -> str:
+    """Replace click directives referencing .mmd files with anchor links."""
+    return re.sub(
+        r'click (\S+) "([^"]+)\.mmd"(?:\s+"[^"]*")?',
+        r'click \1 href "#diagram-\2"',
+        mermaid_content,
+    )
+
+
+def generate_html_viewer(
+    model: "ArchitectureModel",
+    output_path: Path,
+    title: str = "Architecture Diagrams",
+) -> Path:
+    """Generate a self-contained HTML file with all architecture diagrams.
+
+    All diagrams are embedded as Mermaid code blocks and rendered client-side.
+    Click navigation between diagrams works via anchor links (no server needed).
+    Designed for mobile viewing.
+
+    Returns the path to the generated HTML file.
+    """
+    output_path = Path(output_path)
+
+    # ── Collect all diagrams ──────────────────────────────────────
+    diagrams: list[tuple[str, str, str]] = []  # (id, display_name, mermaid)
+
+    # 8 model-based standard diagrams
+    model_generators = [
+        ("context", "Context Diagram", generate_context_diagram),
+        ("components", "Components Diagram", generate_components_diagram),
+        ("behaviors", "Behaviors Diagram", generate_behaviors_diagram),
+        ("dependencies", "Dependencies Diagram", generate_dependencies_diagram),
+        ("data-flow", "Data Flow Diagram", generate_data_flow_diagram),
+        ("constraint-map", "Constraint Map", generate_constraint_map_diagram),
+        ("traceability", "Traceability Diagram", generate_traceability_diagram),
+        ("decomposition", "Decomposition Diagram", generate_decomposition_diagram),
+    ]
+    for dia_id, display, gen_fn in model_generators:
+        diagrams.append((dia_id, display, gen_fn(model)))
+
+    # 2 static diagrams
+    diagrams.append(("pipeline-flow", "Pipeline Flow", generate_pipeline_flow_diagram()))
+    diagrams.append(("entity-lifecycle", "Entity Lifecycle", generate_entity_lifecycle_diagram()))
+
+    # Per-component detail diagrams
+    comp_diagrams: list[tuple[str, str, str]] = []
+    for comp in model.entities.components:
+        dia_id = f"component-{comp.id}"
+        comp_diagrams.append((dia_id, f"{comp.id}: {comp.name}", generate_component_detail_diagram(model, comp.id)))
+    diagrams.extend(comp_diagrams)
+
+    # Per-behavior use-case diagrams
+    beh_diagrams: list[tuple[str, str, str]] = []
+    for beh in model.entities.behaviors:
+        dia_id = f"use-case-{beh.id}"
+        beh_diagrams.append((dia_id, f"{beh.id}: {beh.name}", generate_use_case_diagram(model, beh.id)))
+    diagrams.extend(beh_diagrams)
+
+    # ── Convert click directives to anchor links ──────────────────
+    diagrams = [(did, name, _convert_clicks_to_anchors(content)) for did, name, content in diagrams]
+
+    # ── Build sidebar index ───────────────────────────────────────
+    overview_ids = ["context", "components", "behaviors", "dependencies", "decomposition", "traceability"]
+    data_ids = ["data-flow", "constraint-map"]
+    static_ids = ["pipeline-flow", "entity-lifecycle"]
+
+    def _sidebar_section(title_text: str, items: list[tuple[str, str]], open_tag: bool = False) -> str:
+        open_attr = " open" if open_tag else ""
+        links = "\n".join(f'            <a href="#diagram-{did}">{name}</a>' for did, name in items)
+        return f'        <details{open_attr}><summary>{title_text}</summary>\n{links}\n        </details>'
+
+    sidebar_parts = []
+    # Overview
+    overview_items = [(did, name) for did, name, _ in diagrams if did in overview_ids]
+    sidebar_parts.append(_sidebar_section("Overview", overview_items, open_tag=True))
+    # Data & Constraints
+    data_items = [(did, name) for did, name, _ in diagrams if did in data_ids]
+    sidebar_parts.append(_sidebar_section("Data &amp; Constraints", data_items))
+    # Static
+    static_items = [(did, name) for did, name, _ in diagrams if did in static_ids]
+    sidebar_parts.append(_sidebar_section("Static", static_items))
+    # Components
+    if comp_diagrams:
+        comp_items = [(did, name) for did, name, _ in comp_diagrams]
+        sidebar_parts.append(_sidebar_section(f"Components ({len(comp_items)})", comp_items))
+    # Behaviors
+    if beh_diagrams:
+        beh_items = [(did, name) for did, name, _ in beh_diagrams]
+        sidebar_parts.append(_sidebar_section(f"Behaviors ({len(beh_items)})", beh_items))
+
+    sidebar_html = "\n".join(sidebar_parts)
+
+    # ── Build diagram sections ────────────────────────────────────
+    sections = []
+    for dia_id, display_name, content in diagrams:
+        sections.append(
+            f'        <div class="diagram-section" id="diagram-{dia_id}">\n'
+            f'            <h3>{display_name}</h3>\n'
+            f'            <div class="mermaid">\n{content}\n            </div>\n'
+            f'        </div>'
+        )
+    sections_html = "\n".join(sections)
+
+    # ── Assemble HTML ─────────────────────────────────────────────
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <style>
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{ font-family: -apple-system, system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; }}
+        .nav-toggle {{ display: none; position: fixed; top: 10px; left: 10px; z-index: 1000;
+                       background: #16213e; border: 1px solid #0f3460; padding: 8px 12px;
+                       color: #e0e0e0; border-radius: 4px; cursor: pointer; font-size: 18px; }}
+        @media (max-width: 768px) {{ .nav-toggle {{ display: block; }} }}
+        .sidebar {{ position: fixed; top: 0; left: 0; width: 280px; height: 100vh;
+                    background: #16213e; overflow-y: auto; padding: 16px; z-index: 999;
+                    border-right: 1px solid #0f3460; transition: transform 0.3s; }}
+        @media (max-width: 768px) {{
+            .sidebar {{ transform: translateX(-100%); }}
+            .sidebar.open {{ transform: translateX(0); }}
+        }}
+        .sidebar h2 {{ color: #e94560; margin-bottom: 12px; font-size: 16px; }}
+        .sidebar details {{ margin-bottom: 4px; }}
+        .sidebar summary {{ cursor: pointer; padding: 4px 0; color: #a0a0c0; font-size: 13px; }}
+        .sidebar a {{ display: block; padding: 3px 0 3px 16px; color: #7ec8e3;
+                     text-decoration: none; font-size: 12px; }}
+        .sidebar a:hover {{ color: #e94560; }}
+        .content {{ margin-left: 280px; padding: 20px; }}
+        @media (max-width: 768px) {{ .content {{ margin-left: 0; padding: 10px; }} }}
+        .diagram-section {{ margin-bottom: 40px; padding: 16px; background: #16213e;
+                           border-radius: 8px; border: 1px solid #0f3460; }}
+        .diagram-section h3 {{ color: #e94560; margin-bottom: 12px; font-size: 16px;
+                              padding-top: 60px; margin-top: -60px; }}
+        .mermaid {{ background: #0a0a1a; padding: 12px; border-radius: 4px; overflow-x: auto; }}
+        .back-top {{ position: fixed; bottom: 20px; right: 20px; background: #e94560;
+                    color: white; border: none; padding: 10px 14px; border-radius: 50%;
+                    cursor: pointer; font-size: 18px; z-index: 100; }}
+    </style>
+</head>
+<body>
+    <button class="nav-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+
+    <nav class="sidebar">
+        <h2>{title}</h2>
+{sidebar_html}
+    </nav>
+
+    <main class="content">
+{sections_html}
+    </main>
+
+    <button class="back-top" onclick="window.scrollTo(0,0)">&#8593;</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({{
+            startOnLoad: true,
+            theme: 'dark',
+            securityLevel: 'loose',
+            flowchart: {{ htmlLabels: true, curve: 'basis' }}
+        }});
+    </script>
+</body>
+</html>
+"""
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(html)
+    return output_path
 
 
 def generate_all_diagrams(model: "ArchitectureModel", output_dir: Path) -> dict[str, Path]:
