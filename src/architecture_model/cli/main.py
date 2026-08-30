@@ -505,9 +505,8 @@ def _cmd_coverage(args) -> int:
 
 def _cmd_visualize(args) -> int:
     """Generate Mermaid diagrams from architecture model."""
-    import yaml as yaml_mod
     from ..core.parser import load_model
-    from .visualize import generate_overview_diagram, generate_block_diagram, generate_dependency_diagram
+    from ..core.visualize import generate_all_diagrams
 
     root = Path(args.path).resolve()
     model_path = root / ".architecture-model.yaml"
@@ -519,79 +518,11 @@ def _cmd_visualize(args) -> int:
     out_dir = Path(args.output)
     if not out_dir.is_absolute():
         out_dir = root / out_dir
-    out_dir.mkdir(parents=True, exist_ok=True)
 
-    generated = []
-
-    # Overview diagram
-    overview = generate_overview_diagram(model)
-    p = out_dir / "overview.md"
-    p.write_text(f"# Architecture Overview\n\n```mermaid\n{overview}\n```\n", encoding="utf-8")
-    generated.append("overview.md")
-
-    # Dependency diagram
-    deps = generate_dependency_diagram(model)
-    p = out_dir / "dependencies.md"
-    p.write_text(f"# Component Dependencies\n\n```mermaid\n{deps}\n```\n", encoding="utf-8")
-    generated.append("dependencies.md")
-
-    # Block detail diagrams — load sub-behaviors
-    sub_behaviors_path = root / ".architecture-models" / "sub-behaviors.yaml"
-    if sub_behaviors_path.exists():
-        with open(sub_behaviors_path, encoding="utf-8") as f:
-            sb_data = yaml_mod.safe_load(f)
-        sub_behaviors = sb_data.get("behaviors", [])
-
-        # Group sub-behaviors by parent_behavior
-        from collections import defaultdict
-        parent_groups: dict[str, list] = defaultdict(list)
-        for sb in sub_behaviors:
-            pb = sb.get("parent_behavior", "")
-            if pb:
-                parent_groups[pb].append(sb)
-
-        # Map behavior -> source_block via traces-to relationships
-        beh_to_source_block: dict[str, str] = {}
-        for rel in model.relationships:
-            if rel.type.value == "traces-to":
-                # Find component's source_block
-                for comp in model.entities.components:
-                    if comp.id == rel.from_id and comp.source_block:
-                        beh_to_source_block[rel.to_id] = comp.source_block
-                        break
-
-        # Get source_block names from capabilities
-        source_block_names: dict[str, str] = {}
-        for cap in model.entities.capabilities:
-            if cap.source_block:
-                source_block_names[cap.source_block] = cap.name
-
-        # Group parent behaviors by source_block
-        source_block_behs: dict[str, list[str]] = defaultdict(list)
-        for parent_beh_id in parent_groups:
-            fb = beh_to_source_block.get(parent_beh_id, "")
-            if fb:
-                source_block_behs[fb].append(parent_beh_id)
-
-        for fb in sorted(source_block_behs):
-            block_name = source_block_names.get(fb, fb)
-            diagrams = []
-            for parent_beh_id in sorted(source_block_behs[fb]):
-                d = generate_block_diagram(model, sub_behaviors, block_name, parent_beh_id)
-                if d:
-                    diagrams.append(d)
-            if not diagrams:
-                continue
-            combined = "\n\n".join(f"```mermaid\n{d}\n```" for d in diagrams)
-            filename = f"{fb}-detail.md"
-            p = out_dir / filename
-            p.write_text(f"# {fb}: {block_name}\n\n{combined}\n", encoding="utf-8")
-            generated.append(filename)
-
-    print(f"Generated diagrams in {out_dir}/")
-    for g in sorted(generated):
-        print(f"  {g}")
-
+    paths = generate_all_diagrams(model, out_dir)
+    print(f"Generated {len(paths)} diagrams in {out_dir}/")
+    for name in sorted(paths):
+        print(f"  {paths[name].name}")
     return 0
 
 

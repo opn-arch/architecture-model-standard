@@ -164,3 +164,29 @@ class TestDecompositionDiagram:
     def test_has_css(self):
         mmd = generate_decomposition_diagram(_make_model())
         assert "classDef" in mmd
+
+
+class TestCLIVisualizeImport:
+    def test_cli_visualize_import(self):
+        """Verify CLI visualize doesn't crash on import."""
+        from architecture_model.cli.visualize import (
+            shape, edge_style, generate_all_diagrams,
+            generate_pipeline_flow_diagram,
+        )
+        assert callable(shape)
+        assert callable(generate_all_diagrams)
+        assert callable(generate_pipeline_flow_diagram)
+
+
+class TestGenerateAllDiagrams:
+    def test_generate_all_produces_10_files(self, tmp_path):
+        from architecture_model.core.visualize import generate_all_diagrams
+        model = _make_model()
+        paths = generate_all_diagrams(model, tmp_path)
+        assert len(paths) == 10
+        expected = {"context", "components", "behaviors", "dependencies",
+                    "pipeline-flow", "entity-lifecycle", "data-flow",
+                    "constraint-map", "traceability", "decomposition"}
+        assert set(paths.keys()) == expected
+        for p in paths.values():
+            assert p.exists()
