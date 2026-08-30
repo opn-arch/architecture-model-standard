@@ -188,6 +188,7 @@ def generate_components_diagram(model: "ArchitectureModel") -> str:
         for cid in layer_members[lid]:
             comp = next(c for c in model.entities.components if c.id == cid)
             lines.append(f"        {shape('component', cid, comp.name)}")
+            lines.append(f"        click {_sid(cid)} \"component-{cid}.mmd\" \"View component detail\"")
             class_assignments.append(_apply_class(cid, "component"))
         lines.append("    end")
 
@@ -196,6 +197,7 @@ def generate_components_diagram(model: "ArchitectureModel") -> str:
         lines.append("    subgraph ungrouped[Components]")
         for comp in unassigned:
             lines.append(f"        {shape('component', comp.id, comp.name)}")
+            lines.append(f"        click {_sid(comp.id)} \"component-{comp.id}.mmd\" \"View component detail\"")
             class_assignments.append(_apply_class(comp.id, "component"))
         lines.append("    end")
 
@@ -229,6 +231,7 @@ def generate_behaviors_diagram(model: "ArchitectureModel") -> str:
     beh_ids = {b.id for b in model.entities.behaviors}
     for beh in model.entities.behaviors:
         lines.append(f"    {shape('behavior', beh.id, beh.name)}")
+        lines.append(f"    click {_sid(beh.id)} \"use-case-{beh.id}.mmd\" \"View use case detail\"")
         class_assignments.append(_apply_class(beh.id, "behavior"))
 
     # Edges between behaviors
@@ -792,4 +795,20 @@ def generate_all_diagrams(model: "ArchitectureModel", output_dir: Path) -> dict[
         path = output_dir / f"{name}.mmd"
         path.write_text(content + "\n")
         paths[name] = path
+    # Per-component detail diagrams
+    for comp in model.entities.components:
+        name = f"component-{comp.id}"
+        content = generate_component_detail_diagram(model, comp.id)
+        path = output_dir / f"{name}.mmd"
+        path.write_text(content + "\n")
+        paths[name] = path
+
+    # Per-behavior use-case diagrams
+    for beh in model.entities.behaviors:
+        name = f"use-case-{beh.id}"
+        content = generate_use_case_diagram(model, beh.id)
+        path = output_dir / f"{name}.mmd"
+        path.write_text(content + "\n")
+        paths[name] = path
+
     return paths

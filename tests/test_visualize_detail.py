@@ -95,3 +95,39 @@ class TestUseCaseDiagram:
 
     def test_click_on_sub_behaviors(self):
         assert "click" in generate_use_case_diagram(_make_model(), "BEH-1")
+
+
+class TestClickNavigation:
+    def test_behaviors_diagram_has_click_directives(self):
+        from architecture_model.core.visualize import generate_behaviors_diagram
+        model = _make_model()
+        mmd = generate_behaviors_diagram(model)
+        assert "click" in mmd
+
+    def test_components_diagram_has_click_directives(self):
+        from architecture_model.core.visualize import generate_components_diagram
+        model = _make_model()
+        mmd = generate_components_diagram(model)
+        assert "click" in mmd
+
+
+class TestGenerateAllWithDetail:
+    def test_generates_per_component_diagrams(self, tmp_path):
+        from architecture_model.core.visualize import generate_all_diagrams
+        model = _make_model()
+        paths = generate_all_diagrams(model, tmp_path)
+        assert "component-COMP-1" in paths
+        assert (tmp_path / "component-COMP-1.mmd").exists()
+
+    def test_generates_per_behavior_diagrams(self, tmp_path):
+        from architecture_model.core.visualize import generate_all_diagrams
+        model = _make_model()
+        paths = generate_all_diagrams(model, tmp_path)
+        assert "use-case-BEH-1" in paths
+
+    def test_total_diagram_count(self, tmp_path):
+        from architecture_model.core.visualize import generate_all_diagrams
+        model = _make_model()
+        paths = generate_all_diagrams(model, tmp_path)
+        # 10 standard + 2 components + 3 behaviors = 15
+        assert len(paths) == 15

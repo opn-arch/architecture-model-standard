@@ -183,10 +183,10 @@ class TestGenerateAllDiagrams:
         from architecture_model.core.visualize import generate_all_diagrams
         model = _make_model()
         paths = generate_all_diagrams(model, tmp_path)
-        assert len(paths) == 10
+        assert len(paths) >= 10
         expected = {"context", "components", "behaviors", "dependencies",
                     "pipeline-flow", "entity-lifecycle", "data-flow",
                     "constraint-map", "traceability", "decomposition"}
-        assert set(paths.keys()) == expected
+        assert expected.issubset(set(paths.keys()))
         for p in paths.values():
             assert p.exists()
