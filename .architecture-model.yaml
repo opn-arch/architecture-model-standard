@@ -1087,6 +1087,272 @@ entities:
     - parse_args
     - run_benchmark
     actor_id: ACT-1
+  - id: BEH-P1
+    name: Run Extraction Pipeline
+    status: ACTIVE
+    description: Execute the 10-stage extraction pipeline to produce an architecture model from source code
+    steps:
+    - observe
+    - infer
+    - allocate
+    - relate
+    - specify
+    - contract
+    - validate
+    - decompose
+    - synthesize
+    - emit
+  - id: BEH-P1.1
+    name: Run Observe Stage
+    status: ACTIVE
+    description: AST-scan all source files to produce module inventory
+  - id: BEH-P1.2
+    name: Run Infer Stage
+    status: ACTIVE
+    description: Infer capabilities, actors, and behaviors from inventory
+  - id: BEH-P1.3
+    name: Run Allocate Stage
+    status: ACTIVE
+    description: Allocate modules to components and assign layers
+  - id: BEH-P1.4
+    name: Run Relate Stage
+    status: ACTIVE
+    description: Derive relationships between entities
+  - id: BEH-P1.5
+    name: Run Specify Stage
+    status: ACTIVE
+    description: Specify interfaces from component analysis
+  - id: BEH-P1.6
+    name: Run Contract Stage
+    status: ACTIVE
+    description: Match test contracts to components
+  - id: BEH-P1.7
+    name: Run Validate Stage
+    status: ACTIVE
+    description: Validate model quality and compute confidence scores
+  - id: BEH-P1.8
+    name: Run Decompose Stage
+    status: ACTIVE
+    description: Identify system boundaries for autonomous subsystems
+  - id: BEH-P1.9
+    name: Run Synthesize Stage
+    status: ACTIVE
+    description: Run scoped sub-pipelines for each detected system
+  - id: BEH-P1.10
+    name: Run Emit Stage
+    status: ACTIVE
+    description: Write all artifacts to disk
+  - id: BEH-P1.R
+    name: LLM Refinement
+    status: ACTIVE
+    description: Cross-cutting LLM enrichment between stages
+  - id: BEH-P1.1.1
+    name: Filter Files
+    status: ACTIVE
+  - id: BEH-P1.1.2
+    name: Scan Module
+    status: ACTIVE
+  - id: BEH-P1.1.3
+    name: Extract Functions
+    status: ACTIVE
+  - id: BEH-P1.1.4
+    name: Extract Classes
+    status: ACTIVE
+  - id: BEH-P1.1.5
+    name: Extract Constants
+    status: ACTIVE
+  - id: BEH-P1.1.6
+    name: Extract Imports
+    status: ACTIVE
+  - id: BEH-P1.1.7
+    name: Resolve Import Edges
+    status: ACTIVE
+  - id: BEH-P1.1.8
+    name: Detect Routes
+    status: ACTIVE
+  - id: BEH-P1.1.9
+    name: Detect Constraints
+    status: ACTIVE
+  - id: BEH-P1.1.10
+    name: Find Tests
+    status: ACTIVE
+  - id: BEH-P1.1.11
+    name: Find Docs
+    status: ACTIVE
+  - id: BEH-P1.2.1
+    name: Infer from Routes
+    status: ACTIVE
+  - id: BEH-P1.2.2
+    name: Infer from Triggers
+    status: ACTIVE
+  - id: BEH-P1.2.3
+    name: Infer Domain Modules
+    status: ACTIVE
+  - id: BEH-P1.2.4
+    name: Infer CLI
+    status: ACTIVE
+  - id: BEH-P1.2.5
+    name: Infer Infrastructure
+    status: ACTIVE
+  - id: BEH-P1.2.6
+    name: Infer Package Grouping
+    status: ACTIVE
+  - id: BEH-P1.2.7
+    name: Infer Default Actors
+    status: ACTIVE
+  - id: BEH-P1.2.8
+    name: Infer Behaviors
+    status: ACTIVE
+  - id: BEH-P1.2.9
+    name: Infer Library Behaviors
+    status: ACTIVE
+  - id: BEH-P1.2.10
+    name: Infer Fallback
+    status: ACTIVE
+  - id: BEH-P1.3.1
+    name: Detect Project Type
+    status: ACTIVE
+  - id: BEH-P1.3.2
+    name: Seed from Capabilities
+    status: ACTIVE
+  - id: BEH-P1.3.3
+    name: Import Affinity
+    status: ACTIVE
+  - id: BEH-P1.3.4
+    name: Per-File Allocation
+    status: ACTIVE
+  - id: BEH-P1.3.5
+    name: Split Oversized
+    status: ACTIVE
+  - id: BEH-P1.3.6
+    name: Merge Undersized
+    status: ACTIVE
+  - id: BEH-P1.3.7
+    name: Infer Layer
+    status: ACTIVE
+  - id: BEH-P1.3.8
+    name: Boundary Coherence
+    status: ACTIVE
+  - id: BEH-P1.3.9
+    name: Package Grouping
+    status: ACTIVE
+  - id: BEH-P1.4.1
+    name: Derive Realizes
+    status: ACTIVE
+  - id: BEH-P1.4.2
+    name: Derive Depends-On
+    status: ACTIVE
+  - id: BEH-P1.4.3
+    name: Derive Contains
+    status: ACTIVE
+  - id: BEH-P1.4.4
+    name: Derive Exposes
+    status: ACTIVE
+  - id: BEH-P1.4.5
+    name: Derive Constrained-By
+    status: ACTIVE
+  - id: BEH-P1.4.6
+    name: Build File Map
+    status: ACTIVE
+  - id: BEH-P1.5.1
+    name: Specify REST Interfaces
+    status: ACTIVE
+  - id: BEH-P1.5.2
+    name: Specify CLI Interfaces
+    status: ACTIVE
+  - id: BEH-P1.5.3
+    name: Specify Library API
+    status: ACTIVE
+  - id: BEH-P1.5.4
+    name: Name Library Interface
+    status: ACTIVE
+  - id: BEH-P1.5.5
+    name: Specify Fallback
+    status: ACTIVE
+  - id: BEH-P1.6.1
+    name: Match by Target
+    status: ACTIVE
+  - id: BEH-P1.6.2
+    name: Match by Directory
+    status: ACTIVE
+  - id: BEH-P1.7.1
+    name: Check Capability Realization
+    status: ACTIVE
+  - id: BEH-P1.7.2
+    name: Detect Orphans
+    status: ACTIVE
+  - id: BEH-P1.7.3
+    name: Check File Coverage
+    status: ACTIVE
+  - id: BEH-P1.7.4
+    name: Check Boundary Coherence
+    status: ACTIVE
+  - id: BEH-P1.7.5
+    name: Compute Confidence
+    status: ACTIVE
+  - id: BEH-P1.8.1
+    name: Identify Autonomous Systems
+    status: ACTIVE
+  - id: BEH-P1.8.2
+    name: Decompose Large Components
+    status: ACTIVE
+  - id: BEH-P1.8.3
+    name: Cluster by Directory
+    status: ACTIVE
+  - id: BEH-P1.8.4
+    name: Merge Coupled Components
+    status: ACTIVE
+  - id: BEH-P1.9.1
+    name: Decide Stages
+    status: ACTIVE
+  - id: BEH-P1.9.2
+    name: Run Scoped Sub-Pipeline
+    status: ACTIVE
+  - id: BEH-P1.9.3
+    name: Build Model YAML
+    status: ACTIVE
+  - id: BEH-P1.9.4
+    name: Build Manifest
+    status: ACTIVE
+  - id: BEH-P1.9.5
+    name: Build System-of-Systems
+    status: ACTIVE
+  - id: BEH-P1.9.6
+    name: Collect Lessons
+    status: ACTIVE
+  - id: BEH-P1.10.1
+    name: Write Files
+    status: ACTIVE
+  - id: BEH-P1.10.2
+    name: Build Test Map
+    status: ACTIVE
+  - id: BEH-P1.10.3
+    name: Generate SE Docs
+    status: ACTIVE
+  - id: BEH-P1.10.4
+    name: Enrich Model
+    status: ACTIVE
+  - id: BEH-P1.10.5
+    name: System Interactions
+    status: ACTIVE
+  - id: BEH-P1.10.6
+    name: LLM Reviews
+    status: ACTIVE
+  - id: BEH-P1.10.7
+    name: Inline Reviews
+    status: ACTIVE
+  - id: BEH-P1.R.1
+    name: Build Refinement Prompt
+    status: ACTIVE
+  - id: BEH-P1.R.2
+    name: Normalize LLM Output
+    status: ACTIVE
+  - id: BEH-P1.R.3
+    name: Diff Stage Outputs
+    status: ACTIVE
+  - id: BEH-P1.R.4
+    name: Apply Corrections
+    status: ACTIVE
   interfaces:
   - id: IF-1
     name: main CLI
@@ -2018,3 +2284,123 @@ relationships:
 - from: COMP-12
   to: IF-auto-COMP-12
   type: exposes
+# Pipeline behavior hierarchy
+- {from_id: BEH-P1, to_id: BEH-P1.1, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.2, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.3, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.4, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.5, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.6, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.7, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.8, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.9, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.10, type: contains}
+- {from_id: BEH-P1, to_id: BEH-P1.R, type: contains}
+# Stage sequential triggers
+- {from_id: BEH-P1.1, to_id: BEH-P1.2, type: triggers}
+- {from_id: BEH-P1.2, to_id: BEH-P1.3, type: triggers}
+- {from_id: BEH-P1.3, to_id: BEH-P1.4, type: triggers}
+- {from_id: BEH-P1.4, to_id: BEH-P1.5, type: triggers}
+- {from_id: BEH-P1.5, to_id: BEH-P1.6, type: triggers}
+- {from_id: BEH-P1.6, to_id: BEH-P1.7, type: triggers}
+- {from_id: BEH-P1.7, to_id: BEH-P1.8, type: triggers}
+- {from_id: BEH-P1.8, to_id: BEH-P1.9, type: triggers}
+- {from_id: BEH-P1.9, to_id: BEH-P1.10, type: triggers}
+# LLM refinement triggers
+- {from_id: BEH-P1.2, to_id: BEH-P1.R, type: triggers}
+- {from_id: BEH-P1.3, to_id: BEH-P1.R, type: triggers}
+- {from_id: BEH-P1.4, to_id: BEH-P1.R, type: triggers}
+- {from_id: BEH-P1.5, to_id: BEH-P1.R, type: triggers}
+# Observe sub-behaviors
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.1, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.2, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.3, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.4, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.5, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.6, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.7, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.8, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.9, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.10, type: contains}
+- {from_id: BEH-P1.1, to_id: BEH-P1.1.11, type: contains}
+# Infer sub-behaviors
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.1, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.2, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.3, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.4, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.5, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.6, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.7, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.8, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.9, type: contains}
+- {from_id: BEH-P1.2, to_id: BEH-P1.2.10, type: contains}
+# Allocate sub-behaviors
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.1, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.2, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.3, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.4, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.5, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.6, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.7, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.8, type: contains}
+- {from_id: BEH-P1.3, to_id: BEH-P1.3.9, type: contains}
+# Relate sub-behaviors
+- {from_id: BEH-P1.4, to_id: BEH-P1.4.1, type: contains}
+- {from_id: BEH-P1.4, to_id: BEH-P1.4.2, type: contains}
+- {from_id: BEH-P1.4, to_id: BEH-P1.4.3, type: contains}
+- {from_id: BEH-P1.4, to_id: BEH-P1.4.4, type: contains}
+- {from_id: BEH-P1.4, to_id: BEH-P1.4.5, type: contains}
+- {from_id: BEH-P1.4, to_id: BEH-P1.4.6, type: contains}
+# Specify sub-behaviors
+- {from_id: BEH-P1.5, to_id: BEH-P1.5.1, type: contains}
+- {from_id: BEH-P1.5, to_id: BEH-P1.5.2, type: contains}
+- {from_id: BEH-P1.5, to_id: BEH-P1.5.3, type: contains}
+- {from_id: BEH-P1.5, to_id: BEH-P1.5.4, type: contains}
+- {from_id: BEH-P1.5, to_id: BEH-P1.5.5, type: contains}
+# Contract sub-behaviors
+- {from_id: BEH-P1.6, to_id: BEH-P1.6.1, type: contains}
+- {from_id: BEH-P1.6, to_id: BEH-P1.6.2, type: contains}
+# Validate sub-behaviors
+- {from_id: BEH-P1.7, to_id: BEH-P1.7.1, type: contains}
+- {from_id: BEH-P1.7, to_id: BEH-P1.7.2, type: contains}
+- {from_id: BEH-P1.7, to_id: BEH-P1.7.3, type: contains}
+- {from_id: BEH-P1.7, to_id: BEH-P1.7.4, type: contains}
+- {from_id: BEH-P1.7, to_id: BEH-P1.7.5, type: contains}
+# Decompose sub-behaviors
+- {from_id: BEH-P1.8, to_id: BEH-P1.8.1, type: contains}
+- {from_id: BEH-P1.8, to_id: BEH-P1.8.2, type: contains}
+- {from_id: BEH-P1.8, to_id: BEH-P1.8.3, type: contains}
+- {from_id: BEH-P1.8, to_id: BEH-P1.8.4, type: contains}
+# Synthesize sub-behaviors
+- {from_id: BEH-P1.9, to_id: BEH-P1.9.1, type: contains}
+- {from_id: BEH-P1.9, to_id: BEH-P1.9.2, type: contains}
+- {from_id: BEH-P1.9, to_id: BEH-P1.9.3, type: contains}
+- {from_id: BEH-P1.9, to_id: BEH-P1.9.4, type: contains}
+- {from_id: BEH-P1.9, to_id: BEH-P1.9.5, type: contains}
+- {from_id: BEH-P1.9, to_id: BEH-P1.9.6, type: contains}
+# Emit sub-behaviors
+- {from_id: BEH-P1.10, to_id: BEH-P1.10.1, type: contains}
+- {from_id: BEH-P1.10, to_id: BEH-P1.10.2, type: contains}
+- {from_id: BEH-P1.10, to_id: BEH-P1.10.3, type: contains}
+- {from_id: BEH-P1.10, to_id: BEH-P1.10.4, type: contains}
+- {from_id: BEH-P1.10, to_id: BEH-P1.10.5, type: contains}
+- {from_id: BEH-P1.10, to_id: BEH-P1.10.6, type: contains}
+- {from_id: BEH-P1.10, to_id: BEH-P1.10.7, type: contains}
+# LLM Refinement sub-behaviors
+- {from_id: BEH-P1.R, to_id: BEH-P1.R.1, type: contains}
+- {from_id: BEH-P1.R, to_id: BEH-P1.R.2, type: contains}
+- {from_id: BEH-P1.R, to_id: BEH-P1.R.3, type: contains}
+- {from_id: BEH-P1.R, to_id: BEH-P1.R.4, type: contains}
+# Component traces-to behaviors
+- {from_id: COMP-2.1, to_id: BEH-P1, type: traces-to}
+- {from_id: COMP-2.1, to_id: BEH-P1.R, type: traces-to}
+- {from_id: COMP-2.2, to_id: BEH-P1.1, type: traces-to}
+- {from_id: COMP-2.2, to_id: BEH-P1.2, type: traces-to}
+- {from_id: COMP-2.3, to_id: BEH-P1.3, type: traces-to}
+- {from_id: COMP-2.3, to_id: BEH-P1.4, type: traces-to}
+- {from_id: COMP-2.4, to_id: BEH-P1.5, type: traces-to}
+- {from_id: COMP-2.4, to_id: BEH-P1.6, type: traces-to}
+- {from_id: COMP-2.4, to_id: BEH-P1.7, type: traces-to}
+- {from_id: COMP-2.5, to_id: BEH-P1.8, type: traces-to}
+- {from_id: COMP-2.5, to_id: BEH-P1.9, type: traces-to}
+- {from_id: COMP-2.5, to_id: BEH-P1.10, type: traces-to}
