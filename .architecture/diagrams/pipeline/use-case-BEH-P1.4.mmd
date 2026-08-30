@@ -1,0 +1,51 @@
+flowchart TB
+    BEH_P1_4{{Run Relate Stage}}
+    COMP_2_3[Allocation & Relation Stages]
+    COMP_2_3 -.->|traces-to| BEH_P1_4
+    click COMP_2_3 "component-COMP-2.3.mmd"
+    subgraph sub[Sub-behaviors]
+        BEH_P1_4_1{{Derive Realizes}}
+        BEH_P1_4_2{{"Derive Depends-On"}}
+        BEH_P1_4_3{{Derive Contains}}
+        BEH_P1_4_4{{Derive Exposes}}
+        BEH_P1_4_5{{"Derive Constrained-By"}}
+        BEH_P1_4_6{{Build File Map}}
+    end
+    BEH_P1_4 -.->|contains| BEH_P1_4_1
+    click BEH_P1_4_1 "use-case-BEH-P1.4.1.mmd"
+    BEH_P1_4 -.->|contains| BEH_P1_4_2
+    click BEH_P1_4_2 "use-case-BEH-P1.4.2.mmd"
+    BEH_P1_4 -.->|contains| BEH_P1_4_3
+    click BEH_P1_4_3 "use-case-BEH-P1.4.3.mmd"
+    BEH_P1_4 -.->|contains| BEH_P1_4_4
+    click BEH_P1_4_4 "use-case-BEH-P1.4.4.mmd"
+    BEH_P1_4 -.->|contains| BEH_P1_4_5
+    click BEH_P1_4_5 "use-case-BEH-P1.4.5.mmd"
+    BEH_P1_4 -.->|contains| BEH_P1_4_6
+    click BEH_P1_4_6 "use-case-BEH-P1.4.6.mmd"
+    BEH_P1_3{{Run Allocate Stage}}
+    BEH_P1_3 -->|triggers| BEH_P1_4
+    BEH_P1_5{{Run Specify Stage}}
+    BEH_P1_4 -->|triggers| BEH_P1_5
+    BEH_P1_R{{LLM Refinement}}
+    BEH_P1_4 -->|triggers| BEH_P1_R
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class BEH_P1_4 cls_beh
+    class COMP_2_3 cls_comp
+    class BEH_P1_4_1 cls_beh
+    class BEH_P1_4_2 cls_beh
+    class BEH_P1_4_3 cls_beh
+    class BEH_P1_4_4 cls_beh
+    class BEH_P1_4_5 cls_beh
+    class BEH_P1_4_6 cls_beh
+    class BEH_P1_3 cls_beh
+    class BEH_P1_5 cls_beh
+    class BEH_P1_R cls_beh

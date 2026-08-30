@@ -1,0 +1,22 @@
+flowchart TB
+    COMP_1[Core]
+    subgraph ifaces[Interfaces]
+        IF_auto_COMP_1((Core API))
+    end
+    COMP_1 -.->|exposes| IF_auto_COMP_1
+    subgraph files[Source Files]
+        file_src/architecture_model/core/__init___py[/src/architecture_model/core/__init__.py/]
+    end
+    COMP_1 -.-> files
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_1 cls_comp
+    class IF_auto_COMP_1 cls_iface
+    class file_src/architecture_model/core/__init___py cls_mod

@@ -1,0 +1,32 @@
+flowchart TB
+    COMP_3[Manifest]
+    subgraph caps[Capabilities]
+        CAP_4(Generate Reality Manifest)
+    end
+    COMP_3 ==>|realizes| CAP_4
+    subgraph ifaces[Interfaces]
+        IF_2((runner CLI))
+        IF_4(("COMP-3-1 Library API"))
+    end
+    COMP_3 -.->|exposes| IF_2
+    COMP_3 -.->|exposes| IF_4
+    subgraph files[Source Files]
+        file_src/architecture_model/manifest/__init___py[/src/architecture_model/manifest/__init__.py/]
+        file_src/architecture_model/manifest/types_py[/src/architecture_model/manifest/types.py/]
+    end
+    COMP_3 -.-> files
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_3 cls_comp
+    class CAP_4 cls_cap
+    class IF_2 cls_iface
+    class IF_4 cls_iface
+    class file_src/architecture_model/manifest/__init___py cls_mod
+    class file_src/architecture_model/manifest/types_py cls_mod

@@ -1,0 +1,54 @@
+flowchart TB
+    COMP_8[CLI]
+    subgraph ifaces[Interfaces]
+        IF_auto_COMP_8((CLI API))
+    end
+    COMP_8 -.->|exposes| IF_auto_COMP_8
+    COMP_1[Core]
+    COMP_8 -->|depends-on| COMP_1
+    click COMP_1 "component-COMP-1.mmd"
+    COMP_2[Pipeline]
+    COMP_8 -->|depends-on| COMP_2
+    click COMP_2 "component-COMP-2.mmd"
+    COMP_3[Manifest]
+    COMP_8 -->|depends-on| COMP_3
+    click COMP_3 "component-COMP-3.mmd"
+    COMP_4[Documentation]
+    COMP_8 -->|depends-on| COMP_4
+    click COMP_4 "component-COMP-4.mmd"
+    COMP_5[Orchestration]
+    COMP_8 -->|depends-on| COMP_5
+    click COMP_5 "component-COMP-5.mmd"
+    COMP_7[Authoring]
+    COMP_8 -->|depends-on| COMP_7
+    click COMP_7 "component-COMP-7.mmd"
+    subgraph files[Source Files]
+        file_src/architecture_model/__init___py[/src/architecture_model/__init__.py/]
+        file_src/architecture_model/__main___py[/src/architecture_model/__main__.py/]
+        file_src/architecture_model/cli/__init___py[/src/architecture_model/cli/__init__.py/]
+        file_src/architecture_model/cli/main_py[/src/architecture_model/cli/main.py/]
+        file_src/architecture_model/cli/visualize_py[/src/architecture_model/cli/visualize.py/]
+    end
+    COMP_8 -.-> files
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_8 cls_comp
+    class IF_auto_COMP_8 cls_iface
+    class COMP_1 cls_comp
+    class COMP_2 cls_comp
+    class COMP_3 cls_comp
+    class COMP_4 cls_comp
+    class COMP_5 cls_comp
+    class COMP_7 cls_comp
+    class file_src/architecture_model/__init___py cls_mod
+    class file_src/architecture_model/__main___py cls_mod
+    class file_src/architecture_model/cli/__init___py cls_mod
+    class file_src/architecture_model/cli/main_py cls_mod
+    class file_src/architecture_model/cli/visualize_py cls_mod

@@ -1,0 +1,48 @@
+flowchart TB
+    COMP_2_1[Pipeline Coordination]
+    subgraph ifaces[Interfaces]
+        IF_auto_COMP_2_1((Pipeline Coordination API))
+    end
+    COMP_2_1 -.->|exposes| IF_auto_COMP_2_1
+    subgraph behs[Behaviors]
+        BEH_P1{{Run Extraction Pipeline}}
+        BEH_P1_R{{LLM Refinement}}
+    end
+    COMP_2_1 -.->|traces-to| BEH_P1
+    click BEH_P1 "use-case-BEH-P1.mmd"
+    COMP_2_1 -.->|traces-to| BEH_P1_R
+    click BEH_P1_R "use-case-BEH-P1.R.mmd"
+    COMP_1_1[Type System]
+    COMP_2_1 -->|depends-on| COMP_1_1
+    click COMP_1_1 "component-COMP-1.1.mmd"
+    subgraph files[Source Files]
+        file_src/architecture_model/pipeline/coordinator_py[/src/architecture_model/pipeline/coordinator.py/]
+        file_src/architecture_model/pipeline/protocol_py[/src/architecture_model/pipeline/protocol.py/]
+        file_src/architecture_model/pipeline/cache_py[/src/architecture_model/pipeline/cache.py/]
+        file_src/architecture_model/pipeline/context_gen_py[/src/architecture_model/pipeline/context_gen.py/]
+        file_src/architecture_model/pipeline/report_py[/src/architecture_model/pipeline/report.py/]
+        file_src/architecture_model/pipeline/artifacts_py[/src/architecture_model/pipeline/artifacts.py/]
+        file_src/architecture_model/pipeline/corrections_py[/src/architecture_model/pipeline/corrections.py/]
+    end
+    COMP_2_1 -.-> files
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_2_1 cls_comp
+    class IF_auto_COMP_2_1 cls_iface
+    class BEH_P1 cls_beh
+    class BEH_P1_R cls_beh
+    class COMP_1_1 cls_comp
+    class file_src/architecture_model/pipeline/coordinator_py cls_mod
+    class file_src/architecture_model/pipeline/protocol_py cls_mod
+    class file_src/architecture_model/pipeline/cache_py cls_mod
+    class file_src/architecture_model/pipeline/context_gen_py cls_mod
+    class file_src/architecture_model/pipeline/report_py cls_mod
+    class file_src/architecture_model/pipeline/artifacts_py cls_mod
+    class file_src/architecture_model/pipeline/corrections_py cls_mod

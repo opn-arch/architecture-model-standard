@@ -1,0 +1,147 @@
+flowchart TB
+    subgraph system["architecture-model-standard"]
+        IF_1((main CLI))
+        IF_2((runner CLI))
+        IF_3(("COMP-4-7 Library API"))
+        IF_4(("COMP-3-1 Library API"))
+        IF_5(("COMP-4-1 Library API"))
+        IF_6(("COMP-4-2 Library API"))
+        IF_7(("COMP-4-3 Library API"))
+        IF_8(("COMP-4-4 Library API"))
+        IF_9(("COMP-4-5 Library API"))
+        IF_10(("COMP-4-6 Library API"))
+        IF_11(("COMP-4-8 Library API"))
+        IF_12(("COMP-4-9 Library API"))
+        IF_13(("COMP-4-10 Library API"))
+        IF_14(("COMP-4-11 Library API"))
+        IF_15(("COMP-4-12 Library API"))
+        IF_16(("COMP-4-13 Library API"))
+        IF_auto_COMP_1((Core API))
+        IF_auto_COMP_1_1((Type System API))
+        IF_auto_COMP_1_2((Validation API))
+        IF_auto_COMP_1_3((Parser & Persistence API))
+        IF_auto_COMP_1_4((Model Operations API))
+        IF_auto_COMP_1_5((Quality Metrics API))
+        IF_auto_COMP_2((Pipeline API))
+        IF_auto_COMP_2_1((Pipeline Coordination API))
+        IF_auto_COMP_2_2((Observation Stages API))
+        IF_auto_COMP_2_3((Allocation & Relation Stages API))
+        IF_auto_COMP_2_4((Specification & Contract Stages API))
+        IF_auto_COMP_2_5((Synthesis & Emit Stages API))
+        IF_auto_COMP_3_1((Scanners API))
+        IF_auto_COMP_3_2((Graph & Analysis API))
+        IF_auto_COMP_3_3((Grouping & Generation API))
+        IF_auto_COMP_4_1((Core Doc Generators API))
+        IF_auto_COMP_4_2((SE Document Suite API))
+        IF_auto_COMP_5((Orchestration API))
+        IF_auto_COMP_5_1((Enrichment API))
+        IF_auto_COMP_5_2((Decomposition API))
+        IF_auto_COMP_6((Extract API))
+        IF_auto_COMP_7((Authoring API))
+        IF_auto_COMP_8((CLI API))
+        IF_auto_COMP_9((Configuration API))
+        IF_auto_COMP_10((Export API))
+        IF_auto_COMP_11((Pipeline Learning API))
+        IF_auto_COMP_12((Utilities API))
+    end
+    ACT_1(["AI Agent (MCP Client)"])
+    ACT_2([Developer])
+    ACT_3([CI/CD Pipeline])
+    COMP_4 -.->|exposes| IF_1
+    COMP_3 -.->|exposes| IF_2
+    COMP_4 -.->|exposes| IF_3
+    COMP_3 -.->|exposes| IF_4
+    COMP_4 -.->|exposes| IF_5
+    COMP_4 -.->|exposes| IF_6
+    COMP_4 -.->|exposes| IF_7
+    COMP_4 -.->|exposes| IF_8
+    COMP_4 -.->|exposes| IF_9
+    COMP_4 -.->|exposes| IF_10
+    COMP_4 -.->|exposes| IF_11
+    COMP_4 -.->|exposes| IF_12
+    COMP_4 -.->|exposes| IF_13
+    COMP_4 -.->|exposes| IF_14
+    COMP_4 -.->|exposes| IF_15
+    COMP_4 -.->|exposes| IF_16
+    COMP_1 -.->|exposes| IF_auto_COMP_1
+    COMP_1_1 -.->|exposes| IF_auto_COMP_1_1
+    COMP_1_2 -.->|exposes| IF_auto_COMP_1_2
+    COMP_1_3 -.->|exposes| IF_auto_COMP_1_3
+    COMP_1_4 -.->|exposes| IF_auto_COMP_1_4
+    COMP_1_5 -.->|exposes| IF_auto_COMP_1_5
+    COMP_2 -.->|exposes| IF_auto_COMP_2
+    COMP_2_1 -.->|exposes| IF_auto_COMP_2_1
+    COMP_2_2 -.->|exposes| IF_auto_COMP_2_2
+    COMP_2_3 -.->|exposes| IF_auto_COMP_2_3
+    COMP_2_4 -.->|exposes| IF_auto_COMP_2_4
+    COMP_2_5 -.->|exposes| IF_auto_COMP_2_5
+    COMP_3_1 -.->|exposes| IF_auto_COMP_3_1
+    COMP_3_2 -.->|exposes| IF_auto_COMP_3_2
+    COMP_3_3 -.->|exposes| IF_auto_COMP_3_3
+    COMP_4_1 -.->|exposes| IF_auto_COMP_4_1
+    COMP_4_2 -.->|exposes| IF_auto_COMP_4_2
+    COMP_5 -.->|exposes| IF_auto_COMP_5
+    COMP_5_1 -.->|exposes| IF_auto_COMP_5_1
+    COMP_5_2 -.->|exposes| IF_auto_COMP_5_2
+    COMP_6 -.->|exposes| IF_auto_COMP_6
+    COMP_7 -.->|exposes| IF_auto_COMP_7
+    COMP_8 -.->|exposes| IF_auto_COMP_8
+    COMP_9 -.->|exposes| IF_auto_COMP_9
+    COMP_10 -.->|exposes| IF_auto_COMP_10
+    COMP_11 -.->|exposes| IF_auto_COMP_11
+    COMP_12 -.->|exposes| IF_auto_COMP_12
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class IF_1 cls_iface
+    class IF_2 cls_iface
+    class IF_3 cls_iface
+    class IF_4 cls_iface
+    class IF_5 cls_iface
+    class IF_6 cls_iface
+    class IF_7 cls_iface
+    class IF_8 cls_iface
+    class IF_9 cls_iface
+    class IF_10 cls_iface
+    class IF_11 cls_iface
+    class IF_12 cls_iface
+    class IF_13 cls_iface
+    class IF_14 cls_iface
+    class IF_15 cls_iface
+    class IF_16 cls_iface
+    class IF_auto_COMP_1 cls_iface
+    class IF_auto_COMP_1_1 cls_iface
+    class IF_auto_COMP_1_2 cls_iface
+    class IF_auto_COMP_1_3 cls_iface
+    class IF_auto_COMP_1_4 cls_iface
+    class IF_auto_COMP_1_5 cls_iface
+    class IF_auto_COMP_2 cls_iface
+    class IF_auto_COMP_2_1 cls_iface
+    class IF_auto_COMP_2_2 cls_iface
+    class IF_auto_COMP_2_3 cls_iface
+    class IF_auto_COMP_2_4 cls_iface
+    class IF_auto_COMP_2_5 cls_iface
+    class IF_auto_COMP_3_1 cls_iface
+    class IF_auto_COMP_3_2 cls_iface
+    class IF_auto_COMP_3_3 cls_iface
+    class IF_auto_COMP_4_1 cls_iface
+    class IF_auto_COMP_4_2 cls_iface
+    class IF_auto_COMP_5 cls_iface
+    class IF_auto_COMP_5_1 cls_iface
+    class IF_auto_COMP_5_2 cls_iface
+    class IF_auto_COMP_6 cls_iface
+    class IF_auto_COMP_7 cls_iface
+    class IF_auto_COMP_8 cls_iface
+    class IF_auto_COMP_9 cls_iface
+    class IF_auto_COMP_10 cls_iface
+    class IF_auto_COMP_11 cls_iface
+    class IF_auto_COMP_12 cls_iface
+    class ACT_1 cls_actor
+    class ACT_2 cls_actor
+    class ACT_3 cls_actor

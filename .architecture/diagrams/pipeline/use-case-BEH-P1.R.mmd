@@ -1,0 +1,46 @@
+flowchart TB
+    BEH_P1_R{{LLM Refinement}}
+    COMP_2_1[Pipeline Coordination]
+    COMP_2_1 -.->|traces-to| BEH_P1_R
+    click COMP_2_1 "component-COMP-2.1.mmd"
+    subgraph sub[Sub-behaviors]
+        BEH_P1_R_1{{Build Refinement Prompt}}
+        BEH_P1_R_2{{Normalize LLM Output}}
+        BEH_P1_R_3{{Diff Stage Outputs}}
+        BEH_P1_R_4{{Apply Corrections}}
+    end
+    BEH_P1_R -.->|contains| BEH_P1_R_1
+    click BEH_P1_R_1 "use-case-BEH-P1.R.1.mmd"
+    BEH_P1_R -.->|contains| BEH_P1_R_2
+    click BEH_P1_R_2 "use-case-BEH-P1.R.2.mmd"
+    BEH_P1_R -.->|contains| BEH_P1_R_3
+    click BEH_P1_R_3 "use-case-BEH-P1.R.3.mmd"
+    BEH_P1_R -.->|contains| BEH_P1_R_4
+    click BEH_P1_R_4 "use-case-BEH-P1.R.4.mmd"
+    BEH_P1_2{{Run Infer Stage}}
+    BEH_P1_2 -->|triggers| BEH_P1_R
+    BEH_P1_3{{Run Allocate Stage}}
+    BEH_P1_3 -->|triggers| BEH_P1_R
+    BEH_P1_4{{Run Relate Stage}}
+    BEH_P1_4 -->|triggers| BEH_P1_R
+    BEH_P1_5{{Run Specify Stage}}
+    BEH_P1_5 -->|triggers| BEH_P1_R
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class BEH_P1_R cls_beh
+    class COMP_2_1 cls_comp
+    class BEH_P1_R_1 cls_beh
+    class BEH_P1_R_2 cls_beh
+    class BEH_P1_R_3 cls_beh
+    class BEH_P1_R_4 cls_beh
+    class BEH_P1_2 cls_beh
+    class BEH_P1_3 cls_beh
+    class BEH_P1_4 cls_beh
+    class BEH_P1_5 cls_beh

@@ -1,0 +1,42 @@
+flowchart TB
+    COMP_2_3[Allocation & Relation Stages]
+    subgraph ifaces[Interfaces]
+        IF_auto_COMP_2_3((Allocation & Relation Stages API))
+    end
+    COMP_2_3 -.->|exposes| IF_auto_COMP_2_3
+    subgraph behs[Behaviors]
+        BEH_P1_3{{Run Allocate Stage}}
+        BEH_P1_4{{Run Relate Stage}}
+    end
+    COMP_2_3 -.->|traces-to| BEH_P1_3
+    click BEH_P1_3 "use-case-BEH-P1.3.mmd"
+    COMP_2_3 -.->|traces-to| BEH_P1_4
+    click BEH_P1_4 "use-case-BEH-P1.4.mmd"
+    COMP_1_1[Type System]
+    COMP_2_3 -->|depends-on| COMP_1_1
+    click COMP_1_1 "component-COMP-1.1.mmd"
+    subgraph files[Source Files]
+        file_src/architecture_model/pipeline/allocate_py[/src/architecture_model/pipeline/allocate.py/]
+        file_src/architecture_model/pipeline/allocate_types_py[/src/architecture_model/pipeline/allocate_types.py/]
+        file_src/architecture_model/pipeline/relate_py[/src/architecture_model/pipeline/relate.py/]
+        file_src/architecture_model/pipeline/relate_types_py[/src/architecture_model/pipeline/relate_types.py/]
+    end
+    COMP_2_3 -.-> files
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_2_3 cls_comp
+    class IF_auto_COMP_2_3 cls_iface
+    class BEH_P1_3 cls_beh
+    class BEH_P1_4 cls_beh
+    class COMP_1_1 cls_comp
+    class file_src/architecture_model/pipeline/allocate_py cls_mod
+    class file_src/architecture_model/pipeline/allocate_types_py cls_mod
+    class file_src/architecture_model/pipeline/relate_py cls_mod
+    class file_src/architecture_model/pipeline/relate_types_py cls_mod

@@ -1,0 +1,61 @@
+flowchart TB
+    COMP_4[Documentation]
+    subgraph ifaces[Interfaces]
+        IF_1((main CLI))
+        IF_3(("COMP-4-7 Library API"))
+        IF_5(("COMP-4-1 Library API"))
+        IF_6(("COMP-4-2 Library API"))
+        IF_7(("COMP-4-3 Library API"))
+        IF_8(("COMP-4-4 Library API"))
+        IF_9(("COMP-4-5 Library API"))
+        IF_10(("COMP-4-6 Library API"))
+        IF_11(("COMP-4-8 Library API"))
+        IF_12(("COMP-4-9 Library API"))
+        IF_13(("COMP-4-10 Library API"))
+        IF_14(("COMP-4-11 Library API"))
+        IF_15(("COMP-4-12 Library API"))
+        IF_16(("COMP-4-13 Library API"))
+    end
+    COMP_4 -.->|exposes| IF_1
+    COMP_4 -.->|exposes| IF_3
+    COMP_4 -.->|exposes| IF_5
+    COMP_4 -.->|exposes| IF_6
+    COMP_4 -.->|exposes| IF_7
+    COMP_4 -.->|exposes| IF_8
+    COMP_4 -.->|exposes| IF_9
+    COMP_4 -.->|exposes| IF_10
+    COMP_4 -.->|exposes| IF_11
+    COMP_4 -.->|exposes| IF_12
+    COMP_4 -.->|exposes| IF_13
+    COMP_4 -.->|exposes| IF_14
+    COMP_4 -.->|exposes| IF_15
+    COMP_4 -.->|exposes| IF_16
+    subgraph files[Source Files]
+        file_src/architecture_model/docs/__init___py[/src/architecture_model/docs/__init__.py/]
+    end
+    COMP_4 -.-> files
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_4 cls_comp
+    class IF_1 cls_iface
+    class IF_3 cls_iface
+    class IF_5 cls_iface
+    class IF_6 cls_iface
+    class IF_7 cls_iface
+    class IF_8 cls_iface
+    class IF_9 cls_iface
+    class IF_10 cls_iface
+    class IF_11 cls_iface
+    class IF_12 cls_iface
+    class IF_13 cls_iface
+    class IF_14 cls_iface
+    class IF_15 cls_iface
+    class IF_16 cls_iface
+    class file_src/architecture_model/docs/__init___py cls_mod

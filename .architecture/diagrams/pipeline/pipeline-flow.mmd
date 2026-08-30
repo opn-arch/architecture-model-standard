@@ -1,0 +1,52 @@
+flowchart LR
+    S1[[Observe]]
+    S2[[Infer]]
+    S3[[Allocate]]
+    S4[[Relate]]
+    S5[[Specify]]
+    S6[[Contract]]
+    S7[[Validate]]
+    S8[[Decompose]]
+    S9[[Synthesize]]
+    S10[[Emit]]
+    S1 -->|Inventory| S2
+    S2 -->|Capabilities| S3
+    S3 -->|Components| S4
+    S4 -->|Relationships| S5
+    S5 -->|Interfaces| S6
+    S6 -->|Test Contracts| S7
+    S7 -->|Score| S8
+    S8 -->|Systems| S9
+    S9 -->|Sub-models| S10
+    subgraph llm_loop[LLM Refinement Loop]
+        LLM_reinfer["LLM Re-inference"]
+        LLM_norm[Normalize]
+        LLM_apply[Apply]
+        LLM_reinfer --> LLM_norm --> LLM_apply
+    end
+    S2 -.-> LLM_reinfer
+    S3 -.-> LLM_reinfer
+    S4 -.-> LLM_reinfer
+    S5 -.-> LLM_reinfer
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class S1 cls_stage
+    class S2 cls_stage
+    class S3 cls_stage
+    class S4 cls_stage
+    class S5 cls_stage
+    class S6 cls_stage
+    class S7 cls_stage
+    class S8 cls_stage
+    class S9 cls_stage
+    class S10 cls_stage
+    class LLM_reinfer cls_comp
+    class LLM_norm cls_comp
+    class LLM_apply cls_comp

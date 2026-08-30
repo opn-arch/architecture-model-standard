@@ -1,0 +1,144 @@
+flowchart TB
+    subgraph ungrouped[Components]
+        COMP_1[Core]
+        click COMP_1 "component-COMP-1.mmd" "View component detail"
+        COMP_1_1[Type System]
+        click COMP_1_1 "component-COMP-1.1.mmd" "View component detail"
+        COMP_1_2[Validation]
+        click COMP_1_2 "component-COMP-1.2.mmd" "View component detail"
+        COMP_1_3[Parser & Persistence]
+        click COMP_1_3 "component-COMP-1.3.mmd" "View component detail"
+        COMP_1_4[Model Operations]
+        click COMP_1_4 "component-COMP-1.4.mmd" "View component detail"
+        COMP_1_5[Quality Metrics]
+        click COMP_1_5 "component-COMP-1.5.mmd" "View component detail"
+        COMP_2[Pipeline]
+        click COMP_2 "component-COMP-2.mmd" "View component detail"
+        COMP_2_1[Pipeline Coordination]
+        click COMP_2_1 "component-COMP-2.1.mmd" "View component detail"
+        COMP_2_2[Observation Stages]
+        click COMP_2_2 "component-COMP-2.2.mmd" "View component detail"
+        COMP_2_3[Allocation & Relation Stages]
+        click COMP_2_3 "component-COMP-2.3.mmd" "View component detail"
+        COMP_2_4[Specification & Contract Stages]
+        click COMP_2_4 "component-COMP-2.4.mmd" "View component detail"
+        COMP_2_5[Synthesis & Emit Stages]
+        click COMP_2_5 "component-COMP-2.5.mmd" "View component detail"
+        COMP_3[Manifest]
+        click COMP_3 "component-COMP-3.mmd" "View component detail"
+        COMP_3_1[Scanners]
+        click COMP_3_1 "component-COMP-3.1.mmd" "View component detail"
+        COMP_3_2[Graph & Analysis]
+        click COMP_3_2 "component-COMP-3.2.mmd" "View component detail"
+        COMP_3_3[Grouping & Generation]
+        click COMP_3_3 "component-COMP-3.3.mmd" "View component detail"
+        COMP_4[Documentation]
+        click COMP_4 "component-COMP-4.mmd" "View component detail"
+        COMP_4_1[Core Doc Generators]
+        click COMP_4_1 "component-COMP-4.1.mmd" "View component detail"
+        COMP_4_2[SE Document Suite]
+        click COMP_4_2 "component-COMP-4.2.mmd" "View component detail"
+        COMP_5[Orchestration]
+        click COMP_5 "component-COMP-5.mmd" "View component detail"
+        COMP_5_1[Enrichment]
+        click COMP_5_1 "component-COMP-5.1.mmd" "View component detail"
+        COMP_5_2[Decomposition]
+        click COMP_5_2 "component-COMP-5.2.mmd" "View component detail"
+        COMP_6[Extract]
+        click COMP_6 "component-COMP-6.mmd" "View component detail"
+        COMP_7[Authoring]
+        click COMP_7 "component-COMP-7.mmd" "View component detail"
+        COMP_8[CLI]
+        click COMP_8 "component-COMP-8.mmd" "View component detail"
+        COMP_9[Configuration]
+        click COMP_9 "component-COMP-9.mmd" "View component detail"
+        COMP_10[Export]
+        click COMP_10 "component-COMP-10.mmd" "View component detail"
+        COMP_11[Pipeline Learning]
+        click COMP_11 "component-COMP-11.mmd" "View component detail"
+        COMP_12[Utilities]
+        click COMP_12 "component-COMP-12.mmd" "View component detail"
+    end
+    CAP_1(Validate Architecture Models)
+    CAP_2(Extract Architecture from Code)
+    CAP_3(Run Modular Extraction Pipeline)
+    CAP_4(Generate Reality Manifest)
+    CAP_5(Generate SE Documentation)
+    CAP_6(Author Model from Requirements)
+    CAP_7(Slice and Query Models)
+    CAP_8(Diff Model Versions)
+    CAP_9(Decompose Models Hierarchically)
+    CAP_10(Enrich Models with Code Intelligence)
+    CAP_11(Assess Regen Readiness)
+    CAP_12(Check Development Gate)
+    CAP_13(Detect and Fix Model Drift)
+    CAP_14(Manage Global Learnings)
+    CAP_15(Export for AI Consumption)
+    COMP_1_2 ==>|realizes| CAP_1
+    COMP_6 ==>|realizes| CAP_2
+    COMP_2 ==>|realizes| CAP_3
+    COMP_3 ==>|realizes| CAP_4
+    COMP_4_2 ==>|realizes| CAP_5
+    COMP_7 ==>|realizes| CAP_6
+    COMP_1_4 ==>|realizes| CAP_7
+    COMP_1_4 ==>|realizes| CAP_8
+    COMP_5_2 ==>|realizes| CAP_9
+    COMP_5_1 ==>|realizes| CAP_10
+    COMP_1_5 ==>|realizes| CAP_11
+    COMP_7 ==>|realizes| CAP_12
+    COMP_1_4 ==>|realizes| CAP_13
+    COMP_11 ==>|realizes| CAP_14
+    COMP_10 ==>|realizes| CAP_15
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_1 cls_comp
+    class COMP_1_1 cls_comp
+    class COMP_1_2 cls_comp
+    class COMP_1_3 cls_comp
+    class COMP_1_4 cls_comp
+    class COMP_1_5 cls_comp
+    class COMP_2 cls_comp
+    class COMP_2_1 cls_comp
+    class COMP_2_2 cls_comp
+    class COMP_2_3 cls_comp
+    class COMP_2_4 cls_comp
+    class COMP_2_5 cls_comp
+    class COMP_3 cls_comp
+    class COMP_3_1 cls_comp
+    class COMP_3_2 cls_comp
+    class COMP_3_3 cls_comp
+    class COMP_4 cls_comp
+    class COMP_4_1 cls_comp
+    class COMP_4_2 cls_comp
+    class COMP_5 cls_comp
+    class COMP_5_1 cls_comp
+    class COMP_5_2 cls_comp
+    class COMP_6 cls_comp
+    class COMP_7 cls_comp
+    class COMP_8 cls_comp
+    class COMP_9 cls_comp
+    class COMP_10 cls_comp
+    class COMP_11 cls_comp
+    class COMP_12 cls_comp
+    class CAP_1 cls_cap
+    class CAP_2 cls_cap
+    class CAP_3 cls_cap
+    class CAP_4 cls_cap
+    class CAP_5 cls_cap
+    class CAP_6 cls_cap
+    class CAP_7 cls_cap
+    class CAP_8 cls_cap
+    class CAP_9 cls_cap
+    class CAP_10 cls_cap
+    class CAP_11 cls_cap
+    class CAP_12 cls_cap
+    class CAP_13 cls_cap
+    class CAP_14 cls_cap
+    class CAP_15 cls_cap

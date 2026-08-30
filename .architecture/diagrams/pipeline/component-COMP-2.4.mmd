@@ -1,0 +1,50 @@
+flowchart TB
+    COMP_2_4[Specification & Contract Stages]
+    subgraph ifaces[Interfaces]
+        IF_auto_COMP_2_4((Specification & Contract Stages API))
+    end
+    COMP_2_4 -.->|exposes| IF_auto_COMP_2_4
+    subgraph behs[Behaviors]
+        BEH_P1_5{{Run Specify Stage}}
+        BEH_P1_6{{Run Contract Stage}}
+        BEH_P1_7{{Run Validate Stage}}
+    end
+    COMP_2_4 -.->|traces-to| BEH_P1_5
+    click BEH_P1_5 "use-case-BEH-P1.5.mmd"
+    COMP_2_4 -.->|traces-to| BEH_P1_6
+    click BEH_P1_6 "use-case-BEH-P1.6.mmd"
+    COMP_2_4 -.->|traces-to| BEH_P1_7
+    click BEH_P1_7 "use-case-BEH-P1.7.mmd"
+    COMP_1_2[Validation]
+    COMP_2_4 -->|depends-on| COMP_1_2
+    click COMP_1_2 "component-COMP-1.2.mmd"
+    subgraph files[Source Files]
+        file_src/architecture_model/pipeline/specify_py[/src/architecture_model/pipeline/specify.py/]
+        file_src/architecture_model/pipeline/specify_types_py[/src/architecture_model/pipeline/specify_types.py/]
+        file_src/architecture_model/pipeline/contract_py[/src/architecture_model/pipeline/contract.py/]
+        file_src/architecture_model/pipeline/contract_types_py[/src/architecture_model/pipeline/contract_types.py/]
+        file_src/architecture_model/pipeline/validate_py[/src/architecture_model/pipeline/validate.py/]
+        file_src/architecture_model/pipeline/validate_types_py[/src/architecture_model/pipeline/validate_types.py/]
+    end
+    COMP_2_4 -.-> files
+    classDef cls_stage fill:#4A90D9,stroke:#2C5F8A,color:#fff
+    classDef cls_comp fill:#27AE60,stroke:#1E8449,color:#fff
+    classDef cls_cap fill:#F39C12,stroke:#D68910,color:#fff
+    classDef cls_beh fill:#8E44AD,stroke:#6C3483,color:#fff
+    classDef cls_iface fill:#1ABC9C,stroke:#148F77,color:#fff
+    classDef cls_mod fill:#95A5A6,stroke:#717D7E,color:#fff
+    classDef cls_actor fill:#E74C8B,stroke:#C2185B,color:#fff
+    classDef cls_con fill:#E74C3C,stroke:#C0392B,color:#fff
+    classDef cls_layer fill:#16A085,stroke:#0E6655,color:#fff
+    class COMP_2_4 cls_comp
+    class IF_auto_COMP_2_4 cls_iface
+    class BEH_P1_5 cls_beh
+    class BEH_P1_6 cls_beh
+    class BEH_P1_7 cls_beh
+    class COMP_1_2 cls_comp
+    class file_src/architecture_model/pipeline/specify_py cls_mod
+    class file_src/architecture_model/pipeline/specify_types_py cls_mod
+    class file_src/architecture_model/pipeline/contract_py cls_mod
+    class file_src/architecture_model/pipeline/contract_types_py cls_mod
+    class file_src/architecture_model/pipeline/validate_py cls_mod
+    class file_src/architecture_model/pipeline/validate_types_py cls_mod
