@@ -135,6 +135,15 @@ def main(argv: list[str] | None = None) -> int:
     p_review.add_argument("--feedback", action="store_true",
                            help="Generate model feedback from code analysis")
 
+    # --- viewer ---
+    p_viewer = subparsers.add_parser("viewer", help="Generate self-contained HTML architecture viewer")
+    p_viewer.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
+    p_viewer.add_argument("--model", help="Path to architecture-model.yaml (default: <path>/.architecture-model.yaml)")
+    p_viewer.add_argument("-o", "--output", help="Output HTML path (default: <path>/.architecture/diagrams/viewer.html)")
+    p_viewer.add_argument("--title", help="Page title (default: project name from model meta)")
+    p_viewer.add_argument("--no-docs", action="store_true", help="Skip embedding SE docs and operational artifacts")
+    p_viewer.add_argument("--zip", action="store_true", help="Also produce a zip file alongside the HTML")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -161,6 +170,7 @@ def main(argv: list[str] | None = None) -> int:
         "quality": _cmd_quality,
         "review": _cmd_review,
         "gap-analysis": _cmd_gap_analysis,
+        "viewer": _cmd_viewer,
     }
     return handlers[args.command](args)
 
@@ -1037,6 +1047,50 @@ def _cmd_review(args) -> int:
 
     print(f"ERROR: {path} not found")
     return 1
+
+
+def _cmd_viewer(args) -> int:
+    """Generate self-contained HTML architecture viewer."""
+    import zipfile as _zipfile
+
+    from ..core.parser import load_model
+    from ..core.visualize import generate_html_viewer
+
+    repo_path = Path(args.path).resolve()
+    model_path = Path(args.model) if args.model else repo_path / ".architecture-model.yaml"
+
+    if not model_path.exists():
+        print(f"ERROR: Model not found at {model_path}")
+        return 1
+
+    model = load_model(model_path)
+
+    # Output path
+    if args.output:
+        output_path = Path(args.output)
+    else:
+        output_path = repo_path / ".architecture" / "diagrams" / "viewer.html"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Title
+    title = args.title or getattr(model.meta, "project", "") or "Architecture Viewer"
+
+    # Repo path for doc/manifest embedding (None if --no-docs)
+    embed_repo = None if args.no_docs else repo_path
+
+    result_path = generate_html_viewer(model, output_path, title=title, repo_path=embed_repo)
+    size_kb = result_path.stat().st_size / 1024
+    print(f"Viewer: {result_path} ({size_kb:.0f}KB)")
+
+    # Optional zip
+    if getattr(args, "zip", False):
+        zip_path = result_path.with_suffix(".zip")
+        with _zipfile.ZipFile(zip_path, "w", _zipfile.ZIP_DEFLATED) as zf:
+            zf.write(result_path, result_path.name)
+        zip_kb = zip_path.stat().st_size / 1024
+        print(f"Zip:    {zip_path} ({zip_kb:.0f}KB)")
+
+    return 0
 
 
 if __name__ == "__main__":
