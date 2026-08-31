@@ -24,6 +24,11 @@ from ..core.visualize import (
     generate_component_detail_diagram,
     generate_use_case_diagram,
     generate_html_viewer,
+    # SE overview diagrams
+    generate_conops_diagram,
+    generate_functional_architecture_diagram,
+    generate_logical_architecture_diagram,
+    generate_behavior_overview_diagram,
 )
 
 __all__ = [
@@ -35,5 +40,7 @@ __all__ = [
     "generate_traceability_diagram", "generate_decomposition_diagram",
     "generate_component_detail_diagram", "generate_use_case_diagram",
     "generate_html_viewer",
+    "generate_conops_diagram", "generate_functional_architecture_diagram",
+    "generate_logical_architecture_diagram", "generate_behavior_overview_diagram",
     "generate_all_diagrams",
 ]
