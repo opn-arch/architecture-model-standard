@@ -2021,6 +2021,27 @@ entities:
   - id: CON-2
     name: 'CI/CD: GitHub Actions'
     value: Project uses GitHub Actions for CI/CD
+  layers:
+  - id: LAY-1
+    name: Foundation
+    status: ACTIVE
+    description: Core types, utilities, and shared infrastructure
+  - id: LAY-2
+    name: Domain
+    status: ACTIVE
+    description: Domain logic — manifest generation, extraction, pipeline stages
+  - id: LAY-3
+    name: Application
+    status: ACTIVE
+    description: Orchestration, enrichment, quality assessment
+  - id: LAY-4
+    name: Interface
+    status: ACTIVE
+    description: CLI commands and external-facing APIs
+  - id: LAY-5
+    name: Infrastructure
+    status: ACTIVE
+    description: Configuration, profiles, JSON schema, file discovery
 relationships:
 - type: realizes
   from_id: COMP-1.2
@@ -3233,3 +3254,65 @@ relationships:
   from_id: CAP-15
   to_id: CAP-15.4
   description: CAP-15 contains CAP-15.4
+# Layer contains component relationships
+- type: contains
+  from_id: LAY-1
+  to_id: COMP-1
+  description: Foundation layer contains Core
+- type: contains
+  from_id: LAY-2
+  to_id: COMP-2
+  description: Domain layer contains Pipeline
+- type: contains
+  from_id: LAY-2
+  to_id: COMP-3
+  description: Domain layer contains Manifest
+- type: contains
+  from_id: LAY-2
+  to_id: COMP-6
+  description: Domain layer contains Extract
+- type: contains
+  from_id: LAY-3
+  to_id: COMP-4
+  description: Application layer contains Documentation
+- type: contains
+  from_id: LAY-3
+  to_id: COMP-5
+  description: Application layer contains Orchestration
+- type: contains
+  from_id: LAY-3
+  to_id: COMP-7
+  description: Application layer contains Authoring
+- type: contains
+  from_id: LAY-3
+  to_id: COMP-10
+  description: Application layer contains Export
+- type: contains
+  from_id: LAY-4
+  to_id: COMP-8
+  description: Interface layer contains CLI
+- type: contains
+  from_id: LAY-5
+  to_id: COMP-9
+  description: Infrastructure layer contains Configuration
+- type: contains
+  from_id: LAY-5
+  to_id: COMP-12
+  description: Infrastructure layer contains Utilities
+# Layer dependency relationships
+- type: depends-on
+  from_id: LAY-4
+  to_id: LAY-3
+  description: Interface layer depends on Application layer
+- type: depends-on
+  from_id: LAY-3
+  to_id: LAY-2
+  description: Application layer depends on Domain layer
+- type: depends-on
+  from_id: LAY-2
+  to_id: LAY-1
+  description: Domain layer depends on Foundation layer
+- type: depends-on
+  from_id: LAY-5
+  to_id: LAY-1
+  description: Infrastructure layer depends on Foundation layer
