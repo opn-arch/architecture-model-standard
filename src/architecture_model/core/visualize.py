@@ -732,6 +732,12 @@ def generate_system_decomposition_diagram(model: "ArchitectureModel") -> str:
         for cid in getattr(sys, "component_ids", []):
             if cid in comp_map:
                 sys_components[sys.id].append(cid)
+            else:
+                # Parent ID missing — find children matching cid.* pattern
+                prefix = cid + "."
+                for child_id in sorted(comp_map):
+                    if child_id.startswith(prefix) and child_id not in sys_components[sys.id]:
+                        sys_components[sys.id].append(child_id)
 
     # Also check contains relationships
     for rel in model.relationships:
@@ -1221,9 +1227,10 @@ def _convert_clicks_to_anchors(mermaid_content: str) -> str:
 def inject_click_handlers(mermaid_code: str, entity_ids: set[str]) -> str:
     """Inject click callbacks for every entity node in a Mermaid diagram.
 
-    Scans the Mermaid code for sanitized node IDs that correspond to known
-    entity IDs and appends `click <sid> showEntity` directives. Existing
-    click directives for those nodes are removed first to avoid duplicates.
+    Uses Mermaid's ``callback`` syntax (requires ``securityLevel: 'loose'``)
+    which calls ``window.showEntity(nodeId)`` when a node is clicked.
+    The nodeId passed is the *sanitized* ID (underscores); the viewer JS
+    maps it back to the original entity ID via ``SID_MAP``.
 
     Args:
         mermaid_code: Raw Mermaid diagram string.
@@ -1253,7 +1260,9 @@ def inject_click_handlers(mermaid_code: str, entity_ids: set[str]) -> str:
             found_sids.add(m.group(1))
 
     # Insert click directives before classDef lines (or at end)
-    click_lines = [f"    click {sid} showEntity" for sid in sorted(found_sids)]
+    # Mermaid callback syntax: click <nodeId> callback "functionName"
+    # This calls window.functionName(nodeId) on click.
+    click_lines = [f'    click {sid} callback "showEntity"' for sid in sorted(found_sids)]
 
     # Find insertion point (before first classDef or at end)
     insert_idx = len(lines)
@@ -1347,10 +1356,52 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     return props
 
 
+def _build_module_data(repo_path: Path | None = None) -> dict[str, dict]:
+    """Build compact module data from manifest for viewer embedding.
+
+    Returns dict mapping file path → {name, doc, funcs, classes, consts}.
+    """
+    if repo_path is None:
+        return {}
+    try:
+        from ..manifest.generator import generate_manifest
+        manifest = generate_manifest(repo_path)
+    except Exception:
+        return {}
+
+    modules: dict[str, dict] = {}
+    for mod in manifest.modules:
+        funcs = []
+        for f in mod.functions:
+            funcs.append({
+                "name": f.name,
+                "sig": getattr(f, "signature", "") or "",
+                "doc": (getattr(f, "docstring", "") or "")[:200],
+            })
+        classes = []
+        for c in mod.classes:
+            methods = []
+            for md in (getattr(c, "method_details", None) or []):
+                methods.append(getattr(md, "name", str(md)))
+            classes.append({"name": c.name, "methods": methods})
+        consts = []
+        for c in (mod.module_constants or []):
+            consts.append(c["name"] if isinstance(c, dict) else str(c))
+        modules[mod.file] = {
+            "name": mod.name,
+            "doc": (mod.docstring or "")[:300],
+            "funcs": funcs,
+            "classes": classes,
+            "consts": consts,
+        }
+    return modules
+
+
 def generate_html_viewer(
     model: "ArchitectureModel",
     output_path: Path,
     title: str = "Architecture Viewer",
+    repo_path: Path | None = None,
 ) -> Path:
     """Generate a self-contained HTML viewer with 7 SE model views and universal click navigation.
 
@@ -1360,7 +1411,14 @@ def generate_html_viewer(
     - Every entity node is clickable in every diagram
     - Clicking navigates to entity detail page (property card + faceted diagrams)
     - History stack with breadcrumb trail and back button
+    - Module-level drill-down: click source files to see functions, classes, constants
     - Dark theme, mobile-responsive with hamburger menu
+
+    Args:
+        model: The architecture model to visualize.
+        output_path: Path to write the HTML file.
+        title: Page title.
+        repo_path: If provided, generates manifest data for module-level drill-down.
 
     Returns the path to the generated HTML file.
     """
@@ -1423,12 +1481,28 @@ def generate_html_viewer(
     # ── 4. Property cards ─────────────────────────────────────────
     entity_props = build_entity_properties(model)
 
-    # ── 5. JSON data blob ─────────────────────────────────────────
+    # ── 5. SID reverse mapping (sanitized → original ID) ─────────
+    sid_map = {_sid(eid): eid for eid in all_ids}
+
+    # ── 5b. Module data (manifest) ────────────────────────────────
+    module_data = _build_module_data(repo_path)
+
+    # ── 5c. Component → files mapping ─────────────────────────────
+    comp_files: dict[str, list[str]] = {}
+    for comp in model.entities.components:
+        files = getattr(comp, "files", None) or []
+        if files:
+            comp_files[comp.id] = list(files)
+
+    # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"]}
                      for k, v in se_views.items()},
         "entities": explorer_data,
         "properties": entity_props,
+        "sid_map": sid_map,
+        "modules": module_data,
+        "comp_files": comp_files,
     }
     data_json = _json.dumps(diagram_data, ensure_ascii=False)
 
@@ -1550,6 +1624,35 @@ def generate_html_viewer(
         .type-badge.constraint {{ background: #E74C3C; color: #fff; }}
         .type-badge.system {{ background: #4A90D9; color: #fff; }}
         .type-badge.requirement {{ background: #E74C3C; color: #fff; }}
+
+        /* Source files */
+        .files-section {{ background: #16213e; border: 1px solid #0f3460; border-radius: 6px;
+                          padding: 12px; margin-bottom: 16px; }}
+        .files-header {{ color: #a0a0c0; font-size: 12px; text-transform: uppercase;
+                         letter-spacing: 0.5px; margin-bottom: 8px; }}
+        .file-link {{ display: inline-block; padding: 3px 10px; margin: 3px; border-radius: 4px;
+                      background: #0f3460; color: #7ec8e3; font-size: 12px; cursor: pointer;
+                      text-decoration: none; font-family: monospace; }}
+        .file-link:hover {{ background: #1a5276; color: #e94560; }}
+        .file-nodata {{ opacity: 0.5; cursor: default; }}
+
+        /* Module detail */
+        .mod-doc {{ background: #16213e; border-left: 3px solid #4A90D9; padding: 10px 14px;
+                    margin-bottom: 16px; color: #c0c0d0; font-size: 13px; line-height: 1.5;
+                    border-radius: 0 4px 4px 0; }}
+        .mod-section {{ background: #16213e; border: 1px solid #0f3460; border-radius: 6px;
+                        padding: 14px; margin-bottom: 12px; }}
+        .mod-section-title {{ color: #e94560; font-size: 13px; font-weight: bold;
+                              margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }}
+        .mod-item {{ padding: 6px 0; border-bottom: 1px solid #0a0a2a; }}
+        .mod-item:last-child {{ border-bottom: none; }}
+        .mod-func-name {{ color: #7ec8e3; font-family: monospace; font-size: 13px; font-weight: bold; }}
+        .mod-func-sig {{ color: #a0a0c0; font-family: monospace; font-size: 11px; margin-top: 2px;
+                         word-break: break-all; }}
+        .mod-func-doc {{ color: #808090; font-size: 11px; margin-top: 3px; font-style: italic; }}
+        .mod-class-name {{ color: #F39C12; font-family: monospace; font-size: 13px; font-weight: bold; }}
+        .mod-class-methods {{ color: #a0a0c0; font-size: 11px; margin-top: 2px; }}
+        .mod-consts {{ color: #1ABC9C; font-family: monospace; font-size: 12px; }}
     </style>
 </head>
 <body>
@@ -1620,6 +1723,7 @@ def generate_html_viewer(
             if (navHistory.length === 0) return;
             var prev = navHistory.pop();
             if (prev.type === 'view') showView(prev.id, false);
+            else if (prev.type === 'module') showModule(prev.id);
             else showEntity(prev.id, false);
         }}
 
@@ -1627,6 +1731,7 @@ def generate_html_viewer(
             var target = navHistory[idx];
             navHistory = navHistory.slice(0, idx);
             if (target.type === 'view') showView(target.id, false);
+            else if (target.type === 'module') showModule(target.id);
             else showEntity(target.id, false);
         }}
 
@@ -1678,6 +1783,9 @@ def generate_html_viewer(
 
         /* ── Show Entity detail ───────────────────────────────── */
         window.showEntity = function(eid, pushHistory) {{
+            // Mermaid callbacks pass sanitized IDs (underscores); map back to original
+            if (D.sid_map && D.sid_map[eid]) eid = D.sid_map[eid];
+
             if (pushHistory !== false) {{
                 var cur = content.dataset.currentType;
                 var curId = content.dataset.currentId;
@@ -1695,6 +1803,24 @@ def generate_html_viewer(
             html += '<h2 class="content-header">' + label + '</h2>';
             html += propCardHtml(eid);
 
+            // Source files section (for components)
+            var files = D.comp_files && D.comp_files[eid];
+            if (files && files.length > 0) {{
+                html += '<div class="files-section">';
+                html += '<div class="files-header">Source Modules (' + files.length + ')</div>';
+                for (var fi = 0; fi < files.length; fi++) {{
+                    var fp = files[fi];
+                    var hasData = D.modules && D.modules[fp];
+                    var fname = fp.split('/').pop();
+                    if (hasData) {{
+                        html += '<a class="file-link" onclick="showModule(\'' + fp.replace(/'/g, "\\\\'") + '\');return false;">' + fname + '</a>';
+                    }} else {{
+                        html += '<span class="file-link file-nodata">' + fname + '</span>';
+                    }}
+                }}
+                html += '</div>';
+            }}
+
             var facets = D.entities[eid];
             if (facets && Object.keys(facets).length > 0) {{
                 var i = 0;
@@ -1709,7 +1835,7 @@ def generate_html_viewer(
                         + '</div></div>';
                     i++;
                 }}
-            }} else {{
+            }} else if (!files || files.length === 0) {{
                 html += '<p style="color:#a0a0c0;margin-top:12px">No relationship diagrams for this entity.</p>';
             }}
             content.innerHTML = html;
@@ -1728,6 +1854,73 @@ def generate_html_viewer(
                     }}
                 }});
             }});
+            closeMobileNav();
+        }};
+
+        /* ── Show Module detail ────────────────────────────────── */
+        window.showModule = function(filepath) {{
+            var mod = D.modules && D.modules[filepath];
+            if (!mod) return;
+
+            var cur = content.dataset.currentType;
+            var curId = content.dataset.currentId;
+            var curLabel = content.dataset.currentLabel;
+            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+
+            var fname = filepath.split('/').pop();
+            content.dataset.currentType = 'module';
+            content.dataset.currentId = filepath;
+            content.dataset.currentLabel = fname;
+
+            var html = renderBreadcrumbs(fname);
+            html += '<h2 class="content-header">' + fname + '</h2>';
+            html += '<div class="content-subtitle">' + filepath + '</div>';
+
+            // Module docstring
+            if (mod.doc) {{
+                html += '<div class="mod-doc">' + mod.doc + '</div>';
+            }}
+
+            // Functions
+            if (mod.funcs && mod.funcs.length > 0) {{
+                html += '<div class="mod-section">';
+                html += '<div class="mod-section-title">Functions (' + mod.funcs.length + ')</div>';
+                for (var fi = 0; fi < mod.funcs.length; fi++) {{
+                    var f = mod.funcs[fi];
+                    html += '<div class="mod-item">';
+                    html += '<div class="mod-func-name">' + f.name + '</div>';
+                    if (f.sig) html += '<div class="mod-func-sig">' + f.sig + '</div>';
+                    if (f.doc) html += '<div class="mod-func-doc">' + f.doc + '</div>';
+                    html += '</div>';
+                }}
+                html += '</div>';
+            }}
+
+            // Classes
+            if (mod.classes && mod.classes.length > 0) {{
+                html += '<div class="mod-section">';
+                html += '<div class="mod-section-title">Classes (' + mod.classes.length + ')</div>';
+                for (var ci = 0; ci < mod.classes.length; ci++) {{
+                    var c = mod.classes[ci];
+                    html += '<div class="mod-item">';
+                    html += '<div class="mod-class-name">' + c.name + '</div>';
+                    if (c.methods && c.methods.length > 0) {{
+                        html += '<div class="mod-class-methods">' + c.methods.join(', ') + '</div>';
+                    }}
+                    html += '</div>';
+                }}
+                html += '</div>';
+            }}
+
+            // Constants
+            if (mod.consts && mod.consts.length > 0) {{
+                html += '<div class="mod-section">';
+                html += '<div class="mod-section-title">Constants (' + mod.consts.length + ')</div>';
+                html += '<div class="mod-consts">' + mod.consts.join(', ') + '</div>';
+                html += '</div>';
+            }}
+
+            content.innerHTML = html;
             closeMobileNav();
         }};
 

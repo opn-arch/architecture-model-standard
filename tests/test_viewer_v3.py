@@ -12,6 +12,7 @@ from architecture_model.core.visualize import (
     generate_system_decomposition_diagram,
     inject_click_handlers,
     build_entity_properties,
+    generate_html_viewer,
 )
 
 
@@ -127,7 +128,7 @@ class TestClickInjection:
     def test_injects_click_for_known_ids(self):
         mermaid = "flowchart LR\n    COMP_1[Parser]\n    classDef cls_comp fill:#27AE60"
         result = inject_click_handlers(mermaid, {"COMP-1"})
-        assert "click COMP_1 showEntity" in result
+        assert 'click COMP_1 callback "showEntity"' in result
 
     def test_preserves_classdefs(self):
         mermaid = "flowchart LR\n    COMP_1[Parser]\n    classDef cls_comp fill:#27AE60"
@@ -138,7 +139,7 @@ class TestClickInjection:
         mermaid = 'flowchart LR\n    COMP_1[Parser]\n    click COMP_1 "old.mmd"'
         result = inject_click_handlers(mermaid, {"COMP-1"})
         assert "old.mmd" not in result
-        assert "click COMP_1 showEntity" in result
+        assert 'click COMP_1 callback "showEntity"' in result
 
     def test_ignores_unknown_ids(self):
         mermaid = "flowchart LR\n    COMP_1[Parser]"
@@ -179,3 +180,50 @@ class TestBuildEntityProperties:
         props = build_entity_properties(_make_model())
         p = props["REQ-1"]
         assert p["properties"]["Priority"] == "must"
+
+
+class TestSystemChildResolution:
+    """Test that system decomposition resolves child components when parent ID is missing."""
+
+    def test_resolves_children_when_parent_missing(self):
+        """SYS-1 references COMP-1 which doesn't exist, but COMP-1.1 and COMP-1.2 do."""
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.0", project="test"),
+            entities=Entities(
+                systems=[System(id="SYS-1", name="Core", status=Status.ACTIVE,
+                               component_ids=["COMP-1"])],
+                components=[
+                    Component(id="COMP-1.1", name="Parser", status=Status.ACTIVE),
+                    Component(id="COMP-1.2", name="Validator", status=Status.ACTIVE),
+                    Component(id="COMP-2", name="CLI", status=Status.ACTIVE),
+                ],
+            ),
+            relationships=[],
+        )
+        result = generate_system_decomposition_diagram(model)
+        # COMP-1 doesn't exist, but its children should be in the system subgraph
+        assert "Parser" in result
+        assert "Validator" in result
+        # COMP-2 is unassigned
+        assert "CLI" in result
+        assert "Core" in result
+
+
+class TestHtmlViewerModuleData:
+    """Test that viewer includes module data when repo_path is provided."""
+
+    def test_viewer_includes_showModule(self, tmp_path):
+        html = generate_html_viewer(_make_model(), tmp_path / "v.html").read_text()
+        assert "showModule" in html
+
+    def test_viewer_includes_sid_map(self, tmp_path):
+        html = generate_html_viewer(_make_model(), tmp_path / "v.html").read_text()
+        assert "sid_map" in html
+
+    def test_viewer_includes_comp_files(self, tmp_path):
+        html = generate_html_viewer(_make_model(), tmp_path / "v.html").read_text()
+        assert "comp_files" in html
+
+    def test_callback_syntax(self, tmp_path):
+        html = generate_html_viewer(_make_model(), tmp_path / "v.html").read_text()
+        assert 'callback' in html
