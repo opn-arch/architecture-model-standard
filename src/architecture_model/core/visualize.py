@@ -1824,7 +1824,7 @@ def generate_html_viewer(
                     var hasData = D.modules && D.modules[fp];
                     var fname = fp.split('/').pop();
                     if (hasData) {{
-                        html += '<a class="file-link" onclick="showModule(\'' + fp.replace(/'/g, "\\\\'") + '\');return false;">' + fname + '</a>';
+                        html += '<a class="file-link" data-module="' + fp + '">' + fname + '</a>';
                     }} else {{
                         html += '<span class="file-link file-nodata">' + fname + '</span>';
                     }}
@@ -1863,6 +1863,13 @@ def generate_html_viewer(
                         var code = decodeURIComponent(escape(atob(this.dataset.code)));
                         renderMermaid(document.getElementById(this.dataset.target + '_dia'), code);
                     }}
+                }});
+            }});
+            // Wire module links
+            content.querySelectorAll('[data-module]').forEach(function(a) {{
+                a.addEventListener('click', function(ev) {{
+                    ev.preventDefault();
+                    showModule(this.dataset.module);
                 }});
             }});
             closeMobileNav();
