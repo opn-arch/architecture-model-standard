@@ -1698,8 +1698,9 @@ def generate_html_viewer(
             }}
             try {{
                 var id = 'mmd_' + (++renderCounter);
-                var {{ svg }} = await mermaid.render(id, code);
+                var {{ svg, bindFunctions }} = await mermaid.render(id, code);
                 container.innerHTML = svg;
+                if (bindFunctions) bindFunctions(container);
             }} catch(e) {{
                 container.innerHTML = '<pre style="color:#e94560">' + e.message + '</pre>';
             }}
