@@ -1205,6 +1205,282 @@ def generate_html_viewer(
     return output_path
 
 
+def generate_entity_explorer(
+    model: "ArchitectureModel",
+    entity_type: str,
+    entity_id: str,
+) -> dict[str, str]:
+    """Generate faceted diagrams for an entity.
+
+    Returns dict mapping facet name to Mermaid diagram content.
+    Empty dict if entity not found.
+    """
+    # Build entity lookup maps
+    entity_map: dict[str, tuple[str, str]] = {}
+    for c in model.entities.components:
+        entity_map[c.id] = ("component", c.name)
+    for c in model.entities.capabilities:
+        entity_map[c.id] = ("capability", c.name)
+    for b in model.entities.behaviors:
+        entity_map[b.id] = ("behavior", b.name)
+    for i in model.entities.interfaces:
+        entity_map[i.id] = ("interface", i.name)
+    for la in model.entities.layers:
+        entity_map[la.id] = ("layer", la.name)
+    for a in model.entities.actors:
+        entity_map[a.id] = ("actor", a.name)
+
+    if entity_id not in entity_map:
+        return {}
+
+    etype, ename = entity_map[entity_id]
+    if etype != entity_type:
+        return {}
+
+    def _facet_diagram(center_type: str, center_id: str, center_name: str,
+                       related: list[tuple[str, str, str, str]]) -> str:
+        """Build a small graph LR diagram.
+
+        related: list of (related_id, related_type, related_name, rel_label)
+        where rel_label is like 'realizes' and edge goes center->related.
+        """
+        lines = ["graph LR"]
+        lines.append(f"  {shape(center_type, center_id, center_name)}")
+        seen = set()
+        for rid, rtype, rname, rel_label in related:
+            if rid not in seen:
+                lines.append(f"  {shape(rtype, rid, rname)}")
+                seen.add(rid)
+            lines.append(f"  {_sid(center_id)} {edge_style(rel_label)} {_sid(rid)}")
+        return "\n".join(lines)
+
+    def _facet_diagram_reverse(center_type: str, center_id: str, center_name: str,
+                               related: list[tuple[str, str, str, str]]) -> str:
+        """Like _facet_diagram but edges go related->center."""
+        lines = ["graph LR"]
+        lines.append(f"  {shape(center_type, center_id, center_name)}")
+        seen = set()
+        for rid, rtype, rname, rel_label in related:
+            if rid not in seen:
+                lines.append(f"  {shape(rtype, rid, rname)}")
+                seen.add(rid)
+            lines.append(f"  {_sid(rid)} {edge_style(rel_label)} {_sid(center_id)}")
+        return "\n".join(lines)
+
+    facets: dict[str, str] = {}
+
+    if entity_type == "component":
+        # Capabilities facet
+        caps = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "realizes" and rel.to_id in entity_map:
+                _, rname = entity_map[rel.to_id]
+                caps.append((rel.to_id, "capability", rname, "realizes"))
+        if caps:
+            facets["Capabilities"] = _facet_diagram("component", entity_id, ename, caps)
+
+        # Interfaces facet
+        ifaces = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "exposes" and rel.to_id in entity_map:
+                _, rname = entity_map[rel.to_id]
+                ifaces.append((rel.to_id, "interface", rname, "exposes"))
+        if ifaces:
+            facets["Interfaces"] = _facet_diagram("component", entity_id, ename, ifaces)
+
+        # Dependencies facet (both directions)
+        deps = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "depends-on":
+                if rel.from_id == entity_id and rel.to_id in entity_map:
+                    _, rname = entity_map[rel.to_id]
+                    deps.append((rel.to_id, "component", rname, "depends-on"))
+                elif rel.to_id == entity_id and rel.from_id in entity_map:
+                    _, rname = entity_map[rel.from_id]
+                    deps.append((rel.from_id, "component", rname, "depends-on"))
+        if deps:
+            # Mixed directions - build manually
+            lines = ["graph LR"]
+            lines.append(f"  {shape('component', entity_id, ename)}")
+            seen = set()
+            for rel in model.relationships:
+                if _rel_type(rel) == "depends-on":
+                    if rel.from_id == entity_id and rel.to_id in entity_map:
+                        t = rel.to_id
+                        if t not in seen:
+                            _, rn = entity_map[t]
+                            lines.append(f"  {shape('component', t, rn)}")
+                            seen.add(t)
+                        lines.append(f"  {_sid(entity_id)} {edge_style('depends-on')} {_sid(t)}")
+                    elif rel.to_id == entity_id and rel.from_id in entity_map:
+                        f = rel.from_id
+                        if f not in seen:
+                            _, rn = entity_map[f]
+                            lines.append(f"  {shape('component', f, rn)}")
+                            seen.add(f)
+                        lines.append(f"  {_sid(f)} {edge_style('depends-on')} {_sid(entity_id)}")
+            facets["Dependencies"] = "\n".join(lines)
+
+        # Behaviors facet
+        behs = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "traces-to" and rel.to_id in entity_map:
+                _, rname = entity_map[rel.to_id]
+                behs.append((rel.to_id, "behavior", rname, "traces-to"))
+        if behs:
+            facets["Behaviors"] = _facet_diagram("component", entity_id, ename, behs)
+
+        # Sub-Components facet
+        subs = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "contains" and rel.to_id in entity_map:
+                rt, rname = entity_map[rel.to_id]
+                if rt == "component":
+                    subs.append((rel.to_id, "component", rname, "contains"))
+        if subs:
+            facets["Sub-Components"] = _facet_diagram("component", entity_id, ename, subs)
+
+    elif entity_type == "capability":
+        # Functional Breakdown
+        children = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "contains" and rel.to_id in entity_map:
+                rt, rname = entity_map[rel.to_id]
+                if rt == "capability":
+                    children.append((rel.to_id, "capability", rname, "contains"))
+        if children:
+            facets["Functional Breakdown"] = _facet_diagram("capability", entity_id, ename, children)
+
+        # Components that realize this capability
+        comps = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "realizes" and rel.to_id == entity_id and rel.from_id in entity_map:
+                _, rname = entity_map[rel.from_id]
+                comps.append((rel.from_id, "component", rname, "realizes"))
+        if comps:
+            facets["Components"] = _facet_diagram_reverse("capability", entity_id, ename, comps)
+
+        # Behaviors
+        behs = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "traces-to" and rel.to_id == entity_id and rel.from_id in entity_map:
+                rt, rname = entity_map[rel.from_id]
+                if rt == "behavior":
+                    behs.append((rel.from_id, "behavior", rname, "traces-to"))
+        if behs:
+            facets["Behaviors"] = _facet_diagram_reverse("capability", entity_id, ename, behs)
+
+    elif entity_type == "behavior":
+        # Sub-Behaviors
+        children = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "contains" and rel.to_id in entity_map:
+                rt, rname = entity_map[rel.to_id]
+                if rt == "behavior":
+                    children.append((rel.to_id, "behavior", rname, "contains"))
+        if children:
+            facets["Sub-Behaviors"] = _facet_diagram("behavior", entity_id, ename, children)
+
+        # Triggers (both directions)
+        triggers = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "triggers":
+                if rel.from_id == entity_id and rel.to_id in entity_map:
+                    _, rname = entity_map[rel.to_id]
+                    triggers.append(("out", rel.to_id, rname))
+                elif rel.to_id == entity_id and rel.from_id in entity_map:
+                    _, rname = entity_map[rel.from_id]
+                    triggers.append(("in", rel.from_id, rname))
+        if triggers:
+            lines = ["graph LR"]
+            lines.append(f"  {shape('behavior', entity_id, ename)}")
+            seen = set()
+            for direction, tid, tname in triggers:
+                if tid not in seen:
+                    lines.append(f"  {shape('behavior', tid, tname)}")
+                    seen.add(tid)
+                if direction == "out":
+                    lines.append(f"  {_sid(entity_id)} {edge_style('triggers')} {_sid(tid)}")
+                else:
+                    lines.append(f"  {_sid(tid)} {edge_style('triggers')} {_sid(entity_id)}")
+            facets["Triggers"] = "\n".join(lines)
+
+        # Components (via traces-to)
+        comps = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "traces-to" and rel.to_id == entity_id and rel.from_id in entity_map:
+                rt, rname = entity_map[rel.from_id]
+                if rt == "component":
+                    comps.append((rel.from_id, "component", rname, "traces-to"))
+        if comps:
+            facets["Components"] = _facet_diagram_reverse("behavior", entity_id, ename, comps)
+
+    elif entity_type == "layer":
+        # Components this layer contains
+        comps = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "contains" and rel.to_id in entity_map:
+                rt, rname = entity_map[rel.to_id]
+                if rt == "component":
+                    comps.append((rel.to_id, "component", rname, "contains"))
+        if comps:
+            facets["Components"] = _facet_diagram("layer", entity_id, ename, comps)
+
+        # Dependencies
+        deps = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "depends-on":
+                if rel.from_id == entity_id and rel.to_id in entity_map:
+                    rt, rname = entity_map[rel.to_id]
+                    deps.append((rel.to_id, rt, rname, "depends-on"))
+                elif rel.to_id == entity_id and rel.from_id in entity_map:
+                    rt, rname = entity_map[rel.from_id]
+                    deps.append((rel.from_id, rt, rname, "depends-on"))
+        if deps:
+            facets["Dependencies"] = _facet_diagram("layer", entity_id, ename, deps)
+
+    elif entity_type == "interface":
+        # Provider
+        for rel in model.relationships:
+            if _rel_type(rel) == "exposes" and rel.to_id == entity_id and rel.from_id in entity_map:
+                rt, rname = entity_map[rel.from_id]
+                facets["Provider"] = _facet_diagram_reverse("interface", entity_id, ename,
+                    [(rel.from_id, rt, rname, "exposes")])
+                break
+
+        # Consumers
+        consumers = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "consumes" and rel.to_id == entity_id and rel.from_id in entity_map:
+                rt, rname = entity_map[rel.from_id]
+                consumers.append((rel.from_id, rt, rname, "consumes"))
+        if consumers:
+            facets["Consumers"] = _facet_diagram_reverse("interface", entity_id, ename, consumers)
+
+    elif entity_type == "actor":
+        # Capabilities
+        caps = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and rel.to_id in entity_map:
+                rt, rname = entity_map[rel.to_id]
+                if rt == "capability":
+                    caps.append((rel.to_id, "capability", rname, _rel_type(rel)))
+        if caps:
+            facets["Capabilities"] = _facet_diagram("actor", entity_id, ename, caps)
+
+        # Interfaces
+        ifaces = []
+        for rel in model.relationships:
+            if rel.from_id == entity_id and _rel_type(rel) == "consumes" and rel.to_id in entity_map:
+                rt, rname = entity_map[rel.to_id]
+                if rt == "interface":
+                    ifaces.append((rel.to_id, "interface", rname, "consumes"))
+        if ifaces:
+            facets["Interfaces"] = _facet_diagram("actor", entity_id, ename, ifaces)
+
+    return facets
+
+
 def generate_all_diagrams(model: "ArchitectureModel", output_dir: Path) -> dict[str, Path]:
     """Generate all 10 standard diagrams and write to output_dir.
 

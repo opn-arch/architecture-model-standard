@@ -29,6 +29,7 @@ from ..core.visualize import (
     generate_functional_architecture_diagram,
     generate_logical_architecture_diagram,
     generate_behavior_overview_diagram,
+    generate_entity_explorer,
 )
 
 __all__ = [
@@ -42,5 +43,6 @@ __all__ = [
     "generate_html_viewer",
     "generate_conops_diagram", "generate_functional_architecture_diagram",
     "generate_logical_architecture_diagram", "generate_behavior_overview_diagram",
+    "generate_entity_explorer",
     "generate_all_diagrams",
 ]
