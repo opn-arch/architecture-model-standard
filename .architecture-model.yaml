@@ -3316,3 +3316,301 @@ relationships:
   from_id: LAY-5
   to_id: LAY-1
   description: Infrastructure layer depends on Foundation layer
+
+# L2 capability realizes relationships (auto-inferred)
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.1
+  description: "Validation implements Validate JSON Schema Compliance"
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.2
+  description: "Validation implements Enforce Entity ID Uniqueness"
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.3
+  description: "Validation implements Check Referential Integrity"
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.4
+  description: "Validation implements Detect Orphan Entities"
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.5
+  description: "Validation implements Verify Capability Realization"
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.6
+  description: "Validation implements Check Hierarchy Consistency"
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.7
+  description: "Validation implements Detect Dependency Cycles"
+- type: realizes
+  from_id: COMP-1.2
+  to_id: CAP-1.8
+  description: "Validation implements Validate Domain Profile Rules"
+- type: realizes
+  from_id: COMP-5.1
+  to_id: CAP-10.1
+  description: "Enrichment implements Extract Function Signatures"
+- type: realizes
+  from_id: COMP-5.1
+  to_id: CAP-10.2
+  description: "Enrichment implements Extract Module-Level Constants"
+- type: realizes
+  from_id: COMP-5.1
+  to_id: CAP-10.3
+  description: "Enrichment implements Extract Test Contracts"
+- type: realizes
+  from_id: COMP-5.1
+  to_id: CAP-10.4
+  description: "Enrichment implements Discover Test Files by Convention"
+- type: realizes
+  from_id: COMP-1.5
+  to_id: CAP-11.1
+  description: "Quality Metrics implements Compute System Readiness Score"
+- type: realizes
+  from_id: COMP-1.5
+  to_id: CAP-11.2
+  description: "Quality Metrics implements Compute Component Readiness"
+- type: realizes
+  from_id: COMP-1.5
+  to_id: CAP-11.3
+  description: "Quality Metrics implements Classify Body Hint Quality"
+- type: realizes
+  from_id: COMP-7
+  to_id: CAP-12.1
+  description: "Authoring implements Check Code-Intent Alignment"
+- type: realizes
+  from_id: COMP-7
+  to_id: CAP-12.2
+  description: "Authoring implements Evaluate Stage Quality Gates"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-13.1
+  description: "Model Operations implements Generate Drift Report"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-13.2
+  description: "Model Operations implements Identify Stale Artifacts"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-13.3
+  description: "Model Operations implements Compare Model to Code Reality"
+- type: realizes
+  from_id: COMP-11
+  to_id: CAP-14.1
+  description: "Pipeline Learning implements Store Heuristic Rules"
+- type: realizes
+  from_id: COMP-11
+  to_id: CAP-14.2
+  description: "Pipeline Learning implements Match Archetype Patterns"
+- type: realizes
+  from_id: COMP-11
+  to_id: CAP-14.3
+  description: "Pipeline Learning implements Record User Corrections"
+- type: realizes
+  from_id: COMP-11
+  to_id: CAP-14.4
+  description: "Pipeline Learning implements Track Quality History"
+- type: realizes
+  from_id: COMP-11
+  to_id: CAP-14.5
+  description: "Pipeline Learning implements Generate Lessons from Diagnostics"
+- type: realizes
+  from_id: COMP-10
+  to_id: CAP-15.1
+  description: "Export implements Build Flat File Export"
+- type: realizes
+  from_id: COMP-10
+  to_id: CAP-15.2
+  description: "Export implements Generate Schema Reference"
+- type: realizes
+  from_id: COMP-10
+  to_id: CAP-15.3
+  description: "Export implements Generate Custom Instructions"
+- type: realizes
+  from_id: COMP-10
+  to_id: CAP-15.4
+  description: "Export implements Concatenate Sub-Model Artifacts"
+- type: realizes
+  from_id: COMP-6
+  to_id: CAP-2.1
+  description: "Extract implements Derive Capabilities from Config"
+- type: realizes
+  from_id: COMP-6
+  to_id: CAP-2.2
+  description: "Extract implements Infer Actors from Routes"
+- type: realizes
+  from_id: COMP-6
+  to_id: CAP-2.3
+  description: "Extract implements Derive Components from Manifest"
+- type: realizes
+  from_id: COMP-6
+  to_id: CAP-2.4
+  description: "Extract implements Derive Cross-Block Interfaces"
+- type: realizes
+  from_id: COMP-6
+  to_id: CAP-2.5
+  description: "Extract implements Detect Code Constraints"
+- type: realizes
+  from_id: COMP-6
+  to_id: CAP-2.6
+  description: "Extract implements Derive Entity Relationships"
+- type: realizes
+  from_id: COMP-2
+  to_id: CAP-3.1
+  description: "Pipeline implements AST-Scan Source Files"
+- type: realizes
+  from_id: COMP-2.5
+  to_id: CAP-3.10
+  description: "Synthesis & Emit Stages implements Emit Final Artifacts"
+- type: realizes
+  from_id: COMP-2.2
+  to_id: CAP-3.2
+  description: "Observation Stages implements Infer Capabilities from Code"
+- type: realizes
+  from_id: COMP-2.3
+  to_id: CAP-3.3
+  description: "Allocation & Relation Stages implements Allocate Files to Components"
+- type: realizes
+  from_id: COMP-2.3
+  to_id: CAP-3.4
+  description: "Allocation & Relation Stages implements Derive Entity Relationships"
+- type: realizes
+  from_id: COMP-2.3
+  to_id: CAP-3.5
+  description: "Allocation & Relation Stages implements Derive Interface Specifications"
+- type: realizes
+  from_id: COMP-2.4
+  to_id: CAP-3.6
+  description: "Specification & Contract Stages implements Extract Test Contracts"
+- type: realizes
+  from_id: COMP-2.1
+  to_id: CAP-3.7
+  description: "Pipeline Coordination implements Validate Pipeline Output"
+- type: realizes
+  from_id: COMP-2.5
+  to_id: CAP-3.8
+  description: "Synthesis & Emit Stages implements Detect System Boundaries"
+- type: realizes
+  from_id: COMP-2.1
+  to_id: CAP-3.9
+  description: "Pipeline Coordination implements Run Scoped Sub-Pipelines"
+- type: realizes
+  from_id: COMP-3.1
+  to_id: CAP-4.1
+  description: "Scanners implements Scan Python AST"
+- type: realizes
+  from_id: COMP-3.1
+  to_id: CAP-4.2
+  description: "Scanners implements Extract Function Body Hints"
+- type: realizes
+  from_id: COMP-3.2
+  to_id: CAP-4.3
+  description: "Graph & Analysis implements Build Call Graph"
+- type: realizes
+  from_id: COMP-3.2
+  to_id: CAP-4.4
+  description: "Graph & Analysis implements Analyze Test Files"
+- type: realizes
+  from_id: COMP-3.3
+  to_id: CAP-4.5
+  description: "Grouping & Generation implements Group Modules into Components"
+- type: realizes
+  from_id: COMP-3.1
+  to_id: CAP-4.6
+  description: "Scanners implements Scan Multi-Language Sources"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.1
+  description: "SE Document Suite implements Generate ConOps Document"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.2
+  description: "SE Document Suite implements Generate Functional Analysis"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.3
+  description: "SE Document Suite implements Generate Logical Architecture Doc"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.4
+  description: "SE Document Suite implements Generate Use Case Document"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.5
+  description: "SE Document Suite implements Generate Component Specifications"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.6
+  description: "SE Document Suite implements Generate Interface Specification"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.7
+  description: "SE Document Suite implements Generate Mermaid Diagrams"
+- type: realizes
+  from_id: COMP-4.2
+  to_id: CAP-5.8
+  description: "SE Document Suite implements Generate Health Report"
+- type: realizes
+  from_id: COMP-7
+  to_id: CAP-6.1
+  description: "Authoring implements Parse Requirements Markdown"
+- type: realizes
+  from_id: COMP-7
+  to_id: CAP-6.2
+  description: "Authoring implements Parse Actor Definitions"
+- type: realizes
+  from_id: COMP-7
+  to_id: CAP-6.3
+  description: "Authoring implements Parse Capability Hierarchy"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-7.1
+  description: "Model Operations implements Slice by Source Block"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-7.2
+  description: "Model Operations implements Slice by Architecture Layer"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-7.3
+  description: "Model Operations implements Slice for Artifact Regeneration"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-7.4
+  description: "Model Operations implements Slice for SE Document Views"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-8.1
+  description: "Model Operations implements Diff Entity Lists by ID"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-8.2
+  description: "Model Operations implements Detect Field-Level Changes"
+- type: realizes
+  from_id: COMP-1.4
+  to_id: CAP-8.3
+  description: "Model Operations implements Determine Affected Artifacts"
+- type: realizes
+  from_id: COMP-5.2
+  to_id: CAP-9.1
+  description: "Decomposition implements Compute Component Complexity"
+- type: realizes
+  from_id: COMP-5.2
+  to_id: CAP-9.2
+  description: "Decomposition implements Identify System Candidates"
+- type: realizes
+  from_id: COMP-5.2
+  to_id: CAP-9.3
+  description: "Decomposition implements Detect System Boundaries"
+- type: realizes
+  from_id: COMP-5.2
+  to_id: CAP-9.4
+  description: "Decomposition implements Trace Connected Entities"
+- type: realizes
+  from_id: COMP-5.2
+  to_id: CAP-9.5
+  description: "Decomposition implements Write Sub-Models to Disk"

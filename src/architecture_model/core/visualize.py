@@ -782,10 +782,11 @@ def generate_system_decomposition_diagram(model: "ArchitectureModel") -> str:
 
 
 def generate_conops_diagram(model: "ArchitectureModel") -> str:
-    """ConOps view: actors interacting with the system through capability groups.
+    """ConOps view: actors interacting with systems, systems providing capability groups.
 
-    Shows external actors on the left, system boundary with L1 capability
-    groups (from CAP-0 contains relationships), and actor-to-capability edges.
+    Shows external actors on the left, system nodes in the middle, and
+    L1 capability groups on the right. Actors connect to systems, systems
+    connect to the capabilities their components realize.
     """
     lines = ["graph LR"]
     class_assignments: list[str] = []
@@ -799,6 +800,12 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
     # Build entity lookup
     cap_map = {c.id: c for c in model.entities.capabilities}
 
+    # Build realizes lookup: component_id -> [cap_id]
+    comp_realizes: dict[str, list[str]] = defaultdict(list)
+    for rel in model.relationships:
+        if _rel_type(rel) == "realizes":
+            comp_realizes[rel.from_id].append(rel.to_id)
+
     # Actors subgraph
     if model.entities.actors:
         lines.append('    subgraph ext["External Actors"]')
@@ -807,11 +814,18 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
             class_assignments.append(_apply_class(actor.id, "actor"))
         lines.append("    end")
 
-    # System boundary
-    project = getattr(model.meta, "project", "System")
-    lines.append(f'    subgraph sys["{_label(project)}"]')
+    # Systems subgraph
+    if model.entities.systems:
+        lines.append('    subgraph systems["Systems"]')
+        for sys in model.entities.systems:
+            lines.append(f"        {shape('system', sys.id, sys.name)}")
+            class_assignments.append(_apply_class(sys.id, "system"))
+        lines.append("    end")
 
-    # Find L1 groups: children of CAP-0 (or whatever root capability)
+    # Capability groups subgraph
+    project = getattr(model.meta, "project", "System")
+    lines.append(f'    subgraph caps["Capabilities"]')
+
     root_cap_id = "CAP-0"
     l1_group_ids = contains.get(root_cap_id, [])
 
@@ -822,7 +836,6 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
                 continue
             g_label = _label(g_cap.name)
             lines.append(f'        subgraph {_sid(g_id)}["{g_label}"]')
-            # Children of this group
             for child_id in contains.get(g_id, []):
                 child = cap_map.get(child_id)
                 if child:
@@ -830,29 +843,41 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
                     class_assignments.append(_apply_class(child.id, "capability"))
             lines.append("        end")
     else:
-        # Fallback: show all capabilities flat
         for cap in model.entities.capabilities:
             lines.append(f"        {shape('capability', cap.id, cap.name)}")
             class_assignments.append(_apply_class(cap.id, "capability"))
 
     lines.append("    end")
 
-    # Actor-to-capability edges
-    actor_ids = {a.id for a in model.entities.actors}
-    cap_ids = {c.id for c in model.entities.capabilities}
-    has_edges = False
-    for rel in model.relationships:
-        if rel.from_id in actor_ids and rel.to_id in cap_ids:
-            lines.append(f"    {_sid(rel.from_id)} --> {_sid(rel.to_id)}")
-            has_edges = True
-        elif rel.to_id in actor_ids and rel.from_id in cap_ids:
-            lines.append(f"    {_sid(rel.to_id)} --> {_sid(rel.from_id)}")
-            has_edges = True
-
-    # If no direct edges, connect all actors to system boundary
-    if not has_edges and model.entities.actors:
+    # Actor → System edges (all actors connect to all systems)
+    if model.entities.systems and model.entities.actors:
         for actor in model.entities.actors:
-            lines.append(f"    {_sid(actor.id)} --> sys")
+            for sys in model.entities.systems:
+                lines.append(f"    {_sid(actor.id)} --> {_sid(sys.id)}")
+
+    # System → L1 Capability edges (via realizes from system's components)
+    l1_cap_ids = set()
+    for g_id in l1_group_ids:
+        for child_id in contains.get(g_id, []):
+            if cap_map.get(child_id):
+                l1_cap_ids.add(child_id)
+
+    if model.entities.systems:
+        for sys in model.entities.systems:
+            sys_caps = set()
+            for cid in sys.component_ids:
+                for cap_id in comp_realizes.get(cid, []):
+                    if cap_id in l1_cap_ids:
+                        sys_caps.add(cap_id)
+            for cap_id in sorted(sys_caps):
+                lines.append(f"    {_sid(sys.id)} ==> {_sid(cap_id)}")
+    elif model.entities.actors:
+        # Fallback: direct actor → capability edges
+        actor_ids = {a.id for a in model.entities.actors}
+        cap_ids_set = {c.id for c in model.entities.capabilities}
+        for rel in model.relationships:
+            if rel.from_id in actor_ids and rel.to_id in cap_ids_set:
+                lines.append(f"    {_sid(rel.from_id)} --> {_sid(rel.to_id)}")
 
     lines.extend(css_classes())
     lines.extend(a for a in class_assignments if a)
@@ -932,44 +957,49 @@ def generate_functional_architecture_diagram(model: "ArchitectureModel") -> str:
 
 
 def generate_logical_architecture_diagram(model: "ArchitectureModel") -> str:
-    """Components grouped by layer with dependency edges.
+    """Components grouped by system with dependency edges.
 
-    Groups components by their layer (via contains relationships),
+    Groups components into system subgraphs (using system.component_ids),
     shows depends-on relationships between components.
+    Unassigned components go in an 'Other' subgraph.
     """
     lines = ["graph TB"]
     class_assignments: list[str] = []
 
-    # Build layer -> components mapping from contains relationships
-    layer_components: dict[str, list[str]] = defaultdict(list)
-    comp_in_layer: set[str] = set()
-    for rel in model.relationships:
-        if _rel_type(rel) == "contains":
-            # Check if from_id is a layer
-            layer_ids = {la.id for la in model.entities.layers}
-            if rel.from_id in layer_ids:
-                layer_components[rel.from_id].append(rel.to_id)
-                comp_in_layer.add(rel.to_id)
-
-    layer_map = {la.id: la for la in model.entities.layers}
     comp_map = {c.id: c for c in model.entities.components}
 
-    # Render layers with their components
-    for layer in model.entities.layers:
-        comps = layer_components.get(layer.id, [])
-        lines.append(f'    subgraph {_sid(layer.id)}["{_label(layer.name)}"]')
-        for comp_id in comps:
-            comp = comp_map.get(comp_id)
-            if comp:
-                lines.append(f"        {shape('component', comp.id, comp.name)}")
-                class_assignments.append(_apply_class(comp.id, "component"))
-        lines.append("    end")
+    # Build system -> components mapping
+    comp_in_system: set[str] = set()
+    if model.entities.systems:
+        for sys in model.entities.systems:
+            all_comp_ids = set(comp_map.keys())
+            resolved = []
+            for cid in sys.component_ids:
+                if cid in all_comp_ids:
+                    resolved.append(cid)
+                else:
+                    # Resolve children (COMP-1 -> COMP-1.1, COMP-1.2, ...)
+                    for real_id in sorted(all_comp_ids):
+                        if real_id.startswith(cid + "."):
+                            resolved.append(real_id)
+            lines.append(f'    subgraph {_sid(sys.id)}["{_label(sys.name)}"]')
+            class_assignments.append(_apply_class(sys.id, "system"))
+            for cid in resolved:
+                comp = comp_map.get(cid)
+                if comp:
+                    lines.append(f"        {shape('component', comp.id, comp.name)}")
+                    class_assignments.append(_apply_class(comp.id, "component"))
+                    comp_in_system.add(cid)
+            lines.append("    end")
 
-    # Components not in any layer
-    for comp in model.entities.components:
-        if comp.id not in comp_in_layer:
-            lines.append(f"    {shape('component', comp.id, comp.name)}")
+    # Components not in any system
+    unassigned = [c for c in model.entities.components if c.id not in comp_in_system]
+    if unassigned:
+        lines.append('    subgraph other["Other"]')
+        for comp in unassigned:
+            lines.append(f"        {shape('component', comp.id, comp.name)}")
             class_assignments.append(_apply_class(comp.id, "component"))
+        lines.append("    end")
 
     # Dependency edges
     comp_ids = {c.id for c in model.entities.components}
@@ -983,37 +1013,56 @@ def generate_logical_architecture_diagram(model: "ArchitectureModel") -> str:
 
 
 def generate_behavior_overview_diagram(model: "ArchitectureModel") -> str:
-    """Top-level behaviors with trigger edges.
+    """Full-depth behavior hierarchy with trigger edges.
 
-    Finds top-level behaviors (not contained by another behavior),
-    groups by ID prefix, shows triggers relationships.
+    Shows all behavior levels using nested subgraphs matching the model's
+    contains hierarchy. Top-level behaviors group their children recursively.
+    Triggers shown as solid edges, contains as dotted.
     """
-    lines = ["graph LR"]
+    lines = ["graph TB"]
     class_assignments: list[str] = []
 
-    # Find behaviors that are contained by another behavior
-    contained_behaviors: set[str] = set()
+    # Build contains mapping: parent_beh -> [child_beh]
     beh_ids = {b.id for b in model.entities.behaviors}
+    beh_map = {b.id: b for b in model.entities.behaviors}
+    children_of: dict[str, list[str]] = defaultdict(list)
+    contained_behaviors: set[str] = set()
     for rel in model.relationships:
         if _rel_type(rel) == "contains" and rel.from_id in beh_ids and rel.to_id in beh_ids:
+            children_of[rel.from_id].append(rel.to_id)
             contained_behaviors.add(rel.to_id)
 
     # Top-level behaviors
     top_behaviors = [b for b in model.entities.behaviors if b.id not in contained_behaviors]
 
-    # Group by prefix pattern
+    # Group top-level by prefix
     groups: dict[str, list] = defaultdict(list)
     for beh in top_behaviors:
-        # Extract prefix: BEH-C*, BEH-P*, etc.
         m = re.match(r"(BEH-[A-Z]+)", beh.id)
         if m:
             groups[m.group(1)].append(beh)
         else:
             groups["Other"].append(beh)
 
-    # Render groups as subgraphs
+    def _render_beh_tree(beh_id: str, indent: int, max_depth: int = 3) -> None:
+        """Recursively render a behavior and its children as nested subgraphs."""
+        beh = beh_map.get(beh_id)
+        if not beh:
+            return
+        pad = "    " * indent
+        kids = children_of.get(beh_id, [])
+        if kids and max_depth > 0:
+            lines.append(f'{pad}subgraph {_sid(beh_id)}["{_label(beh.name)}"]')
+            class_assignments.append(_apply_class(beh_id, "behavior"))
+            for kid_id in kids:
+                _render_beh_tree(kid_id, indent + 1, max_depth - 1)
+            lines.append(f'{pad}end')
+        else:
+            lines.append(f"{pad}{shape('behavior', beh_id, beh.name)}")
+            class_assignments.append(_apply_class(beh_id, "behavior"))
+
+    # Render groups
     for prefix, behs in sorted(groups.items()):
-        # Derive group label
         if prefix == "BEH-C":
             label = "CLI Commands"
         elif prefix == "BEH-P":
@@ -1026,21 +1075,13 @@ def generate_behavior_overview_diagram(model: "ArchitectureModel") -> str:
             label = prefix
         lines.append(f'    subgraph {_sid(prefix)}["{label}"]')
         for beh in behs:
-            lines.append(f"        {shape('behavior', beh.id, beh.name)}")
-            class_assignments.append(_apply_class(beh.id, "behavior"))
+            _render_beh_tree(beh.id, 2)
         lines.append("    end")
 
-    # Trigger edges (only between top-level)
-    top_ids = {b.id for b in top_behaviors}
+    # Trigger edges between any behaviors
     for rel in model.relationships:
-        if _rel_type(rel) == "triggers" and rel.from_id in top_ids and rel.to_id in top_ids:
+        if _rel_type(rel) == "triggers" and rel.from_id in beh_ids and rel.to_id in beh_ids:
             lines.append(f"    {_sid(rel.from_id)} --> {_sid(rel.to_id)}")
-
-    # Also show triggers between any behaviors for completeness
-    for rel in model.relationships:
-        if _rel_type(rel) == "triggers" and (rel.from_id not in top_ids or rel.to_id not in top_ids):
-            if rel.from_id in beh_ids and rel.to_id in beh_ids:
-                lines.append(f"    {_sid(rel.from_id)} --> {_sid(rel.to_id)}")
 
     lines.extend(css_classes())
     lines.extend(a for a in class_assignments if a)
