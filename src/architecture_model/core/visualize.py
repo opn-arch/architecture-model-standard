@@ -1042,99 +1042,98 @@ def _convert_clicks_to_anchors(mermaid_content: str) -> str:
 def generate_html_viewer(
     model: "ArchitectureModel",
     output_path: Path,
-    title: str = "Architecture Diagrams",
+    title: str = "Architecture Viewer",
 ) -> Path:
-    """Generate a self-contained HTML file with all architecture diagrams.
+    """Generate a self-contained HTML viewer with SE navigation and entity explorer.
 
-    All diagrams are embedded as Mermaid code blocks and rendered client-side.
-    Click navigation between diagrams works via anchor links (no server needed).
-    Designed for mobile viewing.
+    Layout: sidebar with SE views (ConOps, Functional, Logical, Use Cases) and
+    expandable entity categories. Content area renders Mermaid diagrams on demand.
+    Dark theme, mobile-responsive with hamburger menu at 768px breakpoint.
+
+    All diagram data is embedded as JSON — Mermaid renders lazily on click/expand.
 
     Returns the path to the generated HTML file.
     """
+    import json as _json
+
     output_path = Path(output_path)
 
-    # ── Collect all diagrams ──────────────────────────────────────
-    diagrams: list[tuple[str, str, str]] = []  # (id, display_name, mermaid)
+    # ── 1. Generate SE overview diagrams ──────────────────────────
+    se_views: dict[str, dict[str, str]] = {
+        "conops": {"label": "ConOps", "mermaid": generate_conops_diagram(model)},
+        "functional": {"label": "Functional Architecture", "mermaid": generate_functional_architecture_diagram(model)},
+        "logical": {"label": "Logical Architecture", "mermaid": generate_logical_architecture_diagram(model)},
+        "use-cases": {"label": "Use Cases", "mermaid": generate_behavior_overview_diagram(model)},
+    }
 
-    # 8 model-based standard diagrams
-    model_generators = [
-        ("context", "Context Diagram", generate_context_diagram),
-        ("components", "Components Diagram", generate_components_diagram),
-        ("behaviors", "Behaviors Diagram", generate_behaviors_diagram),
-        ("dependencies", "Dependencies Diagram", generate_dependencies_diagram),
-        ("data-flow", "Data Flow Diagram", generate_data_flow_diagram),
-        ("constraint-map", "Constraint Map", generate_constraint_map_diagram),
-        ("traceability", "Traceability Diagram", generate_traceability_diagram),
-        ("decomposition", "Decomposition Diagram", generate_decomposition_diagram),
+    # ── 2. Collect entity lists & explorer facets ─────────────────
+    entity_categories: list[tuple[str, str, list]] = [
+        ("layers", "Layers", list(model.entities.layers)),
+        ("components", "Components", list(model.entities.components)),
+        ("capabilities", "Capabilities", list(model.entities.capabilities)),
+        ("behaviors", "Behaviors", list(model.entities.behaviors)),
+        ("interfaces", "Interfaces", list(model.entities.interfaces)),
+        ("actors", "Actors", list(model.entities.actors)),
     ]
-    for dia_id, display, gen_fn in model_generators:
-        diagrams.append((dia_id, display, gen_fn(model)))
 
-    # 2 static diagrams
-    diagrams.append(("pipeline-flow", "Pipeline Flow", generate_pipeline_flow_diagram()))
-    diagrams.append(("entity-lifecycle", "Entity Lifecycle", generate_entity_lifecycle_diagram()))
+    # Build entity explorer data: {entity_id: {facet_name: mermaid_str}}
+    # Only generate for entities to keep file size reasonable.
+    # For capabilities/behaviors: only top-level (no '.' in id) plus their direct children.
+    explorer_data: dict[str, dict[str, str]] = {}
 
-    # Per-component detail diagrams
-    comp_diagrams: list[tuple[str, str, str]] = []
-    for comp in model.entities.components:
-        dia_id = f"component-{comp.id}"
-        comp_diagrams.append((dia_id, f"{comp.id}: {comp.name}", generate_component_detail_diagram(model, comp.id)))
-    diagrams.extend(comp_diagrams)
+    def _is_top_level(eid: str) -> bool:
+        """Top-level = no sub-id separator (e.g. CAP-F1 not CAP-F1.2)."""
+        # Split off prefix, check remainder has no dots
+        parts = eid.split("-", 1)
+        return "." not in parts[-1] if len(parts) > 1 else True
 
-    # Per-behavior use-case diagrams
-    beh_diagrams: list[tuple[str, str, str]] = []
-    for beh in model.entities.behaviors:
-        dia_id = f"use-case-{beh.id}"
-        beh_diagrams.append((dia_id, f"{beh.id}: {beh.name}", generate_use_case_diagram(model, beh.id)))
-    diagrams.extend(beh_diagrams)
+    def _is_child_of_top(eid: str) -> bool:
+        """Direct child = exactly one dot in the numeric part (e.g. CAP-F1.2)."""
+        parts = eid.split("-", 1)
+        return parts[-1].count(".") == 1 if len(parts) > 1 else False
 
-    # ── Convert click directives to anchor links ──────────────────
-    diagrams = [(did, name, _convert_clicks_to_anchors(content)) for did, name, content in diagrams]
+    for etype, _label_text, entities in entity_categories:
+        singular = etype.rstrip("s")  # "components" -> "component"
+        for ent in entities:
+            # For caps/behaviors, limit depth
+            if etype in ("capabilities", "behaviors"):
+                if not _is_top_level(ent.id) and not _is_child_of_top(ent.id):
+                    continue
+            facets = generate_entity_explorer(model, singular, ent.id)
+            if facets:
+                explorer_data[ent.id] = facets
 
-    # ── Build sidebar index ───────────────────────────────────────
-    overview_ids = ["context", "components", "behaviors", "dependencies", "decomposition", "traceability"]
-    data_ids = ["data-flow", "constraint-map"]
-    static_ids = ["pipeline-flow", "entity-lifecycle"]
+    # ── 3. Build the JSON data blob ───────────────────────────────
+    diagram_data = {
+        "se_views": {k: v["mermaid"] for k, v in se_views.items()},
+        "entities": explorer_data,
+    }
+    data_json = _json.dumps(diagram_data, ensure_ascii=False)
 
-    def _sidebar_section(title_text: str, items: list[tuple[str, str]], open_tag: bool = False) -> str:
-        open_attr = " open" if open_tag else ""
-        links = "\n".join(f'            <a href="#diagram-{did}">{name}</a>' for did, name in items)
-        return f'        <details{open_attr}><summary>{title_text}</summary>\n{links}\n        </details>'
+    # ── 4. Build sidebar nav HTML ─────────────────────────────────
+    se_nav = "\n".join(
+        f'            <a href="#" data-view="{k}" class="nav-link">{v["label"]}</a>'
+        for k, v in se_views.items()
+    )
 
-    sidebar_parts = []
-    # Overview
-    overview_items = [(did, name) for did, name, _ in diagrams if did in overview_ids]
-    sidebar_parts.append(_sidebar_section("Overview", overview_items, open_tag=True))
-    # Data & Constraints
-    data_items = [(did, name) for did, name, _ in diagrams if did in data_ids]
-    sidebar_parts.append(_sidebar_section("Data &amp; Constraints", data_items))
-    # Static
-    static_items = [(did, name) for did, name, _ in diagrams if did in static_ids]
-    sidebar_parts.append(_sidebar_section("Static", static_items))
-    # Components
-    if comp_diagrams:
-        comp_items = [(did, name) for did, name, _ in comp_diagrams]
-        sidebar_parts.append(_sidebar_section(f"Components ({len(comp_items)})", comp_items))
-    # Behaviors
-    if beh_diagrams:
-        beh_items = [(did, name) for did, name, _ in beh_diagrams]
-        sidebar_parts.append(_sidebar_section(f"Behaviors ({len(beh_items)})", beh_items))
-
-    sidebar_html = "\n".join(sidebar_parts)
-
-    # ── Build diagram sections ────────────────────────────────────
-    sections = []
-    for dia_id, display_name, content in diagrams:
-        sections.append(
-            f'        <div class="diagram-section" id="diagram-{dia_id}">\n'
-            f'            <h3>{display_name}</h3>\n'
-            f'            <div class="mermaid">\n{content}\n            </div>\n'
-            f'        </div>'
+    entity_nav_parts = []
+    for etype, elabel, entities in entity_categories:
+        if not entities:
+            continue
+        items = "\n".join(
+            f'                <a href="#" data-entity="{e.id}" data-etype="{etype.rstrip("s")}" '
+            f'class="nav-link entity-link">{e.id}: {e.name}</a>'
+            for e in entities
         )
-    sections_html = "\n".join(sections)
+        entity_nav_parts.append(
+            f'        <details class="entity-cat">\n'
+            f'            <summary>{elabel} ({len(entities)})</summary>\n'
+            f'{items}\n'
+            f'        </details>'
+        )
+    entity_nav = "\n".join(entity_nav_parts)
 
-    # ── Assemble HTML ─────────────────────────────────────────────
+    # ── 5. Assemble HTML ──────────────────────────────────────────
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1144,57 +1143,150 @@ def generate_html_viewer(
     <style>
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{ font-family: -apple-system, system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; }}
-        .nav-toggle {{ display: none; position: fixed; top: 10px; left: 10px; z-index: 1000;
-                       background: #16213e; border: 1px solid #0f3460; padding: 8px 12px;
-                       color: #e0e0e0; border-radius: 4px; cursor: pointer; font-size: 18px; }}
-        @media (max-width: 768px) {{ .nav-toggle {{ display: block; }} }}
+        .hamburger {{ display: none; position: fixed; top: 10px; left: 10px; z-index: 1001;
+                      background: #16213e; border: 1px solid #0f3460; padding: 8px 12px;
+                      color: #e0e0e0; border-radius: 4px; cursor: pointer; font-size: 20px; }}
+        @media (max-width: 768px) {{ .hamburger {{ display: block; }} }}
         .sidebar {{ position: fixed; top: 0; left: 0; width: 280px; height: 100vh;
-                    background: #16213e; overflow-y: auto; padding: 16px; z-index: 999;
-                    border-right: 1px solid #0f3460; transition: transform 0.3s; }}
+                    background: #16213e; overflow-y: auto; padding: 16px; z-index: 1000;
+                    border-right: 1px solid #0f3460; transition: transform 0.3s ease; }}
         @media (max-width: 768px) {{
             .sidebar {{ transform: translateX(-100%); }}
             .sidebar.open {{ transform: translateX(0); }}
         }}
-        .sidebar h2 {{ color: #e94560; margin-bottom: 12px; font-size: 16px; }}
-        .sidebar details {{ margin-bottom: 4px; }}
-        .sidebar summary {{ cursor: pointer; padding: 4px 0; color: #a0a0c0; font-size: 13px; }}
-        .sidebar a {{ display: block; padding: 3px 0 3px 16px; color: #7ec8e3;
-                     text-decoration: none; font-size: 12px; }}
-        .sidebar a:hover {{ color: #e94560; }}
-        .content {{ margin-left: 280px; padding: 20px; }}
-        @media (max-width: 768px) {{ .content {{ margin-left: 0; padding: 10px; }} }}
-        .diagram-section {{ margin-bottom: 40px; padding: 16px; background: #16213e;
-                           border-radius: 8px; border: 1px solid #0f3460; }}
-        .diagram-section h3 {{ color: #e94560; margin-bottom: 12px; font-size: 16px;
-                              padding-top: 60px; margin-top: -60px; }}
-        .mermaid {{ background: #0a0a1a; padding: 12px; border-radius: 4px; overflow-x: auto; }}
-        .back-top {{ position: fixed; bottom: 20px; right: 20px; background: #e94560;
-                    color: white; border: none; padding: 10px 14px; border-radius: 50%;
-                    cursor: pointer; font-size: 18px; z-index: 100; }}
+        .sidebar h2 {{ color: #e94560; margin-bottom: 16px; font-size: 15px; }}
+        .sidebar .nav-section {{ color: #a0a0c0; font-size: 11px; text-transform: uppercase;
+                                 letter-spacing: 1px; margin: 14px 0 6px; }}
+        .sidebar .nav-link {{ display: block; padding: 4px 0 4px 12px; color: #7ec8e3;
+                              text-decoration: none; font-size: 12px; cursor: pointer; }}
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {{ color: #e94560; }}
+        .sidebar details {{ margin-bottom: 2px; }}
+        .sidebar summary {{ cursor: pointer; padding: 5px 0; color: #a0a0c0; font-size: 13px;
+                            list-style: none; }}
+        .sidebar summary::before {{ content: "\\25b6  "; font-size: 10px; }}
+        .sidebar details[open] > summary::before {{ content: "\\25bc  "; }}
+        .sidebar .entity-link {{ padding-left: 20px; font-size: 11px; white-space: nowrap;
+                                 overflow: hidden; text-overflow: ellipsis; }}
+        .sidebar .divider {{ border-top: 1px solid #0f3460; margin: 10px 0; }}
+        .content {{ margin-left: 280px; padding: 20px; min-height: 100vh; }}
+        @media (max-width: 768px) {{ .content {{ margin-left: 0; padding: 12px; padding-top: 50px; }} }}
+        .content-header {{ color: #e94560; font-size: 18px; margin-bottom: 16px; }}
+        .diagram-box {{ background: #0a0a1a; padding: 16px; border-radius: 6px;
+                        border: 1px solid #0f3460; margin-bottom: 16px; overflow-x: auto; }}
+        .accordion {{ border-bottom: 1px solid #0f3460; }}
+        .accordion-header {{ padding: 10px 0; cursor: pointer; color: #7ec8e3; font-size: 14px;
+                             user-select: none; }}
+        .accordion-header:hover {{ color: #e94560; }}
+        .accordion-header::before {{ content: "\\25b6  "; font-size: 10px; }}
+        .accordion-header.open::before {{ content: "\\25bc  "; }}
+        .accordion-body {{ max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }}
+        .accordion-body.open {{ max-height: 2000px; }}
+        .welcome {{ color: #a0a0c0; font-size: 14px; margin-top: 40px; text-align: center; }}
     </style>
 </head>
 <body>
-    <button class="nav-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+    <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
 
     <nav class="sidebar">
-        <h2>{title}</h2>
-{sidebar_html}
+        <h2>&#9776; {title}</h2>
+        <div class="nav-section">SE Views</div>
+{se_nav}
+        <div class="divider"></div>
+        <div class="nav-section">Entities</div>
+{entity_nav}
     </nav>
 
-    <main class="content">
-{sections_html}
+    <main class="content" id="content">
+        <p class="welcome">Select a view or entity from the sidebar.</p>
     </main>
 
-    <button class="back-top" onclick="window.scrollTo(0,0)">&#8593;</button>
-
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <script>
-        mermaid.initialize({{
-            startOnLoad: true,
-            theme: 'dark',
-            securityLevel: 'loose',
-            flowchart: {{ htmlLabels: true, curve: 'basis' }}
+        var DIAGRAM_DATA = {data_json};
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({{ startOnLoad: false, theme: 'dark', securityLevel: 'loose',
+                             flowchart: {{ htmlLabels: true, curve: 'basis' }} }});
+
+        var renderCounter = 0;
+
+        async function renderMermaid(container, code) {{
+            try {{
+                var id = 'mmd_' + (++renderCounter);
+                var {{ svg }} = await mermaid.render(id, code);
+                container.innerHTML = svg;
+            }} catch(e) {{
+                container.innerHTML = '<pre style="color:#e94560">' + e.message + '</pre>';
+            }}
+        }}
+
+        var content = document.getElementById('content');
+
+        // SE view click
+        document.querySelectorAll('[data-view]').forEach(function(a) {{
+            a.addEventListener('click', function(ev) {{
+                ev.preventDefault();
+                var key = this.dataset.view;
+                var code = DIAGRAM_DATA.se_views[key];
+                if (!code) return;
+                document.querySelectorAll('.nav-link').forEach(function(l){{ l.classList.remove('active'); }});
+                this.classList.add('active');
+                content.innerHTML = '<h2 class="content-header">' + this.textContent + '</h2>'
+                    + '<div class="diagram-box" id="dia-main"></div>';
+                renderMermaid(document.getElementById('dia-main'), code);
+                closeMobileNav();
+            }});
         }});
+
+        // Entity click
+        document.querySelectorAll('[data-entity]').forEach(function(a) {{
+            a.addEventListener('click', function(ev) {{
+                ev.preventDefault();
+                var eid = this.dataset.entity;
+                var facets = DIAGRAM_DATA.entities[eid];
+                document.querySelectorAll('.nav-link').forEach(function(l){{ l.classList.remove('active'); }});
+                this.classList.add('active');
+                var html = '<h2 class="content-header">' + this.textContent + '</h2>';
+                if (!facets || Object.keys(facets).length === 0) {{
+                    html += '<p style="color:#a0a0c0">No relationship diagrams for this entity.</p>';
+                }} else {{
+                    var i = 0;
+                    for (var facetName in facets) {{
+                        var containerId = 'facet_' + eid.replace(/[^a-zA-Z0-9]/g,'_') + '_' + i;
+                        html += '<div class="accordion">'
+                            + '<div class="accordion-header" data-target="' + containerId
+                            + '" data-code="' + btoa(unescape(encodeURIComponent(facets[facetName])))
+                            + '">' + facetName + '</div>'
+                            + '<div class="accordion-body" id="' + containerId + '">'
+                            + '<div class="diagram-box" id="' + containerId + '_dia"></div>'
+                            + '</div></div>';
+                        i++;
+                    }}
+                }}
+                content.innerHTML = html;
+                // Wire accordion
+                content.querySelectorAll('.accordion-header').forEach(function(hdr) {{
+                    hdr.addEventListener('click', function() {{
+                        var body = document.getElementById(this.dataset.target);
+                        var isOpen = body.classList.contains('open');
+                        body.classList.toggle('open');
+                        this.classList.toggle('open');
+                        if (!isOpen && !body.dataset.rendered) {{
+                            body.dataset.rendered = '1';
+                            var code = decodeURIComponent(escape(atob(this.dataset.code)));
+                            renderMermaid(document.getElementById(this.dataset.target + '_dia'), code);
+                        }}
+                    }});
+                }});
+                closeMobileNav();
+            }});
+        }});
+
+        function closeMobileNav() {{
+            if (window.innerWidth <= 768) {{
+                document.querySelector('.sidebar').classList.remove('open');
+            }}
+        }}
     </script>
 </body>
 </html>
