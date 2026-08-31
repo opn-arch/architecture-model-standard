@@ -1267,7 +1267,7 @@ def inject_click_handlers(mermaid_code: str, entity_ids: set[str]) -> str:
     # Insert click directives before classDef lines (or at end)
     # Mermaid callback syntax: click <nodeId> callback "functionName"
     # This calls window.functionName(nodeId) on click.
-    click_lines = [f'    click {sid} callback "showEntity"' for sid in sorted(found_sids)]
+    click_lines = [f'    click {sid} call showEntity()' for sid in sorted(found_sids)]
 
     # Find insertion point (before first classDef or at end)
     insert_idx = len(lines)
@@ -1701,6 +1701,25 @@ def generate_html_viewer(
                 var {{ svg, bindFunctions }} = await mermaid.render(id, code);
                 container.innerHTML = svg;
                 if (bindFunctions) bindFunctions(container);
+                // Manually wire click handlers on SVG nodes (fallback for Mermaid callback issues)
+                container.querySelectorAll('.node').forEach(function(node) {{
+                    var nid = node.id || '';
+                    // Mermaid node IDs: "flowchart-COMP_1-0" or "COMP_1-0"
+                    var parts = nid.split('-');
+                    var sid = '';
+                    if (parts[0] === 'flowchart') {{
+                        sid = parts.slice(1, -1).join('-');
+                    }} else if (parts.length >= 2) {{
+                        sid = parts.slice(0, -1).join('-');
+                    }}
+                    if (sid && D.sid_map && D.sid_map[sid]) {{
+                        node.style.cursor = 'pointer';
+                        node.addEventListener('click', function(ev) {{
+                            ev.stopPropagation();
+                            showEntity(sid);
+                        }});
+                    }}
+                }});
             }} catch(e) {{
                 container.innerHTML = '<pre style="color:#e94560">' + e.message + '</pre>';
             }}

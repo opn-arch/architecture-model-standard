@@ -128,7 +128,7 @@ class TestClickInjection:
     def test_injects_click_for_known_ids(self):
         mermaid = "flowchart LR\n    COMP_1[Parser]\n    classDef cls_comp fill:#27AE60"
         result = inject_click_handlers(mermaid, {"COMP-1"})
-        assert 'click COMP_1 callback "showEntity"' in result
+        assert 'click COMP_1 call showEntity()' in result
 
     def test_preserves_classdefs(self):
         mermaid = "flowchart LR\n    COMP_1[Parser]\n    classDef cls_comp fill:#27AE60"
@@ -139,7 +139,7 @@ class TestClickInjection:
         mermaid = 'flowchart LR\n    COMP_1[Parser]\n    click COMP_1 "old.mmd"'
         result = inject_click_handlers(mermaid, {"COMP-1"})
         assert "old.mmd" not in result
-        assert 'click COMP_1 callback "showEntity"' in result
+        assert 'click COMP_1 call showEntity()' in result
 
     def test_ignores_unknown_ids(self):
         mermaid = "flowchart LR\n    COMP_1[Parser]"
