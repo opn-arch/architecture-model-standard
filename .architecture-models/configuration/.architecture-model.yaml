@@ -1,0 +1,49 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Configuration
+  system: Configuration
+  generated_at: ''
+entities:
+  interfaces:
+  - id: IF-auto-COMP-9
+    name: Configuration API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-9
+    name: Configuration
+    status: ACTIVE
+    description: Configuration loading, domain profiles, schema definitions
+    layer: infrastructure
+    files:
+    - src/architecture_model/config/__init__.py
+    - src/architecture_model/config/loader.py
+    - src/architecture_model/config/schema.py
+    - src/architecture_model/profiles/__init__.py
+    - src/architecture_model/profiles/builtins/__init__.py
+    - src/architecture_model/profiles/schema.py
+    kind: library
+relationships:
+- type: depends-on
+  from: COMP-3.1
+  to: COMP-9
+  description: Scanners use config for exclusion patterns
+- type: depends-on
+  from: COMP-6
+  to: COMP-3.1
+  description: Extract uses scanners for code analysis
+- type: depends-on
+  from: COMP-6
+  to: COMP-9
+  description: Extract uses config for settings
+- type: depends-on
+  from: COMP-11
+  to: COMP-9
+  description: Learning store uses config for paths
+- type: depends-on
+  from: COMP-12
+  to: COMP-9
+  description: Utilities use config
+- type: exposes
+  from: COMP-9
+  to: IF-auto-COMP-9

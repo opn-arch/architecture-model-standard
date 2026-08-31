@@ -1092,8 +1092,12 @@ def generate_html_viewer(
         parts = eid.split("-", 1)
         return parts[-1].count(".") == 1 if len(parts) > 1 else False
 
+    _plural_to_singular = {
+        "layers": "layer", "components": "component", "capabilities": "capability",
+        "behaviors": "behavior", "interfaces": "interface", "actors": "actor",
+    }
     for etype, _label_text, entities in entity_categories:
-        singular = etype.rstrip("s")  # "components" -> "component"
+        singular = _plural_to_singular.get(etype, etype.rstrip("s"))
         for ent in entities:
             # For caps/behaviors, limit depth
             if etype in ("capabilities", "behaviors"):
@@ -1121,7 +1125,7 @@ def generate_html_viewer(
         if not entities:
             continue
         items = "\n".join(
-            f'                <a href="#" data-entity="{e.id}" data-etype="{etype.rstrip("s")}" '
+            f'                <a href="#" data-entity="{e.id}" data-etype="{_plural_to_singular.get(etype, etype.rstrip("s"))}" '
             f'class="nav-link entity-link">{e.id}: {e.name}</a>'
             for e in entities
         )
@@ -1550,13 +1554,20 @@ def generate_entity_explorer(
             facets["Consumers"] = _facet_diagram_reverse("interface", entity_id, ename, consumers)
 
     elif entity_type == "actor":
-        # Capabilities
+        # Capabilities - via explicit relationships or fallback to L1 groups
         caps = []
         for rel in model.relationships:
             if rel.from_id == entity_id and rel.to_id in entity_map:
                 rt, rname = entity_map[rel.to_id]
                 if rt == "capability":
                     caps.append((rel.to_id, "capability", rname, _rel_type(rel)))
+        if not caps:
+            # Fallback: show L1 capability groups (CAP-0.x children)
+            for rel in model.relationships:
+                if rel.from_id == "CAP-0" and _rel_type(rel) == "contains" and rel.to_id in entity_map:
+                    rt, rname = entity_map[rel.to_id]
+                    if rt == "capability":
+                        caps.append((rel.to_id, "capability", rname, "interacts-with"))
         if caps:
             facets["Capabilities"] = _facet_diagram("actor", entity_id, ename, caps)
 

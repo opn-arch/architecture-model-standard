@@ -1,0 +1,68 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Authoring
+  system: Authoring
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-6
+    name: Author Model from Requirements
+    status: ACTIVE
+    description: Parse requirements document into a concept-phase architecture model
+  - id: CAP-12
+    name: Check Development Gate
+    status: ACTIVE
+    description: Verify code reality is tracking toward authored architecture intent
+  interfaces:
+  - id: IF-auto-COMP-7
+    name: Authoring API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-7
+    name: Authoring
+    status: ACTIVE
+    description: Forward-author models from requirements, check development gates
+    layer: application
+    files:
+    - src/architecture_model/authoring/__init__.py
+    - src/architecture_model/authoring/parser.py
+    - src/architecture_model/authoring/gate.py
+    kind: library
+  requirements:
+  - id: REQ-14
+    name: Requirements-to-model parsing
+    status: ACTIVE
+    text: Parse markdown requirements document into concept-phase ArchitectureModel
+relationships:
+- type: realizes
+  from: COMP-7
+  to: CAP-6
+  description: Authoring implements requirements-to-model
+- type: realizes
+  from: COMP-7
+  to: CAP-12
+  description: Authoring gate check
+- type: depends-on
+  from: COMP-7
+  to: COMP-1.1
+  description: Authoring produces core model types
+- type: depends-on
+  from: COMP-7
+  to: COMP-3
+  description: Gate check reads manifest
+- type: depends-on
+  from: COMP-8
+  to: COMP-3
+  description: CLI triggers manifest generation
+- type: depends-on
+  from: COMP-8
+  to: COMP-7
+  description: CLI triggers authoring commands
+- type: satisfies
+  from: COMP-7
+  to: REQ-14
+  description: Authoring parser handles markdown requirements
+- type: exposes
+  from: COMP-7
+  to: IF-auto-COMP-7

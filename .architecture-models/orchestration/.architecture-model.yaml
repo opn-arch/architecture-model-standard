@@ -1,0 +1,116 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Orchestration
+  system: Orchestration
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-9
+    name: Decompose Models Hierarchically
+    status: ACTIVE
+    description: Break coarse models into per-system sub-models with parent/child
+      relationships
+  - id: CAP-10
+    name: Enrich Models with Code Intelligence
+    status: ACTIVE
+    description: Auto-populate signatures, constants, test contracts, behaviors from
+      source
+  interfaces:
+  - id: IF-auto-COMP-5
+    name: Orchestration API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-5.1
+    name: Enrichment API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-5.2
+    name: Decomposition API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-5
+    name: Orchestration
+    status: ACTIVE
+    description: High-level workflows — enrichment, decomposition, behavior analysis
+    layer: application
+    files:
+    - src/architecture_model/orchestration/__init__.py
+  - id: COMP-5.1
+    name: Enrichment
+    status: ACTIVE
+    description: Auto-enrich models with signatures, constants, test contracts, capabilities
+    layer: application
+    files:
+    - src/architecture_model/orchestration/enrich.py
+    - src/architecture_model/orchestration/auto_enrich.py
+    - src/architecture_model/orchestration/enrichment_context.py
+    - src/architecture_model/orchestration/capability_inference.py
+    - src/architecture_model/orchestration/trigger_detection.py
+    - src/architecture_model/orchestration/use_case_inference.py
+    - src/architecture_model/orchestration/naming_context.py
+  - id: COMP-5.2
+    name: Decomposition
+    status: ACTIVE
+    description: Model decomposition, behavior flows, compaction
+    layer: application
+    files:
+    - src/architecture_model/orchestration/decompose.py
+    - src/architecture_model/orchestration/deep_decompose.py
+    - src/architecture_model/orchestration/behavior_decompose.py
+    - src/architecture_model/orchestration/behavior_flows.py
+    - src/architecture_model/orchestration/compaction.py
+    - src/architecture_model/orchestration/pipeline.py
+  requirements:
+  - id: REQ-18
+    name: Behavior filtering cap
+    status: ACTIVE
+    text: Maximum 40 behaviors per component to prevent orphan explosion
+relationships:
+- type: realizes
+  from: COMP-5.2
+  to: CAP-9
+  description: Decomposition implements hierarchical breakdown
+- type: realizes
+  from: COMP-5.1
+  to: CAP-10
+  description: Enrichment implements code intelligence
+- type: depends-on
+  from: COMP-5.1
+  to: COMP-3
+  description: Enrichment reads manifest data
+- type: depends-on
+  from: COMP-5.1
+  to: COMP-1.1
+  description: Enrichment populates core types
+- type: depends-on
+  from: COMP-5.2
+  to: COMP-1.5
+  description: Decomposition uses quality metrics
+- type: depends-on
+  from: COMP-8
+  to: COMP-3
+  description: CLI triggers manifest generation
+- type: depends-on
+  from: COMP-8
+  to: COMP-5
+  description: CLI triggers enrichment/decomposition
+- type: contains
+  from: COMP-5
+  to: COMP-5.1
+- type: contains
+  from: COMP-5
+  to: COMP-5.2
+- type: satisfies
+  from: COMP-5.1
+  to: REQ-18
+  description: Enrichment applies behavior cap at 40
+- type: exposes
+  from: COMP-5
+  to: IF-auto-COMP-5
+- type: exposes
+  from: COMP-5.1
+  to: IF-auto-COMP-5.1
+- type: exposes
+  from: COMP-5.2
+  to: IF-auto-COMP-5.2

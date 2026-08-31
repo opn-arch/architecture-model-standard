@@ -1,0 +1,64 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Extract
+  system: Extract
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-2
+    name: Extract Architecture from Code
+    status: ACTIVE
+    description: Scan source code AST and derive components, relationships, behaviors
+      automatically
+  interfaces:
+  - id: IF-auto-COMP-6
+    name: Extract API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-6
+    name: Extract
+    status: ACTIVE
+    description: Code-to-model extraction — route detection, constraint detection,
+      artifact parsing
+    layer: domain
+    files:
+    - src/architecture_model/extract/from_code.py
+    - src/architecture_model/extract/from_artifacts.py
+    - src/architecture_model/extract/route_detector.py
+    - src/architecture_model/extract/constraint_detector.py
+    - src/architecture_model/extract/table_parser.py
+    kind: library
+  requirements:
+  - id: REQ-O18
+    name: decompose_model requires monitored
+    status: ACTIVE
+  - id: REQ-O19
+    name: compact_root_model requires monitored
+    status: ACTIVE
+relationships:
+- type: realizes
+  from: COMP-6
+  to: CAP-2
+  description: Extract implements code-to-model extraction
+- type: depends-on
+  from: COMP-3.1
+  to: COMP-9
+  description: Scanners use config for exclusion patterns
+- type: depends-on
+  from: COMP-6
+  to: COMP-3.1
+  description: Extract uses scanners for code analysis
+- type: depends-on
+  from: COMP-6
+  to: COMP-9
+  description: Extract uses config for settings
+- type: satisfies
+  from: COMP-6
+  to: REQ-O18
+- type: satisfies
+  from: COMP-6
+  to: REQ-O19
+- type: exposes
+  from: COMP-6
+  to: IF-auto-COMP-6

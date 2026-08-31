@@ -1,0 +1,33 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Utilities
+  system: Utilities
+  generated_at: ''
+entities:
+  interfaces:
+  - id: IF-auto-COMP-12
+    name: Utilities API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-12
+    name: Utilities
+    status: ACTIVE
+    description: Shared utilities, monitoring, patterns, data loading
+    layer: infrastructure
+    files:
+    - src/architecture_model/utils/__init__.py
+    - src/architecture_model/utils/discovery.py
+    - src/architecture_model/monitoring.py
+    - src/architecture_model/monitoring_checks.py
+    - src/architecture_model/patterns.py
+    - src/architecture_model/data/__init__.py
+    kind: library
+relationships:
+- type: depends-on
+  from: COMP-12
+  to: COMP-9
+  description: Utilities use config
+- type: exposes
+  from: COMP-12
+  to: IF-auto-COMP-12

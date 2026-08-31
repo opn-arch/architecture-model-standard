@@ -1,0 +1,64 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / CLI
+  system: CLI
+  generated_at: ''
+entities:
+  interfaces:
+  - id: IF-auto-COMP-8
+    name: CLI API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-8
+    name: CLI
+    status: ACTIVE
+    description: Command-line interface — all user-facing commands
+    layer: interface
+    files:
+    - src/architecture_model/__init__.py
+    - src/architecture_model/__main__.py
+    - src/architecture_model/cli/__init__.py
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/visualize.py
+  requirements:
+  - id: REQ-26
+    name: MCP tool compatibility
+    status: ACTIVE
+    text: All model operations must be invocable via MCP tools (architect_*)
+relationships:
+- type: depends-on
+  from: COMP-7
+  to: COMP-3
+  description: Gate check reads manifest
+- type: depends-on
+  from: COMP-8
+  to: COMP-1
+  description: CLI imports all core operations
+- type: depends-on
+  from: COMP-8
+  to: COMP-2
+  description: CLI orchestrates pipeline runs
+- type: depends-on
+  from: COMP-8
+  to: COMP-3
+  description: CLI triggers manifest generation
+- type: depends-on
+  from: COMP-8
+  to: COMP-4
+  description: CLI triggers doc generation
+- type: depends-on
+  from: COMP-8
+  to: COMP-5
+  description: CLI triggers enrichment/decomposition
+- type: depends-on
+  from: COMP-8
+  to: COMP-7
+  description: CLI triggers authoring commands
+- type: satisfies
+  from: COMP-8
+  to: REQ-26
+  description: CLI exposes all operations for MCP wrapping
+- type: exposes
+  from: COMP-8
+  to: IF-auto-COMP-8

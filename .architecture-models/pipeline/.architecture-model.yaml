@@ -1,0 +1,233 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Pipeline
+  system: Pipeline
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-3
+    name: Run Modular Extraction Pipeline
+    status: ACTIVE
+    description: Execute 10-stage pipeline (observe→infer→allocate→relate→specify→contract→validate→decompose→synthesize→emit)
+  interfaces:
+  - id: IF-auto-COMP-2
+    name: Pipeline API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.1
+    name: Pipeline Coordination API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.2
+    name: Observation Stages API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.3
+    name: Allocation & Relation Stages API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.4
+    name: Specification & Contract Stages API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.5
+    name: Synthesis & Emit Stages API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-2
+    name: Pipeline
+    status: ACTIVE
+    description: Modular 10-stage extraction pipeline with coordination and caching
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/__init__.py
+  - id: COMP-2.1
+    name: Pipeline Coordination
+    status: ACTIVE
+    description: Stage orchestration, context management, caching, reporting
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/coordinator.py
+    - src/architecture_model/pipeline/protocol.py
+    - src/architecture_model/pipeline/cache.py
+    - src/architecture_model/pipeline/context_gen.py
+    - src/architecture_model/pipeline/report.py
+    - src/architecture_model/pipeline/artifacts.py
+    - src/architecture_model/pipeline/corrections.py
+  - id: COMP-2.2
+    name: Observation Stages
+    status: ACTIVE
+    description: 'observe + infer: scan codebase and infer components/behaviors'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/observe.py
+    - src/architecture_model/pipeline/observe_types.py
+    - src/architecture_model/pipeline/infer.py
+    - src/architecture_model/pipeline/infer_types.py
+  - id: COMP-2.3
+    name: Allocation & Relation Stages
+    status: ACTIVE
+    description: 'allocate + relate: assign modules to blocks, discover relationships'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/allocate.py
+    - src/architecture_model/pipeline/allocate_types.py
+    - src/architecture_model/pipeline/relate.py
+    - src/architecture_model/pipeline/relate_types.py
+  - id: COMP-2.4
+    name: Specification & Contract Stages
+    status: ACTIVE
+    description: 'specify + contract + validate: add interfaces, test contracts, validate'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/specify.py
+    - src/architecture_model/pipeline/specify_types.py
+    - src/architecture_model/pipeline/contract.py
+    - src/architecture_model/pipeline/contract_types.py
+    - src/architecture_model/pipeline/validate.py
+    - src/architecture_model/pipeline/validate_types.py
+  - id: COMP-2.5
+    name: Synthesis & Emit Stages
+    status: ACTIVE
+    description: 'decompose + synthesize + emit: break down, merge, output final model'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/decompose.py
+    - src/architecture_model/pipeline/decompose_types.py
+    - src/architecture_model/pipeline/synthesize.py
+    - src/architecture_model/pipeline/synthesize_types.py
+    - src/architecture_model/pipeline/emit.py
+    - src/architecture_model/pipeline/emit_types.py
+    - src/architecture_model/pipeline/regen_score.py
+  requirements:
+  - id: REQ-4
+    name: Entity type coverage
+    status: ACTIVE
+    text: 'Include entities: capabilities, components with signatures, constants,
+      symbols, and files'
+  - id: REQ-5
+    name: Relationship population
+    status: ACTIVE
+    text: Include relationships (realizes, depends-on, contains at minimum)
+  - id: REQ-6
+    name: Deterministic pipeline
+    status: ACTIVE
+    text: Same input must produce same output (no randomness in stage execution)
+  - id: REQ-7
+    name: Pipeline stage independence
+    status: ACTIVE
+    text: Each pipeline stage must be independently runnable with cached predecessors
+  - id: REQ-17
+    name: Test preservation
+    status: ACTIVE
+    text: All existing tests must continue to pass after changes
+  - id: REQ-23
+    name: Graceful degradation
+    status: ACTIVE
+    text: Pipeline must produce partial results on failure, not crash entirely
+  - id: REQ-24
+    name: Uncertainty surfacing
+    status: ACTIVE
+    text: Ambiguous inferences must be flagged as uncertainties, not silently guessed
+  - id: REQ-25
+    name: Large repo handling
+    status: ACTIVE
+    text: Repos with >200 files must complete pipeline in <60s without LLM
+relationships:
+- type: realizes
+  from: COMP-2
+  to: CAP-3
+  description: Pipeline implements 10-stage extraction
+- type: depends-on
+  from: COMP-2.1
+  to: COMP-1.1
+  description: Pipeline coordination uses core types
+- type: depends-on
+  from: COMP-2.2
+  to: COMP-3.1
+  description: Observe stage uses scanners for code facts
+- type: depends-on
+  from: COMP-2.3
+  to: COMP-1.1
+  description: Allocation uses core types and model structure
+- type: depends-on
+  from: COMP-2.4
+  to: COMP-1.2
+  description: Validate stage invokes core validator
+- type: depends-on
+  from: COMP-2.5
+  to: COMP-1.3
+  description: Emit stage uses parser for YAML output
+- type: depends-on
+  from: COMP-8
+  to: COMP-2
+  description: CLI orchestrates pipeline runs
+- type: contains
+  from: COMP-2
+  to: COMP-2.1
+- type: contains
+  from: COMP-2
+  to: COMP-2.2
+- type: contains
+  from: COMP-2
+  to: COMP-2.3
+- type: contains
+  from: COMP-2
+  to: COMP-2.4
+- type: contains
+  from: COMP-2
+  to: COMP-2.5
+- type: contains
+  from: COMP-2
+  to: COMP-11
+- type: satisfies
+  from: COMP-2.2
+  to: REQ-4
+  description: Infer stage produces all entity types
+- type: satisfies
+  from: COMP-2.3
+  to: REQ-5
+  description: Relate stage produces typed relationships
+- type: satisfies
+  from: COMP-2.1
+  to: REQ-6
+  description: Pipeline coordinator runs deterministically
+- type: satisfies
+  from: COMP-2.1
+  to: REQ-7
+  description: Stage caching enables independent runs
+- type: satisfies
+  from: COMP-2.4
+  to: REQ-17
+  description: Validate stage ensures test preservation
+- type: satisfies
+  from: COMP-2.1
+  to: REQ-23
+  description: Coordinator catches stage failures gracefully
+- type: satisfies
+  from: COMP-2.2
+  to: REQ-24
+  description: Infer stage surfaces uncertainties
+- type: satisfies
+  from: COMP-2
+  to: REQ-25
+  description: Pipeline completes large repos without LLM
+- type: exposes
+  from: COMP-2
+  to: IF-auto-COMP-2
+- type: exposes
+  from: COMP-2.1
+  to: IF-auto-COMP-2.1
+- type: exposes
+  from: COMP-2.2
+  to: IF-auto-COMP-2.2
+- type: exposes
+  from: COMP-2.3
+  to: IF-auto-COMP-2.3
+- type: exposes
+  from: COMP-2.4
+  to: IF-auto-COMP-2.4
+- type: exposes
+  from: COMP-2.5
+  to: IF-auto-COMP-2.5

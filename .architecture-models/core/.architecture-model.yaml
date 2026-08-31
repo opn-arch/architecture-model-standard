@@ -1,0 +1,317 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Core
+  system: Core
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-1
+    name: Validate Architecture Models
+    status: ACTIVE
+    description: Check model correctness, completeness, hierarchy consistency, and
+      domain rules
+  - id: CAP-7
+    name: Slice and Query Models
+    status: ACTIVE
+    description: Filter model by block, layer, status, artifact for focused context
+      delivery
+  - id: CAP-8
+    name: Diff Model Versions
+    status: ACTIVE
+    description: Compare two model versions showing additions, removals, and changes
+  - id: CAP-11
+    name: Assess Regen Readiness
+    status: ACTIVE
+    description: Score how well a model captures enough detail to regenerate code
+  - id: CAP-13
+    name: Detect and Fix Model Drift
+    status: ACTIVE
+    description: Compare model against current code, report coverage gaps
+  interfaces:
+  - id: IF-auto-COMP-1
+    name: Core API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.1
+    name: Type System API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.2
+    name: Validation API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.3
+    name: Parser & Persistence API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.4
+    name: Model Operations API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.5
+    name: Quality Metrics API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-1
+    name: Core
+    status: ACTIVE
+    description: Foundation types, validation, parsing, and model operations
+    layer: foundation
+    files:
+    - src/architecture_model/core/__init__.py
+    kind: library
+  - id: COMP-1.1
+    name: Type System
+    status: ACTIVE
+    description: All dataclasses, enums, and type definitions for the architecture
+      model
+    layer: foundation
+    files:
+    - src/architecture_model/core/types.py
+    kind: library
+  - id: COMP-1.2
+    name: Validation
+    status: ACTIVE
+    description: Model validation — JSON schema, referential integrity, hierarchy,
+      cycles, domain rules
+    layer: foundation
+    files:
+    - src/architecture_model/core/validator.py
+    - src/architecture_model/spec/__init__.py
+    kind: library
+  - id: COMP-1.3
+    name: Parser & Persistence
+    status: ACTIVE
+    description: YAML parsing, serialization, round-trip preservation
+    layer: foundation
+    files:
+    - src/architecture_model/core/parser.py
+    - src/architecture_model/core/compression.py
+    - src/architecture_model/core/merger.py
+    - src/architecture_model/persistence/__init__.py
+    - src/architecture_model/persistence/store.py
+    kind: library
+  - id: COMP-1.4
+    name: Model Operations
+    status: ACTIVE
+    description: Slice, diff, coverage, impact analysis, clustering, source block
+      assignment
+    layer: foundation
+    files:
+    - src/architecture_model/core/slicer.py
+    - src/architecture_model/core/differ.py
+    - src/architecture_model/core/coverage.py
+    - src/architecture_model/core/cluster.py
+    - src/architecture_model/core/source_block_assign.py
+    - src/architecture_model/core/source_block_quality.py
+    - src/architecture_model/core/representativeness.py
+    - src/architecture_model/core/test_affinity.py
+    kind: library
+  - id: COMP-1.5
+    name: Quality Metrics
+    status: ACTIVE
+    description: Confidence scoring, regen readiness, corrections tracking
+    layer: foundation
+    files:
+    - src/architecture_model/core/confidence.py
+    - src/architecture_model/core/regen_readiness.py
+    - src/architecture_model/core/corrections.py
+    - src/architecture_model/core/decomposer.py
+    - src/architecture_model/core/visualize.py
+    kind: library
+  requirements:
+  - id: REQ-1
+    name: Model validation score threshold
+    status: ACTIVE
+    text: Model must score >= 80 on validation
+  - id: REQ-2
+    name: Zero errors on valid models
+    status: ACTIVE
+    text: Valid models must produce zero validation errors
+  - id: REQ-3
+    name: Hierarchy consistency
+    status: ACTIVE
+    text: parent_id/children must be bidirectionally consistent
+  - id: REQ-15
+    name: Regen score accuracy
+    status: ACTIVE
+    text: Regen readiness score must correlate with actual regeneration success rate
+  - id: REQ-16
+    name: Per-component readiness
+    status: ACTIVE
+    text: Provide per-component regen score with actionable blockers
+  - id: REQ-20
+    name: Token-efficient output
+    status: ACTIVE
+    text: Model slice output must fit within 4000 tokens for AI consumption
+  - id: REQ-22
+    name: Hierarchical navigation
+    status: ACTIVE
+    text: Model must support parent/child component navigation for focused exploration
+  - id: REQ-27
+    name: YAML round-trip fidelity
+    status: ACTIVE
+    text: Load/dump cycle must not lose any data or change ordering
+  - id: REQ-28
+    name: Schema backward compatibility
+    status: ACTIVE
+    text: New schema versions must load models from older schema versions
+  - id: REQ-O14
+    name: enrich_from_manifest requires monitored
+    status: ACTIVE
+  - id: REQ-O15
+    name: enrich_behaviors_from_manifest requires monitored
+    status: ACTIVE
+  - id: REQ-O16
+    name: enrich_with_block_context requires monitored
+    status: ACTIVE
+  - id: REQ-O17
+    name: create_behaviors_from_manifest requires monitored
+    status: ACTIVE
+relationships:
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1
+  description: Validator implements model validation
+- type: realizes
+  from: COMP-1.4
+  to: CAP-7
+  description: Model Operations implements slice and query
+- type: realizes
+  from: COMP-1.4
+  to: CAP-8
+  description: Model Operations implements model diff
+- type: realizes
+  from: COMP-1.5
+  to: CAP-11
+  description: Quality Metrics implements regen readiness
+- type: realizes
+  from: COMP-1.4
+  to: CAP-13
+  description: Coverage/representativeness detects drift
+- type: depends-on
+  from: COMP-2.1
+  to: COMP-1.1
+  description: Pipeline coordination uses core types
+- type: depends-on
+  from: COMP-2.3
+  to: COMP-1.1
+  description: Allocation uses core types and model structure
+- type: depends-on
+  from: COMP-2.4
+  to: COMP-1.2
+  description: Validate stage invokes core validator
+- type: depends-on
+  from: COMP-2.5
+  to: COMP-1.3
+  description: Emit stage uses parser for YAML output
+- type: depends-on
+  from: COMP-4.1
+  to: COMP-1.1
+  description: Doc generators read model types
+- type: depends-on
+  from: COMP-5.1
+  to: COMP-1.1
+  description: Enrichment populates core types
+- type: depends-on
+  from: COMP-5.2
+  to: COMP-1.5
+  description: Decomposition uses quality metrics
+- type: depends-on
+  from: COMP-7
+  to: COMP-1.1
+  description: Authoring produces core model types
+- type: depends-on
+  from: COMP-8
+  to: COMP-1
+  description: CLI imports all core operations
+- type: depends-on
+  from: COMP-8
+  to: COMP-7
+  description: CLI triggers authoring commands
+- type: depends-on
+  from: COMP-10
+  to: COMP-1.3
+  description: Export serializes model data
+- type: contains
+  from: COMP-1
+  to: COMP-1.1
+- type: contains
+  from: COMP-1
+  to: COMP-1.2
+- type: contains
+  from: COMP-1
+  to: COMP-1.3
+- type: contains
+  from: COMP-1
+  to: COMP-1.4
+- type: contains
+  from: COMP-1
+  to: COMP-1.5
+- type: satisfies
+  from: COMP-1.2
+  to: REQ-1
+  description: Validator enforces score >= 80
+- type: satisfies
+  from: COMP-1.2
+  to: REQ-2
+  description: Validator checks produce zero errors on valid models
+- type: satisfies
+  from: COMP-1.2
+  to: REQ-3
+  description: Hierarchy validator checks bidirectional consistency
+- type: satisfies
+  from: COMP-1.5
+  to: REQ-15
+  description: Regen readiness scoring
+- type: satisfies
+  from: COMP-1.5
+  to: REQ-16
+  description: Per-component readiness with blockers
+- type: satisfies
+  from: COMP-1.4
+  to: REQ-20
+  description: Slicer enforces token budget
+- type: satisfies
+  from: COMP-1.1
+  to: REQ-22
+  description: Type system supports parent_id/children
+- type: satisfies
+  from: COMP-1.3
+  to: REQ-27
+  description: Parser ensures round-trip fidelity
+- type: satisfies
+  from: COMP-1.3
+  to: REQ-28
+  description: Parser handles old schema versions
+- type: satisfies
+  from: COMP-1
+  to: REQ-O14
+- type: satisfies
+  from: COMP-1
+  to: REQ-O15
+- type: satisfies
+  from: COMP-1
+  to: REQ-O16
+- type: satisfies
+  from: COMP-1
+  to: REQ-O17
+- type: exposes
+  from: COMP-1
+  to: IF-auto-COMP-1
+- type: exposes
+  from: COMP-1.1
+  to: IF-auto-COMP-1.1
+- type: exposes
+  from: COMP-1.2
+  to: IF-auto-COMP-1.2
+- type: exposes
+  from: COMP-1.3
+  to: IF-auto-COMP-1.3
+- type: exposes
+  from: COMP-1.4
+  to: IF-auto-COMP-1.4
+- type: exposes
+  from: COMP-1.5
+  to: IF-auto-COMP-1.5

@@ -1,0 +1,43 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Pipeline Learning
+  system: Pipeline Learning
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-14
+    name: Manage Global Learnings
+    status: ACTIVE
+    description: Store, retrieve, and apply heuristics/archetypes/workflows across
+      pipeline runs
+  interfaces:
+  - id: IF-auto-COMP-11
+    name: Pipeline Learning API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-11
+    name: Pipeline Learning
+    status: ACTIVE
+    description: Global learning store, heuristics, lessons extraction
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/global_learning.py
+    - src/architecture_model/pipeline/learning.py
+    - src/architecture_model/pipeline/lessons.py
+    kind: library
+relationships:
+- type: realizes
+  from: COMP-11
+  to: CAP-14
+  description: Pipeline Learning manages global learnings
+- type: depends-on
+  from: COMP-11
+  to: COMP-9
+  description: Learning store uses config for paths
+- type: contains
+  from: COMP-2
+  to: COMP-11
+- type: exposes
+  from: COMP-11
+  to: IF-auto-COMP-11

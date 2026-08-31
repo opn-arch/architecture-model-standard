@@ -1,0 +1,56 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Export
+  system: Export
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-15
+    name: Export for AI Consumption
+    status: ACTIVE
+    description: Produce flat-file exports optimized for token-limited AI environments
+  interfaces:
+  - id: IF-auto-COMP-10
+    name: Export API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-10
+    name: Export
+    status: ACTIVE
+    description: Flat-file export for AI consumption, reference doc generation
+    layer: application
+    files:
+    - src/architecture_model/export/__init__.py
+    - src/architecture_model/export/flatfiles.py
+    - src/architecture_model/export/reference.py
+    kind: library
+  requirements:
+  - id: REQ-29
+    name: Flat-file export completeness
+    status: ACTIVE
+    text: Export must include model, sub-models, docs, manifests, and diagrams
+  - id: REQ-30
+    name: Offline AI usability
+    status: ACTIVE
+    text: Exported package must be self-contained for token-limited AI environments
+relationships:
+- type: realizes
+  from: COMP-10
+  to: CAP-15
+  description: Export produces flat files for AI
+- type: depends-on
+  from: COMP-10
+  to: COMP-1.3
+  description: Export serializes model data
+- type: satisfies
+  from: COMP-10
+  to: REQ-29
+  description: Export includes all artifact types
+- type: satisfies
+  from: COMP-10
+  to: REQ-30
+  description: Export is self-contained for AI
+- type: exposes
+  from: COMP-10
+  to: IF-auto-COMP-10

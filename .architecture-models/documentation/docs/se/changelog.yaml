@@ -1,0 +1,181 @@
+documents:
+  conops.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      System Overview: 93b200ad61f2aeebb54c879da67b3b37
+      Stakeholders: 119e7d0f883c7427bb25e195a0689c24
+      Operational Scenarios: 11cbdcbc9875fac80f058f50a4bd5a8b
+      System Context: c50bee61bfb21a6c9df011af247859bc
+      Operational Constraints: 56edd762deba82bf1227cab628c42754
+      Traceability: 30834c2b0f549382932b4af05cc23a6c
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  functional-analysis.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Capability Inventory: c73a7d5ba36c86b0e3cad516fff4bdf5
+      Functional Decomposition: 0b47afa75402b734b030793f3ec96a23
+      Capability-Component Mapping: a7bf6b67786039336b35f8b81664a5d8
+      Behavioral Coverage: a304bc156de782e3875dfbc53bc7e5a7
+      Traceability: 30834c2b0f549382932b4af05cc23a6c
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  logical-architecture.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Layer Structure: 94f247c1834e0fbab87deab7021f086b
+      Component Allocation: 77a02aa009c7afb1825bac17976c0aad
+      Inter-Component Interfaces: 4eee36a5ca929616af7e360d2cf3b6b7
+      Dependency Graph: 76816728e7a91a259dcb6d240465f63f
+      Traceability: 3f8f2c8348be89633754a44eedbae48a
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  requirements-analysis.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Constraint Inventory: 3e4668f282d4e65235c02f51d7ed6cd1
+      Capability-Derived Requirements: 243e3147e2cb6a03ac08dd92cdac0066
+      Requirements Traceability: 63716b77fdd20d71e3a361bff039ceb0
+      Constraint Allocation: d41d8cd98f00b204e9800998ecf8427e
+      Coverage Gaps: 4d0493eb56de71d5fe56a1a2138d7293
+      Traceability: 099c01dcb905a2cc8400b2f55081d8ca
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  verification-validation.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Verification Matrix: 1dede29b259421565622cfaaa660b79c
+      Validation Coverage: 27bde57e453016ffb387cab1bdcb58cc
+      Behavior Validation: 9ba2fb2b669ef111a0ac80fa48b27760
+      Unverified Items: 89f6a0f623c81a57fed9e3497b78e473
+      Traceability: ae3f8453603555c4525edfef6a8fdcdc
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  operations-manual.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Interface Catalog: d8b451c62df3e6176d095fb19e07041d
+      Operational Workflows: 1f16512868b71a29eb1e85a9b787d9ca
+      Configuration & Constraints: 2e1c32f482f05e81139409b8939c3d38
+      Error Handling: 0e09524fe8d9826b9a636c7d97b2ba76
+      Traceability: a041065475ef6c33a1871f767e0ba34b
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  maintenance-manual.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Component Inventory: 8ae8493d31e7bac2f2f424d94241064b
+      Dependency Impact Analysis: 719cb1887a141bf265055d4722a4ebfd
+      Modification Procedures: bbc1d209df944c26a96eb5d89c05d369
+      Known Constraints: a6d51cf87f21b89a565752847aa0e35e
+      Traceability: a041065475ef6c33a1871f767e0ba34b
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  use-cases.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Actor-Goal Matrix: 79d01c4eccd5e087d6da98ab17bdc573
+      Use Case Specifications: 036df1273f57af83255b59254858c176
+      Use Case Diagram: 149e7973858897180f4620fce9a14434
+      Traceability: 694c9922b2259df712b0ec28128deeb6
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  risk-assessment.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Risk Register: 054bcfde7fef6b346c4617842b4f6e10
+      Dependency Risks: 87199b6bad413c8cb5c69c7099094c8c
+      Constraint Risks: 00427b979046e4f9e8f299b8797039a4
+      Traceability: 694c9922b2259df712b0ec28128deeb6
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  interface-specification.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Interface Inventory: 696a9016705af978fa8ae7dc8cc8983a
+      Interface Details: 02cbf655ae31fe2fcc0b11ac819d11ad
+      Component-Level Interfaces: 1e615be0a0ae7f1b183067e6c3a6986d
+      Traceability: 3f8f2c8348be89633754a44eedbae48a
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  artifact-traceability.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      1. Entity Inventory: 1dd982a3bb0bcb1f9b680631f89e9d5c
+      2. Artifact Dependency Graph: 9f179041a9e3e872f3b3c3cf7706532c
+      3. Entity-to-Artifact Traceability Matrix: b17c0cdfa909747990192f3e0473f39c
+      4. Relationship Distribution: 2b0612cf4d4dcc289a7f503b7bbf5865
+      5. Traceability Gaps: 18ba00f58de177b55083e602a6077cec
+      6. Architecture Artifact Inventory: 9bcb3ab002dff8d8ee3a4cf1c3edc895
+      "7. Entity \u2192 Document \u2192 Review Traceability": 38ade2adb280417774586377d19dc934
+      LLM Review Status: a9515666abfc62ba7457085183c516fd
+      LLM Enrichment Provenance: 67e6f20cd2f443eeb432cf76edecef7e
+      Review Details: da7342beb6395b70076b757affd78c93
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model
+  behavior-flows.md:
+    created: '2026-08-20T18:53:35Z'
+    created_by: architect_pipeline
+    model_version: 95bba635e82d
+    section_hashes:
+      Traceability: 694c9922b2259df712b0ec28128deeb6
+    editions:
+    - timestamp: '2026-08-20T18:53:35Z'
+      author: architect_pipeline
+      type: generated
+      summary: Initial generation from model

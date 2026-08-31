@@ -1,0 +1,331 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Documentation
+  system: Documentation
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-5
+    name: Generate SE Documentation
+    status: ACTIVE
+    description: Produce functional analysis, logical architecture, use cases, requirements,
+      V&V, operations docs
+  interfaces:
+  - id: IF-1
+    name: main CLI
+    status: ACTIVE
+    type: internal
+  - id: IF-3
+    name: COMP-4-7 Library API
+    status: ACTIVE
+    description: 1 public symbols consumed by other components
+    type: internal
+  - id: IF-5
+    name: COMP-4-1 Library API
+    status: ACTIVE
+    description: 10 public symbols exported
+    type: internal
+  - id: IF-6
+    name: COMP-4-2 Library API
+    status: ACTIVE
+    description: 77 public symbols exported
+    type: internal
+  - id: IF-7
+    name: COMP-4-3 Library API
+    status: ACTIVE
+    description: 121 public symbols exported
+    type: internal
+  - id: IF-8
+    name: COMP-4-4 Library API
+    status: ACTIVE
+    description: 13 public symbols exported
+    type: internal
+  - id: IF-9
+    name: COMP-4-5 Library API
+    status: ACTIVE
+    description: 54 public symbols exported
+    type: internal
+  - id: IF-10
+    name: COMP-4-6 Library API
+    status: ACTIVE
+    description: 4 public symbols exported
+    type: internal
+  - id: IF-11
+    name: COMP-4-8 Library API
+    status: ACTIVE
+    description: 3 public symbols exported
+    type: internal
+  - id: IF-12
+    name: COMP-4-9 Library API
+    status: ACTIVE
+    description: 4 public symbols exported
+    type: internal
+  - id: IF-13
+    name: COMP-4-10 Library API
+    status: ACTIVE
+    description: 35 public symbols exported
+    type: internal
+  - id: IF-14
+    name: COMP-4-11 Library API
+    status: ACTIVE
+    description: 10 public symbols exported
+    type: internal
+  - id: IF-15
+    name: COMP-4-12 Library API
+    status: ACTIVE
+    description: 5 public symbols exported
+    type: internal
+  - id: IF-16
+    name: COMP-4-13 Library API
+    status: ACTIVE
+    description: 16 public symbols exported
+    type: internal
+  - id: IF-auto-COMP-4.1
+    name: Core Doc Generators API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-4.2
+    name: SE Document Suite API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-4
+    name: Documentation
+    status: ACTIVE
+    description: Architecture documentation generation — component specs, SE docs,
+      diagrams
+    layer: application
+    files:
+    - src/architecture_model/docs/__init__.py
+    kind: library
+  - id: COMP-4.1
+    name: Core Doc Generators
+    status: ACTIVE
+    description: Component spec, ICD, dependency matrix, health report, drift, diagrams
+    layer: application
+    files:
+    - src/architecture_model/docs/generator.py
+    - src/architecture_model/docs/component_spec.py
+    - src/architecture_model/docs/icd.py
+    - src/architecture_model/docs/dependency_matrix.py
+    - src/architecture_model/docs/health.py
+    - src/architecture_model/docs/drift.py
+    - src/architecture_model/docs/diagrams.py
+    - src/architecture_model/docs/index.py
+    - src/architecture_model/docs/behavior_spec.py
+    - src/architecture_model/docs/integration_flows.py
+    - src/architecture_model/docs/system_design.py
+    kind: library
+  - id: COMP-4.2
+    name: SE Document Suite
+    status: ACTIVE
+    description: Full systems engineering document suite (15 document types)
+    layer: application
+    files:
+    - src/architecture_model/docs/se/__init__.py
+    - src/architecture_model/docs/se/generator.py
+    - src/architecture_model/docs/se/frontmatter.py
+    - src/architecture_model/docs/se/detect.py
+    - src/architecture_model/docs/se/conops.py
+    - src/architecture_model/docs/se/functional_analysis.py
+    - src/architecture_model/docs/se/logical_architecture.py
+    - src/architecture_model/docs/se/requirements_analysis.py
+    - src/architecture_model/docs/se/use_cases.py
+    - src/architecture_model/docs/se/verification_validation.py
+    - src/architecture_model/docs/se/interface_spec.py
+    - src/architecture_model/docs/se/operations_manual.py
+    - src/architecture_model/docs/se/maintenance_manual.py
+    - src/architecture_model/docs/se/risk_assessment.py
+    - src/architecture_model/docs/se/security_analysis.py
+    - src/architecture_model/docs/se/data_model.py
+    - src/architecture_model/docs/se/deployment_guide.py
+    - src/architecture_model/docs/se/api_reference.py
+    - src/architecture_model/docs/se/cli_reference.py
+    - src/architecture_model/docs/se/changelog.py
+    - src/architecture_model/docs/se/plugin_guide.py
+    kind: library
+  requirements:
+  - id: REQ-11
+    name: Live artifact regeneration
+    status: ACTIVE
+    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs)
+      must regenerate in <1s without LLM
+  - id: REQ-12
+    name: SE doc completeness
+    status: ACTIVE
+    text: Generate at minimum functional analysis, logical architecture, use cases,
+      and requirements analysis
+  - id: REQ-13
+    name: User edit preservation
+    status: ACTIVE
+    text: Regeneration must preserve user-edited sections in SE docs
+  - id: REQ-21
+    name: Self-documenting artifacts
+    status: ACTIVE
+    text: Generated docs must be readable by both humans and AI without additional
+      context
+  - id: REQ-O1
+    name: validate_model requires monitored
+    status: ACTIVE
+  - id: REQ-Q1
+    name: Component COMP-28 has 82 test file(s) covering its source
+    status: ACTIVE
+  - id: REQ-O10
+    name: slice_for_artifact requires monitored
+    status: ACTIVE
+  - id: REQ-O11
+    name: generate_recursive_manifests requires monitored
+    status: ACTIVE
+  - id: REQ-O12
+    name: compute_block_dependencies requires monitored
+    status: ACTIVE
+  - id: REQ-O13
+    name: generate_manifest requires monitored
+    status: ACTIVE
+  - id: REQ-O14
+    name: enrich_from_manifest requires monitored
+    status: ACTIVE
+  - id: REQ-O15
+    name: enrich_behaviors_from_manifest requires monitored
+    status: ACTIVE
+  - id: REQ-O16
+    name: enrich_with_block_context requires monitored
+    status: ACTIVE
+  - id: REQ-O17
+    name: create_behaviors_from_manifest requires monitored
+    status: ACTIVE
+  - id: REQ-O18
+    name: decompose_model requires monitored
+    status: ACTIVE
+  - id: REQ-O19
+    name: compact_root_model requires monitored
+    status: ACTIVE
+  - id: REQ-O2
+    name: compute_model_confidence requires monitored
+    status: ACTIVE
+relationships:
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5
+  description: SE Document Suite generates full SE docs
+- type: depends-on
+  from: COMP-4.1
+  to: COMP-1.1
+  description: Doc generators read model types
+- type: depends-on
+  from: COMP-4.2
+  to: COMP-4.1
+  description: SE docs build on core doc generators
+- type: depends-on
+  from: COMP-8
+  to: COMP-4
+  description: CLI triggers doc generation
+- type: contains
+  from: COMP-4
+  to: COMP-4.1
+- type: contains
+  from: COMP-4
+  to: COMP-4.2
+- type: satisfies
+  from: COMP-4.1
+  to: REQ-11
+  description: Template-based generators run in <1s
+- type: satisfies
+  from: COMP-4.2
+  to: REQ-12
+  description: SE suite generates all required doc types
+- type: satisfies
+  from: COMP-4.2
+  to: REQ-13
+  description: SE generator preserves user edits on regen
+- type: satisfies
+  from: COMP-4
+  to: REQ-21
+  description: All docs are self-documenting markdown
+- type: satisfies
+  from: COMP-4
+  to: REQ-O1
+- type: satisfies
+  from: COMP-4
+  to: REQ-Q1
+- type: satisfies
+  from: COMP-4
+  to: REQ-O10
+- type: satisfies
+  from: COMP-4
+  to: REQ-O11
+- type: satisfies
+  from: COMP-4
+  to: REQ-O12
+- type: satisfies
+  from: COMP-4
+  to: REQ-O13
+- type: satisfies
+  from: COMP-4
+  to: REQ-O14
+- type: satisfies
+  from: COMP-4
+  to: REQ-O15
+- type: satisfies
+  from: COMP-4
+  to: REQ-O16
+- type: satisfies
+  from: COMP-4
+  to: REQ-O17
+- type: satisfies
+  from: COMP-4
+  to: REQ-O18
+- type: satisfies
+  from: COMP-4
+  to: REQ-O19
+- type: satisfies
+  from: COMP-4
+  to: REQ-O2
+- type: exposes
+  from: COMP-4
+  to: IF-1
+- type: exposes
+  from: COMP-4
+  to: IF-3
+- type: exposes
+  from: COMP-4
+  to: IF-5
+- type: exposes
+  from: COMP-4
+  to: IF-6
+- type: exposes
+  from: COMP-4
+  to: IF-7
+- type: exposes
+  from: COMP-4
+  to: IF-8
+- type: exposes
+  from: COMP-4
+  to: IF-9
+- type: exposes
+  from: COMP-4
+  to: IF-10
+- type: exposes
+  from: COMP-4
+  to: IF-11
+- type: exposes
+  from: COMP-4
+  to: IF-12
+- type: exposes
+  from: COMP-4
+  to: IF-13
+- type: exposes
+  from: COMP-4
+  to: IF-14
+- type: exposes
+  from: COMP-4
+  to: IF-15
+- type: exposes
+  from: COMP-4
+  to: IF-16
+- type: exposes
+  from: COMP-4.1
+  to: IF-auto-COMP-4.1
+- type: exposes
+  from: COMP-4.2
+  to: IF-auto-COMP-4.2

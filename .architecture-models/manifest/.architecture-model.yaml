@@ -1,0 +1,186 @@
+meta:
+  schema_version: '1.3'
+  project: architecture-model-standard / Manifest
+  system: Manifest
+  generated_at: ''
+entities:
+  capabilities:
+  - id: CAP-4
+    name: Generate Reality Manifest
+    status: ACTIVE
+    description: Scan source files to produce structural facts (functions, imports,
+      classes, routes, tests)
+  interfaces:
+  - id: IF-2
+    name: runner CLI
+    status: ACTIVE
+    type: internal
+  - id: IF-4
+    name: COMP-3-1 Library API
+    status: ACTIVE
+    description: 5 public symbols exported
+    type: internal
+  - id: IF-auto-COMP-3.1
+    name: Scanners API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-3.2
+    name: Graph & Analysis API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-3.3
+    name: Grouping & Generation API
+    status: ACTIVE
+    type: internal
+  components:
+  - id: COMP-3
+    name: Manifest
+    status: ACTIVE
+    description: Source code scanning — AST analysis, import resolution, grouping
+    layer: domain
+    files:
+    - src/architecture_model/manifest/__init__.py
+    - src/architecture_model/manifest/types.py
+    kind: library
+  - id: COMP-3.1
+    name: Scanners
+    status: ACTIVE
+    description: Language-specific source file scanners (Python, TypeScript, Kotlin)
+    layer: domain
+    files:
+    - src/architecture_model/manifest/scanner.py
+    - src/architecture_model/manifest/multi_scanner.py
+    - src/architecture_model/manifest/ts_scanner.py
+    - src/architecture_model/manifest/kt_scanner.py
+    - src/architecture_model/manifest/body_hints.py
+    - src/architecture_model/manifest/metrics.py
+    - src/architecture_model/manifest/scan_cache.py
+    - src/architecture_model/manifest/protocol.py
+    kind: library
+  - id: COMP-3.2
+    name: Graph & Analysis
+    status: ACTIVE
+    description: Import resolution, call graphs, interface extraction, behavior detection
+    layer: domain
+    files:
+    - src/architecture_model/manifest/call_graph.py
+    - src/architecture_model/manifest/interfaces.py
+    - src/architecture_model/manifest/behavior.py
+    - src/architecture_model/manifest/chains.py
+    - src/architecture_model/manifest/test_analyzer.py
+    kind: library
+  - id: COMP-3.3
+    name: Grouping & Generation
+    status: ACTIVE
+    description: Component grouping logic, manifest generation, recursive scanning
+    layer: domain
+    files:
+    - src/architecture_model/manifest/grouping.py
+    - src/architecture_model/manifest/generator.py
+    - src/architecture_model/manifest/recursive.py
+    - src/architecture_model/manifest/blocks.py
+    - src/architecture_model/manifest/slicers.py
+    - src/architecture_model/manifest/display.py
+    kind: library
+  requirements:
+  - id: REQ-8
+    name: Complete file scanning
+    status: ACTIVE
+    text: Manifest must scan all non-trivial Python files in the repository
+  - id: REQ-9
+    name: Import edge resolution
+    status: ACTIVE
+    text: All resolvable imports must produce edges in the manifest
+  - id: REQ-10
+    name: Multi-language scanning
+    status: ACTIVE
+    text: Support Python, TypeScript, and Kotlin source scanning
+  - id: REQ-19
+    name: Boundary coherence
+    status: ACTIVE
+    text: Components should have >70% intra-component imports vs cross-boundary
+relationships:
+- type: realizes
+  from: COMP-3
+  to: CAP-4
+  description: Manifest implements reality manifest generation
+- type: depends-on
+  from: COMP-2.2
+  to: COMP-3.1
+  description: Observe stage uses scanners for code facts
+- type: depends-on
+  from: COMP-3.1
+  to: COMP-9
+  description: Scanners use config for exclusion patterns
+- type: depends-on
+  from: COMP-3.2
+  to: COMP-3.1
+  description: Graph analysis builds on scanner output
+- type: depends-on
+  from: COMP-3.3
+  to: COMP-3.2
+  description: Grouping uses graph edges for affinity
+- type: depends-on
+  from: COMP-5.1
+  to: COMP-3
+  description: Enrichment reads manifest data
+- type: depends-on
+  from: COMP-6
+  to: COMP-3.1
+  description: Extract uses scanners for code analysis
+- type: depends-on
+  from: COMP-6
+  to: COMP-9
+  description: Extract uses config for settings
+- type: depends-on
+  from: COMP-7
+  to: COMP-3
+  description: Gate check reads manifest
+- type: depends-on
+  from: COMP-8
+  to: COMP-3
+  description: CLI triggers manifest generation
+- type: depends-on
+  from: COMP-8
+  to: COMP-7
+  description: CLI triggers authoring commands
+- type: contains
+  from: COMP-3
+  to: COMP-3.1
+- type: contains
+  from: COMP-3
+  to: COMP-3.2
+- type: contains
+  from: COMP-3
+  to: COMP-3.3
+- type: satisfies
+  from: COMP-3.1
+  to: REQ-8
+  description: Scanners cover all Python files
+- type: satisfies
+  from: COMP-3.2
+  to: REQ-9
+  description: Graph analysis resolves imports to edges
+- type: satisfies
+  from: COMP-3.1
+  to: REQ-10
+  description: Multi-scanner supports Python/TS/Kotlin
+- type: satisfies
+  from: COMP-3.3
+  to: REQ-19
+  description: Grouping optimizes boundary coherence
+- type: exposes
+  from: COMP-3
+  to: IF-2
+- type: exposes
+  from: COMP-3
+  to: IF-4
+- type: exposes
+  from: COMP-3.1
+  to: IF-auto-COMP-3.1
+- type: exposes
+  from: COMP-3.2
+  to: IF-auto-COMP-3.2
+- type: exposes
+  from: COMP-3.3
+  to: IF-auto-COMP-3.3
