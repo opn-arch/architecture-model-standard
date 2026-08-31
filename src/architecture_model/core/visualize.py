@@ -1326,6 +1326,7 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
 
     Returns dict mapping entity_id -> {type, name, description, status, properties}
     where properties is a dict of type-specific key/value pairs for display.
+    Lists are stored as lists (rendered as <ul> in JS).
     """
     props: dict[str, dict] = {}
 
@@ -1334,70 +1335,125 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             "type": etype,
             "name": entity.name,
             "description": getattr(entity, "description", ""),
-            "status": getattr(entity.status, "value", str(entity.status)),
+            "status": getattr(entity.status, "value", str(entity.status)) if hasattr(entity, "status") else "",
             "properties": {},
         }
         if extra:
             d["properties"] = extra
         return d
 
+    def _opt(entity, field: str, label: str = "", as_list: bool = False) -> tuple[str, str | list] | None:
+        """Extract optional field from entity. Returns (label, value) or None."""
+        val = getattr(entity, field, None)
+        if val is None or val == "" or val == []:
+            return None
+        lbl = label or field.replace("_", " ").title()
+        if as_list and isinstance(val, list):
+            return (lbl, val)
+        if isinstance(val, list):
+            return (lbl, val)
+        if hasattr(val, "value"):
+            val = val.value
+        return (lbl, str(val))
+
     for a in model.entities.actors:
-        props[a.id] = _base(a, "actor", {
-            "Actor Type": getattr(a.type, "value", str(a.type)),
-            "Goals": ", ".join(a.goals) if a.goals else "",
-        })
+        extra: dict = {}
+        extra["Actor Type"] = getattr(a.type, "value", str(a.type))
+        for pair in [_opt(a, "intent"), _opt(a, "goals")]:
+            if pair:
+                extra[pair[0]] = pair[1]
+        props[a.id] = _base(a, "actor", extra)
 
     for c in model.entities.capabilities:
-        props[c.id] = _base(c, "capability", {
-            "Priority": getattr(c.priority, "value", str(c.priority)),
-            "Source Block": c.source_block or "",
-        })
+        extra = {}
+        extra["Priority"] = getattr(c.priority, "value", str(c.priority))
+        for pair in [_opt(c, "intent"), _opt(c, "moes", "Measures of Effectiveness"),
+                     _opt(c, "source_block", "Source Block")]:
+            if pair:
+                extra[pair[0]] = pair[1]
+        props[c.id] = _base(c, "capability", extra)
 
     for b in model.entities.behaviors:
-        extra: dict[str, str] = {}
-        if hasattr(b, "trigger") and b.trigger:
-            extra["Trigger"] = b.trigger
-        if hasattr(b, "preconditions") and b.preconditions:
-            extra["Preconditions"] = ", ".join(b.preconditions)
+        extra = {}
+        for pair in [_opt(b, "pattern", "Pattern"), _opt(b, "actor", "Actor"),
+                     _opt(b, "steps"), _opt(b, "trigger"), _opt(b, "preconditions")]:
+            if pair:
+                extra[pair[0]] = pair[1]
         props[b.id] = _base(b, "behavior", extra)
 
     for i in model.entities.interfaces:
-        props[i.id] = _base(i, "interface", {
-            "Type": getattr(i.type, "value", str(i.type)) if hasattr(i, "type") else "",
-            "Protocol": getattr(i, "protocol", "") or "",
-        })
+        extra = {}
+        itype = getattr(i.type, "value", str(i.type)) if hasattr(i, "type") else ""
+        if itype:
+            extra["Interface Type"] = itype
+        for pair in [_opt(i, "provider", "Provider"),
+                     _opt(i, "protocol"), _opt(i, "data_format", "Data Format")]:
+            if pair:
+                extra[pair[0]] = pair[1]
+        props[i.id] = _base(i, "interface", extra)
 
     for c in model.entities.constraints:
-        props[c.id] = _base(c, "constraint", {
-            "Rationale": getattr(c, "rationale", "") or "",
-        })
+        extra = {}
+        ctype = getattr(c.type, "value", str(c.type)) if hasattr(c, "type") else ""
+        if ctype:
+            extra["Constraint Type"] = ctype
+        for pair in [_opt(c, "metric"), _opt(c, "threshold"), _opt(c, "rationale")]:
+            if pair:
+                extra[pair[0]] = pair[1]
+        props[c.id] = _base(c, "constraint", extra)
 
     for la in model.entities.layers:
-        props[la.id] = _base(la, "layer")
+        extra = {}
+        for pair in [_opt(la, "order"), _opt(la, "technology"), _opt(la, "directories")]:
+            if pair:
+                extra[pair[0]] = pair[1]
+        props[la.id] = _base(la, "layer", extra)
 
     for c in model.entities.components:
-        extra_c: dict[str, str] = {}
-        if hasattr(c, "layer") and c.layer:
-            extra_c["Layer"] = c.layer
+        extra = {}
+        for pair in [_opt(c, "kind"), _opt(c, "layer"), _opt(c, "intent"),
+                     _opt(c, "goals"), _opt(c, "trade_offs", "Trade-offs"),
+                     _opt(c, "failure_modes", "Failure Modes"), _opt(c, "contract")]:
+            if pair:
+                extra[pair[0]] = pair[1]
         files = getattr(c, "files", []) or []
         if files:
-            extra_c["Files"] = str(len(files))
-        props[c.id] = _base(c, "component", extra_c)
+            extra["Files"] = str(len(files))
+        props[c.id] = _base(c, "component", extra)
 
     for s in model.entities.systems:
-        extra_s: dict[str, str] = {}
+        extra = {}
         if s.component_ids:
-            extra_s["Components"] = str(len(s.component_ids))
-        if s.sub_model_ref:
-            extra_s["Sub-model"] = s.sub_model_ref
-        props[s.id] = _base(s, "system", extra_s)
+            extra["Components"] = str(len(s.component_ids))
+        for pair in [_opt(s, "sub_model_ref", "Sub-model"), _opt(s, "source_block", "Source Block"),
+                     _opt(s, "complexity_score", "Complexity")]:
+            if pair:
+                extra[pair[0]] = pair[1]
+        props[s.id] = _base(s, "system", extra)
 
     for r in model.entities.requirements:
-        props[r.id] = _base(r, "requirement", {
-            "Priority": r.priority or "",
-            "Source": r.source_doc or "",
-            "Rationale": r.rationale or "",
-        })
+        extra = {}
+        for pair in [_opt(r, "text"), _opt(r, "priority"), _opt(r, "moe", "MoE"),
+                     _opt(r, "source_doc", "Source"), _opt(r, "rationale")]:
+            if pair:
+                extra[pair[0]] = pair[1]
+        props[r.id] = _base(r, "requirement", extra)
+
+    # ── Relationship descriptions per entity ─────────────────────
+    for eid in props:
+        rels_out = []
+        rels_in = []
+        for rel in model.relationships:
+            rt = _rel_type(rel)
+            desc = getattr(rel, "description", "") or ""
+            if rel.from_id == eid:
+                target_name = props[rel.to_id]["name"] if rel.to_id in props else rel.to_id
+                rels_out.append({"type": rt, "target": rel.to_id, "target_name": target_name, "description": desc})
+            elif rel.to_id == eid:
+                source_name = props[rel.from_id]["name"] if rel.from_id in props else rel.from_id
+                rels_in.append({"type": rt, "source": rel.from_id, "source_name": source_name, "description": desc})
+        if rels_out or rels_in:
+            props[eid]["relationships"] = {"outgoing": rels_out, "incoming": rels_in}
 
     return props
 
@@ -1441,6 +1497,196 @@ def _build_module_data(repo_path: Path | None = None) -> dict[str, dict]:
             "consts": consts,
         }
     return modules
+
+
+def _md_to_html(md_text: str) -> str:
+    """Convert markdown to simple HTML (headings, paragraphs, lists, code blocks, bold/italic).
+
+    No external dependencies — intentionally minimal.
+    """
+    import re as _re
+
+    lines = md_text.split("\n")
+    html_parts: list[str] = []
+    in_code = False
+    in_list = False
+
+    for line in lines:
+        # Code blocks
+        if line.strip().startswith("```"):
+            if in_code:
+                html_parts.append("</pre>")
+                in_code = False
+            else:
+                if in_list:
+                    html_parts.append("</ul>")
+                    in_list = False
+                html_parts.append("<pre class='md-code'>")
+                in_code = True
+            continue
+        if in_code:
+            html_parts.append(line)
+            continue
+
+        stripped = line.strip()
+        if not stripped:
+            if in_list:
+                html_parts.append("</ul>")
+                in_list = False
+            continue
+
+        # Headings
+        if stripped.startswith("#"):
+            if in_list:
+                html_parts.append("</ul>")
+                in_list = False
+            level = len(stripped) - len(stripped.lstrip("#"))
+            level = min(level, 6)
+            text = stripped[level:].strip()
+            html_parts.append(f"<h{level} class='md-h'>{text}</h{level}>")
+            continue
+
+        # List items
+        if _re.match(r"^[-*+]\s", stripped) or _re.match(r"^\d+\.\s", stripped):
+            if not in_list:
+                html_parts.append("<ul class='md-list'>")
+                in_list = True
+            text = _re.sub(r"^[-*+\d.]+\s*", "", stripped)
+            # Inline formatting
+            text = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+            text = _re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
+            text = _re.sub(r"`(.+?)`", r"<code>\1</code>", text)
+            html_parts.append(f"<li>{text}</li>")
+            continue
+
+        if in_list:
+            html_parts.append("</ul>")
+            in_list = False
+
+        # Paragraph with inline formatting
+        text = stripped
+        text = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+        text = _re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
+        text = _re.sub(r"`(.+?)`", r"<code>\1</code>", text)
+        html_parts.append(f"<p class='md-p'>{text}</p>")
+
+    if in_list:
+        html_parts.append("</ul>")
+    if in_code:
+        html_parts.append("</pre>")
+
+    return "\n".join(html_parts)
+
+
+def _load_docs(repo_path: Path | None = None) -> dict[str, dict[str, str]]:
+    """Load SE documents and component specs as HTML for embedding.
+
+    Returns {"se": {name: html, ...}, "components": {name: html, ...}}.
+    """
+    if repo_path is None:
+        return {}
+
+    result: dict[str, dict[str, str]] = {"se": {}, "components": {}}
+
+    se_dir = repo_path / ".architecture-models" / "docs" / "se"
+    if se_dir.is_dir():
+        for f in sorted(se_dir.glob("*.md")):
+            name = f.stem
+            if name == "index":
+                continue
+            try:
+                result["se"][name] = _md_to_html(f.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+    comp_dir = repo_path / ".architecture" / "docs" / "components"
+    if comp_dir.is_dir():
+        for f in sorted(comp_dir.glob("*.md")):
+            try:
+                result["components"][f.stem] = _md_to_html(f.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+    return result
+
+
+def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
+    """Load operational artifacts for embedding.
+
+    Returns {artifact_name: html_content, ...}.
+    """
+    import json as _json
+
+    if repo_path is None:
+        return {}
+
+    result: dict[str, str] = {}
+
+    # Devlog
+    devlog_path = repo_path / ".architecture" / "devlog.jsonl"
+    if devlog_path.is_file():
+        try:
+            entries = []
+            for line in devlog_path.read_text(encoding="utf-8").strip().split("\n"):
+                if line.strip():
+                    entries.append(_json.loads(line))
+            html = "<div class='ops-devlog'>"
+            for e in entries:
+                html += f"<div class='devlog-entry'>"
+                html += f"<div class='devlog-title'><strong>[{e.get('log_type', '')}]</strong> {e.get('title', '')}</div>"
+                ts = e.get("timestamp", "")
+                if ts:
+                    html += f"<div class='devlog-ts'>{ts}</div>"
+                content = e.get("content", "")
+                if content:
+                    html += f"<div class='devlog-content'>{content}</div>"
+                html += "</div>"
+            html += "</div>"
+            result["devlog"] = html
+        except Exception:
+            pass
+
+    # Gap analysis
+    gap_path = repo_path / ".architecture" / "gap-analysis-report.md"
+    if gap_path.is_file():
+        try:
+            result["gap-analysis"] = _md_to_html(gap_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    # Validation results
+    val_path = repo_path / ".architecture" / "validation.json"
+    if val_path.is_file():
+        try:
+            data = _json.loads(val_path.read_text(encoding="utf-8"))
+            html = f"<div class='ops-validation'>"
+            html += f"<p><strong>Score:</strong> {data.get('score', 'N/A')}/100</p>"
+            html += f"<p><strong>Valid:</strong> {data.get('is_valid', 'N/A')}</p>"
+            issues = data.get("issues", [])
+            if issues:
+                html += f"<p><strong>Issues ({len(issues)}):</strong></p><ul>"
+                for iss in issues[:50]:
+                    if isinstance(iss, dict):
+                        html += f"<li>[{iss.get('severity', '')}] {iss.get('message', str(iss))}</li>"
+                    else:
+                        html += f"<li>{iss}</li>"
+                html += "</ul>"
+            html += "</div>"
+            result["validation"] = html
+        except Exception:
+            pass
+
+    # Derived requirements
+    dreq_path = repo_path / ".architecture-models" / "derived_requirements.yaml"
+    if dreq_path.is_file():
+        try:
+            result["derived-requirements"] = _md_to_html(
+                "```yaml\n" + dreq_path.read_text(encoding="utf-8")[:10000] + "\n```"
+            )
+        except Exception:
+            pass
+
+    return result
 
 
 def generate_html_viewer(
@@ -1540,6 +1786,12 @@ def generate_html_viewer(
         if files:
             comp_files[comp.id] = list(files)
 
+    # ── 5d. SE documents and component specs ──────────────────────
+    docs_data = _load_docs(repo_path)
+
+    # ── 5e. Operational artifacts ─────────────────────────────────
+    ops_data = _load_ops_data(repo_path)
+
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"]}
@@ -1549,6 +1801,8 @@ def generate_html_viewer(
         "sid_map": sid_map,
         "modules": module_data,
         "comp_files": comp_files,
+        "docs": docs_data,
+        "ops": ops_data,
     }
     data_json = _json.dumps(diagram_data, ensure_ascii=False)
 
@@ -1574,6 +1828,43 @@ def generate_html_viewer(
             f'        </details>'
         )
     entity_nav = "\n".join(entity_nav_parts)
+
+    # ── 6c. Documents sidebar ─────────────────────────────────────
+    docs_nav_parts = []
+    if docs_data.get("se"):
+        se_items = "\n".join(
+            f'                <a href="#" onclick="showDoc(\'se\',\'{name}\');return false;" '
+            f'class="nav-link doc-link">{name.replace("-", " ").title()}</a>'
+            for name in docs_data["se"]
+        )
+        docs_nav_parts.append(
+            f'        <details class="entity-cat">\n'
+            f'            <summary>SE Documents ({len(docs_data["se"])})</summary>\n'
+            f'{se_items}\n'
+            f'        </details>'
+        )
+    if docs_data.get("components"):
+        comp_items = "\n".join(
+            f'                <a href="#" onclick="showDoc(\'components\',\'{name}\');return false;" '
+            f'class="nav-link doc-link">{name}</a>'
+            for name in docs_data["components"]
+        )
+        docs_nav_parts.append(
+            f'        <details class="entity-cat">\n'
+            f'            <summary>Component Specs ({len(docs_data["components"])})</summary>\n'
+            f'{comp_items}\n'
+            f'        </details>'
+        )
+    docs_nav = "\n".join(docs_nav_parts)
+
+    # ── 6d. Ops/Intelligence sidebar ──────────────────────────────
+    ops_nav_parts = []
+    for oname in ops_data:
+        ops_nav_parts.append(
+            f'            <a href="#" onclick="showOps(\'{oname}\');return false;" '
+            f'class="nav-link ops-link">{oname.replace("-", " ").title()}</a>'
+        )
+    ops_nav = "\n".join(ops_nav_parts)
 
     # ── 7. Assemble HTML ─────────────────────────────────────────
     html = f"""<!DOCTYPE html>
@@ -1644,6 +1935,26 @@ def generate_html_viewer(
         .prop-value {{ color: #e0e0e0; margin-top: 2px; }}
         .prop-desc {{ grid-column: 1 / -1; }}
         .prop-desc .prop-value {{ font-size: 13px; line-height: 1.5; color: #c0c0d0; }}
+        .prop-list {{ margin: 4px 0 0 16px; padding: 0; }}
+        .prop-list li {{ margin-bottom: 2px; }}
+        .rel-section {{ grid-column: 1 / -1; margin-top: 8px; padding-top: 8px; border-top: 1px solid #0f3460; }}
+        .rel-header {{ color: #7ec8e3; font-size: 13px; font-weight: 600; margin-bottom: 6px; }}
+        .rel-item {{ font-size: 12px; color: #c0c0d0; margin-bottom: 3px; }}
+        .rel-type {{ background: #1a1a3e; color: #7ec8e3; padding: 1px 5px; border-radius: 3px; font-size: 10px; }}
+        .rel-link {{ color: #7ec8e3; text-decoration: none; }}
+        .rel-link:hover {{ text-decoration: underline; }}
+        .rel-desc {{ color: #808090; font-size: 11px; }}
+        .doc-content {{ background: #16213e; border: 1px solid #0f3460; border-radius: 6px;
+                        padding: 16px; margin-bottom: 16px; line-height: 1.6; }}
+        .doc-content .md-h {{ color: #7ec8e3; margin: 12px 0 6px; }}
+        .doc-content .md-p {{ margin-bottom: 8px; color: #c0c0d0; }}
+        .doc-content .md-list {{ margin: 6px 0 6px 20px; color: #c0c0d0; }}
+        .doc-content .md-code {{ background: #0a0a1a; padding: 10px; border-radius: 4px;
+                                 overflow-x: auto; font-size: 12px; color: #a0d0a0; margin: 8px 0; }}
+        .devlog-entry {{ border-bottom: 1px solid #0f3460; padding: 8px 0; }}
+        .devlog-title {{ color: #e0e0e0; font-size: 13px; }}
+        .devlog-ts {{ color: #808090; font-size: 11px; }}
+        .devlog-content {{ color: #c0c0d0; font-size: 12px; margin-top: 4px; }}
 
         /* Diagram */
         .diagram-box {{ background: #0a0a1a; padding: 16px; border-radius: 6px;
@@ -1711,6 +2022,12 @@ def generate_html_viewer(
         <div class="divider"></div>
         <div class="nav-section">Entities</div>
 {entity_nav}
+        <div class="divider"></div>
+        <div class="nav-section">Documents</div>
+{docs_nav}
+        <div class="divider"></div>
+        <div class="nav-section">Intelligence</div>
+{ops_nav}
     </nav>
 
     <main class="content" id="content">
@@ -1767,6 +2084,46 @@ def generate_html_viewer(
         }}
 
         /* ── Mobile nav ───────────────────────────────────────── */
+        /* ── Show Document ─────────────────────────────────────── */
+        function showDoc(category, name) {{
+            var docHtml = (D.docs && D.docs[category] && D.docs[category][name]) || '';
+            if (!docHtml) {{ content.innerHTML = '<p>Document not found.</p>'; return; }}
+            var cur = content.dataset.currentType;
+            var curId = content.dataset.currentId;
+            var curLabel = content.dataset.currentLabel;
+            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            var label = name.replace(/-/g, ' ').replace(/\\b\\w/g, function(c){{ return c.toUpperCase(); }});
+            content.dataset.currentType = 'doc';
+            content.dataset.currentId = category + '/' + name;
+            content.dataset.currentLabel = label;
+            var html = renderBreadcrumbs(label);
+            html += '<h2 class="content-header">' + label + '</h2>';
+            html += '<div class="doc-content">' + docHtml + '</div>';
+            content.innerHTML = html;
+            closeMobileNav();
+        }}
+        window.showDoc = showDoc;
+
+        /* ── Show Ops artifact ────────────────────────────────── */
+        function showOps(name) {{
+            var opsHtml = (D.ops && D.ops[name]) || '';
+            if (!opsHtml) {{ content.innerHTML = '<p>Artifact not found.</p>'; return; }}
+            var cur = content.dataset.currentType;
+            var curId = content.dataset.currentId;
+            var curLabel = content.dataset.currentLabel;
+            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            var label = name.replace(/-/g, ' ').replace(/\\b\\w/g, function(c){{ return c.toUpperCase(); }});
+            content.dataset.currentType = 'ops';
+            content.dataset.currentId = name;
+            content.dataset.currentLabel = label;
+            var html = renderBreadcrumbs(label);
+            html += '<h2 class="content-header">' + label + '</h2>';
+            html += '<div class="doc-content">' + opsHtml + '</div>';
+            content.innerHTML = html;
+            closeMobileNav();
+        }}
+        window.showOps = showOps;
+
         function closeMobileNav() {{
             if (window.innerWidth <= 768)
                 document.querySelector('.sidebar').classList.remove('open');
@@ -1817,13 +2174,39 @@ def generate_html_viewer(
             html += '<div class="prop-item"><div class="prop-label">Status</div><div class="prop-value">' + (p.status || 'N/A') + '</div></div>';
             if (p.properties) {{
                 for (var k in p.properties) {{
-                    if (p.properties[k]) {{
-                        html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value">' + p.properties[k] + '</div></div>';
+                    var v = p.properties[k];
+                    if (v == null || v === '') continue;
+                    if (Array.isArray(v)) {{
+                        html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value"><ul class="prop-list">';
+                        for (var li = 0; li < v.length; li++) html += '<li>' + v[li] + '</li>';
+                        html += '</ul></div></div>';
+                    }} else {{
+                        html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value">' + v + '</div></div>';
                     }}
                 }}
             }}
             if (p.description) {{
                 html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + p.description + '</div></div>';
+            }}
+            if (p.relationships) {{
+                var ro = p.relationships.outgoing || [];
+                var ri = p.relationships.incoming || [];
+                if (ro.length + ri.length > 0) {{
+                    html += '<div class="rel-section"><div class="rel-header">Relationships (' + (ro.length + ri.length) + ')</div>';
+                    for (var oi = 0; oi < ro.length; oi++) {{
+                        var r = ro[oi];
+                        html += '<div class="rel-item"><span class="rel-type">' + r.type + '</span> \\u2192 <a href="#" onclick="showEntity(\\x27' + r.target + '\\x27);return false;" class="rel-link">' + r.target + (r.target_name ? ': ' + r.target_name : '') + '</a>';
+                        if (r.description) html += ' <span class="rel-desc">(' + r.description + ')</span>';
+                        html += '</div>';
+                    }}
+                    for (var ii = 0; ii < ri.length; ii++) {{
+                        var r = ri[ii];
+                        html += '<div class="rel-item"><a href="#" onclick="showEntity(\\x27' + r.source + '\\x27);return false;" class="rel-link">' + r.source + (r.source_name ? ': ' + r.source_name : '') + '</a> <span class="rel-type">' + r.type + '</span> \\u2192 this';
+                        if (r.description) html += ' <span class="rel-desc">(' + r.description + ')</span>';
+                        html += '</div>';
+                    }}
+                    html += '</div>';
+                }}
             }}
             html += '</div>';
             return html;
