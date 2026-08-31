@@ -1324,11 +1324,40 @@ def inject_click_handlers(mermaid_code: str, entity_ids: set[str]) -> str:
 def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     """Build property cards for all entities in the model.
 
-    Returns dict mapping entity_id -> {type, name, description, status, properties}
+    Returns dict mapping entity_id -> {type, name, description, status, properties, depth}
     where properties is a dict of type-specific key/value pairs for display.
     Lists are stored as lists (rendered as <ul> in JS).
+    depth is 'rich', 'moderate', or 'stub' based on field population.
     """
     props: dict[str, dict] = {}
+
+    # Fields that count toward depth scoring per entity type
+    _depth_fields: dict[str, list[str]] = {
+        "actor": ["description", "intent", "goals"],
+        "capability": ["description", "intent", "moes", "requirements"],
+        "behavior": ["description", "steps", "structured_steps", "trigger", "preconditions"],
+        "interface": ["description", "protocol", "endpoints", "data_format", "schema"],
+        "constraint": ["description", "metric", "threshold", "rationale"],
+        "layer": ["description", "technology", "directories"],
+        "component": ["description", "intent", "goals", "files", "signatures", "trade_offs",
+                       "failure_modes", "contract", "responsibilities"],
+        "system": ["description", "component_ids", "sub_model_ref"],
+        "requirement": ["description", "text", "rationale", "moe"],
+    }
+
+    def _score_depth(entity, etype: str) -> str:
+        fields = _depth_fields.get(etype, ["description"])
+        populated = 0
+        for f in fields:
+            val = getattr(entity, f, None)
+            if val and val != [] and val != "":
+                populated += 1
+        ratio = populated / max(len(fields), 1)
+        if ratio >= 0.5:
+            return "rich"
+        elif ratio >= 0.2:
+            return "moderate"
+        return "stub"
 
     def _base(entity, etype: str, extra: dict | None = None) -> dict:
         d: dict = {
@@ -1337,6 +1366,7 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             "description": getattr(entity, "description", ""),
             "status": getattr(entity.status, "value", str(entity.status)) if hasattr(entity, "status") else "",
             "properties": {},
+            "depth": _score_depth(entity, etype),
         }
         if extra:
             d["properties"] = extra
@@ -1982,6 +2012,22 @@ def generate_html_viewer(
         .type-badge.system {{ background: #4A90D9; color: #fff; }}
         .type-badge.requirement {{ background: #E74C3C; color: #fff; }}
 
+        /* Depth badges */
+        .depth-badge {{ display: inline-block; padding: 2px 8px; border-radius: 10px;
+                        font-size: 11px; font-weight: 600; text-transform: uppercase; }}
+        .depth-badge.depth-rich {{ background: #27AE60; color: #fff; }}
+        .depth-badge.depth-moderate {{ background: #F39C12; color: #fff; }}
+        .depth-badge.depth-stub {{ background: #E74C3C; color: #fff; }}
+
+        /* Deepen section */
+        .deepen-section {{ background: #1a1a2e; border: 1px dashed #F39C12; border-radius: 6px;
+                           padding: 12px; margin-top: 12px; }}
+        .deepen-label {{ color: #F39C12; font-size: 12px; margin-bottom: 6px; }}
+        .deepen-cmd {{ display: block; background: #0d1117; color: #58a6ff; padding: 8px 10px;
+                       border-radius: 4px; font-size: 12px; word-break: break-all;
+                       cursor: pointer; user-select: all; }}
+        .deepen-hint {{ color: #666; font-size: 11px; margin-top: 6px; font-style: italic; }}
+
         /* Source files */
         .files-section {{ background: #16213e; border: 1px solid #0f3460; border-radius: 6px;
                           padding: 12px; margin-bottom: 16px; }}
@@ -2172,6 +2218,10 @@ def generate_html_viewer(
             html += '<div class="prop-item"><div class="prop-label">ID</div><div class="prop-value">' + eid + '</div></div>';
             html += '<div class="prop-item"><div class="prop-label">Type</div><div class="prop-value"><span class="type-badge ' + p.type + '">' + p.type + '</span></div></div>';
             html += '<div class="prop-item"><div class="prop-label">Status</div><div class="prop-value">' + (p.status || 'N/A') + '</div></div>';
+            if (p.depth) {{
+                var dc = p.depth === 'rich' ? 'depth-rich' : p.depth === 'moderate' ? 'depth-moderate' : 'depth-stub';
+                html += '<div class="prop-item"><div class="prop-label">Depth</div><div class="prop-value"><span class="depth-badge ' + dc + '">' + p.depth + '</span></div></div>';
+            }}
             if (p.properties) {{
                 for (var k in p.properties) {{
                     var v = p.properties[k];
@@ -2207,6 +2257,13 @@ def generate_html_viewer(
                     }}
                     html += '</div>';
                 }}
+            }}
+            if (p.depth && p.depth !== 'rich') {{
+                html += '<div class="deepen-section">';
+                html += '<div class="deepen-label">Want more detail? Run:</div>';
+                html += '<code class="deepen-cmd">architecture-model deepen --entity ' + eid + ' --repo-path .</code>';
+                html += '<div class="deepen-hint">Then regenerate the viewer with: architecture-model viewer .</div>';
+                html += '</div>';
             }}
             html += '</div>';
             return html;

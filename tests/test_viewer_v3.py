@@ -422,3 +422,69 @@ class TestDocEmbedding:
         result = _md_to_html("```python\nprint('hello')\n```")
         assert "<pre" in result
         assert "print" in result
+
+
+class TestDepthScoring:
+    """Tests for entity depth scoring and viewer depth badge/deepen UI."""
+
+    def test_stub_component(self):
+        """Component with only name/status → stub."""
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.0", project="test"),
+            entities=Entities(
+                components=[Component(id="COMP-1", name="Bare", status=Status.ACTIVE)],
+            ),
+            relationships=[],
+        )
+        props = build_entity_properties(model)
+        assert props["COMP-1"]["depth"] == "stub"
+
+    def test_rich_component(self):
+        """Component with many fields populated → rich."""
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.0", project="test"),
+            entities=Entities(
+                components=[Component(
+                    id="COMP-1", name="Rich", status=Status.ACTIVE,
+                    description="A rich component",
+                    intent="Does everything",
+                    goals=["goal1"],
+                    files=["f.py"],
+                    responsibilities=["resp1"],
+                )],
+            ),
+            relationships=[],
+        )
+        props = build_entity_properties(model)
+        # 5 of 9 fields populated = 0.56 → rich
+        assert props["COMP-1"]["depth"] == "rich"
+
+    def test_moderate_behavior(self):
+        """Behavior with description + trigger → moderate (2/5 = 0.4)."""
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.0", project="test"),
+            entities=Entities(
+                behaviors=[Behavior(
+                    id="BEH-1", name="Do Thing", status=Status.ACTIVE,
+                    description="Does a thing", trigger="on event",
+                )],
+            ),
+            relationships=[],
+        )
+        props = build_entity_properties(model)
+        assert props["BEH-1"]["depth"] == "moderate"
+
+    def test_viewer_contains_depth_css(self, tmp_path):
+        """Generated HTML viewer contains depth badge CSS classes."""
+        html = generate_html_viewer(_make_model(), tmp_path / "v.html").read_text()
+        assert "depth-badge" in html
+        assert "depth-rich" in html
+        assert "depth-moderate" in html
+        assert "depth-stub" in html
+        assert "deepen-section" in html
+        assert "deepen-cmd" in html
+
+    def test_viewer_deepen_command_in_js(self, tmp_path):
+        """Generated HTML contains deepen CLI command template in JS."""
+        html = generate_html_viewer(_make_model(), tmp_path / "v.html").read_text()
+        assert "architecture-model deepen --entity" in html

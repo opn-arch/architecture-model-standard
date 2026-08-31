@@ -144,6 +144,18 @@ def main(argv: list[str] | None = None) -> int:
     p_viewer.add_argument("--no-docs", action="store_true", help="Skip embedding SE docs and operational artifacts")
     p_viewer.add_argument("--zip", action="store_true", help="Also produce a zip file alongside the HTML")
 
+    # --- repair ---
+    p_repair = subparsers.add_parser("repair", help="Backfill missing entities from subsidiary models")
+    p_repair.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
+    p_repair.add_argument("--model", help="Path to model YAML (default: <path>/.architecture-model.yaml)")
+    p_repair.add_argument("--source", nargs="*", help="Source model paths (default: auto-discover)")
+    p_repair.add_argument("--dry-run", action="store_true", help="Show what would be repaired without writing")
+
+    p_deepen = subparsers.add_parser("deepen", help="Enrich a specific entity via scoped manifest scan")
+    p_deepen.add_argument("--entity", required=True, help="Entity ID to deepen (e.g. COMP-1, CAP-3)")
+    p_deepen.add_argument("--repo-path", default=".", help="Repository root (default: cwd)")
+    p_deepen.add_argument("--model", help="Path to model YAML (default: <repo-path>/.architecture-model.yaml)")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -171,6 +183,8 @@ def main(argv: list[str] | None = None) -> int:
         "review": _cmd_review,
         "gap-analysis": _cmd_gap_analysis,
         "viewer": _cmd_viewer,
+        "repair": _cmd_repair,
+        "deepen": _cmd_deepen,
     }
     return handlers[args.command](args)
 
@@ -1049,6 +1063,41 @@ def _cmd_review(args) -> int:
     return 1
 
 
+def _cmd_repair(args) -> int:
+    """Backfill missing entities from subsidiary models."""
+    from ..core.repair import find_dangling_ids, repair_model
+
+    repo_path = Path(args.path).resolve()
+    model_path = Path(args.model) if args.model else repo_path / ".architecture-model.yaml"
+
+    if not model_path.exists():
+        print(f"ERROR: Model not found at {model_path}")
+        return 1
+
+    source_paths = [Path(s) for s in args.source] if args.source else None
+
+    if args.dry_run:
+        from ..core.parser import load_model
+        model = load_model(model_path)
+        dangling = find_dangling_ids(model)
+        print(f"Dangling entity refs: {len(dangling)}")
+        if dangling:
+            # Group by prefix
+            from collections import Counter
+            prefixes = Counter(eid.split("-")[0] for eid in dangling)
+            for prefix, count in prefixes.most_common():
+                print(f"  {prefix}-*: {count}")
+        return 0
+
+    result = repair_model(model_path, source_paths=source_paths)
+    print(f"Repair complete:")
+    print(f"  Backfilled:  {result['backfilled']} entities")
+    print(f"  Dangling:    {result['dangling_before']} -> {result['dangling_after']}")
+    print(f"  Score:       {result['score_before']}/100 -> {result['score_after']}/100")
+    print(f"  Issues:      {result['issues_before']} -> {result['issues_after']}")
+    return 0
+
+
 def _cmd_viewer(args) -> int:
     """Generate self-contained HTML architecture viewer."""
     import zipfile as _zipfile
@@ -1090,6 +1139,46 @@ def _cmd_viewer(args) -> int:
         zip_kb = zip_path.stat().st_size / 1024
         print(f"Zip:    {zip_path} ({zip_kb:.0f}KB)")
 
+    return 0
+
+
+def _cmd_deepen(args) -> int:
+    """Enrich a specific entity via scoped manifest scan."""
+    from ..core.deepen import resolve_entity_files, deepen_entity
+    from ..core.parser import load_model, save_model
+
+    repo_path = Path(args.repo_path).resolve()
+    model_path = Path(args.model) if args.model else repo_path / ".architecture-model.yaml"
+
+    if not model_path.exists():
+        print(f"ERROR: Model not found at {model_path}")
+        return 1
+
+    model = load_model(model_path)
+
+    try:
+        files = resolve_entity_files(model, args.entity)
+    except ValueError as e:
+        print(f"ERROR: {e}")
+        return 1
+
+    if not files:
+        print(f"ERROR: No source files resolved for {args.entity}")
+        return 1
+
+    print(f"Entity:  {args.entity}")
+    print(f"Files:   {len(files)} source files")
+    for f in files:
+        print(f"  - {f}")
+
+    try:
+        updated = deepen_entity(repo_path, model, args.entity)
+    except ValueError as e:
+        print(f"ERROR: {e}")
+        return 1
+
+    save_model(updated, model_path)
+    print(f"Model updated: {model_path}")
     return 0
 
 
