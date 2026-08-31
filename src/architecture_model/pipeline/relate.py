@@ -150,7 +150,20 @@ class RelateStage:
                     )
                 )
 
-        # 4. exposes: component → interface (from routes)
+        # 4. contains: capability → sub-capability (from inference)
+        for cap in inference.capabilities:
+            if hasattr(cap, "sub_capabilities") and cap.sub_capabilities:
+                for sub_id in cap.sub_capabilities:
+                    relationships.append(
+                        DerivedRelationship(
+                            from_id=cap.id,
+                            to_id=sub_id,
+                            rel_type="contains",
+                            evidence_source="capability_hierarchy",
+                        )
+                    )
+
+        # 5. exposes: component → interface (from routes)
         for route in inventory.routes:
             route_file = route.file
             comp_id = file_to_comp.get(route_file)
@@ -165,7 +178,7 @@ class RelateStage:
                     )
                 )
 
-        # 5. constrained-by: component → constraint
+        # 6. constrained-by: component → constraint
         for i, con in enumerate(inventory.constraints):
             con_id = f"CON-{i + 1}"
             # Technology constraints apply to all components
