@@ -1681,8 +1681,10 @@ def generate_html_viewer(
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
-        mermaid.initialize({{ startOnLoad: false, theme: 'dark', securityLevel: 'loose',
-                             flowchart: {{ htmlLabels: true, curve: 'basis' }} }});
+        if (typeof mermaid !== 'undefined') {{
+            mermaid.initialize({{ startOnLoad: false, theme: 'dark', securityLevel: 'loose',
+                                 flowchart: {{ htmlLabels: true, curve: 'basis' }} }});
+        }}
 
         var renderCounter = 0;
         var navHistory = [];  // Stack of {{type, id, label}}
@@ -1690,6 +1692,10 @@ def generate_html_viewer(
 
         /* ── Mermaid rendering ────────────────────────────────── */
         async function renderMermaid(container, code) {{
+            if (typeof mermaid === 'undefined') {{
+                container.innerHTML = '<pre style="color:#a0a0c0">Diagram rendering requires internet (Mermaid CDN). Showing source:</pre><pre style="color:#7ec8e3;font-size:11px;white-space:pre-wrap">' + code.replace(/</g,'&lt;') + '</pre>';
+                return;
+            }}
             try {{
                 var id = 'mmd_' + (++renderCounter);
                 var {{ svg }} = await mermaid.render(id, code);
