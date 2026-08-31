@@ -1,5 +1,7 @@
-"""Tests for capability hierarchy inference."""
+"""Tests for capability hierarchy in the architecture model."""
 import pytest
+import yaml
+from pathlib import Path
 from architecture_model.orchestration.capability_inference import (
     infer_capabilities, build_capability_hierarchy
 )
@@ -7,8 +9,66 @@ from architecture_model.core.types import (
     ArchitectureModel, ModelMeta, Entities, Behavior, Capability, Relationship, RelationType
 )
 
+MODEL_PATH = Path(__file__).parent.parent / ".architecture-model.yaml"
 
-class TestCapabilityHierarchy:
+
+def _load_model():
+    with open(MODEL_PATH) as f:
+        return yaml.safe_load(f)
+
+
+# --- Model YAML hierarchy tests ---
+
+class TestModelCapabilityHierarchy:
+    def test_root_capability_exists(self):
+        model = _load_model()
+        caps = {c["id"]: c for c in model["entities"]["capabilities"]}
+        assert "CAP-0" in caps
+        assert caps["CAP-0"]["name"] == "Provide Architecture-as-Code Standard"
+
+    def test_l1_group_capabilities_exist(self):
+        model = _load_model()
+        caps = {c["id"] for c in model["entities"]["capabilities"]}
+        for cap_id in ["CAP-0.1", "CAP-0.2", "CAP-0.3", "CAP-0.4"]:
+            assert cap_id in caps, f"Missing L1 group capability {cap_id}"
+
+    def test_l2_sub_capabilities_count(self):
+        """At least 70 L2 sub-capabilities should exist."""
+        model = _load_model()
+        caps = model["entities"]["capabilities"]
+        l2_caps = [c for c in caps if "." in c["id"] and not c["id"].startswith("CAP-0.")]
+        assert len(l2_caps) >= 70, f"Only {len(l2_caps)} L2 sub-capabilities"
+
+    def test_all_capabilities_have_descriptions(self):
+        """Every capability should have a description."""
+        model = _load_model()
+        for cap in model["entities"]["capabilities"]:
+            assert cap.get("description"), f"{cap['id']} missing description"
+
+    def test_hierarchy_contains_relationships(self):
+        """Every sub-capability should have a contains relationship from its parent."""
+        model = _load_model()
+        contains_rels = {(r["from_id"], r["to_id"]) for r in model["relationships"]
+                         if r["type"] == "contains"}
+        caps = model["entities"]["capabilities"]
+        for cap in caps:
+            cid = cap["id"]
+            if "." in cid:
+                parent = cid.rsplit(".", 1)[0]
+                assert (parent, cid) in contains_rels, f"Missing contains: {parent} -> {cid}"
+
+    def test_all_existing_caps_have_parent(self):
+        """CAP-1 through CAP-15 should be contained by a CAP-0.x parent."""
+        model = _load_model()
+        contains_rels = {r["to_id"] for r in model["relationships"]
+                         if r["type"] == "contains" and r["from_id"].startswith("CAP-0.")}
+        for i in range(1, 16):
+            assert f"CAP-{i}" in contains_rels, f"CAP-{i} not contained by any L1 group"
+
+
+# --- Inference unit tests (pre-existing) ---
+
+class TestCapabilityInference:
     def test_nested_urls_create_hierarchy(self):
         """Deeper URL paths create parent-child capability relationships."""
         model = ArchitectureModel(

@@ -6,11 +6,30 @@ meta:
   domain_profile: library
 entities:
   capabilities:
+  - id: CAP-0
+    name: Provide Architecture-as-Code Standard
+    status: ACTIVE
+    description: Root capability encompassing all system functions
+  - id: CAP-0.1
+    name: Understand Software Architecture
+    status: ACTIVE
+    description: Analyze and represent software architecture from source code
+  - id: CAP-0.2
+    name: Validate Architectural Claims
+    status: ACTIVE
+    description: Verify architectural claims against code reality
+  - id: CAP-0.3
+    name: Generate Architecture Artifacts
+    status: ACTIVE
+    description: Produce documentation, models, and exports from architectural knowledge
+  - id: CAP-0.4
+    name: Evolve Architecture Over Time
+    status: ACTIVE
+    description: Track changes, decompose systems, and maintain model quality
   - id: CAP-1
     name: Validate Architecture Models
     status: ACTIVE
-    description: Check model correctness, completeness, hierarchy consistency, and
-      domain rules
+    description: Check model correctness, completeness, hierarchy consistency, and domain rules
     intent: Ensure architecture models are structurally sound and internally consistent before downstream consumption
     moes:
     - Validation score >= 80 on well-formed models
@@ -19,8 +38,7 @@ entities:
   - id: CAP-2
     name: Extract Architecture from Code
     status: ACTIVE
-    description: Scan source code AST and derive components, relationships, behaviors
-      automatically
+    description: Scan source code AST and derive components, relationships, behaviors automatically
     intent: Bootstrap architecture models from existing codebases without manual authoring
     moes:
     - Extraction produces valid models scoring >= 90 on arbitrary Python repos
@@ -38,8 +56,7 @@ entities:
   - id: CAP-4
     name: Generate Reality Manifest
     status: ACTIVE
-    description: Scan source files to produce structural facts (functions, imports,
-      classes, routes, tests)
+    description: Scan source files to produce structural facts (functions, imports, classes, routes, tests)
     intent: Establish ground-truth code inventory so architecture claims can be verified against reality
     moes:
     - All non-trivial Python files scanned with function/class extraction
@@ -48,8 +65,7 @@ entities:
   - id: CAP-5
     name: Generate SE Documentation
     status: ACTIVE
-    description: Produce functional analysis, logical architecture, use cases, requirements,
-      V&V, operations docs
+    description: Produce functional analysis, logical architecture, use cases, requirements, V&V, operations docs
     intent: Auto-generate standards-compliant systems engineering documentation from architecture models
     moes:
     - Generate at least 15 SE document types from a single model
@@ -67,8 +83,7 @@ entities:
   - id: CAP-7
     name: Slice and Query Models
     status: ACTIVE
-    description: Filter model by block, layer, status, artifact for focused context
-      delivery
+    description: Filter model by block, layer, status, artifact for focused context delivery
     intent: Deliver only relevant architecture context to token-limited AI agents and focused human queries
     moes:
     - Sliced output fits within 4000-token budget
@@ -86,8 +101,7 @@ entities:
   - id: CAP-9
     name: Decompose Models Hierarchically
     status: ACTIVE
-    description: Break coarse models into per-system sub-models with parent/child
-      relationships
+    description: Break coarse models into per-system sub-models with parent/child relationships
     intent: Enable scalable architecture management by splitting large models into focused, self-contained subsystems
     moes:
     - Components with >=5 files produce autonomous sub-models
@@ -96,8 +110,7 @@ entities:
   - id: CAP-10
     name: Enrich Models with Code Intelligence
     status: ACTIVE
-    description: Auto-populate signatures, constants, test contracts, behaviors from
-      source
+    description: Auto-populate signatures, constants, test contracts, behaviors from source
     intent: Bridge the gap between abstract architecture and concrete code to enable faithful code regeneration
     moes:
     - Signatures populated for >90% of public functions
@@ -133,8 +146,7 @@ entities:
   - id: CAP-14
     name: Manage Global Learnings
     status: ACTIVE
-    description: Store, retrieve, and apply heuristics/archetypes/workflows across
-      pipeline runs
+    description: Store, retrieve, and apply heuristics/archetypes/workflows across pipeline runs
     intent: Improve pipeline accuracy over time by accumulating and reusing extraction patterns
     moes:
     - Learnings persisted across pipeline runs
@@ -149,6 +161,302 @@ entities:
     - Export includes model, sub-models, docs, manifests, and diagrams
     - Exported package is self-contained (no external dependencies)
     - Total export size fits within reasonable token budgets for frontier models
+  - id: CAP-1.1
+    name: Validate JSON Schema Compliance
+    status: ACTIVE
+    description: Checks model against JSON Schema definition
+  - id: CAP-1.2
+    name: Enforce Entity ID Uniqueness
+    status: ACTIVE
+    description: Ensures no duplicate entity IDs exist
+  - id: CAP-1.3
+    name: Check Referential Integrity
+    status: ACTIVE
+    description: Validates all relationship from/to IDs exist
+  - id: CAP-1.4
+    name: Detect Orphan Entities
+    status: ACTIVE
+    description: Finds entities with no relationships
+  - id: CAP-1.5
+    name: Verify Capability Realization
+    status: ACTIVE
+    description: Ensures capabilities are realized by components
+  - id: CAP-1.6
+    name: Check Hierarchy Consistency
+    status: ACTIVE
+    description: Validates parent-child containment consistency
+  - id: CAP-1.7
+    name: Detect Dependency Cycles
+    status: ACTIVE
+    description: Finds circular dependency chains
+  - id: CAP-1.8
+    name: Validate Domain Profile Rules
+    status: ACTIVE
+    description: Checks domain-specific validation rules
+  - id: CAP-2.1
+    name: Derive Capabilities from Config
+    status: ACTIVE
+    description: Extracts capabilities from project configuration
+  - id: CAP-2.2
+    name: Infer Actors from Routes
+    status: ACTIVE
+    description: Identifies system actors from HTTP route patterns
+  - id: CAP-2.3
+    name: Derive Components from Manifest
+    status: ACTIVE
+    description: Creates components from AST manifest data
+  - id: CAP-2.4
+    name: Derive Cross-Block Interfaces
+    status: ACTIVE
+    description: Identifies interfaces between functional blocks
+  - id: CAP-2.5
+    name: Detect Code Constraints
+    status: ACTIVE
+    description: Discovers constraints from code analysis
+  - id: CAP-2.6
+    name: Derive Entity Relationships
+    status: ACTIVE
+    description: Builds relationships from import and call analysis
+  - id: CAP-3.1
+    name: AST-Scan Source Files
+    status: ACTIVE
+    description: 'Observe stage: parse source into typed inventory'
+  - id: CAP-3.2
+    name: Infer Capabilities from Code
+    status: ACTIVE
+    description: 'Infer stage: derive capabilities from code patterns'
+  - id: CAP-3.3
+    name: Allocate Files to Components
+    status: ACTIVE
+    description: 'Allocate stage: group files into components'
+  - id: CAP-3.4
+    name: Derive Entity Relationships
+    status: ACTIVE
+    description: 'Relate stage: discover inter-entity relationships'
+  - id: CAP-3.5
+    name: Derive Interface Specifications
+    status: ACTIVE
+    description: 'Specify stage: extract interface contracts'
+  - id: CAP-3.6
+    name: Extract Test Contracts
+    status: ACTIVE
+    description: 'Contract stage: map tests to components'
+  - id: CAP-3.7
+    name: Validate Pipeline Output
+    status: ACTIVE
+    description: 'Validate stage: check model structural correctness'
+  - id: CAP-3.8
+    name: Detect System Boundaries
+    status: ACTIVE
+    description: 'Decompose stage: identify subsystem boundaries'
+  - id: CAP-3.9
+    name: Run Scoped Sub-Pipelines
+    status: ACTIVE
+    description: 'Synthesize stage: run pipeline per subsystem'
+  - id: CAP-3.10
+    name: Emit Final Artifacts
+    status: ACTIVE
+    description: 'Emit stage: write models and manifests to disk'
+  - id: CAP-4.1
+    name: Scan Python AST
+    status: ACTIVE
+    description: Parse Python source files into structured records
+  - id: CAP-4.2
+    name: Extract Function Body Hints
+    status: ACTIVE
+    description: Derive implementation hints from function bodies
+  - id: CAP-4.3
+    name: Build Call Graph
+    status: ACTIVE
+    description: Construct function call graph from AST analysis
+  - id: CAP-4.4
+    name: Analyze Test Files
+    status: ACTIVE
+    description: Extract test structure and coverage mapping
+  - id: CAP-4.5
+    name: Group Modules into Components
+    status: ACTIVE
+    description: Cluster modules by affinity into components
+  - id: CAP-4.6
+    name: Scan Multi-Language Sources
+    status: ACTIVE
+    description: Parse Kotlin, Java, and TypeScript sources
+  - id: CAP-5.1
+    name: Generate ConOps Document
+    status: ACTIVE
+    description: Produce concept of operations document
+  - id: CAP-5.2
+    name: Generate Functional Analysis
+    status: ACTIVE
+    description: Produce functional decomposition analysis
+  - id: CAP-5.3
+    name: Generate Logical Architecture Doc
+    status: ACTIVE
+    description: Produce logical architecture specification
+  - id: CAP-5.4
+    name: Generate Use Case Document
+    status: ACTIVE
+    description: Produce actor-driven use case documentation
+  - id: CAP-5.5
+    name: Generate Component Specifications
+    status: ACTIVE
+    description: Produce per-component technical specs
+  - id: CAP-5.6
+    name: Generate Interface Specification
+    status: ACTIVE
+    description: Produce interface control documentation
+  - id: CAP-5.7
+    name: Generate Mermaid Diagrams
+    status: ACTIVE
+    description: Produce visual architecture diagrams
+  - id: CAP-5.8
+    name: Generate Health Report
+    status: ACTIVE
+    description: Produce model quality and completeness report
+  - id: CAP-6.1
+    name: Parse Requirements Markdown
+    status: ACTIVE
+    description: Extract structured data from requirements docs
+  - id: CAP-6.2
+    name: Parse Actor Definitions
+    status: ACTIVE
+    description: Identify actors from requirements text
+  - id: CAP-6.3
+    name: Parse Capability Hierarchy
+    status: ACTIVE
+    description: Build capability tree from requirements
+  - id: CAP-7.1
+    name: Slice by Source Block
+    status: ACTIVE
+    description: Extract model subset for a functional block
+  - id: CAP-7.2
+    name: Slice by Architecture Layer
+    status: ACTIVE
+    description: Extract model subset for a layer
+  - id: CAP-7.3
+    name: Slice for Artifact Regeneration
+    status: ACTIVE
+    description: Extract minimal model for code regeneration
+  - id: CAP-7.4
+    name: Slice for SE Document Views
+    status: ACTIVE
+    description: Extract model subsets for specific SE documents
+  - id: CAP-8.1
+    name: Diff Entity Lists by ID
+    status: ACTIVE
+    description: Compare entity sets between model versions
+  - id: CAP-8.2
+    name: Detect Field-Level Changes
+    status: ACTIVE
+    description: Identify specific field modifications
+  - id: CAP-8.3
+    name: Determine Affected Artifacts
+    status: ACTIVE
+    description: Trace which artifacts need regeneration
+  - id: CAP-9.1
+    name: Compute Component Complexity
+    status: ACTIVE
+    description: Score component complexity for decomposition
+  - id: CAP-9.2
+    name: Identify System Candidates
+    status: ACTIVE
+    description: Find components large enough to be subsystems
+  - id: CAP-9.3
+    name: Detect System Boundaries
+    status: ACTIVE
+    description: Use multi-signal affinity to define boundaries
+  - id: CAP-9.4
+    name: Trace Connected Entities
+    status: ACTIVE
+    description: Follow relationships to build complete sub-models
+  - id: CAP-9.5
+    name: Write Sub-Models to Disk
+    status: ACTIVE
+    description: Persist decomposed models to filesystem
+  - id: CAP-10.1
+    name: Extract Function Signatures
+    status: ACTIVE
+    description: Copy AST signatures onto model components
+  - id: CAP-10.2
+    name: Extract Module-Level Constants
+    status: ACTIVE
+    description: Capture constants for regeneration
+  - id: CAP-10.3
+    name: Extract Test Contracts
+    status: ACTIVE
+    description: Map test assertions to component contracts
+  - id: CAP-10.4
+    name: Discover Test Files by Convention
+    status: ACTIVE
+    description: Match test files to source by naming
+  - id: CAP-11.1
+    name: Compute System Readiness Score
+    status: ACTIVE
+    description: Overall system regeneration readiness
+  - id: CAP-11.2
+    name: Compute Component Readiness
+    status: ACTIVE
+    description: Per-component readiness assessment
+  - id: CAP-11.3
+    name: Classify Body Hint Quality
+    status: ACTIVE
+    description: Rate body hint usefulness for regeneration
+  - id: CAP-12.1
+    name: Check Code-Intent Alignment
+    status: ACTIVE
+    description: Verify code matches architectural intent
+  - id: CAP-12.2
+    name: Evaluate Stage Quality Gates
+    status: ACTIVE
+    description: Check pipeline stage pass/fail criteria
+  - id: CAP-13.1
+    name: Generate Drift Report
+    status: ACTIVE
+    description: Produce report of model-code divergence
+  - id: CAP-13.2
+    name: Identify Stale Artifacts
+    status: ACTIVE
+    description: Find artifacts that need regeneration
+  - id: CAP-13.3
+    name: Compare Model to Code Reality
+    status: ACTIVE
+    description: Check architectural claims against AST
+  - id: CAP-14.1
+    name: Store Heuristic Rules
+    status: ACTIVE
+    description: Persist extraction heuristics across projects
+  - id: CAP-14.2
+    name: Match Archetype Patterns
+    status: ACTIVE
+    description: Recognize known architectural patterns
+  - id: CAP-14.3
+    name: Record User Corrections
+    status: ACTIVE
+    description: Capture manual model corrections
+  - id: CAP-14.4
+    name: Track Quality History
+    status: ACTIVE
+    description: Monitor extraction quality over time
+  - id: CAP-14.5
+    name: Generate Lessons from Diagnostics
+    status: ACTIVE
+    description: Extract insights from pipeline runs
+  - id: CAP-15.1
+    name: Build Flat File Export
+    status: ACTIVE
+    description: Package model as flat files for token-limited AI
+  - id: CAP-15.2
+    name: Generate Schema Reference
+    status: ACTIVE
+    description: Produce schema documentation
+  - id: CAP-15.3
+    name: Generate Custom Instructions
+    status: ACTIVE
+    description: Create AI agent instructions from model
+  - id: CAP-15.4
+    name: Concatenate Sub-Model Artifacts
+    status: ACTIVE
+    description: Merge subsystem artifacts for export
   components:
   - id: COMP-1
     name: Core
@@ -180,28 +488,24 @@ entities:
   - id: COMP-1.1
     name: Type System
     status: ACTIVE
-    description: All dataclasses, enums, and type definitions for the architecture
-      model
+    description: All dataclasses, enums, and type definitions for the architecture model
     layer: foundation
     kind: library
     parent_id: COMP-1
     files:
     - src/architecture_model/core/types.py
-    contract: Defines ArchitectureModel, Component, Relationship, Behavior, System,
-      and 17 entity types
+    contract: Defines ArchitectureModel, Component, Relationship, Behavior, System, and 17 entity types
   - id: COMP-1.2
     name: Validation
     status: ACTIVE
-    description: Model validation — JSON schema, referential integrity, hierarchy,
-      cycles, domain rules
+    description: Model validation — JSON schema, referential integrity, hierarchy, cycles, domain rules
     layer: foundation
     kind: library
     parent_id: COMP-1
     files:
     - src/architecture_model/core/validator.py
     - src/architecture_model/spec/__init__.py
-    contract: validate_model() → ValidationResult with scored issues (100 - 10*errors
-      - 2*warnings)
+    contract: validate_model() → ValidationResult with scored issues (100 - 10*errors - 2*warnings)
   - id: COMP-1.3
     name: Parser & Persistence
     status: ACTIVE
@@ -219,8 +523,7 @@ entities:
   - id: COMP-1.4
     name: Model Operations
     status: ACTIVE
-    description: Slice, diff, coverage, impact analysis, clustering, source block
-      assignment
+    description: Slice, diff, coverage, impact analysis, clustering, source block assignment
     layer: foundation
     kind: library
     parent_id: COMP-1
@@ -290,8 +593,7 @@ entities:
     - src/architecture_model/pipeline/report.py
     - src/architecture_model/pipeline/artifacts.py
     - src/architecture_model/pipeline/corrections.py
-    contract: PipelineCoordinator.run(repo_path) orchestrates all stages in dependency
-      order
+    contract: PipelineCoordinator.run(repo_path) orchestrates all stages in dependency order
   - id: COMP-2.2
     name: Observation Stages
     status: ACTIVE
@@ -304,8 +606,7 @@ entities:
     - src/architecture_model/pipeline/observe_types.py
     - src/architecture_model/pipeline/infer.py
     - src/architecture_model/pipeline/infer_types.py
-    contract: observe() → ObserveResult, infer() → InferResult with components and
-      behaviors
+    contract: observe() → ObserveResult, infer() → InferResult with components and behaviors
   - id: COMP-2.3
     name: Allocation & Relation Stages
     status: ACTIVE
@@ -333,8 +634,7 @@ entities:
     - src/architecture_model/pipeline/contract_types.py
     - src/architecture_model/pipeline/validate.py
     - src/architecture_model/pipeline/validate_types.py
-    contract: specify() → SpecifyResult, contract() → ContractResult, validate() →
-      ValidateResult
+    contract: specify() → SpecifyResult, contract() → ContractResult, validate() → ValidateResult
   - id: COMP-2.5
     name: Synthesis & Emit Stages
     status: ACTIVE
@@ -422,13 +722,11 @@ entities:
     - src/architecture_model/manifest/blocks.py
     - src/architecture_model/manifest/slicers.py
     - src/architecture_model/manifest/display.py
-    contract: group_modules() → component assignments, generate_manifest() → full
-      manifest
+    contract: group_modules() → component assignments, generate_manifest() → full manifest
   - id: COMP-4
     name: Documentation
     status: ACTIVE
-    description: Architecture documentation generation — component specs, SE docs,
-      diagrams
+    description: Architecture documentation generation — component specs, SE docs, diagrams
     intent: Generate human-readable and AI-consumable architecture documentation from models automatically
     goals:
     - Produce component specs, ICDs, and dependency matrices from model data
@@ -557,8 +855,7 @@ entities:
   - id: COMP-6
     name: Extract
     status: ACTIVE
-    description: Code-to-model extraction — route detection, constraint detection,
-      artifact parsing
+    description: Code-to-model extraction — route detection, constraint detection, artifact parsing
     intent: Convert raw code artifacts into structured architecture model entities
     goals:
     - Detect web routes, API endpoints, and framework patterns
@@ -604,8 +901,7 @@ entities:
     - src/architecture_model/authoring/__init__.py
     - src/architecture_model/authoring/parser.py
     - src/architecture_model/authoring/gate.py
-    contract: parse_requirements_doc(text) → ArchitectureModel, check_development_gate(model,
-      manifest)
+    contract: parse_requirements_doc(text) → ArchitectureModel, check_development_gate(model, manifest)
   - id: COMP-8
     name: CLI
     status: ACTIVE
@@ -631,8 +927,7 @@ entities:
     - src/architecture_model/cli/__init__.py
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
-    contract: 'CLI commands: validate, slice, diff, manifest, enrich, decompose, docs,
-      coverage, etc.'
+    contract: 'CLI commands: validate, slice, diff, manifest, enrich, decompose, docs, coverage, etc.'
   - id: COMP-9
     name: Configuration
     status: ACTIVE
@@ -728,8 +1023,7 @@ entities:
     name: AI Agent (MCP Client)
     status: ACTIVE
     description: LLM-based coding agent that invokes architecture tools via MCP protocol
-    intent: Consume compressed architecture context to generate, validate, and update
-      models
+    intent: Consume compressed architecture context to generate, validate, and update models
     goals:
     - Load and query architecture models
     - Validate model correctness
@@ -773,8 +1067,7 @@ entities:
   - id: REQ-4
     name: Entity type coverage
     status: ACTIVE
-    text: 'Include entities: capabilities, components with signatures, constants,
-      symbols, and files'
+    text: 'Include entities: capabilities, components with signatures, constants, symbols, and files'
     priority: must
   - id: REQ-5
     name: Relationship population
@@ -809,14 +1102,13 @@ entities:
   - id: REQ-11
     name: Live artifact regeneration
     status: ACTIVE
-    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs)
-      must regenerate in <1s without LLM
+    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs) must regenerate in <1s without
+      LLM
     priority: must
   - id: REQ-12
     name: SE doc completeness
     status: ACTIVE
-    text: Generate at minimum functional analysis, logical architecture, use cases,
-      and requirements analysis
+    text: Generate at minimum functional analysis, logical architecture, use cases, and requirements analysis
     priority: must
   - id: REQ-13
     name: User edit preservation
@@ -861,8 +1153,7 @@ entities:
   - id: REQ-21
     name: Self-documenting artifacts
     status: ACTIVE
-    text: Generated docs must be readable by both humans and AI without additional
-      context
+    text: Generated docs must be readable by both humans and AI without additional context
     priority: must
   - id: REQ-22
     name: Hierarchical navigation
@@ -1374,8 +1665,7 @@ entities:
     interface_type: library
     component_id: COMP-3-1
     methods:
-    - 'extract_behavior_detail: def extract_behavior_detail(source_file: str, function_name:
-      str) -> dict'
+    - 'extract_behavior_detail: def extract_behavior_detail(source_file: str, function_name: str) -> dict'
     - 'find_caller: def find_caller(tree, function_name: str) -> str'
     - 'find_function: def find_function(tree, function_name: str)'
     - 'main: def main()'
@@ -1389,18 +1679,16 @@ entities:
     - 'ConsistencyResult: class ConsistencyResult'
     - 'FunctionMetrics: class FunctionMetrics'
     - 'MetricsCollector: class MetricsCollector'
-    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges:
-      list[tuple[str, str]], perturbations: int=5) -> ConsistencyResult'
-    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id:
-      str, block_name: str, runs: int=3) -> ConsistencyResult'
-    - 'check_pattern_indicators: def check_pattern_indicators(pattern_name: str, file_contents:
-      dict[str, str]) -> ConsistencyResult'
+    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges: list[tuple[str, str]], perturbations:
+      int=5) -> ConsistencyResult'
+    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id: str, block_name: str, runs: int=3)
+      -> ConsistencyResult'
+    - 'check_pattern_indicators: def check_pattern_indicators(pattern_name: str, file_contents: dict[str, str]) -> ConsistencyResult'
     - 'get_collector: def get_collector() -> MetricsCollector'
     - 'get_pattern: def get_pattern(name: str) -> dict[str, Any] | None'
     - 'load_patterns: def load_patterns() -> dict[str, Any]'
-    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str,
-      Any]] | None=None, inputs: Callable[[tuple, dict], dict[str, Any]] | None=None,
-      outputs: Callable[[Any], dict[str, Any]] | None=None) -> Callable'
+    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str, Any]] | None=None, inputs: Callable[[tuple,
+      dict], dict[str, Any]] | None=None, outputs: Callable[[Any], dict[str, Any]] | None=None) -> Callable'
     description: 10 public symbols exported
   - id: IF-6
     name: COMP-4-2 Library API
@@ -1429,14 +1717,11 @@ entities:
     - 'Severity: class Severity'
     - 'ValidationIssue: class ValidationIssue'
     - 'ValidationResult: class ValidationResult'
-    - 'compute_component_readiness: def compute_component_readiness(component: Component)
-      -> ComponentReadiness'
-    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature,
-      test_contracts: list[TestContract]) -> FunctionReadiness'
-    - 'compute_regen_readiness: def compute_regen_readiness(model: ArchitectureModel)
-      -> RegenReadiness'
-    - 'validate_model: def validate_model(model: ArchitectureModel, strict: bool=False,
-      raw_dict: dict | None=None) -> ValidationResult'
+    - 'compute_component_readiness: def compute_component_readiness(component: Component) -> ComponentReadiness'
+    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature, test_contracts: list[TestContract])
+      -> FunctionReadiness'
+    - 'compute_regen_readiness: def compute_regen_readiness(model: ArchitectureModel) -> RegenReadiness'
+    - 'validate_model: def validate_model(model: ArchitectureModel, strict: bool=False, raw_dict: dict | None=None) -> ValidationResult'
     description: 121 public symbols exported
   - id: IF-8
     name: COMP-4-4 Library API
@@ -1452,8 +1737,7 @@ entities:
     - 'discover_config: def discover_config(root: Path) -> tuple[ProjectConfig, DiscoveryReport]'
     - 'get_config: def get_config(root: Path) -> ProjectConfig'
     - 'load_config: def load_config(root: Path) -> ProjectConfig'
-    - 'write_config: def write_config(config: ProjectConfig, root: Path | None=None)
-      -> Path'
+    - 'write_config: def write_config(config: ProjectConfig, root: Path | None=None) -> Path'
     description: 13 public symbols exported
   - id: IF-9
     name: COMP-4-5 Library API
@@ -1461,23 +1745,16 @@ entities:
     component_id: COMP-4-5
     methods:
     - 'EventChain: class EventChain'
-    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups:
-      list[''ModuleGroup''], block_id: str) -> list[EventChain]'
-    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests:
-      dict[str, ''RecursiveManifest''], block_groups: dict[str, list[''ModuleGroup'']])
+    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups: list[''ModuleGroup''], block_id: str)
       -> list[EventChain]'
-    - 'compute_metrics: def compute_metrics(root: Path, config: Optional[Any]=None)
-      -> MetricsResult'
-    - 'derive_interfaces: def derive_interfaces(modules: list[ModuleInfo], root: Path)
-      -> list[InterfaceEdge]'
-    - 'extract_call_order: def extract_call_order(func_node: Union[ast.FunctionDef,
-      ast.AsyncFunctionDef]) -> list[str]'
-    - 'extract_control_flow: def extract_control_flow(func_node: Union[ast.FunctionDef,
-      ast.AsyncFunctionDef]) -> list[str]'
-    - 'extract_guards: def extract_guards(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef])
-      -> list[str]'
-    - 'get_manifest_slice: def get_manifest_slice(manifest: Manifest | dict[str, Any],
-      artifact_name: str) -> str'
+    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests: dict[str, ''RecursiveManifest''], block_groups:
+      dict[str, list[''ModuleGroup'']]) -> list[EventChain]'
+    - 'compute_metrics: def compute_metrics(root: Path, config: Optional[Any]=None) -> MetricsResult'
+    - 'derive_interfaces: def derive_interfaces(modules: list[ModuleInfo], root: Path) -> list[InterfaceEdge]'
+    - 'extract_call_order: def extract_call_order(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_control_flow: def extract_control_flow(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_guards: def extract_guards(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> list[str]'
+    - 'get_manifest_slice: def get_manifest_slice(manifest: Manifest | dict[str, Any], artifact_name: str) -> str'
     - 'scan_file: def scan_file(root: Path, filepath: Path, cache=None) -> ModuleInfo'
     description: 54 public symbols exported
   - id: IF-10
@@ -1485,8 +1762,7 @@ entities:
     interface_type: library
     component_id: COMP-4-6
     methods:
-    - 'collect_py_files: def collect_py_files(directory: Path, recursive: bool=True,
-      exclude_init: bool=False) -> list[Path]'
+    - 'collect_py_files: def collect_py_files(directory: Path, recursive: bool=True, exclude_init: bool=False) -> list[Path]'
     - 'discover_source_files: def discover_source_files(project_root: Path) -> list[Path]'
     - 'discover_test_files: def discover_test_files(project_root: Path) -> list[Path]'
     - 'is_excluded_dir: def is_excluded_dir(path: Path) -> bool'
@@ -1497,8 +1773,8 @@ entities:
     component_id: COMP-4-8
     methods:
     - 'GateResult: class GateResult'
-    - 'check_development_gate: def check_development_gate(model: ArchitectureModel,
-      manifest: Manifest, phase: str | None=None) -> GateResult'
+    - 'check_development_gate: def check_development_gate(model: ArchitectureModel, manifest: Manifest, phase: str | None=None)
+      -> GateResult'
     - 'parse_requirements_doc: def parse_requirements_doc(text: str) -> ArchitectureModel'
     description: 3 public symbols exported
   - id: IF-12
@@ -1508,35 +1784,27 @@ entities:
     methods:
     - 'ProjectSnapshot: class ProjectSnapshot'
     - 'load_project: def load_project(root: Path) -> ProjectSnapshot'
-    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest:
-      Any, representativeness: Any | None=None) -> Path'
-    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness:
-      Any | None=None, telemetry: dict | None=None) -> Path'
+    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest: Any, representativeness: Any | None=None)
+      -> Path'
+    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness: Any | None=None, telemetry:
+      dict | None=None) -> Path'
     description: 4 public symbols exported
   - id: IF-13
     name: COMP-4-10 Library API
     interface_type: library
     component_id: COMP-4-10
     methods:
-    - 'compact_root_model: def compact_root_model(model, *, block_ids: list[str])
-      -> None'
-    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any,
-      manifest: Manifest) -> tuple[list[Behavior], list[Relationship]]'
+    - 'compact_root_model: def compact_root_model(model, *, block_ids: list[str]) -> None'
+    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any, manifest: Manifest) -> tuple[list[Behavior],
+      list[Relationship]]'
     - 'decompose_model: def decompose_model(project_root, *, model_path=None)'
-    - 'enrich_behaviors_from_manifest: def enrich_behaviors_from_manifest(model: Any,
-      manifest: Manifest) -> None'
-    - 'enrich_from_manifest: def enrich_from_manifest(model: Any, manifest: Manifest)
-      -> None'
-    - 'enrich_from_source_graph: def enrich_from_source_graph(model: Any, graph: ''SourceGraph'')
-      -> None'
-    - 'enrich_with_block_context: def enrich_with_block_context(model: Any, recursive_manifests:
-      dict) -> None'
-    - 'extract_component_interfaces: def extract_component_interfaces(model: Any,
-      graph: ''SourceGraph'') -> int'
-    - 'infer_composite_behaviors: def infer_composite_behaviors(model: ArchitectureModel)
-      -> ArchitectureModel'
-    - 'manifest_to_source_graph: def manifest_to_source_graph(manifest: Any, model:
-      Any) -> ''SourceGraph'''
+    - 'enrich_behaviors_from_manifest: def enrich_behaviors_from_manifest(model: Any, manifest: Manifest) -> None'
+    - 'enrich_from_manifest: def enrich_from_manifest(model: Any, manifest: Manifest) -> None'
+    - 'enrich_from_source_graph: def enrich_from_source_graph(model: Any, graph: ''SourceGraph'') -> None'
+    - 'enrich_with_block_context: def enrich_with_block_context(model: Any, recursive_manifests: dict) -> None'
+    - 'extract_component_interfaces: def extract_component_interfaces(model: Any, graph: ''SourceGraph'') -> int'
+    - 'infer_composite_behaviors: def infer_composite_behaviors(model: ArchitectureModel) -> ArchitectureModel'
+    - 'manifest_to_source_graph: def manifest_to_source_graph(manifest: Any, model: Any) -> ''SourceGraph'''
     description: 35 public symbols exported
   - id: IF-14
     name: COMP-4-11 Library API
@@ -1545,17 +1813,14 @@ entities:
     methods:
     - 'RouteInfo: class RouteInfo'
     - 'detect_constraints: def detect_constraints(project_root: Path) -> list[Constraint]'
-    - 'detect_routes: def detect_routes(project_root: Path, web_layer_dirs: list[str]
-      | None=None) -> list[RouteInfo]'
-    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path,
-      project: str='''', system: str='''') -> ArchitectureModel'
-    - 'extract_from_code: def extract_from_code(project_root: str | Path, config:
-      ProjectConfig | None=None, manifest: dict | None=None) -> ArchitectureModel'
+    - 'detect_routes: def detect_routes(project_root: Path, web_layer_dirs: list[str] | None=None) -> list[RouteInfo]'
+    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path, project: str='''', system: str='''') ->
+      ArchitectureModel'
+    - 'extract_from_code: def extract_from_code(project_root: str | Path, config: ProjectConfig | None=None, manifest: dict
+      | None=None) -> ArchitectureModel'
     - 'extract_list_items: def extract_list_items(text: str) -> list[str]'
-    - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str,
-      str]'
-    - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern:
-      str) -> list[dict[str, str]]'
+    - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str, str]'
+    - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern: str) -> list[dict[str, str]]'
     - 'main: def main()'
     - 'parse_tables: def parse_tables(markdown: str) -> list[list[dict[str, str]]]'
     description: 10 public symbols exported
@@ -1575,14 +1840,11 @@ entities:
     interface_type: library
     component_id: COMP-4-13
     methods:
-    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None,
-      include_manifests: bool=True, include_module_specs: bool=True) -> ExportResult'
-    - 'concat_behavior_specs: def concat_behavior_specs(repo_path: Path) -> str |
-      None'
-    - 'concat_behavior_submodels: def concat_behavior_submodels(repo_path: Path) ->
-      str | None'
-    - 'concat_component_models: def concat_component_models(repo_path: Path) -> str
-      | None'
+    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None, include_manifests: bool=True, include_module_specs:
+      bool=True) -> ExportResult'
+    - 'concat_behavior_specs: def concat_behavior_specs(repo_path: Path) -> str | None'
+    - 'concat_behavior_submodels: def concat_behavior_submodels(repo_path: Path) -> str | None'
+    - 'concat_component_models: def concat_component_models(repo_path: Path) -> str | None'
     - 'concat_diagrams: def concat_diagrams(repo_path: Path) -> str | None'
     - 'concat_docs: def concat_docs(repo_path: Path) -> str | None'
     - 'concat_module_specs: def concat_module_specs(repo_path: Path) -> str | None'
@@ -2284,123 +2546,690 @@ relationships:
 - from: COMP-12
   to: IF-auto-COMP-12
   type: exposes
-# Pipeline behavior hierarchy
-- {from_id: BEH-P1, to_id: BEH-P1.1, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.2, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.3, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.4, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.5, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.6, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.7, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.8, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.9, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.10, type: contains}
-- {from_id: BEH-P1, to_id: BEH-P1.R, type: contains}
-# Stage sequential triggers
-- {from_id: BEH-P1.1, to_id: BEH-P1.2, type: triggers}
-- {from_id: BEH-P1.2, to_id: BEH-P1.3, type: triggers}
-- {from_id: BEH-P1.3, to_id: BEH-P1.4, type: triggers}
-- {from_id: BEH-P1.4, to_id: BEH-P1.5, type: triggers}
-- {from_id: BEH-P1.5, to_id: BEH-P1.6, type: triggers}
-- {from_id: BEH-P1.6, to_id: BEH-P1.7, type: triggers}
-- {from_id: BEH-P1.7, to_id: BEH-P1.8, type: triggers}
-- {from_id: BEH-P1.8, to_id: BEH-P1.9, type: triggers}
-- {from_id: BEH-P1.9, to_id: BEH-P1.10, type: triggers}
-# LLM refinement triggers
-- {from_id: BEH-P1.2, to_id: BEH-P1.R, type: triggers}
-- {from_id: BEH-P1.3, to_id: BEH-P1.R, type: triggers}
-- {from_id: BEH-P1.4, to_id: BEH-P1.R, type: triggers}
-- {from_id: BEH-P1.5, to_id: BEH-P1.R, type: triggers}
-# Observe sub-behaviors
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.1, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.2, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.3, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.4, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.5, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.6, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.7, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.8, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.9, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.10, type: contains}
-- {from_id: BEH-P1.1, to_id: BEH-P1.1.11, type: contains}
-# Infer sub-behaviors
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.1, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.2, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.3, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.4, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.5, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.6, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.7, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.8, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.9, type: contains}
-- {from_id: BEH-P1.2, to_id: BEH-P1.2.10, type: contains}
-# Allocate sub-behaviors
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.1, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.2, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.3, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.4, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.5, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.6, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.7, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.8, type: contains}
-- {from_id: BEH-P1.3, to_id: BEH-P1.3.9, type: contains}
-# Relate sub-behaviors
-- {from_id: BEH-P1.4, to_id: BEH-P1.4.1, type: contains}
-- {from_id: BEH-P1.4, to_id: BEH-P1.4.2, type: contains}
-- {from_id: BEH-P1.4, to_id: BEH-P1.4.3, type: contains}
-- {from_id: BEH-P1.4, to_id: BEH-P1.4.4, type: contains}
-- {from_id: BEH-P1.4, to_id: BEH-P1.4.5, type: contains}
-- {from_id: BEH-P1.4, to_id: BEH-P1.4.6, type: contains}
-# Specify sub-behaviors
-- {from_id: BEH-P1.5, to_id: BEH-P1.5.1, type: contains}
-- {from_id: BEH-P1.5, to_id: BEH-P1.5.2, type: contains}
-- {from_id: BEH-P1.5, to_id: BEH-P1.5.3, type: contains}
-- {from_id: BEH-P1.5, to_id: BEH-P1.5.4, type: contains}
-- {from_id: BEH-P1.5, to_id: BEH-P1.5.5, type: contains}
-# Contract sub-behaviors
-- {from_id: BEH-P1.6, to_id: BEH-P1.6.1, type: contains}
-- {from_id: BEH-P1.6, to_id: BEH-P1.6.2, type: contains}
-# Validate sub-behaviors
-- {from_id: BEH-P1.7, to_id: BEH-P1.7.1, type: contains}
-- {from_id: BEH-P1.7, to_id: BEH-P1.7.2, type: contains}
-- {from_id: BEH-P1.7, to_id: BEH-P1.7.3, type: contains}
-- {from_id: BEH-P1.7, to_id: BEH-P1.7.4, type: contains}
-- {from_id: BEH-P1.7, to_id: BEH-P1.7.5, type: contains}
-# Decompose sub-behaviors
-- {from_id: BEH-P1.8, to_id: BEH-P1.8.1, type: contains}
-- {from_id: BEH-P1.8, to_id: BEH-P1.8.2, type: contains}
-- {from_id: BEH-P1.8, to_id: BEH-P1.8.3, type: contains}
-- {from_id: BEH-P1.8, to_id: BEH-P1.8.4, type: contains}
-# Synthesize sub-behaviors
-- {from_id: BEH-P1.9, to_id: BEH-P1.9.1, type: contains}
-- {from_id: BEH-P1.9, to_id: BEH-P1.9.2, type: contains}
-- {from_id: BEH-P1.9, to_id: BEH-P1.9.3, type: contains}
-- {from_id: BEH-P1.9, to_id: BEH-P1.9.4, type: contains}
-- {from_id: BEH-P1.9, to_id: BEH-P1.9.5, type: contains}
-- {from_id: BEH-P1.9, to_id: BEH-P1.9.6, type: contains}
-# Emit sub-behaviors
-- {from_id: BEH-P1.10, to_id: BEH-P1.10.1, type: contains}
-- {from_id: BEH-P1.10, to_id: BEH-P1.10.2, type: contains}
-- {from_id: BEH-P1.10, to_id: BEH-P1.10.3, type: contains}
-- {from_id: BEH-P1.10, to_id: BEH-P1.10.4, type: contains}
-- {from_id: BEH-P1.10, to_id: BEH-P1.10.5, type: contains}
-- {from_id: BEH-P1.10, to_id: BEH-P1.10.6, type: contains}
-- {from_id: BEH-P1.10, to_id: BEH-P1.10.7, type: contains}
-# LLM Refinement sub-behaviors
-- {from_id: BEH-P1.R, to_id: BEH-P1.R.1, type: contains}
-- {from_id: BEH-P1.R, to_id: BEH-P1.R.2, type: contains}
-- {from_id: BEH-P1.R, to_id: BEH-P1.R.3, type: contains}
-- {from_id: BEH-P1.R, to_id: BEH-P1.R.4, type: contains}
-# Component traces-to behaviors
-- {from_id: COMP-2.1, to_id: BEH-P1, type: traces-to}
-- {from_id: COMP-2.1, to_id: BEH-P1.R, type: traces-to}
-- {from_id: COMP-2.2, to_id: BEH-P1.1, type: traces-to}
-- {from_id: COMP-2.2, to_id: BEH-P1.2, type: traces-to}
-- {from_id: COMP-2.3, to_id: BEH-P1.3, type: traces-to}
-- {from_id: COMP-2.3, to_id: BEH-P1.4, type: traces-to}
-- {from_id: COMP-2.4, to_id: BEH-P1.5, type: traces-to}
-- {from_id: COMP-2.4, to_id: BEH-P1.6, type: traces-to}
-- {from_id: COMP-2.4, to_id: BEH-P1.7, type: traces-to}
-- {from_id: COMP-2.5, to_id: BEH-P1.8, type: traces-to}
-- {from_id: COMP-2.5, to_id: BEH-P1.9, type: traces-to}
-- {from_id: COMP-2.5, to_id: BEH-P1.10, type: traces-to}
+- from_id: BEH-P1
+  to_id: BEH-P1.1
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.2
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.3
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.4
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.5
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.6
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.7
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.8
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.9
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.10
+  type: contains
+- from_id: BEH-P1
+  to_id: BEH-P1.R
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.2
+  type: triggers
+- from_id: BEH-P1.2
+  to_id: BEH-P1.3
+  type: triggers
+- from_id: BEH-P1.3
+  to_id: BEH-P1.4
+  type: triggers
+- from_id: BEH-P1.4
+  to_id: BEH-P1.5
+  type: triggers
+- from_id: BEH-P1.5
+  to_id: BEH-P1.6
+  type: triggers
+- from_id: BEH-P1.6
+  to_id: BEH-P1.7
+  type: triggers
+- from_id: BEH-P1.7
+  to_id: BEH-P1.8
+  type: triggers
+- from_id: BEH-P1.8
+  to_id: BEH-P1.9
+  type: triggers
+- from_id: BEH-P1.9
+  to_id: BEH-P1.10
+  type: triggers
+- from_id: BEH-P1.2
+  to_id: BEH-P1.R
+  type: triggers
+- from_id: BEH-P1.3
+  to_id: BEH-P1.R
+  type: triggers
+- from_id: BEH-P1.4
+  to_id: BEH-P1.R
+  type: triggers
+- from_id: BEH-P1.5
+  to_id: BEH-P1.R
+  type: triggers
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.1
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.2
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.3
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.4
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.5
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.6
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.7
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.8
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.9
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.10
+  type: contains
+- from_id: BEH-P1.1
+  to_id: BEH-P1.1.11
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.1
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.2
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.3
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.4
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.5
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.6
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.7
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.8
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.9
+  type: contains
+- from_id: BEH-P1.2
+  to_id: BEH-P1.2.10
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.1
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.2
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.3
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.4
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.5
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.6
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.7
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.8
+  type: contains
+- from_id: BEH-P1.3
+  to_id: BEH-P1.3.9
+  type: contains
+- from_id: BEH-P1.4
+  to_id: BEH-P1.4.1
+  type: contains
+- from_id: BEH-P1.4
+  to_id: BEH-P1.4.2
+  type: contains
+- from_id: BEH-P1.4
+  to_id: BEH-P1.4.3
+  type: contains
+- from_id: BEH-P1.4
+  to_id: BEH-P1.4.4
+  type: contains
+- from_id: BEH-P1.4
+  to_id: BEH-P1.4.5
+  type: contains
+- from_id: BEH-P1.4
+  to_id: BEH-P1.4.6
+  type: contains
+- from_id: BEH-P1.5
+  to_id: BEH-P1.5.1
+  type: contains
+- from_id: BEH-P1.5
+  to_id: BEH-P1.5.2
+  type: contains
+- from_id: BEH-P1.5
+  to_id: BEH-P1.5.3
+  type: contains
+- from_id: BEH-P1.5
+  to_id: BEH-P1.5.4
+  type: contains
+- from_id: BEH-P1.5
+  to_id: BEH-P1.5.5
+  type: contains
+- from_id: BEH-P1.6
+  to_id: BEH-P1.6.1
+  type: contains
+- from_id: BEH-P1.6
+  to_id: BEH-P1.6.2
+  type: contains
+- from_id: BEH-P1.7
+  to_id: BEH-P1.7.1
+  type: contains
+- from_id: BEH-P1.7
+  to_id: BEH-P1.7.2
+  type: contains
+- from_id: BEH-P1.7
+  to_id: BEH-P1.7.3
+  type: contains
+- from_id: BEH-P1.7
+  to_id: BEH-P1.7.4
+  type: contains
+- from_id: BEH-P1.7
+  to_id: BEH-P1.7.5
+  type: contains
+- from_id: BEH-P1.8
+  to_id: BEH-P1.8.1
+  type: contains
+- from_id: BEH-P1.8
+  to_id: BEH-P1.8.2
+  type: contains
+- from_id: BEH-P1.8
+  to_id: BEH-P1.8.3
+  type: contains
+- from_id: BEH-P1.8
+  to_id: BEH-P1.8.4
+  type: contains
+- from_id: BEH-P1.9
+  to_id: BEH-P1.9.1
+  type: contains
+- from_id: BEH-P1.9
+  to_id: BEH-P1.9.2
+  type: contains
+- from_id: BEH-P1.9
+  to_id: BEH-P1.9.3
+  type: contains
+- from_id: BEH-P1.9
+  to_id: BEH-P1.9.4
+  type: contains
+- from_id: BEH-P1.9
+  to_id: BEH-P1.9.5
+  type: contains
+- from_id: BEH-P1.9
+  to_id: BEH-P1.9.6
+  type: contains
+- from_id: BEH-P1.10
+  to_id: BEH-P1.10.1
+  type: contains
+- from_id: BEH-P1.10
+  to_id: BEH-P1.10.2
+  type: contains
+- from_id: BEH-P1.10
+  to_id: BEH-P1.10.3
+  type: contains
+- from_id: BEH-P1.10
+  to_id: BEH-P1.10.4
+  type: contains
+- from_id: BEH-P1.10
+  to_id: BEH-P1.10.5
+  type: contains
+- from_id: BEH-P1.10
+  to_id: BEH-P1.10.6
+  type: contains
+- from_id: BEH-P1.10
+  to_id: BEH-P1.10.7
+  type: contains
+- from_id: BEH-P1.R
+  to_id: BEH-P1.R.1
+  type: contains
+- from_id: BEH-P1.R
+  to_id: BEH-P1.R.2
+  type: contains
+- from_id: BEH-P1.R
+  to_id: BEH-P1.R.3
+  type: contains
+- from_id: BEH-P1.R
+  to_id: BEH-P1.R.4
+  type: contains
+- from_id: COMP-2.1
+  to_id: BEH-P1
+  type: traces-to
+- from_id: COMP-2.1
+  to_id: BEH-P1.R
+  type: traces-to
+- from_id: COMP-2.2
+  to_id: BEH-P1.1
+  type: traces-to
+- from_id: COMP-2.2
+  to_id: BEH-P1.2
+  type: traces-to
+- from_id: COMP-2.3
+  to_id: BEH-P1.3
+  type: traces-to
+- from_id: COMP-2.3
+  to_id: BEH-P1.4
+  type: traces-to
+- from_id: COMP-2.4
+  to_id: BEH-P1.5
+  type: traces-to
+- from_id: COMP-2.4
+  to_id: BEH-P1.6
+  type: traces-to
+- from_id: COMP-2.4
+  to_id: BEH-P1.7
+  type: traces-to
+- from_id: COMP-2.5
+  to_id: BEH-P1.8
+  type: traces-to
+- from_id: COMP-2.5
+  to_id: BEH-P1.9
+  type: traces-to
+- from_id: COMP-2.5
+  to_id: BEH-P1.10
+  type: traces-to
+- type: contains
+  from_id: CAP-0
+  to_id: CAP-0.1
+  description: Root capability contains CAP-0.1
+- type: contains
+  from_id: CAP-0
+  to_id: CAP-0.2
+  description: Root capability contains CAP-0.2
+- type: contains
+  from_id: CAP-0
+  to_id: CAP-0.3
+  description: Root capability contains CAP-0.3
+- type: contains
+  from_id: CAP-0
+  to_id: CAP-0.4
+  description: Root capability contains CAP-0.4
+- type: contains
+  from_id: CAP-0.1
+  to_id: CAP-2
+  description: CAP-0.1 contains CAP-2
+- type: contains
+  from_id: CAP-0.1
+  to_id: CAP-3
+  description: CAP-0.1 contains CAP-3
+- type: contains
+  from_id: CAP-0.1
+  to_id: CAP-4
+  description: CAP-0.1 contains CAP-4
+- type: contains
+  from_id: CAP-0.1
+  to_id: CAP-7
+  description: CAP-0.1 contains CAP-7
+- type: contains
+  from_id: CAP-0.2
+  to_id: CAP-1
+  description: CAP-0.2 contains CAP-1
+- type: contains
+  from_id: CAP-0.2
+  to_id: CAP-11
+  description: CAP-0.2 contains CAP-11
+- type: contains
+  from_id: CAP-0.2
+  to_id: CAP-12
+  description: CAP-0.2 contains CAP-12
+- type: contains
+  from_id: CAP-0.3
+  to_id: CAP-5
+  description: CAP-0.3 contains CAP-5
+- type: contains
+  from_id: CAP-0.3
+  to_id: CAP-6
+  description: CAP-0.3 contains CAP-6
+- type: contains
+  from_id: CAP-0.3
+  to_id: CAP-10
+  description: CAP-0.3 contains CAP-10
+- type: contains
+  from_id: CAP-0.3
+  to_id: CAP-15
+  description: CAP-0.3 contains CAP-15
+- type: contains
+  from_id: CAP-0.4
+  to_id: CAP-8
+  description: CAP-0.4 contains CAP-8
+- type: contains
+  from_id: CAP-0.4
+  to_id: CAP-9
+  description: CAP-0.4 contains CAP-9
+- type: contains
+  from_id: CAP-0.4
+  to_id: CAP-13
+  description: CAP-0.4 contains CAP-13
+- type: contains
+  from_id: CAP-0.4
+  to_id: CAP-14
+  description: CAP-0.4 contains CAP-14
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.1
+  description: CAP-1 contains CAP-1.1
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.2
+  description: CAP-1 contains CAP-1.2
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.3
+  description: CAP-1 contains CAP-1.3
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.4
+  description: CAP-1 contains CAP-1.4
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.5
+  description: CAP-1 contains CAP-1.5
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.6
+  description: CAP-1 contains CAP-1.6
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.7
+  description: CAP-1 contains CAP-1.7
+- type: contains
+  from_id: CAP-1
+  to_id: CAP-1.8
+  description: CAP-1 contains CAP-1.8
+- type: contains
+  from_id: CAP-2
+  to_id: CAP-2.1
+  description: CAP-2 contains CAP-2.1
+- type: contains
+  from_id: CAP-2
+  to_id: CAP-2.2
+  description: CAP-2 contains CAP-2.2
+- type: contains
+  from_id: CAP-2
+  to_id: CAP-2.3
+  description: CAP-2 contains CAP-2.3
+- type: contains
+  from_id: CAP-2
+  to_id: CAP-2.4
+  description: CAP-2 contains CAP-2.4
+- type: contains
+  from_id: CAP-2
+  to_id: CAP-2.5
+  description: CAP-2 contains CAP-2.5
+- type: contains
+  from_id: CAP-2
+  to_id: CAP-2.6
+  description: CAP-2 contains CAP-2.6
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.1
+  description: CAP-3 contains CAP-3.1
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.2
+  description: CAP-3 contains CAP-3.2
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.3
+  description: CAP-3 contains CAP-3.3
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.4
+  description: CAP-3 contains CAP-3.4
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.5
+  description: CAP-3 contains CAP-3.5
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.6
+  description: CAP-3 contains CAP-3.6
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.7
+  description: CAP-3 contains CAP-3.7
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.8
+  description: CAP-3 contains CAP-3.8
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.9
+  description: CAP-3 contains CAP-3.9
+- type: contains
+  from_id: CAP-3
+  to_id: CAP-3.10
+  description: CAP-3 contains CAP-3.10
+- type: contains
+  from_id: CAP-4
+  to_id: CAP-4.1
+  description: CAP-4 contains CAP-4.1
+- type: contains
+  from_id: CAP-4
+  to_id: CAP-4.2
+  description: CAP-4 contains CAP-4.2
+- type: contains
+  from_id: CAP-4
+  to_id: CAP-4.3
+  description: CAP-4 contains CAP-4.3
+- type: contains
+  from_id: CAP-4
+  to_id: CAP-4.4
+  description: CAP-4 contains CAP-4.4
+- type: contains
+  from_id: CAP-4
+  to_id: CAP-4.5
+  description: CAP-4 contains CAP-4.5
+- type: contains
+  from_id: CAP-4
+  to_id: CAP-4.6
+  description: CAP-4 contains CAP-4.6
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.1
+  description: CAP-5 contains CAP-5.1
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.2
+  description: CAP-5 contains CAP-5.2
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.3
+  description: CAP-5 contains CAP-5.3
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.4
+  description: CAP-5 contains CAP-5.4
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.5
+  description: CAP-5 contains CAP-5.5
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.6
+  description: CAP-5 contains CAP-5.6
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.7
+  description: CAP-5 contains CAP-5.7
+- type: contains
+  from_id: CAP-5
+  to_id: CAP-5.8
+  description: CAP-5 contains CAP-5.8
+- type: contains
+  from_id: CAP-6
+  to_id: CAP-6.1
+  description: CAP-6 contains CAP-6.1
+- type: contains
+  from_id: CAP-6
+  to_id: CAP-6.2
+  description: CAP-6 contains CAP-6.2
+- type: contains
+  from_id: CAP-6
+  to_id: CAP-6.3
+  description: CAP-6 contains CAP-6.3
+- type: contains
+  from_id: CAP-7
+  to_id: CAP-7.1
+  description: CAP-7 contains CAP-7.1
+- type: contains
+  from_id: CAP-7
+  to_id: CAP-7.2
+  description: CAP-7 contains CAP-7.2
+- type: contains
+  from_id: CAP-7
+  to_id: CAP-7.3
+  description: CAP-7 contains CAP-7.3
+- type: contains
+  from_id: CAP-7
+  to_id: CAP-7.4
+  description: CAP-7 contains CAP-7.4
+- type: contains
+  from_id: CAP-8
+  to_id: CAP-8.1
+  description: CAP-8 contains CAP-8.1
+- type: contains
+  from_id: CAP-8
+  to_id: CAP-8.2
+  description: CAP-8 contains CAP-8.2
+- type: contains
+  from_id: CAP-8
+  to_id: CAP-8.3
+  description: CAP-8 contains CAP-8.3
+- type: contains
+  from_id: CAP-9
+  to_id: CAP-9.1
+  description: CAP-9 contains CAP-9.1
+- type: contains
+  from_id: CAP-9
+  to_id: CAP-9.2
+  description: CAP-9 contains CAP-9.2
+- type: contains
+  from_id: CAP-9
+  to_id: CAP-9.3
+  description: CAP-9 contains CAP-9.3
+- type: contains
+  from_id: CAP-9
+  to_id: CAP-9.4
+  description: CAP-9 contains CAP-9.4
+- type: contains
+  from_id: CAP-9
+  to_id: CAP-9.5
+  description: CAP-9 contains CAP-9.5
+- type: contains
+  from_id: CAP-10
+  to_id: CAP-10.1
+  description: CAP-10 contains CAP-10.1
+- type: contains
+  from_id: CAP-10
+  to_id: CAP-10.2
+  description: CAP-10 contains CAP-10.2
+- type: contains
+  from_id: CAP-10
+  to_id: CAP-10.3
+  description: CAP-10 contains CAP-10.3
+- type: contains
+  from_id: CAP-10
+  to_id: CAP-10.4
+  description: CAP-10 contains CAP-10.4
+- type: contains
+  from_id: CAP-11
+  to_id: CAP-11.1
+  description: CAP-11 contains CAP-11.1
+- type: contains
+  from_id: CAP-11
+  to_id: CAP-11.2
+  description: CAP-11 contains CAP-11.2
+- type: contains
+  from_id: CAP-11
+  to_id: CAP-11.3
+  description: CAP-11 contains CAP-11.3
+- type: contains
+  from_id: CAP-12
+  to_id: CAP-12.1
+  description: CAP-12 contains CAP-12.1
+- type: contains
+  from_id: CAP-12
+  to_id: CAP-12.2
+  description: CAP-12 contains CAP-12.2
+- type: contains
+  from_id: CAP-13
+  to_id: CAP-13.1
+  description: CAP-13 contains CAP-13.1
+- type: contains
+  from_id: CAP-13
+  to_id: CAP-13.2
+  description: CAP-13 contains CAP-13.2
+- type: contains
+  from_id: CAP-13
+  to_id: CAP-13.3
+  description: CAP-13 contains CAP-13.3
+- type: contains
+  from_id: CAP-14
+  to_id: CAP-14.1
+  description: CAP-14 contains CAP-14.1
+- type: contains
+  from_id: CAP-14
+  to_id: CAP-14.2
+  description: CAP-14 contains CAP-14.2
+- type: contains
+  from_id: CAP-14
+  to_id: CAP-14.3
+  description: CAP-14 contains CAP-14.3
+- type: contains
+  from_id: CAP-14
+  to_id: CAP-14.4
+  description: CAP-14 contains CAP-14.4
+- type: contains
+  from_id: CAP-14
+  to_id: CAP-14.5
+  description: CAP-14 contains CAP-14.5
+- type: contains
+  from_id: CAP-15
+  to_id: CAP-15.1
+  description: CAP-15 contains CAP-15.1
+- type: contains
+  from_id: CAP-15
+  to_id: CAP-15.2
+  description: CAP-15 contains CAP-15.2
+- type: contains
+  from_id: CAP-15
+  to_id: CAP-15.3
+  description: CAP-15 contains CAP-15.3
+- type: contains
+  from_id: CAP-15
+  to_id: CAP-15.4
+  description: CAP-15 contains CAP-15.4
