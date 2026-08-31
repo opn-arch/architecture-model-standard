@@ -46,6 +46,7 @@ class _FakeComponent:
 class _FakeCapability:
     id: str = "CAP-1"
     name: str = "TestCap"
+    description: str = ""
 
 
 @dataclass
@@ -209,6 +210,32 @@ class TestBuildSystemModelYaml:
         parsed = yaml.safe_load(yaml_str)
         assert parsed["meta"]["system"] == "Empty"
         assert parsed["relationships"] == []
+
+    def test_capability_description_preserved(self):
+        """Capability descriptions and status should survive synthesis."""
+        cap = _FakeCapability(id="CAP-1", name="Test", description="A test capability")
+        boundary = SystemBoundary(system_id="SYS-1", name="Sys")
+        results = {
+            "infer": _stage_result(_FakeInferOutput(capabilities=[cap])),
+        }
+        yaml_str = _build_system_model_yaml(boundary, results)
+        parsed = yaml.safe_load(yaml_str)
+        cap_out = parsed["entities"]["capabilities"][0]
+        assert cap_out["status"] == "ACTIVE"
+        assert cap_out["description"] == "A test capability"
+
+    def test_capability_no_description_omitted(self):
+        """Capabilities without description should not have the key."""
+        cap = _FakeCapability(id="CAP-1", name="Test")
+        boundary = SystemBoundary(system_id="SYS-1", name="Sys")
+        results = {
+            "infer": _stage_result(_FakeInferOutput(capabilities=[cap])),
+        }
+        yaml_str = _build_system_model_yaml(boundary, results)
+        parsed = yaml.safe_load(yaml_str)
+        cap_out = parsed["entities"]["capabilities"][0]
+        assert cap_out["status"] == "ACTIVE"
+        assert "description" not in cap_out
 
 
 # ---------------------------------------------------------------------------

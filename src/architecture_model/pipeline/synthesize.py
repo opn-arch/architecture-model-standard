@@ -78,7 +78,9 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
         output = infer_result.output
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
-                cap_dict: dict[str, Any] = {"id": cap.id, "name": cap.name}
+                cap_dict: dict[str, Any] = {"id": cap.id, "name": cap.name, "status": "ACTIVE"}
+                if hasattr(cap, "description") and cap.description:
+                    cap_dict["description"] = cap.description
                 capabilities.append(cap_dict)
 
     cap_ids = {c["id"] for c in capabilities}
@@ -256,9 +258,11 @@ def _build_sos_model(
                 actors.append({"id": getattr(actor, "id", ""), "name": getattr(actor, "name", "")})
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
-                capabilities.append(
-                    {"id": getattr(cap, "id", ""), "name": getattr(cap, "name", "")}
-                )
+                cap_dict = {"id": getattr(cap, "id", ""), "name": getattr(cap, "name", ""), "status": "ACTIVE"}
+                desc = getattr(cap, "description", None)
+                if desc:
+                    cap_dict["description"] = desc
+                capabilities.append(cap_dict)
         if hasattr(output, "behaviors"):
             for beh in output.behaviors:
                 behaviors.append({"id": getattr(beh, "id", ""), "name": getattr(beh, "name", "")})
