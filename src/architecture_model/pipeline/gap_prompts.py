@@ -16,7 +16,9 @@ def _fmt_modules(modules: list[dict]) -> str:
     for m in modules:
         funcs = ", ".join(m.get("functions", []))
         classes = ", ".join(m.get("classes", []))
-        lines.append(f"- {m['path']}  functions=[{funcs}]  classes=[{classes}]")
+        doc = m.get("docstring", "")
+        doc_part = f'  doc="{doc}"' if doc else ""
+        lines.append(f"- {m['path']}{doc_part}  functions=[{funcs}]  classes=[{classes}]")
     return "\n".join(lines)
 
 
@@ -37,19 +39,25 @@ def _fmt_imports(imports: list[dict]) -> str:
 
 
 _TEMPLATES: dict[str, str] = {
-    "infer": """You are an architecture analyst. Given these source modules, identify the capabilities and behaviors this codebase provides.
+    "infer": """You are an architecture analyst. Given these source modules, identify the capabilities this codebase provides.
 
 ## Modules
 {modules}
 
 ## Task
-Analyze the module names, functions, and classes to infer:
-1. **Capabilities** — functional blocks (what the system can do)
-2. **Behaviors** — use cases, workflows, operational sequences
+Analyze the module names, docstrings, functions, and classes to infer a **hierarchical capability tree**:
+1. **Root capability** — one sentence describing the system's overall purpose
+2. **L1 capability groups** — 3-5 thematic groups (e.g., "Understand", "Validate", "Generate", "Evolve")
+3. **L2 capabilities** — concrete functional blocks within each group
+4. **L3 sub-capabilities** — specific functions within each L2 capability
+
+Each capability MUST have a `name` (verb phrase) and `description` (1 sentence, semantic).
+
+Also identify **behaviors** — use cases, workflows, operational sequences.
 
 Respond with JSON only:
 ```json
-{{"capabilities": [{{"name": "...", "source_file": "..."}}], "behaviors": [{{"name": "...", "type": "..."}}]}}
+{{"capabilities": [{{"name": "...", "description": "...", "sub_capabilities": [{{"name": "...", "description": "...", "sub_capabilities": [...]}}]}}], "behaviors": [{{"name": "...", "type": "..."}}]}}
 ```""",
 
     "allocate": """You are an architecture analyst. Given these modules and capabilities, group modules into components with layer assignments.

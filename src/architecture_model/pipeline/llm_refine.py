@@ -33,13 +33,79 @@ def normalize_llm_output(stage: str, raw: dict) -> dict:
     return raw
 
 
+def _flatten_capability_tree(tree: list[dict], prefix: str = "CAP-F") -> list[dict]:
+    """Recursively flatten a hierarchical capability tree into a flat list.
+
+    ID scheme:
+    - Root/L1 groups: CAP-F0, CAP-F0.1, CAP-F0.2, ...
+    - L2 capabilities: CAP-F1, CAP-F2, ...
+    - L3 sub-capabilities: CAP-F1.1, CAP-F1.2, ...
+
+    If the tree has no ``sub_capabilities`` keys, returns the list as-is
+    (backward compatibility with flat capability lists).
+    """
+    # Check if any node has sub_capabilities — if not, it's a flat list
+    has_hierarchy = any(c.get("sub_capabilities") for c in tree)
+    if not has_hierarchy:
+        return tree  # flat list, let caller handle normally
+
+    flat: list[dict] = []
+    l2_counter = 1
+
+    for i, root in enumerate(tree):
+        root_id = f"{prefix}0.{i + 1}" if len(tree) > 1 else f"{prefix}0"
+        root_cap: dict[str, Any] = {
+            "id": root.get("id", root_id),
+            "name": root.get("name", ""),
+            "description": root.get("description", ""),
+            "sub_capability_ids": [],
+        }
+
+        for child in root.get("sub_capabilities", []):
+            child_id = f"{prefix}{l2_counter}"
+            child_cap: dict[str, Any] = {
+                "id": child.get("id", child_id),
+                "name": child.get("name", ""),
+                "description": child.get("description", ""),
+                "sub_capability_ids": [],
+            }
+
+            for j, grandchild in enumerate(child.get("sub_capabilities", [])):
+                gc_id = f"{prefix}{l2_counter}.{j + 1}"
+                gc_cap: dict[str, Any] = {
+                    "id": grandchild.get("id", gc_id),
+                    "name": grandchild.get("name", ""),
+                    "description": grandchild.get("description", ""),
+                }
+                child_cap["sub_capability_ids"].append(gc_cap["id"])
+                flat.append(gc_cap)
+
+            root_cap["sub_capability_ids"].append(child_cap["id"])
+            flat.append(child_cap)
+            l2_counter += 1
+
+        flat.insert(0 if i == 0 else len(flat), root_cap)
+
+    return flat
+
+
 def _normalize_infer(raw: dict) -> dict:
+    raw_caps = raw.get("capabilities", [])
+
+    # Try hierarchical flattening first
+    flat_caps = _flatten_capability_tree(raw_caps)
+    is_hierarchical = flat_caps is not raw_caps  # identity check
+
     caps = []
-    for i, c in enumerate(raw.get("capabilities", [])):
+    for i, c in enumerate(flat_caps):
         d: dict[str, Any] = {
             "id": c.get("id", f"CAP-F{i + 1}"),
             "name": c.get("name", ""),
         }
+        if c.get("description"):
+            d["description"] = c["description"]
+        if c.get("sub_capability_ids"):
+            d["sub_capability_ids"] = c["sub_capability_ids"]
         # LLM uses source_file (singular); extract_stage_data uses source_files (plural list)
         sf = c.get("source_file") or c.get("source_files")
         if isinstance(sf, str):
