@@ -96,6 +96,31 @@ def do_another():
         categories = [u.category for u in result.uncertainties]
         assert "ambiguous_module" in categories
 
+    def test_infer_description_uses_docstrings(self, tmp_path):
+        """Capability descriptions should incorporate module/function docstrings."""
+        (tmp_path / "parser.py").write_text('''
+"""Parse architecture model files into typed objects."""
+
+def load_model(path: str) -> dict:
+    """Load and validate an architecture model from YAML."""
+    pass
+
+def validate_refs(model: dict) -> list:
+    """Check all entity references for integrity."""
+    pass
+
+def dump_model(model: dict) -> str:
+    """Serialize a model back to YAML format."""
+    pass
+''')
+        result = _run_observe_then_infer(tmp_path)
+        caps = result.output.capabilities
+        assert len(caps) >= 1
+        desc = caps[0].description.lower()
+        # Should mention parsing or architecture or model — not just "domain logic in parser.py"
+        assert any(word in desc for word in ["parse", "architecture", "model", "validate"]), \
+            f"Description should be semantic, got: {caps[0].description}"
+
     def test_infer_domain_modules_as_capabilities(self, tmp_path):
         (tmp_path / "payments.py").write_text('''
 def process_payment():

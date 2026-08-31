@@ -33,6 +33,78 @@ from .corrections import get_corrections_for_stage
 _LARGE_REPO_MODULE_THRESHOLD = 50
 
 
+def _describe_capability(modules: list[ModuleRecord]) -> str:
+    """Synthesize a semantic description from module/function/class docstrings.
+
+    Collects first-line docstrings from modules, public functions, and classes,
+    then produces a 1-2 sentence summary. Falls back to name-based summary.
+    """
+    fragments: list[str] = []
+
+    for mod in modules:
+        # Module-level docstring (first line)
+        if mod.docstring:
+            first_line = mod.docstring.strip().split("\n")[0].rstrip(".")
+            if first_line:
+                fragments.append(first_line)
+
+        # Public function docstrings
+        for func in mod.functions:
+            if func.name.startswith("_"):
+                continue
+            if func.docstring:
+                first_line = func.docstring.strip().split("\n")[0].rstrip(".")
+                if first_line:
+                    fragments.append(first_line)
+
+        # Class names + docstrings
+        for cls in mod.classes:
+            if cls.name.startswith("_"):
+                continue
+            # Check method_details for class-level docstring (via __init__ or first method)
+            cls_doc = None
+            for md in cls.method_details:
+                if md.name == "__init__" and md.docstring:
+                    cls_doc = md.docstring.strip().split("\n")[0].rstrip(".")
+                    break
+            if cls_doc:
+                fragments.append(cls_doc)
+            else:
+                fragments.append(cls.name)
+
+    if fragments:
+        # Use up to 3 fragments to build a concise description
+        unique = list(dict.fromkeys(fragments))  # dedupe, preserve order
+        if len(unique) == 1:
+            return unique[0]
+        # Join up to 3 with commas, lowercase subsequent
+        parts = unique[:3]
+        result = parts[0]
+        for p in parts[1:]:
+            # lowercase first char if it's uppercase
+            lowered = p[0].lower() + p[1:] if p and p[0].isupper() else p
+            result += ", " + lowered
+        return result
+
+    # Fallback: summarize from function/class names
+    names: list[str] = []
+    for mod in modules:
+        for func in mod.functions:
+            if not func.name.startswith("_"):
+                names.append(func.name.replace("_", " "))
+        for cls in mod.classes:
+            if not cls.name.startswith("_"):
+                names.append(cls.name)
+
+    if names:
+        unique_names = list(dict.fromkeys(names))[:5]
+        return "Provides " + ", ".join(unique_names)
+
+    # Ultimate fallback
+    stems = [mod.path.stem for mod in modules]
+    return f"Functionality in {', '.join(stems)}"
+
+
 def _infer_fallback_capabilities(modules: list, existing: list) -> list:
     """Fallback: if no capabilities found, treat packages with >3 public functions as capabilities."""
     if existing:
@@ -71,11 +143,17 @@ def _infer_fallback_capabilities(modules: list, existing: list) -> list:
     for pkg, count in sorted(package_functions.items(), key=lambda x: -x[1]):
         if count > 3:
             cap_id = f"CAP-{pkg.replace('_', '-')}"
+            # Collect modules for this package for description
+            pkg_modules = [
+                m for m in modules
+                if pkg in str(getattr(m, "file", "")) or pkg in str(getattr(m, "path", ""))
+            ]
+            desc = _describe_capability(pkg_modules) if pkg_modules else f"Package '{pkg}' exposes {count} public functions"
             caps.append(
                 InferredCapability(
                     id=cap_id,
                     name=f"Provide {pkg.replace('_', ' ').title()} functionality",
-                    description=f"Package '{pkg}' exposes {count} public functions",
+                    description=desc,
                     evidence_source=f"fallback:package:{pkg}",
                 )
             )
@@ -408,7 +486,7 @@ def _infer_from_domain_modules(
                     InferredCapability(
                         id="",
                         name=cap_name,
-                        description=f"Domain logic in {mod.path}",
+                        description=_describe_capability([mod]),
                         evidence_source="domain_module",
                     )
                 )
@@ -460,7 +538,7 @@ def _infer_capabilities_by_package(
                 caps.append(InferredCapability(
                     id="",
                     name=name,
-                    description=f"Module-level capability from {stem}",
+                    description=_describe_capability([mod]),
                     evidence_source="package_group",
                 ))
                 existing_names.add(name.lower())
@@ -475,7 +553,7 @@ def _infer_capabilities_by_package(
             caps.append(InferredCapability(
                 id="",
                 name=cap_name,
-                description=f"Package group with {len(mods)} modules",
+                description=_describe_capability(mods),
                 evidence_source="package_group",
             ))
             existing_names.add(cap_name.lower())
@@ -550,7 +628,7 @@ def _infer_from_cli(modules: list[ModuleRecord]) -> list[InferredCapability]:
                 InferredCapability(
                     id="",
                     name=f"CLI {mod.path.stem.replace('_', ' ').title()}",
-                    description=f"CLI commands in {mod.path}",
+                    description=_describe_capability([mod]),
                     evidence_source="cli_pattern",
                 )
             )
