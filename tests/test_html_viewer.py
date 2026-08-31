@@ -93,8 +93,28 @@ class TestHtmlViewerV2:
     def test_embedded_diagram_data(self, tmp_path):
         html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
         # Diagram data should be embedded as JSON
-        assert "diagramData" in html or "DIAGRAM_DATA" in html
+        assert "var D =" in html or "DIAGRAM_DATA" in html or "diagramData" in html
 
-    def test_has_use_cases_nav(self, tmp_path):
+    def test_has_behavior_model_nav(self, tmp_path):
         html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
-        assert "Use Cases" in html
+        assert "Behavior Model" in html
+
+    def test_has_7_se_views(self, tmp_path):
+        html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
+        for view in ["ConOps", "Functional Architecture", "Logical Architecture",
+                      "Behavior Model", "ICD", "Requirements", "System Decomposition"]:
+            assert view in html, f"Missing SE view: {view}"
+
+    def test_has_breadcrumb_support(self, tmp_path):
+        html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
+        assert "navHistory" in html
+        assert "breadcrumbs" in html
+        assert "goBack" in html
+
+    def test_has_property_cards(self, tmp_path):
+        html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
+        assert "prop-card" in html or "properties" in html
+
+    def test_has_click_handlers(self, tmp_path):
+        html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
+        assert "showEntity" in html

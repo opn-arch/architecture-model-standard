@@ -8,6 +8,8 @@ from ..core.visualize import (
     shape,
     edge_style,
     css_classes,
+    inject_click_handlers,
+    build_entity_properties,
     # Existing generators
     generate_all_diagrams,
     generate_behaviors_diagram,
@@ -30,10 +32,15 @@ from ..core.visualize import (
     generate_logical_architecture_diagram,
     generate_behavior_overview_diagram,
     generate_entity_explorer,
+    # New SE views (v3)
+    generate_icd_diagram,
+    generate_requirements_allocation_diagram,
+    generate_system_decomposition_diagram,
 )
 
 __all__ = [
     "shape", "edge_style", "css_classes",
+    "inject_click_handlers", "build_entity_properties",
     "generate_context_diagram", "generate_components_diagram",
     "generate_behaviors_diagram", "generate_dependencies_diagram",
     "generate_pipeline_flow_diagram", "generate_entity_lifecycle_diagram",
@@ -44,5 +51,7 @@ __all__ = [
     "generate_conops_diagram", "generate_functional_architecture_diagram",
     "generate_logical_architecture_diagram", "generate_behavior_overview_diagram",
     "generate_entity_explorer",
+    "generate_icd_diagram", "generate_requirements_allocation_diagram",
+    "generate_system_decomposition_diagram",
     "generate_all_diagrams",
 ]

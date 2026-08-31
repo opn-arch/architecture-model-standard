@@ -591,6 +591,185 @@ def generate_decomposition_diagram(model: "ArchitectureModel") -> str:
     return "\n".join(lines)
 
 
+def generate_icd_diagram(model: "ArchitectureModel") -> str:
+    """Interface Control Document: all interfaces with provider/consumer edges.
+
+    Shows: interfaces as central nodes, provider components (exposes),
+    consumer actors/components (consumes), grouped by provider component.
+    """
+    lines = ["flowchart LR"]
+    class_assignments: list[str] = []
+
+    comp_map = {c.id: c for c in model.entities.components}
+    ifc_map = {i.id: i for i in model.entities.interfaces}
+    actor_map = {a.id: a for a in model.entities.actors}
+    entity_map: dict[str, tuple[str, str]] = {}
+    for c in model.entities.components:
+        entity_map[c.id] = ("component", c.name)
+    for a in model.entities.actors:
+        entity_map[a.id] = ("actor", a.name)
+    for i in model.entities.interfaces:
+        entity_map[i.id] = ("interface", i.name)
+
+    # Build provider->interfaces mapping
+    provider_ifaces: dict[str, list[str]] = defaultdict(list)
+    for rel in model.relationships:
+        if _rel_type(rel) == "exposes" and rel.to_id in ifc_map:
+            provider_ifaces[rel.from_id].append(rel.to_id)
+
+    # Group interfaces by provider into subgraphs
+    rendered_ifaces: set[str] = set()
+    for provider_id, iface_ids in sorted(provider_ifaces.items()):
+        provider = entity_map.get(provider_id)
+        if not provider:
+            continue
+        ptype, pname = provider
+        lines.append(f'    subgraph {_sid(provider_id)}["{_label(pname)}"]')
+        for iid in iface_ids:
+            ifc = ifc_map.get(iid)
+            if ifc:
+                lines.append(f"        {shape('interface', iid, ifc.name)}")
+                class_assignments.append(_apply_class(iid, "interface"))
+                rendered_ifaces.add(iid)
+        lines.append("    end")
+        class_assignments.append(_apply_class(provider_id, "component"))
+
+    # Orphan interfaces (no provider)
+    orphans = [i for i in model.entities.interfaces if i.id not in rendered_ifaces]
+    if orphans:
+        lines.append('    subgraph orphan["Unassigned Interfaces"]')
+        for ifc in orphans:
+            lines.append(f"        {shape('interface', ifc.id, ifc.name)}")
+            class_assignments.append(_apply_class(ifc.id, "interface"))
+        lines.append("    end")
+
+    # Consumer edges
+    for rel in model.relationships:
+        if _rel_type(rel) == "consumes" and rel.to_id in ifc_map and rel.from_id in entity_map:
+            ftype, fname = entity_map[rel.from_id]
+            lines.append(f"    {shape(ftype, rel.from_id, fname)}")
+            class_assignments.append(_apply_class(rel.from_id, ftype))
+            lines.append(f"    {_sid(rel.from_id)} {edge_style('consumes')} {_sid(rel.to_id)}")
+
+    lines.extend(css_classes())
+    lines.extend(a for a in class_assignments if a)
+    return "\n".join(lines)
+
+
+def generate_requirements_allocation_diagram(model: "ArchitectureModel") -> str:
+    """Requirements Allocation: requirements/constraints mapped to components.
+
+    Shows: requirements as nodes, satisfies edges to components,
+    constrained-by edges from components to constraints.
+    """
+    lines = ["flowchart LR"]
+    class_assignments: list[str] = []
+
+    req_map = {r.id: r for r in model.entities.requirements}
+    con_map = {c.id: c for c in model.entities.constraints}
+    comp_map = {c.id: c for c in model.entities.components}
+
+    # Satisfies edges (component -> requirement)
+    rendered_reqs: set[str] = set()
+    rendered_comps: set[str] = set()
+    for rel in model.relationships:
+        if _rel_type(rel) == "satisfies":
+            if rel.from_id in comp_map and rel.to_id in req_map:
+                if rel.to_id not in rendered_reqs:
+                    req = req_map[rel.to_id]
+                    lines.append(f"    {shape('constraint', rel.to_id, req.name)}")
+                    class_assignments.append(_apply_class(rel.to_id, "constraint"))
+                    rendered_reqs.add(rel.to_id)
+                if rel.from_id not in rendered_comps:
+                    comp = comp_map[rel.from_id]
+                    lines.append(f"    {shape('component', rel.from_id, comp.name)}")
+                    class_assignments.append(_apply_class(rel.from_id, "component"))
+                    rendered_comps.add(rel.from_id)
+                lines.append(f"    {_sid(rel.from_id)} {edge_style('satisfies')} {_sid(rel.to_id)}")
+
+    # Constrained-by edges
+    rendered_cons: set[str] = set()
+    for rel in model.relationships:
+        if _rel_type(rel) == "constrained-by":
+            if rel.from_id in comp_map and rel.to_id in con_map:
+                if rel.to_id not in rendered_cons:
+                    con = con_map[rel.to_id]
+                    lines.append(f"    {shape('constraint', rel.to_id, con.name)}")
+                    class_assignments.append(_apply_class(rel.to_id, "constraint"))
+                    rendered_cons.add(rel.to_id)
+                if rel.from_id not in rendered_comps:
+                    comp = comp_map[rel.from_id]
+                    lines.append(f"    {shape('component', rel.from_id, comp.name)}")
+                    class_assignments.append(_apply_class(rel.from_id, "component"))
+                    rendered_comps.add(rel.from_id)
+                lines.append(f"    {_sid(rel.from_id)} {edge_style('constrained-by')} {_sid(rel.to_id)}")
+
+    # If nothing rendered, show a placeholder
+    if not rendered_reqs and not rendered_cons:
+        lines.append("    none[No requirements or constraints allocated]")
+
+    lines.extend(css_classes())
+    lines.extend(a for a in class_assignments if a)
+    return "\n".join(lines)
+
+
+def generate_system_decomposition_diagram(model: "ArchitectureModel") -> str:
+    """System Decomposition (Physical Architecture): systems containing components.
+
+    Shows: system entities as subgraphs containing their components,
+    with inter-system dependency edges.
+    """
+    lines = ["flowchart TB"]
+    class_assignments: list[str] = []
+
+    sys_map = {s.id: s for s in model.entities.systems}
+    comp_map = {c.id: c for c in model.entities.components}
+
+    # Build system -> component membership
+    sys_components: dict[str, list[str]] = defaultdict(list)
+    for sys in model.entities.systems:
+        # Use component_ids field if available
+        for cid in getattr(sys, "component_ids", []):
+            if cid in comp_map:
+                sys_components[sys.id].append(cid)
+
+    # Also check contains relationships
+    for rel in model.relationships:
+        if _rel_type(rel) == "contains" and rel.from_id in sys_map and rel.to_id in comp_map:
+            if rel.to_id not in sys_components[rel.from_id]:
+                sys_components[rel.from_id].append(rel.to_id)
+
+    assigned_comps: set[str] = set()
+    for sys_id, comp_ids in sys_components.items():
+        sys = sys_map[sys_id]
+        lines.append(f'    subgraph {_sid(sys_id)}["{_label(sys.name)}"]')
+        for cid in comp_ids:
+            comp = comp_map[cid]
+            lines.append(f"        {shape('component', cid, comp.name)}")
+            class_assignments.append(_apply_class(cid, "component"))
+            assigned_comps.add(cid)
+        lines.append("    end")
+
+    # Unassigned components
+    unassigned = [c for c in model.entities.components if c.id not in assigned_comps]
+    if unassigned:
+        lines.append('    subgraph unassigned["Unassigned Components"]')
+        for comp in unassigned:
+            lines.append(f"        {shape('component', comp.id, comp.name)}")
+            class_assignments.append(_apply_class(comp.id, "component"))
+        lines.append("    end")
+
+    # Inter-component dependency edges
+    comp_ids = {c.id for c in model.entities.components}
+    for rel in model.relationships:
+        if _rel_type(rel) == "depends-on" and rel.from_id in comp_ids and rel.to_id in comp_ids:
+            lines.append(f"    {_sid(rel.from_id)} {edge_style('depends-on')} {_sid(rel.to_id)}")
+
+    lines.extend(css_classes())
+    lines.extend(a for a in class_assignments if a)
+    return "\n".join(lines)
+
+
 def generate_conops_diagram(model: "ArchitectureModel") -> str:
     """ConOps view: actors interacting with the system through capability groups.
 
@@ -1039,18 +1218,149 @@ def _convert_clicks_to_anchors(mermaid_content: str) -> str:
     )
 
 
+def inject_click_handlers(mermaid_code: str, entity_ids: set[str]) -> str:
+    """Inject click callbacks for every entity node in a Mermaid diagram.
+
+    Scans the Mermaid code for sanitized node IDs that correspond to known
+    entity IDs and appends `click <sid> showEntity` directives. Existing
+    click directives for those nodes are removed first to avoid duplicates.
+
+    Args:
+        mermaid_code: Raw Mermaid diagram string.
+        entity_ids: Set of original (unsanitized) entity IDs from the model.
+
+    Returns:
+        Mermaid code with click handlers injected before classDef lines.
+    """
+    # Build sid -> original_id mapping
+    sid_to_id: dict[str, str] = {_sid(eid): eid for eid in entity_ids}
+
+    # Remove existing click directives
+    lines = []
+    for line in mermaid_code.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("click "):
+            continue
+        lines.append(line)
+
+    # Find all sids that appear as node definitions in the diagram
+    # Mermaid node patterns: sid[, sid(, sid{, sid([, sid((, sid[[, sid[(, sid[/
+    node_pattern = re.compile(r'\b(' + '|'.join(re.escape(s) for s in sid_to_id) + r')[\[\(\{\|]')
+
+    found_sids: set[str] = set()
+    for line in lines:
+        for m in node_pattern.finditer(line):
+            found_sids.add(m.group(1))
+
+    # Insert click directives before classDef lines (or at end)
+    click_lines = [f"    click {sid} showEntity" for sid in sorted(found_sids)]
+
+    # Find insertion point (before first classDef or at end)
+    insert_idx = len(lines)
+    for i, line in enumerate(lines):
+        if line.strip().startswith("classDef "):
+            insert_idx = i
+            break
+
+    result_lines = lines[:insert_idx] + click_lines + lines[insert_idx:]
+    return "\n".join(result_lines)
+
+
+def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
+    """Build property cards for all entities in the model.
+
+    Returns dict mapping entity_id -> {type, name, description, status, properties}
+    where properties is a dict of type-specific key/value pairs for display.
+    """
+    props: dict[str, dict] = {}
+
+    def _base(entity, etype: str, extra: dict | None = None) -> dict:
+        d: dict = {
+            "type": etype,
+            "name": entity.name,
+            "description": getattr(entity, "description", ""),
+            "status": getattr(entity.status, "value", str(entity.status)),
+            "properties": {},
+        }
+        if extra:
+            d["properties"] = extra
+        return d
+
+    for a in model.entities.actors:
+        props[a.id] = _base(a, "actor", {
+            "Actor Type": getattr(a.type, "value", str(a.type)),
+            "Goals": ", ".join(a.goals) if a.goals else "",
+        })
+
+    for c in model.entities.capabilities:
+        props[c.id] = _base(c, "capability", {
+            "Priority": getattr(c.priority, "value", str(c.priority)),
+            "Source Block": c.source_block or "",
+        })
+
+    for b in model.entities.behaviors:
+        extra: dict[str, str] = {}
+        if hasattr(b, "trigger") and b.trigger:
+            extra["Trigger"] = b.trigger
+        if hasattr(b, "preconditions") and b.preconditions:
+            extra["Preconditions"] = ", ".join(b.preconditions)
+        props[b.id] = _base(b, "behavior", extra)
+
+    for i in model.entities.interfaces:
+        props[i.id] = _base(i, "interface", {
+            "Type": getattr(i.type, "value", str(i.type)) if hasattr(i, "type") else "",
+            "Protocol": getattr(i, "protocol", "") or "",
+        })
+
+    for c in model.entities.constraints:
+        props[c.id] = _base(c, "constraint", {
+            "Rationale": getattr(c, "rationale", "") or "",
+        })
+
+    for la in model.entities.layers:
+        props[la.id] = _base(la, "layer")
+
+    for c in model.entities.components:
+        extra_c: dict[str, str] = {}
+        if hasattr(c, "layer") and c.layer:
+            extra_c["Layer"] = c.layer
+        files = getattr(c, "files", []) or []
+        if files:
+            extra_c["Files"] = str(len(files))
+        props[c.id] = _base(c, "component", extra_c)
+
+    for s in model.entities.systems:
+        extra_s: dict[str, str] = {}
+        if s.component_ids:
+            extra_s["Components"] = str(len(s.component_ids))
+        if s.sub_model_ref:
+            extra_s["Sub-model"] = s.sub_model_ref
+        props[s.id] = _base(s, "system", extra_s)
+
+    for r in model.entities.requirements:
+        props[r.id] = _base(r, "requirement", {
+            "Priority": r.priority or "",
+            "Source": r.source_doc or "",
+            "Rationale": r.rationale or "",
+        })
+
+    return props
+
+
 def generate_html_viewer(
     model: "ArchitectureModel",
     output_path: Path,
     title: str = "Architecture Viewer",
 ) -> Path:
-    """Generate a self-contained HTML viewer with SE navigation and entity explorer.
+    """Generate a self-contained HTML viewer with 7 SE model views and universal click navigation.
 
-    Layout: sidebar with SE views (ConOps, Functional, Logical, Use Cases) and
-    expandable entity categories. Content area renders Mermaid diagrams on demand.
-    Dark theme, mobile-responsive with hamburger menu at 768px breakpoint.
-
-    All diagram data is embedded as JSON — Mermaid renders lazily on click/expand.
+    Features:
+    - 7 SE views: ConOps, Functional Architecture, Logical Architecture,
+      Behavior Model, ICD, Requirements Allocation, System Decomposition
+    - Every entity node is clickable in every diagram
+    - Clicking navigates to entity detail page (property card + faceted diagrams)
+    - History stack with breadcrumb trail and back button
+    - Dark theme, mobile-responsive with hamburger menu
 
     Returns the path to the generated HTML file.
     """
@@ -1058,65 +1368,73 @@ def generate_html_viewer(
 
     output_path = Path(output_path)
 
-    # ── 1. Generate SE overview diagrams ──────────────────────────
+    # Collect all entity IDs for click injection
+    all_ids = model.all_entity_ids
+
+    # ── 1. Generate 7 SE overview diagrams (with click injection) ─
     se_views: dict[str, dict[str, str]] = {
-        "conops": {"label": "ConOps", "mermaid": generate_conops_diagram(model)},
-        "functional": {"label": "Functional Architecture", "mermaid": generate_functional_architecture_diagram(model)},
-        "logical": {"label": "Logical Architecture", "mermaid": generate_logical_architecture_diagram(model)},
-        "use-cases": {"label": "Use Cases", "mermaid": generate_behavior_overview_diagram(model)},
+        "conops": {"label": "ConOps", "subtitle": "Concept of Operations",
+                   "mermaid": inject_click_handlers(generate_conops_diagram(model), all_ids)},
+        "functional": {"label": "Functional Architecture", "subtitle": "Functional Analysis (SA-4.2)",
+                       "mermaid": inject_click_handlers(generate_functional_architecture_diagram(model), all_ids)},
+        "logical": {"label": "Logical Architecture", "subtitle": "Logical Decomposition (SA-4.3)",
+                    "mermaid": inject_click_handlers(generate_logical_architecture_diagram(model), all_ids)},
+        "behavior": {"label": "Behavior Model", "subtitle": "Use Case Analysis",
+                     "mermaid": inject_click_handlers(generate_behavior_overview_diagram(model), all_ids)},
+        "icd": {"label": "ICD", "subtitle": "Interface Control Document",
+                "mermaid": inject_click_handlers(generate_icd_diagram(model), all_ids)},
+        "requirements": {"label": "Requirements", "subtitle": "Requirements Analysis (SA-4.1)",
+                         "mermaid": inject_click_handlers(generate_requirements_allocation_diagram(model), all_ids)},
+        "systems": {"label": "System Decomposition", "subtitle": "Physical Architecture",
+                    "mermaid": inject_click_handlers(generate_system_decomposition_diagram(model), all_ids)},
     }
 
-    # ── 2. Collect entity lists & explorer facets ─────────────────
+    # ── 2. Entity categories for sidebar ──────────────────────────
     entity_categories: list[tuple[str, str, list]] = [
+        ("systems", "Systems", list(model.entities.systems)),
         ("layers", "Layers", list(model.entities.layers)),
         ("components", "Components", list(model.entities.components)),
         ("capabilities", "Capabilities", list(model.entities.capabilities)),
         ("behaviors", "Behaviors", list(model.entities.behaviors)),
         ("interfaces", "Interfaces", list(model.entities.interfaces)),
         ("actors", "Actors", list(model.entities.actors)),
+        ("requirements", "Requirements", list(model.entities.requirements)),
+        ("constraints", "Constraints", list(model.entities.constraints)),
     ]
-
-    # Build entity explorer data: {entity_id: {facet_name: mermaid_str}}
-    # Only generate for entities to keep file size reasonable.
-    # For capabilities/behaviors: only top-level (no '.' in id) plus their direct children.
-    explorer_data: dict[str, dict[str, str]] = {}
-
-    def _is_top_level(eid: str) -> bool:
-        """Top-level = no sub-id separator (e.g. CAP-F1 not CAP-F1.2)."""
-        # Split off prefix, check remainder has no dots
-        parts = eid.split("-", 1)
-        return "." not in parts[-1] if len(parts) > 1 else True
-
-    def _is_child_of_top(eid: str) -> bool:
-        """Direct child = exactly one dot in the numeric part (e.g. CAP-F1.2)."""
-        parts = eid.split("-", 1)
-        return parts[-1].count(".") == 1 if len(parts) > 1 else False
 
     _plural_to_singular = {
         "layers": "layer", "components": "component", "capabilities": "capability",
         "behaviors": "behavior", "interfaces": "interface", "actors": "actor",
+        "systems": "system", "requirements": "requirement", "constraints": "constraint",
     }
+
+    # ── 3. Explorer facets (with click injection) ─────────────────
+    explorer_data: dict[str, dict[str, str]] = {}
     for etype, _label_text, entities in entity_categories:
         singular = _plural_to_singular.get(etype, etype.rstrip("s"))
         for ent in entities:
-            # For caps/behaviors, limit depth
-            if etype in ("capabilities", "behaviors"):
-                if not _is_top_level(ent.id) and not _is_child_of_top(ent.id):
-                    continue
             facets = generate_entity_explorer(model, singular, ent.id)
             if facets:
-                explorer_data[ent.id] = facets
+                # Inject click handlers into each facet diagram
+                explorer_data[ent.id] = {
+                    k: inject_click_handlers(v, all_ids) for k, v in facets.items()
+                }
 
-    # ── 3. Build the JSON data blob ───────────────────────────────
+    # ── 4. Property cards ─────────────────────────────────────────
+    entity_props = build_entity_properties(model)
+
+    # ── 5. JSON data blob ─────────────────────────────────────────
     diagram_data = {
-        "se_views": {k: v["mermaid"] for k, v in se_views.items()},
+        "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"]}
+                     for k, v in se_views.items()},
         "entities": explorer_data,
+        "properties": entity_props,
     }
     data_json = _json.dumps(diagram_data, ensure_ascii=False)
 
-    # ── 4. Build sidebar nav HTML ─────────────────────────────────
+    # ── 6. Sidebar HTML ──────────────────────────────────────────
     se_nav = "\n".join(
-        f'            <a href="#" data-view="{k}" class="nav-link">{v["label"]}</a>'
+        f'            <a href="#" data-view="{k}" class="nav-link se-link">{v["label"]}</a>'
         for k, v in se_views.items()
     )
 
@@ -1125,7 +1443,7 @@ def generate_html_viewer(
         if not entities:
             continue
         items = "\n".join(
-            f'                <a href="#" data-entity="{e.id}" data-etype="{_plural_to_singular.get(etype, etype.rstrip("s"))}" '
+            f'                <a href="#" onclick="showEntity(\'{e.id}\');return false;" '
             f'class="nav-link entity-link">{e.id}: {e.name}</a>'
             for e in entities
         )
@@ -1137,7 +1455,7 @@ def generate_html_viewer(
         )
     entity_nav = "\n".join(entity_nav_parts)
 
-    # ── 5. Assemble HTML ──────────────────────────────────────────
+    # ── 7. Assemble HTML ─────────────────────────────────────────
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1147,10 +1465,14 @@ def generate_html_viewer(
     <style>
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{ font-family: -apple-system, system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; }}
+
+        /* Hamburger */
         .hamburger {{ display: none; position: fixed; top: 10px; left: 10px; z-index: 1001;
                       background: #16213e; border: 1px solid #0f3460; padding: 8px 12px;
                       color: #e0e0e0; border-radius: 4px; cursor: pointer; font-size: 20px; }}
         @media (max-width: 768px) {{ .hamburger {{ display: block; }} }}
+
+        /* Sidebar */
         .sidebar {{ position: fixed; top: 0; left: 0; width: 280px; height: 100vh;
                     background: #16213e; overflow-y: auto; padding: 16px; z-index: 1000;
                     border-right: 1px solid #0f3460; transition: transform 0.3s ease; }}
@@ -1172,9 +1494,38 @@ def generate_html_viewer(
         .sidebar .entity-link {{ padding-left: 20px; font-size: 11px; white-space: nowrap;
                                  overflow: hidden; text-overflow: ellipsis; }}
         .sidebar .divider {{ border-top: 1px solid #0f3460; margin: 10px 0; }}
+
+        /* Content */
         .content {{ margin-left: 280px; padding: 20px; min-height: 100vh; }}
         @media (max-width: 768px) {{ .content {{ margin-left: 0; padding: 12px; padding-top: 50px; }} }}
-        .content-header {{ color: #e94560; font-size: 18px; margin-bottom: 16px; }}
+
+        /* Breadcrumbs */
+        .breadcrumbs {{ display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+                        margin-bottom: 12px; font-size: 12px; }}
+        .breadcrumbs a {{ color: #7ec8e3; text-decoration: none; cursor: pointer; }}
+        .breadcrumbs a:hover {{ color: #e94560; }}
+        .breadcrumbs .sep {{ color: #555; }}
+        .breadcrumbs .current {{ color: #e0e0e0; }}
+        .back-btn {{ background: #0f3460; color: #7ec8e3; border: 1px solid #1a5276;
+                     padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+                     margin-right: 8px; }}
+        .back-btn:hover {{ background: #1a5276; color: #e94560; }}
+
+        /* Headers */
+        .content-header {{ color: #e94560; font-size: 18px; margin-bottom: 4px; }}
+        .content-subtitle {{ color: #a0a0c0; font-size: 13px; margin-bottom: 16px; font-style: italic; }}
+
+        /* Property card */
+        .prop-card {{ background: #16213e; border: 1px solid #0f3460; border-radius: 6px;
+                      padding: 14px; margin-bottom: 16px; display: grid;
+                      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }}
+        .prop-item {{ font-size: 12px; }}
+        .prop-label {{ color: #a0a0c0; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }}
+        .prop-value {{ color: #e0e0e0; margin-top: 2px; }}
+        .prop-desc {{ grid-column: 1 / -1; }}
+        .prop-desc .prop-value {{ font-size: 13px; line-height: 1.5; color: #c0c0d0; }}
+
+        /* Diagram */
         .diagram-box {{ background: #0a0a1a; padding: 16px; border-radius: 6px;
                         border: 1px solid #0f3460; margin-bottom: 16px; overflow-x: auto; }}
         .accordion {{ border-bottom: 1px solid #0f3460; }}
@@ -1184,16 +1535,29 @@ def generate_html_viewer(
         .accordion-header::before {{ content: "\\25b6  "; font-size: 10px; }}
         .accordion-header.open::before {{ content: "\\25bc  "; }}
         .accordion-body {{ max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }}
-        .accordion-body.open {{ max-height: 2000px; }}
+        .accordion-body.open {{ max-height: 4000px; }}
         .welcome {{ color: #a0a0c0; font-size: 14px; margin-top: 40px; text-align: center; }}
+
+        /* Entity type badges */
+        .type-badge {{ display: inline-block; padding: 2px 8px; border-radius: 10px;
+                       font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }}
+        .type-badge.actor {{ background: #E74C8B; color: #fff; }}
+        .type-badge.capability {{ background: #F39C12; color: #fff; }}
+        .type-badge.component {{ background: #27AE60; color: #fff; }}
+        .type-badge.behavior {{ background: #8E44AD; color: #fff; }}
+        .type-badge.interface {{ background: #1ABC9C; color: #fff; }}
+        .type-badge.layer {{ background: #16A085; color: #fff; }}
+        .type-badge.constraint {{ background: #E74C3C; color: #fff; }}
+        .type-badge.system {{ background: #4A90D9; color: #fff; }}
+        .type-badge.requirement {{ background: #E74C3C; color: #fff; }}
     </style>
 </head>
 <body>
     <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
 
     <nav class="sidebar">
-        <h2>&#9776; {title}</h2>
-        <div class="nav-section">SE Views</div>
+        <h2>{title}</h2>
+        <div class="nav-section">SE Model Views</div>
 {se_nav}
         <div class="divider"></div>
         <div class="nav-section">Entities</div>
@@ -1205,7 +1569,7 @@ def generate_html_viewer(
     </main>
 
     <script>
-        var DIAGRAM_DATA = {data_json};
+        var D = {data_json};
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
@@ -1213,7 +1577,10 @@ def generate_html_viewer(
                              flowchart: {{ htmlLabels: true, curve: 'basis' }} }});
 
         var renderCounter = 0;
+        var navHistory = [];  // Stack of {{type, id, label}}
+        var content = document.getElementById('content');
 
+        /* ── Mermaid rendering ────────────────────────────────── */
         async function renderMermaid(container, code) {{
             try {{
                 var id = 'mmd_' + (++renderCounter);
@@ -1224,73 +1591,157 @@ def generate_html_viewer(
             }}
         }}
 
-        var content = document.getElementById('content');
+        /* ── Mobile nav ───────────────────────────────────────── */
+        function closeMobileNav() {{
+            if (window.innerWidth <= 768)
+                document.querySelector('.sidebar').classList.remove('open');
+        }}
 
-        // SE view click
+        /* ── Breadcrumbs ──────────────────────────────────────── */
+        function renderBreadcrumbs(currentLabel) {{
+            var html = '';
+            if (navHistory.length > 0) {{
+                html += '<button class="back-btn" onclick="goBack()">&#8592; Back</button>';
+            }}
+            for (var i = 0; i < navHistory.length; i++) {{
+                var h = navHistory[i];
+                if (h.type === 'view') {{
+                    html += '<a onclick="goToHistory(' + i + ');return false;">' + h.label + '</a>';
+                }} else {{
+                    html += '<a onclick="goToHistory(' + i + ');return false;">' + h.label + '</a>';
+                }}
+                html += '<span class="sep">&#9656;</span>';
+            }}
+            html += '<span class="current">' + currentLabel + '</span>';
+            return '<div class="breadcrumbs">' + html + '</div>';
+        }}
+
+        function goBack() {{
+            if (navHistory.length === 0) return;
+            var prev = navHistory.pop();
+            if (prev.type === 'view') showView(prev.id, false);
+            else showEntity(prev.id, false);
+        }}
+
+        function goToHistory(idx) {{
+            var target = navHistory[idx];
+            navHistory = navHistory.slice(0, idx);
+            if (target.type === 'view') showView(target.id, false);
+            else showEntity(target.id, false);
+        }}
+
+        /* ── Property card HTML ───────────────────────────────── */
+        function propCardHtml(eid) {{
+            var p = D.properties[eid];
+            if (!p) return '';
+            var html = '<div class="prop-card">';
+            html += '<div class="prop-item"><div class="prop-label">ID</div><div class="prop-value">' + eid + '</div></div>';
+            html += '<div class="prop-item"><div class="prop-label">Type</div><div class="prop-value"><span class="type-badge ' + p.type + '">' + p.type + '</span></div></div>';
+            html += '<div class="prop-item"><div class="prop-label">Status</div><div class="prop-value">' + (p.status || 'N/A') + '</div></div>';
+            if (p.properties) {{
+                for (var k in p.properties) {{
+                    if (p.properties[k]) {{
+                        html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value">' + p.properties[k] + '</div></div>';
+                    }}
+                }}
+            }}
+            if (p.description) {{
+                html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + p.description + '</div></div>';
+            }}
+            html += '</div>';
+            return html;
+        }}
+
+        /* ── Show SE view ─────────────────────────────────────── */
+        function showView(key, pushHistory) {{
+            var v = D.se_views[key];
+            if (!v) return;
+            if (pushHistory !== false) {{
+                // Push current state if exists
+                var cur = content.dataset.currentType;
+                var curId = content.dataset.currentId;
+                var curLabel = content.dataset.currentLabel;
+                if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            }}
+            content.dataset.currentType = 'view';
+            content.dataset.currentId = key;
+            content.dataset.currentLabel = v.label;
+
+            var html = renderBreadcrumbs(v.label);
+            html += '<h2 class="content-header">' + v.label + '</h2>';
+            html += '<div class="content-subtitle">' + v.subtitle + '</div>';
+            html += '<div class="diagram-box" id="dia-main"></div>';
+            content.innerHTML = html;
+            renderMermaid(document.getElementById('dia-main'), v.mermaid);
+            closeMobileNav();
+        }}
+
+        /* ── Show Entity detail ───────────────────────────────── */
+        window.showEntity = function(eid, pushHistory) {{
+            if (pushHistory !== false) {{
+                var cur = content.dataset.currentType;
+                var curId = content.dataset.currentId;
+                var curLabel = content.dataset.currentLabel;
+                if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            }}
+
+            var p = D.properties[eid] || {{}};
+            var label = (p.name ? eid + ': ' + p.name : eid);
+            content.dataset.currentType = 'entity';
+            content.dataset.currentId = eid;
+            content.dataset.currentLabel = label;
+
+            var html = renderBreadcrumbs(label);
+            html += '<h2 class="content-header">' + label + '</h2>';
+            html += propCardHtml(eid);
+
+            var facets = D.entities[eid];
+            if (facets && Object.keys(facets).length > 0) {{
+                var i = 0;
+                for (var facetName in facets) {{
+                    var cid = 'f_' + eid.replace(/[^a-zA-Z0-9]/g,'_') + '_' + i;
+                    html += '<div class="accordion">'
+                        + '<div class="accordion-header" data-target="' + cid
+                        + '" data-code="' + btoa(unescape(encodeURIComponent(facets[facetName])))
+                        + '">' + facetName + '</div>'
+                        + '<div class="accordion-body" id="' + cid + '">'
+                        + '<div class="diagram-box" id="' + cid + '_dia"></div>'
+                        + '</div></div>';
+                    i++;
+                }}
+            }} else {{
+                html += '<p style="color:#a0a0c0;margin-top:12px">No relationship diagrams for this entity.</p>';
+            }}
+            content.innerHTML = html;
+
+            // Wire accordion
+            content.querySelectorAll('.accordion-header').forEach(function(hdr) {{
+                hdr.addEventListener('click', function() {{
+                    var body = document.getElementById(this.dataset.target);
+                    var isOpen = body.classList.contains('open');
+                    body.classList.toggle('open');
+                    this.classList.toggle('open');
+                    if (!isOpen && !body.dataset.rendered) {{
+                        body.dataset.rendered = '1';
+                        var code = decodeURIComponent(escape(atob(this.dataset.code)));
+                        renderMermaid(document.getElementById(this.dataset.target + '_dia'), code);
+                    }}
+                }});
+            }});
+            closeMobileNav();
+        }};
+
+        /* ── Wire sidebar SE view links ───────────────────────── */
         document.querySelectorAll('[data-view]').forEach(function(a) {{
             a.addEventListener('click', function(ev) {{
                 ev.preventDefault();
-                var key = this.dataset.view;
-                var code = DIAGRAM_DATA.se_views[key];
-                if (!code) return;
-                document.querySelectorAll('.nav-link').forEach(function(l){{ l.classList.remove('active'); }});
-                this.classList.add('active');
-                content.innerHTML = '<h2 class="content-header">' + this.textContent + '</h2>'
-                    + '<div class="diagram-box" id="dia-main"></div>';
-                renderMermaid(document.getElementById('dia-main'), code);
-                closeMobileNav();
+                navHistory = [];
+                content.dataset.currentType = '';
+                content.dataset.currentId = '';
+                content.dataset.currentLabel = '';
+                showView(this.dataset.view, false);
             }});
         }});
-
-        // Entity click
-        document.querySelectorAll('[data-entity]').forEach(function(a) {{
-            a.addEventListener('click', function(ev) {{
-                ev.preventDefault();
-                var eid = this.dataset.entity;
-                var facets = DIAGRAM_DATA.entities[eid];
-                document.querySelectorAll('.nav-link').forEach(function(l){{ l.classList.remove('active'); }});
-                this.classList.add('active');
-                var html = '<h2 class="content-header">' + this.textContent + '</h2>';
-                if (!facets || Object.keys(facets).length === 0) {{
-                    html += '<p style="color:#a0a0c0">No relationship diagrams for this entity.</p>';
-                }} else {{
-                    var i = 0;
-                    for (var facetName in facets) {{
-                        var containerId = 'facet_' + eid.replace(/[^a-zA-Z0-9]/g,'_') + '_' + i;
-                        html += '<div class="accordion">'
-                            + '<div class="accordion-header" data-target="' + containerId
-                            + '" data-code="' + btoa(unescape(encodeURIComponent(facets[facetName])))
-                            + '">' + facetName + '</div>'
-                            + '<div class="accordion-body" id="' + containerId + '">'
-                            + '<div class="diagram-box" id="' + containerId + '_dia"></div>'
-                            + '</div></div>';
-                        i++;
-                    }}
-                }}
-                content.innerHTML = html;
-                // Wire accordion
-                content.querySelectorAll('.accordion-header').forEach(function(hdr) {{
-                    hdr.addEventListener('click', function() {{
-                        var body = document.getElementById(this.dataset.target);
-                        var isOpen = body.classList.contains('open');
-                        body.classList.toggle('open');
-                        this.classList.toggle('open');
-                        if (!isOpen && !body.dataset.rendered) {{
-                            body.dataset.rendered = '1';
-                            var code = decodeURIComponent(escape(atob(this.dataset.code)));
-                            renderMermaid(document.getElementById(this.dataset.target + '_dia'), code);
-                        }}
-                    }});
-                }});
-                closeMobileNav();
-            }});
-        }});
-
-        function closeMobileNav() {{
-            if (window.innerWidth <= 768) {{
-                document.querySelector('.sidebar').classList.remove('open');
-            }}
-        }}
     </script>
 </body>
 </html>
