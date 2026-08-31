@@ -55,6 +55,8 @@ _SHAPES: dict[str, tuple[str, str]] = {
     "constraint": ("{",   "}"),
     "layer":      ("[(",  ")]"),
     "stage":      ("[[",  "]]"),
+    "system":     ("[[",  "]]"),
+    "requirement":("{{", "}}"),
 }
 
 _EDGES: dict[str, str] = {
@@ -90,12 +92,15 @@ _CSS: dict[str, str] = {
     "cls_actor":  "fill:#E74C8B,stroke:#C2185B,color:#fff",
     "cls_con":    "fill:#E74C3C,stroke:#C0392B,color:#fff",
     "cls_layer":  "fill:#16A085,stroke:#0E6655,color:#fff",
+    "cls_sys":    "fill:#2E86C1,stroke:#1A5276,color:#fff",
+    "cls_req":    "fill:#D4AC0D,stroke:#9A7D0A,color:#fff",
 }
 
 _ENTITY_TO_CSS: dict[str, str] = {
     "component": "cls_comp", "capability": "cls_cap", "behavior": "cls_beh",
     "interface": "cls_iface", "module": "cls_mod", "actor": "cls_actor",
     "constraint": "cls_con", "layer": "cls_layer", "stage": "cls_stage",
+    "system": "cls_sys", "requirement": "cls_req",
 }
 
 
@@ -1969,6 +1974,12 @@ def generate_entity_explorer(
         entity_map[la.id] = ("layer", la.name)
     for a in model.entities.actors:
         entity_map[a.id] = ("actor", a.name)
+    for s in model.entities.systems:
+        entity_map[s.id] = ("system", s.name)
+    for r in model.entities.requirements:
+        entity_map[r.id] = ("requirement", r.name)
+    for con in model.entities.constraints:
+        entity_map[con.id] = ("constraint", con.name)
 
     if entity_id not in entity_map:
         return {}
@@ -2224,6 +2235,84 @@ def generate_entity_explorer(
                     ifaces.append((rel.to_id, "interface", rname, "consumes"))
         if ifaces:
             facets["Interfaces"] = _facet_diagram("actor", entity_id, ename, ifaces)
+
+    elif entity_type == "system":
+        # Component Graph — show all components in this system with dependencies and realizes
+        sys_entity = None
+        for s in model.entities.systems:
+            if s.id == entity_id:
+                sys_entity = s
+                break
+        if sys_entity:
+            comp_set = set()
+            all_comp_ids = {c.id for c in model.entities.components}
+            for cid in sys_entity.component_ids:
+                if cid in all_comp_ids:
+                    comp_set.add(cid)
+                else:
+                    # Resolve children (COMP-1 -> COMP-1.1, COMP-1.2, ...)
+                    for real_id in all_comp_ids:
+                        if real_id.startswith(cid + "."):
+                            comp_set.add(real_id)
+            if comp_set:
+                lines = ["graph LR"]
+                lines.append(f"  {shape('system', entity_id, ename)}")
+                for cid in sorted(comp_set):
+                    if cid in entity_map:
+                        _, cname = entity_map[cid]
+                        lines.append(f"  {shape('component', cid, cname)}")
+                        lines.append(f"  {_sid(entity_id)} -.-> {_sid(cid)}")
+                # Add inter-component dependencies and realizes
+                for rel in model.relationships:
+                    rt = _rel_type(rel)
+                    if rt == "depends-on" and rel.from_id in comp_set and rel.to_id in comp_set:
+                        lines.append(f"  {_sid(rel.from_id)} {edge_style('depends-on')} {_sid(rel.to_id)}")
+                    elif rt == "realizes" and rel.from_id in comp_set and rel.to_id in entity_map:
+                        _, rname = entity_map[rel.to_id]
+                        if _sid(rel.to_id) not in "\n".join(lines):
+                            lines.append(f"  {shape('capability', rel.to_id, rname)}")
+                        lines.append(f"  {_sid(rel.from_id)} {edge_style('realizes')} {_sid(rel.to_id)}")
+                facets["Component Graph"] = "\n".join(lines)
+
+            # Interface Map — interfaces exposed by system's components
+            ifaces = []
+            for rel in model.relationships:
+                if _rel_type(rel) == "exposes" and rel.from_id in comp_set and rel.to_id in entity_map:
+                    _, rname = entity_map[rel.to_id]
+                    ifaces.append((rel.to_id, "interface", rname, "exposes"))
+            if ifaces:
+                facets["Interface Map"] = _facet_diagram("system", entity_id, ename, ifaces)
+
+    elif entity_type == "requirement":
+        # Allocation Map — entities that satisfy/trace-to/allocate-to this requirement
+        allocs = []
+        for rel in model.relationships:
+            rt = _rel_type(rel)
+            if rel.to_id == entity_id and rt in ("satisfies", "traces-to", "allocated-to") and rel.from_id in entity_map:
+                ft, fname = entity_map[rel.from_id]
+                allocs.append((rel.from_id, ft, fname, rt))
+        if allocs:
+            facets["Allocation Map"] = _facet_diagram_reverse("requirement", entity_id, ename, allocs)
+
+        # Constraints related to this requirement
+        cons = []
+        for rel in model.relationships:
+            rt = _rel_type(rel)
+            if rt == "constrained-by" and rel.from_id == entity_id and rel.to_id in entity_map:
+                _, cname = entity_map[rel.to_id]
+                cons.append((rel.to_id, "constraint", cname, "constrained-by"))
+        if cons:
+            facets["Constraints"] = _facet_diagram("requirement", entity_id, ename, cons)
+
+    elif entity_type == "constraint":
+        # Impact Map — entities constrained by this constraint
+        affected = []
+        for rel in model.relationships:
+            if _rel_type(rel) == "constrained-by" and rel.to_id == entity_id and rel.from_id in entity_map:
+                ft, fname = entity_map[rel.from_id]
+                affected.append((rel.from_id, ft, fname, "constrained-by"))
+        if affected:
+            facets["Impact Map"] = _facet_diagram_reverse("constraint", entity_id, ename, affected)
 
     return facets
 
