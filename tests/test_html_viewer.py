@@ -1,6 +1,7 @@
 """Tests for HTML diagram viewer generation (v2 — SE navigation + entity explorer)."""
 import json
 import re
+from html.parser import HTMLParser
 import pytest
 from pathlib import Path
 from architecture_model.core.types import (
@@ -99,7 +100,19 @@ class TestHtmlViewerV2:
 
     def test_embedded_data_contains_project_namespace(self, tmp_path):
         html = generate_html_viewer(_make_model(), tmp_path / "viewer.html").read_text()
-        data = json.loads(re.search(r"var D = (.*);\n", html).group(1))
+
+        class DataParser(HTMLParser):
+            data = ""
+            active = False
+            def handle_starttag(self, tag, attrs):
+                self.active = tag == "script" and dict(attrs).get("id") == "viewer-data"
+            def handle_data(self, value):
+                if self.active:
+                    self.data += value
+
+        parser = DataParser()
+        parser.feed(html)
+        data = json.loads(parser.data)
 
         assert data["meta"]["project"] == "test"
 

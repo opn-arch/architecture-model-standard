@@ -168,6 +168,7 @@ def _parse_meta(d: dict) -> ModelMeta:
         source_language=d.get("source_language", ""),
         domain_profile=d.get("domain_profile", "software"),
         manifest_path=d.get("manifest_path", ""),
+        lifecycle_phase=d.get("lifecycle_phase", "production"),
         parent_model=d.get("parent_model"),
         refines_component=d.get("refines_component"),
     )
@@ -544,6 +545,8 @@ def _parse_relationship(d: dict) -> Relationship:
         strength=Strength(d.get("strength", "moderate")),
         extensions=d.get("extensions", {}),
         imports=d.get("imports", []),
+        import_count=d.get("import_count", 0),
+        weight=d.get("weight", 0.0),
     )
 
 
@@ -577,6 +580,10 @@ def _dump_meta(m: ModelMeta) -> dict:
         d["manifest_hash"] = m.manifest_hash
     if m.source_language:
         d["source_language"] = m.source_language
+    if m.domain_profile and m.domain_profile != "software":
+        d["domain_profile"] = m.domain_profile
+    if m.lifecycle_phase != "production":
+        d["lifecycle_phase"] = m.lifecycle_phase
     if m.manifest_path:
         d["manifest_path"] = m.manifest_path
     if m.parent_model:
@@ -1006,4 +1013,8 @@ def _dump_relationship(r: Relationship) -> dict:
         d["extensions"] = r.extensions
     if r.imports:
         d["imports"] = r.imports
+    if r.import_count:
+        d["import_count"] = r.import_count
+    if r.weight:
+        d["weight"] = r.weight
     return d

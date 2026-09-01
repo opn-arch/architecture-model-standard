@@ -1412,29 +1412,74 @@ def _render_mermaid_svg(code: str) -> str:
         return ""
     nodes: dict[str, str] = {}
     edges: list[tuple[str, str]] = []
+    node_pattern = r'([\w.-]+)(?:\s*(?:\["?([^\]"]+)"?\]|\("?([^\)"]+)"?\)|\{"?([^\}"]+)"?\}))?'
+    edge_pattern = re.compile(
+        rf'^\s*{node_pattern}\s*(?:-->|==>|-\.->|---)(?:\|[^|]*\|)?\s*{node_pattern}\s*$'
+    )
     for line in lines[1:]:
-        node = re.match(r'^([\w.-]+)\s*[\[({]+["\']?(.*?)["\']?[\])}]+$', line)
-        if node and "-->" not in line:
-            nodes[node.group(1)] = node.group(2)
-        edge = re.match(r'^([\w.-]+)\s*(?:-->|==>|-.->|---)\s*([\w.-]+)', line)
+        if line.startswith(("subgraph ", "end", "class ", "classDef ", "style ", "click ")):
+            continue
+        edge = edge_pattern.match(line)
         if edge:
-            source, target = edge.groups()
-            nodes.setdefault(source, source)
-            nodes.setdefault(target, target)
+            source = edge.group(1)
+            source_label = next((value for value in edge.groups()[1:4] if value), source)
+            target = edge.group(5)
+            target_label = next((value for value in edge.groups()[5:8] if value), target)
+            if source_label != source or source not in nodes:
+                nodes[source] = source_label
+            if target_label != target or target not in nodes:
+                nodes[target] = target_label
             edges.append((source, target))
+            continue
+        node = re.match(rf'^\s*{node_pattern}\s*$', line)
+        if node:
+            nodes[node.group(1)] = next((value for value in node.groups()[1:] if value), node.group(1))
     if not nodes:
         return ""
-    positions = {node_id: (130, 55 + index * 100) for index, node_id in enumerate(nodes)}
-    height = len(nodes) * 100 + 20
-    svg = [f'<svg class="offline-diagram flowchart-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 {height}" role="img">',
+    incoming = {node_id: 0 for node_id in nodes}
+    outgoing: dict[str, list[str]] = {node_id: [] for node_id in nodes}
+    for source, target in edges:
+        incoming[target] += 1
+        outgoing[source].append(target)
+    levels = {node_id: 0 for node_id in nodes}
+    queue = [node_id for node_id, count in incoming.items() if count == 0] or list(nodes)[:1]
+    pending = dict(incoming)
+    while queue:
+        source = queue.pop(0)
+        for target in outgoing[source]:
+            levels[target] = max(levels[target], levels[source] + 1)
+            pending[target] -= 1
+            if pending[target] == 0:
+                queue.append(target)
+    columns: dict[int, list[str]] = {}
+    for node_id in nodes:
+        columns.setdefault(levels[node_id], []).append(node_id)
+    positions = {
+        node_id: (130 + level * 240, 65 + index * 100)
+        for level, column in columns.items()
+        for index, node_id in enumerate(column)
+    }
+    width = max(300, (max(columns) + 1) * 240 + 20)
+    height = max(len(column) for column in columns.values()) * 100 + 30
+    svg = [f'<svg class="offline-diagram flowchart-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" role="img">',
            '<defs><marker id="flow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#7ec8e3"/></marker></defs>']
     for source, target in edges:
         x1, y1 = positions[source]
         x2, y2 = positions[target]
-        svg.append(f'<path class="diagram-edge" d="M{x1},{y1 + 24} V{y2 - 24}" fill="none" stroke="#7ec8e3" marker-end="url(#flow-arrow)"/>')
+        svg.append(f'<path class="diagram-edge" d="M{x1 + 90},{y1} H{x2 - 90}" fill="none" stroke="#7ec8e3" marker-end="url(#flow-arrow)"/>')
     for node_id, label in nodes.items():
         x, y = positions[node_id]
-        svg.append(f'<g class="diagram-node" data-node-id="{escape(node_id)}"><rect x="{x - 90}" y="{y - 24}" width="180" height="48" rx="7" fill="#16213e" stroke="#4a90d9"/><text x="{x}" y="{y + 5}" text-anchor="middle" fill="#e0e0e0">{escape(label)}</text></g>')
+        words, wrapped = label.split(), []
+        while words:
+            row = words.pop(0)
+            while words and len(row) + len(words[0]) < 24:
+                row += " " + words.pop(0)
+            wrapped.append(row)
+        text = "".join(
+            f'<tspan x="0" dy="{0 if index == 0 else 16}">{escape(row)}</tspan>'
+            for index, row in enumerate(wrapped[:3])
+        )
+        svg.append(f'<g class="diagram-node" data-node-id="{escape(node_id)}" data-entity-id="{escape(node_id)}" transform="translate({x},{y})" tabindex="0"><rect x="-90" y="-32" width="180" height="64" rx="7" fill="#16213e" stroke="#4a90d9"/><text x="0" y="{-8 * (len(wrapped[:3]) - 1)}" text-anchor="middle" fill="#e0e0e0">{text}</text></g>')
     return "".join(svg) + "</svg>"
 
 
@@ -2127,11 +2172,14 @@ def generate_html_viewer(
         "ops": ops_data,
         "pipeline_history": pipeline_history,
     }
-    data_json = _json.dumps(diagram_data, ensure_ascii=False)
+    data_json = _json.dumps(diagram_data, ensure_ascii=False).translate(str.maketrans({
+        "<": "\\u003c", ">": "\\u003e", "&": "\\u0026",
+        "\u2028": "\\u2028", "\u2029": "\\u2029",
+    }))
 
     # ── 6. Sidebar HTML ──────────────────────────────────────────
     se_nav = "\n".join(
-        f'            <a href="#" data-view="{k}" class="nav-link se-link">{v["label"]}</a>'
+        f'            <a href="#" data-view="{escape(k)}" class="nav-link se-link">{escape(v["label"])}</a>'
         for k, v in se_views.items()
     )
 
@@ -2140,8 +2188,8 @@ def generate_html_viewer(
         if not entities:
             continue
         items = "\n".join(
-            f'                <a href="#" onclick="showEntity(\'{e.id}\');return false;" '
-            f'class="nav-link entity-link">{e.id}: {e.name}</a>'
+            f'                <a href="#" data-entity-id="{escape(e.id)}" '
+            f'class="nav-link entity-link">{escape(e.id)}: {escape(e.name)}</a>'
             for e in entities
         )
         entity_nav_parts.append(
@@ -2156,8 +2204,8 @@ def generate_html_viewer(
     docs_nav_parts = []
     if docs_data.get("se"):
         se_items = "\n".join(
-            f'                <a href="#" onclick="showDoc(\'se\',\'{name}\');return false;" '
-            f'class="nav-link doc-link">{name.replace("-", " ").title()}</a>'
+            f'                <a href="#" data-doc-category="se" data-doc-name="{escape(name)}" '
+            f'class="nav-link doc-link">{escape(name.replace("-", " ").title())}</a>'
             for name in docs_data["se"]
         )
         docs_nav_parts.append(
@@ -2168,8 +2216,8 @@ def generate_html_viewer(
         )
     if docs_data.get("components"):
         comp_items = "\n".join(
-            f'                <a href="#" onclick="showDoc(\'components\',\'{name}\');return false;" '
-            f'class="nav-link doc-link">{name}</a>'
+            f'                <a href="#" data-doc-category="components" data-doc-name="{escape(name)}" '
+            f'class="nav-link doc-link">{escape(name)}</a>'
             for name in docs_data["components"]
         )
         docs_nav_parts.append(
@@ -2184,8 +2232,8 @@ def generate_html_viewer(
     ops_nav_parts = []
     for oname in ops_data:
         ops_nav_parts.append(
-            f'            <a href="#" onclick="showOps(\'{oname}\');return false;" '
-            f'class="nav-link ops-link">{oname.replace("-", " ").title()}</a>'
+            f'            <a href="#" data-ops-name="{escape(oname)}" '
+            f'class="nav-link ops-link">{escape(oname.replace("-", " ").title())}</a>'
         )
     ops_nav = "\n".join(ops_nav_parts)
 
@@ -2195,7 +2243,7 @@ def generate_html_viewer(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
+    <title>{escape(title)}</title>
     <style>
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{ font-family: -apple-system, system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; }}
@@ -2365,12 +2413,12 @@ def generate_html_viewer(
     </style>
 </head>
 <body>
-    <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+    <button class="hamburger" id="menu-toggle">&#9776;</button>
 
     <div style="position:fixed;top:10px;right:10px;z-index:1001;">
-        <button class="toolbar-btn" onclick="exportComments()">Export Comments</button>
-        <button class="toolbar-btn" onclick="document.getElementById('import-comments-input').click()">Import Comments</button>
-        <input type="file" id="import-comments-input" accept=".yaml,.yml" style="display:none;" onchange="importComments(this)">
+        <button class="toolbar-btn" id="export-comments">Export Comments</button>
+        <button class="toolbar-btn" id="import-comments">Import Comments</button>
+        <input type="file" id="import-comments-input" accept=".yaml,.yml" style="display:none;">
     </div>
 
     <nav class="sidebar">
@@ -2385,7 +2433,7 @@ def generate_html_viewer(
 {docs_nav}
         <div class="divider"></div>
         <div class="nav-section">Intelligence</div>
-            <a href="#" onclick="showPipelineHistory();return false;" class="nav-link ops-link">Pipeline History</a>
+            <a href="#" data-action="pipeline-history" class="nav-link ops-link">Pipeline History</a>
 {ops_nav}
     </nav>
 
@@ -2393,10 +2441,9 @@ def generate_html_viewer(
         <p class="welcome">Select a view or entity from the sidebar.</p>
     </main>
 
+    <script id="viewer-data" type="application/json">{data_json}</script>
     <script>
-        var D = {data_json};
-    </script>
-    <script>
+        var D = JSON.parse(document.getElementById('viewer-data').textContent);
         if (typeof mermaid !== 'undefined') {{
             mermaid.initialize({{ startOnLoad: false, theme: 'dark', securityLevel: 'loose',
                                  flowchart: {{ htmlLabels: true, curve: 'basis' }} }});
@@ -2410,6 +2457,14 @@ def generate_html_viewer(
         async function renderMermaid(container, code, offlineSvg) {{
             if (typeof mermaid === 'undefined') {{
                 container.innerHTML = offlineSvg || '<p style="color:#a0a0c0">Diagram format is not supported offline.</p>';
+                container.querySelectorAll('.diagram-node[data-entity-id]').forEach(function(node) {{
+                    var eid = node.dataset.entityId;
+                    if (!D.properties[eid] && D.sid_map) eid = D.sid_map[eid];
+                    if (!eid || !D.properties[eid]) return;
+                    node.style.cursor = 'pointer';
+                    node.addEventListener('click', function() {{ showEntity(eid); }});
+                    node.addEventListener('keydown', function(ev) {{ if (ev.key === 'Enter' || ev.key === ' ') showEntity(eid); }});
+                }});
                 return;
             }}
             try {{
@@ -2437,7 +2492,7 @@ def generate_html_viewer(
                     }}
                 }});
             }} catch(e) {{
-                container.innerHTML = '<pre style="color:#e94560">' + e.message + '</pre>';
+                container.innerHTML = '<pre style="color:#e94560">' + escapeHtml(e.message) + '</pre>';
             }}
         }}
 
@@ -2532,18 +2587,18 @@ def generate_html_viewer(
         function renderBreadcrumbs(currentLabel) {{
             var html = '';
             if (navHistory.length > 0) {{
-                html += '<button class="back-btn" onclick="goBack()">&#8592; Back</button>';
+                html += '<button class="back-btn" data-action="back">&#8592; Back</button>';
             }}
             for (var i = 0; i < navHistory.length; i++) {{
                 var h = navHistory[i];
                 if (h.type === 'view') {{
-                    html += '<a onclick="goToHistory(' + i + ');return false;">' + h.label + '</a>';
+                    html += '<a href="#" data-history-index="' + i + '">' + escapeHtml(h.label) + '</a>';
                 }} else {{
-                    html += '<a onclick="goToHistory(' + i + ');return false;">' + h.label + '</a>';
+                    html += '<a href="#" data-history-index="' + i + '">' + escapeHtml(h.label) + '</a>';
                 }}
                 html += '<span class="sep">&#9656;</span>';
             }}
-            html += '<span class="current">' + currentLabel + '</span>';
+            html += '<span class="current">' + escapeHtml(currentLabel) + '</span>';
             return '<div class="breadcrumbs">' + html + '</div>';
         }}
 
@@ -2573,9 +2628,9 @@ def generate_html_viewer(
             var p = D.properties[eid];
             if (!p) return '';
             var html = '<div class="prop-card">';
-            html += '<div class="prop-item"><div class="prop-label">ID</div><div class="prop-value">' + eid + '</div></div>';
-            html += '<div class="prop-item"><div class="prop-label">Type</div><div class="prop-value"><span class="type-badge ' + p.type + '">' + p.type + '</span></div></div>';
-            html += '<div class="prop-item"><div class="prop-label">Status</div><div class="prop-value">' + (p.status || 'N/A') + '</div></div>';
+            html += '<div class="prop-item"><div class="prop-label">ID</div><div class="prop-value">' + escapeHtml(eid) + '</div></div>';
+            html += '<div class="prop-item"><div class="prop-label">Type</div><div class="prop-value"><span class="type-badge">' + escapeHtml(p.type) + '</span></div></div>';
+            html += '<div class="prop-item"><div class="prop-label">Status</div><div class="prop-value">' + escapeHtml(p.status || 'N/A') + '</div></div>';
             if (p.depth) {{
                 var dc = p.depth === 'rich' ? 'depth-rich' : p.depth === 'moderate' ? 'depth-moderate' : 'depth-stub';
                 html += '<div class="prop-item"><div class="prop-label">Depth</div><div class="prop-value"><span class="depth-badge ' + dc + '">' + p.depth + '</span></div></div>';
@@ -2586,11 +2641,11 @@ def generate_html_viewer(
                     if (v == null || v === '') continue;
                     if (k === 'value_function' || k === 'behavior_diagram' || k === 'behavior_svg' || k === 'Decisions') continue;
                     if (Array.isArray(v)) {{
-                        html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value"><ul class="prop-list">';
-                        for (var li = 0; li < v.length; li++) html += '<li>' + v[li] + '</li>';
+                        html += '<div class="prop-item"><div class="prop-label">' + escapeHtml(k) + '</div><div class="prop-value"><ul class="prop-list">';
+                        for (var li = 0; li < v.length; li++) html += '<li>' + escapeHtml(v[li]) + '</li>';
                         html += '</ul></div></div>';
                     }} else {{
-                        html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value">' + v + '</div></div>';
+                        html += '<div class="prop-item"><div class="prop-label">' + escapeHtml(k) + '</div><div class="prop-value">' + escapeHtml(v) + '</div></div>';
                     }}
                 }}
             }}
@@ -2611,13 +2666,13 @@ def generate_html_viewer(
                 }}
             }}
             if (p.description) {{
-                html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + p.description + '</div></div>';
+                html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + escapeHtml(p.description) + '</div></div>';
             }}
             if (p.properties && p.properties.behavior_diagram) {{
                 var diagramCode = p.properties.behavior_diagram;
                 var uid = 'pipeline_' + eid.replace(/[^a-zA-Z0-9]/g, '_');
                 html += '<div class="pipeline-view">';
-                html += '<div class="rel-header" style="cursor:pointer" onclick="var el=document.getElementById(\\x27' + uid + '\\x27);el.style.display=el.style.display===\\x27none\\x27?\\x27block\\x27:\\x27none\\x27">\\u25B6 Pipeline View</div>';
+                html += '<div class="rel-header pipeline-toggle" data-target="' + escapeHtml(uid) + '" style="cursor:pointer">\\u25B6 Pipeline View</div>';
                 html += '<div id="' + uid + '" style="display:none;margin-top:8px"><div class="mermaid-target" data-mermaid="' + btoa(diagramCode) + '" data-svg="' + btoa(unescape(encodeURIComponent(p.properties.behavior_svg || ''))) + '"></div></div>';
                 html += '</div>';
             }}
@@ -2628,14 +2683,14 @@ def generate_html_viewer(
                     html += '<div class="rel-section"><div class="rel-header">Relationships (' + (ro.length + ri.length) + ')</div>';
                     for (var oi = 0; oi < ro.length; oi++) {{
                         var r = ro[oi];
-                        html += '<div class="rel-item"><span class="rel-type">' + r.type + '</span> \\u2192 <a href="#" onclick="showEntity(\\x27' + r.target + '\\x27);return false;" class="rel-link">' + r.target + (r.target_name ? ': ' + r.target_name : '') + '</a>';
-                        if (r.description) html += ' <span class="rel-desc">(' + r.description + ')</span>';
+                        html += '<div class="rel-item"><span class="rel-type">' + escapeHtml(r.type) + '</span> \\u2192 <a href="#" data-entity-id="' + escapeHtml(r.target) + '" class="rel-link">' + escapeHtml(r.target + (r.target_name ? ': ' + r.target_name : '')) + '</a>';
+                        if (r.description) html += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
                         html += '</div>';
                     }}
                     for (var ii = 0; ii < ri.length; ii++) {{
                         var r = ri[ii];
-                        html += '<div class="rel-item"><a href="#" onclick="showEntity(\\x27' + r.source + '\\x27);return false;" class="rel-link">' + r.source + (r.source_name ? ': ' + r.source_name : '') + '</a> <span class="rel-type">' + r.type + '</span> \\u2192 this';
-                        if (r.description) html += ' <span class="rel-desc">(' + r.description + ')</span>';
+                        html += '<div class="rel-item"><a href="#" data-entity-id="' + escapeHtml(r.source) + '" class="rel-link">' + escapeHtml(r.source + (r.source_name ? ': ' + r.source_name : '')) + '</a> <span class="rel-type">' + escapeHtml(r.type) + '</span> \\u2192 this';
+                        if (r.description) html += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
                         html += '</div>';
                     }}
                     html += '</div>';
@@ -2644,33 +2699,41 @@ def generate_html_viewer(
             if (p.depth && p.depth !== 'rich') {{
                 html += '<div class="deepen-section">';
                 html += '<div class="deepen-label">Want more detail? Run:</div>';
-                html += '<code class="deepen-cmd">architecture-model deepen --entity ' + eid + ' --repo-path .</code>';
+                html += '<code class="deepen-cmd">architecture-model deepen --entity ' + escapeHtml(eid) + ' --repo-path .</code>';
                 html += '<div class="deepen-hint">Then regenerate the viewer with: architecture-model viewer .</div>';
                 html += '</div>';
             }}
             var proj = (D.meta && D.meta.project) || 'unknown';
             var cKey = proj + ':comment:' + eid;
-            var saved = localStorage.getItem(cKey) || '';
+            var saved = storageGet(cKey);
             html += '<div class="comment-section"><div class="comment-label">Notes</div>';
-            html += '<textarea class="comment-textarea" placeholder="Add notes about this entity..." oninput="saveComment(\\x27' + eid + '\\x27, this.value)">' + saved.replace(/</g, '&lt;') + '</textarea></div>';
+            html += '<textarea class="comment-textarea" data-entity-id="' + escapeHtml(eid) + '" placeholder="Add notes about this entity..."></textarea></div>';
             html += '</div>';
-            return html;
+            return {{html: html, comment: saved}};
         }}
 
         /* ── Show SE view ─────────────────────────────────────── */
+        function storageGet(key) {{
+            try {{ return localStorage.getItem(key) || ''; }} catch (e) {{ return ''; }}
+        }}
+        function storageSet(key, value) {{
+            try {{ localStorage.setItem(key, value); return true; }} catch (e) {{ return false; }}
+        }}
         function saveComment(eid, val) {{
             var proj = (D.meta && D.meta.project) || 'unknown';
-            localStorage.setItem(proj + ':comment:' + eid, val);
+            storageSet(proj + ':comment:' + eid, val);
         }}
         function exportComments() {{
             var proj = (D.meta && D.meta.project) || 'unknown';
             var lines = ['# Comments for ' + proj];
-            for (var i = 0; i < localStorage.length; i++) {{
-                var k = localStorage.key(i);
+            var keys = [];
+            try {{ for (var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i)); }} catch (e) {{ return; }}
+            for (var i = 0; i < keys.length; i++) {{
+                var k = keys[i];
                 var pfx = proj + ':comment:';
                 if (k.indexOf(pfx) === 0) {{
                     var eid = k.substring(pfx.length);
-                    var val = localStorage.getItem(k);
+                    var val = storageGet(k);
                     if (val) {{
                         lines.push(eid + ':');
                         lines.push('  comment: |');
@@ -2698,8 +2761,9 @@ def generate_html_viewer(
                 for (var i = 0; i < lines.length; i++) {{
                     var line = lines[i];
                     if (line.match(/^[A-Z][A-Z0-9_-]+.*:$/)) {{
-                        if (curId && curLines.length) localStorage.setItem(proj + ':comment:' + curId, curLines.join('\\n'));
-                        curId = line.replace(/:$/, '').trim();
+                        if (curId && curLines.length) storageSet(proj + ':comment:' + curId, curLines.join('\\n'));
+                        var candidate = line.replace(/:$/, '').trim();
+                        curId = Object.prototype.hasOwnProperty.call(D.properties, candidate) ? candidate : null;
                         curLines = [];
                     }} else if (line.indexOf('  comment: |') === 0) {{
                         // skip marker
@@ -2707,7 +2771,7 @@ def generate_html_viewer(
                         curLines.push(line.substring(4));
                     }}
                 }}
-                if (curId && curLines.length) localStorage.setItem(proj + ':comment:' + curId, curLines.join('\\n'));
+                if (curId && curLines.length) storageSet(proj + ':comment:' + curId, curLines.join('\\n'));
                 alert('Comments imported. Refresh to see them.');
                 input.value = '';
             }};
@@ -2755,8 +2819,9 @@ def generate_html_viewer(
             content.dataset.currentLabel = label;
 
             var html = renderBreadcrumbs(label);
-            html += '<h2 class="content-header">' + label + '</h2>';
-            html += propCardHtml(eid);
+            html += '<h2 class="content-header">' + escapeHtml(label) + '</h2>';
+            var card = propCardHtml(eid);
+            html += card.html;
 
             // Source files section (for components)
             var files = D.comp_files && D.comp_files[eid];
@@ -2768,9 +2833,9 @@ def generate_html_viewer(
                     var hasData = D.modules && D.modules[fp];
                     var fname = fp.split('/').pop();
                     if (hasData) {{
-                        html += '<a class="file-link" data-module="' + fp + '">' + fname + '</a>';
+                        html += '<a class="file-link" data-module="' + escapeHtml(fp) + '">' + escapeHtml(fname) + '</a>';
                     }} else {{
-                        html += '<span class="file-link file-nodata">' + fname + '</span>';
+                        html += '<span class="file-link file-nodata">' + escapeHtml(fname) + '</span>';
                     }}
                 }}
                 html += '</div>';
@@ -2785,7 +2850,7 @@ def generate_html_viewer(
                         + '<div class="accordion-header" data-target="' + cid
                         + '" data-code="' + btoa(unescape(encodeURIComponent(facets[facetName])))
                         + '" data-svg="' + btoa(unescape(encodeURIComponent((D.entity_svgs[eid] || {{}})[facetName] || '')))
-                        + '">' + facetName + '</div>'
+                        + '">' + escapeHtml(facetName) + '</div>'
                         + '<div class="accordion-body" id="' + cid + '">'
                         + '<div class="diagram-box" id="' + cid + '_dia"></div>'
                         + '</div></div>';
@@ -2795,6 +2860,8 @@ def generate_html_viewer(
                 html += '<p style="color:#a0a0c0;margin-top:12px">No relationship diagrams for this entity.</p>';
             }}
             content.innerHTML = html;
+            var commentBox = content.querySelector('.comment-textarea');
+            if (commentBox) commentBox.value = card.comment;
 
             // Wire accordion
             content.querySelectorAll('.accordion-header').forEach(function(hdr) {{
@@ -2830,6 +2897,16 @@ def generate_html_viewer(
                     showModule(this.dataset.module);
                 }});
             }});
+            content.querySelectorAll('[data-entity-id]').forEach(function(a) {{
+                a.addEventListener('click', function(ev) {{ ev.preventDefault(); showEntity(this.dataset.entityId); }});
+            }});
+            content.querySelectorAll('.pipeline-toggle').forEach(function(toggle) {{
+                toggle.addEventListener('click', function() {{
+                    var target = document.getElementById(this.dataset.target);
+                    target.style.display = target.style.display === 'none' ? 'block' : 'none';
+                }});
+            }});
+            if (commentBox) commentBox.addEventListener('input', function() {{ saveComment(this.dataset.entityId, this.value); }});
             closeMobileNav();
         }};
 
@@ -2910,6 +2987,24 @@ def generate_html_viewer(
                 content.dataset.currentLabel = '';
                 showView(this.dataset.view, false);
             }});
+        }});
+        document.querySelectorAll('[data-entity-id]').forEach(function(a) {{
+            a.addEventListener('click', function(ev) {{ ev.preventDefault(); showEntity(this.dataset.entityId); }});
+        }});
+        document.querySelectorAll('[data-doc-name]').forEach(function(a) {{
+            a.addEventListener('click', function(ev) {{ ev.preventDefault(); showDoc(this.dataset.docCategory, this.dataset.docName); }});
+        }});
+        document.querySelectorAll('[data-ops-name]').forEach(function(a) {{
+            a.addEventListener('click', function(ev) {{ ev.preventDefault(); showOps(this.dataset.opsName); }});
+        }});
+        document.querySelector('[data-action="pipeline-history"]').addEventListener('click', function(ev) {{ ev.preventDefault(); showPipelineHistory(); }});
+        document.getElementById('menu-toggle').addEventListener('click', function() {{ document.querySelector('.sidebar').classList.toggle('open'); }});
+        document.getElementById('export-comments').addEventListener('click', exportComments);
+        document.getElementById('import-comments').addEventListener('click', function() {{ document.getElementById('import-comments-input').click(); }});
+        document.getElementById('import-comments-input').addEventListener('change', function() {{ importComments(this); }});
+        content.addEventListener('click', function(ev) {{
+            if (ev.target.dataset.action === 'back') goBack();
+            if (ev.target.dataset.historyIndex) {{ ev.preventDefault(); goToHistory(Number(ev.target.dataset.historyIndex)); }}
         }});
     </script>
 </body>

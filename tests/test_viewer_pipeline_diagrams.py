@@ -1,5 +1,7 @@
 """Tests for behavior sequence and flow diagram generation (Task 3.1 & 3.2)."""
 
+import xml.etree.ElementTree as ET
+
 import pytest
 
 from architecture_model.core.types import (
@@ -257,5 +259,58 @@ class TestOfflineSvgRendering:
 
         html = generate_html_viewer(model, tmp_path / "viewer.html").read_text()
 
-        assert '"behavior_svg": "<svg' in html
+        from html.parser import HTMLParser
+        import json
+
+        class DataParser(HTMLParser):
+            data = ""
+            active = False
+            def handle_starttag(self, tag, attrs):
+                self.active = tag == "script" and dict(attrs).get("id") == "viewer-data"
+            def handle_data(self, data):
+                if self.active:
+                    self.data += data
+            def handle_endtag(self, tag):
+                if tag == "script":
+                    self.active = False
+
+        parser = DataParser()
+        parser.feed(html)
+        properties = json.loads(parser.data)["properties"]["BEH-1"]["properties"]
+        assert properties["behavior_svg"].startswith("<svg")
         assert "Diagram source (offline mode)" not in html
+
+    def test_overview_topology_preserves_edge_variants_and_subgraphs(self):
+        code = '''flowchart LR
+            subgraph Core["Core Layer"]
+                A["Receive request"] -->|valid| B("Parse payload")
+                A -.-> C{Reject request}
+            end
+            B ==> D[Persist result]
+            C --> D
+            class A,B service
+        '''
+
+        root = ET.fromstring(_render_mermaid_svg(code))
+        nodes = root.findall(".//*[@class='diagram-node']")
+        edges = root.findall(".//*[@class='diagram-edge']")
+
+        assert len(nodes) == 4
+        assert len(edges) == 4
+        assert {node.attrib["data-entity-id"] for node in nodes} == {"A", "B", "C", "D"}
+        assert len({node.attrib["transform"].split(",")[0] for node in nodes}) > 1
+
+    def test_behavior_flow_topology_preserves_inline_nodes_and_labels(self):
+        code = '''graph TD
+            start["Start workflow"] --> choose{"Choose a branch"}
+            choose -->|fast path| fast["Fast result"]
+            choose --> slow["A deliberately long slow-path label that needs wrapping"]
+            fast --> done[Done]
+            slow --> done
+        '''
+
+        root = ET.fromstring(_render_mermaid_svg(code))
+
+        assert len(root.findall(".//*[@class='diagram-node']")) == 5
+        assert len(root.findall(".//*[@class='diagram-edge']")) == 5
+        assert root.findall(".//{http://www.w3.org/2000/svg}tspan")

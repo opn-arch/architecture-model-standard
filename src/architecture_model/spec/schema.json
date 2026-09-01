@@ -150,6 +150,12 @@
           "items": {
             "$ref": "#/$defs/requirement"
           }
+        },
+        "external_systems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/external_system"
+          }
         }
       },
       "additionalProperties": false
@@ -1386,7 +1392,8 @@
             "derives-from",
             "verifies",
             "resolves",
-            "affects"
+            "affects",
+            "uses"
           ]
         },
         "from": {
@@ -1412,9 +1419,43 @@
             "type": "string"
           }
         },
+        "import_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
         "extensions": {
           "$ref": "#/$defs/extensions"
         }
+      },
+      "additionalProperties": false
+    },
+    "external_system": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/base_entity"
+        }
+      ],
+      "properties": {
+        "id": true,
+        "name": true,
+        "description": true,
+        "status": true,
+        "tags": true,
+        "source_file": true,
+        "source_line": true,
+        "intent": true,
+        "decisions": true,
+        "url": {"type": "string"},
+        "auth_method": {"type": "string"},
+        "api_type": {"type": "string"},
+        "provider": {"type": "string"},
+        "sla": {"type": "string"},
+        "extensions": true
       },
       "additionalProperties": false
     },

@@ -1,5 +1,9 @@
 """Tests for v3 viewer features: new diagram generators, click injection, property cards."""
 
+from html.parser import HTMLParser
+import json
+import subprocess
+
 import pytest
 from architecture_model.core.types import (
     ArchitectureModel, ModelMeta, Entities, Relationship, RelationType,
@@ -15,6 +19,29 @@ from architecture_model.core.visualize import (
     build_entity_properties,
     generate_html_viewer,
 )
+
+
+class _ScriptParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.scripts = []
+        self.handlers = []
+        self._script = None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        self.handlers.extend(value for name, value in attrs.items() if name.startswith("on"))
+        if tag == "script":
+            self._script = {"type": attrs.get("type"), "text": ""}
+
+    def handle_data(self, data):
+        if self._script is not None:
+            self._script["text"] += data
+
+    def handle_endtag(self, tag):
+        if tag == "script" and self._script is not None:
+            self.scripts.append(self._script)
+            self._script = None
 
 
 def _make_model():
@@ -389,6 +416,85 @@ class TestEnrichedPropertyCards:
         assert "rel-section" in html
         assert "rel-type" in html
         assert "prop-list" in html
+
+    def test_hostile_model_data_is_safe_and_inline_scripts_are_valid(self, tmp_path):
+        hostile = "</script><script>globalThis.pwned=1</script> ' \" & \u2028 \u2029"
+        model = _make_model()
+        model.meta.project = hostile
+        model.entities.components[0].name = hostile
+        model.entities.components[0].description = hostile
+        model.relationships[0].description = hostile
+
+        html = generate_html_viewer(model, tmp_path / "viewer.html", title=hostile).read_text()
+        parser = _ScriptParser()
+        parser.feed(html)
+
+        data_script = next(script for script in parser.scripts if script["type"] == "application/json")
+        assert json.loads(data_script["text"])["properties"]["COMP-1"]["name"] == hostile
+        assert not parser.handlers
+        for index, script in enumerate(parser.scripts):
+            if script["type"] == "application/json":
+                continue
+            path = tmp_path / f"inline-{index}.js"
+            path.write_text(script["text"])
+            result = subprocess.run(["node", "--check", path], capture_output=True, text=True)
+            assert result.returncode == 0, result.stderr
+
+    def test_entity_rendering_escapes_hostile_values_when_storage_throws(self, tmp_path):
+        hostile = "</textarea><img src=x onerror=globalThis.pwned=1> & ' \""
+        model = _make_model()
+        model.entities.components[0].name = hostile
+        model.entities.components[0].description = hostile
+        html = generate_html_viewer(model, tmp_path / "viewer.html").read_text()
+        parser = _ScriptParser()
+        parser.feed(html)
+        data = json.loads(next(s["text"] for s in parser.scripts if s["type"] == "application/json"))
+        script = next(s["text"] for s in parser.scripts if s["type"] != "application/json")
+        harness = f"""
+const vm = require('vm');
+const textarea = {{value: '', addEventListener:()=>{{}}, dataset: {{entityId: 'COMP-1'}}}};
+const content = {{dataset: {{}}, innerHTML: '', addEventListener:()=>{{}}, querySelectorAll: () => [], querySelector: s => s === '.comment-textarea' ? textarea : null}};
+const element = {{addEventListener:()=>{{}}, click:()=>{{}}, value:''}};
+const dataElement = {{...element, textContent: {json.dumps(json.dumps(data))}}};
+const context = {{console, Blob, URL, alert: () => {{}}, MutationObserver: function(){{this.observe=()=>{{}}}},
+  document: {{getElementById: id => id === 'viewer-data' ? dataElement : (id === 'content' ? content : element), querySelectorAll: () => [], querySelector: () => ({{classList: {{remove:()=>{{}}, toggle:()=>{{}}}}, addEventListener:()=>{{}}}}), createElement: () => ({{click:()=>{{}}}})}},
+  localStorage: new Proxy({{}}, {{get() {{throw new Error('storage denied')}}}}),
+  innerWidth: 1200, atob, btoa, escape, unescape, encodeURIComponent, decodeURIComponent}};
+context.window = context;
+vm.createContext(context);
+vm.runInContext({json.dumps(script)}, context);
+context.showEntity('COMP-1');
+if (context.pwned) throw new Error('hostile content executed');
+if (content.innerHTML.includes('<img')) throw new Error('hostile HTML was not escaped');
+if (!content.innerHTML.includes('&lt;/textarea&gt;')) throw new Error('description was not escaped');
+if (textarea.value !== '') throw new Error('unexpected textarea value');
+"""
+        result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
+
+    def test_comment_import_accepts_known_entities_and_rejects_unknown_ids(self, tmp_path):
+        html = generate_html_viewer(_make_model(), tmp_path / "viewer.html").read_text()
+        parser = _ScriptParser()
+        parser.feed(html)
+        data = json.loads(next(s["text"] for s in parser.scripts if s["type"] == "application/json"))
+        script = next(s["text"] for s in parser.scripts if s["type"] != "application/json")
+        imported = "COMP-1:\n  comment: |\n    safe <b>text</b>\nUNKNOWN-9:\n  comment: |\n    rejected"
+        harness = f"""
+const vm = require('vm');
+const writes = [];
+const element = {{addEventListener:()=>{{}}, click:()=>{{}}, value:'', files:[{{}}]}};
+const content = {{...element, dataset: {{}}, querySelectorAll:()=>[], querySelector:()=>null}};
+const context = {{console, Blob, URL, alert:()=>{{}}, MutationObserver:function(){{this.observe=()=>{{}}}},
+  FileReader:function(){{this.readAsText=()=>this.onload({{target:{{result:{json.dumps(imported)}}}}})}},
+  document:{{getElementById:id=>id==='viewer-data'?{{...element,textContent:{json.dumps(json.dumps(data))}}}:id==='content'?content:element,querySelectorAll:()=>[],querySelector:()=>({{...element,classList:{{remove:()=>{{}},toggle:()=>{{}}}}}}),createElement:()=>element}},
+  localStorage:{{length:0,setItem:(key,value)=>writes.push([key,value]),getItem:()=>null,key:()=>null}},
+  innerWidth:1200,atob,btoa,escape,unescape,encodeURIComponent,decodeURIComponent}};
+context.window=context; vm.createContext(context); vm.runInContext({json.dumps(script)},context);
+context.importComments(element);
+if (writes.length !== 1 || !writes[0][0].endsWith(':COMP-1') || writes[0][1] !== 'safe <b>text</b>') throw new Error(JSON.stringify(writes));
+"""
+        result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
 
 
 class TestDocEmbedding:

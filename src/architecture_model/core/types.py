@@ -795,8 +795,12 @@ class ArchitectureModel:
             d["source_artifacts"] = self.meta.source_artifacts
         if self.meta.manifest_hash:
             d["manifest_hash"] = self.meta.manifest_hash
+        if self.meta.source_language:
+            d["source_language"] = self.meta.source_language
         if self.meta.domain_profile and self.meta.domain_profile != "software":
             d["domain_profile"] = self.meta.domain_profile
+        if self.meta.lifecycle_phase != "production":
+            d["lifecycle_phase"] = self.meta.lifecycle_phase
         if self.meta.manifest_path:
             d["manifest_path"] = self.meta.manifest_path
         if self.meta.parent_model:
@@ -1279,4 +1283,10 @@ class ArchitectureModel:
             d["strength"] = r.strength.value
         if r.extensions:
             d["extensions"] = r.extensions
+        if r.imports:
+            d["imports"] = r.imports
+        if r.import_count:
+            d["import_count"] = r.import_count
+        if r.weight:
+            d["weight"] = r.weight
         return d

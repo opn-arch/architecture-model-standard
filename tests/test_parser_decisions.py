@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 import pytest
 
-from architecture_model.core.parser import _parse_raw, dump_model, load_model, save_model
+from architecture_model.core.parser import _parse_raw, dump_model, load_model, save_model, validate_model_data
 from architecture_model.core.types import DecisionEntry
 
 
@@ -361,3 +361,50 @@ class TestExternalSystemRoundtrip:
         assert yaml_loaded.intent == "Process payments through a trusted provider"
         assert file_loaded.provider == "Example Payments"
         assert file_loaded.sla == "99.99%"
+
+    def test_external_system_roundtrip_passes_json_schema(self):
+        raw = _make_raw_entity("external_systems", {
+            "url": "https://vendor.example.test",
+            "auth_method": "mTLS",
+            "api_type": "REST",
+            "provider": "Vendor",
+            "sla": "99.9%",
+        })
+        raw["entities"]["external_systems"][0]["id"] = "EXT-1"
+        raw["meta"]["schema_version"] = "2.1.0"
+
+        dumped = dump_model(_parse_raw(raw))
+
+        assert validate_model_data(dumped) == []
+
+
+class TestPublicSerializerEquivalence:
+    def test_non_default_metadata_and_relationship_fields_are_equivalent(self):
+        raw = _make_raw()
+        raw["meta"].update({
+            "source_language": "python",
+            "domain_profile": "controls",
+            "lifecycle_phase": "concept",
+        })
+        raw["relationships"] = [{
+            "type": "depends-on",
+            "from": "COMP-1",
+            "to": "COMP-1",
+            "imports": ["architecture_model.core.types"],
+            "import_count": 7,
+            "weight": 2.5,
+        }]
+
+        model = _parse_raw(raw)
+
+        assert dump_model(model) == model.to_dict()
+        assert model.to_dict()["meta"] | {
+            "source_language": "python",
+            "domain_profile": "controls",
+            "lifecycle_phase": "concept",
+        } == model.to_dict()["meta"]
+        assert model.to_dict()["relationships"][0] | {
+            "imports": ["architecture_model.core.types"],
+            "import_count": 7,
+            "weight": 2.5,
+        } == model.to_dict()["relationships"][0]
