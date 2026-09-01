@@ -12,6 +12,10 @@ class InferredCapability:
     description: str = ""
     evidence_source: str = ""  # "routes", "domain_module", "test_pattern"
     sub_capabilities: list[str] = field(default_factory=list)
+    intent: str = ""
+    goals: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
+    monitored: list[str] = field(default_factory=list)
 
 
 @dataclass

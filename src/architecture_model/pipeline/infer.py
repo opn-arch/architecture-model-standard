@@ -296,6 +296,9 @@ class InferStage:
             fallback_caps = _infer_fallback_capabilities(inventory.modules, capabilities)
             capabilities.extend(fallback_caps)
 
+        # --- SE field enrichment: intent, goals, failure_modes, monitored ---
+        _enrich_se_fields(capabilities, inventory.modules)
+
         result = InferenceResult(
             capabilities=capabilities,
             actors=actors,
@@ -1118,3 +1121,139 @@ def _module_has_clear_purpose(mod: ModuleRecord, capabilities: list[InferredCapa
         if name.lower() in cap.name.lower() or name.lower() in cap.description.lower():
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# SE field enrichment — intent, goals, failure_modes, monitored
+# ---------------------------------------------------------------------------
+
+_RAISE_RE = re.compile(r"raise\s+(\w+)\s*\(")
+_ERROR_FUNC_KEYWORDS = frozenset({"error", "fail", "retry", "fallback", "timeout"})
+_MONITOR_FUNC_KEYWORDS = frozenset({"log", "metric", "monitor", "trace"})
+_MONITOR_IMPORTS = frozenset({
+    "logging", "logger",
+    "prometheus_client", "statsd", "datadog",
+    "opentelemetry", "sentry_sdk",
+})
+
+
+def _modules_for_capability(
+    cap: InferredCapability, modules: list[ModuleRecord]
+) -> list[ModuleRecord]:
+    """Find modules affiliated with a capability by name/description matching."""
+    result = []
+    for mod in modules:
+        if _is_non_source_module(mod):
+            continue
+        stem = mod.path.stem
+        if (
+            stem.lower() in cap.name.lower()
+            or stem.lower() in cap.description.lower()
+            or cap.name.lower().replace(" ", "_") in stem.lower()
+        ):
+            result.append(mod)
+    return result
+
+
+def _derive_intent(cap: InferredCapability, mods: list[ModuleRecord]) -> str:
+    """Derive intent from module docstring or module name."""
+    for mod in mods:
+        if mod.docstring:
+            first_line = mod.docstring.strip().split("\n")[0].strip()
+            if first_line:
+                return first_line
+    # Fallback: derive from module name
+    if mods:
+        stem = mods[0].path.stem
+        name = stem.replace("_", " ")
+        return f"Handles {name}"
+    return ""
+
+
+def _derive_goals(mods: list[ModuleRecord]) -> list[str]:
+    """Derive goals from public function names."""
+    goals: list[str] = []
+    seen: set[str] = set()
+    for mod in mods:
+        for func in mod.functions:
+            if func.name.startswith("_"):
+                continue
+            label = func.name.replace("_", " ").capitalize()
+            if label.lower() not in seen:
+                seen.add(label.lower())
+                goals.append(label)
+    return goals
+
+
+def _derive_failure_modes(mods: list[ModuleRecord]) -> list[str]:
+    """Derive failure modes from raise statements and error-related function names."""
+    modes: list[str] = []
+    seen: set[str] = set()
+
+    for mod in mods:
+        for func in mod.functions:
+            # Scan body_hint for raise patterns
+            if func.body_hint:
+                for match in _RAISE_RE.finditer(func.body_hint):
+                    exc_type = match.group(1)
+                    label = f"{exc_type} in {func.name}"
+                    if label.lower() not in seen:
+                        seen.add(label.lower())
+                        modes.append(label)
+
+            # Error-related function names
+            name_parts = set(func.name.lower().split("_"))
+            if name_parts & _ERROR_FUNC_KEYWORDS and not func.name.startswith("_"):
+                label = func.name.replace("_", " ").capitalize()
+                if label.lower() not in seen:
+                    seen.add(label.lower())
+                    modes.append(label)
+
+    return modes
+
+
+def _derive_monitored(mods: list[ModuleRecord]) -> list[str]:
+    """Derive monitoring signals from imports and function names."""
+    signals: list[str] = []
+    seen: set[str] = set()
+
+    for mod in mods:
+        # Check imports
+        for imp in mod.imports:
+            imp_lower = imp.lower()
+            for kw in _MONITOR_IMPORTS:
+                if kw in imp_lower and kw not in seen:
+                    seen.add(kw)
+                    signals.append(f"Uses {kw}")
+
+        # Check function names
+        for func in mod.functions:
+            if func.name.startswith("_"):
+                continue
+            name_parts = set(func.name.lower().split("_"))
+            if name_parts & _MONITOR_FUNC_KEYWORDS:
+                label = func.name.replace("_", " ").capitalize()
+                if label.lower() not in seen:
+                    seen.add(label.lower())
+                    signals.append(label)
+
+    return signals
+
+
+def _enrich_se_fields(
+    capabilities: list[InferredCapability], modules: list[ModuleRecord]
+) -> None:
+    """Post-process capabilities to populate SE fields (intent, goals, failure_modes, monitored)."""
+    for cap in capabilities:
+        affiliated = _modules_for_capability(cap, modules)
+        if not affiliated:
+            continue
+
+        if not cap.intent:
+            cap.intent = _derive_intent(cap, affiliated)
+        if not cap.goals:
+            cap.goals = _derive_goals(affiliated)
+        if not cap.failure_modes:
+            cap.failure_modes = _derive_failure_modes(affiliated)
+        if not cap.monitored:
+            cap.monitored = _derive_monitored(affiliated)
