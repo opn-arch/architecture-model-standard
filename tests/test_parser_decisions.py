@@ -7,7 +7,16 @@ import yaml
 import pytest
 
 from architecture_model.core.parser import _parse_raw, dump_model, load_model, save_model, validate_model_data
-from architecture_model.core.types import DecisionEntry
+from architecture_model.core.types import (
+    ComponentInterface,
+    Constant,
+    DecisionEntry,
+    FunctionSignature,
+    Interface,
+    InterfaceType,
+    Status,
+    TestContract,
+)
 
 
 def _make_raw(**overrides):
@@ -408,3 +417,48 @@ class TestPublicSerializerEquivalence:
             "import_count": 7,
             "weight": 2.5,
         } == model.to_dict()["relationships"][0]
+
+    def test_component_codegen_fields_and_interface_contract_roundtrip_and_validate(self):
+        model = _parse_raw(_make_raw())
+        model.meta.schema_version = "2.1.0"
+        model.meta.project = "test-project"
+        component = model.entities.components[0]
+        component.id = "COMP-1"
+        component.constants = [Constant(name="TIMEOUT", value="30", type="int")]
+        component.signatures = [FunctionSignature(
+            name="run", params=["value: str"], returns="bool", complexity="COMPLEX",
+        )]
+        component.test_contracts = [TestContract(
+            test_file="tests/test_run.py", test_method="test_run", assertion="assert run('x')",
+            contract_type="behavioral", required_imports=["pytest", "package.run"],
+        )]
+        component.interfaces = [ComponentInterface(
+            name="run", kind="provides", target_component="COMP-2",
+            signature="(value: str) -> bool", symbols=["Runner"],
+        )]
+        model.entities.interfaces = [Interface(
+            id="IF-1", name="Run API", status=Status.ACTIVE,
+            type=InterfaceType.REST, contract="GET /run -> 200",
+        )]
+
+        parser_dump = dump_model(model)
+        typed_dump = model.to_dict()
+        yaml_dump = yaml.safe_load(model.to_yaml())
+
+        assert parser_dump == typed_dump == yaml_dump
+        dumped_component = typed_dump["entities"]["components"][0]
+        assert dumped_component["constants"][0]["type"] == "int"
+        assert dumped_component["signatures"][0]["complexity"] == "COMPLEX"
+        assert dumped_component["test_contracts"][0]["required_imports"] == ["pytest", "package.run"]
+        assert dumped_component["interfaces"] == [{
+            "name": "run", "kind": "provides", "target_component": "COMP-2",
+            "signature": "(value: str) -> bool", "symbols": ["Runner"],
+        }]
+        assert typed_dump["entities"]["interfaces"][0]["contract"] == "GET /run -> 200"
+        assert validate_model_data(typed_dump) == []
+
+        loaded = _parse_raw(yaml_dump)
+        assert loaded.entities.components[0].interfaces == component.interfaces
+        assert loaded.entities.components[0].signatures[0].complexity == "COMPLEX"
+        assert loaded.entities.components[0].test_contracts[0].required_imports == ["pytest", "package.run"]
+        assert loaded.entities.interfaces[0].contract == "GET /run -> 200"

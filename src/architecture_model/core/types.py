@@ -1050,6 +1050,7 @@ class ArchitectureModel:
             d["constants"] = [
                 {"name": cn.name, "value": cn.value}
                 | ({"context": cn.context} if cn.context else {})
+                | ({"type": cn.type} if cn.type else {})
                 for cn in c.constants
             ]
         if c.signatures:
@@ -1059,6 +1060,7 @@ class ArchitectureModel:
                 | ({"returns": sig.returns} if sig.returns else {})
                 | ({"decorators": sig.decorators} if sig.decorators else {})
                 | ({"body_hint": sig.body_hint} if sig.body_hint else {})
+                | ({"complexity": sig.complexity} if sig.complexity else {})
                 for sig in c.signatures
             ]
         if c.test_contracts:
@@ -1069,6 +1071,7 @@ class ArchitectureModel:
                     "assertion": tc.assertion,
                 }
                 | ({"contract_type": tc.contract_type} if tc.contract_type else {})
+                | ({"required_imports": tc.required_imports} if tc.required_imports else {})
                 for tc in c.test_contracts
             ]
         if c.observability:
@@ -1078,6 +1081,14 @@ class ArchitectureModel:
                 | ({"on_error": o.on_error} if o.on_error != "ERROR" else {})
                 | ({"on_success": o.on_success} if o.on_success else {})
                 for o in c.observability
+            ]
+        if c.interfaces:
+            d["interfaces"] = [
+                {"name": ci.name, "kind": ci.kind}
+                | ({"target_component": ci.target_component} if ci.target_component else {})
+                | ({"signature": ci.signature} if ci.signature else {})
+                | ({"symbols": ci.symbols} if ci.symbols else {})
+                for ci in c.interfaces
             ]
         if c.technology_stack:
             d["technology_stack"] = c.technology_stack

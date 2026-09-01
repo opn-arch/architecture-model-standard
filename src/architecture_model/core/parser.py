@@ -763,6 +763,8 @@ def _dump_interface(i: Interface) -> dict:
         d["endpoints"] = i.endpoints
     if i.schema:
         d["schema"] = i.schema
+    if i.contract:
+        d["contract"] = i.contract
     return d
 
 

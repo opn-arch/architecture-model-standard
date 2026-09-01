@@ -914,6 +914,40 @@
             "additionalProperties": false
           }
         },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "provides",
+                  "requires"
+                ]
+              },
+              "target_component": {
+                "type": "string"
+              },
+              "signature": {
+                "type": "string"
+              },
+              "symbols": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
