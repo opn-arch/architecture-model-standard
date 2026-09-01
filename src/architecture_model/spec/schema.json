@@ -178,6 +178,34 @@
       },
       "additionalProperties": false
     },
+    "decision_entry": {
+      "type": "object",
+      "required": [
+        "date",
+        "choice"
+      ],
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "choice": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "context": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "base_entity": {
       "type": "object",
       "required": [
@@ -215,6 +243,12 @@
         },
         "intent": {
           "type": "string"
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/decision_entry"
+          }
         }
       }
     },
@@ -249,7 +283,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -294,7 +329,32 @@
             "type": "string"
           }
         },
-        "intent": true
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trade_offs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failure_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "monitored": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -408,7 +468,26 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "moes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failure_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -482,7 +561,8 @@
         "contract": {
           "type": "string"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -525,7 +605,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -562,7 +643,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -854,7 +936,14 @@
             "type": "string"
           }
         },
-        "intent": true
+        "monitored": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -894,7 +983,32 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trade_offs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failure_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "monitored": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -950,7 +1064,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -996,7 +1111,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -1038,7 +1154,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -1085,7 +1202,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -1124,7 +1242,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -1175,7 +1294,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -1230,7 +1350,8 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
-        "intent": true
+        "intent": true,
+        "decisions": true
       },
       "additionalProperties": false
     },
@@ -1335,6 +1456,28 @@
         "moe": {
           "type": "string"
         },
+        "value_function": {
+          "type": "string"
+        },
+        "moes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failure_modes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "monitored": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decisions": true,
         "extensions": true
       },
       "additionalProperties": false
