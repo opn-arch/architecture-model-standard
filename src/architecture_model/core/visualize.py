@@ -2692,6 +2692,17 @@ def generate_html_viewer(
             }}
             content.innerHTML = html;
 
+            // Render KaTeX math in .katex-render elements
+            content.querySelectorAll('.katex-render').forEach(function(el) {{
+                try {{
+                    if (typeof katex !== 'undefined') {{
+                        katex.render(el.dataset.latex, el, {{ throwOnError: false, displayMode: false }});
+                    }}
+                }} catch(e) {{
+                    // Fallback: leave raw LaTeX text visible
+                }}
+            }});
+
             // Wire accordion
             content.querySelectorAll('.accordion-header').forEach(function(hdr) {{
                 hdr.addEventListener('click', function() {{
