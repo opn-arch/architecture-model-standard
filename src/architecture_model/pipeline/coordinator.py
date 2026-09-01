@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from time import perf_counter
 from typing import Any
+from uuid import uuid4
 
 from architecture_model.pipeline.global_learning import GlobalLearningStore
 from architecture_model.pipeline.learning import LearningStore
@@ -81,17 +83,33 @@ class PipelineCoordinator:
     def run_to(self, target: str, ctx: PipelineContext) -> dict[str, StageResult]:
         """Run minimum stages to produce target. Skips cached."""
         order = self.resolve_order(target)
+        return self._run_recorded(order, ctx, record_quality=False)
+
+    def _execute_order(
+        self, order: list[str], ctx: PipelineContext, stage_history: list[Any]
+    ) -> dict[str, StageResult]:
         results: dict[str, StageResult] = {}
         for name in order:
             if ctx.has(name):
                 results[name] = ctx.cache[name]
                 continue
             stage = self._stages[name]
-            result = stage.run(ctx)
-            result = self._maybe_refine(name, result, ctx)
-            ctx.cache[name] = result
-            results[name] = result
-            self._evaluate_gates(name, result, ctx)
+            started = datetime.now(timezone.utc)
+            timer = perf_counter()
+            try:
+                result = stage.run(ctx)
+                result = self._maybe_refine(name, result, ctx)
+                ctx.cache[name] = result
+                results[name] = result
+                self._evaluate_gates(name, result, ctx)
+            except Exception:
+                stage_history.append(self._stage_record(
+                    name, stage, started, perf_counter() - timer, None, "failed"
+                ))
+                raise
+            stage_history.append(self._stage_record(
+                name, stage, started, perf_counter() - timer, result, "completed"
+            ))
         return results
 
     def run_stage(self, stage_name: str, ctx: PipelineContext) -> StageResult:
@@ -122,22 +140,123 @@ class PipelineCoordinator:
             self._check_cycle(name, visiting, visited)
 
         order = self._topo_sort(all_names)
-        results: dict[str, StageResult] = {}
-        for name in order:
-            if ctx.has(name):
-                results[name] = ctx.cache[name]
-                continue
-            stage = self._stages[name]
-            result = stage.run(ctx)
-            result = self._maybe_refine(name, result, ctx)
-            ctx.cache[name] = result
-            results[name] = result
-            self._evaluate_gates(name, result, ctx)
+        return self._run_recorded(order, ctx, record_quality=True)
 
-        # Record quality history
-        self._record_quality(results)
+    def _run_recorded(
+        self, order: list[str], ctx: PipelineContext, *, record_quality: bool
+    ) -> dict[str, StageResult]:
+        from .history import append_pipeline_history
 
+        ctx.run_id = str(uuid4())
+        started = datetime.now(timezone.utc)
+        timer = perf_counter()
+        stage_history: list[Any] = []
+        try:
+            results = self._execute_order(order, ctx, stage_history)
+            if record_quality:
+                self._record_quality(results)
+        except Exception as exc:
+            record = self._build_run_record(
+                ctx, started, perf_counter() - timer, stage_history, "failed", str(exc)
+            )
+            try:
+                append_pipeline_history(ctx.repo_path, record)
+            except Exception:
+                pass
+            raise
+        append_pipeline_history(
+            ctx.repo_path,
+            self._build_run_record(ctx, started, perf_counter() - timer, stage_history, "completed"),
+        )
         return results
+
+    @staticmethod
+    def _stage_record(name, stage, started, elapsed, result, status):
+        from .history import StageHistoryRecord
+
+        output = getattr(result, "output", None)
+        output_summary: dict[str, Any] = {"type": type(output).__name__} if output is not None else {}
+        for attr in ("modules", "capabilities", "components", "relationships", "interfaces", "contracts", "systems"):
+            value = getattr(output, attr, None)
+            if value is not None:
+                output_summary[attr] = len(value)
+        return StageHistoryRecord(
+            name=name,
+            started_at=started.isoformat().replace("+00:00", "Z"),
+            completed_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            duration_ms=max(0, int(elapsed * 1000)),
+            score=getattr(getattr(result, "quality", None), "score", None),
+            status=status,
+            invoked_by="pipeline-coordinator",
+            dependencies=list(getattr(stage, "requires", [])),
+            input_summary={"dependencies": list(getattr(stage, "requires", []))},
+            output_summary=output_summary,
+            artifacts=[str(path) for path in getattr(output, "written_paths", [])],
+        )
+
+    @staticmethod
+    def _build_run_record(ctx, started, elapsed, stages, status, error=""):
+        from .history import ComponentHistoryRecord, ModuleHistoryRecord, PipelineRunRecord
+
+        observe = ctx.get("observe")
+        allocate = ctx.get("allocate")
+        inventory = getattr(observe, "output", None)
+        allocation = getattr(allocate, "output", None)
+        modules = list(getattr(inventory, "modules", []) or [])
+        routes = list(getattr(inventory, "routes", []) or [])
+        components = list(getattr(allocation, "components", []) or [])
+        file_to_component = {
+            str(path): comp.id for comp in components for path in getattr(comp, "files", [])
+        }
+        timestamp = started.isoformat().replace("+00:00", "Z")
+        stage_names = [stage.name for stage in stages]
+        component_records = []
+        for comp in components:
+            files = [str(path) for path in getattr(comp, "files", [])]
+            component_records.append(ComponentHistoryRecord(
+                component_id=comp.id,
+                name=comp.name,
+                files=files,
+                modules=files,
+                stages=stage_names,
+                timestamp=timestamp,
+                invoked_by=ctx.invocation or ctx.invocation_source,
+                produced_entity_ids=[item for item in (comp.id, getattr(comp, "capability_id", "")) if item],
+                counts={"files": len(files), "modules": len(files)},
+            ))
+        module_records = []
+        for module in modules:
+            path = str(module.path)
+            module_routes = [route for route in routes if str(getattr(route, "file", "")) == path]
+            module_records.append(ModuleHistoryRecord(
+                path=path,
+                module=Path(path).stem,
+                component_id=file_to_component.get(path, ""),
+                timestamp=timestamp,
+                invoked_by=ctx.invocation or ctx.invocation_source,
+                produced_functions=[item.name for item in module.functions],
+                produced_classes=[item.name for item in module.classes],
+                produced_routes=[f"{item.method} {item.path}" for item in module_routes],
+                produced_constants=[item.name for item in module.constants],
+                produced_entity_ids=[file_to_component[path]] if path in file_to_component else [],
+            ))
+        artifacts = [artifact for stage in stages for artifact in stage.artifacts]
+        return PipelineRunRecord(
+            run_id=ctx.run_id,
+            started_at=timestamp,
+            completed_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            duration_ms=max(0, int(elapsed * 1000)),
+            source=ctx.invocation_source,
+            invocation=ctx.invocation,
+            scope=ctx.scope,
+            parent_run_id=ctx.parent_run_id,
+            status=status,
+            stages=stages,
+            components=component_records,
+            modules=module_records,
+            produced_artifacts=artifacts,
+            error=error,
+        )
 
     def _record_quality(self, results: dict[str, StageResult]) -> None:
         """Record stage quality scores to learning store."""

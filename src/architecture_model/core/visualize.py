@@ -1932,67 +1932,14 @@ def _load_docs(repo_path: Path | None = None) -> dict[str, dict[str, str]]:
     return result
 
 
-def _load_pipeline_history(repo_path: Path | None = None) -> dict:
-    """Parse .architecture-models/pipeline-report.md and extract execution history.
-
-    Returns dict with timestamp, duration, stages, stats — or empty dict if unavailable.
-    """
-    import re
-
+def _load_pipeline_history(repo_path: Path | None = None) -> list[dict] | dict:
+    """Load recent structured pipeline history for embedding in the viewer."""
     if repo_path is None:
         return {}
+    from architecture_model.pipeline.history import load_pipeline_history
 
-    report_path = Path(repo_path) / ".architecture-models" / "pipeline-report.md"
-    if not report_path.is_file():
-        return {}
-
-    try:
-        text = report_path.read_text(encoding="utf-8")
-    except Exception:
-        return {}
-
-    result: dict = {}
-
-    # Timestamp
-    m = re.search(r"\*\*Generated:\*\*\s*(.+)", text)
-    if m:
-        result["timestamp"] = m.group(1).strip()
-
-    # Duration
-    m = re.search(r"\*\*Total Duration:\*\*\s*(.+)", text)
-    if m:
-        result["duration"] = m.group(1).strip()
-
-    # Stage scores table: | name | score | duration | ... |
-    stages = []
-    for m in re.finditer(
-        r"^\|\s*(\w+)\s*\|\s*([\d.]+)\s*\|\s*(\d+\w*)\s*\|",
-        text,
-        re.MULTILINE,
-    ):
-        name = m.group(1)
-        if name.lower() in ("stage", "---"):
-            continue
-        stages.append({"name": name, "score": m.group(2), "duration": m.group(3)})
-    if stages:
-        result["stages"] = stages
-
-    # Stats from observe section
-    stats: dict[str, str] = {}
-    m = re.search(r"Discovered\s+(\d+)\s+modules", text)
-    if m:
-        stats["modules"] = m.group(1)
-    m = re.search(r"(\d+)\s+functions,\s+(\d+)\s+classes", text)
-    if m:
-        stats["functions"] = m.group(1)
-        stats["classes"] = m.group(2)
-    m = re.search(r"(\d+)\s+import edges", text)
-    if m:
-        stats["import_edges"] = m.group(1)
-    if stats:
-        result["stats"] = stats
-
-    return result
+    records = load_pipeline_history(repo_path, limit=50)
+    return [record.to_dict() for record in records] if records else {}
 
 
 def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
@@ -2563,9 +2510,35 @@ def generate_html_viewer(
         window.showOps = showOps;
 
         /* ── Show Pipeline History ────────────────────────────── */
+        function pipelineRuns() {{
+            return Array.isArray(D.pipeline_history) ? D.pipeline_history : [];
+        }}
+
+        function renderRunHistory(runs, itemSelector) {{
+            if (!runs || !runs.length) return '';
+            var html = '<div class="mod-section"><div class="mod-section-title">Run History (' + runs.length + ')</div>';
+            runs.forEach(function(run) {{
+                var items = itemSelector ? itemSelector(run) : [];
+                html += '<div class="mod-item"><div class="mod-func-name">' + escapeHtml(run.started_at || '')
+                    + ' [' + escapeHtml(run.status || '') + ']</div>';
+                html += '<div class="mod-func-sig">Invoked by: ' + escapeHtml(run.invocation || run.source || '')
+                    + ' | Duration: ' + String(run.duration_ms == null ? 'N/A' : run.duration_ms + 'ms') + '</div>';
+                var produced = (run.produced_artifacts || []).slice();
+                items.forEach(function(item) {{
+                    produced = produced.concat(item.produced_entity_ids || [], item.artifacts || []);
+                    if (item.counts) Object.keys(item.counts).forEach(function(k) {{ produced.push(k + ': ' + item.counts[k]); }});
+                    produced = produced.concat(item.produced_functions || [], item.produced_classes || [],
+                        item.produced_routes || [], item.produced_constants || []);
+                }});
+                html += '<div class="mod-func-doc"><strong>Produced Artifacts / Entities:</strong> '
+                    + escapeHtml(produced.join(', ') || 'None recorded') + '</div></div>';
+            }});
+            return html + '</div>';
+        }}
+
         function showPipelineHistory() {{
-            var ph = D.pipeline_history;
-            if (!ph || !ph.timestamp) {{ content.innerHTML = '<p>No pipeline history available.</p>'; return; }}
+            var runs = pipelineRuns();
+            if (!runs || !runs.length) {{ content.innerHTML = '<p>No pipeline history available.</p>'; return; }}
             var cur = content.dataset.currentType;
             var curId = content.dataset.currentId;
             var curLabel = content.dataset.currentLabel;
@@ -2575,29 +2548,22 @@ def generate_html_viewer(
             content.dataset.currentLabel = 'Pipeline History';
             var html = renderBreadcrumbs('Pipeline History');
             html += '<h2 class="content-header">Pipeline History</h2>';
-            html += '<div class="prop-card">';
-            html += '<div class="prop-item"><div class="prop-label">Last Run</div><div class="prop-value">' + ph.timestamp + '</div></div>';
-            html += '<div class="prop-item"><div class="prop-label">Duration</div><div class="prop-value">' + (ph.duration || 'N/A') + '</div></div>';
-            if (ph.stats) {{
-                html += '<div class="prop-item"><div class="prop-label">Modules</div><div class="prop-value">' + (ph.stats.modules || '-') + '</div></div>';
-                html += '<div class="prop-item"><div class="prop-label">Functions</div><div class="prop-value">' + (ph.stats.functions || '-') + '</div></div>';
-                html += '<div class="prop-item"><div class="prop-label">Classes</div><div class="prop-value">' + (ph.stats.classes || '-') + '</div></div>';
-            }}
-            html += '</div>';
-            if (ph.stages && ph.stages.length) {{
+            html += renderRunHistory(runs);
+            runs.forEach(function(run) {{ if (run.stages && run.stages.length) {{
+                html += '<h3>' + escapeHtml(run.run_id) + ' Stages</h3>';
                 html += '<div class="doc-content"><table style="width:100%;border-collapse:collapse">';
                 html += '<tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Stage</th>';
                 html += '<th style="text-align:right;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Score</th>';
                 html += '<th style="text-align:right;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Duration</th></tr>';
-                ph.stages.forEach(function(s) {{
+                run.stages.forEach(function(s) {{
                     var sc = parseFloat(s.score);
                     var color = sc >= 90 ? '#27AE60' : sc >= 70 ? '#F39C12' : '#E74C3C';
                     html += '<tr><td style="padding:4px 8px;color:#e0e0e0">' + s.name + '</td>';
                     html += '<td style="padding:4px 8px;text-align:right;color:' + color + '">' + s.score + '</td>';
-                    html += '<td style="padding:4px 8px;text-align:right;color:#a0a0c0">' + s.duration + '</td></tr>';
+                    html += '<td style="padding:4px 8px;text-align:right;color:#a0a0c0">' + (s.duration_ms == null ? 'N/A' : s.duration_ms + 'ms') + '</td></tr>';
                 }});
                 html += '</table></div>';
-            }}
+            }} }});
             content.innerHTML = html;
             closeMobileNav();
         }}
@@ -2849,6 +2815,13 @@ def generate_html_viewer(
             html += '<h2 class="content-header">' + escapeHtml(label) + '</h2>';
             var card = propCardHtml(eid);
             html += card.html;
+            var entityId = eid;
+            var componentRuns = pipelineRuns().filter(function(run) {{
+                return (run.components || []).some(function(item) {{ return item.component_id === entityId; }});
+            }});
+            html += renderRunHistory(componentRuns, function(run) {{
+                return (run.components || []).filter(function(item) {{ return item.component_id === entityId; }});
+            }});
 
             // Source files section (for components)
             var files = D.comp_files && D.comp_files[eid];
@@ -2999,6 +2972,13 @@ def generate_html_viewer(
                 html += '<div class="mod-consts">' + mod.consts.join(', ') + '</div>';
                 html += '</div>';
             }}
+
+            var moduleRuns = pipelineRuns().filter(function(run) {{
+                return (run.modules || []).some(function(item) {{ return item.path === filepath; }});
+            }});
+            html += renderRunHistory(moduleRuns, function(run) {{
+                return (run.modules || []).filter(function(item) {{ return item.path === filepath; }});
+            }});
 
             content.innerHTML = html;
             closeMobileNav();

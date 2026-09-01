@@ -6,6 +6,13 @@ from pathlib import Path
 import pytest
 
 from architecture_model.core.visualize import _load_pipeline_history
+from architecture_model.pipeline.history import (
+    ComponentHistoryRecord,
+    ModuleHistoryRecord,
+    PipelineRunRecord,
+    StageHistoryRecord,
+    append_pipeline_history,
+)
 
 
 SAMPLE_REPORT = """\
@@ -54,14 +61,11 @@ class TestLoadPipelineHistory:
 
         result = _load_pipeline_history(tmp_path)
 
-        assert result["timestamp"] == "2026-08-19T16:59:51Z"
-        assert result["duration"] == "6937ms"
-        assert len(result["stages"]) == 8
-        assert result["stages"][0] == {"name": "observe", "score": "100", "duration": "6693ms"}
-        assert result["stages"][1] == {"name": "infer", "score": "67", "duration": "2ms"}
-        assert result["stats"]["modules"] == "348"
-        assert result["stats"]["functions"] == "1277"
-        assert result["stats"]["classes"] == "504"
+        assert len(result) == 1
+        assert result[0]["started_at"] == "2026-08-19T16:59:51Z"
+        assert result[0]["duration_ms"] == 6937
+        assert len(result[0]["stages"]) == 8
+        assert result[0]["stages"][0]["name"] == "observe"
 
     def test_viewer_html_contains_pipeline_history(self, tmp_path):
         """When repo_path is provided with a pipeline report, viewer data includes it."""
@@ -87,3 +91,45 @@ class TestLoadPipelineHistory:
 
         html = out.read_text()
         assert "pipeline_history" in html or "pipeline-history" in html
+
+    def test_viewer_embeds_structured_component_and_module_history(self, tmp_path):
+        from architecture_model.core.parser import _parse_raw
+        from architecture_model.core.visualize import generate_html_viewer
+
+        model = _parse_raw({
+            "meta": {"project": "test", "schema_version": "1.3"},
+            "entities": {"components": [{
+                "id": "COMP-1", "name": "Test", "status": "ACTIVE", "files": ["src/test.py"]
+            }]},
+            "relationships": [],
+        })
+        append_pipeline_history(tmp_path, PipelineRunRecord(
+            run_id="run-viewer",
+            started_at="2026-09-01T12:00:00Z",
+            completed_at="2026-09-01T12:00:01Z",
+            duration_ms=1000,
+            source="MCP",
+            invocation="architect_pipeline",
+            status="completed",
+            produced_artifacts=[".architecture-model.yaml"],
+            stages=[StageHistoryRecord(name="observe", score=100, duration_ms=25)],
+            components=[ComponentHistoryRecord(
+                component_id="COMP-1", name="Test", timestamp="2026-09-01T12:00:00Z",
+                invoked_by="architect_pipeline", produced_entity_ids=["COMP-1"], counts={"modules": 1},
+            )],
+            modules=[ModuleHistoryRecord(
+                path="src/test.py", module="test", component_id="COMP-1",
+                timestamp="2026-09-01T12:00:00Z", invoked_by="observe",
+                produced_functions=["work"], produced_entity_ids=["COMP-1"],
+            )],
+        ))
+
+        out = tmp_path / "viewer.html"
+        generate_html_viewer(model, out, repo_path=tmp_path)
+        html = out.read_text()
+
+        assert '"run_id": "run-viewer"' in html
+        assert "renderRunHistory" in html
+        assert "component_id === entityId" in html
+        assert "item.path === filepath" in html
+        assert "Produced Artifacts / Entities" in html

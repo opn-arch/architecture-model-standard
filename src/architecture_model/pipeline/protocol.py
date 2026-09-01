@@ -186,6 +186,10 @@ class PipelineContext:
     output_dir: Path
     domain: str = "software"
     scope: str = ""
+    invocation_source: str = "library"
+    invocation: str = ""
+    parent_run_id: str | None = None
+    run_id: str = ""
     scope_files: list[Path] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
     cache: dict[str, StageResult] = field(default_factory=dict)

@@ -699,6 +699,9 @@ class SynthesizeStage:
                     scope_files=[Path(f) for f in boundary.files],
                     config=ctx.config,
                     domain=ctx.domain,
+                    invocation_source=ctx.invocation_source,
+                    invocation="synthesize",
+                    parent_run_id=ctx.run_id or None,
                 )
 
                 sub_results = coordinator.run_to(last_stage, sub_ctx)

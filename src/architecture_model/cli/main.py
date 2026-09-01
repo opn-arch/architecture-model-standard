@@ -779,7 +779,7 @@ def _cmd_pipeline(args) -> int:
 
     store = LearningStore(learning_path)
     coord = PipelineCoordinator(stages, learning_store=store)
-    ctx = PipelineContext(repo_path=root, output_dir=output_dir)
+    ctx = PipelineContext(repo_path=root, output_dir=output_dir, invocation_source="CLI")
     ctx.config["coordinator"] = coord  # synthesize stage needs this
 
     if getattr(args, "llm_review", False):
