@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import re
+from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -99,7 +101,7 @@ class PipelineRunRecord:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "PipelineRunRecord":
-        values = dict(data)
+        values = deepcopy(data)
         values.setdefault("started_at", values.get("timestamp", ""))
         values.setdefault("invocation", values.get("invoked_by", ""))
         values.setdefault("parent_run_id", values.get("parent"))
@@ -122,20 +124,8 @@ def append_pipeline_history(repo_path: str | Path, record: PipelineRunRecord) ->
     path = Path(repo_path) / ".architecture" / "pipeline-history.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = (json.dumps(record.to_dict(), separators=(",", ":")) + "\n").encode()
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
-    try:
-        try:
-            import fcntl
-
-            fcntl.flock(fd, fcntl.LOCK_EX)
-        except ImportError:
-            pass
-        offset = 0
-        while offset < len(payload):
-            offset += os.write(fd, payload[offset:])
-        os.fsync(fd)
-    finally:
-        os.close(fd)
+    with _locked_history(path) as fd:
+        _append_payload(fd, payload)
     return path
 
 
@@ -169,28 +159,71 @@ def load_pipeline_history(repo_path: str | Path, limit: int = 50) -> list[Pipeli
 def finalize_pipeline_history(
     repo_path: str | Path, run_id: str, artifacts: list[str]
 ) -> PipelineRunRecord | None:
-    """Append a final immutable revision containing post-run artifacts."""
-    base = next((item for item in load_pipeline_history(repo_path, limit=1000) if item.run_id == run_id), None)
-    if base is None:
+    """Append a final immutable revision using one locked merge transaction."""
+    path = Path(repo_path) / ".architecture" / "pipeline-history.jsonl"
+    if not path.is_file():
         return None
-    base.produced_artifacts = list(dict.fromkeys([*base.produced_artifacts, *artifacts]))
-    for component in base.components:
-        safe_name = component.component_id.lower().replace(" ", "-")
-        component.artifacts = list(dict.fromkeys([
-            *component.artifacts,
-            *(path for path in artifacts if path.endswith((
-                "functional.yaml", "structure.yaml", "relationships.yaml", "validation.json",
-                f"specs/{safe_name}.yaml", f"contracts/{safe_name}.yaml",
-            ))),
-        ]))
-    for module in base.modules:
-        module.artifacts = list(dict.fromkeys([
-            *module.artifacts,
-            *(path for path in artifacts if path.endswith("inventory.json")),
-        ]))
-    base.revision = "final"
-    append_pipeline_history(repo_path, base)
-    return base
+    with _locked_history(path) as fd:
+        base = _latest_matching_record(_read_locked(fd), run_id)
+        if base is None:
+            return None
+        base.produced_artifacts = list(dict.fromkeys([*base.produced_artifacts, *artifacts]))
+        for component in base.components:
+            safe_name = component.component_id.lower().replace(" ", "-")
+            component.artifacts = list(dict.fromkeys([
+                *component.artifacts,
+                *(item for item in artifacts if item.endswith((
+                    "functional.yaml", "structure.yaml", "relationships.yaml", "validation.json",
+                    f"specs/{safe_name}.yaml", f"contracts/{safe_name}.yaml",
+                ))),
+            ]))
+        for module in base.modules:
+            module.artifacts = list(dict.fromkeys([
+                *module.artifacts,
+                *(item for item in artifacts if item.endswith("inventory.json")),
+            ]))
+        base.revision = "final"
+        payload = (json.dumps(base.to_dict(), separators=(",", ":")) + "\n").encode()
+        _append_payload(fd, payload)
+        return base
+
+
+@contextmanager
+def _locked_history(path: Path):
+    fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
+    try:
+        try:
+            import fcntl
+
+            fcntl.flock(fd, fcntl.LOCK_EX)
+        except ImportError:
+            pass
+        yield fd
+    finally:
+        os.close(fd)
+
+
+def _append_payload(fd: int, payload: bytes) -> None:
+    offset = 0
+    while offset < len(payload):
+        offset += os.write(fd, payload[offset:])
+    os.fsync(fd)
+
+
+def _read_locked(fd: int) -> str:
+    size = os.fstat(fd).st_size
+    return os.pread(fd, size, 0).decode("utf-8", errors="replace")
+
+
+def _latest_matching_record(text: str, run_id: str) -> PipelineRunRecord | None:
+    for line in reversed(text.splitlines()):
+        try:
+            record = PipelineRunRecord.from_dict(json.loads(line))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        if record.run_id == run_id:
+            return record
+    return None
 
 
 def _load_legacy_report(repo_path: Path) -> PipelineRunRecord | None:

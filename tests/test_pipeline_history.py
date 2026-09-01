@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 import pytest
 
@@ -156,6 +158,45 @@ def test_finalize_enriches_component_and_module_artifacts(tmp_path):
     assert final.modules[0].artifacts == [".architecture/inventory.json"]
 
 
+def test_concurrent_finalize_merges_artifacts_without_loss(tmp_path, monkeypatch):
+    append_pipeline_history(tmp_path, _run("run-concurrent"))
+    barrier = Barrier(2)
+    original_load = load_pipeline_history
+
+    def synchronized_load(*args, **kwargs):
+        records = original_load(*args, **kwargs)
+        barrier.wait(timeout=5)
+        return records
+
+    monkeypatch.setattr("architecture_model.pipeline.history.load_pipeline_history", synchronized_load)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(finalize_pipeline_history, tmp_path, "run-concurrent", [artifact])
+            for artifact in ("artifact-a.json", "artifact-b.json")
+        ]
+        for future in futures:
+            future.result(timeout=10)
+
+    assert set(original_load(tmp_path)[0].produced_artifacts) == {
+        "artifact-a.json", "artifact-b.json"
+    }
+
+
+def test_from_dict_does_not_mutate_caller_nested_dictionaries():
+    data = _run("owned-data").to_dict()
+    data["components"] = [{
+        "component_id": "COMP-1", "name": "API", "parent": "parent-1"
+    }]
+    data["modules"] = [{
+        "path": "api.py", "module": "api", "parent": "parent-1"
+    }]
+    original = json.loads(json.dumps(data))
+
+    PipelineRunRecord.from_dict(data)
+
+    assert data == original
+
+
 def test_actual_pipeline_run_records_stage_component_and_module_outputs(tmp_path):
     (tmp_path / "service.py").write_text(
         "API_VERSION = '1'\n"
@@ -295,4 +336,17 @@ def test_cli_final_revision_contains_written_artifacts(tmp_path):
         ".architecture/inventory.json",
         ".architecture/functional.yaml",
         ".architecture/context.md",
+    }
+
+
+def test_recursive_library_run_finalizes_generated_artifacts(tmp_path):
+    (tmp_path / "app.py").write_text("def run():\n    return 1\n")
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture")
+
+    PipelineCoordinator({"observe": ObserveStage()}).run_recursive(ctx)
+
+    record = load_pipeline_history(tmp_path)[0]
+    assert record.revision == "final"
+    assert set(record.produced_artifacts) >= {
+        ".architecture/inventory.json", ".architecture/context.md"
     }

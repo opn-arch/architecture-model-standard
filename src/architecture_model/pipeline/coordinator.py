@@ -728,6 +728,18 @@ class PipelineCoordinator:
 
         write_artifacts(ctx)
         write_context(ctx)
+        from .history import finalize_pipeline_history
+
+        artifacts = [
+            str(path.relative_to(ctx.repo_path))
+            for path in ctx.output_dir.rglob("*")
+            if path.is_file()
+            and path != ctx.repo_path / ".architecture" / "pipeline-history.jsonl"
+        ]
+        try:
+            finalize_pipeline_history(ctx.repo_path, ctx.run_id, artifacts)
+        except Exception as exc:
+            ctx.history_warnings.append(f"Pipeline history finalization failed: {exc}")
 
         return {
             "results": results,
