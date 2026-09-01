@@ -20,8 +20,10 @@ from .specify_types import DerivedRequirement, InterfaceSpec, SpecifyResult
 
 
 def _name_library_interface(
-    comp_id: str, comp_name: str,
-    public_symbols: dict[str, str], module_stems: list[str],
+    comp_id: str,
+    comp_name: str,
+    public_symbols: dict[str, str],
+    module_stems: list[str],
 ) -> str:
     """Generate a descriptive interface name from component metadata."""
     # Strategy 1: Single dominant class
@@ -57,6 +59,27 @@ _REQ_CONSTANT_PATTERN = re.compile(
 )
 
 
+def _constant_value_function(name: str, value: str) -> tuple[str, str]:
+    """Return a deterministic value function and its interpretation convention."""
+    try:
+        target = float(value)
+    except (TypeError, ValueError):
+        return "", ""
+    target_text = str(int(target)) if target.is_integer() else str(target)
+    upper_bound = re.search(
+        r"(?:^|_)(?:MAX|TIMEOUT|LIMIT|TTL)(?:_|$)", name, re.IGNORECASE
+    )
+    if upper_bound:
+        return (
+            f"V(actual) = min(1, {target_text} / max(actual, 1e-9))",
+            "Value convention: actual is the observed value; values at or below the upper bound score 1.",
+        )
+    return (
+        f"V(actual) = max(0, 1 - abs(actual - {target_text}) / max(abs({target_text}), 1))",
+        "Value convention: direction is ambiguous, so value is normalized target achievement and peaks at the declared target.",
+    )
+
+
 def _derive_requirements(inventory: Inventory) -> list[DerivedRequirement]:
     """Derive requirements from constants, test names, and docstring constraints."""
     reqs: list[DerivedRequirement] = []
@@ -68,20 +91,27 @@ def _derive_requirements(inventory: Inventory) -> list[DerivedRequirement]:
             if _REQ_CONSTANT_PATTERN.search(const.name):
                 counter += 1
                 readable = const.name.replace("_", " ").lower()
-                reqs.append(DerivedRequirement(
-                    id=f"REQ-C{counter}",
-                    name=f"{const.name} constraint",
-                    text=f"System must respect {readable} = {const.value}",
-                    rationale=f"Defined as constant in {mod.path}",
-                    moe=f"Verify {const.name} is respected in all call sites",
-                    source_file=str(mod.path),
-                    source_type="constant",
-                ))
+                value_function, convention = _constant_value_function(
+                    const.name, const.value
+                )
+                reqs.append(
+                    DerivedRequirement(
+                        id=f"REQ-C{counter}",
+                        name=f"{const.name} constraint",
+                        text=f"System must respect {readable} = {const.value}",
+                        rationale=f"Defined as constant in {mod.path}. {convention}".strip(),
+                        moe=f"Verify {const.name} is respected in all call sites",
+                        source_file=str(mod.path),
+                        source_type="constant",
+                        value_function=value_function,
+                        priority="must",
+                    )
+                )
 
     # 2. From test function names
     for mod in inventory.modules:
         path_str = str(mod.path)
-        is_test = ("test_" in mod.path.name or mod.path.name.startswith("test"))
+        is_test = "test_" in mod.path.name or mod.path.name.startswith("test")
         if not is_test:
             continue
         for func in mod.functions:
@@ -89,20 +119,24 @@ def _derive_requirements(inventory: Inventory) -> list[DerivedRequirement]:
                 counter += 1
                 # Convert test_validates_input -> "validates input"
                 behavior = func.name[5:].replace("_", " ")
-                reqs.append(DerivedRequirement(
-                    id=f"REQ-T{counter}",
-                    name=f"Tested: {behavior}",
-                    text=f"System must {behavior}",
-                    rationale=f"Verified by test {func.name} in {mod.path}",
-                    moe=f"Test {func.name} passes",
-                    source_file=path_str,
-                    source_type="test",
-                ))
+                reqs.append(
+                    DerivedRequirement(
+                        id=f"REQ-T{counter}",
+                        name=f"Tested: {behavior}",
+                        text=f"System must {behavior}",
+                        rationale=f"Verified by test {func.name} in {mod.path}",
+                        moe=f"Test {func.name} passes",
+                        source_file=path_str,
+                        source_type="test",
+                    )
+                )
 
     # 3. From docstring constraints
     for mod in inventory.modules:
         # Check module docstring
-        _extract_docstring_reqs(mod.docstring, str(mod.path), "module", mod.path.stem, reqs, counter)
+        _extract_docstring_reqs(
+            mod.docstring, str(mod.path), "module", mod.path.stem, reqs, counter
+        )
         counter += len(reqs) - counter  # sync counter (lazy but correct)
         # Check function docstrings
         for func in mod.functions:
@@ -112,15 +146,17 @@ def _derive_requirements(inventory: Inventory) -> list[DerivedRequirement]:
                     for match in pat.finditer(func.docstring):
                         counter += 1
                         constraint_text = match.group(1).strip()
-                        reqs.append(DerivedRequirement(
-                            id=f"REQ-D{counter}",
-                            name=f"Docstring constraint: {func.name}",
-                            text=constraint_text,
-                            rationale=f"Documented in {func.name}() docstring in {mod.path}",
-                            moe=f"Verify {func.name}() satisfies: {constraint_text}",
-                            source_file=str(mod.path),
-                            source_type="docstring",
-                        ))
+                        reqs.append(
+                            DerivedRequirement(
+                                id=f"REQ-D{counter}",
+                                name=f"Docstring constraint: {func.name}",
+                                text=constraint_text,
+                                rationale=f"Documented in {func.name}() docstring in {mod.path}",
+                                moe=f"Verify {func.name}() satisfies: {constraint_text}",
+                                source_file=str(mod.path),
+                                source_type="docstring",
+                            )
+                        )
         # Check class method docstrings
         for cls in mod.classes:
             for method in cls.method_details:
@@ -129,22 +165,28 @@ def _derive_requirements(inventory: Inventory) -> list[DerivedRequirement]:
                         for match in pat.finditer(method.docstring):
                             counter += 1
                             constraint_text = match.group(1).strip()
-                            reqs.append(DerivedRequirement(
-                                id=f"REQ-D{counter}",
-                                name=f"Docstring constraint: {cls.name}.{method.name}",
-                                text=constraint_text,
-                                rationale=f"Documented in {cls.name}.{method.name}() docstring in {mod.path}",
-                                moe=f"Verify {cls.name}.{method.name}() satisfies: {constraint_text}",
-                                source_file=str(mod.path),
-                                source_type="docstring",
-                            ))
+                            reqs.append(
+                                DerivedRequirement(
+                                    id=f"REQ-D{counter}",
+                                    name=f"Docstring constraint: {cls.name}.{method.name}",
+                                    text=constraint_text,
+                                    rationale=f"Documented in {cls.name}.{method.name}() docstring in {mod.path}",
+                                    moe=f"Verify {cls.name}.{method.name}() satisfies: {constraint_text}",
+                                    source_file=str(mod.path),
+                                    source_type="docstring",
+                                )
+                            )
 
     return reqs
 
 
 def _extract_docstring_reqs(
-    docstring: str | None, source_file: str, context_type: str,
-    context_name: str, reqs: list[DerivedRequirement], counter: int,
+    docstring: str | None,
+    source_file: str,
+    context_type: str,
+    context_name: str,
+    reqs: list[DerivedRequirement],
+    counter: int,
 ) -> None:
     """Extract constraint requirements from a docstring."""
     if not docstring:
@@ -153,15 +195,17 @@ def _extract_docstring_reqs(
         for match in pat.finditer(docstring):
             counter += 1
             constraint_text = match.group(1).strip()
-            reqs.append(DerivedRequirement(
-                id=f"REQ-D{counter}",
-                name=f"Docstring constraint: {context_name}",
-                text=constraint_text,
-                rationale=f"Documented in {context_type} {context_name} docstring in {source_file}",
-                moe=f"Verify {context_name} satisfies: {constraint_text}",
-                source_file=source_file,
-                source_type="docstring",
-            ))
+            reqs.append(
+                DerivedRequirement(
+                    id=f"REQ-D{counter}",
+                    name=f"Docstring constraint: {context_name}",
+                    text=constraint_text,
+                    rationale=f"Documented in {context_type} {context_name} docstring in {source_file}",
+                    moe=f"Verify {context_name} satisfies: {constraint_text}",
+                    source_file=source_file,
+                    source_type="docstring",
+                )
+            )
 
 
 class SpecifyStage:
@@ -221,7 +265,8 @@ class SpecifyStage:
         # CLI interfaces
         for mod in inventory.modules:
             has_cli = any(
-                "click" in imp or "typer" in imp or "argparse" in imp for imp in mod.imports
+                "click" in imp or "typer" in imp or "argparse" in imp
+                for imp in mod.imports
             )
             if has_cli:
                 comp_id = file_to_comp.get(mod.path, "")
@@ -309,8 +354,10 @@ class SpecifyStage:
                     if sym in comp_public[comp_id]
                 )
                 iface_name = _name_library_interface(
-                    comp_id, comp_id_to_name.get(comp_id, comp_id),
-                    comp_public.get(comp_id, {}), comp_id_to_stems.get(comp_id, []),
+                    comp_id,
+                    comp_id_to_name.get(comp_id, comp_id),
+                    comp_public.get(comp_id, {}),
+                    comp_id_to_stems.get(comp_id, []),
                 )
                 interfaces.append(
                     InterfaceSpec(
@@ -328,10 +375,14 @@ class SpecifyStage:
         for comp_id, symbols in comp_public.items():
             if comp_id not in comps_with_iface_so_far and symbols:
                 iface_counter += 1
-                methods = sorted(f"{sym}: {sig}" for sym, sig in list(symbols.items())[:10])
+                methods = sorted(
+                    f"{sym}: {sig}" for sym, sig in list(symbols.items())[:10]
+                )
                 iface_name = _name_library_interface(
-                    comp_id, comp_id_to_name.get(comp_id, comp_id),
-                    symbols, comp_id_to_stems.get(comp_id, []),
+                    comp_id,
+                    comp_id_to_name.get(comp_id, comp_id),
+                    symbols,
+                    comp_id_to_stems.get(comp_id, []),
                 )
                 interfaces.append(
                     InterfaceSpec(
@@ -344,7 +395,9 @@ class SpecifyStage:
                     )
                 )
 
-        result = SpecifyResult(interfaces=interfaces, requirements=_derive_requirements(inventory))
+        result = SpecifyResult(
+            interfaces=interfaces, requirements=_derive_requirements(inventory)
+        )
 
         # Quality: % of components with at least one interface
         comp_ids = {c.id for c in allocation.components}
@@ -359,7 +412,9 @@ class SpecifyStage:
             base_scores = alloc_quality.quality.component_scores
             iface_per_comp: dict[str, int] = {}
             for i in interfaces:
-                iface_per_comp[i.component_id] = iface_per_comp.get(i.component_id, 0) + 1
+                iface_per_comp[i.component_id] = (
+                    iface_per_comp.get(i.component_id, 0) + 1
+                )
             for comp in allocation.components:
                 base = base_scores.get(comp.id)
                 sub = dict(base.sub_scores) if base else {}
@@ -374,9 +429,15 @@ class SpecifyStage:
             score=score,
             sub_scores={
                 "interface_count": float(len(interfaces)),
-                "rest_count": float(sum(1 for i in interfaces if i.interface_type == "rest")),
-                "cli_count": float(sum(1 for i in interfaces if i.interface_type == "cli")),
-                "library_count": float(sum(1 for i in interfaces if i.interface_type == "library")),
+                "rest_count": float(
+                    sum(1 for i in interfaces if i.interface_type == "rest")
+                ),
+                "cli_count": float(
+                    sum(1 for i in interfaces if i.interface_type == "cli")
+                ),
+                "library_count": float(
+                    sum(1 for i in interfaces if i.interface_type == "library")
+                ),
                 "component_coverage": round(coverage, 2),
             },
             thresholds={},

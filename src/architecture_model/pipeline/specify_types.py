@@ -1,4 +1,5 @@
 """Output types for the specify pipeline stage."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -7,6 +8,7 @@ from dataclasses import dataclass, field
 @dataclass
 class InterfaceSpec:
     """An interface specification derived from code."""
+
     id: str
     name: str
     component_id: str
@@ -18,6 +20,7 @@ class InterfaceSpec:
 @dataclass
 class DerivedRequirement:
     """A requirement derived from source code patterns."""
+
     id: str
     name: str
     text: str
@@ -25,10 +28,14 @@ class DerivedRequirement:
     moe: str  # Measure of Effectiveness
     source_file: str
     source_type: str  # "constant" | "test" | "docstring"
+    value_function: str = ""
+    priority: str = "should"
+    status: str = "ACTIVE"
 
 
 @dataclass
 class SpecifyResult:
     """Interface specifications for the system."""
+
     interfaces: list[InterfaceSpec] = field(default_factory=list)
     requirements: list[DerivedRequirement] = field(default_factory=list)

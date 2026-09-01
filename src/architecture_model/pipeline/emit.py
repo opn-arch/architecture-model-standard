@@ -18,6 +18,12 @@ from architecture_model.pipeline.protocol import (
     StageResult,
 )
 from architecture_model.pipeline.synthesize_types import SynthesizeResult
+from architecture_model.pipeline.synthesize import (
+    _capability_dict,
+    _merge_requirements,
+    _requirement_dict,
+    _requirement_key,
+)
 
 
 def _slugify(name: str) -> str:
@@ -84,6 +90,20 @@ def _build_component_test_map(
     return {k: sorted(v) for k, v in comp_tests.items()}
 
 
+def _requirement_object_key(req: object) -> str:
+    """Return the same semantic key used when merging a requirement object."""
+    if hasattr(req, "text"):
+        return _requirement_key(_requirement_dict(req))
+    return _requirement_key(
+        {
+            "name": getattr(req, "name", ""),
+            "text": getattr(req, "name", ""),
+            "source_file": getattr(req, "source_file", ""),
+            "extensions": {"source_type": getattr(req, "source_signal", "legacy")},
+        }
+    )
+
+
 class EmitStage:
     name = "emit"
     version = "1.0"
@@ -105,7 +125,9 @@ class EmitStage:
 
         # 1. Write SoS model
         if synth.sos_model_yaml:
-            _write_file(out_dir / ".architecture-model.yaml", synth.sos_model_yaml, result)
+            _write_file(
+                out_dir / ".architecture-model.yaml", synth.sos_model_yaml, result
+            )
 
         # 2. Write top-level manifest
         if synth.top_manifest_json:
@@ -121,7 +143,9 @@ class EmitStage:
             )
             _write_file(out_dir / "pipeline-report.md", fresh_report, result)
         elif synth.pipeline_report_md:
-            _write_file(out_dir / "pipeline-report.md", synth.pipeline_report_md, result)
+            _write_file(
+                out_dir / "pipeline-report.md", synth.pipeline_report_md, result
+            )
         if synth.lessons_md:
             _write_file(out_dir / "lessons.md", synth.lessons_md, result)
 
@@ -133,7 +157,9 @@ class EmitStage:
             if sm.manifest_json:
                 _write_file(sys_dir / "manifest.json", sm.manifest_json, result)
             if sm.pipeline_report_md:
-                _write_file(sys_dir / "pipeline-report.md", sm.pipeline_report_md, result)
+                _write_file(
+                    sys_dir / "pipeline-report.md", sm.pipeline_report_md, result
+                )
             if sm.lessons_md:
                 _write_file(sys_dir / "lessons.md", sm.lessons_md, result)
             result.system_count += 1
@@ -146,7 +172,9 @@ class EmitStage:
             result.doc_count += 1
 
         # 6. Generate SE docs (non-fatal)
-        self._generate_se_docs(out_dir, synth, result, diagnostics, repo_root=ctx.repo_path)
+        self._generate_se_docs(
+            out_dir, synth, result, diagnostics, repo_root=ctx.repo_path
+        )
 
         # 7. Build file→component map (shared by test map and requirements)
         test_map: dict[str, list[str]] = {}
@@ -180,7 +208,9 @@ class EmitStage:
                 result.total_bytes += test_map_path.stat().st_size
 
                 if file_component_map:
-                    comp_test_map = _build_component_test_map(test_map, file_component_map)
+                    comp_test_map = _build_component_test_map(
+                        test_map, file_component_map
+                    )
                     if comp_test_map:
                         comp_map_path = arch_dir / "component_test_map.json"
                         comp_map_path.write_text(
@@ -243,7 +273,10 @@ class EmitStage:
         # 9. Enrich top-level model with pipeline-derived entities
         try:
             enrichment = _enrich_top_model(
-                ctx, synth, reqs if "reqs" in dir() else [], top_reqs if "top_reqs" in dir() else []
+                ctx,
+                synth,
+                reqs if "reqs" in dir() else [],
+                top_reqs if "top_reqs" in dir() else [],
             )
             if enrichment:
                 diagnostics.append(
@@ -320,7 +353,9 @@ class EmitStage:
                             enrichments=getattr(ctx, "enrichment_log", None),
                             repo_root=ctx.repo_path,
                         )
-                        trace_path = out_dir / "docs" / "se" / "artifact-traceability.md"
+                        trace_path = (
+                            out_dir / "docs" / "se" / "artifact-traceability.md"
+                        )
                         trace_path.parent.mkdir(parents=True, exist_ok=True)
                         trace_path.write_text(trace_content)
                 except Exception:
@@ -443,7 +478,9 @@ class EmitStage:
                         )
                     )
 
-    def _run_llm_reviews_sync(self, out_dir: Path, llm_callback) -> list[ArtifactReview]:
+    def _run_llm_reviews_sync(
+        self, out_dir: Path, llm_callback
+    ) -> list[ArtifactReview]:
         """Synchronous wrapper for _run_llm_reviews that works in any context."""
         coro = self._run_llm_reviews(out_dir, llm_callback)
         try:
@@ -458,7 +495,9 @@ class EmitStage:
             # No running loop — safe to use asyncio.run directly
             return asyncio.run(coro)
 
-    async def _run_llm_reviews(self, out_dir: Path, llm_callback) -> list[ArtifactReview]:
+    async def _run_llm_reviews(
+        self, out_dir: Path, llm_callback
+    ) -> list[ArtifactReview]:
         """Send each reviewable artifact to LLM for review."""
         _SKIP_NAMES = {"index.md", "pipeline-report.md", "lessons.md"}
         reviews: list[ArtifactReview] = []
@@ -663,7 +702,11 @@ def _enrich_top_model(
 
     # 1. Behaviors from infer stage
     infer_result = ctx.get("infer") if ctx.has("infer") else None
-    if infer_result and infer_result.output and hasattr(infer_result.output, "behaviors"):
+    if (
+        infer_result
+        and infer_result.output
+        and hasattr(infer_result.output, "behaviors")
+    ):
         behaviors = entities.setdefault("behaviors", [])
         for beh in infer_result.output.behaviors:
             if beh.id not in existing_ids:
@@ -681,6 +724,31 @@ def _enrich_top_model(
                 behaviors.append(beh_dict)
                 existing_ids.add(beh.id)
                 added["behaviors"] = added.get("behaviors", 0) + 1
+
+    # Preserve inferred capability semantics while retaining existing richer fields.
+    inference_outputs = []
+    if infer_result and infer_result.output:
+        inference_outputs.append(infer_result.output)
+    for system_model in synth.system_models:
+        system_infer = getattr(system_model, "stage_results", {}).get("infer")
+        if system_infer and system_infer.output:
+            inference_outputs.append(system_infer.output)
+    if inference_outputs:
+        capabilities = entities.setdefault("capabilities", [])
+        by_id = {cap.get("id"): cap for cap in capabilities if isinstance(cap, dict)}
+        for inference_output in inference_outputs:
+            for cap in getattr(inference_output, "capabilities", []):
+                existing = by_id.get(cap.id)
+                serialized = _capability_dict(cap, existing)
+                if existing is None:
+                    capabilities.append(serialized)
+                    by_id[cap.id] = serialized
+                    existing_ids.add(cap.id)
+                    added["capabilities"] = added.get("capabilities", 0) + 1
+                elif serialized != existing:
+                    existing.clear()
+                    existing.update(serialized)
+                    added["capability_fields"] = added.get("capability_fields", 0) + 1
 
     # 2. Actors from infer stage
     if infer_result and infer_result.output and hasattr(infer_result.output, "actors"):
@@ -702,12 +770,20 @@ def _enrich_top_model(
                 added["actors"] = added.get("actors", 0) + 1
         # Ensure existing actors have goals
         for actor in actors:
-            if isinstance(actor, dict) and not actor.get("goals") and not actor.get("description"):
+            if (
+                isinstance(actor, dict)
+                and not actor.get("goals")
+                and not actor.get("description")
+            ):
                 actor["goals"] = [f"Interact with {ctx.repo_path.name}"]
 
     # 3. Interfaces from specify stage
     specify_result = ctx.get("specify") if ctx.has("specify") else None
-    if specify_result and specify_result.output and hasattr(specify_result.output, "interfaces"):
+    if (
+        specify_result
+        and specify_result.output
+        and hasattr(specify_result.output, "interfaces")
+    ):
         interfaces = entities.setdefault("interfaces", [])
         for iface in specify_result.output.interfaces:
             if iface.id not in existing_ids:
@@ -733,7 +809,11 @@ def _enrich_top_model(
 
     # 4. Constraints from observe stage
     observe_result = ctx.get("observe") if ctx.has("observe") else None
-    if observe_result and observe_result.output and hasattr(observe_result.output, "constraints"):
+    if (
+        observe_result
+        and observe_result.output
+        and hasattr(observe_result.output, "constraints")
+    ):
         constraints = entities.setdefault("constraints", [])
         for i, con in enumerate(observe_result.output.constraints):
             con_id = f"CON-{i + 1}"
@@ -745,27 +825,56 @@ def _enrich_top_model(
                 existing_ids.add(con_id)
                 added["constraints"] = added.get("constraints", 0) + 1
 
-    # 5. Requirements from derivation
-    if top_reqs:
-        requirements = entities.setdefault("requirements", [])
-        for req in top_reqs:
-            if req.id not in existing_ids:
-                requirements.append(
-                    {
-                        "id": req.id,
-                        "name": req.name,
-                        "category": req.category,
-                        "priority": req.priority,
-                    }
-                )
-                existing_ids.add(req.id)
-                added["requirements"] = added.get("requirements", 0) + 1
+    # 5. Merge specify-derived requirements with legacy records, preferring rich fields.
+    specify_requirements = []
+    if (
+        specify_result
+        and specify_result.output
+        and hasattr(specify_result.output, "requirements")
+    ):
+        specify_requirements = [
+            _requirement_dict(req) for req in specify_result.output.requirements
+        ]
+    legacy_requirements = []
+    for req in top_reqs:
+        source_file = getattr(req, "source_file", "")
+        legacy = {
+            "id": req.id,
+            "name": req.name,
+            "status": "ACTIVE",
+            "text": req.name,
+            "priority": req.priority,
+            "source_file": source_file,
+            "source_doc": source_file,
+            "rationale": getattr(req, "evidence", ""),
+            "tags": [getattr(req, "category", "")],
+            "extensions": {"source_type": getattr(req, "source_signal", "legacy")},
+        }
+        legacy["content_hash"] = _requirement_key(legacy)
+        legacy_requirements.append(legacy)
+    existing_requirements = entities.get("requirements", [])
+    requirements = _merge_requirements(
+        existing_requirements, legacy_requirements, specify_requirements
+    )
+    if requirements:
+        entities["requirements"] = requirements
+        existing_ids.update(req["id"] for req in requirements)
+        added["requirements"] = len(requirements)
+    requirement_id_by_key = {
+        req["content_hash"]: req["id"]
+        for req in requirements
+        if req.get("content_hash")
+    }
 
     # 6. Component descriptions from allocate stage
     alloc_result = ctx.get("allocate") if ctx.has("allocate") else None
     comp_ids = set()
     file_to_comp: dict[str, str] = {}
-    if alloc_result and alloc_result.output and hasattr(alloc_result.output, "components"):
+    if (
+        alloc_result
+        and alloc_result.output
+        and hasattr(alloc_result.output, "components")
+    ):
         alloc_comp_map = {c.id: c for c in alloc_result.output.components}
         for ac in alloc_result.output.components:
             for f in ac.files:
@@ -783,7 +892,9 @@ def _enrich_top_model(
                     desc_count += 1
                 elif alloc_comp and getattr(alloc_comp, "files", None):
                     # Build description from directory structure
-                    dirs = sorted(set(str(Path(f).parent) for f in alloc_comp.files))[:3]
+                    dirs = sorted(set(str(Path(f).parent) for f in alloc_comp.files))[
+                        :3
+                    ]
                     comp["description"] = (
                         f"Source in {', '.join(dirs)} ({len(alloc_comp.files)} files)"
                     )
@@ -792,11 +903,15 @@ def _enrich_top_model(
                     # Use files from the model itself
                     files = comp["files"]
                     dirs = sorted(set(str(Path(f).parent) for f in files))[:3]
-                    comp["description"] = f"Source in {', '.join(dirs)} ({len(files)} files)"
+                    comp["description"] = (
+                        f"Source in {', '.join(dirs)} ({len(files)} files)"
+                    )
                     desc_count += 1
                 elif comp.get("name"):
                     # Last resort: use component name
-                    comp["description"] = f"Handles {comp['name'].lower()} functionality"
+                    comp["description"] = (
+                        f"Handles {comp['name'].lower()} functionality"
+                    )
                     desc_count += 1
             # Also handle children
             for child in comp.get("children", []) if isinstance(comp, dict) else []:
@@ -804,7 +919,9 @@ def _enrich_top_model(
                     child_cid = child.get("id", "")
                     alloc_child = alloc_comp_map.get(child_cid)
                     if alloc_child and getattr(alloc_child, "files", None):
-                        dirs = sorted(set(str(Path(f).parent) for f in alloc_child.files))[:3]
+                        dirs = sorted(
+                            set(str(Path(f).parent) for f in alloc_child.files)
+                        )[:3]
                         child["description"] = (
                             f"Source in {', '.join(dirs)} ({len(alloc_child.files)} files)"
                         )
@@ -812,14 +929,20 @@ def _enrich_top_model(
                     elif child.get("files"):
                         files = child["files"]
                         dirs = sorted(set(str(Path(f).parent) for f in files))[:3]
-                        child["description"] = f"Source in {', '.join(dirs)} ({len(files)} files)"
+                        child["description"] = (
+                            f"Source in {', '.join(dirs)} ({len(files)} files)"
+                        )
                         desc_count += 1
                     elif child.get("name"):
-                        child["description"] = f"Handles {child['name'].lower()} functionality"
+                        child["description"] = (
+                            f"Handles {child['name'].lower()} functionality"
+                        )
                         desc_count += 1
                     elif alloc_comp and getattr(alloc_comp, "files", None):
                         # Build description from directory structure
-                        dirs = sorted(set(str(Path(f).parent) for f in alloc_comp.files))[:3]
+                        dirs = sorted(
+                            set(str(Path(f).parent) for f in alloc_comp.files)
+                        )[:3]
                         comp["description"] = (
                             f"Source in {', '.join(dirs)} ({len(alloc_comp.files)} files)"
                         )
@@ -861,10 +984,16 @@ def _enrich_top_model(
 
     # Build route→component map from observe stage
     route_comp_map: dict[str, str] = {}  # behavior_name → component_id
-    if observe_result and observe_result.output and hasattr(observe_result.output, "routes"):
+    if (
+        observe_result
+        and observe_result.output
+        and hasattr(observe_result.output, "routes")
+    ):
         for route in observe_result.output.routes or []:
             route_name = (
-                f"{route.method} {route.path}" if hasattr(route, "method") else str(route.path)
+                f"{route.method} {route.path}"
+                if hasattr(route, "method")
+                else str(route.path)
             )
             comp = file_to_comp.get(str(route.file), "")
             resolved = _resolve_comp(comp) if comp else ""
@@ -904,31 +1033,62 @@ def _enrich_top_model(
             resolved_cid = _resolve_comp(cid)
             key = (beh_id, resolved_cid, "realizes")
             if resolved_cid and key not in existing_rel_keys:
-                relationships.append({"from": beh_id, "to": resolved_cid, "type": "realizes"})
+                relationships.append(
+                    {"from": beh_id, "to": resolved_cid, "type": "realizes"}
+                )
                 existing_rel_keys.add(key)
                 rel_count += 1
 
     # 7b. Requirements → Components: link by component_id from derivation
-    if top_reqs:
-        for req in top_reqs:
-            resolved = _resolve_comp(req.component_id) if req.component_id else ""
+    linked_requirements = list(top_reqs)
+    if (
+        specify_result
+        and specify_result.output
+        and hasattr(specify_result.output, "requirements")
+    ):
+        linked_requirements.extend(specify_result.output.requirements)
+    if linked_requirements:
+        for req in linked_requirements:
+            requirement_id = requirement_id_by_key.get(
+                _requirement_object_key(req), req.id
+            )
+            resolved = (
+                _resolve_comp(getattr(req, "component_id", ""))
+                if getattr(req, "component_id", "")
+                else ""
+            )
             if resolved:
-                key = (resolved, req.id, "satisfies")
+                key = (resolved, requirement_id, "satisfies")
                 if key not in existing_rel_keys:
-                    relationships.append({"from": resolved, "to": req.id, "type": "satisfies"})
+                    relationships.append(
+                        {"from": resolved, "to": requirement_id, "type": "satisfies"}
+                    )
                     existing_rel_keys.add(key)
                     rel_count += 1
         # Also link requirements without component_id via source file
         if file_to_comp:
-            for req in top_reqs:
-                resolved = _resolve_comp(req.component_id) if req.component_id else ""
-                if not resolved and req.source_file:
+            for req in linked_requirements:
+                requirement_id = requirement_id_by_key.get(
+                    _requirement_object_key(req), req.id
+                )
+                resolved = (
+                    _resolve_comp(getattr(req, "component_id", ""))
+                    if getattr(req, "component_id", "")
+                    else ""
+                )
+                if not resolved and getattr(req, "source_file", ""):
                     raw_comp = file_to_comp.get(req.source_file, "")
                     comp = _resolve_comp(raw_comp) if raw_comp else ""
                     if comp:
-                        key = (comp, req.id, "satisfies")
+                        key = (comp, requirement_id, "satisfies")
                         if key not in existing_rel_keys:
-                            relationships.append({"from": comp, "to": req.id, "type": "satisfies"})
+                            relationships.append(
+                                {
+                                    "from": comp,
+                                    "to": requirement_id,
+                                    "type": "satisfies",
+                                }
+                            )
                             existing_rel_keys.add(key)
                             rel_count += 1
 
@@ -939,7 +1099,9 @@ def _enrich_top_model(
             if iface_comp:
                 key = (iface_comp, iface.get("id", ""), "exposes")
                 if key not in existing_rel_keys:
-                    relationships.append({"from": iface_comp, "to": iface["id"], "type": "exposes"})
+                    relationships.append(
+                        {"from": iface_comp, "to": iface["id"], "type": "exposes"}
+                    )
                     existing_rel_keys.add(key)
                     rel_count += 1
 
@@ -970,7 +1132,11 @@ def _enrich_top_model(
             continue
         # Build method list from contract stage if available
         methods: list[str] = []
-        if contract_result and hasattr(contract_result, "output") and contract_result.output:
+        if (
+            contract_result
+            and hasattr(contract_result, "output")
+            and contract_result.output
+        ):
             for contract in getattr(contract_result.output, "contracts", []):
                 if getattr(contract, "component_id", "") == cid:
                     methods = list(getattr(contract, "exports", []))[:10]
@@ -1011,7 +1177,9 @@ def _enrich_top_model(
                     "methods": [f"{child_name}_api"],
                 }
             )
-            relationships.append({"from": child_id, "to": child_iface_id, "type": "exposes"})
+            relationships.append(
+                {"from": child_id, "to": child_iface_id, "type": "exposes"}
+            )
             existing_ids.add(child_iface_id)
             existing_rel_keys.add((child_id, child_iface_id, "exposes"))
             auto_iface_count += 1
@@ -1022,7 +1190,9 @@ def _enrich_top_model(
         return ""
 
     # Write enriched model
-    model_path.write_text(yaml.dump(model_dict, default_flow_style=False, sort_keys=False))
+    model_path.write_text(
+        yaml.dump(model_dict, default_flow_style=False, sort_keys=False)
+    )
     label = "SoS model" if target_path else "Top-level model"
     parts = [f"{k}: +{v}" for k, v in sorted(added.items())]
     return f"{label} enriched: {', '.join(parts)}"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import time
 from pathlib import Path
@@ -39,6 +40,99 @@ FULL_PIPELINE_STAGES = [
 ABBREVIATED_STAGES = ["observe", "infer"]
 
 
+def _capability_dict(
+    cap: Any, existing: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Serialize inferred capability semantics without replacing richer existing fields."""
+    result = dict(existing or {})
+    result.setdefault("id", getattr(cap, "id", ""))
+    result.setdefault("name", getattr(cap, "name", ""))
+    result.setdefault("status", "ACTIVE")
+    for field in ("description", "intent", "goals", "failure_modes", "monitored"):
+        value = getattr(cap, field, None)
+        if value and not result.get(field):
+            result[field] = value
+    return result
+
+
+def _merge_capabilities(*groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge capabilities by ID, filling missing fields without overwriting rich data."""
+    merged: dict[str, dict[str, Any]] = {}
+    for capability in (item for group in groups for item in group):
+        capability_id = capability.get("id", "")
+        current = merged.setdefault(capability_id, {})
+        for field, value in capability.items():
+            if value and not current.get(field):
+                current[field] = value
+    return list(merged.values())
+
+
+def _requirement_key(requirement: dict[str, Any]) -> str:
+    source_file = str(requirement.get("source_file", ""))
+    extensions = requirement.get("extensions", {})
+    source_type = (
+        extensions.get("source_type", "") if isinstance(extensions, dict) else ""
+    )
+    combined = (
+        " ".join(str(requirement.get(field, "")) for field in ("name", "text"))
+        + f" {source_type}"
+    )
+    constant = re.search(r"\b[A-Z][A-Z0-9_]{2,}\b", combined)
+    if constant and ("constant" in source_type or "constraint" in combined.lower()):
+        semantic = f"constant:{source_file}:{constant.group(0)}"
+        return hashlib.sha256(semantic.encode("utf-8")).hexdigest()[:16]
+    text = " ".join(
+        str(requirement.get("text") or requirement.get("name", "")).lower().split()
+    )
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+def _requirement_dict(req: Any) -> dict[str, Any]:
+    """Serialize a specify-stage requirement as a loadable Requirement entity."""
+    source_file = str(getattr(req, "source_file", ""))
+    moe = getattr(req, "moe", "")
+    result: dict[str, Any] = {
+        "id": getattr(req, "id", ""),
+        "name": getattr(req, "name", ""),
+        "status": getattr(req, "status", "ACTIVE") or "ACTIVE",
+        "text": getattr(req, "text", ""),
+        "rationale": getattr(req, "rationale", ""),
+        "priority": getattr(req, "priority", "should") or "should",
+        "source_file": source_file,
+        "source_doc": source_file,
+        "moe": moe,
+        "moes": [moe] if moe else [],
+        "value_function": getattr(req, "value_function", ""),
+        "extensions": {"source_type": getattr(req, "source_type", "")},
+    }
+    result["content_hash"] = _requirement_key(result)
+    return {key: value for key, value in result.items() if value not in ("", [], {})}
+
+
+def _merge_requirements(*groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Deduplicate requirements semantically and retain the richest values."""
+    merged: dict[str, dict[str, Any]] = {}
+    for requirement in (item for group in groups for item in group):
+        key = _requirement_key(requirement)
+        current = merged.setdefault(key, {})
+        for field, value in requirement.items():
+            if field == "extensions" and isinstance(value, dict):
+                current_extensions = current.setdefault("extensions", {})
+                for ext_key, ext_value in value.items():
+                    if ext_value and (
+                        not current_extensions.get(ext_key)
+                        or ext_value in {"constant", "test", "docstring"}
+                    ):
+                        current_extensions[ext_key] = ext_value
+                continue
+            if value and (
+                not current.get(field) or len(str(value)) > len(str(current[field]))
+            ):
+                current[field] = value
+        current["content_hash"] = key
+    return list(merged.values())
+
+
 def _decide_stages(boundary: SystemBoundary) -> list[str]:
     """Decide which pipeline stages to run based on system complexity."""
     if len(boundary.files) >= 8:
@@ -51,7 +145,9 @@ def _slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
-def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageResult]) -> str:
+def _build_system_model_yaml(
+    boundary: SystemBoundary, results: dict[str, StageResult]
+) -> str:
     """Build a YAML model string from scoped pipeline results."""
     components: list[dict[str, Any]] = []
     capabilities: list[dict[str, Any]] = []
@@ -78,10 +174,7 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
         output = infer_result.output
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
-                cap_dict: dict[str, Any] = {"id": cap.id, "name": cap.name, "status": "ACTIVE"}
-                if hasattr(cap, "description") and cap.description:
-                    cap_dict["description"] = cap.description
-                capabilities.append(cap_dict)
+                capabilities.append(_capability_dict(cap))
 
     cap_ids = {c["id"] for c in capabilities}
     comp_ids = {c["id"] for c in components}
@@ -141,6 +234,32 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
                     iface_dict["description"] = iface.description
                 interfaces.append(iface_dict)
 
+    requirements: list[dict[str, Any]] = []
+    if (
+        specify_result
+        and specify_result.output
+        and hasattr(specify_result.output, "requirements")
+    ):
+        requirements = _merge_requirements(
+            [_requirement_dict(req) for req in specify_result.output.requirements]
+        )
+        file_to_comp = {
+            str(source): f"{sys_prefix}-{comp.id}"
+            for comp in getattr(getattr(alloc_result, "output", None), "components", [])
+            for source in comp.files
+        }
+        source_by_id = {
+            req.id: req.source_file for req in specify_result.output.requirements
+        }
+        for requirement in requirements:
+            component_id = file_to_comp.get(
+                str(source_by_id.get(requirement["id"], ""))
+            )
+            if component_id and component_id in comp_ids:
+                relationships.append(
+                    {"from": component_id, "to": requirement["id"], "type": "satisfies"}
+                )
+
     # Extract constraints from observe results (filter by source file)
     constraints: list[dict[str, Any]] = []
     observe_result = results.get("observe")
@@ -163,7 +282,11 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
     # Derive layers from unique layer values on components
     layers: list[dict[str, Any]] = []
     seen_layers: set[str] = set()
-    if alloc_result and alloc_result.output and hasattr(alloc_result.output, "components"):
+    if (
+        alloc_result
+        and alloc_result.output
+        and hasattr(alloc_result.output, "components")
+    ):
         for comp in alloc_result.output.components:
             layer = getattr(comp, "layer", "")
             if layer and layer not in seen_layers:
@@ -173,7 +296,11 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
 
     # Build ID remap for namespacing (original COMP-N → sys_prefix-COMP-N)
     id_remap: dict[str, str] = {}
-    if alloc_result and alloc_result.output and hasattr(alloc_result.output, "components"):
+    if (
+        alloc_result
+        and alloc_result.output
+        and hasattr(alloc_result.output, "components")
+    ):
         for comp in alloc_result.output.components:
             id_remap[comp.id] = f"{sys_prefix}-{comp.id}"
 
@@ -212,6 +339,8 @@ def _build_system_model_yaml(boundary: SystemBoundary, results: dict[str, StageR
         model_dict["entities"]["interfaces"] = interfaces
     if constraints:
         model_dict["entities"]["constraints"] = constraints
+    if requirements:
+        model_dict["entities"]["requirements"] = requirements
     if layers:
         model_dict["entities"]["layers"] = layers
 
@@ -255,22 +384,24 @@ def _build_sos_model(
         output = infer_result.output
         if hasattr(output, "actors"):
             for actor in output.actors:
-                actors.append({"id": getattr(actor, "id", ""), "name": getattr(actor, "name", "")})
+                actors.append(
+                    {"id": getattr(actor, "id", ""), "name": getattr(actor, "name", "")}
+                )
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
-                cap_dict = {"id": getattr(cap, "id", ""), "name": getattr(cap, "name", ""), "status": "ACTIVE"}
-                desc = getattr(cap, "description", None)
-                if desc:
-                    cap_dict["description"] = desc
-                capabilities.append(cap_dict)
+                capabilities.append(_capability_dict(cap))
         if hasattr(output, "behaviors"):
             for beh in output.behaviors:
-                behaviors.append({"id": getattr(beh, "id", ""), "name": getattr(beh, "name", "")})
+                behaviors.append(
+                    {"id": getattr(beh, "id", ""), "name": getattr(beh, "name", "")}
+                )
 
     # Inter-system interfaces from decompose edges
     inter_system_interfaces: list[dict[str, Any]] = []
     for from_sys, to_sys, rel_type in decompose.inter_system_edges:
-        inter_system_interfaces.append({"from": from_sys, "to": to_sys, "type": rel_type})
+        inter_system_interfaces.append(
+            {"from": from_sys, "to": to_sys, "type": rel_type}
+        )
 
     # Add realizes relationships (system → capability) from top-level relate
     # The decompose maps comp_id → system_id, so we can translate
@@ -294,6 +425,7 @@ def _build_sos_model(
     all_interfaces: list[dict[str, Any]] = []
     all_constraints: list[dict[str, Any]] = []
     all_layers: list[dict[str, Any]] = []
+    all_requirements: list[dict[str, Any]] = []
     seen_layer_ids: set[str] = set()
 
     for sm in systems:
@@ -305,6 +437,12 @@ def _build_sos_model(
             all_components.extend(sub_entities.get("components", []))
             all_interfaces.extend(sub_entities.get("interfaces", []))
             all_constraints.extend(sub_entities.get("constraints", []))
+            capabilities = _merge_capabilities(
+                capabilities, sub_entities.get("capabilities", [])
+            )
+            all_requirements = _merge_requirements(
+                all_requirements, sub_entities.get("requirements", [])
+            )
             # Merge behaviors from sub-systems (supplement top-level inferred ones)
             for beh in sub_entities.get("behaviors", []):
                 if not any(b["id"] == beh["id"] for b in behaviors):
@@ -322,7 +460,11 @@ def _build_sos_model(
 
     # Also pull components from top-level allocate if available
     alloc_result = top_results.get("allocate")
-    if alloc_result and alloc_result.output and hasattr(alloc_result.output, "components"):
+    if (
+        alloc_result
+        and alloc_result.output
+        and hasattr(alloc_result.output, "components")
+    ):
         for comp in alloc_result.output.components:
             if not any(c.get("id") == comp.id for c in all_components):
                 comp_dict: dict[str, Any] = {"id": comp.id, "name": comp.name}
@@ -364,6 +506,18 @@ def _build_sos_model(
         sos_dict["entities"]["constraints"] = all_constraints
     if all_layers:
         sos_dict["entities"]["layers"] = all_layers
+    top_specify = top_results.get("specify")
+    if (
+        top_specify
+        and top_specify.output
+        and hasattr(top_specify.output, "requirements")
+    ):
+        all_requirements = _merge_requirements(
+            all_requirements,
+            [_requirement_dict(req) for req in top_specify.output.requirements],
+        )
+    if all_requirements:
+        sos_dict["entities"]["requirements"] = all_requirements
 
     # Add inline components
     if inlines:
