@@ -34,6 +34,7 @@ from .types import (
     Data,
     DataField,
     Decision,
+    DecisionEntry,
     DecisionStatus,
     Entities,
     Environment,
@@ -233,6 +234,16 @@ def _parse_base(d: dict) -> dict:
         "extensions": d.get("extensions", {}),
         "confidence": float(d.get("confidence", 0.0)),
         "intent": d.get("intent", ""),
+        "decisions": [
+            DecisionEntry(
+                date=de.get("date", ""),
+                choice=de.get("choice", ""),
+                rationale=de.get("rationale", ""),
+                alternatives=de.get("alternatives", []),
+                context=de.get("context", ""),
+            )
+            for de in d.get("decisions", [])
+        ],
     }
 
 
@@ -253,6 +264,10 @@ def _parse_capability(d: dict) -> Capability:
         priority=_parse_priority(d.get("priority")),
         requirements=d.get("requirements", []),
         moes=d.get("moes", []),
+        goals=d.get("goals", []),
+        trade_offs=d.get("trade_offs", []),
+        failure_modes=d.get("failure_modes", []),
+        monitored=d.get("monitored", []),
     )
 
 
@@ -301,6 +316,9 @@ def _parse_behavior(d: dict) -> Behavior:
             )
             for s in d.get("structured_steps", [])
         ],
+        goals=d.get("goals", []),
+        moes=d.get("moes", []),
+        failure_modes=d.get("failure_modes", []),
     )
 
 
@@ -448,6 +466,7 @@ def _parse_component(d: dict) -> Component:
         moes=d.get("moes", []),
         trade_offs=d.get("trade_offs", []),
         failure_modes=d.get("failure_modes", []),
+        monitored=d.get("monitored", []),
     )
 
 
@@ -460,6 +479,10 @@ def _parse_system(d: dict) -> System:
         complexity_score=float(d.get("complexity_score", 0.0)),
         sub_model_ref=d.get("sub_model_ref", ""),
         component_ids=d.get("component_ids", []),
+        goals=d.get("goals", []),
+        trade_offs=d.get("trade_offs", []),
+        failure_modes=d.get("failure_modes", []),
+        monitored=d.get("monitored", []),
     )
 
 
@@ -501,7 +524,7 @@ def _parse_lifecycle(d: dict) -> Lifecycle:
 
 def _parse_requirement(d: dict) -> Requirement:
     base = _parse_base(d)
-    return Requirement(**base, text=d.get("text",""), source_doc=d.get("source_doc",""), source_anchor=d.get("source_anchor",""), content_hash=d.get("content_hash",""), rationale=d.get("rationale",""), priority=d.get("priority",""), moe=d.get("moe",""))
+    return Requirement(**base, text=d.get("text",""), source_doc=d.get("source_doc",""), source_anchor=d.get("source_anchor",""), content_hash=d.get("content_hash",""), rationale=d.get("rationale",""), priority=d.get("priority",""), moe=d.get("moe",""), value_function=d.get("value_function",""), moes=d.get("moes",[]), failure_modes=d.get("failure_modes",[]), monitored=d.get("monitored",[]))
 
 
 def _parse_relationship(d: dict) -> Relationship:
@@ -605,6 +628,17 @@ def _dump_base(entity: Any) -> dict:
         d["source_line"] = entity.source_line
     if entity.extensions:
         d["extensions"] = entity.extensions
+    if entity.decisions:
+        d["decisions"] = [
+            {k: v for k, v in {
+                "date": de.date,
+                "choice": de.choice,
+                "rationale": de.rationale,
+                "alternatives": de.alternatives,
+                "context": de.context,
+            }.items() if v}
+            for de in entity.decisions
+        ]
     return d
 
 
@@ -624,6 +658,16 @@ def _dump_capability(c: Capability) -> dict:
         d["priority"] = _enum_val(c.priority)
     if c.requirements:
         d["requirements"] = c.requirements
+    if c.moes:
+        d["moes"] = c.moes
+    if c.goals:
+        d["goals"] = c.goals
+    if c.trade_offs:
+        d["trade_offs"] = c.trade_offs
+    if c.failure_modes:
+        d["failure_modes"] = c.failure_modes
+    if c.monitored:
+        d["monitored"] = c.monitored
     return d
 
 
@@ -668,6 +712,12 @@ def _dump_behavior(b: Behavior) -> dict:
             }.items() if v}
             for s in b.structured_steps
         ]
+    if b.goals:
+        d["goals"] = b.goals
+    if b.moes:
+        d["moes"] = b.moes
+    if b.failure_modes:
+        d["failure_modes"] = b.failure_modes
     return d
 
 
@@ -788,6 +838,16 @@ def _dump_component(c: Component) -> dict:
             | ({"symbols": ci.symbols} if ci.symbols else {})
             for ci in c.interfaces
         ]
+    if c.goals:
+        d["goals"] = c.goals
+    if c.moes:
+        d["moes"] = c.moes
+    if c.trade_offs:
+        d["trade_offs"] = c.trade_offs
+    if c.failure_modes:
+        d["failure_modes"] = c.failure_modes
+    if c.monitored:
+        d["monitored"] = c.monitored
     return d
 
 
@@ -803,6 +863,14 @@ def _dump_system(s: System) -> dict:
         d["sub_model_ref"] = s.sub_model_ref
     if s.component_ids:
         d["component_ids"] = s.component_ids
+    if s.goals:
+        d["goals"] = s.goals
+    if s.trade_offs:
+        d["trade_offs"] = s.trade_offs
+    if s.failure_modes:
+        d["failure_modes"] = s.failure_modes
+    if s.monitored:
+        d["monitored"] = s.monitored
     return d
 
 
@@ -884,6 +952,13 @@ def _dump_requirement(req: Requirement) -> dict:
     if req.source_doc: r["source_doc"] = req.source_doc
     if req.source_anchor: r["source_anchor"] = req.source_anchor
     if req.content_hash: r["content_hash"] = req.content_hash
+    if req.rationale: r["rationale"] = req.rationale
+    if req.priority: r["priority"] = req.priority
+    if req.moe: r["moe"] = req.moe
+    if req.value_function: r["value_function"] = req.value_function
+    if req.moes: r["moes"] = req.moes
+    if req.failure_modes: r["failure_modes"] = req.failure_modes
+    if req.monitored: r["monitored"] = req.monitored
     return r
 
 
