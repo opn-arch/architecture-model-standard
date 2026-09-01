@@ -30,6 +30,60 @@ def _make_raw_entity(entity_type, entity_data):
     }
 
 
+@pytest.mark.parametrize(("entity_type", "se_fields"), [
+    ("capabilities", {
+        "goals": ["Deliver value"], "moes": ["99% success"],
+        "requirements": ["REQ-1"], "trade_offs": ["Speed vs cost"],
+        "failure_modes": ["Timeout"], "monitored": ["success_rate"],
+    }),
+    ("behaviors", {
+        "goals": ["Complete workflow"], "moes": ["< 1s"],
+        "failure_modes": ["Invalid input"], "steps": ["Validate", "Persist"],
+    }),
+    ("components", {
+        "goals": ["Process requests"], "moes": ["p99 < 100ms"],
+        "trade_offs": ["Memory vs latency"], "failure_modes": ["Overload"],
+        "monitored": ["latency_p99"], "files": ["src/service.py"],
+    }),
+    ("systems", {
+        "goals": ["Serve users"], "trade_offs": ["Cost vs availability"],
+        "failure_modes": ["Region outage"], "monitored": ["availability"],
+        "component_ids": ["COMP-1"],
+    }),
+    ("requirements", {
+        "rationale": "User need", "priority": "must", "moe": "Legacy measure",
+        "value_function": "minimize(latency)", "moes": ["p99 < 100ms"],
+        "failure_modes": ["Unmet target"], "monitored": ["latency_p99"],
+    }),
+])
+def test_to_dict_and_yaml_preserve_intent_decisions_and_se_fields(entity_type, se_fields):
+    decision = {
+        "choice": "Use explicit serialization",
+        "date": "2026-09-01",
+        "rationale": "Preserve model semantics",
+        "alternatives": ["Implicit conversion"],
+        "context": "ArchitectureModel.to_dict",
+    }
+    raw = _make_raw_entity(entity_type, {
+        "intent": "Preserve architectural intent",
+        "decisions": [decision],
+        **se_fields,
+    })
+    model = _parse_raw(raw)
+
+    dumped = model.to_dict()["entities"][entity_type][0]
+    loaded = _parse_raw(yaml.safe_load(model.to_yaml()))
+    entity = getattr(loaded.entities, entity_type)[0]
+
+    assert dumped["intent"] == "Preserve architectural intent"
+    assert dumped["decisions"] == [decision]
+    for field, value in se_fields.items():
+        assert dumped[field] == value
+        assert getattr(entity, field) == value
+    assert entity.intent == "Preserve architectural intent"
+    assert entity.decisions == [DecisionEntry(**decision)]
+
+
 # ---------------------------------------------------------------------------
 # DecisionEntry on BaseEntity (via Component)
 # ---------------------------------------------------------------------------

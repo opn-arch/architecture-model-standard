@@ -866,6 +866,21 @@ class ArchitectureModel:
             d["extensions"] = entity.extensions
         if entity.intent:
             d["intent"] = entity.intent
+        if entity.decisions:
+            d["decisions"] = [
+                {
+                    key: value
+                    for key, value in {
+                        "choice": decision.choice,
+                        "date": decision.date,
+                        "rationale": decision.rationale,
+                        "alternatives": decision.alternatives,
+                        "context": decision.context,
+                    }.items()
+                    if value
+                }
+                for decision in entity.decisions
+            ]
         return d
 
     @classmethod
@@ -887,6 +902,14 @@ class ArchitectureModel:
             d["requirements"] = c.requirements
         if c.moes:
             d["moes"] = c.moes
+        if c.goals:
+            d["goals"] = c.goals
+        if c.trade_offs:
+            d["trade_offs"] = c.trade_offs
+        if c.failure_modes:
+            d["failure_modes"] = c.failure_modes
+        if c.monitored:
+            d["monitored"] = c.monitored
         return d
 
     @classmethod
@@ -914,6 +937,29 @@ class ArchitectureModel:
             d["compensations"] = [
                 {"step": c.step, "compensate": c.compensate} for c in b.compensations
             ]
+        if b.structured_steps:
+            d["structured_steps"] = [
+                {
+                    key: value
+                    for key, value in {
+                        "order": step.order,
+                        "action": step.action,
+                        "component_ref": step.component_ref,
+                        "actor": step.actor,
+                        "input": step.input,
+                        "output": step.output,
+                        "error_handling": step.error_handling,
+                    }.items()
+                    if value
+                }
+                for step in b.structured_steps
+            ]
+        if b.goals:
+            d["goals"] = b.goals
+        if b.moes:
+            d["moes"] = b.moes
+        if b.failure_modes:
+            d["failure_modes"] = b.failure_modes
         return d
 
     @classmethod
@@ -981,6 +1027,10 @@ class ArchitectureModel:
             ]
         if c.region:
             d["region"] = c.region
+        if c.pattern:
+            d["pattern"] = c.pattern
+        if c.contract:
+            d["contract"] = c.contract
         if c.replicas is not None:
             d["replicas"] = c.replicas
         if c.symbols:
@@ -1039,6 +1089,8 @@ class ArchitectureModel:
             d["trade_offs"] = c.trade_offs
         if c.failure_modes:
             d["failure_modes"] = c.failure_modes
+        if c.monitored:
+            d["monitored"] = c.monitored
         return d
 
     @classmethod
@@ -1054,6 +1106,14 @@ class ArchitectureModel:
             d["sub_model_ref"] = s.sub_model_ref
         if s.component_ids:
             d["component_ids"] = s.component_ids
+        if s.goals:
+            d["goals"] = s.goals
+        if s.trade_offs:
+            d["trade_offs"] = s.trade_offs
+        if s.failure_modes:
+            d["failure_modes"] = s.failure_modes
+        if s.monitored:
+            d["monitored"] = s.monitored
         return d
 
     @classmethod
