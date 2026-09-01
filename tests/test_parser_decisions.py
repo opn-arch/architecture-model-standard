@@ -235,6 +235,29 @@ class TestRequirementSEFields:
         assert req["priority"] == "high"
         assert req["moe"] == "legacy_moe"
 
+    def test_to_dict_and_yaml_roundtrip_all_requirement_se_fields(self):
+        model = _parse_raw(_make_raw_entity("requirements", {
+            "rationale": "Optimize user experience",
+            "priority": "must",
+            "moe": "Legacy measure",
+            "value_function": r"J = \sum_t latency_t",
+            "moes": ["p99 < 200ms"],
+            "failure_modes": ["Timeout"],
+            "monitored": ["latency_p99"],
+        }))
+
+        requirement = model.to_dict()["entities"]["requirements"][0]
+        loaded = _parse_raw(yaml.safe_load(model.to_yaml())).entities.requirements[0]
+
+        assert requirement["value_function"] == r"J = \sum_t latency_t"
+        assert requirement["moes"] == ["p99 < 200ms"]
+        assert requirement["failure_modes"] == ["Timeout"]
+        assert requirement["monitored"] == ["latency_p99"]
+        assert loaded.value_function == r"J = \sum_t latency_t"
+        assert loaded.moes == ["p99 < 200ms"]
+        assert loaded.failure_modes == ["Timeout"]
+        assert loaded.monitored == ["latency_p99"]
+
 
 class TestComponentMonitored:
     def test_parse_component_monitored(self):

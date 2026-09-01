@@ -341,6 +341,26 @@ class TestEnrichedPropertyCards:
         import json
         json.dumps(properties)
 
+    def test_real_decisions_render_as_structured_rows(self, tmp_path):
+        model = _make_rich_model()
+        model.entities.components[0].decisions = [DecisionEntry(
+            choice="Use YAML",
+            date="2026-09-01",
+            rationale="Readable",
+            alternatives=["JSON", "TOML"],
+            context="Model persistence",
+        )]
+
+        html = generate_html_viewer(model, tmp_path / "viewer.html").read_text()
+
+        assert 'class="decision-card"' in html
+        assert 'class="decision-choice"' in html
+        assert "decision.date" in html
+        assert "decision.rationale" in html
+        assert "decision.alternatives" in html
+        assert "decision.context" in html
+        assert "[object Object]" not in html
+
     def test_requirement_value_function_uses_runtime_data_key(self):
         model = _make_rich_model()
         model.entities.requirements[0].value_function = r"J = \sum_t c_t"

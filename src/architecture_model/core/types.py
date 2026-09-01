@@ -1181,6 +1181,14 @@ class ArchitectureModel:
             d["priority"] = req.priority
         if req.moe:
             d["moe"] = req.moe
+        if req.value_function:
+            d["value_function"] = req.value_function
+        if req.moes:
+            d["moes"] = req.moes
+        if req.failure_modes:
+            d["failure_modes"] = req.failure_modes
+        if req.monitored:
+            d["monitored"] = req.monitored
         return d
 
     @classmethod

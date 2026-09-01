@@ -10,6 +10,8 @@ from architecture_model.core.visualize import (
     generate_behavior_sequence_diagram,
     generate_behavior_flow_diagram,
     build_entity_properties,
+    _render_mermaid_svg,
+    generate_html_viewer,
 )
 
 
@@ -221,3 +223,39 @@ class TestBehaviorDiagramInViewer:
         props = build_entity_properties(model)
 
         assert "behavior_diagram" not in props["BEH-1"].get("properties", {})
+
+
+class TestOfflineSvgRendering:
+    def test_flowchart_renders_nodes_and_paths(self):
+        svg = _render_mermaid_svg('graph TD\n    step0["Build"]\n    step1["Deploy"]\n    step0 --> step1')
+
+        assert svg.startswith("<svg")
+        assert 'class="diagram-node"' in svg
+        assert '<path class="diagram-edge"' in svg
+        assert "Build" in svg
+        assert "Deploy" in svg
+
+    def test_sequence_renders_participants_and_messages(self):
+        svg = _render_mermaid_svg(
+            "sequenceDiagram\n"
+            "    participant API\n"
+            "    participant Database\n"
+            "    API->>Database: Query user\n"
+        )
+
+        assert svg.startswith("<svg")
+        assert 'class="sequence-participant"' in svg
+        assert '<path class="sequence-message"' in svg
+        assert "Query user" in svg
+
+    def test_viewer_embeds_offline_behavior_svg(self, tmp_path):
+        behavior = Behavior(
+            id="BEH-1", name="Deploy", status=Status.ACTIVE,
+            steps=["Build", "Deploy"],
+        )
+        model = _make_model(behaviors=[behavior])
+
+        html = generate_html_viewer(model, tmp_path / "viewer.html").read_text()
+
+        assert '"behavior_svg": "<svg' in html
+        assert "Diagram source (offline mode)" not in html

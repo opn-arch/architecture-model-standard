@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from html import escape
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -1377,6 +1378,66 @@ def generate_behavior_flow_diagram(model: "ArchitectureModel", behavior_id: str)
     return "\n".join(lines)
 
 
+def _render_mermaid_svg(code: str) -> str:
+    """Render generated sequence and flowchart Mermaid subsets as SVG."""
+    lines = [line.strip() for line in code.splitlines() if line.strip()]
+    if not lines:
+        return ""
+    if lines[0] == "sequenceDiagram":
+        participants = [line.removeprefix("participant ") for line in lines[1:] if line.startswith("participant ")]
+        messages = []
+        for line in lines[1:]:
+            match = re.match(r"(.+?)-{1,2}(?:>>|>)(.+?):\s*(.*)", line)
+            if match:
+                source, target, text = (part.strip() for part in match.groups())
+                for name in (source, target):
+                    if name not in participants:
+                        participants.append(name)
+                messages.append((source, target, text))
+        if not participants:
+            return ""
+        positions = {name: 90 + index * 180 for index, name in enumerate(participants)}
+        width, height = max(360, len(participants) * 180), 110 + len(messages) * 58
+        svg = [f'<svg class="offline-diagram sequence-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" role="img">',
+               '<defs><marker id="seq-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#7ec8e3"/></marker></defs>']
+        for name, x in positions.items():
+            svg.append(f'<rect class="sequence-participant" x="{x - 65}" y="15" width="130" height="34" rx="5" fill="#16213e" stroke="#4a90d9"/><text x="{x}" y="37" text-anchor="middle" fill="#e0e0e0">{escape(name)}</text><path d="M{x},49 V{height - 15}" stroke="#667" stroke-dasharray="5 4"/>')
+        for index, (source, target, text) in enumerate(messages):
+            x1, x2, y = positions[source], positions[target], 78 + index * 58
+            path = f"M{x1},{y} H{x2}" if x1 != x2 else f"M{x1},{y} h55 v22 h-55"
+            svg.append(f'<path class="sequence-message" d="{path}" fill="none" stroke="#7ec8e3" marker-end="url(#seq-arrow)"/><text x="{(x1 + x2) / 2}" y="{y - 7}" text-anchor="middle" fill="#e0e0e0">{escape(text)}</text>')
+        return "".join(svg) + "</svg>"
+
+    if not lines[0].startswith(("graph ", "flowchart ")):
+        return ""
+    nodes: dict[str, str] = {}
+    edges: list[tuple[str, str]] = []
+    for line in lines[1:]:
+        node = re.match(r'^([\w.-]+)\s*[\[({]+["\']?(.*?)["\']?[\])}]+$', line)
+        if node and "-->" not in line:
+            nodes[node.group(1)] = node.group(2)
+        edge = re.match(r'^([\w.-]+)\s*(?:-->|==>|-.->|---)\s*([\w.-]+)', line)
+        if edge:
+            source, target = edge.groups()
+            nodes.setdefault(source, source)
+            nodes.setdefault(target, target)
+            edges.append((source, target))
+    if not nodes:
+        return ""
+    positions = {node_id: (130, 55 + index * 100) for index, node_id in enumerate(nodes)}
+    height = len(nodes) * 100 + 20
+    svg = [f'<svg class="offline-diagram flowchart-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 {height}" role="img">',
+           '<defs><marker id="flow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#7ec8e3"/></marker></defs>']
+    for source, target in edges:
+        x1, y1 = positions[source]
+        x2, y2 = positions[target]
+        svg.append(f'<path class="diagram-edge" d="M{x1},{y1 + 24} V{y2 - 24}" fill="none" stroke="#7ec8e3" marker-end="url(#flow-arrow)"/>')
+    for node_id, label in nodes.items():
+        x, y = positions[node_id]
+        svg.append(f'<g class="diagram-node" data-node-id="{escape(node_id)}"><rect x="{x - 90}" y="{y - 24}" width="180" height="48" rx="7" fill="#16213e" stroke="#4a90d9"/><text x="{x}" y="{y + 5}" text-anchor="middle" fill="#e0e0e0">{escape(label)}</text></g>')
+    return "".join(svg) + "</svg>"
+
+
 def inject_click_handlers(mermaid_code: str, entity_ids: set[str]) -> str:
     """Inject click callbacks for every entity node in a Mermaid diagram.
 
@@ -1549,10 +1610,12 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             diagram = generate_behavior_sequence_diagram(model, b.id)
             if diagram:
                 extra["behavior_diagram"] = diagram
+                extra["behavior_svg"] = _render_mermaid_svg(diagram)
         elif b.steps:
             diagram = generate_behavior_flow_diagram(model, b.id)
             if diagram:
                 extra["behavior_diagram"] = diagram
+                extra["behavior_svg"] = _render_mermaid_svg(diagram)
         props[b.id] = _base(b, "behavior", extra)
 
     for i in model.entities.interfaces:
@@ -2050,9 +2113,12 @@ def generate_html_viewer(
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "meta": {"project": model.meta.project},
-        "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"]}
+        "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"],
+                         "svg": _render_mermaid_svg(v["mermaid"])}
                      for k, v in se_views.items()},
         "entities": explorer_data,
+        "entity_svgs": {eid: {name: _render_mermaid_svg(code) for name, code in facets.items()}
+                         for eid, facets in explorer_data.items()},
         "properties": entity_props,
         "sid_map": sid_map,
         "modules": module_data,
@@ -2291,6 +2357,11 @@ def generate_html_viewer(
         .math-expression {{ display: inline-block; padding: 4px 7px; border-radius: 4px;
                             background: #0d1117; color: #7ec8e3; font-family: ui-monospace, monospace;
                             white-space: pre-wrap; overflow-wrap: anywhere; }}
+        .offline-diagram {{ width: 100%; min-height: 180px; }}
+        .decision-card {{ margin: 10px 0; padding: 10px 12px; border: 1px solid #0f3460;
+                          border-left: 3px solid #4a90d9; border-radius: 4px; background: #11182c; }}
+        .decision-choice {{ color: #7ec8e3; font-weight: 700; margin-bottom: 6px; }}
+        .decision-row {{ color: #c0c0d0; font-size: 12px; line-height: 1.5; }}
     </style>
 </head>
 <body>
@@ -2336,9 +2407,9 @@ def generate_html_viewer(
         var content = document.getElementById('content');
 
         /* ── Mermaid rendering ────────────────────────────────── */
-        async function renderMermaid(container, code) {{
+        async function renderMermaid(container, code, offlineSvg) {{
             if (typeof mermaid === 'undefined') {{
-                container.innerHTML = '<pre style="color:#a0a0c0">Diagram source (offline mode):</pre><pre style="color:#7ec8e3;font-size:11px;white-space:pre-wrap">' + escapeHtml(code) + '</pre>';
+                container.innerHTML = offlineSvg || '<p style="color:#a0a0c0">Diagram format is not supported offline.</p>';
                 return;
             }}
             try {{
@@ -2513,7 +2584,7 @@ def generate_html_viewer(
                 for (var k in p.properties) {{
                     var v = p.properties[k];
                     if (v == null || v === '') continue;
-                    if (k === 'value_function' || k === 'behavior_diagram') continue;
+                    if (k === 'value_function' || k === 'behavior_diagram' || k === 'behavior_svg' || k === 'Decisions') continue;
                     if (Array.isArray(v)) {{
                         html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value"><ul class="prop-list">';
                         for (var li = 0; li < v.length; li++) html += '<li>' + v[li] + '</li>';
@@ -2527,6 +2598,18 @@ def generate_html_viewer(
                 var vf = p.properties.value_function;
                 html += '<div class="prop-item"><div class="prop-label">Value Function</div><div class="prop-value"><code class="math-expression">' + escapeHtml(vf) + '</code></div></div>';
             }}
+            if (p.properties && p.properties.Decisions) {{
+                var decisions = p.properties.Decisions;
+                for (var di = 0; di < decisions.length; di++) {{
+                    var decision = decisions[di];
+                    html += '<div class="decision-card"><div class="decision-choice">' + escapeHtml(decision.choice) + '</div>';
+                    if (decision.date) html += '<div class="decision-row"><b>Date:</b> ' + escapeHtml(decision.date) + '</div>';
+                    if (decision.rationale) html += '<div class="decision-row"><b>Rationale:</b> ' + escapeHtml(decision.rationale) + '</div>';
+                    if (decision.alternatives && decision.alternatives.length) html += '<div class="decision-row"><b>Alternatives:</b> ' + decision.alternatives.map(escapeHtml).join(', ') + '</div>';
+                    if (decision.context) html += '<div class="decision-row"><b>Context:</b> ' + escapeHtml(decision.context) + '</div>';
+                    html += '</div>';
+                }}
+            }}
             if (p.description) {{
                 html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + p.description + '</div></div>';
             }}
@@ -2535,7 +2618,7 @@ def generate_html_viewer(
                 var uid = 'pipeline_' + eid.replace(/[^a-zA-Z0-9]/g, '_');
                 html += '<div class="pipeline-view">';
                 html += '<div class="rel-header" style="cursor:pointer" onclick="var el=document.getElementById(\\x27' + uid + '\\x27);el.style.display=el.style.display===\\x27none\\x27?\\x27block\\x27:\\x27none\\x27">\\u25B6 Pipeline View</div>';
-                html += '<div id="' + uid + '" style="display:none;margin-top:8px"><div class="mermaid-target" data-mermaid="' + btoa(diagramCode) + '"></div></div>';
+                html += '<div id="' + uid + '" style="display:none;margin-top:8px"><div class="mermaid-target" data-mermaid="' + btoa(diagramCode) + '" data-svg="' + btoa(unescape(encodeURIComponent(p.properties.behavior_svg || ''))) + '"></div></div>';
                 html += '</div>';
             }}
             if (p.relationships) {{
@@ -2649,7 +2732,7 @@ def generate_html_viewer(
             html += '<div class="content-subtitle">' + v.subtitle + '</div>';
             html += '<div class="diagram-box" id="dia-main"></div>';
             content.innerHTML = html;
-            renderMermaid(document.getElementById('dia-main'), v.mermaid);
+            renderMermaid(document.getElementById('dia-main'), v.mermaid, v.svg);
             closeMobileNav();
         }}
 
@@ -2701,6 +2784,7 @@ def generate_html_viewer(
                     html += '<div class="accordion">'
                         + '<div class="accordion-header" data-target="' + cid
                         + '" data-code="' + btoa(unescape(encodeURIComponent(facets[facetName])))
+                        + '" data-svg="' + btoa(unescape(encodeURIComponent((D.entity_svgs[eid] || {{}})[facetName] || '')))
                         + '">' + facetName + '</div>'
                         + '<div class="accordion-body" id="' + cid + '">'
                         + '<div class="diagram-box" id="' + cid + '_dia"></div>'
@@ -2722,7 +2806,8 @@ def generate_html_viewer(
                     if (!isOpen && !body.dataset.rendered) {{
                         body.dataset.rendered = '1';
                         var code = decodeURIComponent(escape(atob(this.dataset.code)));
-                        renderMermaid(document.getElementById(this.dataset.target + '_dia'), code);
+                        var svg = decodeURIComponent(escape(atob(this.dataset.svg)));
+                        renderMermaid(document.getElementById(this.dataset.target + '_dia'), code, svg);
                     }}
                 }});
             }});
@@ -2732,7 +2817,8 @@ def generate_html_viewer(
                     if (el.parentElement.style.display !== 'none' && !el.dataset.rendered) {{
                         el.dataset.rendered = '1';
                         var code = decodeURIComponent(escape(atob(el.dataset.mermaid)));
-                        renderMermaid(el, code);
+                        var svg = decodeURIComponent(escape(atob(el.dataset.svg)));
+                        renderMermaid(el, code, svg);
                     }}
                 }});
                 observer.observe(el.parentElement, {{ attributes: true, attributeFilter: ['style'] }});
