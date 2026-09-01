@@ -36,6 +36,9 @@ from ..core.visualize import (
     generate_icd_diagram,
     generate_requirements_allocation_diagram,
     generate_system_decomposition_diagram,
+    # Behavior detail diagrams
+    generate_behavior_sequence_diagram,
+    generate_behavior_flow_diagram,
 )
 
 __all__ = [
@@ -53,5 +56,7 @@ __all__ = [
     "generate_entity_explorer",
     "generate_icd_diagram", "generate_requirements_allocation_diagram",
     "generate_system_decomposition_diagram",
+    "generate_behavior_sequence_diagram",
+    "generate_behavior_flow_diagram",
     "generate_all_diagrams",
 ]

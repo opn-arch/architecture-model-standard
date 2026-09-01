@@ -1270,6 +1270,113 @@ def _convert_clicks_to_anchors(mermaid_content: str) -> str:
     )
 
 
+def generate_behavior_sequence_diagram(model: "ArchitectureModel", behavior_id: str) -> str:
+    """Generate a Mermaid sequenceDiagram for a behavior's structured_steps.
+
+    Returns empty string if behavior not found or has no structured_steps.
+    """
+    beh = None
+    for b in model.entities.behaviors:
+        if b.id == behavior_id:
+            beh = b
+            break
+    if not beh or not beh.structured_steps:
+        return ""
+
+    comp_map = {c.id: c.name for c in model.entities.components}
+    steps = sorted(beh.structured_steps, key=lambda s: s.order)
+
+    def _participant(step):
+        if step.component_ref and step.component_ref in comp_map:
+            return comp_map[step.component_ref]
+        return "System"
+
+    # Collect unique participants in order
+    seen = set()
+    participants = []
+    has_actor = any(s.actor and s.actor.lower() in ("user", "actor", "human", "operator") for s in steps)
+    if has_actor:
+        participants.append("Actor")
+        seen.add("Actor")
+    for s in steps:
+        name = _participant(s)
+        if name not in seen:
+            participants.append(name)
+            seen.add(name)
+
+    lines = ["sequenceDiagram"]
+    for p in participants:
+        lines.append(f"    participant {p}")
+
+    # Trigger as note
+    if beh.trigger:
+        lines.append(f"    Note over {participants[0 if not has_actor else 1]}: {beh.trigger}")
+
+    prev_participant = None
+    for s in steps:
+        curr = _participant(s)
+        is_actor_step = s.actor and s.actor.lower() in ("user", "actor", "human", "operator")
+        if is_actor_step:
+            lines.append(f"    Actor->>{curr}: {s.action}")
+        elif prev_participant is None:
+            lines.append(f"    {curr}->>{curr}: {s.action}")
+        else:
+            lines.append(f"    {prev_participant}->>{curr}: {s.action}")
+        prev_participant = curr
+
+    return "\n".join(lines)
+
+
+def generate_behavior_flow_diagram(model: "ArchitectureModel", behavior_id: str) -> str:
+    """Generate a Mermaid graph TD flowchart for a behavior's steps.
+
+    Works with simple string steps or structured_steps as fallback.
+    Returns empty string if behavior not found or has no steps.
+    """
+    beh = None
+    for b in model.entities.behaviors:
+        if b.id == behavior_id:
+            beh = b
+            break
+    if not beh:
+        return ""
+
+    # Build step list: prefer simple steps, fall back to structured_steps
+    step_labels = []
+    comp_refs = []
+    if beh.steps:
+        step_labels = list(beh.steps)
+        comp_refs = [""] * len(step_labels)
+    elif beh.structured_steps:
+        sorted_steps = sorted(beh.structured_steps, key=lambda s: s.order)
+        step_labels = [s.action for s in sorted_steps]
+        comp_refs = [s.component_ref for s in sorted_steps]
+    else:
+        return ""
+
+    # Assign colors by component_ref
+    unique_comps = list(dict.fromkeys(r for r in comp_refs if r))
+    comp_colors = {}
+    palette = ["#4a9eff", "#ff6b6b", "#51cf66", "#ffd43b", "#cc5de8", "#ff922b"]
+    for i, c in enumerate(unique_comps):
+        comp_colors[c] = palette[i % len(palette)]
+
+    lines = ["graph TD"]
+    for i, label in enumerate(step_labels):
+        node_id = f"step{i}"
+        lines.append(f'    {node_id}["{label}"]')
+        if i > 0:
+            lines.append(f"    step{i-1} --> {node_id}")
+
+    # Apply styles for component-colored nodes
+    for i, ref in enumerate(comp_refs):
+        if ref and ref in comp_colors:
+            color = comp_colors[ref]
+            lines.append(f"    style step{i} fill:{color},color:#fff")
+
+    return "\n".join(lines)
+
+
 def inject_click_handlers(mermaid_code: str, entity_ids: set[str]) -> str:
     """Inject click callbacks for every entity node in a Mermaid diagram.
 
@@ -1423,6 +1530,15 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
                      _opt(b, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
+        # Embed behavior diagram (sequence for structured_steps, flow for simple steps)
+        if b.structured_steps:
+            diagram = generate_behavior_sequence_diagram(model, b.id)
+            if diagram:
+                extra["behavior_diagram"] = diagram
+        elif b.steps:
+            diagram = generate_behavior_flow_diagram(model, b.id)
+            if diagram:
+                extra["behavior_diagram"] = diagram
         props[b.id] = _base(b, "behavior", extra)
 
     for i in model.entities.interfaces:
@@ -2278,6 +2394,14 @@ def generate_html_viewer(
             if (p.description) {{
                 html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + p.description + '</div></div>';
             }}
+            if (p.properties && p.properties.behavior_diagram) {{
+                var diagramCode = p.properties.behavior_diagram;
+                var uid = 'pipeline_' + eid.replace(/[^a-zA-Z0-9]/g, '_');
+                html += '<div class="pipeline-view">';
+                html += '<div class="rel-header" style="cursor:pointer" onclick="var el=document.getElementById(\\x27' + uid + '\\x27);el.style.display=el.style.display===\\x27none\\x27?\\x27block\\x27:\\x27none\\x27">\\u25B6 Pipeline View</div>';
+                html += '<div id="' + uid + '" style="display:none;margin-top:8px"><div class="mermaid-target" data-mermaid="' + btoa(diagramCode) + '"></div></div>';
+                html += '</div>';
+            }}
             if (p.relationships) {{
                 var ro = p.relationships.outgoing || [];
                 var ri = p.relationships.incoming || [];
@@ -2465,6 +2589,17 @@ def generate_html_viewer(
                         renderMermaid(document.getElementById(this.dataset.target + '_dia'), code);
                     }}
                 }});
+            }});
+            // Wire pipeline-view mermaid rendering on toggle
+            content.querySelectorAll('.mermaid-target').forEach(function(el) {{
+                var observer = new MutationObserver(function(mutations) {{
+                    if (el.parentElement.style.display !== 'none' && !el.dataset.rendered) {{
+                        el.dataset.rendered = '1';
+                        var code = decodeURIComponent(escape(atob(el.dataset.mermaid)));
+                        renderMermaid(el, code);
+                    }}
+                }});
+                observer.observe(el.parentElement, {{ attributes: true, attributeFilter: ['style'] }});
             }});
             // Wire module links
             content.querySelectorAll('[data-module]').forEach(function(a) {{
