@@ -36,6 +36,9 @@ class ComponentHistoryRecord:
     timestamp: str = ""
     duration_ms: int | None = None
     invoked_by: str = "pipeline"
+    source: str = "library"
+    scope: str = ""
+    parent_run_id: str | None = None
     produced_entity_ids: list[str] = field(default_factory=list)
     artifacts: list[str] = field(default_factory=list)
     counts: dict[str, int] = field(default_factory=dict)
@@ -49,12 +52,17 @@ class ModuleHistoryRecord:
     timestamp: str = ""
     duration_ms: int | None = None
     invoked_by: str = "pipeline"
+    source: str = "library"
+    scope: str = ""
+    parent_run_id: str | None = None
     stage: str = "observe"
     produced_functions: list[str] = field(default_factory=list)
     produced_classes: list[str] = field(default_factory=list)
     produced_routes: list[str] = field(default_factory=list)
     produced_constants: list[str] = field(default_factory=list)
     produced_entity_ids: list[str] = field(default_factory=list)
+    artifacts: list[str] = field(default_factory=list)
+    counts: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -74,16 +82,38 @@ class PipelineRunRecord:
     modules: list[ModuleHistoryRecord] = field(default_factory=list)
     produced_artifacts: list[str] = field(default_factory=list)
     error: str = ""
+    revision: str = "base"
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        for collection in (data["components"], data["modules"]):
+            for item in collection:
+                item["parent"] = item.get("parent_run_id")
+        data.update({
+            "timestamp": self.started_at,
+            "invoked_by": self.invocation or self.source,
+            "parent": self.parent_run_id,
+            "artifacts": list(self.produced_artifacts),
+        })
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "PipelineRunRecord":
         values = dict(data)
+        values.setdefault("started_at", values.get("timestamp", ""))
+        values.setdefault("invocation", values.get("invoked_by", ""))
+        values.setdefault("parent_run_id", values.get("parent"))
+        values.setdefault("produced_artifacts", values.get("artifacts", []))
+        for alias in ("timestamp", "invoked_by", "parent", "artifacts"):
+            values.pop(alias, None)
         values["stages"] = [StageHistoryRecord(**item) for item in values.get("stages", [])]
-        values["components"] = [ComponentHistoryRecord(**item) for item in values.get("components", [])]
-        values["modules"] = [ModuleHistoryRecord(**item) for item in values.get("modules", [])]
+        component_values = values.get("components", [])
+        module_values = values.get("modules", [])
+        for item in [*component_values, *module_values]:
+            item.setdefault("parent_run_id", item.get("parent"))
+            item.pop("parent", None)
+        values["components"] = [ComponentHistoryRecord(**item) for item in component_values]
+        values["modules"] = [ModuleHistoryRecord(**item) for item in module_values]
         return cls(**values)
 
 
@@ -118,14 +148,49 @@ def load_pipeline_history(repo_path: str | Path, limit: int = 50) -> list[Pipeli
         legacy = _load_legacy_report(Path(repo_path))
         return [legacy] if legacy is not None else []
     records: list[PipelineRunRecord] = []
+    seen_run_ids: set[str] = set()
     for line in reversed(path.read_text(encoding="utf-8", errors="replace").splitlines()):
         try:
-            records.append(PipelineRunRecord.from_dict(json.loads(line)))
+            record = PipelineRunRecord.from_dict(json.loads(line))
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
+        if record.run_id in seen_run_ids:
+            continue
+        records.append(record)
+        seen_run_ids.add(record.run_id)
         if len(records) >= limit:
             break
+    if not records:
+        legacy = _load_legacy_report(Path(repo_path))
+        return [legacy] if legacy is not None else []
     return records
+
+
+def finalize_pipeline_history(
+    repo_path: str | Path, run_id: str, artifacts: list[str]
+) -> PipelineRunRecord | None:
+    """Append a final immutable revision containing post-run artifacts."""
+    base = next((item for item in load_pipeline_history(repo_path, limit=1000) if item.run_id == run_id), None)
+    if base is None:
+        return None
+    base.produced_artifacts = list(dict.fromkeys([*base.produced_artifacts, *artifacts]))
+    for component in base.components:
+        safe_name = component.component_id.lower().replace(" ", "-")
+        component.artifacts = list(dict.fromkeys([
+            *component.artifacts,
+            *(path for path in artifacts if path.endswith((
+                "functional.yaml", "structure.yaml", "relationships.yaml", "validation.json",
+                f"specs/{safe_name}.yaml", f"contracts/{safe_name}.yaml",
+            ))),
+        ]))
+    for module in base.modules:
+        module.artifacts = list(dict.fromkeys([
+            *module.artifacts,
+            *(path for path in artifacts if path.endswith("inventory.json")),
+        ]))
+    base.revision = "final"
+    append_pipeline_history(repo_path, base)
+    return base
 
 
 def _load_legacy_report(repo_path: Path) -> PipelineRunRecord | None:

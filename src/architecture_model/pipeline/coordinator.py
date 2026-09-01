@@ -104,11 +104,11 @@ class PipelineCoordinator:
                 self._evaluate_gates(name, result, ctx)
             except Exception:
                 stage_history.append(self._stage_record(
-                    name, stage, started, perf_counter() - timer, None, "failed"
+                    name, stage, ctx, started, perf_counter() - timer, None, "failed"
                 ))
                 raise
             stage_history.append(self._stage_record(
-                name, stage, started, perf_counter() - timer, result, "completed"
+                name, stage, ctx, started, perf_counter() - timer, result, "completed"
             ))
         return results
 
@@ -164,22 +164,25 @@ class PipelineCoordinator:
             except Exception:
                 pass
             raise
-        append_pipeline_history(
-            ctx.repo_path,
-            self._build_run_record(ctx, started, perf_counter() - timer, stage_history, "completed"),
-        )
+        try:
+            append_pipeline_history(
+                ctx.repo_path,
+                self._build_run_record(ctx, started, perf_counter() - timer, stage_history, "completed"),
+            )
+        except Exception as exc:
+            ctx.history_warnings.append(f"Pipeline history persistence failed: {exc}")
         return results
 
     @staticmethod
-    def _stage_record(name, stage, started, elapsed, result, status):
+    def _stage_record(name, stage, ctx, started, elapsed, result, status):
         from .history import StageHistoryRecord
 
         output = getattr(result, "output", None)
-        output_summary: dict[str, Any] = {"type": type(output).__name__} if output is not None else {}
-        for attr in ("modules", "capabilities", "components", "relationships", "interfaces", "contracts", "systems"):
-            value = getattr(output, attr, None)
-            if value is not None:
-                output_summary[attr] = len(value)
+        output_summary = PipelineCoordinator._result_summary(output)
+        input_summary = {
+            dep: PipelineCoordinator._result_summary(ctx.cache[dep].output)
+            for dep in getattr(stage, "requires", []) if dep in ctx.cache
+        }
         return StageHistoryRecord(
             name=name,
             started_at=started.isoformat().replace("+00:00", "Z"),
@@ -189,10 +192,26 @@ class PipelineCoordinator:
             status=status,
             invoked_by="pipeline-coordinator",
             dependencies=list(getattr(stage, "requires", [])),
-            input_summary={"dependencies": list(getattr(stage, "requires", []))},
+            input_summary=input_summary,
             output_summary=output_summary,
             artifacts=[str(path) for path in getattr(output, "written_paths", [])],
         )
+
+    @staticmethod
+    def _result_summary(output) -> dict[str, Any]:
+        if output is None:
+            return {}
+        counts: dict[str, int] = {}
+        for attr in (
+            "modules", "edges", "routes", "constraints", "test_files", "docs",
+            "capabilities", "actors", "behaviors", "components", "unallocated",
+            "relationships", "layers", "interfaces", "requirements", "contracts",
+            "systems", "system_models", "written_paths", "issues",
+        ):
+            value = getattr(output, attr, None)
+            if isinstance(value, (list, tuple, dict, set)):
+                counts[attr] = len(value)
+        return {"type": type(output).__name__, "counts": counts, **counts}
 
     @staticmethod
     def _build_run_record(ctx, started, elapsed, stages, status, error=""):
@@ -210,9 +229,76 @@ class PipelineCoordinator:
         }
         timestamp = started.isoformat().replace("+00:00", "Z")
         stage_names = [stage.name for stage in stages]
+        infer_output = getattr(ctx.get("infer"), "output", None)
+        specify_output = getattr(ctx.get("specify"), "output", None)
+        contract_output = getattr(ctx.get("contract"), "output", None)
+        relate_output = getattr(ctx.get("relate"), "output", None)
+        capabilities = list(getattr(infer_output, "capabilities", []) or [])
+        behaviors = list(getattr(infer_output, "behaviors", []) or [])
+        actors = list(getattr(infer_output, "actors", []) or [])
+        interfaces = list(getattr(specify_output, "interfaces", []) or [])
+        requirements = list(getattr(specify_output, "requirements", []) or [])
+        contracts = list(getattr(contract_output, "contracts", []) or [])
+        relationships = list(getattr(relate_output, "relationships", []) or [])
+        comp_entities: dict[str, set[str]] = {comp.id: set() for comp in components}
+        cap_to_components: dict[str, set[str]] = {}
+        for comp in components:
+            if getattr(comp, "capability_id", ""):
+                cap_to_components.setdefault(comp.capability_id, set()).add(comp.id)
+        for rel in relationships:
+            if rel.rel_type == "realizes" and rel.from_id in comp_entities:
+                cap_to_components.setdefault(rel.to_id, set()).add(rel.from_id)
+        for cap in capabilities:
+            owner_ids = set(cap_to_components.get(cap.id, set()))
+            if cap.evidence_source == "routes":
+                owner_ids.update(
+                    file_to_component.get(str(route.file), "") for route in routes
+                )
+                owner_ids.discard("")
+            elif cap.evidence_source:
+                owner_ids.update(
+                    comp_id for path, comp_id in file_to_component.items()
+                    if path in cap.evidence_source
+                )
+            cap_to_components[cap.id] = owner_ids
+            for comp_id in owner_ids:
+                comp_entities[comp_id].add(cap.id)
+        for behavior in behaviors:
+            for comp_id in cap_to_components.get(behavior.capability_id, set()):
+                comp_entities[comp_id].add(behavior.id)
+                if behavior.actor_id:
+                    comp_entities[comp_id].add(behavior.actor_id)
+        actor_ids = {actor.id for actor in actors}
+        for comp_id in comp_entities:
+            comp_entities[comp_id].intersection_update(
+                {cap.id for cap in capabilities} | {item.id for item in behaviors} | actor_ids
+            )
+        for interface in interfaces:
+            if interface.component_id in comp_entities:
+                comp_entities[interface.component_id].add(interface.id)
+        for requirement in requirements:
+            comp_id = file_to_component.get(str(requirement.source_file), "")
+            if comp_id:
+                comp_entities[comp_id].add(requirement.id)
+        comp_artifacts = PipelineCoordinator._existing_artifacts(ctx, components)
         component_records = []
         for comp in components:
             files = [str(path) for path in getattr(comp, "files", [])]
+            entity_ids = sorted(comp_entities[comp.id])
+            counts = {
+                "files": len(files), "modules": len(files),
+                "capabilities": sum(item.startswith("CAP-") for item in entity_ids),
+                "behaviors": sum(item.startswith("BEH-") for item in entity_ids),
+                "actors": sum(item.startswith("ACT-") for item in entity_ids),
+                "interfaces": sum(item.startswith("IF-") for item in entity_ids),
+                "requirements": sum(item.startswith("REQ-") for item in entity_ids),
+                "contracts": sum(item.target_component == comp.id for item in contracts),
+                "relationships": sum(
+                    item.from_id == comp.id or item.to_id == comp.id
+                    or item.from_id in entity_ids or item.to_id in entity_ids
+                    for item in relationships
+                ),
+            }
             component_records.append(ComponentHistoryRecord(
                 component_id=comp.id,
                 name=comp.name,
@@ -221,24 +307,59 @@ class PipelineCoordinator:
                 stages=stage_names,
                 timestamp=timestamp,
                 invoked_by=ctx.invocation or ctx.invocation_source,
-                produced_entity_ids=[item for item in (comp.id, getattr(comp, "capability_id", "")) if item],
-                counts={"files": len(files), "modules": len(files)},
+                source=ctx.invocation_source,
+                scope=ctx.scope,
+                parent_run_id=ctx.parent_run_id,
+                produced_entity_ids=entity_ids,
+                artifacts=comp_artifacts.get(comp.id, []),
+                counts=counts,
             ))
         module_records = []
         for module in modules:
             path = str(module.path)
             module_routes = [route for route in routes if str(getattr(route, "file", "")) == path]
+            module_entity_ids = {
+                item.id for item in requirements if str(item.source_file) == path
+            }
+            for cap in capabilities:
+                if path and (path in str(cap.evidence_source) or (
+                    cap.evidence_source == "routes" and any(str(route.file) == path for route in module_routes)
+                )):
+                    module_entity_ids.add(cap.id)
+            for behavior in behaviors:
+                if behavior.capability_id in module_entity_ids:
+                    module_entity_ids.add(behavior.id)
+                    if behavior.actor_id:
+                        module_entity_ids.add(behavior.actor_id)
+            comp_id = file_to_component.get(path, "")
+            module_entity_ids.update(
+                interface.id for interface in interfaces if interface.component_id == comp_id
+                and any(method in {item.name for item in module.functions} for method in interface.methods)
+            )
+            module_artifacts = []
+            inventory_path = ctx.output_dir / "inventory.json"
+            if inventory_path.is_file():
+                module_artifacts.append(str(inventory_path.relative_to(ctx.repo_path)))
             module_records.append(ModuleHistoryRecord(
                 path=path,
                 module=Path(path).stem,
-                component_id=file_to_component.get(path, ""),
+                component_id=comp_id,
                 timestamp=timestamp,
                 invoked_by=ctx.invocation or ctx.invocation_source,
+                source=ctx.invocation_source,
+                scope=ctx.scope,
+                parent_run_id=ctx.parent_run_id,
                 produced_functions=[item.name for item in module.functions],
                 produced_classes=[item.name for item in module.classes],
                 produced_routes=[f"{item.method} {item.path}" for item in module_routes],
                 produced_constants=[item.name for item in module.constants],
-                produced_entity_ids=[file_to_component[path]] if path in file_to_component else [],
+                produced_entity_ids=sorted(module_entity_ids),
+                artifacts=module_artifacts,
+                counts={
+                    "functions": len(module.functions), "classes": len(module.classes),
+                    "routes": len(module_routes), "constants": len(module.constants),
+                    "entities": len(module_entity_ids),
+                },
             ))
         artifacts = [artifact for stage in stages for artifact in stage.artifacts]
         return PipelineRunRecord(
@@ -257,6 +378,25 @@ class PipelineCoordinator:
             produced_artifacts=artifacts,
             error=error,
         )
+
+    @staticmethod
+    def _existing_artifacts(ctx, components) -> dict[str, list[str]]:
+        result: dict[str, list[str]] = {comp.id: [] for comp in components}
+        shared = [
+            ctx.output_dir / name for name in
+            ("functional.yaml", "structure.yaml", "relationships.yaml", "validation.json")
+        ]
+        for comp in components:
+            candidates = [*shared]
+            safe_name = comp.id.lower().replace(" ", "-")
+            candidates.extend([
+                ctx.output_dir / "specs" / f"{safe_name}.yaml",
+                ctx.output_dir / "contracts" / f"{safe_name}.yaml",
+            ])
+            result[comp.id] = [
+                str(path.relative_to(ctx.repo_path)) for path in candidates if path.is_file()
+            ]
+        return result
 
     def _record_quality(self, results: dict[str, StageResult]) -> None:
         """Record stage quality scores to learning store."""

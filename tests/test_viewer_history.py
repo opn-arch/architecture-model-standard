@@ -110,17 +110,27 @@ class TestLoadPipelineHistory:
             duration_ms=1000,
             source="MCP",
             invocation="architect_pipeline",
-            status="completed",
+            status="completed", scope="COMP-1", parent_run_id="parent-run",
             produced_artifacts=[".architecture-model.yaml"],
-            stages=[StageHistoryRecord(name="observe", score=100, duration_ms=25)],
+            stages=[StageHistoryRecord(
+                name="observe", score=100, confidence=0.95, duration_ms=25,
+                status="completed", invoked_by="pipeline-coordinator", dependencies=["scan"],
+                input_summary={"scan": {"type": "Source", "counts": {"files": 1}}},
+                output_summary={"type": "Inventory", "counts": {"modules": 1}},
+                artifacts=[".architecture/inventory.json"],
+            )],
             components=[ComponentHistoryRecord(
                 component_id="COMP-1", name="Test", timestamp="2026-09-01T12:00:00Z",
-                invoked_by="architect_pipeline", produced_entity_ids=["COMP-1"], counts={"modules": 1},
+                invoked_by="architect_pipeline", source="MCP", scope="COMP-1",
+                parent_run_id="parent-run", produced_entity_ids=["CAP-1"],
+                artifacts=[".architecture/functional.yaml"], counts={"modules": 1},
             )],
             modules=[ModuleHistoryRecord(
                 path="src/test.py", module="test", component_id="COMP-1",
-                timestamp="2026-09-01T12:00:00Z", invoked_by="observe",
-                produced_functions=["work"], produced_entity_ids=["COMP-1"],
+                timestamp="2026-09-01T12:00:00Z", invoked_by="observe", source="MCP",
+                scope="COMP-1", parent_run_id="parent-run", duration_ms=None,
+                produced_functions=["work"], produced_entity_ids=["CAP-1"],
+                artifacts=[".architecture/inventory.json"], counts={"functions": 1},
             )],
         ))
 
@@ -133,3 +143,14 @@ class TestLoadPipelineHistory:
         assert "component_id === entityId" in html
         assert "item.path === filepath" in html
         assert "Produced Artifacts / Entities" in html
+        assert "Completed" in html
+        assert "Stage Started / Completed" in html
+        assert "Source / Invoked By" in html
+        assert "Scope / Parent" in html
+        assert "Dependencies" in html
+        assert "Input Summary" in html
+        assert "Output Summary" in html
+        assert "Confidence" in html
+        assert "Unavailable" in html
+        assert "<details" in html
+        assert "comment-textarea" in html

@@ -201,6 +201,7 @@ class PipelineContext:
     enrichment_log: list[EnrichmentRecord] = field(default_factory=list)
     review_log: list[StageQualityReview] = field(default_factory=list)
     refinement_logs: list[Any] = field(default_factory=list)
+    history_warnings: list[str] = field(default_factory=list)
     # LLM enrichment callback: stages can call this for naming, classification, etc.
     # Signature: async (stage: str, prompt: str, context: dict) -> str
     # If None, stages use heuristic fallbacks (deterministic mode).

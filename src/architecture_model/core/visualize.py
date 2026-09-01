@@ -2519,21 +2519,60 @@ def generate_html_viewer(
             var html = '<div class="mod-section"><div class="mod-section-title">Run History (' + runs.length + ')</div>';
             runs.forEach(function(run) {{
                 var items = itemSelector ? itemSelector(run) : [];
-                html += '<div class="mod-item"><div class="mod-func-name">' + escapeHtml(run.started_at || '')
-                    + ' [' + escapeHtml(run.status || '') + ']</div>';
-                html += '<div class="mod-func-sig">Invoked by: ' + escapeHtml(run.invocation || run.source || '')
-                    + ' | Duration: ' + String(run.duration_ms == null ? 'N/A' : run.duration_ms + 'ms') + '</div>';
+                html += '<details class="mod-item"><summary class="mod-func-name">' + escapeHtml(run.started_at || '')
+                    + ' [' + escapeHtml(run.status || '') + ']</summary>';
+                html += '<div class="mod-func-sig"><strong>Completed:</strong> ' + escapeHtml(run.completed_at || 'Unavailable') + '</div>';
+                html += '<div class="mod-func-sig"><strong>Source / Invoked By:</strong> '
+                    + escapeHtml(run.source || '') + ' / ' + escapeHtml(run.invocation || run.invoked_by || '') + '</div>';
+                html += '<div class="mod-func-sig"><strong>Scope / Parent:</strong> '
+                    + escapeHtml(run.scope || 'root') + ' / ' + escapeHtml(run.parent_run_id || run.parent || 'none') + '</div>';
+                html += '<div class="mod-func-sig"><strong>Duration:</strong> '
+                    + String(run.duration_ms == null ? 'Unavailable' : run.duration_ms + 'ms') + '</div>';
                 var produced = (run.produced_artifacts || []).slice();
                 items.forEach(function(item) {{
+                    html += '<div class="mod-func-sig"><strong>Entry Timestamp:</strong> '
+                        + escapeHtml(item.timestamp || 'Unavailable') + ' | <strong>Stages:</strong> '
+                        + escapeHtml((item.stages || [item.stage]).filter(Boolean).join(', ')) + '</div>';
+                    html += '<div class="mod-func-sig"><strong>Source / Invoked By:</strong> '
+                        + escapeHtml(item.source || run.source || '') + ' / ' + escapeHtml(item.invoked_by || '') + '</div>';
+                    html += '<div class="mod-func-sig"><strong>Scope / Parent:</strong> '
+                        + escapeHtml(item.scope || run.scope || 'root') + ' / '
+                        + escapeHtml(item.parent_run_id || run.parent_run_id || 'none') + '</div>';
+                    html += '<div class="mod-func-sig"><strong>Duration:</strong> '
+                        + String(item.duration_ms == null ? 'Unavailable' : item.duration_ms + 'ms') + '</div>';
                     produced = produced.concat(item.produced_entity_ids || [], item.artifacts || []);
                     if (item.counts) Object.keys(item.counts).forEach(function(k) {{ produced.push(k + ': ' + item.counts[k]); }});
                     produced = produced.concat(item.produced_functions || [], item.produced_classes || [],
                         item.produced_routes || [], item.produced_constants || []);
                 }});
                 html += '<div class="mod-func-doc"><strong>Produced Artifacts / Entities:</strong> '
-                    + escapeHtml(produced.join(', ') || 'None recorded') + '</div></div>';
+                    + escapeHtml(produced.join(', ') || 'None recorded') + '</div></details>';
             }});
             return html + '</div>';
+        }}
+
+        function renderStageHistory(run) {{
+            if (!run.stages || !run.stages.length) return '';
+            var html = '<details class="mod-section"><summary class="mod-section-title">' + escapeHtml(run.run_id) + ' Stages</summary>';
+            run.stages.forEach(function(s) {{
+                html += '<details class="mod-item"><summary class="mod-func-name">' + escapeHtml(s.name)
+                    + ' [' + escapeHtml(s.status || '') + ']</summary>';
+                html += '<div class="mod-func-sig"><strong>Stage Started / Completed:</strong> '
+                    + escapeHtml(s.started_at || 'Unavailable') + ' / '
+                    + escapeHtml(s.completed_at || 'Unavailable') + '</div>';
+                html += '<div class="mod-func-sig"><strong>Invoked By:</strong> ' + escapeHtml(s.invoked_by || '') + '</div>';
+                html += '<div class="mod-func-sig"><strong>Dependencies:</strong> ' + escapeHtml((s.dependencies || []).join(', ') || 'None') + '</div>';
+                html += '<div class="mod-func-sig"><strong>Input Summary:</strong> ' + escapeHtml(JSON.stringify(s.input_summary || {{}})) + '</div>';
+                html += '<div class="mod-func-sig"><strong>Output Summary:</strong> ' + escapeHtml(JSON.stringify(s.output_summary || {{}})) + '</div>';
+                html += '<div class="mod-func-sig"><strong>Score / Confidence:</strong> '
+                    + String(s.score == null ? 'Unavailable' : s.score) + ' / '
+                    + String(s.confidence == null ? 'Unavailable' : s.confidence) + '</div>';
+                html += '<div class="mod-func-sig"><strong>Duration:</strong> '
+                    + String(s.duration_ms == null ? 'Unavailable' : s.duration_ms + 'ms') + '</div>';
+                html += '<div class="mod-func-doc"><strong>Artifacts:</strong> '
+                    + escapeHtml((s.artifacts || []).join(', ') || 'None') + '</div></details>';
+            }});
+            return html + '</details>';
         }}
 
         function showPipelineHistory() {{
@@ -2549,21 +2588,7 @@ def generate_html_viewer(
             var html = renderBreadcrumbs('Pipeline History');
             html += '<h2 class="content-header">Pipeline History</h2>';
             html += renderRunHistory(runs);
-            runs.forEach(function(run) {{ if (run.stages && run.stages.length) {{
-                html += '<h3>' + escapeHtml(run.run_id) + ' Stages</h3>';
-                html += '<div class="doc-content"><table style="width:100%;border-collapse:collapse">';
-                html += '<tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Stage</th>';
-                html += '<th style="text-align:right;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Score</th>';
-                html += '<th style="text-align:right;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Duration</th></tr>';
-                run.stages.forEach(function(s) {{
-                    var sc = parseFloat(s.score);
-                    var color = sc >= 90 ? '#27AE60' : sc >= 70 ? '#F39C12' : '#E74C3C';
-                    html += '<tr><td style="padding:4px 8px;color:#e0e0e0">' + s.name + '</td>';
-                    html += '<td style="padding:4px 8px;text-align:right;color:' + color + '">' + s.score + '</td>';
-                    html += '<td style="padding:4px 8px;text-align:right;color:#a0a0c0">' + (s.duration_ms == null ? 'N/A' : s.duration_ms + 'ms') + '</td></tr>';
-                }});
-                html += '</table></div>';
-            }} }});
+            runs.forEach(function(run) {{ html += renderStageHistory(run); }});
             content.innerHTML = html;
             closeMobileNav();
         }}
