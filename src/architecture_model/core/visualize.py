@@ -1333,16 +1333,20 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
 
     # Fields that count toward depth scoring per entity type
     _depth_fields: dict[str, list[str]] = {
-        "actor": ["description", "intent", "goals"],
-        "capability": ["description", "intent", "moes", "requirements"],
-        "behavior": ["description", "steps", "structured_steps", "trigger", "preconditions"],
-        "interface": ["description", "protocol", "endpoints", "data_format", "schema"],
-        "constraint": ["description", "metric", "threshold", "rationale"],
-        "layer": ["description", "technology", "directories"],
+        "actor": ["description", "intent", "goals", "decisions"],
+        "capability": ["description", "intent", "moes", "requirements", "goals",
+                        "trade_offs", "failure_modes", "monitored", "decisions"],
+        "behavior": ["description", "steps", "structured_steps", "trigger", "preconditions",
+                      "goals", "moes", "failure_modes", "decisions"],
+        "interface": ["description", "protocol", "endpoints", "data_format", "schema", "decisions"],
+        "constraint": ["description", "metric", "threshold", "rationale", "decisions"],
+        "layer": ["description", "technology", "directories", "decisions"],
         "component": ["description", "intent", "goals", "files", "signatures", "trade_offs",
-                       "failure_modes", "contract", "responsibilities"],
-        "system": ["description", "component_ids", "sub_model_ref"],
-        "requirement": ["description", "text", "rationale", "moe"],
+                       "failure_modes", "contract", "responsibilities", "monitored", "decisions"],
+        "system": ["description", "component_ids", "sub_model_ref", "goals",
+                    "trade_offs", "failure_modes", "monitored", "decisions"],
+        "requirement": ["description", "text", "rationale", "moe", "value_function",
+                         "moes", "failure_modes", "monitored", "decisions"],
     }
 
     def _score_depth(entity, etype: str) -> str:
@@ -1389,7 +1393,8 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     for a in model.entities.actors:
         extra: dict = {}
         extra["Actor Type"] = getattr(a.type, "value", str(a.type))
-        for pair in [_opt(a, "intent"), _opt(a, "goals")]:
+        for pair in [_opt(a, "intent"), _opt(a, "goals"),
+                     _opt(a, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[a.id] = _base(a, "actor", extra)
@@ -1398,7 +1403,12 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         extra = {}
         extra["Priority"] = getattr(c.priority, "value", str(c.priority))
         for pair in [_opt(c, "intent"), _opt(c, "moes", "Measures of Effectiveness"),
-                     _opt(c, "source_block", "Source Block")]:
+                     _opt(c, "source_block", "Source Block"),
+                     _opt(c, "goals", "Goals", as_list=True),
+                     _opt(c, "trade_offs", "Trade-offs", as_list=True),
+                     _opt(c, "failure_modes", "Failure Modes", as_list=True),
+                     _opt(c, "monitored", "Monitored"),
+                     _opt(c, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[c.id] = _base(c, "capability", extra)
@@ -1406,7 +1416,11 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     for b in model.entities.behaviors:
         extra = {}
         for pair in [_opt(b, "pattern", "Pattern"), _opt(b, "actor", "Actor"),
-                     _opt(b, "steps"), _opt(b, "trigger"), _opt(b, "preconditions")]:
+                     _opt(b, "steps"), _opt(b, "trigger"), _opt(b, "preconditions"),
+                     _opt(b, "goals", "Goals", as_list=True),
+                     _opt(b, "moes", "Measures of Effectiveness", as_list=True),
+                     _opt(b, "failure_modes", "Failure Modes", as_list=True),
+                     _opt(b, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[b.id] = _base(b, "behavior", extra)
@@ -1417,7 +1431,8 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         if itype:
             extra["Interface Type"] = itype
         for pair in [_opt(i, "provider", "Provider"),
-                     _opt(i, "protocol"), _opt(i, "data_format", "Data Format")]:
+                     _opt(i, "protocol"), _opt(i, "data_format", "Data Format"),
+                     _opt(i, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[i.id] = _base(i, "interface", extra)
@@ -1427,14 +1442,16 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         ctype = getattr(c.type, "value", str(c.type)) if hasattr(c, "type") else ""
         if ctype:
             extra["Constraint Type"] = ctype
-        for pair in [_opt(c, "metric"), _opt(c, "threshold"), _opt(c, "rationale")]:
+        for pair in [_opt(c, "metric"), _opt(c, "threshold"), _opt(c, "rationale"),
+                     _opt(c, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[c.id] = _base(c, "constraint", extra)
 
     for la in model.entities.layers:
         extra = {}
-        for pair in [_opt(la, "order"), _opt(la, "technology"), _opt(la, "directories")]:
+        for pair in [_opt(la, "order"), _opt(la, "technology"), _opt(la, "directories"),
+                     _opt(la, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[la.id] = _base(la, "layer", extra)
@@ -1443,7 +1460,9 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         extra = {}
         for pair in [_opt(c, "kind"), _opt(c, "layer"), _opt(c, "intent"),
                      _opt(c, "goals"), _opt(c, "trade_offs", "Trade-offs"),
-                     _opt(c, "failure_modes", "Failure Modes"), _opt(c, "contract")]:
+                     _opt(c, "failure_modes", "Failure Modes"), _opt(c, "contract"),
+                     _opt(c, "monitored", "Monitored"),
+                     _opt(c, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         files = getattr(c, "files", []) or []
@@ -1456,7 +1475,12 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         if s.component_ids:
             extra["Components"] = str(len(s.component_ids))
         for pair in [_opt(s, "sub_model_ref", "Sub-model"), _opt(s, "source_block", "Source Block"),
-                     _opt(s, "complexity_score", "Complexity")]:
+                     _opt(s, "complexity_score", "Complexity"),
+                     _opt(s, "goals", "Goals", as_list=True),
+                     _opt(s, "trade_offs", "Trade-offs", as_list=True),
+                     _opt(s, "failure_modes", "Failure Modes", as_list=True),
+                     _opt(s, "monitored", "Monitored"),
+                     _opt(s, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[s.id] = _base(s, "system", extra)
@@ -1464,7 +1488,12 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     for r in model.entities.requirements:
         extra = {}
         for pair in [_opt(r, "text"), _opt(r, "priority"), _opt(r, "moe", "MoE"),
-                     _opt(r, "source_doc", "Source"), _opt(r, "rationale")]:
+                     _opt(r, "source_doc", "Source"), _opt(r, "rationale"),
+                     _opt(r, "value_function", "Value Function"),
+                     _opt(r, "moes", "Measures of Effectiveness", as_list=True),
+                     _opt(r, "failure_modes", "Failure Modes", as_list=True),
+                     _opt(r, "monitored", "Monitored"),
+                     _opt(r, "decisions", "Decisions", as_list=True)]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[r.id] = _base(r, "requirement", extra)

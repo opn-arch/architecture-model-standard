@@ -451,12 +451,13 @@ class TestDepthScoring:
                     goals=["goal1"],
                     files=["f.py"],
                     responsibilities=["resp1"],
+                    monitored=True,
                 )],
             ),
             relationships=[],
         )
         props = build_entity_properties(model)
-        # 5 of 9 fields populated = 0.56 → rich
+        # 6 of 11 fields populated = 0.55 → rich
         assert props["COMP-1"]["depth"] == "rich"
 
     def test_moderate_behavior(self):
@@ -488,3 +489,53 @@ class TestDepthScoring:
         """Generated HTML contains deepen CLI command template in JS."""
         html = generate_html_viewer(_make_model(), tmp_path / "v.html").read_text()
         assert "architecture-model deepen --entity" in html
+
+    def test_capability_with_se_fields_scores_higher(self):
+        """Capability with goals+failure_modes+monitored scores rich (not stub)."""
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.0", project="test"),
+            entities=Entities(
+                capabilities=[Capability(
+                    id="CAP-1", name="Rich Cap", status=Status.ACTIVE,
+                    description="desc",
+                    goals=["g1"],
+                    failure_modes=["fm1"],
+                    monitored=True,
+                    decisions=["d1"],
+                    moes=["m1"],
+                )],
+            ),
+            relationships=[],
+        )
+        props = build_entity_properties(model)
+        # 5 of 9 fields populated (description, moes, goals, failure_modes, monitored, decisions) = 6/9 → rich
+        assert props["CAP-1"]["depth"] == "rich"
+
+    def test_build_entity_properties_includes_se_fields(self):
+        """build_entity_properties extracts new SE fields into property cards."""
+        model = ArchitectureModel(
+            meta=ModelMeta(schema_version="2.0", project="test"),
+            entities=Entities(
+                capabilities=[Capability(
+                    id="CAP-1", name="Cap", status=Status.ACTIVE,
+                    goals=["g1"], failure_modes=["fm1"], decisions=["d1"],
+                )],
+                behaviors=[Behavior(
+                    id="BEH-1", name="Beh", status=Status.ACTIVE,
+                    goals=["g1"], failure_modes=["fm1"],
+                )],
+                components=[Component(
+                    id="COMP-1", name="Comp", status=Status.ACTIVE,
+                    monitored=True, decisions=["d1"],
+                )],
+            ),
+            relationships=[],
+        )
+        props = build_entity_properties(model)
+        assert "Goals" in props["CAP-1"]["properties"]
+        assert "Failure Modes" in props["CAP-1"]["properties"]
+        assert "Decisions" in props["CAP-1"]["properties"]
+        assert "Goals" in props["BEH-1"]["properties"]
+        assert "Failure Modes" in props["BEH-1"]["properties"]
+        assert "Monitored" in props["COMP-1"]["properties"]
+        assert "Decisions" in props["COMP-1"]["properties"]
