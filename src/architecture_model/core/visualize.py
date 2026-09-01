@@ -1411,10 +1411,10 @@ def _render_mermaid_svg(code: str) -> str:
     if not lines[0].startswith(("graph ", "flowchart ")):
         return ""
     nodes: dict[str, str] = {}
-    edges: list[tuple[str, str]] = []
-    node_pattern = r'([\w.-]+)(?:\s*(?:\["?([^\]"]+)"?\]|\("?([^\)"]+)"?\)|\{"?([^\}"]+)"?\}))?'
+    edges: list[tuple[str, str, str]] = []
+    node_pattern = r'([\w.-]+)(?:\s*(?:\[\["?(.+?)"?\]\]|\(\("?(.+?)"?\)\)|\["?(.+?)"?\]|\("?(.+?)"?\)|\{"?(.+?)"?\}))?'
     edge_pattern = re.compile(
-        rf'^\s*{node_pattern}\s*(?:-->|==>|-\.->|---)(?:\|[^|]*\|)?\s*{node_pattern}\s*$'
+        rf'^\s*{node_pattern}\s*(?:-->|==>|-\.->|---)(?:\|([^|]*)\|)?\s*{node_pattern}\s*$'
     )
     for line in lines[1:]:
         if line.startswith(("subgraph ", "end", "class ", "classDef ", "style ", "click ")):
@@ -1422,14 +1422,15 @@ def _render_mermaid_svg(code: str) -> str:
         edge = edge_pattern.match(line)
         if edge:
             source = edge.group(1)
-            source_label = next((value for value in edge.groups()[1:4] if value), source)
-            target = edge.group(5)
-            target_label = next((value for value in edge.groups()[5:8] if value), target)
+            source_label = next((value for value in edge.groups()[1:6] if value), source)
+            edge_label = edge.group(7) or ""
+            target = edge.group(8)
+            target_label = next((value for value in edge.groups()[8:13] if value), target)
             if source_label != source or source not in nodes:
                 nodes[source] = source_label
             if target_label != target or target not in nodes:
                 nodes[target] = target_label
-            edges.append((source, target))
+            edges.append((source, target, edge_label))
             continue
         node = re.match(rf'^\s*{node_pattern}\s*$', line)
         if node:
@@ -1438,7 +1439,7 @@ def _render_mermaid_svg(code: str) -> str:
         return ""
     incoming = {node_id: 0 for node_id in nodes}
     outgoing: dict[str, list[str]] = {node_id: [] for node_id in nodes}
-    for source, target in edges:
+    for source, target, _ in edges:
         incoming[target] += 1
         outgoing[source].append(target)
     levels = {node_id: 0 for node_id in nodes}
@@ -1463,10 +1464,15 @@ def _render_mermaid_svg(code: str) -> str:
     height = max(len(column) for column in columns.values()) * 100 + 30
     svg = [f'<svg class="offline-diagram flowchart-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" role="img">',
            '<defs><marker id="flow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#7ec8e3"/></marker></defs>']
-    for source, target in edges:
+    for edge_index, (source, target, edge_label) in enumerate(edges):
         x1, y1 = positions[source]
         x2, y2 = positions[target]
-        svg.append(f'<path class="diagram-edge" d="M{x1 + 90},{y1} H{x2 - 90}" fill="none" stroke="#7ec8e3" marker-end="url(#flow-arrow)"/>')
+        offset = (edge_index % 3 - 1) * 8
+        mid = (x1 + x2) / 2 + offset
+        path = f'M{x1 + 90},{y1} C{mid},{y1} {mid},{y2} {x2 - 90},{y2}'
+        svg.append(f'<path class="diagram-edge" d="{path}" fill="none" stroke="#7ec8e3" marker-end="url(#flow-arrow)"/>')
+        if edge_label:
+            svg.append(f'<text class="diagram-edge-label" x="{mid}" y="{(y1 + y2) / 2 - 6}" text-anchor="middle" fill="#a0a0c0">{escape(edge_label)}</text>')
     for node_id, label in nodes.items():
         x, y = positions[node_id]
         words, wrapped = label.split(), []
@@ -1803,6 +1809,12 @@ def _md_to_html(md_text: str) -> str:
     """
     import re as _re
 
+    def inline(text: str) -> str:
+        text = escape(text)
+        text = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+        text = _re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
+        return _re.sub(r"`(.+?)`", r"<code>\1</code>", text)
+
     lines = md_text.split("\n")
     html_parts: list[str] = []
     in_code = False
@@ -1822,7 +1834,7 @@ def _md_to_html(md_text: str) -> str:
                 in_code = True
             continue
         if in_code:
-            html_parts.append(line)
+            html_parts.append(escape(line))
             continue
 
         stripped = line.strip()
@@ -1840,7 +1852,7 @@ def _md_to_html(md_text: str) -> str:
             level = len(stripped) - len(stripped.lstrip("#"))
             level = min(level, 6)
             text = stripped[level:].strip()
-            html_parts.append(f"<h{level} class='md-h'>{text}</h{level}>")
+            html_parts.append(f"<h{level} class='md-h'>{inline(text)}</h{level}>")
             continue
 
         # List items
@@ -1849,11 +1861,7 @@ def _md_to_html(md_text: str) -> str:
                 html_parts.append("<ul class='md-list'>")
                 in_list = True
             text = _re.sub(r"^[-*+\d.]+\s*", "", stripped)
-            # Inline formatting
-            text = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-            text = _re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-            text = _re.sub(r"`(.+?)`", r"<code>\1</code>", text)
-            html_parts.append(f"<li>{text}</li>")
+            html_parts.append(f"<li>{inline(text)}</li>")
             continue
 
         if in_list:
@@ -1862,10 +1870,7 @@ def _md_to_html(md_text: str) -> str:
 
         # Paragraph with inline formatting
         text = stripped
-        text = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-        text = _re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-        text = _re.sub(r"`(.+?)`", r"<code>\1</code>", text)
-        html_parts.append(f"<p class='md-p'>{text}</p>")
+        html_parts.append(f"<p class='md-p'>{inline(text)}</p>")
 
     if in_list:
         html_parts.append("</ul>")
@@ -1993,13 +1998,13 @@ def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
             html = "<div class='ops-devlog'>"
             for e in entries:
                 html += f"<div class='devlog-entry'>"
-                html += f"<div class='devlog-title'><strong>[{e.get('log_type', '')}]</strong> {e.get('title', '')}</div>"
+                html += f"<div class='devlog-title'><strong>[{escape(str(e.get('log_type', '')))}]</strong> {escape(str(e.get('title', '')))}</div>"
                 ts = e.get("timestamp", "")
                 if ts:
-                    html += f"<div class='devlog-ts'>{ts}</div>"
+                    html += f"<div class='devlog-ts'>{escape(str(ts))}</div>"
                 content = e.get("content", "")
                 if content:
-                    html += f"<div class='devlog-content'>{content}</div>"
+                    html += f"<div class='devlog-content'>{escape(str(content))}</div>"
                 html += "</div>"
             html += "</div>"
             result["devlog"] = html
@@ -2020,16 +2025,16 @@ def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
         try:
             data = _json.loads(val_path.read_text(encoding="utf-8"))
             html = f"<div class='ops-validation'>"
-            html += f"<p><strong>Score:</strong> {data.get('score', 'N/A')}/100</p>"
-            html += f"<p><strong>Valid:</strong> {data.get('is_valid', 'N/A')}</p>"
+            html += f"<p><strong>Score:</strong> {escape(str(data.get('score', 'N/A')))}/100</p>"
+            html += f"<p><strong>Valid:</strong> {escape(str(data.get('is_valid', 'N/A')))}</p>"
             issues = data.get("issues", [])
             if issues:
                 html += f"<p><strong>Issues ({len(issues)}):</strong></p><ul>"
                 for iss in issues[:50]:
                     if isinstance(iss, dict):
-                        html += f"<li>[{iss.get('severity', '')}] {iss.get('message', str(iss))}</li>"
+                        html += f"<li>[{escape(str(iss.get('severity', '')))}] {escape(str(iss.get('message', str(iss))))}</li>"
                     else:
-                        html += f"<li>{iss}</li>"
+                        html += f"<li>{escape(str(iss))}</li>"
                 html += "</ul>"
             html += "</div>"
             result["validation"] = html
@@ -2422,7 +2427,7 @@ def generate_html_viewer(
     </div>
 
     <nav class="sidebar">
-        <h2>{title}</h2>
+        <h2>{escape(title)}</h2>
         <div class="nav-section">SE Model Views</div>
 {se_nav}
         <div class="divider"></div>
@@ -2751,7 +2756,9 @@ def generate_html_viewer(
         function importComments(input) {{
             var file = input.files[0];
             if (!file) return;
-            var reader = new FileReader();
+            var reader;
+            try {{ reader = new FileReader(); }} catch (e) {{ input.value = ''; return; }}
+            reader.onerror = function() {{ input.value = ''; }};
             reader.onload = function(e) {{
                 var text = e.target.result;
                 var proj = (D.meta && D.meta.project) || 'unknown';
@@ -2775,7 +2782,7 @@ def generate_html_viewer(
                 alert('Comments imported. Refresh to see them.');
                 input.value = '';
             }};
-            reader.readAsText(file);
+            try {{ reader.readAsText(file); }} catch (e) {{ input.value = ''; }}
         }}
         function showView(key, pushHistory) {{
             var v = D.se_views[key];

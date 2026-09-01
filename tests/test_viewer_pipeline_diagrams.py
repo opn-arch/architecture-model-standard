@@ -14,6 +14,9 @@ from architecture_model.core.visualize import (
     build_entity_properties,
     _render_mermaid_svg,
     generate_html_viewer,
+    generate_icd_diagram,
+    generate_system_decomposition_diagram,
+    generate_pipeline_flow_diagram,
 )
 
 
@@ -314,3 +317,36 @@ class TestOfflineSvgRendering:
         assert len(root.findall(".//*[@class='diagram-node']")) == 5
         assert len(root.findall(".//*[@class='diagram-edge']")) == 5
         assert root.findall(".//{http://www.w3.org/2000/svg}tspan")
+
+    def test_generated_interface_and_system_shapes_render_with_edge_labels(self):
+        component = Component(id="COMP-1", name="Gateway", status=Status.ACTIVE)
+        from architecture_model.core.types import Interface, System, RelationType
+        interface = Interface(id="IF-1", name="Public API", status=Status.ACTIVE)
+        system = System(id="SYS-1", name="Platform", status=Status.ACTIVE, component_ids=["COMP-1"])
+        model = _make_model(
+            components=[component],
+            relationships=[Relationship(type=RelationType.EXPOSES, from_id="COMP-1", to_id="IF-1")],
+        )
+        model.entities.interfaces = [interface]
+        model.entities.systems = [system]
+
+        for diagram in (generate_icd_diagram(model), generate_system_decomposition_diagram(model)):
+            root = ET.fromstring(_render_mermaid_svg(diagram))
+            assert root.findall(".//*[@class='diagram-node']")
+        pipeline = ET.fromstring(_render_mermaid_svg(generate_pipeline_flow_diagram()))
+        assert pipeline.findall(".//*[@class='diagram-edge']")
+        assert pipeline.findall(".//*[@class='diagram-edge-label']")
+
+    def test_parallel_branch_edges_have_distinct_geometry_and_labels(self):
+        svg = _render_mermaid_svg('''flowchart LR
+            A[Start] -->|left| B((Interface))
+            A -->|right| C[[System]]
+            B --> D{Done}
+            C --> D
+        ''')
+        root = ET.fromstring(svg)
+        paths = [edge.attrib["d"] for edge in root.findall(".//*[@class='diagram-edge']")]
+        labels = ["".join(label.itertext()) for label in root.findall(".//*[@class='diagram-edge-label']")]
+
+        assert len(paths) == len(set(paths)) == 4
+        assert {"left", "right"}.issubset(labels)

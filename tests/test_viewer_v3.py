@@ -26,11 +26,14 @@ class _ScriptParser(HTMLParser):
         super().__init__()
         self.scripts = []
         self.handlers = []
+        self.images = []
         self._script = None
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         self.handlers.extend(value for name, value in attrs.items() if name.startswith("on"))
+        if tag == "img":
+            self.images.append(attrs)
         if tag == "script":
             self._script = {"type": attrs.get("type"), "text": ""}
 
@@ -431,6 +434,8 @@ class TestEnrichedPropertyCards:
 
         data_script = next(script for script in parser.scripts if script["type"] == "application/json")
         assert json.loads(data_script["text"])["properties"]["COMP-1"]["name"] == hostile
+        assert len(parser.scripts) == 2
+        assert not parser.images
         assert not parser.handlers
         for index, script in enumerate(parser.scripts):
             if script["type"] == "application/json":
@@ -573,6 +578,59 @@ class TestDocEmbedding:
         result = _md_to_html("```python\nprint('hello')\n```")
         assert "<pre" in result
         assert "print" in result
+
+    def test_markdown_escapes_raw_html_before_formatting(self):
+        from architecture_model.core.visualize import _md_to_html
+
+        result = _md_to_html("# Safe\n\n<img src=x onerror=globalThis.pwned=1> **bold**\n\n```\n<script>alert(1)</script>\n```")
+
+        parser = _ScriptParser()
+        parser.feed(result)
+        assert not parser.images
+        assert not parser.scripts
+        assert "&lt;img src=x onerror=globalThis.pwned=1&gt;" in result
+        assert "<strong>bold</strong>" in result
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in result
+
+    def test_ops_json_values_are_html_escaped(self, tmp_path):
+        from architecture_model.core.visualize import _load_ops_data
+
+        arch_dir = tmp_path / ".architecture"
+        arch_dir.mkdir()
+        payload = "<img src=x onerror=globalThis.pwned=1>"
+        (arch_dir / "devlog.jsonl").write_text(json.dumps({
+            "log_type": payload, "title": payload, "timestamp": payload, "content": payload,
+        }) + "\n")
+
+        result = _load_ops_data(tmp_path)["devlog"]
+        parser = _ScriptParser()
+        parser.feed(result)
+
+        assert not parser.images
+        assert not parser.handlers
+        assert result.count("&lt;img") == 4
+
+    @pytest.mark.parametrize("reader_body", [
+        "throw new Error('read denied')",
+        "this.onerror(new Error('malformed'))",
+    ])
+    def test_comment_import_contains_filereader_failures(self, tmp_path, reader_body):
+        html = generate_html_viewer(_make_model(), tmp_path / "viewer.html").read_text()
+        parser = _ScriptParser()
+        parser.feed(html)
+        data = json.loads(next(s["text"] for s in parser.scripts if s["type"] == "application/json"))
+        script = next(s["text"] for s in parser.scripts if s["type"] != "application/json")
+        harness = f"""
+const vm=require('vm'); const element={{addEventListener:()=>{{}},click:()=>{{}},value:'',files:[{{}}]}};
+const content={{...element,dataset:{{}},querySelectorAll:()=>[],querySelector:()=>null}};
+const context={{console,Blob,URL,alert:()=>{{}},MutationObserver:function(){{this.observe=()=>{{}}}},
+ FileReader:function(){{this.readAsText=()=>{{{reader_body}}}}},
+ document:{{getElementById:id=>id==='viewer-data'?{{...element,textContent:{json.dumps(json.dumps(data))}}}:id==='content'?content:element,querySelectorAll:()=>[],querySelector:()=>({{...element,classList:{{remove:()=>{{}},toggle:()=>{{}}}}}}),createElement:()=>element}},
+ localStorage:{{length:0,setItem:()=>{{}},getItem:()=>null,key:()=>null}},innerWidth:1200,atob,btoa,escape,unescape,encodeURIComponent,decodeURIComponent}};
+context.window=context;vm.createContext(context);vm.runInContext({json.dumps(script)},context);context.importComments(element);
+"""
+        result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
 
 
 class TestDepthScoring:
