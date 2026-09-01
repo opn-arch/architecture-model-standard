@@ -286,6 +286,17 @@ class LifecyclePhase(str, Enum):
 
 
 @dataclass
+class DecisionEntry:
+    """A lightweight decision record embedded in any entity."""
+
+    date: str = ""
+    choice: str = ""
+    rationale: str = ""
+    alternatives: list[str] = field(default_factory=list)
+    context: str = ""
+
+
+@dataclass
 class BaseEntity:
     id: str
     name: str
@@ -297,6 +308,7 @@ class BaseEntity:
     extensions: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.0
     intent: str = ""
+    decisions: list[DecisionEntry] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -316,6 +328,10 @@ class Capability(BaseEntity):
     priority: Priority = Priority.MEDIUM
     requirements: list[str] = field(default_factory=list)
     moes: list[str] = field(default_factory=list)
+    goals: list[str] = field(default_factory=list)
+    trade_offs: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
+    monitored: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -360,6 +376,9 @@ class Behavior(BaseEntity):
     states: list[StateTransition] = field(default_factory=list)
     compensations: list[Compensation] = field(default_factory=list)
     structured_steps: list[Step] = field(default_factory=list)
+    goals: list[str] = field(default_factory=list)
+    moes: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -504,6 +523,7 @@ class Component(BaseEntity):
     moes: list[str] = field(default_factory=list)
     trade_offs: list[str] = field(default_factory=list)
     failure_modes: list[str] = field(default_factory=list)
+    monitored: list[str] = field(default_factory=list)
     parent_id: Optional[str] = None
     children: list[str] = field(default_factory=list)
 
@@ -528,6 +548,10 @@ class System(BaseEntity):
     complexity_score: float = 0.0
     sub_model_ref: str = ""
     component_ids: list[str] = field(default_factory=list)
+    goals: list[str] = field(default_factory=list)
+    trade_offs: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
+    monitored: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -620,6 +644,10 @@ class Requirement(BaseEntity):
     rationale: str = ""
     priority: str = ""
     moe: str = ""
+    value_function: str = ""
+    moes: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
+    monitored: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
