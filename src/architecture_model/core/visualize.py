@@ -1785,6 +1785,69 @@ def _load_docs(repo_path: Path | None = None) -> dict[str, dict[str, str]]:
     return result
 
 
+def _load_pipeline_history(repo_path: Path | None = None) -> dict:
+    """Parse .architecture-models/pipeline-report.md and extract execution history.
+
+    Returns dict with timestamp, duration, stages, stats — or empty dict if unavailable.
+    """
+    import re
+
+    if repo_path is None:
+        return {}
+
+    report_path = Path(repo_path) / ".architecture-models" / "pipeline-report.md"
+    if not report_path.is_file():
+        return {}
+
+    try:
+        text = report_path.read_text(encoding="utf-8")
+    except Exception:
+        return {}
+
+    result: dict = {}
+
+    # Timestamp
+    m = re.search(r"\*\*Generated:\*\*\s*(.+)", text)
+    if m:
+        result["timestamp"] = m.group(1).strip()
+
+    # Duration
+    m = re.search(r"\*\*Total Duration:\*\*\s*(.+)", text)
+    if m:
+        result["duration"] = m.group(1).strip()
+
+    # Stage scores table: | name | score | duration | ... |
+    stages = []
+    for m in re.finditer(
+        r"^\|\s*(\w+)\s*\|\s*([\d.]+)\s*\|\s*(\d+\w*)\s*\|",
+        text,
+        re.MULTILINE,
+    ):
+        name = m.group(1)
+        if name.lower() in ("stage", "---"):
+            continue
+        stages.append({"name": name, "score": m.group(2), "duration": m.group(3)})
+    if stages:
+        result["stages"] = stages
+
+    # Stats from observe section
+    stats: dict[str, str] = {}
+    m = re.search(r"Discovered\s+(\d+)\s+modules", text)
+    if m:
+        stats["modules"] = m.group(1)
+    m = re.search(r"(\d+)\s+functions,\s+(\d+)\s+classes", text)
+    if m:
+        stats["functions"] = m.group(1)
+        stats["classes"] = m.group(2)
+    m = re.search(r"(\d+)\s+import edges", text)
+    if m:
+        stats["import_edges"] = m.group(1)
+    if stats:
+        result["stats"] = stats
+
+    return result
+
+
 def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
     """Load operational artifacts for embedding.
 
@@ -1967,6 +2030,9 @@ def generate_html_viewer(
     # ── 5e. Operational artifacts ─────────────────────────────────
     ops_data = _load_ops_data(repo_path)
 
+    # ── 5f. Pipeline history ──────────────────────────────────────
+    pipeline_history = _load_pipeline_history(repo_path)
+
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"]}
@@ -1978,6 +2044,7 @@ def generate_html_viewer(
         "comp_files": comp_files,
         "docs": docs_data,
         "ops": ops_data,
+        "pipeline_history": pipeline_history,
     }
     data_json = _json.dumps(diagram_data, ensure_ascii=False)
 
@@ -2207,6 +2274,9 @@ def generate_html_viewer(
         .toolbar-btn {{ background: #1a1a2e; color: #a0a0c0; border: 1px solid #0f3460; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 6px; }}
         .toolbar-btn:hover {{ background: #0f3460; color: #fff; }}
     </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
     <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
@@ -2229,6 +2299,7 @@ def generate_html_viewer(
 {docs_nav}
         <div class="divider"></div>
         <div class="nav-section">Intelligence</div>
+            <a href="#" onclick="showPipelineHistory();return false;" class="nav-link ops-link">Pipeline History</a>
 {ops_nav}
     </nav>
 
@@ -2326,6 +2397,47 @@ def generate_html_viewer(
         }}
         window.showOps = showOps;
 
+        /* ── Show Pipeline History ────────────────────────────── */
+        function showPipelineHistory() {{
+            var ph = D.pipeline_history;
+            if (!ph || !ph.timestamp) {{ content.innerHTML = '<p>No pipeline history available.</p>'; return; }}
+            var cur = content.dataset.currentType;
+            var curId = content.dataset.currentId;
+            var curLabel = content.dataset.currentLabel;
+            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            content.dataset.currentType = 'pipeline-history';
+            content.dataset.currentId = 'pipeline-history';
+            content.dataset.currentLabel = 'Pipeline History';
+            var html = renderBreadcrumbs('Pipeline History');
+            html += '<h2 class="content-header">Pipeline History</h2>';
+            html += '<div class="prop-card">';
+            html += '<div class="prop-item"><div class="prop-label">Last Run</div><div class="prop-value">' + ph.timestamp + '</div></div>';
+            html += '<div class="prop-item"><div class="prop-label">Duration</div><div class="prop-value">' + (ph.duration || 'N/A') + '</div></div>';
+            if (ph.stats) {{
+                html += '<div class="prop-item"><div class="prop-label">Modules</div><div class="prop-value">' + (ph.stats.modules || '-') + '</div></div>';
+                html += '<div class="prop-item"><div class="prop-label">Functions</div><div class="prop-value">' + (ph.stats.functions || '-') + '</div></div>';
+                html += '<div class="prop-item"><div class="prop-label">Classes</div><div class="prop-value">' + (ph.stats.classes || '-') + '</div></div>';
+            }}
+            html += '</div>';
+            if (ph.stages && ph.stages.length) {{
+                html += '<div class="doc-content"><table style="width:100%;border-collapse:collapse">';
+                html += '<tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Stage</th>';
+                html += '<th style="text-align:right;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Score</th>';
+                html += '<th style="text-align:right;padding:4px 8px;border-bottom:1px solid #0f3460;color:#7ec8e3">Duration</th></tr>';
+                ph.stages.forEach(function(s) {{
+                    var sc = parseFloat(s.score);
+                    var color = sc >= 90 ? '#27AE60' : sc >= 70 ? '#F39C12' : '#E74C3C';
+                    html += '<tr><td style="padding:4px 8px;color:#e0e0e0">' + s.name + '</td>';
+                    html += '<td style="padding:4px 8px;text-align:right;color:' + color + '">' + s.score + '</td>';
+                    html += '<td style="padding:4px 8px;text-align:right;color:#a0a0c0">' + s.duration + '</td></tr>';
+                }});
+                html += '</table></div>';
+            }}
+            content.innerHTML = html;
+            closeMobileNav();
+        }}
+        window.showPipelineHistory = showPipelineHistory;
+
         function closeMobileNav() {{
             if (window.innerWidth <= 768)
                 document.querySelector('.sidebar').classList.remove('open');
@@ -2390,6 +2502,10 @@ def generate_html_viewer(
                         html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value">' + v + '</div></div>';
                     }}
                 }}
+            }}
+            if (p.properties && p.properties.value_function) {{
+                var vf = p.properties.value_function;
+                html += '<div class="prop-item"><div class="prop-label">Value Function</div><div class="prop-value"><span class="katex-render" data-latex="' + vf.replace(/"/g, '&quot;') + '">' + vf + '</span></div></div>';
             }}
             if (p.description) {{
                 html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + p.description + '</div></div>';
