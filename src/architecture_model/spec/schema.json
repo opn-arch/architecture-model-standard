@@ -730,6 +730,9 @@
         "region": {
           "type": "string"
         },
+        "contract": {
+          "type": "string"
+        },
         "replicas": {
           "type": "integer",
           "minimum": 0

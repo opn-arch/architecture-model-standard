@@ -462,3 +462,17 @@ class TestPublicSerializerEquivalence:
         assert loaded.entities.components[0].signatures[0].complexity == "COMPLEX"
         assert loaded.entities.components[0].test_contracts[0].required_imports == ["pytest", "package.run"]
         assert loaded.entities.interfaces[0].contract == "GET /run -> 200"
+
+    def test_component_contract_roundtrip_validates_against_schema(self):
+        raw = _make_raw(contract="Provides parse(source: str) -> Model")
+        raw["meta"] = {"project": "test-project", "schema_version": "2.1.0"}
+        raw["entities"]["components"][0]["id"] = "COMP-1"
+        model = _parse_raw(raw)
+
+        dumped = model.to_dict()
+        yaml_dumped = yaml.safe_load(model.to_yaml())
+
+        assert dumped == dump_model(model) == yaml_dumped
+        assert dumped["entities"]["components"][0]["contract"] == "Provides parse(source: str) -> Model"
+        assert validate_model_data(dumped) == []
+        assert _parse_raw(yaml_dumped).entities.components[0].contract == "Provides parse(source: str) -> Model"
