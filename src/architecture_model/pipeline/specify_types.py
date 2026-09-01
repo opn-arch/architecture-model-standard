@@ -16,6 +16,19 @@ class InterfaceSpec:
 
 
 @dataclass
+class DerivedRequirement:
+    """A requirement derived from source code patterns."""
+    id: str
+    name: str
+    text: str
+    rationale: str
+    moe: str  # Measure of Effectiveness
+    source_file: str
+    source_type: str  # "constant" | "test" | "docstring"
+
+
+@dataclass
 class SpecifyResult:
     """Interface specifications for the system."""
     interfaces: list[InterfaceSpec] = field(default_factory=list)
+    requirements: list[DerivedRequirement] = field(default_factory=list)
