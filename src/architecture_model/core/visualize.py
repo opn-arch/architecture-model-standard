@@ -2085,10 +2085,21 @@ def generate_html_viewer(
         .mod-class-name {{ color: #F39C12; font-family: monospace; font-size: 13px; font-weight: bold; }}
         .mod-class-methods {{ color: #a0a0c0; font-size: 11px; margin-top: 2px; }}
         .mod-consts {{ color: #1ABC9C; font-family: monospace; font-size: 12px; }}
+        .comment-section {{ margin-top: 12px; }}
+        .comment-label {{ color: #a0a0c0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }}
+        .comment-textarea {{ width: 100%; min-height: 60px; background: #0d1117; color: #e0e0e0; border: 1px solid #0f3460; border-radius: 4px; padding: 8px; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box; }}
+        .toolbar-btn {{ background: #1a1a2e; color: #a0a0c0; border: 1px solid #0f3460; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 6px; }}
+        .toolbar-btn:hover {{ background: #0f3460; color: #fff; }}
     </style>
 </head>
 <body>
     <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+
+    <div style="position:fixed;top:10px;right:10px;z-index:1001;">
+        <button class="toolbar-btn" onclick="exportComments()">Export Comments</button>
+        <button class="toolbar-btn" onclick="document.getElementById('import-comments-input').click()">Import Comments</button>
+        <input type="file" id="import-comments-input" accept=".yaml,.yml" style="display:none;" onchange="importComments(this)">
+    </div>
 
     <nav class="sidebar">
         <h2>{title}</h2>
@@ -2294,11 +2305,71 @@ def generate_html_viewer(
                 html += '<div class="deepen-hint">Then regenerate the viewer with: architecture-model viewer .</div>';
                 html += '</div>';
             }}
+            var proj = (D.meta && D.meta.project) || 'unknown';
+            var cKey = proj + ':comment:' + eid;
+            var saved = localStorage.getItem(cKey) || '';
+            html += '<div class="comment-section"><div class="comment-label">Notes</div>';
+            html += '<textarea class="comment-textarea" placeholder="Add notes about this entity..." oninput="saveComment(\\x27' + eid + '\\x27, this.value)">' + saved.replace(/</g, '&lt;') + '</textarea></div>';
             html += '</div>';
             return html;
         }}
 
         /* ── Show SE view ─────────────────────────────────────── */
+        function saveComment(eid, val) {{
+            var proj = (D.meta && D.meta.project) || 'unknown';
+            localStorage.setItem(proj + ':comment:' + eid, val);
+        }}
+        function exportComments() {{
+            var proj = (D.meta && D.meta.project) || 'unknown';
+            var lines = ['# Comments for ' + proj];
+            for (var i = 0; i < localStorage.length; i++) {{
+                var k = localStorage.key(i);
+                var pfx = proj + ':comment:';
+                if (k.indexOf(pfx) === 0) {{
+                    var eid = k.substring(pfx.length);
+                    var val = localStorage.getItem(k);
+                    if (val) {{
+                        lines.push(eid + ':');
+                        lines.push('  comment: |');
+                        var vlines = val.split('\\n');
+                        for (var j = 0; j < vlines.length; j++) lines.push('    ' + vlines[j]);
+                    }}
+                }}
+            }}
+            var blob = new Blob([lines.join('\\n')], {{type: 'text/yaml'}});
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = proj + '-comments.yaml';
+            a.click();
+        }}
+        function importComments(input) {{
+            var file = input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {{
+                var text = e.target.result;
+                var proj = (D.meta && D.meta.project) || 'unknown';
+                var lines = text.split('\\n');
+                var curId = null;
+                var curLines = [];
+                for (var i = 0; i < lines.length; i++) {{
+                    var line = lines[i];
+                    if (line.match(/^[A-Z][A-Z0-9_-]+.*:$/)) {{
+                        if (curId && curLines.length) localStorage.setItem(proj + ':comment:' + curId, curLines.join('\\n'));
+                        curId = line.replace(/:$/, '').trim();
+                        curLines = [];
+                    }} else if (line.indexOf('  comment: |') === 0) {{
+                        // skip marker
+                    }} else if (curId && line.match(/^    /)) {{
+                        curLines.push(line.substring(4));
+                    }}
+                }}
+                if (curId && curLines.length) localStorage.setItem(proj + ':comment:' + curId, curLines.join('\\n'));
+                alert('Comments imported. Refresh to see them.');
+                input.value = '';
+            }};
+            reader.readAsText(file);
+        }}
         function showView(key, pushHistory) {{
             var v = D.se_views[key];
             if (!v) return;
