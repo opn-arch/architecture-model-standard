@@ -1584,6 +1584,12 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             return value.value
         return value
 
+    universal_fields = [
+        "description", "intent", "goals", "requirements", "rationale", "moes",
+        "value_function", "failure_modes", "trade_offs", "interface_refs",
+        "decisions", "monitored",
+    ]
+
     # Fields that count toward depth scoring per entity type
     _depth_fields: dict[str, list[str]] = {
         "actor": ["description", "intent", "goals", "decisions"],
@@ -1603,7 +1609,7 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     }
 
     def _score_depth(entity, etype: str) -> str:
-        fields = _depth_fields.get(etype, ["description"])
+        fields = _depth_fields.get(etype, universal_fields)
         populated = 0
         for f in fields:
             val = getattr(entity, f, None)
@@ -1617,16 +1623,33 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         return "stub"
 
     def _base(entity, etype: str, extra: dict | None = None) -> dict:
+        universal = {}
+        for field_name, label in (
+            ("intent", "Intent"),
+            ("goals", "Goals"),
+            ("requirements", "Requirements"),
+            ("rationale", "Rationale"),
+            ("moes", "Measures of Effectiveness"),
+            ("value_function", "value_function"),
+            ("failure_modes", "Failure Modes"),
+            ("trade_offs", "Trade-offs"),
+            ("interface_refs", "Interfaces"),
+            ("decisions", "Decisions"),
+            ("monitored", "Monitored"),
+        ):
+            value = getattr(entity, field_name, None)
+            if value not in (None, "", []):
+                universal[label] = _json_safe(value)
         d: dict = {
             "type": etype,
             "name": entity.name,
             "description": getattr(entity, "description", ""),
             "status": getattr(entity.status, "value", str(entity.status)) if hasattr(entity, "status") else "",
-            "properties": {},
+            "properties": universal,
             "depth": _score_depth(entity, etype),
         }
         if extra:
-            d["properties"] = extra
+            d["properties"].update(extra)
         return d
 
     def _opt(entity, field: str, label: str = "", as_list: bool = False) -> tuple[str, str | list] | None:
@@ -1732,6 +1755,8 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         files = getattr(c, "files", []) or []
         if files:
             extra["Files"] = str(len(files))
+        if c.interfaces:
+            extra["Component Interfaces"] = _json_safe(c.interfaces)
         props[c.id] = _base(c, "component", extra)
 
     for s in model.entities.systems:
@@ -1761,6 +1786,25 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             if pair:
                 extra[pair[0]] = pair[1]
         props[r.id] = _base(r, "requirement", extra)
+
+    remaining_entity_types = (
+        ("data", model.entities.data, ("schema_def", "format", "fields", "owner", "sensitivity")),
+        ("event", model.entities.events, ("kind", "source", "target", "payload", "frequency", "reliability")),
+        ("resource", model.entities.resources, ("kind", "provider", "location", "sla")),
+        ("environment", model.entities.environments, ("kind", "infrastructure", "constraints", "region")),
+        ("quality attribute", model.entities.quality_attributes, ("metric", "target", "current", "measurement_method", "applies_to")),
+        ("decision", model.entities.decisions, ("decision_status", "context", "options", "consequences", "supersedes")),
+        ("lifecycle", model.entities.lifecycles, ("phase", "version", "start_date", "end_date", "migration_from", "migration_to", "milestones")),
+        ("external system", model.entities.external_systems, ("url", "auth_method", "api_type", "provider", "sla")),
+    )
+    for entity_type, entities, fields in remaining_entity_types:
+        for entity in entities:
+            extra = {}
+            for field_name in fields:
+                pair = _opt(entity, field_name)
+                if pair:
+                    extra[pair[0]] = pair[1]
+            props[entity.id] = _base(entity, entity_type, extra)
 
     # ── Relationship descriptions per entity ─────────────────────
     for eid in props:
@@ -2082,12 +2126,24 @@ def generate_html_viewer(
         ("actors", "Actors", list(model.entities.actors)),
         ("requirements", "Requirements", list(model.entities.requirements)),
         ("constraints", "Constraints", list(model.entities.constraints)),
+        ("data", "Data", list(model.entities.data)),
+        ("events", "Events", list(model.entities.events)),
+        ("resources", "Resources", list(model.entities.resources)),
+        ("environments", "Environments", list(model.entities.environments)),
+        ("quality_attributes", "Quality Attributes", list(model.entities.quality_attributes)),
+        ("decisions", "Decisions", list(model.entities.decisions)),
+        ("lifecycles", "Lifecycles", list(model.entities.lifecycles)),
+        ("external_systems", "External Systems", list(model.entities.external_systems)),
     ]
 
     _plural_to_singular = {
         "layers": "layer", "components": "component", "capabilities": "capability",
         "behaviors": "behavior", "interfaces": "interface", "actors": "actor",
         "systems": "system", "requirements": "requirement", "constraints": "constraint",
+        "data": "data", "events": "event", "resources": "resource",
+        "environments": "environment", "quality_attributes": "quality attribute",
+        "decisions": "decision", "lifecycles": "lifecycle",
+        "external_systems": "external system",
     }
 
     # ── 3. Explorer facets (with click injection) ─────────────────

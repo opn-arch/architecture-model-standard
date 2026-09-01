@@ -158,7 +158,7 @@
           }
         }
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "relationships": {
       "type": "array",
@@ -182,7 +182,7 @@
       "patternProperties": {
         "^x-": {}
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "decision_entry": {
       "type": "object",
@@ -209,7 +209,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "base_entity": {
       "type": "object",
@@ -249,12 +249,47 @@
         "intent": {
           "type": "string"
         },
+        "goals": {
+          "$ref": "#/$defs/semantic_string_list"
+        },
+        "requirements": {
+          "$ref": "#/$defs/semantic_string_list",
+          "description": "Requirement entity IDs or inline requirement statements"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "moes": {
+          "$ref": "#/$defs/semantic_string_list"
+        },
+        "value_function": {
+          "type": "string"
+        },
+        "failure_modes": {
+          "$ref": "#/$defs/semantic_string_list"
+        },
+        "trade_offs": {
+          "$ref": "#/$defs/semantic_string_list"
+        },
+        "interface_refs": {
+          "$ref": "#/$defs/semantic_string_list",
+          "description": "Interface entity IDs or contract names"
+        },
         "decisions": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/decision_entry"
           }
+        },
+        "monitored": {
+          "$ref": "#/$defs/semantic_string_list"
         }
+      }
+    },
+    "semantic_string_list": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     },
     "actor": {
@@ -291,7 +326,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "capability": {
       "allOf": [
@@ -361,7 +396,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "behavior": {
       "allOf": [
@@ -494,7 +529,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "interface": {
       "allOf": [
@@ -569,7 +604,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "constraint": {
       "allOf": [
@@ -613,7 +648,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "layer": {
       "allOf": [
@@ -651,7 +686,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "component": {
       "allOf": [
@@ -987,7 +1022,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "system": {
       "allOf": [
@@ -1052,7 +1087,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "data": {
       "allOf": [
@@ -1109,7 +1144,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "event": {
       "allOf": [
@@ -1156,7 +1191,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "resource": {
       "allOf": [
@@ -1199,7 +1234,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "environment": {
       "allOf": [
@@ -1247,7 +1282,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "quality_attribute": {
       "allOf": [
@@ -1287,7 +1322,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "decision": {
       "allOf": [
@@ -1339,7 +1374,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "lifecycle": {
       "allOf": [
@@ -1395,7 +1430,7 @@
         "intent": true,
         "decisions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "relationship": {
       "type": "object",
@@ -1468,7 +1503,7 @@
           "$ref": "#/$defs/extensions"
         }
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "external_system": {
       "type": "object",
@@ -1494,7 +1529,7 @@
         "sla": {"type": "string"},
         "extensions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     },
     "requirement": {
       "type": "object",
@@ -1557,7 +1592,7 @@
         "decisions": true,
         "extensions": true
       },
-      "additionalProperties": false
+      "unevaluatedProperties": false
     }
   }
 }

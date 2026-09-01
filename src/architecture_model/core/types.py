@@ -308,7 +308,18 @@ class BaseEntity:
     extensions: dict[str, Any] = field(default_factory=dict)
     confidence: float = 0.0
     intent: str = ""
+    goals: list[str] = field(default_factory=list)
+    # Values may be requirement entity IDs or inline requirement statements.
+    requirements: list[str] = field(default_factory=list)
+    rationale: str = ""
+    moes: list[str] = field(default_factory=list)
+    value_function: str = ""
+    failure_modes: list[str] = field(default_factory=list)
+    trade_offs: list[str] = field(default_factory=list)
+    # Interface IDs or contract names; Component.interfaces remains strongly typed.
+    interface_refs: list[str] = field(default_factory=list)
     decisions: list[DecisionEntry] = field(default_factory=list)
+    monitored: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -319,19 +330,12 @@ class BaseEntity:
 @dataclass
 class Actor(BaseEntity):
     type: ActorType = ActorType.HUMAN
-    goals: list[str] = field(default_factory=list)
 
 
 @dataclass
 class Capability(BaseEntity):
     source_block: str = ""
     priority: Priority = Priority.MEDIUM
-    requirements: list[str] = field(default_factory=list)
-    moes: list[str] = field(default_factory=list)
-    goals: list[str] = field(default_factory=list)
-    trade_offs: list[str] = field(default_factory=list)
-    failure_modes: list[str] = field(default_factory=list)
-    monitored: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -376,9 +380,6 @@ class Behavior(BaseEntity):
     states: list[StateTransition] = field(default_factory=list)
     compensations: list[Compensation] = field(default_factory=list)
     structured_steps: list[Step] = field(default_factory=list)
-    goals: list[str] = field(default_factory=list)
-    moes: list[str] = field(default_factory=list)
-    failure_modes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -406,7 +407,6 @@ class Constraint(BaseEntity):
     type: ConstraintType = ConstraintType.TECHNOLOGY
     metric: str = ""
     threshold: str = ""
-    rationale: str = ""
 
 
 @dataclass
@@ -519,11 +519,6 @@ class Component(BaseEntity):
     technology_stack: list[str] = field(default_factory=list)
     operations: dict[str, Any] = field(default_factory=dict)
     external_dependencies: list[dict[str, Any]] = field(default_factory=list)
-    goals: list[str] = field(default_factory=list)
-    moes: list[str] = field(default_factory=list)
-    trade_offs: list[str] = field(default_factory=list)
-    failure_modes: list[str] = field(default_factory=list)
-    monitored: list[str] = field(default_factory=list)
     parent_id: Optional[str] = None
     children: list[str] = field(default_factory=list)
 
@@ -548,10 +543,6 @@ class System(BaseEntity):
     complexity_score: float = 0.0
     sub_model_ref: str = ""
     component_ids: list[str] = field(default_factory=list)
-    goals: list[str] = field(default_factory=list)
-    trade_offs: list[str] = field(default_factory=list)
-    failure_modes: list[str] = field(default_factory=list)
-    monitored: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -615,7 +606,6 @@ class Decision(BaseEntity):
     decision_status: DecisionStatus = DecisionStatus.ACCEPTED
     context: str = ""
     options: list[str] = field(default_factory=list)
-    rationale: str = ""
     consequences: list[str] = field(default_factory=list)
     supersedes: str = ""
 
@@ -641,13 +631,8 @@ class Requirement(BaseEntity):
     source_doc: str = ""
     source_anchor: str = ""
     content_hash: str = ""
-    rationale: str = ""
     priority: str = ""
     moe: str = ""
-    value_function: str = ""
-    moes: list[str] = field(default_factory=list)
-    failure_modes: list[str] = field(default_factory=list)
-    monitored: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -870,6 +855,13 @@ class ArchitectureModel:
             d["extensions"] = entity.extensions
         if entity.intent:
             d["intent"] = entity.intent
+        for field_name in (
+            "goals", "requirements", "rationale", "moes", "value_function",
+            "failure_modes", "trade_offs", "interface_refs", "monitored",
+        ):
+            value = getattr(entity, field_name)
+            if value:
+                d[field_name] = value
         if entity.decisions:
             d["decisions"] = [
                 {
