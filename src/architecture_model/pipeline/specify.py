@@ -66,6 +66,12 @@ def _constant_value_function(name: str, value: str) -> tuple[str, str]:
     except (TypeError, ValueError):
         return "", ""
     target_text = str(int(target)) if target.is_integer() else str(target)
+    lower_bound = re.search(r"(?:^|_)MIN(?:_|$)", name, re.IGNORECASE)
+    if lower_bound:
+        return (
+            f"V(actual) = min(1, actual / {target_text})",
+            "Value convention: actual is the observed value; values at or above the lower bound score 1.",
+        )
     upper_bound = re.search(
         r"(?:^|_)(?:MAX|TIMEOUT|LIMIT|TTL)(?:_|$)", name, re.IGNORECASE
     )

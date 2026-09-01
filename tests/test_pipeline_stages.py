@@ -91,7 +91,9 @@ class TestSpecifyStage:
         _setup_project(tmp_path)
         ctx = _run_full_pipeline(tmp_path)
         specify_result = ctx.get("specify")
-        rest = [i for i in specify_result.output.interfaces if i.interface_type == "rest"]
+        rest = [
+            i for i in specify_result.output.interfaces if i.interface_type == "rest"
+        ]
         assert len(rest) >= 1
 
     def test_specify_name_and_requires(self):
@@ -124,9 +126,15 @@ class TestSpecifyStage:
                 ModuleRecord(
                     path=auth_path,
                     functions=[
-                        FunctionRecord(name="authenticate", signature="(token)", body_hint=""),
-                        FunctionRecord(name="get_current_user", signature="(token)", body_hint=""),
-                        FunctionRecord(name="hash_password", signature="(pwd)", body_hint=""),
+                        FunctionRecord(
+                            name="authenticate", signature="(token)", body_hint=""
+                        ),
+                        FunctionRecord(
+                            name="get_current_user", signature="(token)", body_hint=""
+                        ),
+                        FunctionRecord(
+                            name="hash_password", signature="(pwd)", body_hint=""
+                        ),
                     ],
                     imports=[],
                 ),
@@ -195,9 +203,15 @@ class TestSpecifyStage:
                 ModuleRecord(
                     path=auth_path,
                     functions=[
-                        FunctionRecord(name="authenticate", signature="(token)", body_hint=""),
-                        FunctionRecord(name="get_current_user", signature="(token)", body_hint=""),
-                        FunctionRecord(name="hash_password", signature="(pwd)", body_hint=""),
+                        FunctionRecord(
+                            name="authenticate", signature="(token)", body_hint=""
+                        ),
+                        FunctionRecord(
+                            name="get_current_user", signature="(token)", body_hint=""
+                        ),
+                        FunctionRecord(
+                            name="hash_password", signature="(pwd)", body_hint=""
+                        ),
                     ],
                     imports=[],
                 ),
@@ -410,7 +424,10 @@ def test_infer_groups_by_package_for_large_repos(tmp_path):
 
 def test_allocate_splits_by_package_not_leaf_dir():
     """When splitting oversized components, group by sub-package, not leaf dir."""
-    from architecture_model.pipeline.allocate import _split_oversized, _group_by_package_level
+    from architecture_model.pipeline.allocate import (
+        _split_oversized,
+        _group_by_package_level,
+    )
     from architecture_model.pipeline.allocate_types import ComponentAllocation
 
     # 18 files across 3 sub-packages (models, backends, sql), each with 2 sub-dirs (a, b), 3 files each
@@ -498,7 +515,11 @@ def test_infer_cli_use_cases(tmp_path):
         ModuleRecord,
         FunctionRecord,
     )
-    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+    from architecture_model.pipeline.protocol import (
+        PipelineContext,
+        StageResult,
+        QualityMetrics,
+    )
 
     mod = ModuleRecord(
         path=Path("manage.py"),
@@ -522,7 +543,9 @@ def test_infer_cli_use_cases(tmp_path):
         modules=[mod], edges=[], routes=[], constraints=[], test_files=[], docs=[]
     )
 
-    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture-models")
+    ctx = PipelineContext(
+        repo_path=tmp_path, output_dir=tmp_path / ".architecture-models"
+    )
     ctx.cache["observe"] = StageResult(
         output=inventory,
         quality=QualityMetrics(score=100),
@@ -548,7 +571,11 @@ def test_infer_middleware_workflow(tmp_path):
         ModuleRecord,
         ClassRecord,
     )
-    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+    from architecture_model.pipeline.protocol import (
+        PipelineContext,
+        StageResult,
+        QualityMetrics,
+    )
 
     mod = ModuleRecord(
         path=Path("django/middleware/csrf.py"),
@@ -573,7 +600,9 @@ def test_infer_middleware_workflow(tmp_path):
         modules=[mod], edges=[], routes=[], constraints=[], test_files=[], docs=[]
     )
 
-    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture-models")
+    ctx = PipelineContext(
+        repo_path=tmp_path, output_dir=tmp_path / ".architecture-models"
+    )
     ctx.cache["observe"] = StageResult(
         output=inventory,
         quality=QualityMetrics(score=100),
@@ -605,8 +634,14 @@ def test_synthesize_propagates_all_entities():
         InferredActor,
         InferredBehavior,
     )
-    from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
-    from architecture_model.pipeline.relate_types import RelateResult, DerivedRelationship
+    from architecture_model.pipeline.allocate_types import (
+        AllocationResult,
+        ComponentAllocation,
+    )
+    from architecture_model.pipeline.relate_types import (
+        RelateResult,
+        DerivedRelationship,
+    )
     from architecture_model.pipeline.specify_types import SpecifyResult, InterfaceSpec
     from architecture_model.pipeline.decompose_types import SystemBoundary
 
@@ -656,7 +691,10 @@ def test_synthesize_propagates_all_entities():
                 ],
                 actors=[
                     InferredActor(
-                        id="ACT-1", name="Developer", actor_type="human", evidence_source="cli"
+                        id="ACT-1",
+                        name="Developer",
+                        actor_type="human",
+                        evidence_source="cli",
                     ),
                 ],
                 behaviors=[
@@ -674,7 +712,10 @@ def test_synthesize_propagates_all_entities():
                         behavior_type="workflow",
                     ),
                     InferredBehavior(
-                        id="BEH-3", name="Global", capability_id="", behavior_type="use_case"
+                        id="BEH-3",
+                        name="Global",
+                        capability_id="",
+                        behavior_type="use_case",
                     ),
                 ],
             )
@@ -700,7 +741,9 @@ def test_synthesize_propagates_all_entities():
         "relate": _sr(
             RelateResult(
                 relationships=[
-                    DerivedRelationship(from_id="COMP-1", to_id="CAP-1", rel_type="realizes"),
+                    DerivedRelationship(
+                        from_id="COMP-1", to_id="CAP-1", rel_type="realizes"
+                    ),
                 ]
             )
         ),
@@ -716,7 +759,10 @@ def test_synthesize_propagates_all_entities():
                         description="Parser interface",
                     ),
                     InterfaceSpec(
-                        id="IF-2", name="OtherAPI", component_id="COMP-OTHER", interface_type="rest"
+                        id="IF-2",
+                        name="OtherAPI",
+                        component_id="COMP-OTHER",
+                        interface_type="rest",
                     ),
                 ]
             )
@@ -730,14 +776,14 @@ def test_synthesize_propagates_all_entities():
     # Behaviors: BEH-1 (cap matches) and BEH-3 (no cap_id) included, BEH-2 excluded
     assert "behaviors" in entities
     beh_ids = [b["id"] for b in entities["behaviors"]]
-    assert "BEH-1" in beh_ids
-    assert "BEH-3" in beh_ids
-    assert "BEH-2" not in beh_ids
+    assert "core-BEH-1" in beh_ids
+    assert "core-BEH-3" in beh_ids
+    assert "core-BEH-2" not in beh_ids
 
     # Interfaces: only IF-1 (component matches)
     assert "interfaces" in entities
     assert len(entities["interfaces"]) == 1
-    assert entities["interfaces"][0]["id"] == "IF-1"
+    assert entities["interfaces"][0]["id"] == "core-IF-1"
 
     # Constraints: only the one with source in boundary files
     assert "constraints" in entities
@@ -753,7 +799,7 @@ def test_synthesize_propagates_all_entities():
     # Actors: all included
     assert "actors" in entities
     assert len(entities["actors"]) == 1
-    assert entities["actors"][0]["id"] == "ACT-1"
+    assert entities["actors"][0]["id"] == "core-ACT-1"
 
 
 def test_infer_flags_complex_behavior_uncertainty(tmp_path):
@@ -764,7 +810,11 @@ def test_infer_flags_complex_behavior_uncertainty(tmp_path):
         ModuleRecord,
         ClassRecord,
     )
-    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+    from architecture_model.pipeline.protocol import (
+        PipelineContext,
+        StageResult,
+        QualityMetrics,
+    )
 
     mod = ModuleRecord(
         path=Path("django/db/models/query.py"),
@@ -843,9 +893,19 @@ def test_relate_produces_constrained_by(tmp_path):
         ModuleRecord,
         ConstraintRecord,
     )
-    from architecture_model.pipeline.infer_types import InferenceResult, InferredCapability
-    from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
-    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+    from architecture_model.pipeline.infer_types import (
+        InferenceResult,
+        InferredCapability,
+    )
+    from architecture_model.pipeline.allocate_types import (
+        AllocationResult,
+        ComponentAllocation,
+    )
+    from architecture_model.pipeline.protocol import (
+        PipelineContext,
+        StageResult,
+        QualityMetrics,
+    )
 
     mod = ModuleRecord(
         path=Path("app/main.py"),
@@ -857,10 +917,18 @@ def test_relate_produces_constrained_by(tmp_path):
         docstring="",
     )
     constraint = ConstraintRecord(
-        name="python", value=">=3.10", source="pyproject.toml", constraint_type="TECHNOLOGY"
+        name="python",
+        value=">=3.10",
+        source="pyproject.toml",
+        constraint_type="TECHNOLOGY",
     )
     inventory = Inventory(
-        modules=[mod], edges=[], routes=[], constraints=[constraint], test_files=[], docs=[]
+        modules=[mod],
+        edges=[],
+        routes=[],
+        constraints=[constraint],
+        test_files=[],
+        docs=[],
     )
 
     ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
@@ -874,7 +942,9 @@ def test_relate_produces_constrained_by(tmp_path):
         version="1.0",
     )
     ctx.cache["infer"] = StageResult(
-        output=InferenceResult(capabilities=[InferredCapability(id="CAP-1", name="App")]),
+        output=InferenceResult(
+            capabilities=[InferredCapability(id="CAP-1", name="App")]
+        ),
         quality=QualityMetrics(score=100),
         diagnostics=[],
         uncertainties=[],
@@ -886,7 +956,10 @@ def test_relate_produces_constrained_by(tmp_path):
         output=AllocationResult(
             components=[
                 ComponentAllocation(
-                    id="COMP-1", name="App", capability_id="CAP-1", files=[Path("app/main.py")]
+                    id="COMP-1",
+                    name="App",
+                    capability_id="CAP-1",
+                    files=[Path("app/main.py")],
                 )
             ]
         ),
@@ -900,7 +973,9 @@ def test_relate_produces_constrained_by(tmp_path):
 
     stage = RelateStage()
     result = stage.run(ctx)
-    constrained = [r for r in result.output.relationships if r.rel_type == "constrained-by"]
+    constrained = [
+        r for r in result.output.relationships if r.rel_type == "constrained-by"
+    ]
     assert len(constrained) >= 1
     assert constrained[0].to_id == "CON-1"
 
@@ -909,9 +984,19 @@ def test_relate_produces_layer_entities(tmp_path):
     """Relate should produce first-class layer entities."""
     from architecture_model.pipeline.relate import RelateStage
     from architecture_model.pipeline.observe_types import Inventory, ModuleRecord
-    from architecture_model.pipeline.infer_types import InferenceResult, InferredCapability
-    from architecture_model.pipeline.allocate_types import AllocationResult, ComponentAllocation
-    from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+    from architecture_model.pipeline.infer_types import (
+        InferenceResult,
+        InferredCapability,
+    )
+    from architecture_model.pipeline.allocate_types import (
+        AllocationResult,
+        ComponentAllocation,
+    )
+    from architecture_model.pipeline.protocol import (
+        PipelineContext,
+        StageResult,
+        QualityMetrics,
+    )
 
     mod = ModuleRecord(
         path=Path("app/main.py"),
@@ -937,7 +1022,9 @@ def test_relate_produces_layer_entities(tmp_path):
         version="1.0",
     )
     ctx.cache["infer"] = StageResult(
-        output=InferenceResult(capabilities=[InferredCapability(id="CAP-1", name="App")]),
+        output=InferenceResult(
+            capabilities=[InferredCapability(id="CAP-1", name="App")]
+        ),
         quality=QualityMetrics(score=100),
         diagnostics=[],
         uncertainties=[],
@@ -1082,10 +1169,16 @@ def test_full_pipeline_produces_all_entity_types(tmp_path):
 
     constraints = [
         ConstraintRecord(
-            name="python", value=">=3.10", source="pyproject.toml", constraint_type="TECHNOLOGY"
+            name="python",
+            value=">=3.10",
+            source="pyproject.toml",
+            constraint_type="TECHNOLOGY",
         ),
         ConstraintRecord(
-            name="django", value=">=4.2", source="requirements.txt", constraint_type="TECHNOLOGY"
+            name="django",
+            value=">=4.2",
+            source="requirements.txt",
+            constraint_type="TECHNOLOGY",
         ),
     ]
 
@@ -1136,21 +1229,24 @@ def test_full_pipeline_produces_all_entity_types(tmp_path):
 
     # Verify all 7 entity types present
     assert "components" in entities, f"Missing components. Got: {list(entities.keys())}"
-    assert "capabilities" in entities, f"Missing capabilities. Got: {list(entities.keys())}"
+    assert "capabilities" in entities, (
+        f"Missing capabilities. Got: {list(entities.keys())}"
+    )
     assert "behaviors" in entities, f"Missing behaviors. Got: {list(entities.keys())}"
     assert "actors" in entities, f"Missing actors. Got: {list(entities.keys())}"
     assert "layers" in entities, f"Missing layers. Got: {list(entities.keys())}"
 
     # Verify behavior type diversity
     behavior_types = {b.get("behavior_type") for b in entities["behaviors"]}
-    assert "route_handler" in behavior_types, f"Missing route_handler. Got: {behavior_types}"
+    assert "route_handler" in behavior_types, (
+        f"Missing route_handler. Got: {behavior_types}"
+    )
     assert "use_case" in behavior_types, f"Missing use_case. Got: {behavior_types}"
 
     # Verify relationships include key types
     rels = model.get("relationships", [])
     rel_types = {r["type"] for r in rels}
     assert "realizes" in rel_types, f"Missing realizes. Got: {rel_types}"
-
 
 
 class TestPerComponentQualityPropagation:

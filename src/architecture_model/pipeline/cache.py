@@ -62,7 +62,10 @@ def _get_output_class(stage_name: str) -> type | None:
         "contract": ("architecture_model.pipeline.contract_types", "ContractResult"),
         "validate": ("architecture_model.pipeline.validate_types", "ValidateResult"),
         "decompose": ("architecture_model.pipeline.decompose_types", "DecomposeResult"),
-        "synthesize": ("architecture_model.pipeline.synthesize_types", "SynthesizeResult"),
+        "synthesize": (
+            "architecture_model.pipeline.synthesize_types",
+            "SynthesizeResult",
+        ),
         "emit": ("architecture_model.pipeline.emit_types", "EmitResult"),
     }
     entry = _stage_output_types.get(stage_name)
@@ -133,13 +136,17 @@ def _deserialize_stage_result(data: dict, stage_name: str) -> StageResult:
 
     # Reconstruct diagnostics
     diagnostics = [
-        Diagnostic(**d) if isinstance(d, dict) and "__dataclass__" not in d else _deserialize(d)
+        Diagnostic(**d)
+        if isinstance(d, dict) and "__dataclass__" not in d
+        else _deserialize(d)
         for d in data.get("diagnostics", [])
     ]
 
     # Reconstruct uncertainties
     uncertainties = [
-        Uncertainty(**u) if isinstance(u, dict) and "__dataclass__" not in u else _deserialize(u)
+        Uncertainty(**u)
+        if isinstance(u, dict) and "__dataclass__" not in u
+        else _deserialize(u)
         for u in data.get("uncertainties", [])
     ]
 
@@ -158,6 +165,7 @@ def _deserialize_stage_result(data: dict, stage_name: str) -> StageResult:
         input_hash=data.get("input_hash", ""),
         duration_ms=data.get("duration_ms", 0),
         version=data.get("version", "1.0"),
+        summary=data.get("summary", ""),
     )
 
 
@@ -253,7 +261,10 @@ class PipelineCache:
         if not path.exists():
             return []
         data = json.loads(path.read_text())
-        return [ArtifactReview(**{k: v for k, v in d.items() if k in _review_fields}) for d in data]
+        return [
+            ArtifactReview(**{k: v for k, v in d.items() if k in _review_fields})
+            for d in data
+        ]
 
     def clear(self) -> None:
         """Remove all cached data."""

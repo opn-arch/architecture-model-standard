@@ -1,4 +1,5 @@
 """Tests for file-based pipeline cache."""
+
 import json
 from pathlib import Path
 
@@ -38,15 +39,22 @@ def _make_result(score=0.85):
             ModuleRecord(path=Path("src/foo.py"), line_count=100, imports=["os"]),
             ModuleRecord(path=Path("src/bar.py"), line_count=50),
         ],
-        edges=[ImportEdge(source=Path("src/foo.py"), target=Path("src/bar.py"), symbols=["Bar"])],
+        edges=[
+            ImportEdge(
+                source=Path("src/foo.py"), target=Path("src/bar.py"), symbols=["Bar"]
+            )
+        ],
     )
     return StageResult(
         output=inv,
         quality=QualityMetrics(score=score, sub_scores={"coverage": 0.9}),
-        diagnostics=[Diagnostic(severity="warning", code="W001", message="test warning")],
+        diagnostics=[
+            Diagnostic(severity="warning", code="W001", message="test warning")
+        ],
         uncertainties=[Uncertainty(category="naming", description="unclear name")],
         input_hash="abc123",
         duration_ms=150,
+        summary="Observed test inventory.",
     )
 
 
@@ -78,6 +86,7 @@ class TestPipelineCache:
         assert loaded.quality.score == 0.85
         assert loaded.duration_ms == 150
         assert loaded.input_hash == "abc123"
+        assert loaded.summary == "Observed test inventory."
         assert len(loaded.diagnostics) == 1
         assert len(loaded.uncertainties) == 1
 
@@ -140,9 +149,9 @@ class TestPipelineCache:
 
     def test_hydrate_context(self, cache, tmp_path):
         cache.save_stage("observe", _make_result(0.85))
-        cache.save_llm_calls([
-            LLMCallRecord(stage="observe", purpose="test", total_tokens=100)
-        ])
+        cache.save_llm_calls(
+            [LLMCallRecord(stage="observe", purpose="test", total_tokens=100)]
+        )
 
         ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / "out")
         loaded_stages = cache.hydrate_context(ctx)

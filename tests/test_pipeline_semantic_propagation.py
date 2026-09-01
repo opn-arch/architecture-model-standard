@@ -1,5 +1,7 @@
 """End-to-end coverage for semantic pipeline propagation."""
 
+import yaml
+
 from architecture_model.core.parser import load_model
 from architecture_model.pipeline.allocate import AllocateStage
 from architecture_model.pipeline.cache import PipelineCache
@@ -51,6 +53,15 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
         (package / f"worker_{index}.py").write_text(
             f"from .jobs import process_jobs\n\ndef run_worker_{index}():\n    return process_jobs()\n"
         )
+    scheduler = tmp_path / "scheduler"
+    scheduler.mkdir()
+    (scheduler / "scheduler.py").write_text(
+        '"""Schedule enough workers."""\nMIN_WORKERS = 4\n\ndef schedule_workers():\n    return MIN_WORKERS\n'
+    )
+    for index in range(7):
+        (scheduler / f"queue_{index}.py").write_text(
+            f"from .scheduler import schedule_workers\n\ndef run_queue_{index}():\n    return schedule_workers()\n"
+        )
 
     output_dir = tmp_path / ".architecture"
     ctx = PipelineContext(repo_path=tmp_path, output_dir=output_dir)
@@ -63,7 +74,7 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
         ctx.cache[stage_name] = disk_cache.load_stage(stage_name)
 
     components = ctx.get("allocate").output.components
-    boundary = SystemBoundary(
+    jobs_boundary = SystemBoundary(
         system_id="SYS-jobs",
         name="Jobs",
         component_ids=[component.id for component in components],
@@ -72,8 +83,17 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
         ],
         is_full_system=True,
     )
+    scheduler_boundary = SystemBoundary(
+        system_id="SYS-scheduler",
+        name="Scheduler",
+        component_ids=[component.id for component in components],
+        files=[
+            str(path.relative_to(tmp_path)) for path in sorted(scheduler.glob("*.py"))
+        ],
+        is_full_system=True,
+    )
     ctx.cache["decompose"] = StageResult(
-        output=DecomposeResult(systems=[boundary]),
+        output=DecomposeResult(systems=[jobs_boundary, scheduler_boundary]),
         quality=QualityMetrics(score=100.0),
     )
     ctx.config["coordinator"] = coordinator
@@ -108,6 +128,20 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
         load_model(emitted_dir / "jobs" / ".architecture-model.yaml"),
         load_model(tmp_path / ".architecture-model.yaml"),
     ]
+
+    sos_model = models[0]
+    raw_sos = yaml.safe_load((emitted_dir / ".architecture-model.yaml").read_text())
+    all_ids = [
+        entity["id"]
+        for group in raw_sos["entities"].values()
+        if isinstance(group, list)
+        for entity in group
+        if isinstance(entity, dict) and entity.get("id")
+    ]
+    assert len(all_ids) == len(set(all_ids))
+    assert len({req.id for req in sos_model.entities.requirements}) == len(
+        sos_model.entities.requirements
+    )
 
     for model in models:
         capability = next(cap for cap in model.entities.capabilities if cap.intent)

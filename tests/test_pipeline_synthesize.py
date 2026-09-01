@@ -1,4 +1,5 @@
 """Tests for the synthesize pipeline stage."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -23,6 +24,7 @@ from architecture_model.pipeline.synthesize import (
     _build_sos_model,
     _build_system_model_yaml,
     _decide_stages,
+    _merge_requirements,
 )
 from architecture_model.pipeline.synthesize_types import (
     SoSModel,
@@ -34,6 +36,7 @@ from architecture_model.pipeline.synthesize_types import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class _FakeComponent:
@@ -116,6 +119,7 @@ class MockCoordinator:
 # Type defaults
 # ---------------------------------------------------------------------------
 
+
 class TestTypeDefaults:
     def test_system_model_defaults(self):
         sm = SystemModel(system_id="SYS-1", name="Test")
@@ -141,6 +145,7 @@ class TestTypeDefaults:
 # Stage metadata
 # ---------------------------------------------------------------------------
 
+
 class TestStageMetadata:
     def test_name_and_version(self):
         stage = SynthesizeStage()
@@ -165,9 +170,12 @@ class TestStageMetadata:
 # _decide_stages
 # ---------------------------------------------------------------------------
 
+
 class TestDecideStages:
     def test_large_system_gets_full(self):
-        b = SystemBoundary(system_id="S1", name="Big", files=[f"f{i}.py" for i in range(10)])
+        b = SystemBoundary(
+            system_id="S1", name="Big", files=[f"f{i}.py" for i in range(10)]
+        )
         assert _decide_stages(b) == FULL_PIPELINE_STAGES
 
     def test_small_system_gets_abbreviated(self):
@@ -175,11 +183,15 @@ class TestDecideStages:
         assert _decide_stages(b) == ABBREVIATED_STAGES
 
     def test_boundary_at_8(self):
-        b = SystemBoundary(system_id="S1", name="Edge", files=[f"f{i}.py" for i in range(8)])
+        b = SystemBoundary(
+            system_id="S1", name="Edge", files=[f"f{i}.py" for i in range(8)]
+        )
         assert _decide_stages(b) == FULL_PIPELINE_STAGES
 
     def test_boundary_at_7(self):
-        b = SystemBoundary(system_id="S1", name="Edge", files=[f"f{i}.py" for i in range(7)])
+        b = SystemBoundary(
+            system_id="S1", name="Edge", files=[f"f{i}.py" for i in range(7)]
+        )
         assert _decide_stages(b) == ABBREVIATED_STAGES
 
 
@@ -187,13 +199,16 @@ class TestDecideStages:
 # _build_system_model_yaml
 # ---------------------------------------------------------------------------
 
+
 class TestBuildSystemModelYaml:
     def test_produces_valid_yaml(self):
         boundary = SystemBoundary(system_id="SYS-core", name="Core")
         results = {
             "allocate": _stage_result(_FakeAllocOutput(components=[_FakeComponent()])),
             "infer": _stage_result(_FakeInferOutput(capabilities=[_FakeCapability()])),
-            "relate": _stage_result(_FakeRelateOutput(relationships=[_FakeRelationship()])),
+            "relate": _stage_result(
+                _FakeRelateOutput(relationships=[_FakeRelationship()])
+            ),
         }
         yaml_str = _build_system_model_yaml(boundary, results)
         parsed = yaml.safe_load(yaml_str)
@@ -238,9 +253,60 @@ class TestBuildSystemModelYaml:
         assert "description" not in cap_out
 
 
+class TestMergeRequirements:
+    def test_preserves_richer_record_identity_and_only_fills_missing_fields(self):
+        poor = {
+            "id": "REQ-legacy",
+            "name": "A much longer legacy display name for timeout",
+            "text": "System must respect TIMEOUT = 30",
+            "source_file": "config.py",
+            "extensions": {"source_type": "constant:TIMEOUT=30", "legacy": True},
+        }
+        rich = {
+            "id": "REQ-rich",
+            "name": "TIMEOUT constraint",
+            "status": "ACTIVE",
+            "text": "System must respect TIMEOUT = 30",
+            "source_file": "config.py",
+            "rationale": "Architectural rationale",
+            "moe": "Measure timeout",
+            "moes": ["Measure timeout"],
+            "value_function": "V(actual) = min(1, 30 / max(actual, 1e-9))",
+            "extensions": {"source_type": "constant"},
+        }
+
+        merged = _merge_requirements([poor], [rich])
+
+        assert len(merged) == 1
+        assert merged[0]["id"] == "REQ-rich"
+        assert merged[0]["name"] == "TIMEOUT constraint"
+        assert merged[0]["extensions"] == {"source_type": "constant", "legacy": True}
+
+    def test_renames_colliding_ids_deterministically(self):
+        first = {
+            "id": "REQ-C1",
+            "name": "TIMEOUT",
+            "text": "Timeout 30",
+            "source_file": "a.py",
+        }
+        second = {
+            "id": "REQ-C1",
+            "name": "MIN_WORKERS",
+            "text": "Workers 4",
+            "source_file": "b.py",
+        }
+
+        merged = _merge_requirements([first], [second])
+
+        assert len({req["id"] for req in merged}) == 2
+        assert merged[0]["id"] == "REQ-C1"
+        assert merged[1]["id"].startswith("REQ-C1-")
+
+
 # ---------------------------------------------------------------------------
 # _build_manifest_json
 # ---------------------------------------------------------------------------
+
 
 class TestBuildManifestJson:
     def test_with_observe_output(self):
@@ -248,6 +314,7 @@ class TestBuildManifestJson:
             "observe": _stage_result(_FakeObserveOutput(modules=[_FakeModule()]))
         }
         import json
+
         data = json.loads(_build_manifest_json(results))
         assert len(data["modules"]) == 1
 
@@ -258,6 +325,7 @@ class TestBuildManifestJson:
 # ---------------------------------------------------------------------------
 # run() without coordinator
 # ---------------------------------------------------------------------------
+
 
 class TestRunWithoutCoordinator:
     def test_produces_sos_from_top_level(self, tmp_path):
@@ -277,7 +345,9 @@ class TestRunWithoutCoordinator:
             tmp_path,
             decompose=_stage_result(decompose),
             observe=_stage_result(_FakeObserveOutput()),
-            infer=_stage_result(_FakeInferOutput(actors=[_FakeCapability(id="ACT-1", name="User")])),
+            infer=_stage_result(
+                _FakeInferOutput(actors=[_FakeCapability(id="ACT-1", name="User")])
+            ),
             allocate=_stage_result(_FakeAllocOutput()),
             relate=_stage_result(_FakeRelateOutput()),
         )
@@ -300,7 +370,11 @@ class TestRunWithoutCoordinator:
     def test_no_coordinator_diagnostic(self, tmp_path):
         stage = SynthesizeStage()
         decompose = DecomposeResult(
-            systems=[SystemBoundary(system_id="S1", name="A", files=["a.py"] * 10, is_full_system=True)]
+            systems=[
+                SystemBoundary(
+                    system_id="S1", name="A", files=["a.py"] * 10, is_full_system=True
+                )
+            ]
         )
         ctx = _make_ctx(
             tmp_path,
@@ -319,20 +393,33 @@ class TestRunWithoutCoordinator:
 # run() with mock coordinator
 # ---------------------------------------------------------------------------
 
+
 class TestRunWithCoordinator:
     def test_scoped_runs(self, tmp_path):
         sub_results = {
             "observe": _stage_result(_FakeObserveOutput(modules=[_FakeModule()])),
             "infer": _stage_result(_FakeInferOutput(capabilities=[_FakeCapability()])),
             "allocate": _stage_result(_FakeAllocOutput(components=[_FakeComponent()])),
-            "relate": _stage_result(_FakeRelateOutput(relationships=[_FakeRelationship()])),
+            "relate": _stage_result(
+                _FakeRelateOutput(relationships=[_FakeRelationship()])
+            ),
         }
         coordinator = MockCoordinator(results=sub_results)
 
         decompose = DecomposeResult(
             systems=[
-                SystemBoundary(system_id="SYS-a", name="Alpha", files=[f"f{i}.py" for i in range(10)], is_full_system=True),
-                SystemBoundary(system_id="SYS-b", name="Beta", files=["x.py", "y.py"], is_full_system=True),
+                SystemBoundary(
+                    system_id="SYS-a",
+                    name="Alpha",
+                    files=[f"f{i}.py" for i in range(10)],
+                    is_full_system=True,
+                ),
+                SystemBoundary(
+                    system_id="SYS-b",
+                    name="Beta",
+                    files=["x.py", "y.py"],
+                    is_full_system=True,
+                ),
             ],
             inter_system_edges=[("SYS-a", "SYS-b", "depends-on")],
         )
@@ -373,7 +460,12 @@ class TestRunWithCoordinator:
         coordinator = MockCoordinator()
         decompose = DecomposeResult(
             inline_components=[
-                SystemBoundary(system_id="SYS-utils", name="Utils", files=["u.py"], is_full_system=False),
+                SystemBoundary(
+                    system_id="SYS-utils",
+                    name="Utils",
+                    files=["u.py"],
+                    is_full_system=False,
+                ),
             ],
         )
         ctx = _make_ctx(
@@ -398,9 +490,13 @@ class TestRunWithCoordinator:
 # SoS model structure
 # ---------------------------------------------------------------------------
 
+
 class TestSoSModel:
     def test_inter_system_edges(self):
-        systems = [SystemModel(system_id="SYS-a", name="A"), SystemModel(system_id="SYS-b", name="B")]
+        systems = [
+            SystemModel(system_id="SYS-a", name="A"),
+            SystemModel(system_id="SYS-b", name="B"),
+        ]
         decompose = DecomposeResult(
             inter_system_edges=[("SYS-a", "SYS-b", "depends-on")]
         )
@@ -423,6 +519,7 @@ class TestSoSModel:
 # ---------------------------------------------------------------------------
 # Pipeline reports
 # ---------------------------------------------------------------------------
+
 
 class TestPipelineReports:
     def test_reports_generated(self, tmp_path):

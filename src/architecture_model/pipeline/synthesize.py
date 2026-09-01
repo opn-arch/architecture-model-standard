@@ -109,27 +109,59 @@ def _requirement_dict(req: Any) -> dict[str, Any]:
     return {key: value for key, value in result.items() if value not in ("", [], {})}
 
 
+def _requirement_richness(requirement: dict[str, Any]) -> tuple[int, int]:
+    """Score semantic completeness before using length as a stable tie-breaker."""
+    semantic_fields = (
+        "text",
+        "rationale",
+        "moe",
+        "moes",
+        "value_function",
+        "source_file",
+        "source_doc",
+        "priority",
+        "status",
+    )
+    populated = sum(bool(requirement.get(field)) for field in semantic_fields)
+    return populated, sum(
+        len(str(requirement.get(field, ""))) for field in semantic_fields
+    )
+
+
 def _merge_requirements(*groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Deduplicate requirements semantically and retain the richest values."""
     merged: dict[str, dict[str, Any]] = {}
     for requirement in (item for group in groups for item in group):
         key = _requirement_key(requirement)
-        current = merged.setdefault(key, {})
-        for field, value in requirement.items():
+        candidate = dict(requirement)
+        candidate["content_hash"] = key
+        current = merged.get(key)
+        if current is None:
+            merged[key] = candidate
+            continue
+        richer, poorer = (
+            (candidate, current)
+            if _requirement_richness(candidate) > _requirement_richness(current)
+            else (current, candidate)
+        )
+        result = dict(richer)
+        for field, value in poorer.items():
             if field == "extensions" and isinstance(value, dict):
-                current_extensions = current.setdefault("extensions", {})
+                extensions = result.setdefault("extensions", {})
                 for ext_key, ext_value in value.items():
-                    if ext_value and (
-                        not current_extensions.get(ext_key)
-                        or ext_value in {"constant", "test", "docstring"}
-                    ):
-                        current_extensions[ext_key] = ext_value
-                continue
-            if value and (
-                not current.get(field) or len(str(value)) > len(str(current[field]))
-            ):
-                current[field] = value
-        current["content_hash"] = key
+                    extensions.setdefault(ext_key, ext_value)
+            elif value and not result.get(field):
+                result[field] = value
+        result["id"] = richer["id"]
+        result["content_hash"] = key
+        merged[key] = result
+    used_ids: dict[str, str] = {}
+    for key, requirement in merged.items():
+        requirement_id = requirement.get("id") or f"REQ-{key.upper()}"
+        if requirement_id in used_ids and used_ids[requirement_id] != key:
+            requirement_id = f"{requirement_id}-{key[:8].upper()}"
+        requirement["id"] = requirement_id
+        used_ids[requirement_id] = key
     return list(merged.values())
 
 
@@ -174,7 +206,9 @@ def _build_system_model_yaml(
         output = infer_result.output
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
-                capabilities.append(_capability_dict(cap))
+                cap_dict = _capability_dict(cap)
+                cap_dict["id"] = f"{sys_prefix}-{cap.id}"
+                capabilities.append(cap_dict)
 
     cap_ids = {c["id"] for c in capabilities}
     comp_ids = {c["id"] for c in components}
@@ -186,15 +220,23 @@ def _build_system_model_yaml(
         output = infer_result.output
         if hasattr(output, "behaviors"):
             for beh in output.behaviors:
-                if beh.capability_id and beh.capability_id not in cap_ids:
+                capability_id = (
+                    f"{sys_prefix}-{beh.capability_id}" if beh.capability_id else ""
+                )
+                if capability_id and capability_id not in cap_ids:
                     continue
-                beh_dict: dict[str, Any] = {"id": beh.id, "name": beh.name}
+                beh_dict: dict[str, Any] = {
+                    "id": f"{sys_prefix}-{beh.id}",
+                    "name": beh.name,
+                }
                 if beh.behavior_type:
                     beh_dict["behavior_type"] = beh.behavior_type
                 if beh.steps:
                     beh_dict["steps"] = beh.steps
                 if beh.actor_id:
-                    beh_dict["actor_id"] = beh.actor_id
+                    beh_dict["actor_id"] = f"{sys_prefix}-{beh.actor_id}"
+                if capability_id:
+                    beh_dict["capability_id"] = capability_id
                 if beh.triggers:
                     beh_dict["triggers"] = beh.triggers
                 behaviors.append(beh_dict)
@@ -205,7 +247,10 @@ def _build_system_model_yaml(
         output = infer_result.output
         if hasattr(output, "actors"):
             for actor in output.actors:
-                actor_dict: dict[str, Any] = {"id": actor.id, "name": actor.name}
+                actor_dict: dict[str, Any] = {
+                    "id": f"{sys_prefix}-{actor.id}",
+                    "name": actor.name,
+                }
                 if actor.actor_type:
                     actor_dict["actor_type"] = actor.actor_type
                 if actor.evidence_source:
@@ -223,7 +268,7 @@ def _build_system_model_yaml(
                 if namespaced_comp_id not in comp_ids:
                     continue
                 iface_dict: dict[str, Any] = {
-                    "id": iface.id,
+                    "id": f"{sys_prefix}-{iface.id}",
                     "name": iface.name,
                     "interface_type": iface.interface_type,
                     "component_id": namespaced_comp_id,
@@ -243,17 +288,20 @@ def _build_system_model_yaml(
         requirements = _merge_requirements(
             [_requirement_dict(req) for req in specify_result.output.requirements]
         )
+        requirement_source_by_key = {
+            _requirement_key(_requirement_dict(req)): req.source_file
+            for req in specify_result.output.requirements
+        }
+        for requirement in requirements:
+            requirement["id"] = f"{sys_prefix}-{requirement['id']}"
         file_to_comp = {
             str(source): f"{sys_prefix}-{comp.id}"
             for comp in getattr(getattr(alloc_result, "output", None), "components", [])
             for source in comp.files
         }
-        source_by_id = {
-            req.id: req.source_file for req in specify_result.output.requirements
-        }
         for requirement in requirements:
             component_id = file_to_comp.get(
-                str(source_by_id.get(requirement["id"], ""))
+                str(requirement_source_by_key.get(requirement["content_hash"], ""))
             )
             if component_id and component_id in comp_ids:
                 relationships.append(
@@ -270,7 +318,7 @@ def _build_system_model_yaml(
                 if con.source not in file_set:
                     continue
                 con_dict: dict[str, Any] = {
-                    "id": f"CON-{i + 1}",
+                    "id": f"{sys_prefix}-CON-{i + 1}",
                     "name": con.name,
                     "value": con.value,
                     "source": con.source,
@@ -292,7 +340,7 @@ def _build_system_model_yaml(
             if layer and layer not in seen_layers:
                 seen_layers.add(layer)
                 slug = re.sub(r"[^a-z0-9]+", "-", layer.lower()).strip("-")
-                layers.append({"id": f"LAYER-{slug}", "name": layer})
+                layers.append({"id": f"{sys_prefix}-LAYER-{slug}", "name": layer})
 
     # Build ID remap for namespacing (original COMP-N → sys_prefix-COMP-N)
     id_remap: dict[str, str] = {}
@@ -303,6 +351,16 @@ def _build_system_model_yaml(
     ):
         for comp in alloc_result.output.components:
             id_remap[comp.id] = f"{sys_prefix}-{comp.id}"
+    if infer_result and infer_result.output:
+        for cap in getattr(infer_result.output, "capabilities", []):
+            id_remap[cap.id] = f"{sys_prefix}-{cap.id}"
+        for behavior in getattr(infer_result.output, "behaviors", []):
+            id_remap[behavior.id] = f"{sys_prefix}-{behavior.id}"
+        for actor in getattr(infer_result.output, "actors", []):
+            id_remap[actor.id] = f"{sys_prefix}-{actor.id}"
+    if specify_result and specify_result.output:
+        for interface in getattr(specify_result.output, "interfaces", []):
+            id_remap[interface.id] = f"{sys_prefix}-{interface.id}"
 
     # Extract from relate results
     relate_result = results.get("relate")
@@ -426,6 +484,7 @@ def _build_sos_model(
     all_constraints: list[dict[str, Any]] = []
     all_layers: list[dict[str, Any]] = []
     all_requirements: list[dict[str, Any]] = []
+    subsystem_relationships: list[dict[str, Any]] = []
     seen_layer_ids: set[str] = set()
 
     for sm in systems:
@@ -454,7 +513,7 @@ def _build_sos_model(
                     all_layers.append(layer)
             # Collect sub-system relationships into inter-system set
             for rel in sub_model.get("relationships", []):
-                inter_system_interfaces.append(rel)
+                subsystem_relationships.append(rel)
         except Exception:
             continue
 
@@ -518,6 +577,26 @@ def _build_sos_model(
         )
     if all_requirements:
         sos_dict["entities"]["requirements"] = all_requirements
+
+    requirement_id_by_key = {
+        requirement["content_hash"]: requirement["id"]
+        for requirement in all_requirements
+        if requirement.get("content_hash")
+    }
+    subsystem_requirement_key_by_id = {
+        requirement["id"]: _requirement_key(requirement)
+        for sm in systems
+        if sm.model_yaml
+        for requirement in (yaml.safe_load(sm.model_yaml) or {})
+        .get("entities", {})
+        .get("requirements", [])
+    }
+    for relationship in subsystem_relationships:
+        relationship = dict(relationship)
+        target_key = subsystem_requirement_key_by_id.get(relationship.get("to", ""))
+        if target_key:
+            relationship["to"] = requirement_id_by_key[target_key]
+        inter_system_interfaces.append(relationship)
 
     # Add inline components
     if inlines:
