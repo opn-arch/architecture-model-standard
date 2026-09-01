@@ -1,6 +1,7 @@
 """Tests for behavior sequence and flow diagram generation (Task 3.1 & 3.2)."""
 
 import xml.etree.ElementTree as ET
+import re
 
 import pytest
 
@@ -17,6 +18,22 @@ from architecture_model.core.visualize import (
     generate_icd_diagram,
     generate_system_decomposition_diagram,
     generate_pipeline_flow_diagram,
+    generate_context_diagram,
+    generate_components_diagram,
+    generate_behaviors_diagram,
+    generate_dependencies_diagram,
+    generate_entity_lifecycle_diagram,
+    generate_data_flow_diagram,
+    generate_constraint_map_diagram,
+    generate_traceability_diagram,
+    generate_decomposition_diagram,
+    generate_requirements_allocation_diagram,
+    generate_conops_diagram,
+    generate_functional_architecture_diagram,
+    generate_logical_architecture_diagram,
+    generate_behavior_overview_diagram,
+    generate_component_detail_diagram,
+    generate_use_case_diagram,
 )
 
 
@@ -350,3 +367,88 @@ class TestOfflineSvgRendering:
 
         assert len(paths) == len(set(paths)) == 4
         assert {"left", "right"}.issubset(labels)
+
+    def test_all_emitted_edge_operators_and_chains_are_preserved(self):
+        root = ET.fromstring(_render_mermaid_svg('''flowchart LR
+            A[Start] --> B(Capability) ==> C{{Behavior}} -.-> D((Interface)) -.-x E{Constraint}
+        '''))
+
+        assert len(root.findall(".//*[@class='diagram-node']")) == 5
+        assert len(root.findall(".//*[@class='diagram-edge']")) == 4
+
+    def test_all_standard_node_shapes_strip_mermaid_delimiters(self):
+        root = ET.fromstring(_render_mermaid_svg('''flowchart LR
+            actor([Actor]) --> module[/Module/] --> layer[(Layer)] --> behavior{{Behavior}} --> requirement{{Requirement}}
+            requirement --> interface((Interface)) --> system[[System]] --> component[Component] --> capability(Capability) --> constraint{Constraint}
+        '''))
+        labels = ["".join(node.itertext()) for node in root.findall(".//*[@class='diagram-node']")]
+
+        assert labels == ["Actor", "Module", "Layer", "Behavior", "Requirement", "Interface", "System", "Component", "Capability", "Constraint"]
+        assert not any(re.search(r"^[\[({/]|[\])}/]$", label) for label in labels)
+
+    def test_every_diagram_generator_preserves_emitted_topology(self):
+        from architecture_model.core.types import (
+            Actor, Capability, Interface, Constraint, Layer, System, Requirement,
+            RelationType, Step,
+        )
+        actor = Actor(id="ACT-1", name="User", status=Status.ACTIVE)
+        capability = Capability(id="CAP-1", name="Operate", status=Status.ACTIVE)
+        behavior = Behavior(
+            id="BEH-1", name="Run", status=Status.ACTIVE, steps=["Start", "Finish"],
+            structured_steps=[Step(order=1, action="Start", component_ref="COMP-1"), Step(order=2, action="Finish", component_ref="COMP-2")],
+        )
+        interface = Interface(id="IF-1", name="API", status=Status.ACTIVE)
+        constraint = Constraint(id="CON-1", name="Secure", status=Status.ACTIVE)
+        layer = Layer(id="LAY-1", name="Core", status=Status.ACTIVE)
+        components = [
+            Component(id="COMP-1", name="Gateway", status=Status.ACTIVE, layer="LAY-1", files=["gateway.py"]),
+            Component(id="COMP-2", name="Worker", status=Status.ACTIVE, layer="LAY-1"),
+        ]
+        system = System(id="SYS-1", name="Platform", status=Status.ACTIVE, component_ids=["COMP-1", "COMP-2"])
+        requirement = Requirement(id="REQ-1", name="Must run", status=Status.ACTIVE)
+        relationships = [
+            Relationship(type=RelationType.CONSUMES, from_id="ACT-1", to_id="IF-1"),
+            Relationship(type=RelationType.EXPOSES, from_id="COMP-1", to_id="IF-1"),
+            Relationship(type=RelationType.REALIZES, from_id="COMP-1", to_id="CAP-1"),
+            Relationship(type=RelationType.DEPENDS_ON, from_id="COMP-1", to_id="COMP-2"),
+            Relationship(type=RelationType.TRACES_TO, from_id="BEH-1", to_id="COMP-1"),
+            Relationship(type=RelationType.CONSTRAINED_BY, from_id="COMP-1", to_id="CON-1"),
+            Relationship(type=RelationType.SATISFIES, from_id="COMP-1", to_id="REQ-1"),
+            Relationship(type=RelationType.PRODUCES, from_id="COMP-1", to_id="IF-1"),
+            Relationship(type=RelationType.SUBSCRIBES_TO, from_id="IF-1", to_id="COMP-2"),
+            Relationship(type=RelationType.CONTAINS, from_id="LAY-1", to_id="COMP-1"),
+            Relationship(type=RelationType.TRIGGERS, from_id="BEH-1", to_id="BEH-1"),
+        ]
+        model = _make_model(behaviors=[behavior], components=components, relationships=relationships)
+        model.entities.actors = [actor]
+        model.entities.capabilities = [capability]
+        model.entities.interfaces = [interface]
+        model.entities.constraints = [constraint]
+        model.entities.layers = [layer]
+        model.entities.systems = [system]
+        model.entities.requirements = [requirement]
+        diagrams = [
+            generate_context_diagram(model), generate_components_diagram(model), generate_behaviors_diagram(model),
+            generate_dependencies_diagram(model), generate_pipeline_flow_diagram(), generate_entity_lifecycle_diagram(),
+            generate_data_flow_diagram(model), generate_constraint_map_diagram(model), generate_traceability_diagram(model),
+            generate_decomposition_diagram(model), generate_icd_diagram(model), generate_requirements_allocation_diagram(model),
+            generate_system_decomposition_diagram(model), generate_conops_diagram(model),
+            generate_functional_architecture_diagram(model), generate_logical_architecture_diagram(model),
+            generate_behavior_overview_diagram(model), generate_component_detail_diagram(model, "COMP-1"),
+            generate_use_case_diagram(model, "BEH-1"), generate_behavior_flow_diagram(model, "BEH-1"),
+            generate_behavior_sequence_diagram(model, "BEH-1"),
+        ]
+
+        for index, mermaid in enumerate(diagrams):
+            svg = _render_mermaid_svg(mermaid)
+            assert svg, (index, mermaid)
+            root = ET.fromstring(svg)
+            if mermaid.startswith("sequenceDiagram"):
+                assert root.findall(".//*[@class='sequence-participant']")
+                assert root.findall(".//*[@class='sequence-message']")
+                continue
+            assert root.findall(".//*[@class='diagram-node']"), mermaid
+            expected_edges = len(re.findall(r"-->|==>|-\.->|-\.-x", mermaid))
+            assert len(root.findall(".//*[@class='diagram-edge']")) == expected_edges, mermaid
+            labels = ["".join(node.itertext()) for node in root.findall(".//*[@class='diagram-node']")]
+            assert not any(re.search(r"^[\[({/]|[\])}/]$", label) for label in labels), (mermaid, labels)

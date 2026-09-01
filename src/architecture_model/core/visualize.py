@@ -1412,29 +1412,49 @@ def _render_mermaid_svg(code: str) -> str:
         return ""
     nodes: dict[str, str] = {}
     edges: list[tuple[str, str, str]] = []
-    node_pattern = r'([\w.-]+)(?:\s*(?:\[\["?(.+?)"?\]\]|\(\("?(.+?)"?\)\)|\["?(.+?)"?\]|\("?(.+?)"?\)|\{"?(.+?)"?\}))?'
-    edge_pattern = re.compile(
-        rf'^\s*{node_pattern}\s*(?:-->|==>|-\.->|---)(?:\|([^|]*)\|)?\s*{node_pattern}\s*$'
-    )
+    edge_pattern = re.compile(r'\s*(-->|==>|-\.->|-\.-x)(?:\|([^|]*)\|)?\s*')
+    delimiters = sorted(set(_SHAPES.values()), key=lambda pair: len(pair[0]) + len(pair[1]), reverse=True)
+
+    def parse_node(text: str) -> tuple[str, str] | None:
+        match = re.fullmatch(r'([\w.-]+)\s*(.*)', text.strip())
+        if not match:
+            return None
+        node_id, shaped = match.groups()
+        label = node_id
+        if shaped:
+            for prefix, suffix in delimiters:
+                if shaped.startswith(prefix) and shaped.endswith(suffix):
+                    label = shaped[len(prefix):len(shaped) - len(suffix)]
+                    break
+            else:
+                return None
+        if len(label) >= 2 and label[0] == label[-1] and label[0] in "\"'":
+            label = label[1:-1]
+        return node_id, label
+
     for line in lines[1:]:
         if line.startswith(("subgraph ", "end", "class ", "classDef ", "style ", "click ")):
             continue
-        edge = edge_pattern.match(line)
-        if edge:
-            source = edge.group(1)
-            source_label = next((value for value in edge.groups()[1:6] if value), source)
-            edge_label = edge.group(7) or ""
-            target = edge.group(8)
-            target_label = next((value for value in edge.groups()[8:13] if value), target)
-            if source_label != source or source not in nodes:
-                nodes[source] = source_label
-            if target_label != target or target not in nodes:
-                nodes[target] = target_label
-            edges.append((source, target, edge_label))
+        operators = list(edge_pattern.finditer(line))
+        if operators:
+            node_texts = [line[:operators[0].start()]]
+            node_texts.extend(
+                line[operator.end():operators[index + 1].start()]
+                for index, operator in enumerate(operators[:-1])
+            )
+            node_texts.append(line[operators[-1].end():])
+            parsed = [parse_node(text) for text in node_texts]
+            if all(parsed):
+                parsed_nodes = [node for node in parsed if node is not None]
+                for node_id, label in parsed_nodes:
+                    if label != node_id or node_id not in nodes:
+                        nodes[node_id] = label
+                for index, operator in enumerate(operators):
+                    edges.append((parsed_nodes[index][0], parsed_nodes[index + 1][0], operator.group(2) or ""))
             continue
-        node = re.match(rf'^\s*{node_pattern}\s*$', line)
+        node = parse_node(line)
         if node:
-            nodes[node.group(1)] = next((value for value in node.groups()[1:] if value), node.group(1))
+            nodes[node[0]] = node[1]
     if not nodes:
         return ""
     incoming = {node_id: 0 for node_id in nodes}
