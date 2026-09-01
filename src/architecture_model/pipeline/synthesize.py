@@ -188,13 +188,21 @@ def _build_system_model_yaml(
     # Namespace prefix for component IDs to avoid collisions across sub-systems
     sys_prefix = _slugify(boundary.name)
 
+    id_remap: dict[str, str] = {}
+
+    def _register_id(original_id: str) -> str:
+        """Register and return one canonical subsystem ID mapping."""
+        if not original_id:
+            return original_id
+        return id_remap.setdefault(original_id, f"{sys_prefix}-{original_id}")
+
     # Extract from allocate results
     alloc_result = results.get("allocate")
     if alloc_result and alloc_result.output:
         output = alloc_result.output
         if hasattr(output, "components"):
             for comp in output.components:
-                namespaced_id = f"{sys_prefix}-{comp.id}"
+                namespaced_id = _register_id(comp.id)
                 comp_dict: dict[str, Any] = {"id": namespaced_id, "name": comp.name}
                 if hasattr(comp, "files") and comp.files:
                     comp_dict["files"] = [str(f) for f in comp.files]
@@ -207,7 +215,7 @@ def _build_system_model_yaml(
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
                 cap_dict = _capability_dict(cap)
-                cap_dict["id"] = f"{sys_prefix}-{cap.id}"
+                cap_dict["id"] = _register_id(cap.id)
                 capabilities.append(cap_dict)
 
     cap_ids = {c["id"] for c in capabilities}
@@ -221,12 +229,12 @@ def _build_system_model_yaml(
         if hasattr(output, "behaviors"):
             for beh in output.behaviors:
                 capability_id = (
-                    f"{sys_prefix}-{beh.capability_id}" if beh.capability_id else ""
+                    _register_id(beh.capability_id) if beh.capability_id else ""
                 )
                 if capability_id and capability_id not in cap_ids:
                     continue
                 beh_dict: dict[str, Any] = {
-                    "id": f"{sys_prefix}-{beh.id}",
+                    "id": _register_id(beh.id),
                     "name": beh.name,
                 }
                 if beh.behavior_type:
@@ -234,7 +242,7 @@ def _build_system_model_yaml(
                 if beh.steps:
                     beh_dict["steps"] = beh.steps
                 if beh.actor_id:
-                    beh_dict["actor_id"] = f"{sys_prefix}-{beh.actor_id}"
+                    beh_dict["actor_id"] = _register_id(beh.actor_id)
                 if capability_id:
                     beh_dict["capability_id"] = capability_id
                 if beh.triggers:
@@ -248,7 +256,7 @@ def _build_system_model_yaml(
         if hasattr(output, "actors"):
             for actor in output.actors:
                 actor_dict: dict[str, Any] = {
-                    "id": f"{sys_prefix}-{actor.id}",
+                    "id": _register_id(actor.id),
                     "name": actor.name,
                 }
                 if actor.actor_type:
@@ -264,11 +272,11 @@ def _build_system_model_yaml(
         output = specify_result.output
         if hasattr(output, "interfaces"):
             for iface in output.interfaces:
-                namespaced_comp_id = f"{sys_prefix}-{iface.component_id}"
+                namespaced_comp_id = _register_id(iface.component_id)
                 if namespaced_comp_id not in comp_ids:
                     continue
                 iface_dict: dict[str, Any] = {
-                    "id": f"{sys_prefix}-{iface.id}",
+                    "id": _register_id(iface.id),
                     "name": iface.name,
                     "interface_type": iface.interface_type,
                     "component_id": namespaced_comp_id,
@@ -293,9 +301,9 @@ def _build_system_model_yaml(
             for req in specify_result.output.requirements
         }
         for requirement in requirements:
-            requirement["id"] = f"{sys_prefix}-{requirement['id']}"
+            requirement["id"] = _register_id(requirement["id"])
         file_to_comp = {
-            str(source): f"{sys_prefix}-{comp.id}"
+            str(source): _register_id(comp.id)
             for comp in getattr(getattr(alloc_result, "output", None), "components", [])
             for source in comp.files
         }
@@ -318,7 +326,7 @@ def _build_system_model_yaml(
                 if con.source not in file_set:
                     continue
                 con_dict: dict[str, Any] = {
-                    "id": f"{sys_prefix}-CON-{i + 1}",
+                    "id": _register_id(f"CON-{i + 1}"),
                     "name": con.name,
                     "value": con.value,
                     "source": con.source,
@@ -339,28 +347,8 @@ def _build_system_model_yaml(
             layer = getattr(comp, "layer", "")
             if layer and layer not in seen_layers:
                 seen_layers.add(layer)
-                slug = re.sub(r"[^a-z0-9]+", "-", layer.lower()).strip("-")
-                layers.append({"id": f"{sys_prefix}-LAYER-{slug}", "name": layer})
-
-    # Build ID remap for namespacing (original COMP-N → sys_prefix-COMP-N)
-    id_remap: dict[str, str] = {}
-    if (
-        alloc_result
-        and alloc_result.output
-        and hasattr(alloc_result.output, "components")
-    ):
-        for comp in alloc_result.output.components:
-            id_remap[comp.id] = f"{sys_prefix}-{comp.id}"
-    if infer_result and infer_result.output:
-        for cap in getattr(infer_result.output, "capabilities", []):
-            id_remap[cap.id] = f"{sys_prefix}-{cap.id}"
-        for behavior in getattr(infer_result.output, "behaviors", []):
-            id_remap[behavior.id] = f"{sys_prefix}-{behavior.id}"
-        for actor in getattr(infer_result.output, "actors", []):
-            id_remap[actor.id] = f"{sys_prefix}-{actor.id}"
-    if specify_result and specify_result.output:
-        for interface in getattr(specify_result.output, "interfaces", []):
-            id_remap[interface.id] = f"{sys_prefix}-{interface.id}"
+                original_layer_id = f"LAYER-{layer.upper()}"
+                layers.append({"id": _register_id(original_layer_id), "name": layer})
 
     # Extract from relate results
     relate_result = results.get("relate")
@@ -368,10 +356,14 @@ def _build_system_model_yaml(
         output = relate_result.output
         if hasattr(output, "relationships"):
             for rel in output.relationships:
+                from_id = id_remap.get(rel.from_id)
+                to_id = id_remap.get(rel.to_id)
+                if not from_id or not to_id:
+                    continue
                 relationships.append(
                     {
-                        "from": id_remap.get(rel.from_id, rel.from_id),
-                        "to": id_remap.get(rel.to_id, rel.to_id),
+                        "from": from_id,
+                        "to": to_id,
                         "type": rel.rel_type,
                     }
                 )

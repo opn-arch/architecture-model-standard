@@ -183,7 +183,6 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
         assert all(
             rel.from_id in entity_ids and rel.to_id in entity_ids
             for rel in model.relationships
-            if rel.type.value == "satisfies"
         )
 
     root_capability = models[-1].entities.capabilities[0]
