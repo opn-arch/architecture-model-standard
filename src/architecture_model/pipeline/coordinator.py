@@ -339,7 +339,9 @@ class PipelineCoordinator:
             module_artifacts = []
             inventory_path = ctx.output_dir / "inventory.json"
             if inventory_path.is_file():
-                module_artifacts.append(str(inventory_path.relative_to(ctx.repo_path)))
+                from .history import serialize_artifact_path
+
+                module_artifacts.append(serialize_artifact_path(inventory_path, ctx.repo_path))
             module_records.append(ModuleHistoryRecord(
                 path=path,
                 module=Path(path).stem,
@@ -381,6 +383,8 @@ class PipelineCoordinator:
 
     @staticmethod
     def _existing_artifacts(ctx, components) -> dict[str, list[str]]:
+        from .history import serialize_artifact_path
+
         result: dict[str, list[str]] = {comp.id: [] for comp in components}
         shared = [
             ctx.output_dir / name for name in
@@ -394,7 +398,7 @@ class PipelineCoordinator:
                 ctx.output_dir / "contracts" / f"{safe_name}.yaml",
             ])
             result[comp.id] = [
-                str(path.relative_to(ctx.repo_path)) for path in candidates if path.is_file()
+                serialize_artifact_path(path, ctx.repo_path) for path in candidates if path.is_file()
             ]
         return result
 
@@ -728,10 +732,10 @@ class PipelineCoordinator:
 
         write_artifacts(ctx)
         write_context(ctx)
-        from .history import finalize_pipeline_history
+        from .history import finalize_pipeline_history, serialize_artifact_path
 
         artifacts = [
-            str(path.relative_to(ctx.repo_path))
+            serialize_artifact_path(path, ctx.repo_path)
             for path in ctx.output_dir.rglob("*")
             if path.is_file()
             and path != ctx.repo_path / ".architecture" / "pipeline-history.jsonl"

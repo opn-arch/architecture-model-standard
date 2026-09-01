@@ -129,6 +129,16 @@ def append_pipeline_history(repo_path: str | Path, record: PipelineRunRecord) ->
     return path
 
 
+def serialize_artifact_path(path: str | Path, repo_path: str | Path) -> str:
+    """Return a repo-relative artifact path, or an absolute path when external."""
+    resolved_path = Path(path).resolve()
+    resolved_repo = Path(repo_path).resolve()
+    try:
+        return str(resolved_path.relative_to(resolved_repo))
+    except ValueError:
+        return str(resolved_path)
+
+
 def load_pipeline_history(repo_path: str | Path, limit: int = 50) -> list[PipelineRunRecord]:
     """Load newest valid records, skipping malformed lines."""
     path = Path(repo_path) / ".architecture" / "pipeline-history.jsonl"

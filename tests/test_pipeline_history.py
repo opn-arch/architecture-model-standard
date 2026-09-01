@@ -350,3 +350,38 @@ def test_recursive_library_run_finalizes_generated_artifacts(tmp_path):
     assert set(record.produced_artifacts) >= {
         ".architecture/inventory.json", ".architecture/context.md"
     }
+
+
+def test_cli_external_output_records_absolute_artifacts(tmp_path):
+    from architecture_model.cli.main import main
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "app.py").write_text("def run():\n    return 1\n")
+    output = tmp_path / "external-cli-output"
+
+    assert main(["pipeline", str(repo), "--stage", "infer", "--output", str(output)]) == 0
+
+    record = load_pipeline_history(repo)[0]
+    assert record.revision == "final"
+    assert (output / "inventory.json").is_file()
+    assert (output / "context.md").is_file()
+    assert str((output / "inventory.json").resolve()) in record.produced_artifacts
+    assert str((output / "context.md").resolve()) in record.produced_artifacts
+
+
+def test_recursive_external_output_records_absolute_artifacts(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "app.py").write_text("def run():\n    return 1\n")
+    output = tmp_path / "external-library-output"
+    ctx = PipelineContext(repo_path=repo, output_dir=output)
+
+    PipelineCoordinator({"observe": ObserveStage()}).run_recursive(ctx)
+
+    record = load_pipeline_history(repo)[0]
+    assert record.revision == "final"
+    assert (output / "inventory.json").is_file()
+    assert (output / "context.md").is_file()
+    assert str((output / "inventory.json").resolve()) in record.produced_artifacts
+    assert str((output / "context.md").resolve()) in record.produced_artifacts

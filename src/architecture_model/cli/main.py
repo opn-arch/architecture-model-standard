@@ -805,15 +805,16 @@ def _cmd_pipeline(args) -> int:
     # Write artifacts
     write_artifacts(ctx)
     context_path = write_context(ctx)
-    from ..pipeline.history import finalize_pipeline_history
+    from ..pipeline.history import finalize_pipeline_history, serialize_artifact_path
 
     artifact_paths = [
-        str(path.relative_to(root))
+        serialize_artifact_path(path, root)
         for path in output_dir.rglob("*")
         if path.is_file() and path != root / ".architecture" / "pipeline-history.jsonl"
     ]
-    if context_path.is_file() and str(context_path.relative_to(root)) not in artifact_paths:
-        artifact_paths.append(str(context_path.relative_to(root)))
+    serialized_context = serialize_artifact_path(context_path, root)
+    if context_path.is_file() and serialized_context not in artifact_paths:
+        artifact_paths.append(serialized_context)
     try:
         finalize_pipeline_history(root, ctx.run_id, artifact_paths)
     except Exception as exc:
