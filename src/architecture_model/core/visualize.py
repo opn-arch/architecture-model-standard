@@ -1438,6 +1438,20 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     """
     props: dict[str, dict] = {}
 
+    def _json_safe(value):
+        """Recursively convert typed model values into viewer JSON values."""
+        from dataclasses import asdict, is_dataclass
+
+        if is_dataclass(value):
+            return {key: _json_safe(item) for key, item in asdict(value).items() if item not in (None, "", [])}
+        if isinstance(value, dict):
+            return {str(key): _json_safe(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [_json_safe(item) for item in value]
+        if hasattr(value, "value"):
+            return value.value
+        return value
+
     # Fields that count toward depth scoring per entity type
     _depth_fields: dict[str, list[str]] = {
         "actor": ["description", "intent", "goals", "decisions"],
@@ -1490,9 +1504,9 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             return None
         lbl = label or field.replace("_", " ").title()
         if as_list and isinstance(val, list):
-            return (lbl, val)
+            return (lbl, _json_safe(val))
         if isinstance(val, list):
-            return (lbl, val)
+            return (lbl, _json_safe(val))
         if hasattr(val, "value"):
             val = val.value
         return (lbl, str(val))
@@ -1605,7 +1619,7 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
         extra = {}
         for pair in [_opt(r, "text"), _opt(r, "priority"), _opt(r, "moe", "MoE"),
                      _opt(r, "source_doc", "Source"), _opt(r, "rationale"),
-                     _opt(r, "value_function", "Value Function"),
+                     _opt(r, "value_function", "value_function"),
                      _opt(r, "moes", "Measures of Effectiveness", as_list=True),
                      _opt(r, "failure_modes", "Failure Modes", as_list=True),
                      _opt(r, "monitored", "Monitored"),
@@ -2035,6 +2049,7 @@ def generate_html_viewer(
 
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
+        "meta": {"project": model.meta.project},
         "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"]}
                      for k, v in se_views.items()},
         "entities": explorer_data,
@@ -2273,10 +2288,10 @@ def generate_html_viewer(
         .comment-textarea {{ width: 100%; min-height: 60px; background: #0d1117; color: #e0e0e0; border: 1px solid #0f3460; border-radius: 4px; padding: 8px; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box; }}
         .toolbar-btn {{ background: #1a1a2e; color: #a0a0c0; border: 1px solid #0f3460; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 6px; }}
         .toolbar-btn:hover {{ background: #0f3460; color: #fff; }}
+        .math-expression {{ display: inline-block; padding: 4px 7px; border-radius: 4px;
+                            background: #0d1117; color: #7ec8e3; font-family: ui-monospace, monospace;
+                            white-space: pre-wrap; overflow-wrap: anywhere; }}
     </style>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
     <button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
@@ -2310,7 +2325,6 @@ def generate_html_viewer(
     <script>
         var D = {data_json};
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
         if (typeof mermaid !== 'undefined') {{
             mermaid.initialize({{ startOnLoad: false, theme: 'dark', securityLevel: 'loose',
@@ -2324,7 +2338,7 @@ def generate_html_viewer(
         /* ── Mermaid rendering ────────────────────────────────── */
         async function renderMermaid(container, code) {{
             if (typeof mermaid === 'undefined') {{
-                container.innerHTML = '<pre style="color:#a0a0c0">Diagram rendering requires internet (Mermaid CDN). Showing source:</pre><pre style="color:#7ec8e3;font-size:11px;white-space:pre-wrap">' + code.replace(/</g,'&lt;') + '</pre>';
+                container.innerHTML = '<pre style="color:#a0a0c0">Diagram source (offline mode):</pre><pre style="color:#7ec8e3;font-size:11px;white-space:pre-wrap">' + escapeHtml(code) + '</pre>';
                 return;
             }}
             try {{
@@ -2479,6 +2493,11 @@ def generate_html_viewer(
         }}
 
         /* ── Property card HTML ───────────────────────────────── */
+        function escapeHtml(value) {{
+            return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }}
+
         function propCardHtml(eid) {{
             var p = D.properties[eid];
             if (!p) return '';
@@ -2494,6 +2513,7 @@ def generate_html_viewer(
                 for (var k in p.properties) {{
                     var v = p.properties[k];
                     if (v == null || v === '') continue;
+                    if (k === 'value_function' || k === 'behavior_diagram') continue;
                     if (Array.isArray(v)) {{
                         html += '<div class="prop-item"><div class="prop-label">' + k + '</div><div class="prop-value"><ul class="prop-list">';
                         for (var li = 0; li < v.length; li++) html += '<li>' + v[li] + '</li>';
@@ -2505,7 +2525,7 @@ def generate_html_viewer(
             }}
             if (p.properties && p.properties.value_function) {{
                 var vf = p.properties.value_function;
-                html += '<div class="prop-item"><div class="prop-label">Value Function</div><div class="prop-value"><span class="katex-render" data-latex="' + vf.replace(/"/g, '&quot;') + '">' + vf + '</span></div></div>';
+                html += '<div class="prop-item"><div class="prop-label">Value Function</div><div class="prop-value"><code class="math-expression">' + escapeHtml(vf) + '</code></div></div>';
             }}
             if (p.description) {{
                 html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + p.description + '</div></div>';
@@ -2691,17 +2711,6 @@ def generate_html_viewer(
                 html += '<p style="color:#a0a0c0;margin-top:12px">No relationship diagrams for this entity.</p>';
             }}
             content.innerHTML = html;
-
-            // Render KaTeX math in .katex-render elements
-            content.querySelectorAll('.katex-render').forEach(function(el) {{
-                try {{
-                    if (typeof katex !== 'undefined') {{
-                        katex.render(el.dataset.latex, el, {{ throwOnError: false, displayMode: false }});
-                    }}
-                }} catch(e) {{
-                    // Fallback: leave raw LaTeX text visible
-                }}
-            }});
 
             // Wire accordion
             content.querySelectorAll('.accordion-header').forEach(function(hdr) {{

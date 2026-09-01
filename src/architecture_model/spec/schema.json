@@ -181,7 +181,6 @@
     "decision_entry": {
       "type": "object",
       "required": [
-        "date",
         "choice"
       ],
       "properties": {

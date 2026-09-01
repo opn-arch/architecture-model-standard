@@ -5,7 +5,7 @@ from architecture_model.core.types import (
     ArchitectureModel, ModelMeta, Entities, Relationship, RelationType,
     Component, Capability, Actor, Behavior, Interface, Constraint, Layer,
     System, Requirement, Status, ActorType, Priority, ConstraintType,
-    InterfaceType,
+    InterfaceType, DecisionEntry,
 )
 from architecture_model.core.visualize import (
     generate_icd_diagram,
@@ -324,6 +324,31 @@ class TestEnrichedPropertyCards:
         props = build_entity_properties(_make_rich_model())
         p = props["REQ-1"]
         assert p["properties"]["Text"] == "System shall parse YAML files"
+
+    def test_real_decisions_are_json_safe_with_readable_labels(self):
+        model = _make_rich_model()
+        model.entities.components[0].decisions = [
+            DecisionEntry(choice="Use YAML", rationale="Readable", alternatives=["JSON"]),
+        ]
+
+        properties = build_entity_properties(model)["COMP-1"]["properties"]
+
+        assert properties["Decisions"] == [{
+            "choice": "Use YAML",
+            "rationale": "Readable",
+            "alternatives": ["JSON"],
+        }]
+        import json
+        json.dumps(properties)
+
+    def test_requirement_value_function_uses_runtime_data_key(self):
+        model = _make_rich_model()
+        model.entities.requirements[0].value_function = r"J = \sum_t c_t"
+
+        properties = build_entity_properties(model)["REQ-1"]["properties"]
+
+        assert properties["value_function"] == r"J = \sum_t c_t"
+        assert "Value Function" not in properties
 
     def test_outgoing_relationships(self):
         props = build_entity_properties(_make_rich_model())

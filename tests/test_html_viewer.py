@@ -1,4 +1,6 @@
 """Tests for HTML diagram viewer generation (v2 — SE navigation + entity explorer)."""
+import json
+import re
 import pytest
 from pathlib import Path
 from architecture_model.core.types import (
@@ -94,6 +96,17 @@ class TestHtmlViewerV2:
         html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
         # Diagram data should be embedded as JSON
         assert "var D =" in html or "DIAGRAM_DATA" in html or "diagramData" in html
+
+    def test_embedded_data_contains_project_namespace(self, tmp_path):
+        html = generate_html_viewer(_make_model(), tmp_path / "viewer.html").read_text()
+        data = json.loads(re.search(r"var D = (.*);\n", html).group(1))
+
+        assert data["meta"]["project"] == "test"
+
+    def test_generated_html_has_no_external_resources(self, tmp_path):
+        html = generate_html_viewer(_make_model(), tmp_path / "viewer.html").read_text()
+
+        assert not re.search(r"(?:src|href)=[\"']https?://", html)
 
     def test_has_behavior_model_nav(self, tmp_path):
         html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()

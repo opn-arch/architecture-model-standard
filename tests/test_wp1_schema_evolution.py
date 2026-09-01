@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 
 SCHEMA_PATH = Path(__file__).parent.parent / "src" / "architecture_model" / "spec" / "schema.json"
@@ -109,3 +110,40 @@ class TestSchemaValidation:
             "relationships": [],
         }
         jsonschema.validate(model, schema)  # Should not raise
+
+    def test_decision_entry_allows_choice_without_date(self):
+        schema = _load_schema()
+        model = {
+            "meta": {
+                "schema_version": "2.1.0", "project": "test",
+                "generated_at": "2026-01-01T00:00:00Z",
+            },
+            "entities": {
+                "components": [{
+                    "id": "COMP-1", "name": "Test", "status": "ACTIVE",
+                    "decisions": [{"choice": "Use YAML"}],
+                }],
+            },
+            "relationships": [],
+        }
+
+        jsonschema.validate(model, schema)
+
+    def test_decision_entry_rejects_missing_choice(self):
+        schema = _load_schema()
+        model = {
+            "meta": {
+                "schema_version": "2.1.0", "project": "test",
+                "generated_at": "2026-01-01T00:00:00Z",
+            },
+            "entities": {
+                "components": [{
+                    "id": "COMP-1", "name": "Test", "status": "ACTIVE",
+                    "decisions": [{"date": "2026-01-15"}],
+                }],
+            },
+            "relationships": [],
+        }
+
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(model, schema)

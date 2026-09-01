@@ -289,8 +289,8 @@ class LifecyclePhase(str, Enum):
 class DecisionEntry:
     """A lightweight decision record embedded in any entity."""
 
+    choice: str
     date: str = ""
-    choice: str = ""
     rationale: str = ""
     alternatives: list[str] = field(default_factory=list)
     context: str = ""

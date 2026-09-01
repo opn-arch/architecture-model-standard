@@ -1,15 +1,20 @@
 """Tests for the Decision dataclass and decisions field on BaseEntity."""
 
+import pytest
+
 from architecture_model.core.types import DecisionEntry as Decision, BaseEntity, Component, Status
 
 
 def test_decision_defaults():
-    d = Decision()
+    d = Decision(choice="Use PostgreSQL")
     assert d.date == ""
-    assert d.choice == ""
+    assert d.choice == "Use PostgreSQL"
     assert d.rationale == ""
     assert d.alternatives == []
     assert d.context == ""
+
+    with pytest.raises(TypeError):
+        Decision()
 
 
 def test_decision_with_values():

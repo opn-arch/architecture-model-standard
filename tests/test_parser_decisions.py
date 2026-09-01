@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 import yaml
+import pytest
 
 from architecture_model.core.parser import _parse_raw, dump_model, load_model, save_model
 from architecture_model.core.types import DecisionEntry
@@ -35,6 +36,15 @@ def _make_raw_entity(entity_type, entity_data):
 
 
 class TestDecisionEntryParsing:
+    def test_choice_is_required_and_date_defaults_empty(self):
+        decision = DecisionEntry(choice="Use YAML")
+
+        assert decision.choice == "Use YAML"
+        assert decision.date == ""
+
+        with pytest.raises(TypeError):
+            DecisionEntry()
+
     def test_parse_decisions_from_yaml_dict(self):
         raw = _make_raw(decisions=[
             {"date": "2026-01-15", "choice": "Use YAML", "rationale": "Human readable",
@@ -55,6 +65,10 @@ class TestDecisionEntryParsing:
         raw = _make_raw()
         model = _parse_raw(raw)
         assert model.entities.components[0].decisions == []
+
+    def test_parse_decision_requires_choice(self):
+        with pytest.raises(KeyError):
+            _parse_raw(_make_raw(decisions=[{"date": "2026-01-15"}]))
 
     def test_dump_preserves_decisions(self):
         raw = _make_raw(decisions=[
@@ -81,6 +95,15 @@ class TestDecisionEntryParsing:
         assert isinstance(d, DecisionEntry)
         assert d.choice == "Async IO"
         assert d.alternatives == ["Threads", "Processes"]
+
+    def test_intent_roundtrip_through_file(self, tmp_path):
+        model = _parse_raw(_make_raw(intent="Keep architecture intent durable"))
+        path = tmp_path / "model.yaml"
+
+        save_model(model, path)
+        loaded = load_model(path)
+
+        assert loaded.entities.components[0].intent == "Keep architecture intent durable"
 
     def test_decisions_on_capability(self):
         raw = _make_raw_entity("capabilities", {

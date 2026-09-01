@@ -236,8 +236,8 @@ def _parse_base(d: dict) -> dict:
         "intent": d.get("intent", ""),
         "decisions": [
             DecisionEntry(
+                choice=de["choice"],
                 date=de.get("date", ""),
-                choice=de.get("choice", ""),
                 rationale=de.get("rationale", ""),
                 alternatives=de.get("alternatives", []),
                 context=de.get("context", ""),
@@ -620,6 +620,8 @@ def _dump_base(entity: Any) -> dict:
     }
     if entity.description:
         d["description"] = entity.description
+    if entity.intent:
+        d["intent"] = entity.intent
     if entity.tags:
         d["tags"] = entity.tags
     if entity.source_file:
