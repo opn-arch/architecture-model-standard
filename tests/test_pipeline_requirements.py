@@ -87,7 +87,10 @@ class TestConstantRequirements:
 
         requirement = _derive_requirements(inv)[0]
 
-        assert requirement.value_function == "V(actual) = min(1, actual / 4)"
+        assert requirement.value_function == (
+            "V(actual) = 1 if actual >= 4 else "
+            "max(0, 1 - (4 - actual) / max(abs(4), 1))"
+        )
         assert "at or above the lower bound score 1" in requirement.rationale
 
     def test_maximum_and_timeout_constants_reward_staying_below_target(self):
@@ -106,13 +109,60 @@ class TestConstantRequirements:
         requirements = _derive_requirements(inv)
 
         assert [req.value_function for req in requirements] == [
-            "V(actual) = min(1, 100 / max(actual, 1e-9))",
-            "V(actual) = min(1, 30 / max(actual, 1e-9))",
+            "V(actual) = 1 if actual <= 100 else max(0, 1 - (actual - 100) / max(abs(100), 1))",
+            "V(actual) = 1 if actual <= 30 else max(0, 1 - (actual - 30) / max(abs(30), 1))",
         ]
         assert all(
             "at or below the upper bound score 1" in req.rationale
             for req in requirements
         )
+
+    def test_zero_directional_thresholds_use_safe_piecewise_expressions(self):
+        inv = _make_inventory(
+            modules=[
+                ModuleRecord(
+                    path=Path("src/limits.py"),
+                    constants=[
+                        ConstantRecord(name="MIN_WORKERS", value="0", type="int"),
+                        ConstantRecord(name="MAX_ERRORS", value="0", type="int"),
+                    ],
+                )
+            ]
+        )
+
+        minimum, maximum = _derive_requirements(inv)
+
+        assert minimum.value_function == (
+            "V(actual) = 1 if actual >= 0 else "
+            "max(0, 1 - (0 - actual) / max(abs(0), 1))"
+        )
+        assert maximum.value_function == (
+            "V(actual) = 1 if actual <= 0 else "
+            "max(0, 1 - (actual - 0) / max(abs(0), 1))"
+        )
+        assert "/ 0" not in minimum.value_function
+        assert "/ 0" not in maximum.value_function
+
+    def test_negative_thresholds_use_signed_comparison_and_absolute_scale(self):
+        inv = _make_inventory(
+            modules=[
+                ModuleRecord(
+                    path=Path("src/temperature.py"),
+                    constants=[
+                        ConstantRecord(name="MIN_TEMPERATURE", value="-20", type="int"),
+                        ConstantRecord(name="MAX_TEMPERATURE", value="-5", type="int"),
+                    ],
+                )
+            ]
+        )
+
+        minimum, maximum = _derive_requirements(inv)
+
+        assert "actual >= -20" in minimum.value_function
+        assert "max(abs(-20), 1)" in minimum.value_function
+        assert "actual <= -5" in maximum.value_function
+        assert "max(abs(-5), 1)" in maximum.value_function
+        assert all("signed threshold" in req.rationale for req in (minimum, maximum))
 
     def test_non_requirement_constant_ignored(self):
         inv = _make_inventory(

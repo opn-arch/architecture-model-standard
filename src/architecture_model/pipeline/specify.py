@@ -69,16 +69,18 @@ def _constant_value_function(name: str, value: str) -> tuple[str, str]:
     lower_bound = re.search(r"(?:^|_)MIN(?:_|$)", name, re.IGNORECASE)
     if lower_bound:
         return (
-            f"V(actual) = min(1, actual / {target_text})",
-            "Value convention: actual is the observed value; values at or above the lower bound score 1.",
+            f"V(actual) = 1 if actual >= {target_text} else "
+            f"max(0, 1 - ({target_text} - actual) / max(abs({target_text}), 1))",
+            "Value convention: actual is compared to the signed threshold; values at or above the lower bound score 1, and violations decline by absolute target scale.",
         )
     upper_bound = re.search(
         r"(?:^|_)(?:MAX|TIMEOUT|LIMIT|TTL)(?:_|$)", name, re.IGNORECASE
     )
     if upper_bound:
         return (
-            f"V(actual) = min(1, {target_text} / max(actual, 1e-9))",
-            "Value convention: actual is the observed value; values at or below the upper bound score 1.",
+            f"V(actual) = 1 if actual <= {target_text} else "
+            f"max(0, 1 - (actual - {target_text}) / max(abs({target_text}), 1))",
+            "Value convention: actual is compared to the signed threshold; values at or below the upper bound score 1, and violations decline by absolute target scale.",
         )
     return (
         f"V(actual) = max(0, 1 - abs(actual - {target_text}) / max(abs({target_text}), 1))",
