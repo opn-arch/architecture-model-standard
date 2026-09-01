@@ -324,3 +324,40 @@ class TestComponentMonitored:
         model = _parse_raw(raw)
         dumped = dump_model(model)
         assert dumped["entities"]["components"][0]["monitored"] == ["m1"]
+
+
+class TestExternalSystemRoundtrip:
+    def test_parser_and_typed_serializers_preserve_external_system(self, tmp_path):
+        decision = {
+            "choice": "Use vendor API",
+            "date": "2026-09-01",
+            "rationale": "Required integration",
+            "alternatives": ["Build internally"],
+            "context": "Payment processing",
+        }
+        raw = _make_raw_entity("external_systems", {
+            "intent": "Process payments through a trusted provider",
+            "decisions": [decision],
+            "url": "https://payments.example.test",
+            "auth_method": "OAuth2",
+            "api_type": "REST",
+            "provider": "Example Payments",
+            "sla": "99.99%",
+        })
+
+        model = _parse_raw(raw)
+        parser_dump = dump_model(model)["entities"]["external_systems"][0]
+        typed_dump = model.to_dict()["entities"]["external_systems"][0]
+        yaml_loaded = _parse_raw(yaml.safe_load(model.to_yaml())).entities.external_systems[0]
+        path = tmp_path / "model.yaml"
+        save_model(model, path)
+        file_loaded = load_model(path).entities.external_systems[0]
+
+        assert parser_dump == typed_dump
+        assert typed_dump["intent"] == "Process payments through a trusted provider"
+        assert typed_dump["decisions"] == [decision]
+        assert typed_dump["url"] == "https://payments.example.test"
+        assert yaml_loaded.decisions == [DecisionEntry(**decision)]
+        assert yaml_loaded.intent == "Process payments through a trusted provider"
+        assert file_loaded.provider == "Example Payments"
+        assert file_loaded.sla == "99.99%"

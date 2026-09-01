@@ -41,6 +41,7 @@ from .types import (
     EnvironmentKind,
     Event,
     EventKind,
+    ExternalSystem,
     FunctionSignature,
     Interface,
     InterfaceType,
@@ -219,6 +220,10 @@ def _parse_entities(d: dict) -> Entities:
         decisions=[_parse_decision(x) for x in _normalize_entity_list(d.get("decisions", []))],
         lifecycles=[_parse_lifecycle(x) for x in _normalize_entity_list(d.get("lifecycles", []))],
         requirements=[_parse_requirement(x) for x in _normalize_entity_list(d.get("requirements", []))],
+        external_systems=[
+            _parse_external_system(x)
+            for x in _normalize_entity_list(d.get("external_systems", []))
+        ],
     )
 
 
@@ -542,6 +547,17 @@ def _parse_relationship(d: dict) -> Relationship:
     )
 
 
+def _parse_external_system(d: dict) -> ExternalSystem:
+    return ExternalSystem(
+        **_parse_base(d),
+        url=d.get("url", ""),
+        auth_method=d.get("auth_method", ""),
+        api_type=d.get("api_type", ""),
+        provider=d.get("provider", ""),
+        sla=d.get("sla", ""),
+    )
+
+
 # ---------------------------------------------------------------------------
 # Internal: Serialization
 # ---------------------------------------------------------------------------
@@ -604,6 +620,8 @@ def _dump_entities(e: Entities) -> dict:
         d["lifecycles"] = [_dump_lifecycle(x) for x in e.lifecycles]
     if e.requirements:
         d["requirements"] = [_dump_requirement(x) for x in e.requirements]
+    if e.external_systems:
+        d["external_systems"] = [_dump_external_system(x) for x in e.external_systems]
     return d
 
 
@@ -961,6 +979,16 @@ def _dump_requirement(req: Requirement) -> dict:
     if req.moes: r["moes"] = req.moes
     if req.failure_modes: r["failure_modes"] = req.failure_modes
     if req.monitored: r["monitored"] = req.monitored
+    return r
+
+
+def _dump_external_system(es: ExternalSystem) -> dict:
+    r = _dump_base(es)
+    if es.url: r["url"] = es.url
+    if es.auth_method: r["auth_method"] = es.auth_method
+    if es.api_type: r["api_type"] = es.api_type
+    if es.provider: r["provider"] = es.provider
+    if es.sla: r["sla"] = es.sla
     return r
 
 
