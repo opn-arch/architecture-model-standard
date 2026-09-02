@@ -202,3 +202,30 @@ def test_logical_saturated_budget_keeps_cross_system_interface_path_atomic(tmp_p
     assert all(node.kind != "interface" or len([
         edge for edge in spec.edges if node.id in {edge.source, edge.target}
     ]) >= 2 for node in spec.nodes)
+
+
+def test_logical_hidden_priority_interface_does_not_reserve_connected_systems(tmp_path):
+    context = _context(tmp_path, inline_count=20, actor_count=20)
+    hidden = Selector(qualified_id="domain::IF-1", resolved_id="domain::IF-1")
+    spec = project_logical_architecture(
+        context,
+        ViewCuration(hide=[hidden]),
+        max_overview_nodes=4,
+    )
+    context.models["domain"].entities.interfaces = [
+        item for item in context.models["domain"].entities.interfaces if item.id != "IF-1"
+    ]
+    without_interface = project_logical_architecture(
+        ArchitectureViewContext(context.root, context.models, []),
+        max_overview_nodes=4,
+    )
+
+    refs = {node.entity_ref for node in spec.nodes}
+    assert len(spec.nodes) <= 4
+    assert "domain::IF-1" not in refs
+    assert all("node:domain::IF-1" not in {edge.source, edge.target} for edge in spec.edges)
+    assert {
+        node.entity_ref for node in spec.nodes if node.kind == "system"
+    } == {
+        node.entity_ref for node in without_interface.nodes if node.kind == "system"
+    }

@@ -968,6 +968,8 @@ def project_logical_architecture(
     system_node_by_ref = {node.entity_ref: node for node in system_nodes}
     cross_system_interfaces: list[tuple[IndexedEntity, str, str]] = []
     for interface in context.entities("interface"):
+        if interface.key in hidden:
+            continue
         endpoint_systems = []
         for reference in (interface.value.provider, interface.value.consumer):
             endpoint = _find_local(context, interface.model, reference)
