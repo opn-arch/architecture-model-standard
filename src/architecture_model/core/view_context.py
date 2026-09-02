@@ -8,6 +8,7 @@ from typing import Any, Iterable
 
 from architecture_model.core.hierarchy import load_model_hierarchy
 from architecture_model.core.types import ArchitectureModel, BaseEntity, Relationship
+from architecture_model.core.diagram_spec import Diagnostic
 
 
 @dataclass(frozen=True)
@@ -54,7 +55,11 @@ class ArchitectureViewContext:
     def __init__(self, root: Path, models: dict[str, ArchitectureModel], warnings: list[str], histories: Any = None):
         self.root = root
         self.models = models
-        self.warnings = sorted(set(warnings))
+        self.diagnostics: list[Diagnostic] = []
+        self._diagnostic_keys: set[tuple[str, str, str, str]] = set()
+        for warning in warnings:
+            self._add_diagnostic("warning", "HIERARCHY_WARNING", warning)
+        self.warnings = self.diagnostics
         self.histories = histories
         self._entities: dict[str, IndexedEntity] = {}
         self._relationships: list[IndexedRelationship] = []
@@ -104,7 +109,7 @@ class ArchitectureViewContext:
                         continue
                     key = f"{namespace}::{entity.id}"
                     if key in self._entities:
-                        self.warnings.append(f"Duplicate entity ID rejected in {namespace}: {entity.id}")
+                        self._add_diagnostic("warning", "DUPLICATE_ENTITY", f"Duplicate entity ID rejected in {namespace}: {entity.id}")
                         continue
                     record = IndexedEntity(key, entity.id, singular, namespace, entity, source)
                     self._entities[key] = record
@@ -131,27 +136,37 @@ class ArchitectureViewContext:
                 source_key = self._relationship_key(namespace, relationship.from_id)
                 target_key = self._relationship_key(namespace, relationship.to_id)
                 if source_key not in self._entities or target_key not in self._entities:
-                    self.warnings.append(
-                        f"Unresolved relationship in {namespace}: {source_key} -> {target_key}"
-                    )
+                    self._add_diagnostic("warning", "RELATIONSHIP_UNRESOLVED", f"Unresolved relationship in {namespace}: {source_key} -> {target_key}")
                     continue
                 kind = getattr(relationship.type, "value", str(relationship.type))
                 record = IndexedRelationship(source_key, target_key, kind, namespace, relationship)
                 self._relationships.append(record)
                 self._outgoing.setdefault(source_key, []).append(record)
                 self._incoming.setdefault(target_key, []).append(record)
-        self.warnings = sorted(set(self.warnings))
+        self.warnings = self.diagnostics
+
+    def _add_diagnostic(self, severity: str, code: str, message: str, source: str = "", **context: Any) -> None:
+        key = (severity, code, message, source)
+        if key not in self._diagnostic_keys:
+            self._diagnostic_keys.add(key)
+            self.diagnostics.append(Diagnostic(severity, code, message, source=source, context=context))
 
     @staticmethod
     def _relationship_key(namespace: str, reference: str) -> str:
         return reference if "::" in reference else f"{namespace}::{reference}"
 
-    def entity(self, key: str) -> IndexedEntity | None:
-        return self._entities.get(key)
+    def entity(self, key: str, *, diagnose: bool = True) -> IndexedEntity | None:
+        value = self._entities.get(key)
+        if value is None and diagnose:
+            self._add_diagnostic("warning", "ENTITY_NOT_FOUND", f"Entity not found: {key}", key=key)
+        return value
 
     def qualified_entity(self, model: str, local_id: str) -> IndexedEntity | None:
         if "::" in local_id:
-            return self.entity(local_id) if local_id.startswith(f"{model}::") else None
+            if not local_id.startswith(f"{model}::"):
+                self._add_diagnostic("warning", "QUALIFIED_SCOPE_MISMATCH", f"Qualified entity {local_id} is outside model {model}")
+                return None
+            return self.entity(local_id)
         return self.entity(f"{model}::{local_id}")
 
     def parent_model(self, model: str) -> str | None:
@@ -172,6 +187,25 @@ class ArchitectureViewContext:
         while current is not None and current not in result:
             result.append(current)
             current = self.parent_model(current)
+        return result
+
+    def entity_parents(self, key: str) -> list[str]:
+        return sorted(relationship.source for relationship in self.incoming(key, "contains"))
+
+    def entity_children(self, key: str) -> list[str]:
+        return sorted(relationship.target for relationship in self.outgoing(key, "contains"))
+
+    def entity_ancestors(self, key: str) -> list[str]:
+        result: list[str] = []
+        seen = {key}
+        frontier = self.entity_parents(key)
+        while frontier:
+            current = frontier.pop(0)
+            if current in seen:
+                continue
+            seen.add(current)
+            result.append(current)
+            frontier.extend(parent for parent in self.entity_parents(current) if parent not in seen)
         return result
 
     def entities(self, entity_type: str | None = None, model: str | None = None) -> list[IndexedEntity]:
@@ -220,7 +254,14 @@ class ArchitectureViewContext:
             values = [value for value in values if value.key in keys]
         if tag:
             values = [value for value in values if tag in (value.tags or [])]
-        return values if len(values) <= 1 else []
+        if len(values) > 1:
+            description = qualified_id or local_id or name or source_file or tag
+            self._add_diagnostic("warning", "SELECTOR_AMBIGUOUS", f"Selector is ambiguous: {description}", selector=description)
+            return []
+        if not values:
+            description = qualified_id or local_id or name or source_file or tag
+            self._add_diagnostic("warning", "SELECTOR_NOT_FOUND", f"Selector did not match: {description}", selector=description)
+        return values
 
     def components_owning_file(self, path: str) -> list[str]:
         return sorted(

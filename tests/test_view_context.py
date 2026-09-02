@@ -2,6 +2,7 @@ from pathlib import Path
 
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
+from architecture_model.core.diagram_spec import Diagnostic
 
 
 def _write(path: Path, body: str) -> None:
@@ -87,9 +88,9 @@ def test_context_warns_for_traversal_dead_and_cycle_refs(tmp_path):
     context = ArchitectureViewContext.load(load_model(root_path), tmp_path)
 
     assert len(context.models) == 2
-    assert any("Missing sub-model" in warning for warning in context.warnings)
-    assert any("Path traversal" in warning for warning in context.warnings)
-    assert any("cycle" in warning.lower() for warning in context.warnings)
+    assert any("Missing sub-model" in warning.message for warning in context.warnings)
+    assert any("Path traversal" in warning.message for warning in context.warnings)
+    assert any("cycle" in warning.message.lower() for warning in context.warnings)
 
 
 def test_context_selectors_do_not_choose_ambiguous_local_id(tmp_path):
@@ -209,4 +210,41 @@ def test_unknown_unqualified_relationship_endpoint_is_not_guessed_in_other_model
     context = ArchitectureViewContext.from_repo(tmp_path)
 
     assert context.incoming("root::SYS-A") == []
-    assert any("root::COMP-1" in warning for warning in context.warnings)
+    assert any("root::COMP-1" in warning.message for warning in context.warnings)
+
+
+def test_entity_containment_ancestry_is_qualified_cycle_safe_and_separate_from_models(tmp_path):
+    root_path = tmp_path / ".architecture-model.yaml"
+    _write(root_path, _model("root", """  capabilities:
+    - {id: CAP-A, name: A, status: ACTIVE}
+    - {id: CAP-B, name: B, status: ACTIVE}
+    - {id: CAP-C, name: C, status: ACTIVE}
+""", """  - {from: CAP-A, to: CAP-B, type: contains}
+  - {from: CAP-B, to: CAP-C, type: contains}
+  - {from: CAP-C, to: CAP-A, type: contains}
+"""))
+    context = ArchitectureViewContext.from_repo(tmp_path)
+    assert context.entity_parents("root::CAP-C") == ["root::CAP-B"]
+    assert context.entity_children("root::CAP-A") == ["root::CAP-B"]
+    assert context.entity_ancestors("root::CAP-C") == ["root::CAP-B", "root::CAP-A"]
+    assert context.ancestors("root") == []
+
+
+def test_missing_and_ambiguous_queries_record_deduplicated_diagnostics(tmp_path):
+    context = _context_with_duplicate_names(tmp_path)
+    assert context.entity("root::MISSING") is None
+    assert context.entity("root::MISSING") is None
+    assert context.select(name="Duplicate", system="root") == []
+    assert context.select(name="Duplicate", system="root") == []
+    assert all(isinstance(item, Diagnostic) for item in context.diagnostics)
+    assert [item.code for item in context.diagnostics].count("ENTITY_NOT_FOUND") == 1
+    assert [item.code for item in context.diagnostics].count("SELECTOR_AMBIGUOUS") == 1
+
+
+def _context_with_duplicate_names(tmp_path):
+    root_path = tmp_path / ".architecture-model.yaml"
+    _write(root_path, _model("root", """  components:
+    - {id: COMP-A, name: Duplicate, status: ACTIVE}
+    - {id: COMP-B, name: Duplicate, status: ACTIVE}
+"""))
+    return ArchitectureViewContext.from_repo(tmp_path)

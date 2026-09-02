@@ -11,6 +11,49 @@ from typing import Any, Callable, Iterable, TypeVar
 
 JsonPrimitive = str | int | float | bool | None
 T = TypeVar("T")
+MAX_TEXT_LENGTH = 500
+
+
+@dataclass(frozen=True)
+class Diagnostic:
+    severity: str
+    code: str
+    message: str
+    view: str = ""
+    source: str = ""
+    context: dict[str, JsonPrimitive] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def _provenance_list(values: Iterable["DiagramProvenance | str | dict[str, Any]"]) -> list["DiagramProvenance"]:
+    result: list[DiagramProvenance] = []
+    for value in values:
+        if isinstance(value, DiagramProvenance):
+            result.append(value)
+        elif isinstance(value, dict):
+            result.append(DiagramProvenance(**value))
+        else:
+            result.append(DiagramProvenance(source=str(value)))
+    return result
+
+
+def _diagnostics(values: Iterable[Diagnostic | str]) -> list[Diagnostic]:
+    return [value if isinstance(value, Diagnostic) else Diagnostic("warning", "LEGACY", str(value)) for value in values]
+
+
+def _validate_text(value: str) -> None:
+    unsafe = re.search(r"<\s*script\b|\bon\w+\s*=|javascript\s*:", value, re.IGNORECASE)
+    controls = any(ord(char) < 32 and char not in "\n\r\t" for char in value)
+    if unsafe or controls or len(value) > MAX_TEXT_LENGTH:
+        raise ValueError("Invalid presentation text")
+
+
+def validate_presentation_text(value: str) -> str:
+    """Validate unescaped presentation data and retain its plain-text content."""
+    _validate_text(value)
+    return value
 
 
 def _json_safe(value: Any) -> Any:
@@ -43,11 +86,15 @@ class DiagramNode:
     lane: str = ""
     status: str = ""
     inferred: bool = False
-    evidence: list[str] = field(default_factory=list)
+    evidence: list[DiagramProvenance] = field(default_factory=list)
     entity_ref: str = ""
     drilldown_ref: str = ""
     badges: list[str] = field(default_factory=list)
     metrics: dict[str, JsonPrimitive] = field(default_factory=dict)
+    safe_text: bool = True
+
+    def __post_init__(self) -> None:
+        self.evidence = _provenance_list(self.evidence)
 
 
 @dataclass
@@ -56,10 +103,13 @@ class DiagramEdge:
     target: str
     kind: str
     label: str = ""
-    evidence: list[str] = field(default_factory=list)
+    evidence: list[DiagramProvenance] = field(default_factory=list)
     inferred: bool = False
     style: str = ""
     critical: bool = False
+
+    def __post_init__(self) -> None:
+        self.evidence = _provenance_list(self.evidence)
 
 
 @dataclass
@@ -117,11 +167,12 @@ class DiagramSpec:
     lanes: list[DiagramGroup] = field(default_factory=list)
     callouts: list[DiagramCallout] = field(default_factory=list)
     legend: list[LegendEntry] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+    warnings: list[Diagnostic] = field(default_factory=list)
     provenance: DiagramProvenance = field(default_factory=DiagramProvenance)
     drilldowns: list[DiagramDrilldown] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        self.warnings = _diagnostics(self.warnings)
         if isinstance(self.provenance, dict):
             self.provenance = DiagramProvenance(
                 source=str(self.provenance.get("source", "")),
@@ -134,22 +185,27 @@ class DiagramSpec:
             ]
 
     def validate(self) -> None:
-        def reject_html(value: Any) -> None:
-            if isinstance(value, str) and re.search(r"<\s*/?\s*[A-Za-z][^>]*>", value):
-                raise ValueError("HTML is not allowed in diagram specifications")
+        def validate_text(value: Any) -> None:
+            if isinstance(value, str):
+                _validate_text(value)
             if isinstance(value, dict):
                 for item in value.values():
-                    reject_html(item)
+                    validate_text(item)
             elif isinstance(value, (list, tuple)):
                 for item in value:
-                    reject_html(item)
+                    validate_text(item)
 
-        reject_html(asdict(self))
+        validate_text(asdict(self))
+        all_ids: list[str] = []
         for label, values in (("node", self.nodes), ("group", self.groups), ("lane", self.lanes), ("callout", self.callouts), ("legend", self.legend), ("drilldown", self.drilldowns)):
             ids = [value.id for value in values]
             duplicate = next((item for item in ids if ids.count(item) > 1), None)
             if duplicate:
                 raise ValueError(f"Duplicate {label} ID: {duplicate}")
+            all_ids.extend(ids)
+        duplicate = next((identifier for identifier in all_ids if all_ids.count(identifier) > 1), None)
+        if duplicate:
+            raise ValueError(f"Duplicate document ID: {duplicate}")
         node_ids = {node.id for node in self.nodes}
         group_ids = {group.id for group in self.groups}
         lane_ids = {lane.id for lane in self.lanes}
@@ -201,7 +257,7 @@ class DiagramSpec:
         data["edges"] = sorted(data["edges"], key=lambda item: (item["source"], item["target"], item["kind"], item["label"]))
         for key in ("groups", "lanes", "callouts", "legend", "drilldowns"):
             data[key] = sorted(data[key], key=lambda item: (item.get("order", 0), item["id"]))
-        data["warnings"] = sorted(set(data["warnings"]))
+        data["warnings"] = sorted(data["warnings"], key=lambda item: (item["severity"], item["code"], item["message"]))
         return _json_safe(data)
 
     @classmethod
@@ -215,7 +271,7 @@ class DiagramSpec:
             lanes=[DiagramGroup(**item) for item in data.get("lanes", [])],
             callouts=[DiagramCallout(**item) for item in data.get("callouts", [])],
             legend=[LegendEntry(**item) for item in data.get("legend", [])],
-            warnings=list(data.get("warnings", [])), provenance=DiagramProvenance(**data.get("provenance", {})),
+            warnings=[Diagnostic(**item) if isinstance(item, dict) else item for item in data.get("warnings", [])], provenance=DiagramProvenance(**data.get("provenance", {})),
             drilldowns=[DiagramDrilldown(**item) for item in data.get("drilldowns", [])],
         )
         spec.validate()

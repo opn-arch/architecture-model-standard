@@ -9,6 +9,7 @@ from architecture_model.core.view_curation import (
     merge_ordered,
     validate_view_curation,
 )
+from architecture_model.core.diagram_spec import Diagnostic
 
 
 def _context(tmp_path: Path) -> ArchitectureViewContext:
@@ -40,7 +41,7 @@ def test_missing_and_invalid_curation_fall_back_without_crashing(tmp_path):
     path.write_text("version: 2\nviews: nope", encoding="utf-8")
     invalid = load_viewer_curation(tmp_path, context, path)
     assert invalid.views.logical.featured == []
-    assert invalid.warnings
+    assert invalid.diagnostics
 
 
 def test_loader_resolves_selectors_and_rejects_ambiguity(tmp_path):
@@ -62,8 +63,8 @@ views:
     curation = load_viewer_curation(tmp_path, context)
 
     assert [item.resolved_id for item in curation.views.conops.featured] == ["root::COMP-1"]
-    assert any("Ambiguous selector" in warning for warning in curation.warnings)
-    assert any("Duplicate selector" in warning for warning in curation.warnings)
+    assert any("ambiguous" in warning.message.lower() for warning in curation.diagnostics)
+    assert any("Duplicate selector" in warning.message for warning in curation.diagnostics)
     assert curation.views.conops.labels == {"root::COMP-1": "Primary"}
 
 
@@ -105,16 +106,14 @@ views:
 
     curation = load_viewer_curation(tmp_path, context, path)
 
-    assert [item.id for item in curation.views.logical.externals] == ["EXT-GOOD"]
-    assert len(curation.views.logical.flows) == 1
-    assert any("unsafe evidence" in warning.lower() for warning in curation.warnings)
-    assert any("canonical relationship" in warning.lower() for warning in curation.warnings)
+    assert curation.views.logical == type(curation.views.logical)()
+    assert any("unsafe evidence" in warning.message.lower() for warning in curation.diagnostics)
 
 
 def test_explicit_config_path_cannot_escape_repo_and_merge_is_deterministic(tmp_path):
     context = _context(tmp_path)
     curation = load_viewer_curation(tmp_path, context, tmp_path / "../outside.yaml")
-    assert any("outside repository" in warning for warning in curation.warnings)
+    assert any("outside repository" in warning.message for warning in curation.diagnostics)
     assert merge_ordered(["b", "a"], ["a", "c"]) == ["b", "a", "c"]
     assert Selector(local_id="COMP-1", system="root").resolve(context) == "root::COMP-1"
 
@@ -134,7 +133,7 @@ views:
 """, encoding="utf-8")
     curation = load_viewer_curation(tmp_path, context, path)
     assert len(curation.views.functional.flows) == 1
-    assert any("Duplicate curated flow" in warning for warning in curation.warnings)
+    assert any("Duplicate curated flow" in warning.message for warning in curation.diagnostics)
 
 
 def test_malformed_collections_and_orders_warn_and_fall_back(tmp_path):
@@ -152,7 +151,7 @@ views:
 """, encoding="utf-8")
     curation = load_viewer_curation(tmp_path, context, path)
     assert curation.views.logical.groups == []
-    assert len(curation.warnings) >= 5
+    assert curation.diagnostics
 
 
 def test_unknown_top_level_and_view_keys_warn(tmp_path):
@@ -165,8 +164,8 @@ views:
     mystery: true
 """, encoding="utf-8")
     curation = load_viewer_curation(tmp_path, context, path)
-    assert any("Unknown top-level key" in warning for warning in curation.warnings)
-    assert any("Unknown conops key" in warning for warning in curation.warnings)
+    assert any("Unknown top-level key" in warning.message for warning in curation.diagnostics)
+    assert curation.views.conops == type(curation.views.conops)()
 
 
 def test_file_only_evidence_and_non_presentation_edge_kinds_are_rejected(tmp_path):
@@ -197,8 +196,7 @@ views:
     curation = load_viewer_curation(tmp_path, context, path)
     assert curation.views.conops.externals == []
     assert curation.views.conops.flows == []
-    assert any("evidence record" in warning for warning in curation.warnings)
-    assert any("Unsupported inferred flow kind" in warning for warning in curation.warnings)
+    assert any("evidence record" in warning.message for warning in curation.diagnostics)
 
 
 def test_global_presentation_ids_and_deferred_endpoint_validation(tmp_path):
@@ -229,5 +227,70 @@ views:
     assert curation.views.functional.tiers == []
     assert curation.views.functional.externals == []
     endpoint_warnings = validate_view_curation(curation.views.functional, context)
-    assert any("unknown target" in warning for warning in endpoint_warnings)
+    assert any("unknown target" in warning.message for warning in endpoint_warnings)
     assert isinstance(curation.views.functional.flows[0].evidence[0], EvidenceRecord)
+
+
+def test_invalid_view_fails_closed_while_other_view_survives(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  conops:
+    unsupported: true
+    featured: [root::COMP-1]
+  logical:
+    featured: [root::COMP-1]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.conops == type(curation.views.conops)()
+    assert [item.resolved_id for item in curation.views.logical.featured] == ["root::COMP-1"]
+    assert all(isinstance(item, Diagnostic) for item in curation.diagnostics)
+
+
+def test_invalid_top_level_key_fails_closed_for_entire_profile(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+unsupported: true
+views:
+  logical:
+    featured: [root::COMP-1]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.logical.featured == []
+    assert any(item.code == "CURATION_ROOT_INVALID" for item in curation.diagnostics)
+
+
+def test_preferred_roots_and_drilldowns_are_typed_and_resolved(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  functional:
+    preferred_capability_root: root::COMP-1
+    mission_root: {local_id: COMP-1, system: root}
+    drilldowns:
+      overview: root::COMP-1
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    view = curation.views.functional
+    assert view.preferred_capability_root.resolved_id == "root::COMP-1"
+    assert view.mission_root.resolved_id == "root::COMP-1"
+    assert view.drilldowns["overview"].resolved_id == "root::COMP-1"
+
+
+def test_unsafe_label_invalidates_only_its_view_and_math_text_survives(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  conops:
+    labels: {root::COMP-1: '<script>alert(1)</script>'}
+  logical:
+    labels: {root::COMP-1: 'Latency < 10ms'}
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.conops.labels == {}
+    assert curation.views.logical.labels["root::COMP-1"] == "Latency < 10ms"
+    assert curation.views.logical.safe_text is True

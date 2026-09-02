@@ -5,6 +5,7 @@ from typing import get_type_hints
 import pytest
 
 from architecture_model.core.diagram_spec import (
+    Diagnostic,
     DiagramEdge,
     DiagramGroup,
     DiagramNode,
@@ -56,9 +57,15 @@ def test_bounded_selection_is_stable_and_reports_omissions():
 
 
 def test_diagram_spec_rejects_embedded_html():
-    spec = DiagramSpec(id="x", title="<b>Unsafe</b>")
-    with pytest.raises(ValueError, match="HTML"):
-        spec.validate()
+    spec = DiagramSpec(id="x", title="Latency < 10ms", nodes=[DiagramNode("n", "<b>literal</b>", "note")])
+    spec.validate()
+    assert spec.nodes[0].safe_text is True
+
+
+@pytest.mark.parametrize("label", ["<script>alert(1)</script>", '<img onerror="run()">', "javascript:run()", "bad\x00text", "x" * 501])
+def test_diagram_spec_rejects_unsafe_or_oversized_text(label):
+    with pytest.raises(ValueError, match="presentation text"):
+        DiagramSpec(id="x", title=label).validate()
 
 
 def test_typed_provenance_and_drilldowns_preserve_dict_shape():
@@ -131,5 +138,37 @@ def test_group_and_lane_ids_share_one_container_namespace():
         groups=[DiagramGroup("shared", "Group", "group")],
         lanes=[DiagramGroup("shared", "Lane", "lane")],
     )
-    with pytest.raises(ValueError, match="Duplicate container ID"):
+    with pytest.raises(ValueError, match="Duplicate document ID"):
         spec.validate()
+
+
+def test_node_and_edge_normalize_and_serialize_typed_provenance():
+    node = DiagramNode("a", "A", "component", evidence=["model.yaml"])
+    edge = DiagramEdge("a", "b", "flow", evidence=[DiagramProvenance(source="manifest", entity_refs=["root::A"])])
+    spec = DiagramSpec("x", "X", nodes=[node, DiagramNode("b", "B", "component")], edges=[edge])
+    payload = spec.to_dict()
+    assert isinstance(node.evidence[0], DiagramProvenance)
+    assert payload["nodes"][0]["evidence"] == [{"source": "model.yaml", "entity_refs": []}]
+    assert payload["edges"][0]["evidence"] == [{"source": "manifest", "entity_refs": ["root::A"]}]
+    restored = DiagramSpec.from_dict(payload)
+    assert restored.nodes[0].evidence == [DiagramProvenance(source="model.yaml")]
+    assert restored.edges[0].evidence == [DiagramProvenance(source="manifest", entity_refs=["root::A"])]
+
+
+def test_all_document_element_ids_share_one_namespace():
+    spec = DiagramSpec(
+        "x", "X", nodes=[DiagramNode("shared", "N", "component")],
+        legend=[LegendEntry("shared", "Legend", "component")],
+    )
+    with pytest.raises(ValueError, match="Duplicate document ID"):
+        spec.validate()
+
+
+def test_structured_diagnostics_serialize_as_dicts():
+    spec = DiagramSpec("x", "X", warnings=["legacy", Diagnostic("warning", "TEST", "message", view="x")])
+    payload = spec.to_dict()
+    assert all(isinstance(item, Diagnostic) for item in spec.warnings)
+    assert payload["warnings"] == [
+        {"severity": "warning", "code": "LEGACY", "view": "", "source": "", "message": "legacy", "context": {}},
+        {"severity": "warning", "code": "TEST", "view": "x", "source": "", "message": "message", "context": {}},
+    ]
