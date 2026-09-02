@@ -440,16 +440,32 @@ def _build_system_model_yaml(
         return candidate
 
     file_set = {_normalized_path(path) for path in boundary.files}
+    if ownership is not None and boundary.system_id != "shared":
+        file_set = {
+            path for path in file_set
+            if ownership.boundary_by_file.get(path, boundary.system_id) == boundary.system_id
+        }
 
     # Extract from allocate results
     alloc_result = results.get("allocate")
     allocation_components = list(
         getattr(getattr(alloc_result, "output", None), "components", [])
     )
-    if ownership is None:
-        ownership = _build_file_ownership(allocation_components, [boundary])
-    file_owner = ownership.component_by_file
-    local_component_ids = {component.id for component in allocation_components}
+    local_file_owner: dict[str, str] = {}
+    for component in sorted(
+        allocation_components,
+        key=lambda item: (item.id, item.name, tuple(sorted(map(str, item.files)))),
+    ):
+        for path in component.files:
+            normalized = _normalized_path(path)
+            if not file_set or normalized in file_set:
+                local_file_owner.setdefault(normalized, component.id)
+
+    def _local_owner_id(path: Any) -> str:
+        return next((
+            component_id for owned_path, component_id in local_file_owner.items()
+            if _paths_match(owned_path, path)
+        ), "")
     if alloc_result and alloc_result.output:
         output = alloc_result.output
         if hasattr(output, "components"):
@@ -460,16 +476,7 @@ def _build_system_model_yaml(
                 comp_files = {
                     _normalized_path(path)
                     for path in getattr(comp, "files", [])
-                    if (
-                        file_owner.get(_normalized_path(path)) == comp.id
-                        or file_owner.get(_normalized_path(path)) not in local_component_ids
-                    )
-                    and (
-                        ownership.boundary_by_file.get(
-                            _normalized_path(path), boundary.system_id
-                        ) == boundary.system_id
-                        or (_is_shared(comp) and boundary.system_id == "shared")
-                    )
+                    if local_file_owner.get(_normalized_path(path)) == comp.id
                 }
                 if file_set and not comp_files.intersection(file_set):
                     continue
@@ -481,16 +488,7 @@ def _build_system_model_yaml(
                 if hasattr(comp, "files") and comp.files:
                     comp_dict["files"] = [
                         str(path) for path in comp.files
-                        if (
-                            file_owner.get(_normalized_path(path)) == comp.id
-                            or file_owner.get(_normalized_path(path)) not in local_component_ids
-                        )
-                        and (
-                            ownership.boundary_by_file.get(
-                                _normalized_path(path), boundary.system_id
-                            ) == boundary.system_id
-                            or (_is_shared(comp) and boundary.system_id == "shared")
-                        )
+                        if local_file_owner.get(_normalized_path(path)) == comp.id
                         and (not file_set or _normalized_path(path) in file_set)
                     ]
                 typed_interfaces = getattr(comp, "interfaces", None)
@@ -599,13 +597,16 @@ def _build_system_model_yaml(
                     beh_dict["triggers"] = beh.triggers
                 existing_structured = getattr(beh, "structured_steps", None)
                 if existing_structured:
+                    local_owner_id = _local_owner_id(source_file)
                     beh_dict["structured_steps"] = [
                         {
                             **(asdict(step) if is_dataclass(step) else dict(step)),
                             "component_ref": _register_id(
-                                getattr(step, "component_ref", "")
-                                if is_dataclass(step)
-                                else step.get("component_ref", "")
+                                local_owner_id or (
+                                    getattr(step, "component_ref", "")
+                                    if is_dataclass(step)
+                                    else step.get("component_ref", "")
+                                )
                             ),
                         }
                         for step in existing_structured
@@ -772,18 +773,13 @@ def _build_system_model_yaml(
                     }
                 )
 
-    component_files = [
-        (path, component["id"])
-        for component in components for path in component.get("files", [])
-    ]
     relationship_keys = {
         (rel["from"], rel["to"], rel["type"]) for rel in relationships
     }
     for behavior in behaviors:
-        component_id = next((
-            component_id for path, component_id in component_files
-            if _paths_match(path, behavior.get("source_file", ""))
-        ), "")
+        component_id = id_remap.get(
+            _local_owner_id(behavior.get("source_file", "")), ""
+        )
         capability_id = behavior.get("capability_id", "")
         if component_id and behavior.get("steps") and not behavior.get("structured_steps"):
             behavior["structured_steps"] = [

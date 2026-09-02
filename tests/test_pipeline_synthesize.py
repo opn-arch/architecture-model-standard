@@ -30,7 +30,7 @@ from architecture_model.pipeline.synthesize import (
     _merge_requirements,
     _scoped_evidence,
 )
-from architecture_model.core.parser import _parse_raw, validate_model_data
+from architecture_model.core.parser import _parse_raw, load_model, validate_model_data
 from architecture_model.core.validator import validate_model
 from architecture_model.pipeline.synthesize_types import (
     SoSModel,
@@ -284,6 +284,62 @@ class TestDecideStages:
 
 
 class TestBuildSystemModelYaml:
+    def test_scoped_component_ownership_ignores_colliding_parent_component_ids(self):
+        boundary = SystemBoundary(
+            "SYS-docs", "Project Documentation Orchestration",
+            files=["workflow.py"], is_full_system=True,
+        )
+        parent_ownership = _build_file_ownership(
+            [_FakeComponent("COMP-1", "Parent owner", ["workflow.py"])],
+            [boundary],
+        )
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-3", "Overlapping candidate", ["workflow.py"]),
+                _FakeComponent("COMP-2", "Workflow owner", ["workflow.py"]),
+                _FakeComponent("COMP-1", "Unrelated collision", ["unrelated.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[_FakeCapability(
+                    "CAP-1", "Generate project documentation",
+                    source_files=["workflow.py"],
+                )],
+                behaviors=[_FakeBehavior(
+                    "BEH-1", "Generate project documentation",
+                    source_file="workflow.py", capability_id="CAP-1",
+                    steps=["Collect architecture", "Render documents"],
+                )],
+            )),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+
+        raw = yaml.safe_load(_build_system_model_yaml(
+            boundary, results, ownership=parent_ownership,
+        ))
+
+        components = raw["entities"]["components"]
+        assert [(item["id"], item["files"]) for item in components] == [
+            ("COMP-2", ["workflow.py"]),
+        ]
+        behavior = raw["entities"]["behaviors"][0]
+        assert {step["component_ref"] for step in behavior["structured_steps"]} == {
+            "COMP-2"
+        }
+        assert {tuple(rel.values()) for rel in raw["relationships"]} >= {
+            ("COMP-2", "CAP-1", "realizes"),
+            ("COMP-2", "BEH-1", "traces-to"),
+        }
+        entity_ids = {
+            entity["id"]
+            for entities in raw["entities"].values()
+            for entity in entities
+        }
+        assert len(entity_ids) == sum(len(items) for items in raw["entities"].values())
+        assert all(
+            rel["from"] in entity_ids and rel["to"] in entity_ids
+            for rel in raw["relationships"]
+        )
+
     def test_full_subsystem_maps_absolute_behavior_source_to_relative_component(self):
         behavior = _FakeBehavior(
             id="BEH-1",
@@ -1099,6 +1155,90 @@ class TestRunWithCoordinator:
         }
         assert all(sub_ctx.parent_run_id == "parent-run" for sub_ctx in scoped.values())
         assert all(sub_ctx.invocation == "synthesize" for sub_ctx in scoped.values())
+
+    def test_full_system_correction_with_parent_id_collision_validates_and_promotes(self, tmp_path):
+        boundary = SystemBoundary(
+            "SYS-docs", "Project Documentation Orchestration",
+            files=["workflow.py", "helper.py"], is_full_system=True,
+        )
+        scoped_results = {
+            "observe": _stage_result(_FakeObserveOutput()),
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-2", "Workflow owner", ["workflow.py"]),
+                _FakeComponent("COMP-1", "Scoped helper", ["helper.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[
+                    _FakeCapability("CAP-1", "Generate documentation", source_files=["workflow.py"]),
+                    _FakeCapability("CAP-2", "Support generation", source_files=["helper.py"]),
+                ],
+                behaviors=[_FakeBehavior(
+                    "BEH-1", "Generate documentation workflow",
+                    source_file="workflow.py", capability_id="CAP-1",
+                    steps=["Collect architecture", "Render documents"],
+                )],
+            )),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-2", "CAP-1", "realizes"),
+                _FakeRelationship("COMP-1", "CAP-2", "realizes"),
+            ])),
+        }
+        coordinator = MockCoordinator(scoped_results)
+        ctx = _make_ctx(
+            tmp_path,
+            decompose=_stage_result(DecomposeResult(systems=[boundary])),
+            observe=_stage_result(_FakeObserveOutput()),
+            infer=_stage_result(_FakeInferOutput()),
+            allocate=_stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Parent workflow owner", ["workflow.py"]),
+                _FakeComponent("COMP-9", "Parent helper owner", ["helper.py"]),
+            ])),
+            relate=_stage_result(_FakeRelateOutput()),
+        )
+        ctx.config["coordinator"] = coordinator
+        ctx.prior_corrections = [Evidence(
+            "user_correction", 1.0,
+            "Collect architecture -> Render documents", "complex_behavior",
+            {
+                "resolution_id": "docs-workflow",
+                "behavior_name": "Generate documentation workflow",
+                "source_files": ["workflow.py"],
+                "steps": ["Collect architecture", "Render documents"],
+            },
+        )]
+
+        synth = SynthesizeStage().run(ctx).output
+        assert [item.raw for item in coordinator.contexts[0].prior_corrections] == [
+            "Collect architecture -> Render documents"
+        ]
+        child_raw = yaml.safe_load(synth.system_models[0].model_yaml)
+        assert validate_model_data(child_raw) == []
+        child = _parse_raw(child_raw)
+        assert not [
+            issue for issue in validate_model(child, raw_dict=child_raw).issues
+            if getattr(issue.severity, "value", issue.severity) == "error"
+        ]
+        behavior = child_raw["entities"]["behaviors"][0]
+        assert {step["component_ref"] for step in behavior["structured_steps"]} == {
+            "COMP-2"
+        }
+        assert {tuple(rel.values()) for rel in child_raw["relationships"]} >= {
+            ("COMP-2", "CAP-1", "realizes"),
+            ("COMP-2", "BEH-1", "traces-to"),
+        }
+
+        ctx.cache["synthesize"] = _stage_result(synth)
+        candidate_bytes = synth.sos_model_yaml.encode()
+        emitted = EmitStage().run(ctx).output
+        assert emitted.promoted is True, emitted.final_validation_issues
+        assert (tmp_path / ".architecture-model.yaml").read_bytes() == candidate_bytes
+        promoted_child = load_model(
+            tmp_path / ".architecture-models/project-documentation-orchestration/.architecture-model.yaml"
+        )
+        assert not [
+            issue for issue in validate_model(promoted_child).issues
+            if getattr(issue.severity, "value", issue.severity) == "error"
+        ]
 
     def test_scoped_runs(self, tmp_path):
         sub_results = {
