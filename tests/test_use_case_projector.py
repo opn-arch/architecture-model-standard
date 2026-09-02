@@ -331,6 +331,43 @@ def test_actor_drilldown_preserves_mixed_canonical_and_inferred_associations(tmp
     assert edges["node:root::BEH-01"].style == "dashed"
 
 
+def test_canonical_actor_participation_wins_over_same_curated_association(tmp_path):
+    context = _context(tmp_path)
+    behavior = context.entity("root::BEH-00")
+    evidence = [EvidenceRecord("docs/use-cases.md", "Secondary evidence for canonical participation.")]
+    curation = ViewCuration(associations=[
+        CuratedUseCaseAssociation("root::ACT-OPS", [behavior.key], True, evidence),
+    ])
+
+    spec = project_use_cases(context, curation)
+    actor = next(node for node in spec.nodes if node.entity_ref == "root::ACT-OPS")
+    overview_edges = [
+        edge for edge in spec.edges
+        if edge.source == actor.id and edge.target == _node_id_for_test(behavior.key)
+        and edge.kind == "participates"
+    ]
+    assert len(overview_edges) == 1
+    overview = overview_edges[0]
+    assert not overview.inferred and overview.style == ""
+    assert overview.evidence[0].source == "model-entity"
+    assert any(item.source == "curated-inference" for item in overview.evidence[1:])
+
+    detail = next(item.spec for item in spec.drilldowns if item.id == actor.drilldown_ref)
+    detail_edges = [
+        edge for edge in detail.edges
+        if edge.target == _node_id_for_test(behavior.key) and edge.kind == "participates"
+    ]
+    assert len(detail_edges) == 1
+    drilldown = detail_edges[0]
+    assert not drilldown.inferred and drilldown.style == ""
+    assert drilldown.evidence[0].source == "model-entity"
+    assert any(item.source == "curated-inference" for item in drilldown.evidence[1:])
+
+
+def _node_id_for_test(key: str) -> str:
+    return f"node:{key}"
+
+
 def test_use_cases_are_deterministic_with_duplicate_local_ids(tmp_path):
     context = _context(tmp_path)
     first = project_use_cases(context).to_dict()

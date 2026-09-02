@@ -1676,8 +1676,10 @@ def _actor_use_case_drilldown(
     behaviors: Iterable[IndexedEntity], evidence: list[DiagramProvenance], curation: ViewCuration,
     visible: Callable[[str | IndexedEntity], bool],
     inferred_associations: dict[str, list[DiagramProvenance]] | None = None,
+    secondary_associations: dict[str, list[DiagramProvenance]] | None = None,
 ) -> DiagramSpec:
     inferred_associations = inferred_associations or {}
+    secondary_associations = secondary_associations or {}
     actor_node = DiagramNode(
         f"detail:{actor_id}", label, "actor", entity_ref=entity.key if entity else "",
         inferred=entity is None, evidence=[_provenance(entity)] if entity else evidence,
@@ -1688,10 +1690,14 @@ def _actor_use_case_drilldown(
     for behavior in sorted((item for item in behaviors if visible(item)), key=lambda item: item.key):
         node_id = _node_id(behavior.key)
         inferred_evidence = inferred_associations.get(behavior.key)
+        canonical_evidence = [
+            *([_provenance(entity)] if entity else []), _provenance(behavior),
+            *secondary_associations.get(behavior.key, []),
+        ]
         nodes.append(DiagramNode(node_id, _label(behavior, curation), "use-case", entity_ref=behavior.key, evidence=[_provenance(behavior)]))
         edges.append(DiagramEdge(
             actor_node.id, node_id, "participates",
-            evidence=inferred_evidence or [_derived("behavior-actor", [behavior.key, *([entity.key] if entity else [])])],
+            evidence=inferred_evidence or canonical_evidence,
             inferred=bool(inferred_evidence) or entity is None,
             style="dashed" if inferred_evidence else "",
         ))
@@ -1804,6 +1810,7 @@ def project_use_cases(
     curated_actor_by_id = {item.id: item for item in curation.actors if visible(item.id)}
     curated_associations = []
     inferred_by_actor: dict[str, dict[str, list[DiagramProvenance]]] = defaultdict(dict)
+    secondary_by_actor: dict[str, dict[str, list[DiagramProvenance]]] = defaultdict(dict)
     for association in curation.associations:
         associated = [
             context.entity(key, diagnose=False) for key in association.use_cases
@@ -1826,8 +1833,12 @@ def project_use_cases(
         for behavior in associated:
             if behavior not in participant_values[key][3]:
                 participant_values[key][3].append(behavior)
-            curated_associations.append((key, behavior.key, evidence))
-            inferred_by_actor[key][behavior.key] = evidence
+            canonical_actor = _behavior_actor(context, behavior)
+            if canonical_actor and canonical_actor.key == key:
+                secondary_by_actor[key][behavior.key] = evidence
+            else:
+                curated_associations.append((key, behavior.key, evidence))
+                inferred_by_actor[key][behavior.key] = evidence
     for key, (label, actor, evidence, actor_behaviors) in sorted(participant_values.items()):
         if len(nodes) >= limit - (1 if len(behaviors) > len(selected) else 0):
             break
@@ -1843,6 +1854,7 @@ def project_use_cases(
             spec=_actor_use_case_drilldown(
                 node_id, label, actor, actor_behaviors, evidence, curation, visible,
                 inferred_associations=inferred_by_actor.get(key),
+                secondary_associations=secondary_by_actor.get(key),
             ),
         ))
 
@@ -1865,9 +1877,17 @@ def project_use_cases(
             continue
         for behavior in actor_behaviors:
             if behavior.key in selected_keys:
+                canonical_actor = _behavior_actor(context, behavior)
+                canonical_pair = bool(canonical_actor and canonical_actor.key == key)
+                edge_evidence = evidence
+                if canonical_pair:
+                    edge_evidence = [
+                        _provenance(canonical_actor), _provenance(behavior),
+                        *secondary_by_actor.get(key, {}).get(behavior.key, []),
+                    ]
                 edges.append(DiagramEdge(
-                    actor_node, _node_id(behavior.key), "participates", evidence=evidence,
-                    inferred=actor is None,
+                    actor_node, _node_id(behavior.key), "participates", evidence=edge_evidence,
+                    inferred=actor is None and not canonical_pair,
                 ))
     for actor_key, behavior_key, evidence in curated_associations:
         actor_node = _node_id(actor_key) if context.entity(actor_key, diagnose=False) else actor_key
