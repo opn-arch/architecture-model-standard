@@ -220,7 +220,7 @@ def test_use_case_all_ten_featured_render_before_supporting_nodes(tmp_path):
     assert spec.layout == "use-case-catalog"
     assert all(node.status != "omitted" for node in spec.nodes)
     omitted = next(callout for callout in spec.callouts if callout.id == "use-cases:omitted")
-    assert omitted.kind == "omitted-count" and omitted.target
+    assert omitted.kind == "omitted-count" and not omitted.target
 
 
 def test_use_case_curated_associations_and_annotations_are_inferred_canonical_first_and_nonmutating(tmp_path):

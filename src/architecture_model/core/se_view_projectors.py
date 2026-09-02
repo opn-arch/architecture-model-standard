@@ -16,6 +16,7 @@ from architecture_model.core.diagram_spec import (
     DiagramNode,
     DiagramProvenance,
     DiagramSpec,
+    bound_diagram_spec,
 )
 from architecture_model.core.view_context import ArchitectureViewContext, IndexedEntity, IndexedRelationship
 from architecture_model.core.view_curation import (
@@ -580,7 +581,7 @@ def project_conops(
     curation = curation or ViewCuration()
     limit = max(1, max_overview_nodes)
     if curation.scenarios:
-        return _project_curated_conops(context, curation, limit)
+        return bound_diagram_spec(_project_curated_conops(context, curation, limit))
     warnings = _curation_diagnostics("conops", context, curation)
     hidden = {item.resolved_id for item in curation.hide if item.resolved_id}
     featured = {item.resolved_id for item in curation.featured if item.resolved_id}
@@ -770,7 +771,7 @@ def project_conops(
         provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
     )
     spec.validate()
-    return spec
+    return bound_diagram_spec(spec)
 
 
 def _capability_roots(context: ArchitectureViewContext) -> list[IndexedEntity]:
@@ -1036,7 +1037,7 @@ def _project_curated_functional(
         provenance=DiagramProvenance("curated-functional", context={"max_overview_nodes": limit}),
     )
     spec.validate()
-    return spec
+    return bound_diagram_spec(spec)
 
 
 def project_functional_architecture(
@@ -1166,7 +1167,7 @@ def project_functional_architecture(
                                      context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
     )
     spec.validate()
-    return spec
+    return bound_diagram_spec(spec)
 
 
 _LOGICAL_TIERS = (
@@ -1664,7 +1665,7 @@ def project_logical_architecture(
         facets={"logical_dependencies": dependency_facet},
     )
     spec.validate()
-    return spec
+    return bound_diagram_spec(spec)
 
 
 def _behavior_actor(context: ArchitectureViewContext, behavior: IndexedEntity) -> IndexedEntity | None:
@@ -2128,7 +2129,7 @@ def project_use_cases(
     ]
     if omitted and len(nodes) < limit and featured:
         callouts = [DiagramCallout(
-            "use-cases:omitted", f"{len(omitted)} additional use cases", nodes[0].id,
+            "use-cases:omitted", f"{len(omitted)} additional use cases", "",
             "omitted-count", [item.key for item in omitted],
         )]
         warnings.append(Diagnostic(
@@ -2164,7 +2165,7 @@ def project_use_cases(
         provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
     )
     spec.validate()
-    return spec
+    return bound_diagram_spec(spec)
 
 
 __all__ = [

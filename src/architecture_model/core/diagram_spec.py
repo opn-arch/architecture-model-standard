@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from copy import deepcopy
 from collections.abc import Mapping
 from enum import Enum
 import math
@@ -13,6 +14,9 @@ from typing import Any, Callable, Iterable, TypeVar
 JsonPrimitive = str | int | float | bool | None
 T = TypeVar("T")
 MAX_TEXT_LENGTH = 500
+MAX_PRIMARY_NODES = 25
+MAX_PRIMARY_EDGES = 40
+MAX_DRILLDOWN_DEPTH = 12
 
 
 @dataclass(frozen=True)
@@ -417,3 +421,122 @@ def bounded(items: Iterable[T], limit: int, *, key: Callable[[T], Any]) -> tuple
     omitted = len(ordered) - len(selected)
     noun = "item" if omitted == 1 else "items"
     return selected, f"{omitted} {noun} omitted (limit {limit})" if omitted else ""
+
+
+def bound_diagram_spec(
+    spec: DiagramSpec, *, max_nodes: int = MAX_PRIMARY_NODES,
+    max_edges: int = MAX_PRIMARY_EDGES, max_depth: int = MAX_DRILLDOWN_DEPTH,
+) -> DiagramSpec:
+    """Return a deterministic, recursively navigable bounded diagram tree."""
+
+    if max_nodes < 2 or max_edges < 1 or max_depth < 1:
+        raise ValueError("Diagram bounds require at least 2 nodes, 1 edge, and depth 1")
+
+    def page_tree(template: DiagramSpec, nodes: list[DiagramNode], edges: list[DiagramEdge], depth: int) -> DiagramSpec:
+        chunks = [nodes[index:index + max_nodes] for index in range(0, len(nodes), max_nodes)]
+        pages: list[DiagramSpec] = []
+        for index, chunk in enumerate(chunks, 1):
+            ids = {node.id for node in chunk}
+            drilldown_ids = {node.drilldown_ref for node in chunk if node.drilldown_ref}
+            pages.append(DiagramSpec(
+                f"{template.id}:page:{depth}:{index}", f"{template.title} - Page {index}", template.subtitle,
+                template.direction, template.layout, chunk,
+                [edge for edge in edges if edge.source in ids and edge.target in ids][:max_edges],
+                deepcopy(template.groups), deepcopy(template.lanes), provenance=deepcopy(template.provenance),
+                drilldowns=[item for item in template.drilldowns if item.id in drilldown_ids],
+                facets={**deepcopy(template.facets), "page": index, "page_count": len(chunks)},
+            ))
+        while len(pages) > max_nodes:
+            grouped: list[DiagramSpec] = []
+            for group_index in range(0, len(pages), max_nodes):
+                children = pages[group_index:group_index + max_nodes]
+                directory_id = f"{template.id}:pages:{depth}:{group_index // max_nodes + 1}"
+                directory_nodes = [
+                    DiagramNode(
+                        f"{directory_id}:item:{index}", child.title, "summary", status="page",
+                        drilldown_ref=f"drilldown:{directory_id}:item:{index}",
+                    )
+                    for index, child in enumerate(children, 1)
+                ]
+                grouped.append(DiagramSpec(
+                    directory_id, f"More {template.title}", nodes=directory_nodes,
+                    drilldowns=[DiagramDrilldown(node.drilldown_ref, node.id, spec=child) for node, child in zip(directory_nodes, children)],
+                    provenance=deepcopy(template.provenance), facets={"page_directory": True},
+                ))
+            pages = grouped
+            depth += 1
+            if depth >= max_depth:
+                raise ValueError(f"Diagram drilldown depth exceeds safe limit {max_depth}: {template.id}")
+        if len(pages) == 1:
+            return pages[0]
+        directory_id = f"{template.id}:pages:{depth}"
+        directory_nodes = [
+            DiagramNode(
+                f"{directory_id}:item:{index}", page.title, "summary", status="page",
+                drilldown_ref=f"drilldown:{directory_id}:item:{index}",
+            )
+            for index, page in enumerate(pages, 1)
+        ]
+        return DiagramSpec(
+            directory_id, f"More {template.title}", nodes=directory_nodes,
+            drilldowns=[DiagramDrilldown(node.drilldown_ref, node.id, spec=page) for node, page in zip(directory_nodes, pages)],
+            provenance=deepcopy(template.provenance), facets={"page_directory": True},
+        )
+
+    def visit(current: DiagramSpec, depth: int) -> DiagramSpec:
+        result = deepcopy(current)
+        result.drilldowns = [
+            DiagramDrilldown(item.id, item.source, item.target, item.spec_ref, item.route, visit(item.spec, depth + 1) if item.spec else None)
+            for item in result.drilldowns
+        ]
+        if len(result.nodes) <= max_nodes and len(result.edges) <= max_edges:
+            return result
+
+        ordered = list(result.nodes)
+        keep_count = max_nodes - 1
+        selected = ordered[:keep_count]
+        omitted = ordered[keep_count:]
+        if not omitted:
+            selected_ids = {node.id for node in selected}
+            result.edges = result.edges[:max_edges]
+            result.nodes = selected
+            result.drilldowns = [item for item in result.drilldowns if item.source in selected_ids]
+            return result
+        if depth >= max_depth:
+            raise ValueError(f"Diagram drilldown depth exceeds safe limit {max_depth}: {current.id}")
+
+        summary_id = f"{result.id}:more:{depth}"
+        drilldown_id = f"drilldown:{summary_id}"
+        selected_ids = {node.id for node in selected}
+        omitted_ids = {node.id for node in omitted}
+        original_edges = result.edges
+        retained_edges = [edge for edge in original_edges if edge.source in selected_ids and edge.target in selected_ids][:max_edges]
+        child_edges = [edge for edge in result.edges if edge.source in omitted_ids and edge.target in omitted_ids]
+        child_drilldown_ids = {node.drilldown_ref for node in omitted if node.drilldown_ref}
+        child_template = DiagramSpec(
+            f"{result.id}:continuation", f"More {result.title}", result.subtitle,
+            result.direction, result.layout, groups=deepcopy(result.groups), lanes=deepcopy(result.lanes),
+            provenance=deepcopy(result.provenance),
+            drilldowns=[item for item in result.drilldowns if item.id in child_drilldown_ids],
+            facets={**deepcopy(result.facets), "continuation_of": result.id},
+        )
+        child = page_tree(child_template, omitted, child_edges, depth + 1)
+        selected.append(DiagramNode(
+            summary_id, f"More {result.title} ({len(omitted)})", "summary",
+            status="omitted", drilldown_ref=drilldown_id, badges=[f"items:{len(omitted)}"],
+        ))
+        result.nodes = selected
+        result.edges = retained_edges
+        used = {node.drilldown_ref for node in selected if node.drilldown_ref}
+        result.drilldowns = [item for item in result.drilldowns if item.id in used]
+        result.drilldowns.append(DiagramDrilldown(drilldown_id, summary_id, spec=child))
+        result.facets = {
+            **result.facets,
+            "bounded": True,
+            "omitted_edge_records": [asdict(edge) for edge in original_edges if edge not in retained_edges and edge not in child_edges],
+        }
+        return result
+
+    bounded_spec = visit(spec, 0)
+    bounded_spec.validate()
+    return bounded_spec

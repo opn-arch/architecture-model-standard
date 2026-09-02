@@ -229,3 +229,46 @@ if (content.dataset.currentType !== 'history') throw new Error('did not restore 
 """
     result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+def test_actual_logs_db_every_direct_projector_panel_is_bounded_resolved_and_complete(monkeypatch) -> None:
+    from architecture_model.core.diagram_renderer import render_diagram_panel
+    from architecture_model.core import se_view_projectors
+    from architecture_model.core.view_context import ArchitectureViewContext
+    from architecture_model.core.view_curation import load_viewer_curation
+
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        return
+    context = ArchitectureViewContext.from_repo(repo)
+    curated = load_viewer_curation(repo, context).views
+    projectors = (
+        (se_view_projectors.project_conops, curated.conops),
+        (se_view_projectors.project_functional_architecture, curated.functional),
+        (se_view_projectors.project_logical_architecture, curated.logical),
+        (se_view_projectors.project_use_cases, curated.use_cases),
+    )
+    with monkeypatch.context() as context_patch:
+        context_patch.setattr(se_view_projectors, "bound_diagram_spec", lambda spec: spec)
+        unbounded = [projector(context, curation) for projector, curation in projectors]
+    roots = [
+        projector(context, curation) for projector, curation in projectors
+    ]
+    expected_refs = set()
+    raw_stack = list(unbounded)
+    while raw_stack:
+        raw = raw_stack.pop()
+        expected_refs.update(node.entity_ref for node in raw.nodes if node.entity_ref)
+        raw_stack.extend(item.spec for item in raw.drilldowns if item.spec)
+    actual_refs = set()
+    stack = list(roots)
+    while stack:
+        spec = stack.pop()
+        panel = render_diagram_panel(spec)
+        drilldown_ids = {item.id for item in spec.drilldowns}
+        assert len(spec.nodes) <= 25 and len(spec.edges) <= 40
+        assert panel.width <= 2400 and panel.height <= 1800
+        assert all(not node.drilldown_ref or node.drilldown_ref in drilldown_ids for node in spec.nodes)
+        actual_refs.update(node.entity_ref for node in spec.nodes if node.entity_ref)
+        stack.extend(item.spec for item in spec.drilldowns if item.spec)
+    assert actual_refs == expected_refs

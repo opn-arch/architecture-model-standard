@@ -565,6 +565,35 @@ def test_callout_preserves_target_evidence_and_visible_connector() -> None:
     assert connector is not None and connector.attrib["data-target-ref"] == "function"
 
 
+def test_callout_connector_is_orthogonal_and_avoids_unrelated_nodes() -> None:
+    root = _root(render_diagram_svg(_spec()))
+    connector = root.find(".//svg:path[@data-callout-connector='note']", SVG)
+    nodes = {
+        item.attrib["data-node-id"]: _box(item)
+        for item in root.findall(".//svg:g[@data-node-id]", SVG)
+    }
+
+    assert connector is not None
+    segments = _route_segments(connector.attrib["d"])
+    assert segments and all(x1 == x2 or y1 == y2 for x1, y1, x2, y2 in segments)
+    assert all(
+        not _segment_crosses_box(segment, box)
+        for segment in segments
+        for identifier, box in nodes.items()
+        if identifier != "function"
+    )
+
+
+def test_untargeted_callout_stays_in_footer_without_connector() -> None:
+    spec = _spec()
+    spec.callouts = [DiagramCallout("omitted", "12 additional use cases", kind="omitted-count")]
+
+    root = _root(render_diagram_svg(spec))
+
+    assert root.find(".//svg:g[@data-callout-id='omitted']", SVG) is not None
+    assert root.find(".//svg:path[@data-callout-connector='omitted']", SVG) is None
+
+
 def test_rendering_is_deterministic_when_inputs_are_shuffled() -> None:
     first = _spec()
     second = _spec()
@@ -625,6 +654,18 @@ def test_actual_projector_geometry_has_no_visual_collisions(projector: str, tmp_
     labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
     assert len(labels) == len(set(labels))
     assert all(not _overlaps(label, node) for label in labels for node in nodes.values())
+
+
+def test_operational_routes_use_orthogonal_channels_without_unrelated_node_intrusion(tmp_path) -> None:
+    spec = _actual_specs(tmp_path)["conops"]
+    root = _root(render_diagram_svg(spec))
+    nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+
+    for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+        segments = _route_segments(edge.attrib["d"])
+        unrelated = [box for identifier, box in nodes.items() if identifier not in {edge.attrib["data-source"], edge.attrib["data-target"]}]
+        assert all(x1 == x2 or y1 == y2 for x1, y1, x2, y2 in segments)
+        assert all(not _segment_crosses_box(segment, box) for segment in segments for box in unrelated)
 
 
 @pytest.mark.parametrize("direction", ["LR", "TB"])

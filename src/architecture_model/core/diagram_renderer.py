@@ -28,8 +28,8 @@ class DiagramRenderOptions:
     expands beyond preferred bounds rather than clipping geometry or footers.
     """
 
-    max_width: int = 4096
-    max_height: int = 4096
+    max_width: int = 2400
+    max_height: int = 1800
     node_width: int = 190
     node_height: int = 92
     rank_gap: int = 110
@@ -287,12 +287,19 @@ def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, 
         x = origin_x
         for lane in ordered_lanes:
             members = lane_members[lane.id]
-            y = origin_y
-            for node in members:
+            tallest = max((_node_height(node, options) for node in members), default=options.node_height)
+            footer_reserve = (len(spec.legend) + len(spec.callouts) + len(spec.warnings) + bool(spec.provenance.source)) * 36 + 24
+            max_rows = max(1, (options.max_height - origin_y - options.margin - footer_reserve) // (tallest + options.node_gap))
+            column_count = max(1, (len(members) + max_rows - 1) // max_rows)
+            for index, node in enumerate(members):
                 height = _node_height(node, options)
-                boxes[node.id] = _Box(x, y, options.node_width, height)
-                y += height + options.node_gap
-            x += options.node_width + options.rank_gap
+                column, row = divmod(index, max_rows)
+                boxes[node.id] = _Box(
+                    x + column * (options.node_width + options.node_gap),
+                    origin_y + row * (tallest + options.node_gap),
+                    options.node_width, height,
+                )
+            x += column_count * options.node_width + max(0, column_count - 1) * options.node_gap + options.rank_gap
         y = origin_y
         for node in unassigned:
             height = _node_height(node, options)
@@ -409,36 +416,29 @@ def _operational_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], nodes: dic
 
     source, target = boxes[edge.source], boxes[edge.target]
     source_node, target_node = nodes[edge.source], nodes[edge.target]
+    obstacles = [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]
     sy, ty = source.y + source.height / 2, target.y + target.height / 2
     if source_node.kind in {"actor", "external"} and target_node.kind == "scenario":
         sx, tx = source.x + source.width, target.x
-        scenario_rank = [
-            identifier for identifier, _ in sorted(
-                ((identifier, box.y) for identifier, box in boxes.items() if nodes[identifier].kind == "scenario"),
-                key=lambda item: (item[1], item[0]),
-            )
-        ].index(edge.target)
-        bus_x = tx - 54 + scenario_rank * 24 - index % 4 * 4
-        return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
-    if source_node.kind == "scenario" and target_node.kind == "outcome":
-        sx, tx = source.x + source.width / 2, target.x + target.width / 2
-        bus_y = max(box.y + box.height for box in boxes.values()) + 24
-        return _points_path([(sx, source.y + source.height), (sx, bus_y), (tx, bus_y), (tx, target.y + target.height)])
-    if source_node.kind == "scenario" and target_node.kind == "system":
-        sx, tx = source.x + source.width, target.x
-        bus_x = tx - 18
+        bus_x = tx - 24 - index % 5 * 8
         return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
     if source_node.kind == "scenario" and target_node.kind == "scenario":
-        sx = source.x + source.width / 2
-        tx = target.x + target.width / 2
-        if source.y < target.y:
-            return _points_path([(sx, source.y + source.height), (tx, target.y)])
-        sx, tx = source.x + source.width / 2, target.x + target.width / 2
-        track_y = min(box.y for box in boxes.values()) - 18 - index % 3 * 8
-        return _points_path([(sx, source.y), (sx, track_y), (tx, track_y), (tx, target.y)])
-    return _lane_edge_path(source, target, "LR", index % 5, [
-        box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}
-    ])
+        boundary_x = source.x + source.width
+        return _points_path([(boundary_x, sy), (boundary_x, ty), (target.x + target.width, ty)])
+    if source_node.kind == "scenario" and target_node.kind in {"system", "outcome"}:
+        boundary_boxes = [box for identifier, box in boxes.items() if nodes[identifier].kind == "system"]
+        boundary_left = min((box.x for box in boundary_boxes), default=target.x)
+        trunk_x = source.x + source.width + max((boundary_left - source.x - source.width) / 2, 18)
+        if target_node.kind == "system":
+            return _points_path([(source.x + source.width, sy), (trunk_x, sy), (trunk_x, ty), (target.x, ty)])
+        bottom = max(box.y + box.height for box in boxes.values()) + 20
+        target_right = target.x + target.width
+        outer_right = max(box.x + box.width for box in boxes.values()) + 20
+        return _points_path([
+            (source.x + source.width, sy), (trunk_x, sy), (trunk_x, bottom),
+            (outer_right, bottom), (outer_right, ty), (target_right, ty),
+        ])
+    return _lane_edge_path(source, target, "LR", index % 5, obstacles)
 
 
 def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
@@ -461,24 +461,64 @@ def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str,
         origin_y = options.margin + 72 + (route_band if direction != "TB" else 0)
         rank_count = max(len(buckets), 1)
         widest_rank = max((len(items) for items in buckets.values()), default=1)
+        footer_reserve = (len(spec.legend) + len(spec.callouts) + len(spec.warnings) + bool(spec.provenance.source)) * 36 + 24
+        wrapped_linear = direction == "TB" and len(spec.nodes) > 12 and widest_rank <= 2
+        rows_per_column = max(
+            1, (options.max_height - origin_y - options.margin * 2 - footer_reserve) // (options.node_height + 24),
+        ) if wrapped_linear else rank_count
         if direction == "TB":
-            rank_step = min(options.node_height + options.rank_gap, max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(rank_count - 1, 1)))
+            rank_step = options.node_height + 24 if wrapped_linear else min(options.node_height + options.rank_gap, max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(rank_count - 1, 1)))
             item_step = min(options.node_width + options.node_gap, max(options.node_width, (options.max_width - options.margin * 2 - options.node_width) // max(widest_rank - 1, 1)))
+            max_columns = max(1, (options.max_width - origin_x - options.margin - 40) // max(item_step, 1))
+            rank_offsets: dict[int, int] = {}
+            rank_cursor = 0
+            for rank in sorted(buckets):
+                rank_offsets[rank] = rank_cursor
+                rank_cursor += max(1, (len(buckets[rank]) + max_columns - 1) // max_columns) * rank_step
         else:
             rank_step = min(options.node_width + options.rank_gap, max(options.node_width, (options.max_width - options.margin * 2 - options.node_width) // max(rank_count - 1, 1)))
             item_step = min(options.node_height + options.node_gap, max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(widest_rank - 1, 1)))
+            tallest = max((_node_height(node, options) for node in spec.nodes), default=options.node_height)
+            max_rows = max(1, (options.max_height - origin_y - options.margin - 40 - footer_reserve) // (tallest + options.node_gap))
+            rank_offsets = {}
+            rank_cursor = 0
+            for rank in sorted(buckets):
+                rank_offsets[rank] = rank_cursor
+                rank_cursor += max(1, (len(buckets[rank]) + max_rows - 1) // max_rows) * rank_step
         for rank_index, rank in enumerate(sorted(buckets)):
             cursor = 0
             for item_index, node in enumerate(buckets[rank]):
                 height = _node_height(node, options)
                 if direction == "TB":
-                    x = origin_x + item_index * item_step
-                    y = origin_y + rank_index * rank_step
+                    if wrapped_linear:
+                        column, row = divmod(rank_index, rows_per_column)
+                        x = origin_x + column * (options.node_width + options.rank_gap)
+                        y = origin_y + row * rank_step
+                    else:
+                        row, column = divmod(item_index, max_columns)
+                        x = origin_x + column * item_step
+                        y = origin_y + rank_offsets[rank] + row * rank_step
                 else:
-                    x = origin_x + rank_index * rank_step
-                    y = origin_y + cursor
-                    cursor += height + options.node_gap
+                    column, row = divmod(item_index, max_rows)
+                    x = origin_x + rank_offsets[rank] + column * rank_step
+                    y = origin_y + row * (tallest + options.node_gap)
                 boxes[node.id] = _Box(x, y, options.node_width, height)
+
+    footer_reserve = (len(spec.legend) + len(spec.callouts) + len(spec.warnings) + bool(spec.provenance.source)) * 36 + 24
+    node_right = max((box.x + box.width for box in boxes.values()), default=0)
+    node_bottom = max((box.y + box.height for box in boxes.values()), default=0)
+    if node_right + options.margin + 20 > options.max_width or node_bottom + options.margin + footer_reserve + 20 > options.max_height:
+        ordered = sorted(spec.nodes, key=lambda node: (boxes[node.id].y, boxes[node.id].x, node.id))
+        step_x = options.node_width + options.node_gap
+        columns = max(1, (options.max_width - options.margin * 2 - 40) // step_x)
+        tallest = max((_node_height(node, options) for node in ordered), default=options.node_height)
+        for index, node in enumerate(ordered):
+            row, column = divmod(index, columns)
+            boxes[node.id] = _Box(
+                options.margin + 20 + column * step_x,
+                options.margin + 108 + row * (tallest + options.node_gap),
+                options.node_width, _node_height(node, options),
+            )
 
     containers = [*spec.groups, *spec.lanes]
     container_boxes: dict[str, _Box] = {}
@@ -739,7 +779,12 @@ def _edge_svg(
         classes.append("is-inferred")
     if edge.critical or edge.style.lower() in {"critical", "cycle"}:
         classes.append("is-critical")
-    visible_label = "" if layout == "logical-tiers" and kind in _DEPENDENCY_EDGE_KINDS and edge.count == 1 else edge.label
+    visible_label = "" if (
+        layout == "logical-tiers" and kind in _DEPENDENCY_EDGE_KINDS and edge.count == 1
+        or layout == "operational-lanes" and nodes and nodes[edge.source].kind == "scenario" and nodes[edge.target].kind in {"system", "outcome"}
+    ) else edge.label
+    if layout == "operational-lanes" and visible_label:
+        visible_label = _lines(visible_label, 18, 1)[0]
     label_text = _lines(visible_label + (f" ({edge.count})" if edge.count != 1 else ""), 28, 1)[0] if visible_label or edge.count != 1 else ""
     label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
     track = index % 5
@@ -871,7 +916,19 @@ def _footer(spec: DiagramSpec, start_y: int, boxes: dict[str, _Box], width: int)
         parts.append(f'<g data-callout-id="{_text(callout.id)}" data-footer-item="callout:{_text(callout.id)}" data-kind="{_text(callout.kind)}" data-target-ref="{_text(callout.target)}" data-evidence="{_text(evidence)}" data-x="48" data-y="{y - 14}" data-width="{item_width}" data-height="32"><title>{_text(evidence or callout.label)}</title><text class="footer-text" x="48" y="{y}">{_text(_lines(callout.label, max(item_width // 7, 20), 2)[0])}</text></g>')
         if callout.target in boxes:
             target = boxes[callout.target]
-            parts.append(f'<path class="callout-connector" data-callout-connector="{_text(callout.id)}" data-target-ref="{_text(callout.target)}" d="M {target.x + target.width / 2:g} {target.y + target.height:g} L 48 {y - 14}"/>')
+            obstacles = [box for identifier, box in boxes.items() if identifier != callout.target]
+            footer_y = y - 14
+            outer_left = min(box.x for box in boxes.values()) - 16
+            outer_right = max(box.x + box.width for box in boxes.values()) + 16
+            candidates = [
+                [(target.x, target.y + target.height / 2), (outer_left, target.y + target.height / 2), (outer_left, footer_y), (48, footer_y)],
+                [(target.x + target.width, target.y + target.height / 2), (outer_right, target.y + target.height / 2), (outer_right, footer_y), (48, footer_y)],
+            ]
+            points = next((candidate for candidate in candidates if not any(
+                _segment_intersects_box(first, second, obstacle)
+                for first, second in zip(candidate, candidate[1:]) for obstacle in obstacles
+            )), candidates[0])
+            parts.append(f'<path class="callout-connector" data-callout-connector="{_text(callout.id)}" data-target-ref="{_text(callout.target)}" d="{_points_path(points)}"/>')
         y += 36
     for diagnostic in sorted(spec.warnings, key=lambda item: (item.severity, item.code, item.message)):
         parts.append(f'<g data-diagnostic-code="{_text(diagnostic.code)}" data-footer-item="diagnostic:{_text(diagnostic.code)}" data-severity="{_text(diagnostic.severity)}" data-x="48" data-y="{y - 14}" data-width="{item_width}" data-height="32"><text class="footer-text diagnostic-{_text(diagnostic.severity.lower())}" x="48" y="{y}">{_text(diagnostic.severity.upper())}: {_text(_lines(diagnostic.message, max(item_width // 7, 20), 2)[0])}</text></g>')
