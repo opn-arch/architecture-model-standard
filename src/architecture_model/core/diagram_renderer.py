@@ -195,49 +195,88 @@ def _node_height(node: DiagramNode, options: DiagramRenderOptions) -> int:
     return max(options.node_height, content_height + 12)
 
 
-def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
-    ranks = _ranks(spec)
-    buckets: dict[int, list[DiagramNode]] = {}
-    for node in sorted(spec.nodes, key=lambda item: (ranks[item.id], item.group, item.lane, item.kind, item.id)):
-        buckets.setdefault(ranks[node.id], []).append(node)
-    boxes: dict[str, _Box] = {}
+def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, _Box]:
+    """Place lane members by lane order, independent of graph cycles."""
     direction = spec.direction.upper()
-    label_lane = max((min(max(len(edge.label) * 6, 30), 168) + 6 for edge in spec.edges if edge.label), default=18)
-    route_band = max(len(spec.edges), 1) * (label_lane if direction == "TB" else 18) + 18
-    origin_x = options.margin + (route_band if direction == "TB" else 0)
-    origin_y = options.margin + 72 + (route_band if direction != "TB" else 0)
-    rank_count = max(len(buckets), 1)
-    widest_rank = max((len(items) for items in buckets.values()), default=1)
+    lane_members = {
+        lane.id: sorted((node for node in spec.nodes if node.lane == lane.id), key=lambda node: (node.kind, node.id))
+        for lane in spec.lanes
+    }
+    assigned = {node.id for members in lane_members.values() for node in members}
+    unassigned = sorted((node for node in spec.nodes if node.id not in assigned), key=lambda node: (node.kind, node.id))
+    boxes: dict[str, _Box] = {}
+    header = 36
+    lane_gap = 56
+    origin_x = options.margin + 20
+    origin_y = options.margin + 72 + header
+
     if direction == "TB":
-        rank_step = min(
-            options.node_height + options.rank_gap,
-            max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(rank_count - 1, 1)),
-        )
-        item_step = min(
-            options.node_width + options.node_gap,
-            max(options.node_width, (options.max_width - options.margin * 2 - options.node_width) // max(widest_rank - 1, 1)),
-        )
+        y = origin_y
+        for lane in sorted(spec.lanes, key=lambda item: (item.order, item.id)):
+            members = lane_members[lane.id]
+            for index, node in enumerate(members):
+                boxes[node.id] = _Box(
+                    origin_x + index * (options.node_width + options.node_gap), y,
+                    options.node_width, _node_height(node, options),
+                )
+            y += max((_node_height(node, options) for node in members), default=options.node_height) + lane_gap
+        for index, node in enumerate(unassigned):
+            boxes[node.id] = _Box(
+                origin_x + index * (options.node_width + options.node_gap), y,
+                options.node_width, _node_height(node, options),
+            )
     else:
-        rank_step = min(
-            options.node_width + options.rank_gap,
-            max(options.node_width, (options.max_width - options.margin * 2 - options.node_width) // max(rank_count - 1, 1)),
-        )
-        item_step = min(
-            options.node_height + options.node_gap,
-            max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(widest_rank - 1, 1)),
-        )
-    for rank_index, rank in enumerate(sorted(buckets)):
-        cursor = 0
-        for item_index, node in enumerate(buckets[rank]):
+        x = origin_x
+        for lane in sorted(spec.lanes, key=lambda item: (item.order, item.id)):
+            members = lane_members[lane.id]
+            y = origin_y
+            for node in members:
+                height = _node_height(node, options)
+                boxes[node.id] = _Box(x, y, options.node_width, height)
+                y += height + options.node_gap
+            x += options.node_width + options.rank_gap
+        y = origin_y
+        for node in unassigned:
             height = _node_height(node, options)
-            if direction == "TB":
-                x = origin_x + item_index * item_step
-                y = origin_y + rank_index * rank_step
-            else:
-                x = origin_x + rank_index * rank_step
-                y = origin_y + cursor
-                cursor += height + options.node_gap
             boxes[node.id] = _Box(x, y, options.node_width, height)
+            y += height + options.node_gap
+    return boxes
+
+
+def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
+    direction = spec.direction.upper()
+    if spec.lanes:
+        boxes = _lane_layout(spec, options)
+    else:
+        ranks = _ranks(spec)
+        buckets: dict[int, list[DiagramNode]] = {}
+        for node in sorted(spec.nodes, key=lambda item: (ranks[item.id], item.group, item.kind, item.id)):
+            buckets.setdefault(ranks[node.id], []).append(node)
+        boxes = {}
+        label_lane = max((min(max(len(edge.label) * 6, 30), 168) + 6 for edge in spec.edges if edge.label), default=18)
+        route_band = max(len(spec.edges), 1) * (label_lane if direction == "TB" else 18) + 18
+        origin_x = options.margin + (route_band if direction == "TB" else 0)
+        origin_y = options.margin + 72 + (route_band if direction != "TB" else 0)
+        rank_count = max(len(buckets), 1)
+        widest_rank = max((len(items) for items in buckets.values()), default=1)
+        if direction == "TB":
+            rank_step = min(options.node_height + options.rank_gap, max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(rank_count - 1, 1)))
+            item_step = min(options.node_width + options.node_gap, max(options.node_width, (options.max_width - options.margin * 2 - options.node_width) // max(widest_rank - 1, 1)))
+        else:
+            rank_step = min(options.node_width + options.rank_gap, max(options.node_width, (options.max_width - options.margin * 2 - options.node_width) // max(rank_count - 1, 1)))
+            item_step = min(options.node_height + options.node_gap, max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(widest_rank - 1, 1)))
+        for rank_index, rank in enumerate(sorted(buckets)):
+            cursor = 0
+            for item_index, node in enumerate(buckets[rank]):
+                height = _node_height(node, options)
+                if direction == "TB":
+                    x = origin_x + item_index * item_step
+                    y = origin_y + rank_index * rank_step
+                else:
+                    x = origin_x + rank_index * rank_step
+                    y = origin_y + cursor
+                    cursor += height + options.node_gap
+                boxes[node.id] = _Box(x, y, options.node_width, height)
 
     containers = [*spec.groups, *spec.lanes]
     container_boxes: dict[str, _Box] = {}
@@ -368,6 +407,67 @@ def _edge_path(source: _Box, target: _Box, direction: str, lane: int, margin: in
     return f"M {sx:g} {sy:g} V {lane_y:g} H {tx:g} V {ty:g}"
 
 
+def _segment_intersects_box(first: tuple[float, float], second: tuple[float, float], box: _Box) -> bool:
+    x1, y1 = first
+    x2, y2 = second
+    if x1 == x2:
+        return box.x < x1 < box.x + box.width and max(min(y1, y2), box.y) < min(max(y1, y2), box.y + box.height)
+    return box.y < y1 < box.y + box.height and max(min(x1, x2), box.x) < min(max(x1, x2), box.x + box.width)
+
+
+def _points_path(points: list[tuple[float, float]]) -> str:
+    parts = [f"M {points[0][0]:g} {points[0][1]:g}"]
+    for (x1, y1), (x2, y2) in zip(points, points[1:]):
+        parts.append(f"H {x2:g}" if y1 == y2 else f"V {y2:g}")
+    return " ".join(parts)
+
+
+def _lane_edge_path(source: _Box, target: _Box, direction: str, track: int, obstacles: list[_Box]) -> str:
+    offset = 10 + track * 8
+    candidates: list[list[tuple[float, float]]] = []
+    if direction == "TB":
+        if source.y == target.y:
+            sx, tx = source.x + source.width / 2, target.x + target.width / 2
+            candidates.extend([
+                [(sx, source.y), (sx, source.y - offset), (tx, source.y - offset), (tx, target.y)],
+                [(sx, source.y + source.height), (sx, source.y + source.height + offset), (tx, source.y + source.height + offset), (tx, target.y + target.height)],
+            ])
+        else:
+            downward = source.y < target.y
+            sy = source.y + source.height if downward else source.y
+            ty = target.y if downward else target.y + target.height
+            sx, tx = source.x + source.width / 2, target.x + target.width / 2
+            middle = (sy + ty) / 2 + (track - 2) * 5
+            candidates.append([(sx, sy), (sx, middle), (tx, middle), (tx, ty)])
+            for outer_x in (min(box.x for box in [source, target, *obstacles]) - offset,
+                            max(box.x + box.width for box in [source, target, *obstacles]) + offset):
+                source_gap = sy + (offset if downward else -offset)
+                target_gap = ty - (offset if downward else -offset)
+                candidates.append([(sx, sy), (sx, source_gap), (outer_x, source_gap), (outer_x, target_gap), (tx, target_gap), (tx, ty)])
+    elif source.x == target.x:
+        sy, ty = source.y + source.height / 2, target.y + target.height / 2
+        candidates.extend([
+            [(source.x, sy), (source.x - offset, sy), (source.x - offset, ty), (target.x, ty)],
+            [(source.x + source.width, sy), (source.x + source.width + offset, sy), (source.x + source.width + offset, ty), (target.x + target.width, ty)],
+        ])
+    else:
+        rightward = source.x < target.x
+        sx = source.x + source.width if rightward else source.x
+        tx = target.x if rightward else target.x + target.width
+        sy, ty = source.y + source.height / 2, target.y + target.height / 2
+        middle = (sx + tx) / 2 + (track - 2) * 5
+        candidates.append([(sx, sy), (middle, sy), (middle, ty), (tx, ty)])
+        for outer_y in (min(box.y for box in [source, target, *obstacles]) - offset,
+                        max(box.y + box.height for box in [source, target, *obstacles]) + offset):
+            source_gap = sx + (offset if rightward else -offset)
+            target_gap = tx - (offset if rightward else -offset)
+            candidates.append([(sx, sy), (source_gap, sy), (source_gap, outer_y), (target_gap, outer_y), (target_gap, ty), (tx, ty)])
+    for points in candidates:
+        if not any(_segment_intersects_box(first, second, box) for first, second in zip(points, points[1:]) for box in obstacles):
+            return _points_path(points)
+    return _points_path(candidates[-1])
+
+
 def _edge_style(edge: DiagramEdge) -> str:
     requested = edge.style.lower().strip()
     if requested not in _ALLOWED_EDGE_STYLES:
@@ -386,7 +486,7 @@ def _edge_style(edge: DiagramEdge) -> str:
     return "operational"
 
 
-def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: int, margin: int, lane_step: int) -> str:
+def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: int, margin: int, lane_step: int, lane_aware: bool = False) -> str:
     kind = edge.kind.lower().replace("_", "-")
     semantic_style = _edge_style(edge)
     classes = ["diagram-edge", f"kind-{_text(kind)}", f"edge-style-{semantic_style}"]
@@ -397,7 +497,9 @@ def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: 
         classes.append("is-critical")
     label_text = _lines(edge.label + (f" ({edge.count})" if edge.count != 1 else ""), 28, 1)[0] if edge.label or edge.count != 1 else ""
     label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
-    path = _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
+    track = index % 5
+    obstacles = [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]
+    path = _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
     evidence_title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
     title = f"{edge.label}: {evidence_title}" if edge.label else evidence_title
@@ -407,12 +509,26 @@ def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: 
     ]
     if label:
         source, target = boxes[edge.source], boxes[edge.target]
-        if direction == "TB":
+        if lane_aware and direction == "TB":
+            x = (source.x + source.width / 2 + target.x + target.width / 2) / 2 - label_width / 2
+            y = ((source.y + source.height if source.y < target.y else source.y) + (target.y if source.y < target.y else target.y + target.height)) / 2 - 13 + (track - 2) * 8
+        elif lane_aware:
+            x = ((source.x + source.width if source.x < target.x else source.x) + (target.x if source.x < target.x else target.x + target.width)) / 2 - label_width / 2 + (track - 2) * 8
+            y = (source.y + source.height / 2 + target.y + target.height / 2) / 2 - 13
+        elif direction == "TB":
             x = margin + index * lane_step + 4
             y = (source.y + target.y) / 2 - 6
         else:
             x = (source.x + source.width + target.x) / 2 - label_width / 2
             y = margin + 72 + index * 18 - 13
+        if lane_aware:
+            candidates = [(x, y)]
+            for distance in range(1, 9):
+                candidates.extend([(x + distance * 22, y), (x - distance * 22, y)])
+            x, y = next((
+                (candidate_x, candidate_y) for candidate_x, candidate_y in candidates
+                if not any(_overlaps(_Box(int(candidate_x), int(candidate_y), label_width, 12), box) for box in obstacles)
+            ), (x, y))
         result.append(f'<text class="edge-label" data-edge-label="edge-{index}" data-x="{x:g}" data-y="{y:g}" data-width="{label_width:g}" data-height="12" x="{x + label_width / 2:g}" y="{y + 9:g}">{_text(label_text)}</text>')
     if edge.evidence:
         result.append(f'<g class="evidence-indicator" data-evidence="true"><title>{_text(title)}</title><circle cx="{boxes[edge.source].x + boxes[edge.source].width + 6}" cy="{boxes[edge.source].y + 6}" r="4"/></g>')
@@ -521,7 +637,7 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
             continue
         key = (edge.source, edge.target)
         parallel_seen[key] = parallel_seen.get(key, 0) + 1
-        edge_svg = _edge_svg(edge, boxes, spec.direction.upper(), index, options.margin, edge_lane_step)
+        edge_svg = _edge_svg(edge, boxes, spec.direction.upper(), index, options.margin, edge_lane_step, bool(spec.lanes))
         parts.append(edge_svg.replace('url(#arrow)', f'url(#{arrow_id})'))
     for node in sorted(spec.nodes, key=lambda item: item.id):
         parts.append(_node_svg(node, boxes[node.id], spec.id))

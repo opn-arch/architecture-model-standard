@@ -35,6 +35,7 @@ from architecture_model.core.se_view_projectors import (
     project_logical_architecture,
     project_use_cases,
 )
+from architecture_model.core.view_context import ArchitectureViewContext
 from tests.test_conops_projector import _context as conops_context
 from tests.test_functional_projector import _context as functional_context
 from tests.test_logical_projector import _context as logical_context
@@ -293,6 +294,63 @@ def test_empty_groups_have_distinct_nonzero_positions() -> None:
     assert len(boxes) == 2
     assert len(set(boxes)) == 2
     assert all(width > 0 and height > 0 for _, _, width, height in boxes)
+
+
+@pytest.mark.parametrize("direction", ["TB", "LR"])
+def test_lane_layout_is_ordered_contained_and_not_dependency_ranked(direction: str) -> None:
+    spec = DiagramSpec(
+        "lanes", "Lanes", direction=direction,
+        lanes=[
+            DiagramGroup("first", "First tier", "tier", order=1),
+            DiagramGroup("second", "Second tier", "tier", order=2),
+        ],
+        nodes=[
+            DiagramNode("a", "A", "system", lane="first"),
+            DiagramNode("b", "B", "system", lane="first"),
+            DiagramNode("c", "C", "system", lane="second"),
+            DiagramNode("d", "D", "system", lane="second"),
+        ],
+        edges=[DiagramEdge("a", "b", "depends-on", style="cycle"), DiagramEdge("b", "a", "depends-on", style="cycle")],
+    )
+
+    root = _root(render_diagram_svg(spec))
+    nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+    lanes = {item.attrib["data-container-id"]: _box(item) for item in root.findall(".//svg:g[@data-container-id]", SVG)}
+    for lane_id, members in (("first", ("a", "b")), ("second", ("c", "d"))):
+        left, top, width, height = lanes[lane_id]
+        for member in members:
+            x, y, node_width, node_height = nodes[member]
+            assert left <= x and top + 24 <= y and x + node_width <= left + width and y + node_height <= top + height
+    assert not _overlaps(lanes["first"], lanes["second"])
+    if direction == "TB":
+        assert nodes["a"][1] == nodes["b"][1]
+        assert nodes["a"][0] < nodes["b"][0]
+        assert lanes["first"][1] < lanes["second"][1]
+    else:
+        assert nodes["a"][0] == nodes["b"][0]
+        assert nodes["a"][1] < nodes["b"][1]
+        assert lanes["first"][0] < lanes["second"][0]
+
+
+def test_many_lane_edges_reuse_bounded_local_tracks() -> None:
+    nodes = [DiagramNode(f"a-{index}", f"A {index}", "system", lane="first") for index in range(4)]
+    nodes += [DiagramNode(f"b-{index}", f"B {index}", "system", lane="second") for index in range(4)]
+    edges = [DiagramEdge(f"a-{source}", f"b-{target}", "depends-on", f"edge {source}-{target}") for source in range(4) for target in range(4)]
+    spec = DiagramSpec(
+        "lane-routes", "Lane routes", direction="TB", nodes=nodes, edges=edges,
+        lanes=[DiagramGroup("first", "First", "tier", order=0), DiagramGroup("second", "Second", "tier", order=1)],
+    )
+
+    root = _root(render_diagram_svg(spec))
+    _, _, width, height = [float(value) for value in root.attrib["viewBox"].split()]
+    paths = [edge.attrib["d"] for edge in root.findall(".//svg:path[@data-edge-id]", SVG)]
+    nodes_by_id = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+
+    assert width <= 1800 and height <= 1200
+    assert len({tuple(_route_segments(path)) for path in paths}) > 4
+    for edge, path in zip(root.findall(".//svg:path[@data-edge-id]", SVG), paths):
+        unrelated = [box for identifier, box in nodes_by_id.items() if identifier not in {edge.attrib["data-source"], edge.attrib["data-target"]}]
+        assert all(not _segment_crosses_box(segment, box) for segment in _route_segments(path) for box in unrelated)
 
 
 @pytest.mark.parametrize("kind", ["initiates", "uses", "connects", "produces", "consumes", "exposes", "depends-on", "interface-port", "contains", "participates", "triggers", "next", "error", "compensates", "transition", "owns", "decomposition", "allocation"])
@@ -606,6 +664,29 @@ def test_actual_projector_svgs_render_with_rsvg(tmp_path) -> None:
         svg_path = tmp_path / f"{name}.svg"
         png_path = tmp_path / f"{name}.png"
         svg_path.write_text(render_diagram_svg(spec), encoding="utf-8")
+        subprocess.run(["rsvg-convert", str(svg_path), "-o", str(png_path)], check=True, capture_output=True)
+        assert png_path.stat().st_size > 0
+
+
+def test_real_logs_db_logical_svg_is_practically_bounded_and_collision_free(tmp_path) -> None:
+    from architecture_model.core.view_curation import load_viewer_curation
+
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    spec = project_logical_architecture(context, load_viewer_curation(repo, context).views.logical)
+    root = _root(render_diagram_svg(spec, DiagramRenderOptions(max_width=1800, max_height=1200)))
+    _, _, width, height = [float(value) for value in root.attrib["viewBox"].split()]
+    nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+
+    assert width <= 1800 and height <= 1200
+    for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+        unrelated = [box for identifier, box in nodes.items() if identifier not in {edge.attrib["data-source"], edge.attrib["data-target"]}]
+        assert all(not _segment_crosses_box(segment, box) for segment in _route_segments(edge.attrib["d"]) for box in unrelated)
+    if shutil.which("rsvg-convert"):
+        svg_path, png_path = tmp_path / "logical.svg", tmp_path / "logical.png"
+        svg_path.write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
         subprocess.run(["rsvg-convert", str(svg_path), "-o", str(png_path)], check=True, capture_output=True)
         assert png_path.stat().st_size > 0
 

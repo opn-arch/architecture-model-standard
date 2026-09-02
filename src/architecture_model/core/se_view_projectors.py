@@ -1187,16 +1187,28 @@ def project_logical_architecture(
     order = {key: index for index, key in enumerate(curation.order)}
     systems, model_owner = _system_models(context)
     tier_defs = {tier: (label, index) for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)}
-    groups = [
-        DiagramGroup(f"logical-tier:{tier}", label, "tier", order=index)
-        for tier, (label, index) in tier_defs.items() if visible(f"logical-tier:{tier}")
-    ]
+    lanes = []
     membership: dict[str, str] = {}
-    for curated in curation.tiers:
-        if not visible(curated.id):
-            continue
-        groups.append(DiagramGroup(curated.id, curated.label, "tier", curated.parent, curated.order))
-        membership.update({member: curated.id for member in curated.members if visible(member)})
+    if curation.tiers:
+        for curated in sorted(curation.tiers, key=lambda item: (item.order, item.id)):
+            if visible(curated.id):
+                lanes.append(DiagramGroup(curated.id, curated.label, "tier", curated.parent, curated.order))
+                membership.update({member: curated.id for member in curated.members if visible(member)})
+    else:
+        lanes = [
+            DiagramGroup(f"logical-tier:{tier}", label, "tier", order=index)
+            for tier, (label, index) in tier_defs.items() if visible(f"logical-tier:{tier}")
+        ]
+
+    def lane_for(entity: IndexedEntity) -> str:
+        assigned = membership.get(entity.key, "")
+        if assigned:
+            return assigned
+        tier = _logical_tier(entity)
+        automatic = f"logical-tier:{tier}"
+        if any(item.id == automatic for item in lanes):
+            return automatic
+        return next((item.id for item in lanes if tier in f"{item.id} {item.label}".casefold()), lanes[0].id if lanes else "")
 
     system_nodes: list[DiagramNode] = []
     drilldowns: list[DiagramDrilldown] = []
@@ -1208,10 +1220,9 @@ def project_logical_architecture(
         if not any(int(badge.rsplit(":", 1)[1]) for badge in badges):
             continue
         drilldown_id = _drilldown_id(curation, key)
-        default_group = f"logical-tier:{_logical_tier(system)}"
         system_nodes.append(DiagramNode(
             _node_id(key), _label(system, curation), "system",
-            group=membership.get(key, default_group if visible(default_group) else ""),
+            lane=lane_for(system),
             entity_ref=key, drilldown_ref=drilldown_id, badges=badges, metrics=metrics, evidence=[_provenance(system)],
         ))
         drilldowns.append(DiagramDrilldown(
@@ -1231,8 +1242,10 @@ def project_logical_architecture(
         ]
         if members:
             consumed.update(item.key for item in members)
-            groups.append(DiagramGroup(group.id, group.label, "aggregate", group.parent, group.order))
-            aggregates.append((group.id, group.label, group.id, members))
+            lane = group.parent or next((membership.get(item.key, "") for item in members if membership.get(item.key)), "")
+            if not lane:
+                lane = lane_for(members[0])
+            aggregates.append((group.id, group.label, lane, members))
     inline = [
         item for item in context.entities("component", "root")
         if visible(item) and item.key not in consumed
@@ -1243,14 +1256,14 @@ def project_logical_architecture(
     for tier, members in sorted(semantic.items(), key=lambda item: tier_defs[item[0]][1]):
         identifier = f"logical-inline:{tier}"
         if visible(identifier):
-            aggregates.append((identifier, f"Inline {tier_defs[tier][0]}", f"logical-tier:{tier}", members))
+            aggregates.append((identifier, f"Inline {tier_defs[tier][0]}", lane_for(members[0]), members))
 
     aggregate_nodes: list[DiagramNode] = []
-    for identifier, label, group, members in aggregates:
+    for identifier, label, lane, members in aggregates:
         refs = [item.key for item in sorted(members, key=lambda value: value.key)]
         drilldown_id = f"drilldown:{identifier}"
         aggregate_nodes.append(DiagramNode(
-            f"aggregate:{identifier}", label, "aggregate", group=group, drilldown_ref=drilldown_id,
+            f"aggregate:{identifier}", label, "aggregate", lane=lane, drilldown_ref=drilldown_id,
             badges=[f"components:{len(refs)}"], metrics={"members": ", ".join(refs)},
             evidence=[_derived("presentation-aggregate", refs)],
         ))
@@ -1277,7 +1290,18 @@ def project_logical_architecture(
         distinct = sorted(set(endpoint_systems))
         if len(distinct) == 2 and all(key in system_node_by_ref for key in distinct):
             cross_system_interfaces.append((interface, distinct[0], distinct[1]))
-    cross_system_interfaces.sort(key=lambda item: item[0].key)
+    featured = {item.resolved_id for item in curation.featured if item.resolved_id}
+    relationship_importance = defaultdict(int)
+    for relationship in context.relationships():
+        if relationship.kind in _LOGICAL_EDGE_KINDS:
+            weight = 2 if getattr(relationship.value.strength, "value", "") == "strong" or relationship.value.extensions.get("critical") else 1
+            relationship_importance[relationship.source] += weight
+            relationship_importance[relationship.target] += weight
+    cross_system_interfaces.sort(key=lambda item: (
+        item[0].key not in featured,
+        -relationship_importance[item[0].key],
+        item[0].key,
+    ))
 
     priority_nodes: list[DiagramNode] = []
     priority_interface = cross_system_interfaces[0] if cross_system_interfaces and limit >= 3 else None
@@ -1394,7 +1418,7 @@ def project_logical_architecture(
     used_drilldowns = {node.drilldown_ref for node in selected if node.drilldown_ref}
     spec = DiagramSpec(
         "logical", "Logical Architecture", direction="TB", nodes=selected,
-        edges=list(edge_values.values()), groups=groups,
+        edges=list(edge_values.values()), lanes=lanes,
         warnings=[*context.diagnostics, *warnings],
         drilldowns=[item for item in drilldowns if item.id in used_drilldowns],
         provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),

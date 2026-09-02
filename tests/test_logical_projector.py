@@ -6,7 +6,7 @@ import pytest
 from architecture_model.core.parser import load_model
 from architecture_model.core.se_view_projectors import project_logical_architecture
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import CuratedGroup, Selector, ViewCuration
+from architecture_model.core.view_curation import CuratedGroup, Selector, ViewCuration, load_viewer_curation
 
 
 def _write(path: Path, text: str) -> None:
@@ -97,7 +97,12 @@ def test_logical_projects_tiered_systems_aggregates_and_semantic_exchanges(tmp_p
     systems = {node.entity_ref: node for node in spec.nodes if node.kind == "system"}
     assert {"root::SYS-WEB", "root::SYS-DOMAIN"} <= systems.keys()
     assert {"components:1", "interfaces:1", "capabilities:1"} <= set(systems["root::SYS-WEB"].badges)
-    assert all(node.group and node.drilldown_ref for node in systems.values())
+    assert [lane.id for lane in spec.lanes] == [
+        "logical-tier:web", "logical-tier:application", "logical-tier:domain",
+        "logical-tier:data", "logical-tier:infrastructure",
+    ]
+    assert not any(group.kind == "tier" for group in spec.groups)
+    assert all(node.lane and not node.group and node.drilldown_ref for node in systems.values())
     assert any(node.kind == "aggregate" and node.metrics["members"] for node in spec.nodes)
     assert all(group.label != "Other" for group in spec.groups)
 
@@ -133,7 +138,10 @@ def test_logical_curation_controls_tiers_labels_aggregation_hiding_and_drilldown
         members=["root::INLINE-0", "root::INLINE-2"],
     )
     curation = ViewCuration(
-        tiers=[CuratedGroup("custom-domain", "Business Tier", "tier", order=1, members=["root::SYS-DOMAIN"])],
+        tiers=[
+            CuratedGroup("custom-web", "Delivery Tier", "tier", order=0, members=["root::SYS-WEB"]),
+            CuratedGroup("custom-domain", "Business Tier", "tier", order=1, members=["root::SYS-DOMAIN"]),
+        ],
         groups=[aggregate],
         aggregate_components=[
             Selector(qualified_id="root::INLINE-0", resolved_id="root::INLINE-0"),
@@ -146,9 +154,12 @@ def test_logical_curation_controls_tiers_labels_aggregation_hiding_and_drilldown
     )
     spec = project_logical_architecture(context, curation)
     domain = next(node for node in spec.nodes if node.entity_ref == "root::SYS-DOMAIN")
-    workers = next(node for node in spec.nodes if node.group == "workers")
-    assert domain.label == "Policy Core" and domain.group == "custom-domain"
+    workers = next(node for node in spec.nodes if node.kind == "aggregate" and node.label == "Background Workers")
+    assert [lane.id for lane in spec.lanes] == ["custom-web", "custom-domain"]
+    assert not spec.groups
+    assert domain.label == "Policy Core" and domain.lane == "custom-domain" and not domain.group
     assert domain.drilldown_ref == "domain-detail"
+    assert workers.lane == "custom-domain" and not workers.group and workers.drilldown_ref
     assert workers.kind == "aggregate" and workers.metrics["members"] == "root::INLINE-0, root::INLINE-2"
     assert all(node.entity_ref != "root::INLINE-1" for node in spec.nodes)
 
@@ -310,3 +321,29 @@ def test_logical_hide_applies_to_presentation_groups_and_membership(tmp_path):
 
     assert all(group.id != "workers" for nested in _nested_specs(spec) for group in nested.groups)
     assert all(node.group != "workers" for nested in _nested_specs(spec) for node in nested.nodes)
+
+
+def test_real_logs_db_logical_curation_has_one_five_lane_tier_representation():
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+
+    context = ArchitectureViewContext.from_repo(repo)
+    curation = load_viewer_curation(repo, context).views.logical
+    spec = project_logical_architecture(context, curation)
+
+    assert [lane.id for lane in spec.lanes] == [
+        "tier-web", "tier-application", "tier-domain", "tier-data", "tier-infrastructure",
+    ]
+    assert not any(group.kind in {"tier", "aggregate"} or group.id.startswith("logical-tier:") for group in spec.groups)
+    systems = [node for node in spec.nodes if node.kind == "system"]
+    aggregates = [node for node in spec.nodes if node.kind == "aggregate"]
+    assert len(systems) == 8
+    assert len(aggregates) == 3
+    assert all(node.lane and not node.group for node in [*systems, *aggregates])
+    assert all(node.drilldown_ref for node in aggregates)
+    assert len(spec.nodes) <= 15
+    assert all(any(node.lane == lane.id for node in spec.nodes) for lane in spec.lanes)
+    assert all(lane.label != "Other" for lane in spec.lanes)
+    assert all(edge.evidence and edge.count >= 1 for edge in spec.edges)
+    assert any(edge.style == "cycle" for edge in spec.edges)
