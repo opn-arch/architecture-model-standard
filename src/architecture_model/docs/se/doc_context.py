@@ -194,25 +194,7 @@ def _code_context_from_observe(
 
         if mod.docstring:
             mod_lines.append(f"**{path_str}**: {mod.docstring[:200]}")
-    elif doc_name == "behavior_flows":
-        model_ctx = "\n\n".join(
-            [
-                "## Behaviors",
-                _behaviors_summary(model, max_items=50),
-                "## Components",
-                _components_summary(model),
-                "## Actors",
-                _actors_summary(model),
-                "## Trigger/Contains Relationships",
-                _relationships_summary(model, "triggers"),
-                _relationships_summary(model, "contains"),
-            ]
-        )
-        code_ctx = _code_context_from_observe(
-            inventory, comp_files, focus="routes", max_tokens_approx=2000
-        )
-
-    else:
+        else:
             mod_lines.append(f"**{path_str}** ({mod.line_count} lines)")
 
         # Classes
@@ -327,6 +309,24 @@ def build_context_for_doc(
                 _behaviors_summary(model, max_items=50),
                 "## Capabilities",
                 _capabilities_summary(model),
+            ]
+        )
+        code_ctx = _code_context_from_observe(
+            inventory, comp_files, focus="routes", max_tokens_approx=2000
+        )
+
+    elif doc_name == "behavior_flows":
+        model_ctx = "\n\n".join(
+            [
+                "## Behaviors",
+                _behaviors_summary(model, max_items=50),
+                "## Components",
+                _components_summary(model),
+                "## Actors",
+                _actors_summary(model),
+                "## Trigger/Contains Relationships",
+                _relationships_summary(model, "triggers"),
+                _relationships_summary(model, "contains"),
             ]
         )
         code_ctx = _code_context_from_observe(

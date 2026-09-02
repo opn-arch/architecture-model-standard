@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import xml.etree.ElementTree as ET
+from types import SimpleNamespace
 
 
 class TestChangelog:
@@ -127,6 +128,42 @@ def _make_model():
         ],
     }
     return _parse_raw(raw)
+
+
+def test_behavior_flows_context_includes_behavior_and_observed_code() -> None:
+    from architecture_model.docs.se.doc_context import build_context_for_doc
+
+    inventory = SimpleNamespace(
+        modules=[
+            SimpleNamespace(
+                path=Path("src/workflow.py"),
+                docstring="",
+                line_count=42,
+                classes=[],
+                functions=[],
+            )
+        ],
+        routes=[
+            SimpleNamespace(
+                method="POST",
+                path="/submit",
+                function_name="submit_form",
+                file="src/workflow.py",
+                docstring="Submit a workflow",
+            )
+        ],
+        test_files=[],
+    )
+    stage_results = {"observe": SimpleNamespace(output=inventory)}
+
+    model_context, code_context = build_context_for_doc(
+        "behavior_flows", _make_model(), stage_results
+    )
+
+    assert "## Behaviors" in model_context
+    assert "BEH-1: Submit Form" in model_context
+    assert "POST /submit" in code_context
+    assert "**src/workflow.py** (42 lines)" in code_context
 
 
 class TestConOps:
