@@ -800,10 +800,12 @@ def _system_models(context: ArchitectureViewContext) -> tuple[dict[str, IndexedE
     return systems, model_owner
 
 
-def _logical_facets(context: ArchitectureViewContext, models: Iterable[str]) -> tuple[list[str], dict[str, str | int | bool]]:
+def _logical_facets(
+    context: ArchitectureViewContext, models: Iterable[str], visible_interfaces: Iterable[IndexedEntity],
+) -> tuple[list[str], dict[str, str | int | bool]]:
     namespaces = set(models)
     capabilities = sum(len(context.entities("capability", model)) for model in namespaces)
-    interfaces = sum(len(context.entities("interface", model)) for model in namespaces)
+    interfaces = sum(item.model in namespaces for item in visible_interfaces)
     components = sum(len(context.entities("component", model)) for model in namespaces)
     requirements = sum(len(context.entities("requirement", model)) for model in namespaces)
     monitoring = sum(
@@ -831,11 +833,12 @@ def _logical_entity_spec(identifier: str, title: str, entities: Iterable[Indexed
 
 def _logical_system_drilldown(
     context: ArchitectureViewContext, system: IndexedEntity, models: list[str], curation: ViewCuration,
-    *, max_nodes: int = 36,
+    visible_interface_keys: set[str], *, max_nodes: int = 36,
 ) -> DiagramSpec:
     entities = [
         item for model in models for item in context.entities(model=model)
         if item.entity_type in {"layer", "component", "interface", "capability", "requirement"}
+        and (item.entity_type != "interface" or item.key in visible_interface_keys)
     ]
     priority = {"layer": 0, "component": 1, "interface": 2, "capability": 3, "requirement": 4}
     entities.sort(key=lambda item: (priority.get(item.entity_type, 9), item.key))
@@ -895,6 +898,8 @@ def project_logical_architecture(
     limit = max(1, max_overview_nodes)
     warnings = _curation_diagnostics("logical", context, curation)
     hidden = {item.resolved_id for item in curation.hide if item.resolved_id}
+    visible_interfaces = [item for item in context.entities("interface") if item.key not in hidden]
+    visible_interface_keys = {item.key for item in visible_interfaces}
     order = {key: index for index, key in enumerate(curation.order)}
     systems, model_owner = _system_models(context)
     tier_defs = {tier: (label, index) for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)}
@@ -910,7 +915,7 @@ def project_logical_architecture(
         if key in hidden:
             continue
         models = context.child_models_for_system(key)
-        badges, metrics = _logical_facets(context, models)
+        badges, metrics = _logical_facets(context, models, visible_interfaces)
         if not any(int(badge.rsplit(":", 1)[1]) for badge in badges):
             continue
         drilldown_id = _drilldown_id(curation, key)
@@ -919,7 +924,8 @@ def project_logical_architecture(
             entity_ref=key, drilldown_ref=drilldown_id, badges=badges, metrics=metrics, evidence=[_provenance(system)],
         ))
         drilldowns.append(DiagramDrilldown(
-            drilldown_id, _node_id(key), spec=_logical_system_drilldown(context, system, models, curation),
+            drilldown_id, _node_id(key),
+            spec=_logical_system_drilldown(context, system, models, curation, visible_interface_keys),
         ))
 
     aggregate_members = {item.resolved_id for item in curation.aggregate_components if item.resolved_id}
@@ -967,9 +973,7 @@ def project_logical_architecture(
 
     system_node_by_ref = {node.entity_ref: node for node in system_nodes}
     cross_system_interfaces: list[tuple[IndexedEntity, str, str]] = []
-    for interface in context.entities("interface"):
-        if interface.key in hidden:
-            continue
+    for interface in visible_interfaces:
         endpoint_systems = []
         for reference in (interface.value.provider, interface.value.consumer):
             endpoint = _find_local(context, interface.model, reference)
@@ -1021,6 +1025,15 @@ def project_logical_architecture(
     for relationship in context.relationships():
         if relationship.kind not in _LOGICAL_EDGE_KINDS:
             continue
+        endpoints = [
+            context.entity(key, diagnose=False)
+            for key in (relationship.source, relationship.target)
+        ]
+        if any(
+            endpoint and endpoint.entity_type == "interface" and endpoint.key not in visible_interface_keys
+            for endpoint in endpoints
+        ):
+            continue
         source, target = owner(relationship.source), owner(relationship.target)
         if not source or not target or source == target or source not in selected_ids or target not in selected_ids:
             continue
@@ -1039,7 +1052,7 @@ def project_logical_architecture(
             edge.style = "cycle"
 
     interfaces = []
-    for interface in context.entities("interface"):
+    for interface in visible_interfaces:
         endpoints = [
             item for reference in (interface.value.provider, interface.value.consumer)
             if (item := _find_local(context, interface.model, reference))

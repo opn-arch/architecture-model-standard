@@ -229,3 +229,32 @@ def test_logical_hidden_priority_interface_does_not_reserve_connected_systems(tm
     } == {
         node.entity_ref for node in without_interface.nodes if node.kind == "system"
     }
+
+
+def test_logical_hidden_nonpriority_interface_never_renders_indirectly(tmp_path):
+    hidden = Selector(qualified_id="web::IF-1", resolved_id="web::IF-1")
+    spec = project_logical_architecture(
+        _context(tmp_path),
+        ViewCuration(hide=[hidden]),
+        max_overview_nodes=10,
+    )
+
+    nested_specs = [spec]
+    for drilldown in spec.drilldowns:
+        if drilldown.spec:
+            nested_specs.append(drilldown.spec)
+            nested_specs.extend(item.spec for item in drilldown.spec.drilldowns if item.spec)
+    assert all(
+        node.entity_ref != "web::IF-1"
+        for nested in nested_specs for node in nested.nodes
+    )
+    assert all(
+        "node:web::IF-1" not in {edge.source, edge.target}
+        for nested in nested_specs for edge in nested.edges
+    )
+    assert all(
+        not (edge.kind == "consumes" and edge.target == "node:root::SYS-WEB")
+        for edge in spec.edges
+    )
+    web = next(node for node in spec.nodes if node.entity_ref == "root::SYS-WEB")
+    assert "interfaces:0" in web.badges
