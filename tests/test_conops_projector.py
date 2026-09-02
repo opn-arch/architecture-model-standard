@@ -415,7 +415,7 @@ def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows(
     assert labels == ["Acquire Knowledge", "Enrich & Organize", "Search & Use", "Review & Govern", "Learn & Improve"]
     assert all("CLI" not in node.label and "Audit Kb" not in node.label for node in spec.nodes)
     externals = [node for node in spec.nodes if node.kind == "external"]
-    assert len(externals) == 5
+    assert len(externals) == 4
     external_children = {
         child.id for node in externals for item in spec.drilldowns
         if item.id == node.drilldown_ref for child in item.spec.nodes

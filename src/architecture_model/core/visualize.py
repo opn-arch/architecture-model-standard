@@ -21,16 +21,7 @@ from html import escape
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .diagram_renderer import render_diagram_panel
-from .diagram_spec import Diagnostic, DiagramSpec
-from .se_view_projectors import (
-    project_conops,
-    project_functional_architecture,
-    project_logical_architecture,
-    project_use_cases,
-)
-from .view_context import ArchitectureViewContext
-from .view_curation import ViewCuration, load_viewer_curation
+from .curated_views import build_curated_views
 
 if TYPE_CHECKING:
     from .types import ArchitectureModel
@@ -2380,42 +2371,17 @@ def generate_html_viewer(
     output_path = Path(output_path)
 
     project_root = Path(repo_path).resolve() if repo_path is not None else output_path.parent.resolve()
-    view_context = ArchitectureViewContext.load(model, project_root)
-    curation = load_viewer_curation(project_root, view_context, curation_path) if use_curation else None
-    curation_candidate = Path(curation_path) if curation_path is not None else project_root / ".architecture/viewer-curation.yaml"
-    curation_candidate = curation_candidate if curation_candidate.is_absolute() else project_root / curation_candidate
-    curation_exists = use_curation and curation_candidate.is_file()
-    native_projectors = {
-        "conops": ("ConOps", "Concept of Operations", project_conops, "conops"),
-        "functional": ("Functional Architecture", "Functional Analysis (SA-4.2)", project_functional_architecture, "functional"),
-        "logical": ("Logical Architecture", "Logical Decomposition (SA-4.3)", project_logical_architecture, "logical"),
-        "use-cases": ("Use Cases", "Use Case Analysis", project_use_cases, "use_cases"),
-    }
+    native_views = build_curated_views(
+        model, project_root, curation_path=curation_path, use_curation=use_curation, theme="dark",
+    )
     se_views: dict[str, dict] = {}
-    for key, (label, subtitle, projector, curation_name) in native_projectors.items():
-        view_diagnostics = [item for item in (curation.diagnostics if curation else []) if not item.view or item.view == curation_name]
-        selected = getattr(curation.views, curation_name) if curation is not None else ViewCuration()
-        try:
-            spec = projector(view_context, selected)
-        except ValueError as exc:
-            diagnostic = Diagnostic(
-                "warning", "VIEW_PROJECTION_INVALID",
-                f"Unsafe or invalid presentation data omitted; automatic {label} view unavailable",
-                view=curation_name, source="model",
-            )
-            spec = DiagramSpec(key, label, subtitle, warnings=[diagnostic])
-            view_diagnostics.append(diagnostic)
-        spec.warnings.extend(item for item in view_context.diagnostics if item not in spec.warnings)
-        spec.warnings.extend(item for item in view_diagnostics if item not in spec.warnings)
-        panel = render_diagram_panel(spec)
+    for key, view in native_views.items():
+        spec, panel = view["spec"], view["panel"]
         se_views[key] = {
-            "label": label, "subtitle": subtitle, "renderer": "native",
+            "label": view["label"], "subtitle": view["subtitle"], "renderer": "native",
             "spec": spec.to_dict(), "panel": panel.to_dict(),
             "warnings": [item.to_dict() for item in spec.warnings],
-            "curation": {
-                "status": "partial" if view_diagnostics else "curated" if curation_exists else "auto",
-                "path": str(curation_candidate) if use_curation else "disabled",
-            },
+            "curation": view["curation"],
         }
 
     # Collect all entity IDs for compatibility Mermaid click injection.
@@ -4026,6 +3992,7 @@ def generate_entity_explorer(
 
 def generate_all_diagrams(
     model: "ArchitectureModel", output_dir: Path, repo_path: Path | None = None,
+    curation_path: Path | None = None, use_curation: bool = True,
 ) -> dict[str, Path]:
     """Generate all 10 standard diagrams and write to output_dir.
 
@@ -4075,16 +4042,14 @@ def generate_all_diagrams(
         paths[name] = path
 
     if repo_path is not None:
-        context = ArchitectureViewContext.load(model, repo_path)
-        specs = {
-            "conops": project_conops(context),
-            "functional-architecture": project_functional_architecture(context),
-            "logical-architecture": project_logical_architecture(context),
-            "use-cases": project_use_cases(context),
-        }
-        for name, spec in specs.items():
-            path = output_dir / f"{name}.svg"
-            path.write_text(render_diagram_panel(spec).svg + "\n", encoding="utf-8")
+        views = build_curated_views(
+            model, repo_path, curation_path=curation_path, use_curation=use_curation, theme="light",
+        )
+        export_names = {"functional": "functional-architecture", "logical": "logical-architecture"}
+        for key, view in views.items():
+            name = export_names.get(key, key)
+            path = output_dir / view["filename"]
+            path.write_text(view["panel"].svg + "\n", encoding="utf-8")
             paths[name] = path
 
     return paths

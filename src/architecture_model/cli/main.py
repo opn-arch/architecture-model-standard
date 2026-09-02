@@ -91,6 +91,9 @@ def main(argv: list[str] | None = None) -> int:
     p_visualize = subparsers.add_parser("visualize", help="Generate Mermaid diagrams from architecture model")
     p_visualize.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_visualize.add_argument("-o", "--output", default="output/diagrams", help="Output directory (default: output/diagrams)")
+    visualize_curation = p_visualize.add_mutually_exclusive_group()
+    visualize_curation.add_argument("--curation", metavar="PATH", help="Viewer curation YAML path")
+    visualize_curation.add_argument("--no-curation", action="store_true", help="Disable curation auto-discovery")
 
     # --- author ---
     p_author = subparsers.add_parser("author", help="Generate model from requirements document")
@@ -546,7 +549,11 @@ def _cmd_visualize(args) -> int:
     if not out_dir.is_absolute():
         out_dir = root / out_dir
 
-    paths = generate_all_diagrams(model, out_dir, repo_path=root)
+    paths = generate_all_diagrams(
+        model, out_dir, repo_path=root,
+        curation_path=Path(args.curation) if getattr(args, "curation", None) else None,
+        use_curation=not getattr(args, "no_curation", False),
+    )
     print(f"Generated {len(paths)} diagrams in {out_dir}/")
     for name in sorted(paths):
         print(f"  {paths[name].name}")

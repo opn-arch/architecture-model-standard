@@ -120,30 +120,21 @@ def generate_se_docs(
     result: dict[str, Any] = {"generated": [], "skipped": [], "preserved_edits": [], "errors": []}
     native_views: dict[str, tuple[Any, str]] = {}
     if repo_root is not None:
-        from architecture_model.core.diagram_renderer import render_diagram_panel
-        from architecture_model.core.se_view_projectors import (
-            project_conops,
-            project_functional_architecture,
-            project_logical_architecture,
-            project_use_cases,
-        )
-        from architecture_model.core.view_context import ArchitectureViewContext
-        from architecture_model.core.view_curation import load_viewer_curation
+        from architecture_model.core.curated_views import build_curated_views
 
-        context = ArchitectureViewContext.load(model, repo_root)
-        curation = load_viewer_curation(repo_root, context)
+        views = build_curated_views(model, repo_root, theme="light")
         definitions = {
-            "conops": (project_conops, curation.views.conops, "conops.svg"),
-            "functional_analysis": (project_functional_architecture, curation.views.functional, "functional-architecture.svg"),
-            "logical_architecture": (project_logical_architecture, curation.views.logical, "logical-architecture.svg"),
-            "use_cases": (project_use_cases, curation.views.use_cases, "use-cases.svg"),
+            "conops": views["conops"],
+            "functional_analysis": views["functional"],
+            "logical_architecture": views["logical"],
+            "use_cases": views["use-cases"],
         }
-        for key, (projector, view_curation, filename) in definitions.items():
+        for key, view in definitions.items():
             if doc_filter and key not in doc_filter:
                 continue
-            spec = projector(context, view_curation)
+            spec, filename = view["spec"], view["filename"]
             svg_path = output_dir / filename
-            svg_path.write_text(render_diagram_panel(spec).svg + "\n", encoding="utf-8")
+            svg_path.write_text(view["panel"].svg + "\n", encoding="utf-8")
             result["generated"].append(str(svg_path))
             native_views[key] = (spec, filename)
 

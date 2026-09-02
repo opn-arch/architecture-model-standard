@@ -777,8 +777,7 @@ def test_real_logs_db_curated_views_meet_objective_geometry(tmp_path) -> None:
     for name, spec in specs.items():
         root = _root(render_diagram_svg(spec))
         crossings = _visual_crossings(root)
-        if name != "conops":
-            assert crossings[0] <= ({"functional": 0, "logical": 1, "use-cases": 0}[name]), (name, crossings)
+        assert crossings[0] <= ({"conops": 0, "functional": 0, "logical": 1, "use-cases": 0}[name]), (name, crossings)
         assert crossings[1] == 0, (name, crossings)
         nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
         labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
@@ -816,6 +815,14 @@ def test_real_logs_db_curated_views_meet_objective_geometry(tmp_path) -> None:
     logical_root = _root(render_diagram_svg(specs["logical"]))
     cycle_paths = [edge.attrib["d"] for edge in logical_root.findall(".//svg:path[@data-edge-id]", SVG) if "is-critical" in edge.attrib["class"]]
     assert len(cycle_paths) == len(set(cycle_paths))
+    logical_dependencies = [edge for edge in logical_root.findall(".//svg:path[@data-edge-id]", SVG) if edge.attrib["data-kind"] == "depends-on"]
+    dependency_ids = {edge.attrib["id"] for edge in logical_dependencies}
+    visible_dependency_labels = [
+        label.text for label in logical_root.findall(".//svg:text[@data-edge-label]", SVG)
+        if label.attrib["data-edge-label"] in dependency_ids
+    ]
+    assert all("×" in label or "(" in label for label in visible_dependency_labels)
+    assert all(edge.attrib["stroke-width"] == "2" for edge in logical_dependencies if "is-critical" in edge.attrib["class"])
 
     assert len([node for node in specs["use-cases"].nodes if node.kind == "use-case"]) == 10
     assert all(node.status != "omitted" for node in specs["use-cases"].nodes)
@@ -897,6 +904,7 @@ def test_standalone_svg_embeds_explicit_accessible_theme(theme, background, text
     canvas = root.find("svg:rect[@data-canvas-background]", SVG)
 
     assert canvas is not None and canvas.attrib["fill"] == background
+    assert root.attrib["data-theme"] == theme
     assert f"--diagram-text: {text}" in panel.svg
     assert f"--diagram-surface: {surface}" in panel.svg
     assert f"--diagram-edge: {edge}" in panel.svg
@@ -905,6 +913,13 @@ def test_standalone_svg_embeds_explicit_accessible_theme(theme, background, text
     assert _contrast(background, text) >= 7
     assert _contrast(surface, text) >= 7
     assert _contrast(background, edge) >= 3
+    for element in root.iter():
+        if element.tag.rsplit("}", 1)[-1] in {"rect", "path", "polygon", "circle", "ellipse", "text"}:
+            assert "var(" not in " ".join(element.attrib.values())
+    assert all("fill" in item.attrib for item in root.findall(".//svg:text", SVG))
+    assert all("stroke" in item.attrib for item in root.findall(".//svg:path[@data-edge-id]", SVG))
+    for shape in root.findall('.//*[@class="node-shape"]'):
+        assert "fill" in shape.attrib and "stroke" in shape.attrib
 
 
 def test_renderer_rejects_unknown_theme() -> None:

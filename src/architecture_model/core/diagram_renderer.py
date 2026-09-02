@@ -117,6 +117,10 @@ _DOTTED_EDGE_KINDS = {"decomposition", "contains", "error", "compensates"}
 _DASHED_EDGE_KINDS = {"allocation", "owns", "interface-port"}
 _DATA_EDGE_KINDS = {"data", "produces", "consumes", "exposes", "uses", "connects"}
 _DEPENDENCY_EDGE_KINDS = {"dependency", "depends-on"}
+_PALETTES = {
+    "light": {"background": "#ffffff", "text": "#172033", "muted": "#475569", "surface": "#f8fafc", "edge": "#475569", "critical": "#a33a12"},
+    "dark": {"background": "#0f172a", "text": "#f8fafc", "muted": "#cbd5e1", "surface": "#1e293b", "edge": "#cbd5e1", "critical": "#f59e0b"},
+}
 
 
 def _freeze(value: Any) -> Any:
@@ -240,6 +244,20 @@ def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, 
     }
     if spec.layout == "logical-tiers":
         lane_members = _crossing_minimized_order(lane_members, spec.edges, lane_order)
+    elif spec.layout == "operational-lanes":
+        scenario_order = {
+            node.id: index for index, node in enumerate(node for node in spec.nodes if node.kind == "scenario")
+        }
+        targets: dict[str, int] = {}
+        for edge in spec.edges:
+            if edge.target in scenario_order:
+                targets[edge.source] = min(targets.get(edge.source, len(scenario_order)), scenario_order[edge.target])
+        lane_members = {
+            key: sorted(values, key=lambda node: (
+                scenario_order[node.id] if node.id in scenario_order else targets.get(node.id, len(scenario_order)), node.id,
+            ))
+            for key, values in lane_members.items()
+        }
     else:
         lane_members = {key: sorted(values, key=lambda node: (node.kind, node.id)) for key, values in lane_members.items()}
     assigned = {node.id for members in lane_members.values() for node in members}
@@ -384,6 +402,43 @@ def _use_case_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], index: int) -
             (target.x + target.width, ty),
         ])
     return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
+
+
+def _operational_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], nodes: dict[str, DiagramNode], index: int) -> str:
+    """Route ConOps flows on separated source, delivery, and outcome buses."""
+
+    source, target = boxes[edge.source], boxes[edge.target]
+    source_node, target_node = nodes[edge.source], nodes[edge.target]
+    sy, ty = source.y + source.height / 2, target.y + target.height / 2
+    if source_node.kind in {"actor", "external"} and target_node.kind == "scenario":
+        sx, tx = source.x + source.width, target.x
+        scenario_rank = [
+            identifier for identifier, _ in sorted(
+                ((identifier, box.y) for identifier, box in boxes.items() if nodes[identifier].kind == "scenario"),
+                key=lambda item: (item[1], item[0]),
+            )
+        ].index(edge.target)
+        bus_x = tx - 54 + scenario_rank * 24 - index % 4 * 4
+        return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
+    if source_node.kind == "scenario" and target_node.kind == "outcome":
+        sx, tx = source.x + source.width / 2, target.x + target.width / 2
+        bus_y = max(box.y + box.height for box in boxes.values()) + 24
+        return _points_path([(sx, source.y + source.height), (sx, bus_y), (tx, bus_y), (tx, target.y + target.height)])
+    if source_node.kind == "scenario" and target_node.kind == "system":
+        sx, tx = source.x + source.width, target.x
+        bus_x = tx - 18
+        return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
+    if source_node.kind == "scenario" and target_node.kind == "scenario":
+        sx = source.x + source.width / 2
+        tx = target.x + target.width / 2
+        if source.y < target.y:
+            return _points_path([(sx, source.y + source.height), (tx, target.y)])
+        sx, tx = source.x + source.width / 2, target.x + target.width / 2
+        track_y = min(box.y for box in boxes.values()) - 18 - index % 3 * 8
+        return _points_path([(sx, source.y), (sx, track_y), (tx, track_y), (tx, target.y)])
+    return _lane_edge_path(source, target, "LR", index % 5, [
+        box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}
+    ])
 
 
 def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
@@ -674,7 +729,7 @@ def _edge_svg(
     margin: int, lane_step: int, lane_aware: bool = False,
     occupied_labels: list[_Box] | None = None,
     layout: str = "flowchart",
-    routed_paths: list[str] | None = None,
+    routed_paths: list[str] | None = None, nodes: dict[str, DiagramNode] | None = None,
 ) -> str:
     kind = edge.kind.lower().replace("_", "-")
     semantic_style = _edge_style(edge)
@@ -689,7 +744,7 @@ def _edge_svg(
     label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
     track = index % 5
     obstacles = [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]
-    path = _use_case_edge_path(edge, boxes, index) if layout == "use-case-catalog" else _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
+    path = _operational_edge_path(edge, boxes, nodes or {}, index) if layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if layout == "use-case-catalog" else _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
     evidence_title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
     detailed_label = edge.title or edge.label
@@ -742,34 +797,65 @@ def _edge_svg(
 
 
 def _stylesheet(theme: str) -> str:
-    palette = {
-        "light": ("#172033", "#475569", "#f8fafc", "#475569"),
-        "dark": ("#f8fafc", "#cbd5e1", "#1e293b", "#cbd5e1"),
-    }
-    text, muted, surface, edge = palette[theme]
+    palette = _PALETTES[theme]
+    text, muted, surface, edge = (palette[key] for key in ("text", "muted", "surface", "edge"))
     return """<style>
-.diagram { --diagram-text: TEXT; --diagram-muted: MUTED; --diagram-surface: SURFACE; --diagram-edge: EDGE; --diagram-label-halo: SURFACE; font-family: system-ui, sans-serif; color: var(--diagram-text); }
-.diagram-node .node-shape { fill: var(--diagram-surface); stroke: var(--diagram-edge); stroke-width: 1.5; }
+.diagram { --diagram-text: TEXT; --diagram-muted: MUTED; --diagram-surface: SURFACE; --diagram-edge: EDGE; font-family: system-ui, sans-serif; color: TEXT; }
+.diagram-node .node-shape { fill: SURFACE; stroke: EDGE; stroke-width: 1.5; }
 .diagram-node.is-inferred .node-shape { stroke-dasharray: 7 5; }
-.kind-system .node-shape { fill: #eef6ff; stroke: #1d4ed8; }
-.kind-functional-block .node-shape,.kind-function .node-shape { fill: #ecfdf5; stroke: #047857; }
-.kind-outcome .node-shape { fill: #fff7ed; stroke: #c2410c; }
-.kind-requirement .node-shape { fill: #fffbeb; stroke: #a16207; }
-.container { fill: #f8fafc; fill-opacity: .28; stroke: #94a3b8; stroke-width: 1; }
+.container { fill: SURFACE; fill-opacity: .28; stroke: EDGE; stroke-width: 1; }
 .container.system { stroke-width: 3; }
-.diagram-edge { fill: none; stroke: var(--diagram-edge); stroke-width: 1.5; }
-.diagram-edge.is-critical { stroke: #b91c1c; stroke-width: 3; }
-.node-label,.node-subtitle,.edge-label,.footer-text,.container-label,.diagram-title { fill: var(--diagram-text); dominant-baseline: middle; }
+.diagram-edge { fill: none; stroke: EDGE; stroke-width: 1.5; }
+.diagram-edge.is-critical { stroke: CRITICAL; stroke-width: 2; }
+.node-label,.node-subtitle,.edge-label,.footer-text,.container-label,.diagram-title { fill: TEXT; dominant-baseline: middle; }
 .node-label { text-anchor: middle; font-size: 13px; font-weight: 600; }
 .node-subtitle { text-anchor: middle; font-size: 10px; fill: #64748b; }
-.node-badge { font-size: 8px; fill: var(--diagram-muted); }
+.node-badge { font-size: 8px; fill: MUTED; }
 .edge-label,.footer-text,.container-label { font-size: 10px; }
-.edge-label-contrast { paint-order: stroke; stroke: var(--diagram-label-halo); stroke-width: 4px; stroke-linejoin: round; }
+.edge-label-contrast { paint-order: stroke; stroke: SURFACE; stroke-width: 4px; stroke-linejoin: round; }
 .diagram-title { font-size: 20px; font-weight: 700; }
-.diagram-subtitle { font-size: 12px; fill: var(--diagram-muted); }
+.diagram-subtitle { font-size: 12px; fill: MUTED; }
 .diagnostic-error { fill: #b91c1c; }.diagnostic-warning { fill: #a16207; }
 .evidence-indicator { fill: #2563eb; }
-</style>""".replace("TEXT", text).replace("MUTED", muted).replace("SURFACE", surface).replace("EDGE", edge)
+</style>""".replace("TEXT", text).replace("MUTED", muted).replace("SURFACE", surface).replace("EDGE", edge).replace("CRITICAL", palette["critical"])
+
+
+def _explicit_presentation(svg: str, theme: str) -> str:
+    """Add literal SVG attributes for renderers with incomplete CSS support."""
+
+    palette = _PALETTES[theme]
+
+    def resolve(match: re.Match[str]) -> str:
+        tag, attributes = match.group(1), match.group(2)
+        classes = re.search(r'class="([^"]*)"', attributes)
+        class_names = classes.group(1).split() if classes else []
+        additions: list[str] = []
+        if tag == "text" and "fill=" not in attributes:
+            additions.append(f'fill="{palette["muted"] if "diagram-subtitle" in class_names or "node-subtitle" in class_names or "node-badge" in class_names else palette["text"]}"')
+        elif tag == "path" and "data-edge-id=" in attributes:
+            additions.extend((
+                'fill="none"' if "fill=" not in attributes else "",
+                f'stroke="{palette["critical"] if "is-critical" in class_names else palette["edge"]}"' if "stroke=" not in attributes else "",
+                f'stroke-width="{2 if "is-critical" in class_names else 1.5}"' if "stroke-width=" not in attributes else "",
+            ))
+        elif "node-shape" in class_names:
+            additions.extend((
+                f'fill="{"none" if tag == "path" else palette["surface"]}"' if "fill=" not in attributes else "",
+                f'stroke="{palette["edge"]}"' if "stroke=" not in attributes else "",
+            ))
+        elif tag == "path":
+            additions.extend((
+                'fill="none"' if "fill=" not in attributes else "",
+                f'stroke="{palette["edge"]}"' if "stroke=" not in attributes else "",
+            ))
+        elif tag in {"rect", "polygon", "circle", "ellipse"} and "fill=" not in attributes:
+            additions.append(f'fill="{palette["surface"]}"')
+            if "stroke=" not in attributes and ("container" in class_names or "node-shape" in class_names):
+                additions.append(f'stroke="{palette["edge"]}"')
+        additions = [item for item in additions if item]
+        return f'<{tag}{attributes}{(" " + " ".join(additions)) if additions else ""}>'
+
+    return re.sub(r'<(rect|path|text|polygon|circle|ellipse)(\s[^>]*?)(/?)>', lambda match: resolve(match)[:-1] + match.group(3) + ">", svg)
 
 
 def _footer(spec: DiagramSpec, start_y: int, boxes: dict[str, _Box], width: int) -> str:
@@ -817,12 +903,12 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     namespace = f"diagram-{re.sub(r'[^a-zA-Z0-9_-]+', '-', spec.id).strip('-') or 'view'}-{hashlib.sha256(spec.id.encode()).hexdigest()[:8]}"
     title_id, desc_id, arrow_id = f"{namespace}-title", f"{namespace}-desc", f"{namespace}-arrow"
     parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" class="diagram" data-diagram-id="{_text(spec.id)}" data-pan-zoom="true" width="100%" height="auto" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="{title_id} {desc_id}">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" class="diagram" data-diagram-id="{_text(spec.id)}" data-theme="{options.theme}" data-pan-zoom="true" width="100%" height="auto" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="{title_id} {desc_id}">',
         f'<title id="{title_id}">{_text(spec.title)}</title>',
         f'<desc id="{desc_id}">{_text(spec.subtitle or "Architecture diagram")}</desc>',
         f'<rect data-canvas-background="true" width="{width}" height="{height}" fill="{"#ffffff" if options.theme == "light" else "#0f172a"}"/>',
         _stylesheet(options.theme),
-        f'<defs><marker id="{arrow_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker></defs>',
+        f'<defs><marker id="{arrow_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="{_PALETTES[options.theme]["edge"]}" stroke="none"/></marker></defs>',
         f'<text class="diagram-title" x="{options.margin}" y="30">{_text(spec.title)}</text>',
     ]
     if spec.subtitle:
@@ -849,8 +935,9 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     parallel_seen: dict[tuple[str, str], int] = {}
     occupied_labels: list[_Box] = []
     lane_aware = bool(spec.lanes) or spec.layout in {"functional-flow", "use-case-catalog"}
+    node_lookup = {node.id: node for node in spec.nodes}
     routed_paths = [
-        _use_case_edge_path(edge, boxes, index) if spec.layout == "use-case-catalog" else _lane_edge_path(
+        _operational_edge_path(edge, boxes, node_lookup, index) if spec.layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if spec.layout == "use-case-catalog" else _lane_edge_path(
             boxes[edge.source], boxes[edge.target], spec.direction.upper(), index % 5,
             [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}],
         ) if lane_aware else _edge_path(
@@ -869,6 +956,7 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
             edge, boxes, spec.direction.upper(), index, options.margin, edge_lane_step,
             lane_aware, occupied_labels, spec.layout,
             [path for path_index, path in enumerate(routed_paths) if path_index != index],
+            node_lookup,
         )
         parts.append(edge_svg.replace('url(#arrow)', f'url(#{arrow_id})'))
     for node in sorted(spec.nodes, key=lambda item: item.id):
@@ -876,7 +964,7 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     footer_start = max([box.y + box.height for box in [*boxes.values(), *containers.values()]] + [160]) + 38
     parts.append(_footer(spec, footer_start, boxes, width))
     parts.append("</svg>")
-    return "".join(parts), width, height
+    return _explicit_presentation("".join(parts), options.theme), width, height
 
 
 def render_diagram_svg(spec: DiagramSpec, options: DiagramRenderOptions | None = None) -> str:

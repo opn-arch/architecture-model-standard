@@ -57,6 +57,9 @@ def test_viewer_embeds_four_native_specs_panels_and_drilldowns(tmp_path: Path) -
     for key in ("conops", "functional", "logical", "use-cases"):
         view = data["se_views"][key]
         assert view["renderer"] == "native"
+        assert view["panel"]["theme"] == "dark"
+        assert 'data-theme="dark"' in view["panel"]["svg"]
+        assert all(panel["theme"] == "dark" for panel in view["panel"]["drilldowns"].values())
         assert view["spec"]["id"]
         assert "<svg" in view["panel"]["svg"]
         ET.fromstring(view["panel"]["svg"])
@@ -144,7 +147,33 @@ def test_generate_all_diagrams_preserves_mmd_and_adds_native_svg(tmp_path: Path)
     assert paths["context"].suffix == ".mmd"
     for name in ("conops", "functional-architecture", "logical-architecture", "use-cases"):
         assert paths[name].suffix == ".svg"
-        ET.parse(paths[name])
+        root = ET.parse(paths[name]).getroot()
+        assert root.attrib["data-theme"] == "light"
+
+
+def test_viewer_exports_and_docs_share_curated_spec_identity(tmp_path: Path) -> None:
+    from architecture_model.docs.se.generator import generate_se_docs
+
+    model = load_model(_write_model(tmp_path))
+    curation = tmp_path / ".architecture" / "viewer-curation.yaml"
+    curation.parent.mkdir()
+    curation.write_text("""version: 1
+views:
+  conops:
+    labels: {root::BEH-1: Curated operation}
+""", encoding="utf-8")
+    viewer = _viewer_data(generate_html_viewer(model, tmp_path / "viewer.html", repo_path=tmp_path).read_text())
+    exports = generate_all_diagrams(model, tmp_path / "exports", repo_path=tmp_path)
+    docs = tmp_path / "docs"
+    generate_se_docs(model, docs, repo_root=tmp_path, doc_filter=["conops"])
+
+    expected = viewer["se_views"]["conops"]["spec"]
+    for path in (exports["conops"], docs / "conops.svg"):
+        root = ET.parse(path).getroot()
+        assert root.attrib["data-diagram-id"] == expected["id"]
+        assert {item.attrib["data-node-id"] for item in root.iter() if "data-node-id" in item.attrib} == {
+            item["id"] for item in expected["nodes"]
+        }
 
 
 def test_generated_javascript_parses_with_node(tmp_path: Path) -> None:
