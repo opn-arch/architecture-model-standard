@@ -219,6 +219,43 @@ def _normalized_path(path: Any) -> str:
     return Path(str(path)).as_posix().lstrip("./")
 
 
+def _paths_match(first: Any, second: Any) -> bool:
+    """Match normalized paths across absolute and repository-relative forms."""
+    left = _normalized_path(first)
+    right = _normalized_path(second)
+    return left == right or left.endswith(f"/{right}") or right.endswith(f"/{left}")
+
+
+class _EntityIdAllocator:
+    """Allocate deterministic schema-valid IDs in one global namespace."""
+
+    def __init__(self, initial: set[str] | None = None) -> None:
+        self.used = set(initial or ())
+        self.assigned: dict[tuple[str, str], str] = {}
+
+    def allocate(self, original_id: str, namespace: str = "", prefix: str = "") -> str:
+        if not original_id:
+            return original_id
+        key = (namespace, original_id)
+        if key in self.assigned:
+            return self.assigned[key]
+        candidate = _schema_id(original_id)
+        if candidate in self.used:
+            entity_prefix = prefix or original_id.split("-", 1)[0]
+            entity_prefix = re.sub(r"[^A-Z]", "", entity_prefix.upper()) or "ID"
+            digest = int.from_bytes(
+                hashlib.sha256(f"{namespace}:{original_id}".encode()).digest()[:8], "big"
+            )
+            candidate = f"{entity_prefix}-{digest}"
+            counter = 1
+            while candidate in self.used:
+                candidate = f"{entity_prefix}-{digest}{counter}"
+                counter += 1
+        self.used.add(candidate)
+        self.assigned[key] = candidate
+        return candidate
+
+
 @dataclass(frozen=True)
 class FileOwnership:
     """Canonical file ownership for one synthesis run.
@@ -390,24 +427,16 @@ def _build_system_model_yaml(
 
     id_remap: dict[str, str] = {}
     selected_component_ids: set[str] = set()
-    used_local_ids: set[str] = set()
+    allocator = _EntityIdAllocator()
 
-    def _register_id(original_id: str) -> str:
+    def _register_id(original_id: str, prefix: str = "") -> str:
         """Register and return one canonical subsystem ID mapping."""
         if not original_id:
             return original_id
         if original_id in id_remap:
             return id_remap[original_id]
-        candidate = _schema_id(original_id)
-        if candidate in used_local_ids:
-            digest = hashlib.sha256(original_id.encode()).hexdigest()
-            length = 8
-            candidate = f"{candidate}-{digest[:length]}"
-            while candidate in used_local_ids:
-                length += 2
-                candidate = f"{_schema_id(original_id)}-{digest[:length]}"
+        candidate = allocator.allocate(original_id, prefix=prefix)
         id_remap[original_id] = candidate
-        used_local_ids.add(candidate)
         return candidate
 
     file_set = {_normalized_path(path) for path in boundary.files}
@@ -441,7 +470,7 @@ def _build_system_model_yaml(
                 }
                 if file_set and not comp_files.intersection(file_set):
                     continue
-                namespaced_id = _register_id(comp.id)
+                namespaced_id = _register_id(comp.id, "COMP")
                 selected_component_ids.add(comp.id)
                 comp_dict: dict[str, Any] = {
                     "id": namespaced_id, "name": comp.name, "status": "ACTIVE"
@@ -498,7 +527,9 @@ def _build_system_model_yaml(
                 selected_owned_files = {
                     path for component in components for path in component.get("files", [])
                 }
-                if file_set and not cap_sources.intersection(file_set) and not (
+                if file_set and not any(
+                    _paths_match(source, scoped) for source in cap_sources for scoped in file_set
+                ) and not (
                     realized_by_selected
                     and not cap_sources
                     and selected_owned_files
@@ -507,7 +538,7 @@ def _build_system_model_yaml(
                     continue
                 cap_dict = _capability_dict(cap)
                 selected_capability_ids.add(cap.id)
-                cap_dict["id"] = _register_id(cap.id)
+                cap_dict["id"] = _register_id(cap.id, "CAP")
                 capability_inputs[cap_dict["id"]] = cap
                 capabilities.append(cap_dict)
 
@@ -523,7 +554,7 @@ def _build_system_model_yaml(
                 if (
                     file_set
                     and (
-                        (source_file and source_file not in file_set)
+                        (source_file and not any(_paths_match(source_file, path) for path in file_set))
                         or (
                             not source_file
                             and beh.capability_id not in selected_capability_ids
@@ -538,7 +569,7 @@ def _build_system_model_yaml(
                 if capability_id and capability_id not in cap_ids:
                     continue
                 beh_dict: dict[str, Any] = {
-                    "id": _register_id(beh.id),
+                    "id": _register_id(beh.id, "BEH"),
                     "name": beh.name,
                     "status": "ACTIVE",
                 }
@@ -550,7 +581,7 @@ def _build_system_model_yaml(
                 ):
                     value = getattr(beh, field, None)
                     if value:
-                        beh_dict[field] = value
+                        beh_dict[field] = str(value) if field == "source_file" else value
                 if beh.actor_id:
                     beh_dict["actor_id"] = _register_id(beh.actor_id)
                 if capability_id:
@@ -579,7 +610,7 @@ def _build_system_model_yaml(
         if hasattr(output, "actors"):
             for actor in output.actors:
                 actor_dict: dict[str, Any] = {
-                    "id": _register_id(actor.id),
+                    "id": _register_id(actor.id, "ACT"),
                     "name": actor.name,
                     "status": "ACTIVE",
                 }
@@ -602,7 +633,7 @@ def _build_system_model_yaml(
                 if namespaced_comp_id not in comp_ids:
                     continue
                 iface_dict: dict[str, Any] = {
-                    "id": _register_id(iface.id),
+                    "id": _register_id(iface.id, "IF"),
                     "name": iface.name,
                     "status": "ACTIVE",
                     "type": _interface_type(iface.interface_type),
@@ -649,7 +680,7 @@ def _build_system_model_yaml(
             for req in scoped_requirements
         }
         for requirement in requirements:
-            requirement["id"] = _register_id(requirement["id"])
+            requirement["id"] = _register_id(requirement["id"], "REQ")
         file_to_comp = {
             _normalized_path(path): component["id"]
             for component in components for path in component.get("files", [])
@@ -673,7 +704,7 @@ def _build_system_model_yaml(
                 if file_set and _normalized_path(con.source) not in file_set:
                     continue
                 con_dict: dict[str, Any] = {
-                    "id": _register_id(f"CON-{i + 1}"),
+                    "id": _register_id(f"CON-{i + 1}", "CON"),
                     "name": con.name,
                     "status": "ACTIVE",
                     "value": con.value,
@@ -711,7 +742,7 @@ def _build_system_model_yaml(
                 seen_layers.add(layer)
                 original_layer_id = f"LAYER-{layer.upper()}"
                 layers.append({
-                    "id": _register_id(original_layer_id), "name": layer, "status": "ACTIVE"
+                    "id": _register_id(original_layer_id, "LAY"), "name": layer, "status": "ACTIVE"
                 })
 
     # Extract from relate results
@@ -732,15 +763,18 @@ def _build_system_model_yaml(
                     }
                 )
 
-    file_to_comp = {
-        _normalized_path(path): component["id"]
+    component_files = [
+        (path, component["id"])
         for component in components for path in component.get("files", [])
-    }
+    ]
     relationship_keys = {
         (rel["from"], rel["to"], rel["type"]) for rel in relationships
     }
     for behavior in behaviors:
-        component_id = file_to_comp.get(_normalized_path(behavior.get("source_file", "")))
+        component_id = next((
+            component_id for path, component_id in component_files
+            if _paths_match(path, behavior.get("source_file", ""))
+        ), "")
         capability_id = behavior.get("capability_id", "")
         if component_id and behavior.get("steps") and not behavior.get("structured_steps"):
             behavior["structured_steps"] = [
@@ -833,7 +867,7 @@ def _build_system_model_yaml(
                 [capability["name"] for capability in realized]
                 + [goal for capability in realized for goal in capability.get("goals", [])]
             )
-            component.setdefault("extensions", {})["semantic_derivation"] = {
+            component.setdefault("extensions", {})["x-semantic-derivation"] = {
                 "method": "realized_capabilities",
                 "capabilities": [capability["id"] for capability in realized],
                 "primary_capability": primary["id"],
@@ -859,7 +893,7 @@ def _build_system_model_yaml(
                 if value_functions:
                     component["value_function"] = value_functions[0]
             component.setdefault("extensions", {}).setdefault(
-                "semantic_derivation", {"method": "source_ownership"}
+                "x-semantic-derivation", {"method": "source_ownership"}
             )["requirements"] = requirement_ids
         if interface_ids:
             component["interface_refs"] = interface_ids
@@ -974,22 +1008,6 @@ def _build_manifest_json(results: dict[str, StageResult]) -> str:
     return json.dumps({"modules": modules}, indent=2)
 
 
-def _unique_inline_id(original_id: str, boundary_id: str, used_ids: set[str]) -> str:
-    """Allocate a deterministic schema-safe ID for an inline projection."""
-    candidate = _schema_id(original_id)
-    if candidate not in used_ids:
-        used_ids.add(candidate)
-        return candidate
-    digest = hashlib.sha256(f"{boundary_id}:{original_id}".encode()).hexdigest()
-    candidate = f"{candidate}-{digest[:8]}"
-    length = 10
-    while candidate in used_ids:
-        candidate = f"{_schema_id(original_id)}-{digest[:length]}"
-        length += 2
-    used_ids.add(candidate)
-    return candidate
-
-
 def _rewrite_inline_refs(value: Any, id_remap: dict[str, str]) -> Any:
     """Rewrite entity references throughout an inline projection."""
     if isinstance(value, list):
@@ -1071,22 +1089,27 @@ def _build_sos_model(
                     }
                 )
 
-    # Inter-system interfaces from decompose edges
-    inter_system_interfaces: list[dict[str, Any]] = []
-    for from_sys, to_sys, rel_type in decompose.inter_system_edges:
-        inter_system_interfaces.append(
-            {"from": _schema_id(from_sys), "to": _schema_id(to_sys), "type": rel_type}
-        )
-
     # Build SoS YAML
     slugs = _system_slugs([system for system in systems if system.model_yaml])
+    allocator = _EntityIdAllocator()
+    system_id_remap = {
+        system.system_id: allocator.allocate(system.system_id, namespace="root", prefix="SYS")
+        for system in systems if system.model_yaml
+    }
+    inter_system_interfaces: list[dict[str, Any]] = []
+    for from_sys, to_sys, rel_type in decompose.inter_system_edges:
+        inter_system_interfaces.append({
+            "from": system_id_remap.get(from_sys, allocator.allocate(from_sys, "root", "SYS")),
+            "to": system_id_remap.get(to_sys, allocator.allocate(to_sys, "root", "SYS")),
+            "type": rel_type,
+        })
     source_artifacts = [
         f".architecture-models/{slugs[system.system_id]}/.architecture-model.yaml"
         for system in systems if system.model_yaml
     ] + [str(path) for boundary in inlines for path in boundary.files]
     system_entities = [
         {
-            "id": _schema_id(s.system_id),
+            "id": system_id_remap[s.system_id],
             "name": s.name,
             "status": "ACTIVE",
             "sub_model_ref": f".architecture-models/{slugs[s.system_id]}/.architecture-model.yaml",
@@ -1112,12 +1135,12 @@ def _build_sos_model(
         sos_dict["entities"]["capabilities"] = capabilities
     if behaviors:
         sos_dict["entities"]["behaviors"] = behaviors
-    used_ids = {
+    allocator.used.update({
         entity["id"]
         for group in sos_dict["entities"].values()
         for entity in group
         if entity.get("id")
-    }
+    })
     inline_relationships: list[dict[str, Any]] = []
     allocation_output = getattr(getattr(top_results.get("allocate"), "output", None), "components", [])
     inference_output = getattr(top_results.get("infer"), "output", None)
@@ -1171,7 +1194,7 @@ def _build_sos_model(
         for group_name, entities in shared_projection.get("entities", {}).items():
             if group_name != "actors":
                 sos_dict["entities"].setdefault(group_name, []).extend(entities)
-                used_ids.update(entity["id"] for entity in entities if entity.get("id"))
+                allocator.used.update(entity["id"] for entity in entities if entity.get("id"))
         inline_relationships.extend(shared_projection.get("relationships", []))
     for boundary in inlines:
         owned_files = [
@@ -1200,8 +1223,13 @@ def _build_sos_model(
             for entity in entities:
                 original_id = entity.get("id", "")
                 if original_id:
-                    id_remap[original_id] = _unique_inline_id(
-                        original_id, boundary.system_id, used_ids
+                    prefix = {
+                        "components": "COMP", "capabilities": "CAP", "behaviors": "BEH",
+                        "interfaces": "IF", "requirements": "REQ", "constraints": "CON",
+                        "layers": "LAY", "systems": "SYS",
+                    }.get(group_name, "")
+                    id_remap[original_id] = allocator.allocate(
+                        original_id, namespace=boundary.system_id, prefix=prefix,
                     )
         for group_name, entities in projected_entities.items():
             if group_name == "actors":

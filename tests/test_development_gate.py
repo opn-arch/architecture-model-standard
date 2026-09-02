@@ -1,5 +1,9 @@
 """Tests for the development gate."""
 
+from pathlib import Path
+
+from architecture_model.core.parser import load_model
+
 from architecture_model.authoring.gate import check_development_gate, GateResult
 from architecture_model.core.types import (
     ArchitectureModel,
@@ -85,3 +89,119 @@ def test_concept_no_entities_fails():
     manifest = _make_manifest(modules=5)
     result = check_development_gate(model, manifest, phase="concept")
     assert result.phase_requirements_met is False
+
+
+def _write_model(path: Path, entities: str, relationships: str = "[]") -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "meta:\n"
+        "  project: hierarchy\n"
+        "  schema_version: 2.0.0\n"
+        "  generated_at: '2026-09-02T00:00:00Z'\n"
+        f"entities:\n{entities}"
+        f"relationships: {relationships}\n"
+    )
+
+
+def test_hierarchical_gate_unions_submodel_files_and_scores_each_boundary(tmp_path):
+    _write_model(
+        tmp_path / ".architecture-model.yaml",
+        "  systems:\n"
+        "  - id: SYS-1\n"
+        "    name: Child\n"
+        "    status: ACTIVE\n"
+        "    sub_model_ref: .architecture-models/child/.architecture-model.yaml\n"
+        "  components:\n"
+        "  - id: COMP-ROOT\n"
+        "    name: Root\n"
+        "    status: ACTIVE\n"
+        "    files: [root.py]\n",
+    )
+    _write_model(
+        tmp_path / ".architecture-models/child/.architecture-model.yaml",
+        "  components:\n"
+        "  - id: COMP-1\n"
+        "    name: Child\n"
+        "    status: ACTIVE\n"
+        "    files: [child.py]\n"
+        "  capabilities:\n"
+        "  - id: CAP-1\n"
+        "    name: Child capability\n"
+        "    status: ACTIVE\n"
+        "  constraints:\n"
+        "  - id: CON-1\n"
+        "    name: Child constraint\n"
+        "    status: ACTIVE\n",
+        "[{from: COMP-1, to: CAP-1, type: realizes}, "
+        "{from: CON-1, to: COMP-1, type: allocated-to}]",
+    )
+    manifest = _make_manifest(filenames=["root.py", "child.py"])
+    manifest.project_root = str(tmp_path)
+
+    result = check_development_gate(
+        load_model(tmp_path / ".architecture-model.yaml"), manifest, phase="production",
+    )
+
+    assert result.root_local_file_coverage == 50.0
+    assert result.file_coverage == 100.0
+    assert result.capability_realization == 100.0
+    assert result.constraint_allocation == 100.0
+    assert result.phase_requirements_met is True
+
+
+def test_hierarchical_gate_fails_dead_submodel_reference(tmp_path):
+    _write_model(
+        tmp_path / ".architecture-model.yaml",
+        "  systems:\n"
+        "  - id: SYS-1\n"
+        "    name: Missing\n"
+        "    status: ACTIVE\n"
+        "    sub_model_ref: .architecture-models/missing/.architecture-model.yaml\n"
+        "  components:\n"
+        "  - id: COMP-ROOT\n"
+        "    name: Root\n"
+        "    status: ACTIVE\n"
+        "    files: [root.py]\n",
+    )
+    manifest = _make_manifest(filenames=["root.py", "missing.py"])
+    manifest.project_root = str(tmp_path)
+
+    result = check_development_gate(
+        load_model(tmp_path / ".architecture-model.yaml"), manifest, phase="production",
+    )
+
+    assert result.phase_requirements_met is False
+    assert any("missing" in issue.lower() for issue in result.issues)
+
+
+def test_hierarchical_gate_rejects_cycle_and_path_traversal(tmp_path):
+    outside = tmp_path.parent / "outside-model.yaml"
+    _write_model(outside, "  components: []\n")
+    _write_model(
+        tmp_path / ".architecture-model.yaml",
+        "  systems:\n"
+        "  - id: SYS-1\n"
+        "    name: Child\n"
+        "    status: ACTIVE\n"
+        "    sub_model_ref: child.yaml\n"
+        "  - id: SYS-2\n"
+        "    name: Outside\n"
+        "    status: ACTIVE\n"
+        "    sub_model_ref: ../outside-model.yaml\n",
+    )
+    _write_model(
+        tmp_path / "child.yaml",
+        "  systems:\n"
+        "  - id: SYS-3\n"
+        "    name: Root again\n"
+        "    status: ACTIVE\n"
+        "    sub_model_ref: .architecture-model.yaml\n",
+    )
+    manifest = _make_manifest(filenames=["root.py"])
+    manifest.project_root = str(tmp_path)
+
+    result = check_development_gate(load_model(tmp_path / ".architecture-model.yaml"), manifest)
+
+    assert result.phase_requirements_met is False
+    assert any("cycle" in issue.lower() for issue in result.issues)
+    assert any("traversal" in issue.lower() for issue in result.issues)

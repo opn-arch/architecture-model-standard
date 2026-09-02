@@ -102,6 +102,7 @@ def load_model(path: str | Path) -> ArchitectureModel:
         raise ValueError(f"Empty model file: {path}")
 
     model = _parse_raw(raw)
+    model._source_path = path.resolve()
     from architecture_model.core.confidence import compute_model_confidence
     compute_model_confidence(model)
     return model

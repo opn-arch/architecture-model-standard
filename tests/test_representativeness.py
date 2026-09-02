@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from architecture_model.core.types import ArchitectureModel, Component, Entities, Relationship
 from architecture_model.manifest.types import ModuleInfo, InterfaceEdge
 from architecture_model.core.representativeness import compute_representativeness, RepresentativenessResult, HierarchicalRepresentativenessResult
+from architecture_model.core.parser import load_model
 
 
 def _model(components=None, relationships=None):
@@ -34,6 +35,37 @@ def _edge(source, target):
 
 
 class TestFileCoverage:
+    def test_root_model_uses_valid_descendant_component_files(self, tmp_path):
+        child = tmp_path / ".architecture-models/core/.architecture-model.yaml"
+        child.parent.mkdir(parents=True)
+        child.write_text(
+            "meta: {project: child, schema_version: 2.0.0, generated_at: '2026-09-02T00:00:00Z'}\n"
+            "entities:\n"
+            "  components:\n"
+            "  - {id: COMP-1, name: Core, status: ACTIVE, files: [src/core.py]}\n"
+            "relationships: []\n"
+        )
+        root = tmp_path / ".architecture-model.yaml"
+        root.write_text(
+            "meta: {project: root, schema_version: 2.0.0, generated_at: '2026-09-02T00:00:00Z'}\n"
+            "entities:\n"
+            "  systems:\n"
+            "  - id: SYS-1\n"
+            "    name: Core\n"
+            "    status: ACTIVE\n"
+            "    sub_model_ref: .architecture-models/core/.architecture-model.yaml\n"
+            "  components:\n"
+            "  - {id: COMP-ROOT, name: Root, status: ACTIVE, files: [src/root.py]}\n"
+            "relationships: []\n"
+        )
+        modules = [_module("src/root.py"), _module("src/core.py")]
+
+        result = compute_representativeness(load_model(root), modules, [])
+
+        assert result.root_local_file_coverage == 50.0
+        assert result.file_coverage == 100.0
+        assert result.hierarchy_issues == []
+
     def test_perfect_file_coverage(self):
         modules = [_module("a.py"), _module("b.py")]
         model = _model(components=[_comp("C1", "All", ["a.py", "b.py"])])

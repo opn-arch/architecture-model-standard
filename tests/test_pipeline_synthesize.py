@@ -30,6 +30,8 @@ from architecture_model.pipeline.synthesize import (
     _merge_requirements,
     _scoped_evidence,
 )
+from architecture_model.core.parser import _parse_raw, validate_model_data
+from architecture_model.core.validator import validate_model
 from architecture_model.pipeline.synthesize_types import (
     SoSModel,
     SynthesizeResult,
@@ -274,6 +276,45 @@ class TestDecideStages:
 
 
 class TestBuildSystemModelYaml:
+    def test_full_subsystem_maps_absolute_behavior_source_to_relative_component(self):
+        behavior = _FakeBehavior(
+            id="BEH-1",
+            source_file=Path("/repo/src/docs/orchestrate.py"),
+            capability_id="CAP-1",
+            steps=["Collect inputs", "Generate documents"],
+        )
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Documentation", ["src/docs/orchestrate.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[_FakeCapability(
+                    "CAP-1", "Orchestrate documentation",
+                    source_files=[Path("/repo/src/docs/orchestrate.py")],
+                )],
+                behaviors=[behavior],
+            )),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary(
+                "SYS-1", "Project Documentation Orchestration",
+                files=["src/docs/orchestrate.py"], is_full_system=True,
+            ),
+            results,
+        ))
+
+        projected = parsed["entities"]["behaviors"][0]
+        assert projected["structured_steps"] == [
+            {"order": 1, "action": "Collect inputs", "component_ref": "COMP-1"},
+            {"order": 2, "action": "Generate documents", "component_ref": "COMP-1"},
+        ]
+        assert {tuple(item.values()) for item in parsed["relationships"]} >= {
+            ("COMP-1", "CAP-1", "realizes"),
+            ("COMP-1", "BEH-1", "traces-to"),
+        }
+
     def test_nested_interface_target_remaps_through_collision_id_map(self, tmp_path):
         owner = _FakeComponent(
             "ITEM A", "Owner", ["owner.py"], interfaces=[{
@@ -366,7 +407,7 @@ class TestBuildSystemModelYaml:
         assert component["intent"] == "Primary intent"
         assert ";" not in component["intent"]
         assert "Secondary intent" in component["goals"]
-        assert component["extensions"]["semantic_derivation"]["primary_capability"] == "CAP-1"
+        assert component["extensions"]["x-semantic-derivation"]["primary_capability"] == "CAP-1"
 
     def test_child_refs_are_direct_or_source_aligned_not_component_wide(self):
         results = {
@@ -526,7 +567,7 @@ class TestBuildSystemModelYaml:
         assert component["moes"] == ["95 percent complete"]
         assert component["value_function"] == "completed / total"
         assert component["trade_offs"] == ["Latency versus throughput"]
-        assert component["extensions"]["semantic_derivation"]["capabilities"] == ["CAP-1"]
+        assert component["extensions"]["x-semantic-derivation"]["capabilities"] == ["CAP-1"]
         projected_capability = parsed["entities"]["capabilities"][0]
         projected_behavior = parsed["entities"]["behaviors"][0]
         projected_interface = parsed["entities"]["interfaces"][0]
@@ -568,7 +609,7 @@ class TestBuildSystemModelYaml:
         assert component["moes"] == ["Observed value is >= 5"]
         assert component["value_function"] == "min(1, actual / 5)"
         assert component["rationale"] == "Source constant defines the supported minimum"
-        assert component["extensions"]["semantic_derivation"]["requirements"] == ["REQ-1"]
+        assert component["extensions"]["x-semantic-derivation"]["requirements"] == ["REQ-1"]
 
     def test_component_requirement_refs_include_direct_satisfies_edges(self):
         results = {
@@ -1149,6 +1190,77 @@ class TestRunWithCoordinator:
 
 
 class TestSoSModel:
+    def test_all_projection_collision_ids_validate_and_promote_exact_bytes(self, tmp_path):
+        boundaries = [
+            SystemBoundary("INLINE-A", "A", files=["a.py"], is_full_system=False),
+            SystemBoundary("INLINE-B", "B", files=["b.py"], is_full_system=False),
+        ]
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP 3", "A component", ["a.py"]),
+                _FakeComponent("COMP@3", "B component", ["b.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[
+                    _FakeCapability("CAP 3", "A capability", source_files=["a.py"]),
+                    _FakeCapability("CAP@3", "B capability", source_files=["b.py"]),
+                ],
+                behaviors=[
+                    _FakeBehavior("BEH 3", "A behavior", source_file="a.py", capability_id="CAP 3"),
+                    _FakeBehavior("BEH@3", "B behavior", source_file="b.py", capability_id="CAP@3"),
+                ],
+            )),
+            "specify": _stage_result(_FakeSpecifyOutput(
+                interfaces=[
+                    _FakeInterface("IF 3", "A interface", "COMP 3"),
+                    _FakeInterface("IF@3", "B interface", "COMP@3"),
+                ],
+                requirements=[
+                    _FakeRequirement("REQ 3", "A requirement", "a.py"),
+                    _FakeRequirement("REQ@3", "B requirement", "b.py"),
+                ],
+            )),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+        subsystem_yaml = yaml.safe_dump({
+            "meta": {
+                "project": "collision-demo", "schema_version": "2.0.0",
+                "generated_at": "2026-09-02T00:00:00Z",
+            },
+            "entities": {},
+            "relationships": [],
+        }, sort_keys=False)
+        systems = [
+            SystemModel("SYS 3", "One", subsystem_yaml),
+            SystemModel("SYS@3", "Two", subsystem_yaml),
+        ]
+        sos = _build_sos_model(
+            systems, boundaries, DecomposeResult(), results, project_name="collision-demo",
+        )
+        raw = yaml.safe_load(sos.model_yaml)
+        ids = [
+            entity["id"]
+            for entities in raw["entities"].values()
+            for entity in entities
+        ]
+
+        assert len(ids) == len(set(ids))
+        assert validate_model_data(raw) == []
+        assert not [
+            issue for issue in validate_model(_parse_raw(raw), raw_dict=raw).issues
+            if getattr(issue.severity, "value", issue.severity) == "error"
+        ]
+
+        ctx = _make_ctx(tmp_path)
+        candidate_bytes = sos.model_yaml.encode()
+        ctx.cache["synthesize"] = _stage_result(SynthesizeResult(
+            sos_model_yaml=sos.model_yaml,
+            system_models=systems,
+        ))
+        emitted = EmitStage().run(ctx).output
+        assert emitted.promoted is True, emitted.final_validation_issues
+        assert (tmp_path / ".architecture-model.yaml").read_bytes() == candidate_bytes
+
     def test_explicitly_shared_entities_stay_top_level_when_file_is_subsystem_owned(self):
         component = _FakeComponent("COMP-shared", "Shared", ["shared.py"])
         component.shared = True

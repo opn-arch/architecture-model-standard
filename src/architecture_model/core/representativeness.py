@@ -21,6 +21,8 @@ class RepresentativenessResult:
     unverified_relationships: list[str] = field(default_factory=list)
     low_coherence_components: list[str] = field(default_factory=list)
     uncaptured_behaviors: list[str] = field(default_factory=list)
+    root_local_file_coverage: float = 0.0
+    hierarchy_issues: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -33,6 +35,8 @@ class RepresentativenessResult:
             "unverified_relationships": self.unverified_relationships,
             "low_coherence_components": self.low_coherence_components,
             "uncaptured_behaviors": self.uncaptured_behaviors,
+            "root_local_file_coverage": self.root_local_file_coverage,
+            "hierarchy_issues": self.hierarchy_issues,
         }
 
 
@@ -81,10 +85,23 @@ def compute_representativeness(
     interfaces: list[InterfaceEdge],
 ) -> RepresentativenessResult:
     result = RepresentativenessResult()
-    components = model.entities.components if model.entities and model.entities.components else []
+    root_components = model.entities.components if model.entities and model.entities.components else []
+    components = list(root_components)
+    source_path = getattr(model, "_source_path", None)
+    if source_path and model.entities.systems:
+        from architecture_model.core.hierarchy import load_model_hierarchy
+
+        hierarchy, result.hierarchy_issues = load_model_hierarchy(model, source_path.parent)
+        components = [component for current in hierarchy for component in current.entities.components]
 
     # --- File Coverage ---
     non_trivial = [m for m in modules if not _is_trivial(m)]
+    root_files = [path for component in root_components for path in component.files]
+    result.root_local_file_coverage = (
+        sum(any(_files_match(path, module.file) for path in root_files) for module in non_trivial)
+        / len(non_trivial) * 100
+        if non_trivial else 0.0
+    )
     if not non_trivial:
         result.file_coverage = 0.0
     elif not components:
