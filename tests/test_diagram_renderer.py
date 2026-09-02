@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
 import json
+from pathlib import Path
 import random
 import re
+import shutil
+import subprocess
 from types import MappingProxyType
 import xml.etree.ElementTree as ET
 
@@ -104,6 +107,64 @@ def _boxes(root: ET.Element) -> list[tuple[float, float, float, float]]:
     for node in root.findall(".//svg:g[@data-node-id]", SVG):
         result.append(tuple(float(node.attrib[key]) for key in ("data-x", "data-y", "data-width", "data-height")))
     return result
+
+
+def _box(element: ET.Element) -> tuple[float, float, float, float]:
+    return tuple(float(element.attrib[key]) for key in ("data-x", "data-y", "data-width", "data-height"))
+
+
+def _overlaps(first: tuple[float, float, float, float], second: tuple[float, float, float, float]) -> bool:
+    x1, y1, width1, height1 = first
+    x2, y2, width2, height2 = second
+    return x1 < x2 + width2 and x2 < x1 + width1 and y1 < y2 + height2 and y2 < y1 + height1
+
+
+def _route_segments(path: str) -> list[tuple[float, float, float, float]]:
+    tokens = re.findall(r"[A-Z]|-?\d+(?:\.\d+)?", path)
+    index = 0
+    x = y = 0.0
+    segments = []
+    while index < len(tokens):
+        command = tokens[index]
+        index += 1
+        if command in {"M", "L"}:
+            next_x, next_y = float(tokens[index]), float(tokens[index + 1])
+            index += 2
+        elif command == "H":
+            next_x, next_y = float(tokens[index]), y
+            index += 1
+        elif command == "V":
+            next_x, next_y = x, float(tokens[index])
+            index += 1
+        else:
+            raise AssertionError(f"Unsupported route command {command}")
+        if command != "M":
+            segments.append((x, y, next_x, next_y))
+        x, y = next_x, next_y
+    return segments
+
+
+def _segment_crosses_box(segment: tuple[float, float, float, float], box: tuple[float, float, float, float]) -> bool:
+    x1, y1, x2, y2 = segment
+    left, top, width, height = box
+    right, bottom = left + width, top + height
+    if x1 == x2:
+        return left < x1 < right and max(min(y1, y2), top) < min(max(y1, y2), bottom)
+    if y1 == y2:
+        return top < y1 < bottom and max(min(x1, x2), left) < min(max(x1, x2), right)
+    return True
+
+
+def _actual_specs(tmp_path: Path) -> dict[str, DiagramSpec]:
+    paths = {name: tmp_path / name for name in ("conops", "functional", "logical", "use-cases")}
+    for path in paths.values():
+        path.mkdir()
+    return {
+        "conops": project_conops(conops_context(paths["conops"])),
+        "functional": project_functional_architecture(functional_context(paths["functional"], ["MISSION-X", "CAP-A", "CAP-B"])),
+        "logical": project_logical_architecture(logical_context(paths["logical"])),
+        "use-cases": project_use_cases(use_case_context(paths["use-cases"], 4)),
+    }
 
 
 def test_renders_parseable_semantic_svg_with_expected_structure() -> None:
@@ -286,6 +347,25 @@ def test_clickable_nodes_emit_accessible_interaction_metadata_without_handlers()
     assert not any(key.lower().startswith("on") for element in root.iter() for key in element.attrib)
 
 
+def test_node_text_blocks_are_spaced_and_contained_with_subtitle_and_badges() -> None:
+    root = _root(render_diagram_svg(_spec()))
+    node = root.find(".//svg:g[@data-node-id='function']", SVG)
+
+    assert node is not None
+    node_box = _box(node)
+    blocks = [_box(item) for item in node.findall("svg:text[@data-text-role]", SVG)]
+    assert len(blocks) >= 4
+    for index, first in enumerate(blocks):
+        assert node_box[0] <= first[0] and node_box[1] <= first[1]
+        assert first[0] + first[2] <= node_box[0] + node_box[2]
+        assert first[1] + first[3] <= node_box[1] + node_box[3]
+        for second in blocks[index + 1 :]:
+            assert not _overlaps(first, second)
+    subtitle = _box(node.find("svg:text[@data-text-role='subtitle']", SVG))
+    badge = _box(node.find("svg:text[@data-text-role='badge']", SVG))
+    assert badge[1] - (subtitle[1] + subtitle[3]) >= 6
+
+
 def test_accessibility_ids_are_namespaced_for_multiple_inline_panels() -> None:
     first = _root(render_diagram_svg(DiagramSpec("first", "First")))
     second = _root(render_diagram_svg(DiagramSpec("second", "Second")))
@@ -380,16 +460,7 @@ def test_total_edge_order_is_deterministic_across_all_fields_and_provenance() ->
 
 @pytest.mark.parametrize("projector", ["conops", "functional", "logical", "use-cases"])
 def test_actual_projector_outputs_parse_and_layout_without_node_overlap(projector: str, tmp_path) -> None:
-    paths = {name: tmp_path / name for name in ("conops", "functional", "logical", "use-cases")}
-    for path in paths.values():
-        path.mkdir()
-    specs = {
-        "conops": project_conops(conops_context(paths["conops"])),
-        "functional": project_functional_architecture(functional_context(paths["functional"], ["MISSION-X", "CAP-A", "CAP-B"])),
-        "logical": project_logical_architecture(logical_context(paths["logical"])),
-        "use-cases": project_use_cases(use_case_context(paths["use-cases"], 4)),
-    }
-    spec = specs[projector]
+    spec = _actual_specs(tmp_path)[projector]
 
     root = _root(render_diagram_svg(spec))
     boxes = _boxes(root)
@@ -401,6 +472,106 @@ def test_actual_projector_outputs_parse_and_layout_without_node_overlap(projecto
     for index, (x1, y1, w1, h1) in enumerate(boxes):
         for x2, y2, w2, h2 in boxes[index + 1 :]:
             assert x1 + w1 <= x2 or x2 + w2 <= x1 or y1 + h1 <= y2 or y2 + h2 <= y1
+
+
+@pytest.mark.parametrize("projector", ["conops", "functional", "logical", "use-cases"])
+def test_actual_projector_geometry_has_no_visual_collisions(projector: str, tmp_path) -> None:
+    root = _root(render_diagram_svg(_actual_specs(tmp_path)[projector]))
+    nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+
+    for node in root.findall(".//svg:g[@data-node-id]", SVG):
+        text_boxes = [_box(item) for item in node.findall("svg:text[@data-text-role]", SVG)]
+        assert all(not _overlaps(first, second) for index, first in enumerate(text_boxes) for second in text_boxes[index + 1 :])
+
+    group_labels = root.findall(".//svg:text[@data-group-label]", SVG)
+    for label in group_labels:
+        label_box = _box(label)
+        assert all(not _overlaps(label_box, node_box) for node_box in nodes.values())
+        assert all(not _overlaps(label_box, _box(other)) for other in group_labels if other is not label)
+
+    for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+        unrelated = [box for identifier, box in nodes.items() if identifier not in {edge.attrib["data-source"], edge.attrib["data-target"]}]
+        assert all(not _segment_crosses_box(segment, box) for segment in _route_segments(edge.attrib["d"]) for box in unrelated)
+
+    labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
+    assert len(labels) == len(set(labels))
+    assert all(not _overlaps(label, node) for label in labels for node in nodes.values())
+
+
+@pytest.mark.parametrize("direction", ["LR", "TB"])
+def test_edge_label_tracks_route_and_retains_hidden_text_in_title(direction: str) -> None:
+    spec = DiagramSpec(
+        "labels",
+        "Labels",
+        direction=direction,
+        nodes=[DiagramNode("a", "A", "component"), DiagramNode("b", "B", "component")],
+        edges=[DiagramEdge("a", "b", "uses", "same label") for _ in range(8)],
+    )
+
+    root = _root(render_diagram_svg(spec))
+    labels = root.findall(".//svg:text[@data-edge-label]", SVG)
+    edges = root.findall(".//svg:path[@data-edge-id]", SVG)
+
+    assert len({_box(item) for item in labels}) == len(labels)
+    assert all(not _overlaps(first, second) for index, first in enumerate(map(_box, labels)) for second in list(map(_box, labels))[index + 1 :])
+    assert all(edge.find("svg:title", SVG) is not None and "same label" in edge.find("svg:title", SVG).text for edge in edges)
+    assert all(edge.attrib.get("data-label-hidden") in {"true", "false"} for edge in edges)
+    _, _, view_width, view_height = (float(value) for value in root.attrib["viewBox"].split())
+    for edge, label in zip(edges, labels):
+        x, y, width, height = _box(label)
+        assert x + width <= view_width and y + height <= view_height
+        segments = _route_segments(edge.attrib["d"])
+        assert any(
+            segment[0] == segment[2] and abs(x - segment[0]) <= 8
+            or segment[1] == segment[3] and abs(y - segment[1]) <= 14
+            for segment in segments
+        )
+
+
+def test_tb_mixed_width_edge_labels_reserve_non_overlapping_route_lanes() -> None:
+    spec = DiagramSpec(
+        "mixed-labels",
+        "Mixed labels",
+        direction="TB",
+        nodes=[DiagramNode("a", "A", "component"), DiagramNode("b", "B", "component")],
+        edges=[
+            DiagramEdge("a", "b", "uses", "x"),
+            DiagramEdge("a", "b", "uses", "a substantially longer edge label"),
+            DiagramEdge("a", "b", "uses", "medium label"),
+        ],
+    )
+
+    root = _root(render_diagram_svg(spec))
+    labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
+
+    assert all(not _overlaps(first, second) for index, first in enumerate(labels) for second in labels[index + 1 :])
+
+
+def test_nested_group_headers_and_padding_do_not_overlap_children() -> None:
+    root = _root(render_diagram_svg(_spec()))
+    containers = {item.attrib["data-container-id"]: item for item in root.findall(".//svg:g[@data-container-id]", SVG)}
+    parent, child = containers["system"], containers["functions"]
+    parent_label = parent.find("svg:text[@data-group-label]", SVG)
+    child_label = child.find("svg:text[@data-group-label]", SVG)
+
+    assert parent_label is not None and child_label is not None
+    assert not _overlaps(_box(parent_label), _box(child_label))
+    assert float(child.attrib["data-y"]) >= float(parent.attrib["data-y"]) + float(parent.attrib["data-header-height"]) + 8
+    parent_box, child_box = _box(parent), _box(child)
+    assert parent_box[0] <= child_box[0] - 8
+    assert parent_box[1] <= child_box[1] - float(parent.attrib["data-header-height"])
+    assert parent_box[0] + parent_box[2] >= child_box[0] + child_box[2] + 8
+    assert parent_box[1] + parent_box[3] >= child_box[1] + child_box[3] + 8
+
+
+@pytest.mark.skipif(shutil.which("rsvg-convert") is None, reason="rsvg-convert is optional")
+def test_actual_projector_svgs_render_with_rsvg(tmp_path) -> None:
+    for name, spec in _actual_specs(tmp_path).items():
+        svg_path = tmp_path / f"{name}.svg"
+        png_path = tmp_path / f"{name}.png"
+        svg_path.write_text(render_diagram_svg(spec), encoding="utf-8")
+        subprocess.run(["rsvg-convert", str(svg_path), "-o", str(png_path)], check=True, capture_output=True)
+        assert png_path.stat().st_size > 0
 
 
 def test_drilldown_panels_are_keyed_exactly_and_nested_specs_render_independently() -> None:

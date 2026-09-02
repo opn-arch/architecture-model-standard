@@ -183,6 +183,16 @@ def _ranks(spec: DiagramSpec) -> dict[str, int]:
     return ranks
 
 
+def _node_height(node: DiagramNode, options: DiagramRenderOptions) -> int:
+    label_rows = len(_lines(node.label, 24, 2))
+    content_height = 20 + label_rows * 16
+    if node.subtitle:
+        content_height += 18
+    if node.badges:
+        content_height += 16
+    return max(options.node_height, content_height + 12)
+
+
 def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
     ranks = _ranks(spec)
     buckets: dict[int, list[DiagramNode]] = {}
@@ -190,6 +200,10 @@ def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str,
         buckets.setdefault(ranks[node.id], []).append(node)
     boxes: dict[str, _Box] = {}
     direction = spec.direction.upper()
+    label_lane = max((min(max(len(edge.label) * 6, 30), 168) + 6 for edge in spec.edges if edge.label), default=18)
+    route_band = max(len(spec.edges), 1) * (label_lane if direction == "TB" else 18) + 18
+    origin_x = options.margin + (route_band if direction == "TB" else 0)
+    origin_y = options.margin + 72 + (route_band if direction != "TB" else 0)
     rank_count = max(len(buckets), 1)
     widest_rank = max((len(items) for items in buckets.values()), default=1)
     if direction == "TB":
@@ -211,14 +225,17 @@ def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str,
             max(options.node_height, (options.max_height - options.margin * 2 - 72 - options.node_height) // max(widest_rank - 1, 1)),
         )
     for rank_index, rank in enumerate(sorted(buckets)):
+        cursor = 0
         for item_index, node in enumerate(buckets[rank]):
+            height = _node_height(node, options)
             if direction == "TB":
-                x = options.margin + item_index * item_step
-                y = options.margin + 72 + rank_index * rank_step
+                x = origin_x + item_index * item_step
+                y = origin_y + rank_index * rank_step
             else:
-                x = options.margin + rank_index * rank_step
-                y = options.margin + 72 + item_index * item_step
-            boxes[node.id] = _Box(x, y, options.node_width, options.node_height)
+                x = origin_x + rank_index * rank_step
+                y = origin_y + cursor
+                cursor += height + options.node_gap
+            boxes[node.id] = _Box(x, y, options.node_width, height)
 
     containers = [*spec.groups, *spec.lanes]
     container_boxes: dict[str, _Box] = {}
@@ -232,7 +249,7 @@ def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str,
                 continue
             if members:
                 left = min(box.x for box in members) - 20
-                top = min(box.y for box in members) - 30
+                top = min(box.y for box in members) - 36
                 right = max(box.x + box.width for box in members) + 20
                 bottom = max(box.y + box.height for box in members) + 20
                 container_boxes[identifier] = _Box(left, top, right - left, bottom - top)
@@ -283,6 +300,13 @@ def _shape(node: DiagramNode, box: _Box) -> str:
     return f'<rect {common} x="{x}" y="{y}" width="{width}" height="{height}" rx="{radius}"/>'
 
 
+def _text_svg(role: str, value: str, x: float, y: float, width: float, height: float, css_class: str) -> str:
+    return (
+        f'<text class="{css_class}" data-text-role="{role}" data-x="{x:g}" data-y="{y:g}" '
+        f'data-width="{width:g}" data-height="{height:g}" x="{x + width / 2:g}" y="{y + height * .72:g}">{_text(value)}</text>'
+    )
+
+
 def _node_svg(node: DiagramNode, box: _Box, view_id: str) -> str:
     classes = ["diagram-node", f"kind-{_text(node.kind.lower().replace('_', '-'))}"]
     if node.inferred:
@@ -305,15 +329,21 @@ def _node_svg(node: DiagramNode, box: _Box, view_id: str) -> str:
     if node.entity_ref or node.drilldown_ref:
         attributes.extend(['tabindex="0"', 'role="button"', 'data-keyboard-action="activate"'])
     parts = [f'<g {" ".join(attributes)}><title>{_text(node.label)}</title>', _shape(node, box)]
-    label_y = box.y + 28
-    for index, line in enumerate(_lines(node.label, 24, 2)):
-        parts.append(f'<text class="node-label" x="{box.x + box.width / 2:g}" y="{label_y + index * 16}">{_text(line)}</text>')
+    cursor = box.y + 12
+    text_x = box.x + 8
+    text_width = box.width - 16
+    for line in _lines(node.label, 24, 2):
+        parts.append(_text_svg("title", line, text_x, cursor, text_width, 14, "node-label"))
+        cursor += 16
     if node.subtitle:
         subtitle = _lines(node.subtitle, 28, 1)[0]
-        parts.append(f'<text class="node-subtitle" x="{box.x + box.width / 2:g}" y="{box.y + box.height - 12}">{_text(subtitle)}</text>')
+        cursor += 4
+        parts.append(_text_svg("subtitle", subtitle, text_x, cursor, text_width, 10, "node-subtitle"))
+        cursor += 10
     if node.badges:
         badge = _lines(" | ".join(sorted(node.badges)), 30, 1)[0]
-        parts.append(f'<text class="node-badge" x="{box.x + 8}" y="{box.y + box.height - 4}">{_text(badge)}</text>')
+        cursor += 6
+        parts.append(_text_svg("badge", badge, text_x, cursor, text_width, 10, "node-badge"))
     if node.evidence:
         parts.append(f'<g class="evidence-indicator" data-evidence="true"><title>{_text(_provenance_text(node.evidence))}</title><circle cx="{box.x + box.width - 8}" cy="{box.y + 8}" r="4"/></g>')
     parts.append("</g>")
@@ -324,24 +354,16 @@ def _provenance_text(values: list[DiagramProvenance]) -> str:
     return "; ".join(filter(None, (value.source for value in values))) or "Evidence available"
 
 
-def _edge_path(source: _Box, target: _Box, direction: str, offset: int, obstacles: list[_Box]) -> str:
+def _edge_path(source: _Box, target: _Box, direction: str, lane: int, margin: int, lane_step: int = 18) -> str:
     if direction == "TB":
-        sx, sy = source.x + source.width / 2 + offset, source.y + source.height
-        tx, ty = target.x + target.width / 2 + offset, target.y
-        blockers = [box for box in obstacles if source.y + source.height < box.y < target.y and box.x < sx < box.x + box.width]
-        if blockers:
-            lane = min(box.x for box in blockers) - 24 - abs(offset)
-            return f"M {sx:g} {sy:g} H {lane:g} V {ty:g} H {tx:g}"
-        middle = (sy + ty) / 2 + offset
-        return f"M {sx:g} {sy:g} V {middle:g} H {tx:g} V {ty:g}"
-    sx, sy = source.x + source.width, source.y + source.height / 2 + offset
-    tx, ty = target.x, target.y + target.height / 2 + offset
-    blockers = [box for box in obstacles if source.x + source.width < box.x < target.x and box.y < sy < box.y + box.height]
-    if blockers:
-        lane = min(box.y for box in blockers) - 24 - abs(offset)
-        return f"M {sx:g} {sy:g} V {lane:g} H {tx:g} V {ty:g}"
-    middle = (sx + tx) / 2 + offset
-    return f"M {sx:g} {sy:g} H {middle:g} V {ty:g} H {tx:g}"
+        sx, sy = source.x + source.width / 2, source.y
+        tx, ty = target.x + target.width / 2, target.y
+        lane_x = margin + lane * lane_step
+        return f"M {sx:g} {sy:g} H {lane_x:g} V {ty:g} H {tx:g}"
+    sx, sy = source.x + source.width, source.y + source.height / 2
+    tx, ty = target.x, target.y + target.height / 2
+    lane_y = margin + 72 + lane * 18
+    return f"M {sx:g} {sy:g} V {lane_y:g} H {tx:g} V {ty:g}"
 
 
 def _edge_style(edge: DiagramEdge) -> str:
@@ -362,7 +384,7 @@ def _edge_style(edge: DiagramEdge) -> str:
     return "operational"
 
 
-def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: int, offset: int) -> str:
+def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: int, margin: int, lane_step: int) -> str:
     kind = edge.kind.lower().replace("_", "-")
     semantic_style = _edge_style(edge)
     classes = ["diagram-edge", f"kind-{_text(kind)}", f"edge-style-{semantic_style}"]
@@ -371,18 +393,25 @@ def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: 
         classes.append("is-inferred")
     if edge.critical or edge.style.lower() in {"critical", "cycle"}:
         classes.append("is-critical")
-    path = _edge_path(boxes[edge.source], boxes[edge.target], direction, offset, [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}])
+    label_text = _lines(edge.label + (f" ({edge.count})" if edge.count != 1 else ""), 28, 1)[0] if edge.label or edge.count != 1 else ""
+    label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
+    path = _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
-    title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
+    evidence_title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
+    title = f"{edge.label}: {evidence_title}" if edge.label else evidence_title
+    label = edge.label + (f" ({edge.count})" if edge.count != 1 else "")
     result = [
-        f'<path id="edge-{index}" class="{" ".join(classes)}" data-edge-id="edge-{index}" data-source="{_text(edge.source)}" data-target="{_text(edge.target)}" data-kind="{_text(edge.kind)}" d="{path}" style="{dash}"{marker}><title>{_text(title)}</title></path>'
+        f'<path id="edge-{index}" class="{" ".join(classes)}" data-edge-id="edge-{index}" data-source="{_text(edge.source)}" data-target="{_text(edge.target)}" data-kind="{_text(edge.kind)}" data-label-hidden="{str(not bool(label)).lower()}" d="{path}" style="{dash}"{marker}><title>{_text(title)}</title></path>'
     ]
-    if edge.label or edge.count != 1:
+    if label:
         source, target = boxes[edge.source], boxes[edge.target]
-        x = (source.x + source.width / 2 + target.x + target.width / 2) / 2
-        y = (source.y + source.height / 2 + target.y + target.height / 2) / 2 - 7 - offset
-        label = edge.label + (f" ({edge.count})" if edge.count != 1 else "")
-        result.append(f'<text class="edge-label" x="{x:g}" y="{y:g}">{_text(_lines(label, 28, 1)[0])}</text>')
+        if direction == "TB":
+            x = margin + index * lane_step + 4
+            y = (source.y + target.y) / 2 - 6
+        else:
+            x = (source.x + source.width + target.x) / 2 - label_width / 2
+            y = margin + 72 + index * 18 - 13
+        result.append(f'<text class="edge-label" data-edge-label="edge-{index}" data-x="{x:g}" data-y="{y:g}" data-width="{label_width:g}" data-height="12" x="{x + label_width / 2:g}" y="{y + 9:g}">{_text(label_text)}</text>')
     if edge.evidence:
         result.append(f'<g class="evidence-indicator" data-evidence="true"><title>{_text(title)}</title><circle cx="{boxes[edge.source].x + boxes[edge.source].width + 6}" cy="{boxes[edge.source].y + 6}" r="4"/></g>')
     return "".join(result)
@@ -441,6 +470,13 @@ def _edge_key(edge: DiagramEdge) -> tuple[Any, ...]:
     return edge.source, edge.target, edge.kind, edge.label, edge.count, edge.style, edge.critical, edge.inferred, evidence
 
 
+def _overlaps(first: _Box, second: _Box) -> bool:
+    return (
+        first.x < second.x + second.width and second.x < first.x + first.width
+        and first.y < second.y + second.height and second.y < first.y + first.height
+    )
+
+
 def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int, int]:
     spec.validate()
     for edge in spec.edges:
@@ -459,11 +495,21 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     if spec.subtitle:
         parts.append(f'<text class="diagram-subtitle" x="{options.margin}" y="51">{_text(_lines(spec.subtitle, 80, 1)[0])}</text>')
     container_lookup = {item.id: item for item in [*spec.groups, *spec.lanes]}
+    group_label_boxes: list[_Box] = []
     for identifier, box in sorted(containers.items(), key=lambda item: (container_lookup[item[0]].order, item[0])):
         container = container_lookup[identifier]
-        parts.append(f'<g data-container-id="{_text(identifier)}" data-kind="{_text(container.kind)}" data-x="{box.x}" data-y="{box.y}" data-width="{box.width}" data-height="{box.height}"><rect class="container {_text(container.kind)}" x="{box.x}" y="{box.y}" width="{box.width}" height="{box.height}" rx="8"/><text class="container-label" x="{box.x + 8}" y="{box.y + 13}">{_text(container.label)}</text></g>')
+        label_width = min(max(len(container.label) * 6, 30), max(box.width - 16, 30))
+        label_box = _Box(box.x + 8, box.y + 5, label_width, 14)
+        while any(_overlaps(label_box, occupied) for occupied in group_label_boxes) and label_box.x + label_box.width + 8 <= box.x + box.width:
+            label_box = _Box(label_box.x + 8, label_box.y, label_box.width, label_box.height)
+        group_label_boxes.append(label_box)
+        parts.append(f'<g data-container-id="{_text(identifier)}" data-kind="{_text(container.kind)}" data-x="{box.x}" data-y="{box.y}" data-width="{box.width}" data-height="{box.height}" data-header-height="24"><rect class="container {_text(container.kind)}" x="{box.x}" y="{box.y}" width="{box.width}" height="{box.height}" rx="8"/><text class="container-label" data-group-label="{_text(identifier)}" data-x="{label_box.x}" data-y="{label_box.y}" data-width="{label_box.width}" data-height="{label_box.height}" x="{label_box.x}" y="{label_box.y + 11}">{_text(container.label)}</text></g>')
 
     ordered_edges = sorted(spec.edges, key=_edge_key)
+    edge_lane_step = max(
+        (min(max(len(_lines(edge.label, 28, 1)[0]) * 6, 30), 168) + 6 for edge in ordered_edges if edge.label),
+        default=18,
+    ) if spec.direction.upper() == "TB" else 18
     parallel_totals: dict[tuple[str, str], int] = {}
     for edge in ordered_edges:
         parallel_totals[(edge.source, edge.target)] = parallel_totals.get((edge.source, edge.target), 0) + 1
@@ -472,10 +518,8 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
         if edge.source not in boxes or edge.target not in boxes:
             continue
         key = (edge.source, edge.target)
-        seen = parallel_seen.get(key, 0)
-        offset = int((seen - (parallel_totals[key] - 1) / 2) * 18)
-        parallel_seen[key] = seen + 1
-        edge_svg = _edge_svg(edge, boxes, spec.direction.upper(), index, offset)
+        parallel_seen[key] = parallel_seen.get(key, 0) + 1
+        edge_svg = _edge_svg(edge, boxes, spec.direction.upper(), index, options.margin, edge_lane_step)
         parts.append(edge_svg.replace('url(#arrow)', f'url(#{arrow_id})'))
     for node in sorted(spec.nodes, key=lambda item: item.id):
         parts.append(_node_svg(node, boxes[node.id], spec.id))
