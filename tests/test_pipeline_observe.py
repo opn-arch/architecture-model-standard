@@ -98,6 +98,43 @@ mod = importlib.import_module(name)
         assert not any("excluded" in p for p in paths)
         assert len(result.output.modules) == 1
 
+    def test_scoped_observe_filters_all_file_derived_evidence(self, tmp_path):
+        api = tmp_path / "api.py"
+        api.write_text(
+            'from fastapi import APIRouter\nrouter = APIRouter()\n'
+            '@router.get("/only-api")\ndef route(): return {}\n'
+        )
+        model = tmp_path / "models.py"
+        model.write_text("class Account: pass\n")
+        migration = tmp_path / "migrations" / "001.py"
+        migration.parent.mkdir()
+        migration.write_text("REVISION = '001'\n")
+        (tmp_path / "README.md").write_text("# Global docs\n")
+        api_doc = tmp_path / "api.md"
+        api_doc.write_text("# API docs\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_api.py").write_text("def test_api(): pass\n")
+        (tests / "test_models.py").write_text("def test_models(): pass\n")
+
+        api_result = ObserveStage().run(PipelineContext(
+            repo_path=tmp_path,
+            output_dir=tmp_path / ".arch-api",
+            scope_files=[api, api_doc],
+        )).output
+        model_result = ObserveStage().run(PipelineContext(
+            repo_path=tmp_path,
+            output_dir=tmp_path / ".arch-model",
+            scope_files=[model, migration],
+        )).output
+
+        assert [route.path for route in api_result.routes] == ["/only-api"]
+        assert model_result.routes == []
+        assert [doc.path for doc in api_result.docs] == [Path("api.md")]
+        assert model_result.docs == []
+        assert [test.path for test in api_result.test_files] == [Path("tests/test_api.py")]
+        assert [test.path for test in model_result.test_files] == [Path("tests/test_models.py")]
+
 
 class TestObservePerModuleQuality:
     def test_module_record_has_quality_score(self):

@@ -741,7 +741,22 @@ class PipelineCoordinator:
             and path != ctx.repo_path / ".architecture" / "pipeline-history.jsonl"
         ]
         try:
-            finalize_pipeline_history(ctx.repo_path, ctx.run_id, artifacts)
+            emit = results.get("emit")
+            emitted = emit.output if emit and hasattr(emit.output, "final_model_score") else None
+            final_validation = None
+            if emitted:
+                final_validation = {
+                    "extraction_score": emitted.extraction_score,
+                    "final_model_score": emitted.final_model_score,
+                    "final_model_path": serialize_artifact_path(
+                        emitted.final_model_path, ctx.repo_path
+                    ) if emitted.final_model_path else "",
+                    "promoted": emitted.promoted,
+                    "issues": emitted.final_validation_issues,
+                }
+            finalize_pipeline_history(
+                ctx.repo_path, ctx.run_id, artifacts, final_validation=final_validation
+            )
         except Exception as exc:
             ctx.history_warnings.append(f"Pipeline history finalization failed: {exc}")
 

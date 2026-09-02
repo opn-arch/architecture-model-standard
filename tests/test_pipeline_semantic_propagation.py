@@ -144,17 +144,18 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
         "  to: CAP-1\n"
         "  type: realizes\n"
     )
-    EmitStage().run(ctx)
+    emit_result = EmitStage().run(ctx)
+    assert emit_result.output.promoted, emit_result.output.final_validation_issues
 
     emitted_dir = output_dir / ".architecture-models"
     models = [
-        load_model(emitted_dir / ".architecture-model.yaml"),
-        load_model(emitted_dir / "jobs" / ".architecture-model.yaml"),
+        load_model(tmp_path / ".architecture-models" / "jobs" / ".architecture-model.yaml"),
+        load_model(tmp_path / ".architecture-models" / "scheduler" / ".architecture-model.yaml"),
         load_model(tmp_path / ".architecture-model.yaml"),
     ]
 
-    sos_model = models[0]
-    raw_sos = yaml.safe_load((emitted_dir / ".architecture-model.yaml").read_text())
+    sos_model = models[-1]
+    raw_sos = yaml.safe_load((tmp_path / ".architecture-model.yaml").read_text())
     all_ids = [
         entity["id"]
         for group in raw_sos["entities"].values()
@@ -163,24 +164,23 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
         if isinstance(entity, dict) and entity.get("id")
     ]
     assert len(all_ids) == len(set(all_ids))
-    assert len({req.id for req in sos_model.entities.requirements}) == len(
-        sos_model.entities.requirements
-    )
+    assert sos_model.entities.requirements == []
+    assert sos_model.entities.capabilities == []
+    assert sos_model.entities.behaviors == []
+    assert sos_model.entities.components == []
 
-    for model in models:
-        capability = next(cap for cap in model.entities.capabilities if cap.intent)
-        assert capability.goals
-        assert capability.failure_modes
-        assert capability.monitored
-
+    expected_tokens = [
+        (models[0], ("TIMEOUT", "MAX_BATCH", "BATCH_SIZE"), "MIN_WORKERS"),
+        (models[1], ("MIN_WORKERS",), "TIMEOUT"),
+    ]
+    for model, tokens, excluded_token in expected_tokens:
         threshold_requirements = [
             req
             for req in model.entities.requirements
-            if any(
-                token in req.name for token in ("TIMEOUT", "MAX_BATCH", "BATCH_SIZE")
-            )
+            if any(token in req.name for token in tokens)
         ]
-        assert len(threshold_requirements) == 3
+        assert len(threshold_requirements) == len(tokens)
+        assert not any(excluded_token in req.name for req in model.entities.requirements)
         for requirement in threshold_requirements:
             assert requirement.text
             assert requirement.rationale
@@ -209,7 +209,5 @@ def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
             for rel in model.relationships
         )
 
-    root_capability = models[-1].entities.capabilities[0]
-    assert root_capability.moes == ["Existing effectiveness measure"]
-    assert root_capability.requirements == ["Existing capability requirement"]
-    assert root_capability.trade_offs == ["Existing trade-off"]
+    assert len(sos_model.entities.systems) == 2
+    assert all(system.sub_model_ref for system in sos_model.entities.systems)

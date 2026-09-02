@@ -12,6 +12,7 @@ from architecture_model.pipeline.report import (
     _extract_findings,
     generate_pipeline_report,
 )
+from architecture_model.pipeline.emit_types import EmitResult
 
 
 def _make_result(score=90.0, duration_ms=100, output=None, diagnostics=None, uncertainties=None):
@@ -93,6 +94,26 @@ class TestStageReportMarkdown:
 
 
 class TestGeneratePipelineReport:
+    def test_distinguishes_extraction_and_final_model_scores(self):
+        results = {
+            "validate": _make_result(score=95),
+            "emit": StageResult(
+                output=EmitResult(
+                    extraction_score=95,
+                    final_model_score=87,
+                    final_model_path="/repo/.architecture-model.yaml",
+                    promoted=True,
+                ),
+                quality=QualityMetrics(score=87),
+            ),
+        }
+
+        report = generate_pipeline_report(results)
+
+        assert "**Extraction Score:** 95" in report
+        assert "**Final Model Score:** 87" in report
+        assert "**Final Model:** `/repo/.architecture-model.yaml`" in report
+        assert "**Promoted:** yes" in report
     def test_deterministic_run(self):
         results = {"observe": _make_result(95.0, 150)}
         report = generate_pipeline_report(results, "TestSystem")

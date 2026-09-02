@@ -204,6 +204,16 @@ def generate_pipeline_report(
     lines.append(f"**Generated:** {now}")
     lines.append(f"**Total Duration:** {total_duration}ms")
     lines.append(f"**Stages:** {len(results)}")
+    emit_result = results.get("emit")
+    if emit_result and hasattr(emit_result.output, "final_model_score"):
+        emitted = emit_result.output
+        lines.append(f"**Extraction Score:** {emitted.extraction_score:g}")
+        lines.append(f"**Final Model Score:** {emitted.final_model_score:g}")
+        if emitted.final_model_path:
+            lines.append(f"**Final Model:** `{emitted.final_model_path}`")
+        lines.append(f"**Promoted:** {'yes' if emitted.promoted else 'no'}")
+        if emitted.final_validation_issues:
+            lines.append(f"**Final Validation Issues:** {len(emitted.final_validation_issues)}")
     lines.append("")
 
     # LLM Summary

@@ -776,14 +776,14 @@ def test_synthesize_propagates_all_entities():
     # Behaviors: BEH-1 (cap matches) and BEH-3 (no cap_id) included, BEH-2 excluded
     assert "behaviors" in entities
     beh_ids = [b["id"] for b in entities["behaviors"]]
-    assert "core-BEH-1" in beh_ids
-    assert "core-BEH-3" in beh_ids
-    assert "core-BEH-2" not in beh_ids
+    assert "BEH-1" in beh_ids
+    assert "BEH-3" in beh_ids
+    assert "BEH-2" not in beh_ids
 
     # Interfaces: only IF-1 (component matches)
     assert "interfaces" in entities
     assert len(entities["interfaces"]) == 1
-    assert entities["interfaces"][0]["id"] == "core-IF-1"
+    assert entities["interfaces"][0]["id"] == "IF-1"
 
     # Constraints: only the one with source in boundary files
     assert "constraints" in entities
@@ -799,7 +799,7 @@ def test_synthesize_propagates_all_entities():
     # Actors: all included
     assert "actors" in entities
     assert len(entities["actors"]) == 1
-    assert entities["actors"][0]["id"] == "core-ACT-1"
+    assert entities["actors"][0]["id"] == "ACT-1"
 
 
 def test_infer_flags_complex_behavior_uncertainty(tmp_path):

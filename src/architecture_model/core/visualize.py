@@ -1986,6 +1986,43 @@ def _load_pipeline_history(repo_path: Path | None = None) -> list[dict] | dict:
     return [record.to_dict() for record in records] if records else {}
 
 
+def _load_submodel_view_data(
+    model: "ArchitectureModel", repo_path: Path | None,
+) -> tuple[dict[str, dict], dict[str, list[str]], dict[str, list[str]]]:
+    """Load referenced subsystem entities into qualified viewer-only data."""
+    if repo_path is None:
+        return {}, {}, {}
+    from architecture_model.core.parser import load_model
+
+    root = repo_path.resolve()
+    properties: dict[str, dict] = {}
+    comp_files: dict[str, list[str]] = {}
+    systems: dict[str, list[str]] = {}
+    for system in model.entities.systems:
+        if not system.sub_model_ref:
+            continue
+        path = (root / system.sub_model_ref).resolve()
+        try:
+            path.relative_to(root)
+            sub_model = load_model(path)
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        slug = path.parent.name
+        local_props = build_entity_properties(sub_model)
+        qualified_ids = {entity_id: f"{slug}::{entity_id}" for entity_id in local_props}
+        systems[system.id] = list(qualified_ids.values())
+        for entity_id, value in local_props.items():
+            qualified = qualified_ids[entity_id]
+            item = dict(value)
+            item["display_id"] = entity_id
+            item["model"] = slug
+            properties[qualified] = item
+        for component in sub_model.entities.components:
+            if component.files:
+                comp_files[qualified_ids[component.id]] = list(component.files)
+    return properties, comp_files, systems
+
+
 def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
     """Load operational artifacts for embedding.
 
@@ -2160,6 +2197,8 @@ def generate_html_viewer(
 
     # ── 4. Property cards ─────────────────────────────────────────
     entity_props = build_entity_properties(model)
+    sub_props, sub_comp_files, subsystem_entities = _load_submodel_view_data(model, repo_path)
+    entity_props.update(sub_props)
 
     # ── 5. SID reverse mapping (sanitized → original ID) ─────────
     sid_map = {_sid(eid): eid for eid in all_ids}
@@ -2173,6 +2212,7 @@ def generate_html_viewer(
         files = getattr(comp, "files", None) or []
         if files:
             comp_files[comp.id] = list(files)
+    comp_files.update(sub_comp_files)
 
     # ── 5d. SE documents and component specs ──────────────────────
     docs_data = _load_docs(repo_path)
@@ -2199,6 +2239,7 @@ def generate_html_viewer(
         "docs": docs_data,
         "ops": ops_data,
         "pipeline_history": pipeline_history,
+        "subsystem_entities": subsystem_entities,
     }
     data_json = _json.dumps(diagram_data, ensure_ascii=False).translate(str.maketrans({
         "<": "\\u003c", ">": "\\u003e", "&": "\\u0026",
@@ -2227,6 +2268,18 @@ def generate_html_viewer(
             f'        </details>'
         )
     entity_nav = "\n".join(entity_nav_parts)
+    if sub_props:
+        items = "\n".join(
+            f'                <a href="#" data-entity-id="{escape(entity_id)}" '
+            f'class="nav-link entity-link">{escape(value["model"])} / '
+            f'{escape(value["display_id"])}: {escape(value["name"])}</a>'
+            for entity_id, value in sub_props.items()
+        )
+        entity_nav += (
+            f'        <details class="entity-cat">\n'
+            f'            <summary>Subsystem Entities ({len(sub_props)})</summary>\n'
+            f'{items}\n        </details>'
+        )
 
     # ── 6c. Documents sidebar ─────────────────────────────────────
     docs_nav_parts = []
@@ -2776,7 +2829,7 @@ def generate_html_viewer(
                 html += '</div>';
             }}
             var proj = (D.meta && D.meta.project) || 'unknown';
-            var cKey = proj + ':comment:' + eid;
+            var cKey = 'arch-comment:' + proj + ':' + eid;
             var saved = storageGet(cKey);
             html += '<div class="comment-section"><div class="comment-label">Notes</div>';
             html += '<textarea class="comment-textarea" data-entity-id="' + escapeHtml(eid) + '" placeholder="Add notes about this entity..."></textarea></div>';
@@ -2793,7 +2846,7 @@ def generate_html_viewer(
         }}
         function saveComment(eid, val) {{
             var proj = (D.meta && D.meta.project) || 'unknown';
-            storageSet(proj + ':comment:' + eid, val);
+            storageSet('arch-comment:' + proj + ':' + eid, val);
         }}
         function exportComments() {{
             var proj = (D.meta && D.meta.project) || 'unknown';
@@ -2802,7 +2855,7 @@ def generate_html_viewer(
             try {{ for (var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i)); }} catch (e) {{ return; }}
             for (var i = 0; i < keys.length; i++) {{
                 var k = keys[i];
-                var pfx = proj + ':comment:';
+                var pfx = 'arch-comment:' + proj + ':';
                 if (k.indexOf(pfx) === 0) {{
                     var eid = k.substring(pfx.length);
                     var val = storageGet(k);
@@ -2835,7 +2888,7 @@ def generate_html_viewer(
                 for (var i = 0; i < lines.length; i++) {{
                     var line = lines[i];
                     if (line.match(/^[A-Z][A-Z0-9_-]+.*:$/)) {{
-                        if (curId && curLines.length) storageSet(proj + ':comment:' + curId, curLines.join('\\n'));
+                        if (curId && curLines.length) storageSet('arch-comment:' + proj + ':' + curId, curLines.join('\\n'));
                         var candidate = line.replace(/:$/, '').trim();
                         curId = Object.prototype.hasOwnProperty.call(D.properties, candidate) ? candidate : null;
                         curLines = [];
@@ -2845,7 +2898,7 @@ def generate_html_viewer(
                         curLines.push(line.substring(4));
                     }}
                 }}
-                if (curId && curLines.length) storageSet(proj + ':comment:' + curId, curLines.join('\\n'));
+                if (curId && curLines.length) storageSet('arch-comment:' + proj + ':' + curId, curLines.join('\\n'));
                 alert('Comments imported. Refresh to see them.');
                 input.value = '';
             }};
@@ -2896,6 +2949,16 @@ def generate_html_viewer(
             html += '<h2 class="content-header">' + escapeHtml(label) + '</h2>';
             var card = propCardHtml(eid);
             html += card.html;
+            var children = D.subsystem_entities && D.subsystem_entities[eid];
+            if (children && children.length) {{
+                html += '<div class="files-section"><div class="files-header">Subsystem Entities (' + children.length + ')</div>';
+                children.forEach(function(child) {{
+                    var cp = D.properties[child] || {{}};
+                    html += '<a href="#" class="entity-link" data-entity-id="' + escapeHtml(child) + '">' +
+                        escapeHtml((cp.display_id || child) + ': ' + (cp.name || '')) + '</a>';
+                }});
+                html += '</div>';
+            }}
             var entityId = eid;
             var componentRuns = pipelineRuns().filter(function(run) {{
                 return (run.components || []).some(function(item) {{ return item.component_id === entityId; }});

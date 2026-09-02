@@ -1,6 +1,7 @@
 """Tests for Mermaid diagram generation."""
 
 import pytest
+import yaml
 
 from architecture_model.core.types import (
     Actor,
@@ -18,6 +19,7 @@ from architecture_model.core.types import (
     Relationship,
     RelationType,
     Status,
+    System,
 )
 from architecture_model.core.visualize import (
     generate_all_diagrams,
@@ -25,6 +27,7 @@ from architecture_model.core.visualize import (
     generate_components_diagram,
     generate_context_diagram,
     generate_dependencies_diagram,
+    generate_html_viewer,
 )
 
 
@@ -178,3 +181,33 @@ class TestGenerateAll:
         generate_all_diagrams(model, out)
         assert out.exists()
         assert (out / "context.mmd").exists()
+
+    def test_viewer_qualifies_duplicate_subsystem_entity_ids(self, tmp_path):
+        models_dir = tmp_path / ".architecture-models"
+        for slug, name in (("alpha", "Alpha component"), ("beta", "Beta component")):
+            path = models_dir / slug / ".architecture-model.yaml"
+            path.parent.mkdir(parents=True)
+            path.write_text(yaml.safe_dump({
+                "meta": {"project": slug, "schema_version": "2.0", "source_artifacts": [f"{slug}.py"]},
+                "entities": {"components": [{"id": "COMP-1", "name": name, "status": "ACTIVE"}]},
+                "relationships": [],
+            }))
+        root = ArchitectureModel(
+            meta=ModelMeta(project="root", schema_version="2.0"),
+            entities=Entities(systems=[
+                System(id="SYS-a", name="Alpha", status=Status.ACTIVE,
+                       sub_model_ref=".architecture-models/alpha/.architecture-model.yaml"),
+                System(id="SYS-b", name="Beta", status=Status.ACTIVE,
+                       sub_model_ref=".architecture-models/beta/.architecture-model.yaml"),
+            ]),
+        )
+
+        output = generate_html_viewer(root, tmp_path / "viewer.html", repo_path=tmp_path)
+        html = output.read_text()
+
+        assert "alpha::COMP-1" in html
+        assert "beta::COMP-1" in html
+        assert "Alpha component" in html
+        assert "Beta component" in html
+        assert '"display_id": "COMP-1"' in html
+        assert "'arch-comment:' + proj + ':' + eid" in html

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import pytest
+import yaml
+from pathlib import Path
 
 from architecture_model.pipeline.emit import EmitStage, _slugify
 from architecture_model.pipeline.emit_types import EmitResult
@@ -19,6 +21,19 @@ def _make_ctx(tmp_path, synth_result):
         uncertainties=[],
     )
     return ctx
+
+
+def _model(project="test", entities=None, relationships=None):
+    return yaml.safe_dump({
+        "meta": {
+            "project": project,
+            "schema_version": "2.0.0",
+            "generated_at": "2026-09-01T00:00:00Z",
+            "source_artifacts": ["source.py"],
+        },
+        "entities": entities or {},
+        "relationships": relationships or [],
+    }, sort_keys=False)
 
 
 # 1. EmitResult defaults
@@ -69,8 +84,12 @@ class TestEmitStageMeta:
 # 4. Full run with all artifacts
 class TestEmitRunFull:
     def test_full_run(self, tmp_path):
+        sub_path = ".architecture-models/core/.architecture-model.yaml"
         synth = SynthesizeResult(
-            sos_model_yaml="meta:\n  project: test\n",
+            sos_model_yaml=_model(entities={"systems": [{
+                "id": "SYS-1", "name": "Core", "status": "ACTIVE",
+                "sub_model_ref": sub_path,
+            }]}),
             top_manifest_json='{"modules": []}',
             pipeline_report_md="# Report\n",
             lessons_md="# Lessons\n",
@@ -78,7 +97,7 @@ class TestEmitRunFull:
                 SystemModel(
                     system_id="SYS-1",
                     name="Core",
-                    model_yaml="meta:\n  name: core\n",
+                    model_yaml=_model(project="core"),
                     manifest_json='{"files": []}',
                     pipeline_report_md="# Core Report\n",
                     lessons_md="# Core Lessons\n",
@@ -95,7 +114,7 @@ class TestEmitRunFull:
         out = result.output
         out_dir = tmp_path / ".architecture-models"
 
-        assert (out_dir / ".architecture-model.yaml").exists()
+        assert (tmp_path / ".architecture-model.yaml").exists()
         assert (out_dir / "manifest.json").exists()
         assert (out_dir / "pipeline-report.md").exists()
         assert (out_dir / "lessons.md").exists()
@@ -108,6 +127,29 @@ class TestEmitRunFull:
         assert out.doc_count >= 1
         assert len(out.written_paths) >= 9
         assert result.quality.score == 100.0
+        assert out.promoted is True
+        assert out.final_model_path == str(tmp_path / ".architecture-model.yaml")
+        assert out.final_model_score > 0
+        assert out.extraction_score == 0
+
+    def test_reports_extraction_and_final_validation_separately(self, tmp_path):
+        synth = SynthesizeResult(sos_model_yaml=_model())
+        ctx = _make_ctx(tmp_path, synth)
+        ctx.cache["validate"] = StageResult(
+            output=None, quality=QualityMetrics(score=95), diagnostics=[], uncertainties=[]
+        )
+
+        result = EmitStage().run(ctx)
+
+        assert result.output.extraction_score == 95
+        assert result.output.final_model_score == 100
+        assert result.quality.sub_scores["extraction_score"] == 95
+        assert result.quality.sub_scores["final_model_score"] == 100
+        assert result.quality.sub_scores["promoted"] == 100
+        report = (tmp_path / ".architecture-models" / "pipeline-report.md").read_text()
+        assert "**Extraction Score:** 95" in report
+        assert "**Final Model Score:** 100" in report
+        assert "**Promoted:** yes" in report
 
 
 # 5. Empty SynthesizeResult
@@ -126,8 +168,8 @@ class TestPerSystemDirs:
     def test_slugified_names(self, tmp_path):
         synth = SynthesizeResult(
             system_models=[
-                SystemModel(system_id="S1", name="My Component", model_yaml="x"),
-                SystemModel(system_id="S2", name="FOO BAR", model_yaml="y"),
+                SystemModel(system_id="S1", name="My Component", model_yaml=_model()),
+                SystemModel(system_id="S2", name="FOO BAR", model_yaml=_model()),
             ],
         )
         ctx = _make_ctx(tmp_path, synth)
@@ -188,7 +230,7 @@ class TestSystemInteractions:
 # 9. Total bytes tracking
 class TestTotalBytes:
     def test_bytes(self, tmp_path):
-        content = "hello world"
+        content = _model()
         synth = SynthesizeResult(sos_model_yaml=content)
         ctx = _make_ctx(tmp_path, synth)
         result = EmitStage().run(ctx)
@@ -199,11 +241,24 @@ class TestTotalBytes:
 class TestWrittenPaths:
     def test_paths(self, tmp_path):
         synth = SynthesizeResult(
-            sos_model_yaml="model",
+            sos_model_yaml=_model(),
             top_manifest_json="manifest",
         )
         ctx = _make_ctx(tmp_path, synth)
         result = EmitStage().run(ctx)
-        assert len(result.output.written_paths) == 2
+        assert len(result.output.written_paths) == 3
         assert any(".architecture-model.yaml" in p for p in result.output.written_paths)
         assert any("manifest.json" in p for p in result.output.written_paths)
+
+    def test_invalid_candidate_preserves_existing_canonical_model(self, tmp_path):
+        canonical = tmp_path / ".architecture-model.yaml"
+        canonical.write_text(_model(project="existing"))
+        synth = SynthesizeResult(sos_model_yaml="meta:\n  project: ''\n")
+
+        result = EmitStage().run(_make_ctx(tmp_path, synth))
+
+        assert yaml.safe_load(canonical.read_text())["meta"]["project"] == "existing"
+        assert result.output.promoted is False
+        assert result.output.final_validation_issues
+        assert Path(result.output.candidate_path).exists()
+        assert result.quality.score == result.output.final_model_score

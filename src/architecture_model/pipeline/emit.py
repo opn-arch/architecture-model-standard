@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -36,6 +37,13 @@ def _write_file(path: Path, content: str, result: EmitResult) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)
     result.written_paths.append(str(path))
+    result.total_bytes += len(content.encode("utf-8"))
+
+
+def _write_candidate(path: Path, content: str, result: EmitResult) -> None:
+    """Write staged content without reporting it as a durable artifact."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
     result.total_bytes += len(content.encode("utf-8"))
 
 
@@ -113,7 +121,7 @@ class EmitStage:
         return ctx.has("synthesize")
 
     def output_path(self, ctx: PipelineContext) -> Path:
-        return ctx.output_dir / ".architecture-models"
+        return ctx.repo_path / ".architecture-models"
 
     def run(self, ctx: PipelineContext) -> StageResult[EmitResult]:
         t0 = time.monotonic()
@@ -121,13 +129,19 @@ class EmitStage:
         synth: SynthesizeResult = ctx.get("synthesize").output
         out_dir = self.output_path(ctx)
         result = EmitResult(output_dir=str(out_dir))
+        validate_stage = ctx.get("validate")
+        result.extraction_score = validate_stage.quality.score if validate_stage else 0.0
         diagnostics: list[Diagnostic] = []
+        candidate_dir = ctx.output_dir / ".architecture-model-candidates"
+        candidate_paths: list[tuple[Path, Path]] = []
 
         # 1. Write SoS model
         if synth.sos_model_yaml:
-            _write_file(
-                out_dir / ".architecture-model.yaml", synth.sos_model_yaml, result
-            )
+            top_candidate = candidate_dir / ".architecture-model.yaml"
+            _write_candidate(top_candidate, synth.sos_model_yaml, result)
+            result.candidate_path = str(top_candidate)
+            result.final_model_path = str(ctx.repo_path / ".architecture-model.yaml")
+            candidate_paths.append((top_candidate, ctx.repo_path / ".architecture-model.yaml"))
 
         # 2. Write top-level manifest
         if synth.top_manifest_json:
@@ -153,7 +167,9 @@ class EmitStage:
         for sm in synth.system_models:
             sys_dir = out_dir / _slugify(sm.name)
             if sm.model_yaml:
-                _write_file(sys_dir / ".architecture-model.yaml", sm.model_yaml, result)
+                candidate = candidate_dir / _slugify(sm.name) / ".architecture-model.yaml"
+                _write_candidate(candidate, sm.model_yaml, result)
+                candidate_paths.append((candidate, sys_dir / ".architecture-model.yaml"))
             if sm.manifest_json:
                 _write_file(sys_dir / "manifest.json", sm.manifest_json, result)
             if sm.pipeline_report_md:
@@ -170,11 +186,6 @@ class EmitStage:
             interactions_md = _generate_system_interactions(synth)
             _write_file(docs_dir / "system-interactions.md", interactions_md, result)
             result.doc_count += 1
-
-        # 6. Generate SE docs (non-fatal)
-        self._generate_se_docs(
-            out_dir, synth, result, diagnostics, repo_root=ctx.repo_path
-        )
 
         # 7. Build file→component map (shared by test map and requirements)
         test_map: dict[str, list[str]] = {}
@@ -270,57 +281,14 @@ class EmitStage:
                 )
             )
 
-        # 9. Enrich top-level model with pipeline-derived entities
-        try:
-            enrichment = _enrich_top_model(
-                ctx,
-                synth,
-                reqs if "reqs" in dir() else [],
-                top_reqs if "top_reqs" in dir() else [],
-            )
-            if enrichment:
-                diagnostics.append(
-                    Diagnostic(
-                        severity="info",
-                        code="MODEL_ENRICHED",
-                        message=enrichment,
-                    )
-                )
-        except Exception as exc:
-            diagnostics.append(
-                Diagnostic(
-                    severity="warning",
-                    code="MODEL_ENRICH_FAILED",
-                    message=f"Model enrichment failed: {exc}",
-                )
-            )
+        # 9. Validate the complete staged hierarchy before replacing any canonical file.
+        if candidate_paths:
+            _validate_and_promote_models(ctx, candidate_paths, result, diagnostics)
 
-        # 9b. Enrich SoS model with same pipeline-derived data
-        try:
-            sos_path = out_dir / ".architecture-model.yaml"
-            if sos_path.exists():
-                sos_enrichment = _enrich_top_model(
-                    ctx,
-                    synth,
-                    reqs if "reqs" in dir() else [],
-                    top_reqs if "top_reqs" in dir() else [],
-                    target_path=sos_path,
-                )
-                if sos_enrichment:
-                    diagnostics.append(
-                        Diagnostic(
-                            severity="info",
-                            code="SOS_MODEL_ENRICHED",
-                            message=sos_enrichment,
-                        )
-                    )
-        except Exception as exc:
-            diagnostics.append(
-                Diagnostic(
-                    severity="warning",
-                    code="SOS_ENRICH_FAILED",
-                    message=f"SoS model enrichment failed: {exc}",
-                )
+        # 9b. Generate docs only from promoted canonical models.
+        if result.promoted:
+            self._generate_se_docs(
+                out_dir, synth, result, diagnostics, repo_root=ctx.repo_path
             )
 
         # 10. LLM review pass on generated artifacts
@@ -343,7 +311,7 @@ class EmitStage:
                     )
                     from architecture_model.core.parser import load_model as _load_model
 
-                    sos_model_path = out_dir / ".architecture-model.yaml"
+                    sos_model_path = ctx.repo_path / ".architecture-model.yaml"
                     if sos_model_path.exists():
                         _model = _load_model(sos_model_path)
                         trace_content = generate_artifact_traceability(
@@ -381,21 +349,38 @@ class EmitStage:
             )
 
         quality = QualityMetrics(
-            score=100.0 if result.written_paths else 0.0,
+            score=result.final_model_score if candidate_paths else (100.0 if result.written_paths else 0.0),
             sub_scores={
                 "files_written": len(result.written_paths),
                 "systems": result.system_count,
                 "total_bytes": result.total_bytes,
+                "extraction_score": result.extraction_score,
+                "final_model_score": result.final_model_score,
+                "promoted": 100.0 if result.promoted else 0.0,
             },
         )
 
-        return StageResult(
+        stage_result = StageResult(
             output=result,
             quality=quality,
             diagnostics=diagnostics,
             uncertainties=[],
             duration_ms=duration,
         )
+        if candidate_paths:
+            from architecture_model.pipeline.report import generate_pipeline_report
+
+            report_results = {name: ctx.cache[name] for name in ctx.cache}
+            report_results["emit"] = stage_result
+            report_path = out_dir / "pipeline-report.md"
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            report_path.write_text(generate_pipeline_report(
+                report_results, system_name=ctx.repo_path.name, llm_calls=ctx.llm_calls
+            ))
+            if str(report_path) not in result.written_paths:
+                result.written_paths.append(str(report_path))
+        return stage_result
+
 
     def _generate_se_docs(
         self,
@@ -560,6 +545,69 @@ class EmitStage:
             )
 
         return reviews
+
+
+def _validate_and_promote_models(
+    ctx: PipelineContext,
+    candidate_paths: list[tuple[Path, Path]],
+    result: EmitResult,
+    diagnostics: list[Diagnostic],
+) -> None:
+    """Validate all staged models before atomically promoting any of them."""
+    import yaml
+
+    from architecture_model.core.parser import _parse_raw
+    from architecture_model.core.validator import validate_model
+
+    validations = []
+    issues: list[dict] = []
+    staged_targets = {target.resolve() for _, target in candidate_paths}
+    try:
+        for candidate, target in candidate_paths:
+            raw = yaml.safe_load(candidate.read_text()) or {}
+            validation = validate_model(_parse_raw(raw), raw_dict=raw)
+            validations.append(validation)
+            for issue in validation.issues:
+                issues.append({
+                    "path": str(target),
+                    "severity": getattr(issue.severity, "value", str(issue.severity)),
+                    "code": issue.code,
+                    "message": issue.message,
+                })
+            if target == ctx.repo_path / ".architecture-model.yaml":
+                for system in raw.get("entities", {}).get("systems", []):
+                    ref = system.get("sub_model_ref", "")
+                    if not ref or (ctx.repo_path / ref).resolve() not in staged_targets:
+                        issues.append({
+                            "path": str(target), "severity": "error",
+                            "code": "DEAD_SUB_MODEL_REF",
+                            "message": f"System {system.get('id', '')} references missing model {ref}",
+                        })
+    except Exception as exc:
+        issues.append({
+            "path": result.candidate_path, "severity": "error",
+            "code": "FINAL_MODEL_PARSE_FAILED", "message": str(exc),
+        })
+
+    result.final_validation_issues = issues
+    result.final_model_score = min((validation.score for validation in validations), default=0.0)
+    errors = [issue for issue in issues if issue["severity"].lower() == "error"]
+    if errors:
+        diagnostics.append(Diagnostic(
+            severity="error", code="FINAL_MODEL_INVALID",
+            message=f"Final hierarchy has {len(errors)} structural errors; canonical models unchanged",
+        ))
+        return
+
+    for candidate, target in candidate_paths:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(candidate, target)
+        result.written_paths.append(str(target))
+    result.promoted = True
+    diagnostics.append(Diagnostic(
+        severity="info", code="FINAL_MODEL_PROMOTED",
+        message=f"Validated and promoted {len(candidate_paths)} canonical model files",
+    ))
 
 
 def _inline_reviews(out_dir: Path, reviews: list[ArtifactReview]) -> int:

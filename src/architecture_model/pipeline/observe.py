@@ -76,11 +76,20 @@ class ObserveStage:
                     )
                 )
 
+        scope_paths = _scope_paths(ctx)
+
         # Routes
         routes = _detect_routes(ctx.repo_path)
+        if scope_paths is not None:
+            routes = [route for route in routes if _in_scope(route.file, scope_paths, ctx.repo_path)]
 
         # Constraints
         constraints = _detect_constraints(ctx.repo_path)
+        if scope_paths is not None:
+            constraints = [
+                constraint for constraint in constraints
+                if _in_scope(Path(constraint.source), scope_paths, ctx.repo_path)
+            ]
 
         # Test files
         test_files = _find_test_files(py_files, ctx.repo_path)
@@ -93,6 +102,8 @@ class ObserveStage:
 
         # Docs
         docs = _find_docs(ctx.repo_path)
+        if scope_paths is not None:
+            docs = [doc for doc in docs if _in_scope(doc.path, scope_paths, ctx.repo_path)]
 
         # Resolve import edges from module imports
         edges = _resolve_import_edges(modules)
@@ -211,6 +222,22 @@ def _is_excluded(path: Path, root: Path) -> bool:
         except Exception:
             pass
     return False
+
+
+def _scope_paths(ctx: PipelineContext) -> set[Path] | None:
+    """Return normalized scoped and explicitly shared file paths."""
+    if not ctx.scope_files:
+        return None
+    shared = ctx.config.get("shared_scope_files", [])
+    return {
+        (path if path.is_absolute() else ctx.repo_path / path).resolve()
+        for path in [*ctx.scope_files, *(Path(item) for item in shared)]
+    }
+
+
+def _in_scope(path: Path, scope_paths: set[Path], root: Path) -> bool:
+    candidate = path if path.is_absolute() else root / path
+    return candidate.resolve() in scope_paths
 
 
 _gitignore_dirs_cache: dict[Path, set[str]] = {}

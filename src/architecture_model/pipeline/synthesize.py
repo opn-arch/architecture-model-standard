@@ -6,6 +6,7 @@ import json
 import hashlib
 import re
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -177,16 +178,22 @@ def _slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
+def _schema_id(entity_id: str) -> str:
+    """Normalize generated IDs only when they violate the schema pattern."""
+    if re.fullmatch(r"[A-Z]+-[A-Z]?-?\d+|[a-z][a-z0-9-]+", entity_id):
+        return entity_id
+    return _slugify(entity_id)
+
+
 def _build_system_model_yaml(
-    boundary: SystemBoundary, results: dict[str, StageResult]
+    boundary: SystemBoundary,
+    results: dict[str, StageResult],
+    project_name: str = "",
 ) -> str:
     """Build a YAML model string from scoped pipeline results."""
     components: list[dict[str, Any]] = []
     capabilities: list[dict[str, Any]] = []
     relationships: list[dict[str, Any]] = []
-
-    # Namespace prefix for component IDs to avoid collisions across sub-systems
-    sys_prefix = _slugify(boundary.name)
 
     id_remap: dict[str, str] = {}
 
@@ -194,7 +201,7 @@ def _build_system_model_yaml(
         """Register and return one canonical subsystem ID mapping."""
         if not original_id:
             return original_id
-        return id_remap.setdefault(original_id, f"{sys_prefix}-{original_id}")
+        return id_remap.setdefault(original_id, _schema_id(original_id))
 
     # Extract from allocate results
     alloc_result = results.get("allocate")
@@ -203,7 +210,9 @@ def _build_system_model_yaml(
         if hasattr(output, "components"):
             for comp in output.components:
                 namespaced_id = _register_id(comp.id)
-                comp_dict: dict[str, Any] = {"id": namespaced_id, "name": comp.name}
+                comp_dict: dict[str, Any] = {
+                    "id": namespaced_id, "name": comp.name, "status": "ACTIVE"
+                }
                 if hasattr(comp, "files") and comp.files:
                     comp_dict["files"] = [str(f) for f in comp.files]
                 components.append(comp_dict)
@@ -236,17 +245,26 @@ def _build_system_model_yaml(
                 beh_dict: dict[str, Any] = {
                     "id": _register_id(beh.id),
                     "name": beh.name,
+                    "status": "ACTIVE",
                 }
                 if beh.behavior_type:
                     beh_dict["behavior_type"] = beh.behavior_type
-                if beh.steps:
-                    beh_dict["steps"] = beh.steps
+                for field in (
+                    "description", "intent", "trigger", "preconditions",
+                    "postconditions", "frequency", "pattern", "steps", "source_file",
+                ):
+                    value = getattr(beh, field, None)
+                    if value:
+                        beh_dict[field] = value
                 if beh.actor_id:
                     beh_dict["actor_id"] = _register_id(beh.actor_id)
                 if capability_id:
                     beh_dict["capability_id"] = capability_id
                 if beh.triggers:
                     beh_dict["triggers"] = beh.triggers
+                existing_structured = getattr(beh, "structured_steps", None)
+                if existing_structured:
+                    beh_dict["structured_steps"] = existing_structured
                 behaviors.append(beh_dict)
 
     # Extract actors from infer results (all are system-wide)
@@ -258,6 +276,7 @@ def _build_system_model_yaml(
                 actor_dict: dict[str, Any] = {
                     "id": _register_id(actor.id),
                     "name": actor.name,
+                    "status": "ACTIVE",
                 }
                 if actor.actor_type:
                     actor_dict["actor_type"] = actor.actor_type
@@ -278,6 +297,7 @@ def _build_system_model_yaml(
                 iface_dict: dict[str, Any] = {
                     "id": _register_id(iface.id),
                     "name": iface.name,
+                    "status": "ACTIVE",
                     "interface_type": iface.interface_type,
                     "component_id": namespaced_comp_id,
                 }
@@ -328,6 +348,7 @@ def _build_system_model_yaml(
                 con_dict: dict[str, Any] = {
                     "id": _register_id(f"CON-{i + 1}"),
                     "name": con.name,
+                    "status": "ACTIVE",
                     "value": con.value,
                     "source": con.source,
                 }
@@ -348,7 +369,9 @@ def _build_system_model_yaml(
             if layer and layer not in seen_layers:
                 seen_layers.add(layer)
                 original_layer_id = f"LAYER-{layer.upper()}"
-                layers.append({"id": _register_id(original_layer_id), "name": layer})
+                layers.append({
+                    "id": _register_id(original_layer_id), "name": layer, "status": "ACTIVE"
+                })
 
     # Extract from relate results
     relate_result = results.get("relate")
@@ -368,11 +391,40 @@ def _build_system_model_yaml(
                     }
                 )
 
+    file_to_comp = {
+        str(source): _register_id(comp.id)
+        for comp in getattr(getattr(alloc_result, "output", None), "components", [])
+        for source in comp.files
+    }
+    relationship_keys = {
+        (rel["from"], rel["to"], rel["type"]) for rel in relationships
+    }
+    for behavior in behaviors:
+        component_id = file_to_comp.get(str(behavior.get("source_file", "")))
+        capability_id = behavior.get("capability_id", "")
+        if component_id and behavior.get("steps") and not behavior.get("structured_steps"):
+            behavior["structured_steps"] = [
+                {"order": order, "action": action, "component_ref": component_id}
+                for order, action in enumerate(behavior["steps"], 1)
+            ]
+        for target_id, rel_type in (
+            (capability_id, "realizes"), (behavior["id"], "traces-to")
+        ):
+            key = (component_id, target_id, rel_type)
+            if component_id and target_id and key not in relationship_keys:
+                relationships.append({"from": component_id, "to": target_id, "type": rel_type})
+                relationship_keys.add(key)
+
     model_dict: dict[str, Any] = {
         "meta": {
-            "schema_version": "2.0",
+            "project": project_name or boundary.name,
+            "schema_version": "2.0.0",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "system": boundary.name,
             "system_id": boundary.system_id,
+            "parent_model": "../../.architecture-model.yaml",
+            "refines_component": boundary.system_id,
+            "source_artifacts": list(boundary.files),
         },
         "entities": {},
         "relationships": relationships,
@@ -422,9 +474,11 @@ def _build_sos_model(
     inlines: list[SystemBoundary],
     decompose: DecomposeResult,
     top_results: dict[str, StageResult],
+    project_name: str = "",
 ) -> SoSModel:
     """Assemble the System-of-Systems model."""
-    # Extract top-level actors and capabilities from infer stage
+    # Actors remain top-level external context. Internal inferred entities stay
+    # in their self-contained subsystem models.
     actors: list[dict[str, Any]] = []
     capabilities: list[dict[str, Any]] = []
     behaviors: list[dict[str, Any]] = []
@@ -435,110 +489,42 @@ def _build_sos_model(
         if hasattr(output, "actors"):
             for actor in output.actors:
                 actors.append(
-                    {"id": getattr(actor, "id", ""), "name": getattr(actor, "name", "")}
-                )
-        if hasattr(output, "capabilities"):
-            for cap in output.capabilities:
-                capabilities.append(_capability_dict(cap))
-        if hasattr(output, "behaviors"):
-            for beh in output.behaviors:
-                behaviors.append(
-                    {"id": getattr(beh, "id", ""), "name": getattr(beh, "name", "")}
+                    {
+                        "id": _schema_id(getattr(actor, "id", "")),
+                        "name": getattr(actor, "name", ""),
+                        "status": "ACTIVE",
+                    }
                 )
 
     # Inter-system interfaces from decompose edges
     inter_system_interfaces: list[dict[str, Any]] = []
     for from_sys, to_sys, rel_type in decompose.inter_system_edges:
         inter_system_interfaces.append(
-            {"from": from_sys, "to": to_sys, "type": rel_type}
+            {"from": _schema_id(from_sys), "to": _schema_id(to_sys), "type": rel_type}
         )
 
-    # Add realizes relationships (system → capability) from top-level relate
-    # The decompose maps comp_id → system_id, so we can translate
-    relate_result = top_results.get("relate")
-    if relate_result and hasattr(relate_result, "output") and relate_result.output:
-        comp_to_sys_map: dict[str, str] = {}
-        for boundary in decompose.systems + decompose.inline_components:
-            for cid in boundary.component_ids:
-                comp_to_sys_map[cid] = boundary.system_id
-        for rel in relate_result.output.relationships:
-            if rel.rel_type == "realizes":
-                sys_id = comp_to_sys_map.get(rel.from_id)
-                if sys_id:
-                    inter_system_interfaces.append(
-                        {"from": sys_id, "to": rel.to_id, "type": "realizes"}
-                    )
-
-    # Aggregate entities from sub-system models into the SoS model
-    # This ensures SE docs generated from the SoS model have real content
-    all_components: list[dict[str, Any]] = []
-    all_interfaces: list[dict[str, Any]] = []
-    all_constraints: list[dict[str, Any]] = []
-    all_layers: list[dict[str, Any]] = []
-    all_requirements: list[dict[str, Any]] = []
-    subsystem_relationships: list[dict[str, Any]] = []
-    seen_layer_ids: set[str] = set()
-
-    for sm in systems:
-        if not sm.model_yaml:
-            continue
-        try:
-            sub_model = yaml.safe_load(sm.model_yaml)
-            sub_entities = sub_model.get("entities", {})
-            all_components.extend(sub_entities.get("components", []))
-            all_interfaces.extend(sub_entities.get("interfaces", []))
-            all_constraints.extend(sub_entities.get("constraints", []))
-            capabilities = _merge_capabilities(
-                capabilities, sub_entities.get("capabilities", [])
-            )
-            all_requirements = _merge_requirements(
-                all_requirements, sub_entities.get("requirements", [])
-            )
-            # Merge behaviors from sub-systems (supplement top-level inferred ones)
-            for beh in sub_entities.get("behaviors", []):
-                if not any(b["id"] == beh["id"] for b in behaviors):
-                    behaviors.append(beh)
-            # Deduplicate layers
-            for layer in sub_entities.get("layers", []):
-                if layer.get("id") not in seen_layer_ids:
-                    seen_layer_ids.add(layer.get("id", ""))
-                    all_layers.append(layer)
-            # Collect sub-system relationships into inter-system set
-            for rel in sub_model.get("relationships", []):
-                subsystem_relationships.append(rel)
-        except Exception:
-            continue
-
-    # Also pull components from top-level allocate if available
-    alloc_result = top_results.get("allocate")
-    if (
-        alloc_result
-        and alloc_result.output
-        and hasattr(alloc_result.output, "components")
-    ):
-        for comp in alloc_result.output.components:
-            if not any(c.get("id") == comp.id for c in all_components):
-                comp_dict: dict[str, Any] = {"id": comp.id, "name": comp.name}
-                if hasattr(comp, "files") and comp.files:
-                    comp_dict["files"] = [str(f) for f in comp.files]
-                if hasattr(comp, "layer") and comp.layer:
-                    comp_dict["layer"] = comp.layer
-                all_components.append(comp_dict)
-
     # Build SoS YAML
+    source_artifacts = [
+        f".architecture-models/{_slugify(system.name)}/.architecture-model.yaml"
+        for system in systems if system.model_yaml
+    ] + [str(path) for boundary in inlines for path in boundary.files]
     sos_dict: dict[str, Any] = {
         "meta": {
-            "schema_version": "2.0",
+            "project": project_name or "System-of-Systems",
+            "schema_version": "2.0.0",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "system_of_systems": True,
+            "source_artifacts": source_artifacts,
         },
         "entities": {
             "systems": [
                 {
-                    "id": s.system_id,
+                    "id": _schema_id(s.system_id),
                     "name": s.name,
-                    "model_path": f"{_slugify(s.name)}/.architecture-model.yaml",
+                    "status": "ACTIVE",
+                    "sub_model_ref": f".architecture-models/{_slugify(s.name)}/.architecture-model.yaml",
                 }
-                for s in systems
+                for s in systems if s.model_yaml
             ],
         },
         "relationships": inter_system_interfaces,
@@ -549,51 +535,11 @@ def _build_sos_model(
         sos_dict["entities"]["capabilities"] = capabilities
     if behaviors:
         sos_dict["entities"]["behaviors"] = behaviors
-    if all_components:
-        sos_dict["entities"]["components"] = all_components
-    if all_interfaces:
-        sos_dict["entities"]["interfaces"] = all_interfaces
-    if all_constraints:
-        sos_dict["entities"]["constraints"] = all_constraints
-    if all_layers:
-        sos_dict["entities"]["layers"] = all_layers
-    top_specify = top_results.get("specify")
-    if (
-        top_specify
-        and top_specify.output
-        and hasattr(top_specify.output, "requirements")
-    ):
-        all_requirements = _merge_requirements(
-            all_requirements,
-            [_requirement_dict(req) for req in top_specify.output.requirements],
-        )
-    if all_requirements:
-        sos_dict["entities"]["requirements"] = all_requirements
-
-    requirement_id_by_key = {
-        requirement["content_hash"]: requirement["id"]
-        for requirement in all_requirements
-        if requirement.get("content_hash")
-    }
-    subsystem_requirement_key_by_id = {
-        requirement["id"]: _requirement_key(requirement)
-        for sm in systems
-        if sm.model_yaml
-        for requirement in (yaml.safe_load(sm.model_yaml) or {})
-        .get("entities", {})
-        .get("requirements", [])
-    }
-    for relationship in subsystem_relationships:
-        relationship = dict(relationship)
-        target_key = subsystem_requirement_key_by_id.get(relationship.get("to", ""))
-        if target_key:
-            relationship["to"] = requirement_id_by_key[target_key]
-        inter_system_interfaces.append(relationship)
-
     # Add inline components
     if inlines:
-        sos_dict["entities"]["inline_components"] = [
-            {"id": i.system_id, "name": i.name, "files": i.files} for i in inlines
+        sos_dict["entities"]["components"] = [
+            {"id": _schema_id(i.system_id), "name": i.name, "status": "ACTIVE", "files": i.files}
+            for i in inlines
         ]
 
     sos_yaml = yaml.dump(sos_dict, default_flow_style=False, sort_keys=False)
@@ -662,7 +608,7 @@ class SynthesizeStage:
                 sub_results = scoped_cache.load_all()
                 sub_llm_calls = scoped_cache.load_llm_calls()
 
-                model_yaml = _build_system_model_yaml(boundary, sub_results)
+                model_yaml = _build_system_model_yaml(boundary, sub_results, ctx.repo_path.name)
                 manifest_json = _build_manifest_json(sub_results)
                 report_md = generate_pipeline_report(
                     sub_results,
@@ -707,7 +653,7 @@ class SynthesizeStage:
                 sub_results = coordinator.run_to(last_stage, sub_ctx)
                 sub_llm_calls = list(sub_ctx.llm_calls)
 
-                model_yaml = _build_system_model_yaml(boundary, sub_results)
+                model_yaml = _build_system_model_yaml(boundary, sub_results, ctx.repo_path.name)
                 manifest_json = _build_manifest_json(sub_results)
                 report_md = generate_pipeline_report(
                     sub_results,
@@ -744,20 +690,13 @@ class SynthesizeStage:
 
             system_models.append(sm)
 
-        # Inline components — minimal models, no scoped run
-        for boundary in decompose_result.inline_components:
-            sm = SystemModel(
-                system_id=boundary.system_id,
-                name=boundary.name,
-            )
-            system_models.append(sm)
-
         # Build SoS model
         sos = _build_sos_model(
             system_models,
             decompose_result.inline_components,
             decompose_result,
             ctx.cache,
+            project_name=ctx.repo_path.name,
         )
 
         # Top-level reports

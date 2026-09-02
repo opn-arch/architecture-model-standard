@@ -138,6 +138,30 @@ def test_finalize_appends_enriched_record_and_loader_returns_latest_revision(tmp
     assert records[0].revision == "final"
 
 
+def test_finalize_records_final_model_validation_status(tmp_path):
+    append_pipeline_history(tmp_path, _run("run-validation"))
+
+    finalize_pipeline_history(
+        tmp_path,
+        "run-validation",
+        [".architecture-model.yaml"],
+        final_validation={
+            "extraction_score": 95,
+            "final_model_score": 87,
+            "final_model_path": ".architecture-model.yaml",
+            "promoted": True,
+            "issues": [{"code": "WARNING_ONLY"}],
+        },
+    )
+
+    final = load_pipeline_history(tmp_path)[0]
+    assert final.extraction_score == 95
+    assert final.final_model_score == 87
+    assert final.final_model_path == ".architecture-model.yaml"
+    assert final.model_promoted is True
+    assert final.final_validation_issues == [{"code": "WARNING_ONLY"}]
+
+
 def test_finalize_enriches_component_and_module_artifacts(tmp_path):
     record = _run("run-nested-final")
     record.components = [ComponentHistoryRecord(

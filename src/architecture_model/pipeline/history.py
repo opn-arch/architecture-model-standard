@@ -85,6 +85,11 @@ class PipelineRunRecord:
     produced_artifacts: list[str] = field(default_factory=list)
     error: str = ""
     revision: str = "base"
+    extraction_score: float | None = None
+    final_model_score: float | None = None
+    final_model_path: str = ""
+    model_promoted: bool = False
+    final_validation_issues: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -167,7 +172,10 @@ def load_pipeline_history(repo_path: str | Path, limit: int = 50) -> list[Pipeli
 
 
 def finalize_pipeline_history(
-    repo_path: str | Path, run_id: str, artifacts: list[str]
+    repo_path: str | Path,
+    run_id: str,
+    artifacts: list[str],
+    final_validation: dict[str, Any] | None = None,
 ) -> PipelineRunRecord | None:
     """Append a final immutable revision using one locked merge transaction."""
     path = Path(repo_path) / ".architecture" / "pipeline-history.jsonl"
@@ -178,6 +186,12 @@ def finalize_pipeline_history(
         if base is None:
             return None
         base.produced_artifacts = list(dict.fromkeys([*base.produced_artifacts, *artifacts]))
+        if final_validation:
+            base.extraction_score = final_validation.get("extraction_score")
+            base.final_model_score = final_validation.get("final_model_score")
+            base.final_model_path = final_validation.get("final_model_path", "")
+            base.model_promoted = bool(final_validation.get("promoted"))
+            base.final_validation_issues = list(final_validation.get("issues", []))
         for component in base.components:
             safe_name = component.component_id.lower().replace(" ", "-")
             component.artifacts = list(dict.fromkeys([

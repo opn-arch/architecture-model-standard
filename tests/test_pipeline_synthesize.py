@@ -50,6 +50,8 @@ class _FakeCapability:
     id: str = "CAP-1"
     name: str = "TestCap"
     description: str = ""
+    intent: str = ""
+    goals: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -88,6 +90,26 @@ class _FakeModule:
 @dataclass
 class _FakeObserveOutput:
     modules: list = field(default_factory=list)
+    constraints: list = field(default_factory=list)
+
+
+@dataclass
+class _FakeBehavior:
+    id: str = "BEH-1"
+    name: str = "Process request"
+    capability_id: str = "CAP-1"
+    actor_id: str = ""
+    steps: list[str] = field(default_factory=lambda: ["Validate", "Persist"])
+    triggers: list[str] = field(default_factory=list)
+    behavior_type: str = "workflow"
+    source_file: str = "a.py"
+    intent: str = "Safely process a request"
+    description: str = "Request workflow"
+    trigger: str = "request received"
+    preconditions: list[str] = field(default_factory=lambda: ["request is valid"])
+    postconditions: list[str] = field(default_factory=lambda: ["request is stored"])
+    frequency: str = "per request"
+    pattern: str = "sequential"
 
 
 def _make_ctx(tmp_path: Path, **cache_extras: StageResult) -> PipelineContext:
@@ -214,7 +236,7 @@ class TestBuildSystemModelYaml:
         parsed = yaml.safe_load(yaml_str)
 
         assert parsed["meta"]["system"] == "Core"
-        assert parsed["meta"]["schema_version"] == "2.0"
+        assert parsed["meta"]["schema_version"] == "2.0.0"
         assert len(parsed["entities"]["components"]) == 1
         assert len(parsed["entities"]["capabilities"]) == 1
         assert len(parsed["relationships"]) == 1
@@ -251,6 +273,59 @@ class TestBuildSystemModelYaml:
         cap_out = parsed["entities"]["capabilities"][0]
         assert cap_out["status"] == "ACTIVE"
         assert "description" not in cap_out
+
+    def test_preserves_workflow_semantics_and_derives_valid_traceability(self, tmp_path):
+        boundary = SystemBoundary(
+            system_id="SYS-1", name="Orders", files=["a.py", "b.py"]
+        )
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput(components=[_FakeComponent()])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[_FakeCapability(intent="Accept orders", goals=["Reliable intake"])],
+                behaviors=[_FakeBehavior()],
+            )),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            boundary, results, project_name="shop"
+        ))
+        behavior = parsed["entities"]["behaviors"][0]
+
+        generated_at = parsed["meta"].pop("generated_at")
+        assert generated_at
+        assert parsed["meta"] == {
+            "project": "shop",
+            "schema_version": "2.0.0",
+            "system": "Orders",
+            "system_id": "SYS-1",
+            "parent_model": "../../.architecture-model.yaml",
+            "refines_component": "SYS-1",
+            "source_artifacts": ["a.py", "b.py"],
+        }
+        assert behavior["description"] == "Request workflow"
+        assert behavior["intent"] == "Safely process a request"
+        assert behavior["trigger"] == "request received"
+        assert behavior["preconditions"] == ["request is valid"]
+        assert behavior["postconditions"] == ["request is stored"]
+        assert behavior["frequency"] == "per request"
+        assert behavior["pattern"] == "sequential"
+        assert behavior["steps"] == ["Validate", "Persist"]
+        assert behavior["source_file"] == "a.py"
+        assert behavior["structured_steps"] == [
+            {"order": 1, "action": "Validate", "component_ref": "COMP-1"},
+            {"order": 2, "action": "Persist", "component_ref": "COMP-1"},
+        ]
+        assert {tuple(r.values()) for r in parsed["relationships"]} >= {
+            ("COMP-1", "CAP-1", "realizes"),
+            ("COMP-1", "BEH-1", "traces-to"),
+        }
+
+        from architecture_model.core.parser import _parse_raw
+        from architecture_model.core.validator import validate_model
+
+        validation = validate_model(_parse_raw(parsed))
+        assert not [issue for issue in validation.issues if issue.severity == "error"]
 
 
 class TestMergeRequirements:
@@ -365,7 +440,7 @@ class TestRunWithoutCoordinator:
         # SoS should have inter-system edge
         sos_parsed = yaml.safe_load(synth.sos_model_yaml)
         assert len(sos_parsed["relationships"]) == 1
-        assert sos_parsed["relationships"][0]["from"] == "SYS-core"
+        assert sos_parsed["relationships"][0]["from"] == "sys-core"
 
     def test_no_coordinator_diagnostic(self, tmp_path):
         stage = SynthesizeStage()
@@ -482,8 +557,9 @@ class TestRunWithCoordinator:
         result = stage.run(ctx)
 
         assert len(coordinator.calls) == 0
-        assert len(result.output.system_models) == 1
-        assert result.output.system_models[0].name == "Utils"
+        assert result.output.system_models == []
+        parsed = yaml.safe_load(result.output.sos_model_yaml)
+        assert parsed["entities"]["components"][0]["name"] == "Utils"
 
 
 # ---------------------------------------------------------------------------
@@ -494,15 +570,15 @@ class TestRunWithCoordinator:
 class TestSoSModel:
     def test_inter_system_edges(self):
         systems = [
-            SystemModel(system_id="SYS-a", name="A"),
-            SystemModel(system_id="SYS-b", name="B"),
+            SystemModel(system_id="SYS-a", name="A", model_yaml="meta: {}"),
+            SystemModel(system_id="SYS-b", name="B", model_yaml="meta: {}"),
         ]
         decompose = DecomposeResult(
             inter_system_edges=[("SYS-a", "SYS-b", "depends-on")]
         )
         sos = _build_sos_model(systems, [], decompose, {})
         assert len(sos.inter_system_interfaces) == 1
-        assert sos.inter_system_interfaces[0]["from"] == "SYS-a"
+        assert sos.inter_system_interfaces[0]["from"] == "sys-a"
 
         parsed = yaml.safe_load(sos.model_yaml)
         assert parsed["meta"]["system_of_systems"] is True
@@ -514,6 +590,48 @@ class TestSoSModel:
         sos = _build_sos_model([], [], DecomposeResult(), top_results)
         assert len(sos.actors) == 1
         assert sos.actors[0]["name"] == "Admin"
+
+    def test_top_model_references_systems_and_keeps_inline_components_only(self):
+        subsystem_yaml = yaml.safe_dump({
+            "meta": {"project": "demo", "schema_version": "2.0"},
+            "entities": {
+                "components": [{"id": "COMP-1", "name": "Internal"}],
+                "capabilities": [{"id": "CAP-1", "name": "Internal cap"}],
+                "behaviors": [{"id": "BEH-1", "name": "Internal flow"}],
+            },
+            "relationships": [],
+        })
+        systems = [
+            SystemModel(system_id="SYS-a", name="Alpha", model_yaml=subsystem_yaml),
+            SystemModel(system_id="SYS-b", name="Beta", model_yaml=subsystem_yaml),
+        ]
+        inline = SystemBoundary(
+            system_id="COMP-inline", name="Inline", files=["inline.py"],
+            component_ids=["COMP-9"], is_full_system=False,
+        )
+
+        parsed = yaml.safe_load(_build_sos_model(
+            systems, [inline], DecomposeResult(), {}, project_name="demo"
+        ).model_yaml)
+
+        assert parsed["meta"]["project"] == "demo"
+        assert parsed["meta"]["source_artifacts"] == [
+            ".architecture-models/alpha/.architecture-model.yaml",
+            ".architecture-models/beta/.architecture-model.yaml",
+            "inline.py",
+        ]
+        assert [system["id"] for system in parsed["entities"]["systems"]] == [
+            "sys-a", "sys-b"
+        ]
+        assert all(system.get("sub_model_ref") for system in parsed["entities"]["systems"])
+        assert parsed["entities"]["components"] == [{
+            "id": "comp-inline", "name": "Inline", "status": "ACTIVE",
+            "files": ["inline.py"],
+        }]
+        assert "capabilities" not in parsed["entities"]
+        assert "behaviors" not in parsed["entities"]
+        assert "layers" not in parsed["entities"]
+        assert "requirements" not in parsed["entities"]
 
 
 # ---------------------------------------------------------------------------
