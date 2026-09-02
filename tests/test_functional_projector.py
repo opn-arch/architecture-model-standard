@@ -185,3 +185,45 @@ def test_functional_curated_drilldown_key_replaces_generated_presentation_id(tmp
     node = next(item for item in spec.nodes if item.entity_ref == "root::CAP-A")
     assert node.drilldown_ref == "inspect-function"
     assert next(item for item in spec.drilldowns if item.id == "inspect-function").spec is not None
+
+
+def test_functional_drilldown_connects_every_semantic_participant(tmp_path):
+    path = tmp_path / ".architecture-model.yaml"
+    path.write_text("""meta: {project: detail, schema_version: '2.0'}
+entities:
+  actors: [{id: ACT-1, name: Operator, status: ACTIVE}]
+  capabilities: [{id: CAP-1, name: Mission, status: ACTIVE, requirements: [REQ-1]}]
+  behaviors:
+    - {id: BEH-1, name: Start, status: ACTIVE, actor_id: ACT-1, capability_id: CAP-1, interface_refs: [IF-1]}
+    - {id: BEH-2, name: Finish, status: ACTIVE, capability_id: CAP-1}
+  components:
+    - {id: COMP-1, name: Producer, status: ACTIVE}
+    - {id: COMP-2, name: Consumer, status: ACTIVE}
+  interfaces: [{id: IF-1, name: Data, status: ACTIVE, provider: COMP-1, consumer: COMP-2}]
+  requirements: [{id: REQ-1, name: Safe operation, status: ACTIVE}]
+relationships:
+  - {from: COMP-1, to: CAP-1, type: realizes}
+  - {from: COMP-1, to: BEH-1, type: traces-to}
+  - {from: BEH-1, to: BEH-2, type: triggers}
+  - {from: COMP-1, to: IF-1, type: exposes}
+  - {from: COMP-2, to: IF-1, type: consumes}
+  - {from: COMP-1, to: REQ-1, type: satisfies}
+  - {from: CAP-1, to: REQ-1, type: constrained-by}
+""", encoding="utf-8")
+    spec = project_functional_architecture(ArchitectureViewContext.from_repo(tmp_path))
+    detail = spec.drilldowns[0].spec
+    kinds = {edge.kind for edge in detail.edges}
+    assert {"realizes", "traces-to", "triggers", "participates", "exposes", "consumes", "satisfies", "constrained-by"} <= kinds
+    assert all(edge.evidence for edge in detail.edges)
+
+
+def test_functional_orphan_and_omitted_summaries_are_bounded_and_navigable(tmp_path):
+    context = _context(tmp_path, ["ROOT", *[f"CAP-{index}" for index in range(8)]])
+    spec = project_functional_architecture(context, max_overview_nodes=5)
+    assert len(spec.nodes) <= 5
+    summaries = [node for node in spec.nodes if node.kind == "summary"]
+    assert {node.status for node in summaries} >= {"orphan", "omitted"}
+    for node in summaries:
+        detail = next(item.spec for item in spec.drilldowns if item.id == node.drilldown_ref)
+        assert detail and detail.nodes
+        assert all(item.entity_ref and item.evidence for item in detail.nodes)

@@ -174,3 +174,43 @@ def test_conops_drilldown_and_curation_are_structural(tmp_path):
     assert scenario.drilldown_ref == "mission-detail"
     assert scenario.label == "Curated Mission" and scenario.group == "priority"
     assert detail and {node.kind for node in detail.nodes} >= {"behavior", "interface", "system", "requirement", "moe", "failure"}
+
+
+def test_conops_keeps_unresolved_interface_on_degraded_boundary_path(tmp_path):
+    path = tmp_path / ".architecture-model.yaml"
+    path.write_text("""meta: {project: degraded, schema_version: '2.0'}
+entities:
+  interfaces:
+    - {id: IF-LOST, name: Lost Link, status: ACTIVE, provider: Missing Provider, protocol: HTTPS}
+relationships: []
+""", encoding="utf-8")
+    spec = project_conops(ArchitectureViewContext.from_repo(tmp_path), max_overview_nodes=2)
+    assert len(spec.nodes) == 2
+    interface = next(node for node in spec.nodes if node.entity_ref == "root::IF-LOST")
+    boundary = next(node for node in spec.nodes if node.kind == "unknown-boundary")
+    edge = next(edge for edge in spec.edges if {edge.source, edge.target} == {interface.id, boundary.id})
+    assert edge.inferred and edge.evidence[0].source == "unresolved-interface-endpoint"
+    assert any(item.code == "CONOPS_DEGRADED_INTERFACE" for item in spec.warnings)
+
+
+def test_conops_actor_and_external_drilldowns_list_participation_and_evidence(tmp_path):
+    context = _context(tmp_path)
+    context.entity("root::ACT-1").value.goals = ["Complete mission"]
+    spec = project_conops(context)
+    actor = next(node for node in spec.nodes if node.entity_ref == "root::ACT-1")
+    detail = next(item.spec for item in spec.drilldowns if item.id == actor.drilldown_ref)
+    assert detail and {node.kind for node in detail.nodes} >= {"actor", "goal", "scenario", "interface", "system"}
+    assert all(node.evidence for node in detail.nodes)
+    assert all(not node.drilldown_ref or any(item.id == node.drilldown_ref for item in spec.drilldowns) for node in spec.nodes)
+
+
+def test_conops_restores_bounded_failure_and_error_handling_callouts(tmp_path):
+    context = _context(tmp_path)
+    behavior = context.entity("root::BEH-0").value
+    from architecture_model.core.types import Step
+    behavior.structured_steps = [Step(1, "Run", "", error_handling="Use degraded mode")]
+    context.entity("root::SYS-1").value.failure_modes = ["System outage"]
+    spec = project_conops(context)
+    assert {item.label for item in spec.callouts} >= {"Timeout", "Use degraded mode", "System outage"}
+    assert len(spec.callouts) <= 6
+    assert all(item.target and item.evidence for item in spec.callouts)

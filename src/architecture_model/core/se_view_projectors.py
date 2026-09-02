@@ -160,6 +160,47 @@ def _scenario_drilldown(context: ArchitectureViewContext, behavior: IndexedEntit
     return DiagramSpec(f"conops-detail:{behavior.key}", f"Scenario: {behavior.name}", nodes=nodes, edges=edges)
 
 
+def _participant_drilldown(
+    context: ArchitectureViewContext, node: DiagramNode, entity: IndexedEntity | None,
+    evidence: list[DiagramProvenance], curation: ViewCuration,
+) -> DiagramSpec:
+    root = DiagramNode(
+        f"detail:{node.id}", node.label, node.kind, entity_ref=entity.key if entity else "",
+        inferred=node.inferred, evidence=[_provenance(entity)] if entity else evidence,
+    )
+    nodes = [root]
+    edges: list[DiagramEdge] = []
+    names = {node.label}
+    if entity:
+        names.add(entity.local_id)
+        nodes.extend(_support_nodes(entity, "goal", entity.value.goals))
+    referenced = {ref for item in evidence for ref in item.entity_refs}
+    behaviors = [
+        item for item in context.entities("behavior")
+        if item.key in referenced or item.value.actor_id in names or item.value.actor in names
+        or any(step.actor in names for step in item.value.structured_steps)
+    ]
+    interfaces = [
+        item for item in context.entities("interface")
+        if item.key in referenced or item.value.provider in names or item.value.consumer in names
+        or any(item.local_id in behavior.value.interface_refs for behavior in behaviors)
+    ]
+    systems = sorted({
+        system.key: system for interface in interfaces
+        if (system := _interface_system(context, interface))
+    }.values(), key=lambda item: item.key)
+    for item in [*behaviors, *interfaces, *systems]:
+        detail_id = _node_id(item.key)
+        nodes.append(DiagramNode(
+            detail_id, _label(item, curation), "scenario" if item.entity_type == "behavior" else item.entity_type,
+            entity_ref=item.key, evidence=[_provenance(item)],
+        ))
+        refs = [item.key] if entity is None else [entity.key, item.key]
+        edges.append(DiagramEdge(root.id, detail_id, "participates", inferred=True,
+                                 evidence=[_derived("participant-association", refs)]))
+    return DiagramSpec(f"participant-detail:{node.id}", f"Participant: {node.label}", nodes=nodes, edges=edges)
+
+
 def _external_evidence(context: ArchitectureViewContext) -> dict[str, tuple[str, list[DiagramProvenance]]]:
     evidence: dict[str, tuple[str, list[DiagramProvenance]]] = {}
 
@@ -247,6 +288,38 @@ def project_conops(
     actors = [item for item in context.entities("actor") if item.key not in hidden]
     formal_externals = [item for item in context.entities("external_system") if item.key not in hidden]
     inferred = _external_evidence(context)
+    degraded_interfaces: set[str] = set()
+    for interface in context.entities("interface"):
+        if interface.key in hidden or _interface_system(context, interface):
+            continue
+        unresolved = [
+            value for value in (interface.value.provider, interface.value.consumer)
+            if value and not _find_local(context, interface.model, value)
+        ]
+        if not unresolved or len(nodes) + 2 > limit:
+            continue
+        interface_node = DiagramNode(
+            _node_id(interface.key), _label(interface, curation), "interface", lane="boundary",
+            status="degraded", entity_ref=interface.key, evidence=[_provenance(interface)],
+        )
+        boundary_id = f"unknown-boundary:{interface.key}"
+        boundary_evidence = [
+            _derived("unresolved-interface-endpoint", [interface.key], endpoint=value, protocol=interface.value.protocol)
+            for value in unresolved
+        ]
+        boundary_node = DiagramNode(
+            boundary_id, unresolved[0], "unknown-boundary", lane="boundary", status="degraded",
+            inferred=True, evidence=boundary_evidence,
+        )
+        include(interface_node)
+        include(boundary_node)
+        edges[(interface_node.id, boundary_node.id, "connects")] = DiagramEdge(
+            interface_node.id, boundary_node.id, "connects", inferred=True, evidence=boundary_evidence,
+        )
+        degraded_interfaces.add(interface.key)
+        warnings.append(Diagnostic(
+            "warning", "CONOPS_DEGRADED_INTERFACE", f"Unresolved interface endpoint: {interface.name}", view="conops",
+        ))
 
     behaviors = [item for item in context.entities("behavior") if item.key not in hidden]
     behaviors.sort(key=lambda item: (item.key not in featured, order.get(item.key, len(order)), item.key))
@@ -311,7 +384,9 @@ def project_conops(
         include(DiagramNode(external.id, external.name, "external", lane="actors", status="inferred", inferred=True,
                             evidence=_curated_provenance(external.evidence)))
     for normalized, (name, evidence) in sorted(inferred.items()):
-        if normalized not in curated_names:
+        if normalized not in curated_names and not any(
+            ref in degraded_interfaces for item in evidence for ref in item.entity_refs
+        ):
             include(DiagramNode(f"external:{normalized}", name, "external", lane="actors", status="inferred", inferred=True, evidence=evidence))
     node_by_ref = {node.entity_ref: node.id for node in nodes.values() if node.entity_ref}
     for relationship in context.relationships():
@@ -321,6 +396,43 @@ def project_conops(
             if source and target and "interface" in {source.entity_type, target.entity_type}:
                 key = (node_by_ref[relationship.source], node_by_ref[relationship.target], relationship.kind)
                 edges[key] = DiagramEdge(*key, evidence=[_relationship_provenance(relationship)])
+    for node in list(nodes.values()):
+        if node.kind not in {"actor", "external", "unknown-boundary"}:
+            continue
+        entity = context.entity(node.entity_ref, diagnose=False) if node.entity_ref else None
+        drilldown_id = f"drilldown:{node.id}"
+        node.drilldown_ref = drilldown_id
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, node.id, spec=_participant_drilldown(context, node, entity, node.evidence, curation),
+        ))
+    callouts: list[DiagramCallout] = []
+    for behavior in behaviors:
+        target = _node_id(behavior.key)
+        if target not in nodes:
+            continue
+        failures = [
+            *behavior.value.failure_modes,
+            *[step.error_handling for step in behavior.value.structured_steps if step.error_handling],
+        ]
+        for index, failure in enumerate(failures):
+            callouts.append(DiagramCallout(
+                f"failure:{behavior.key}:{index}", failure, target, "failure", [behavior.key],
+            ))
+    for system in context.entities("system"):
+        target = _node_id(system.key)
+        if target in nodes:
+            for index, failure in enumerate(system.value.failure_modes):
+                callouts.append(DiagramCallout(
+                    f"failure:{system.key}:{index}", failure, target, "failure", [system.key],
+                ))
+    for capability in context.entities("capability"):
+        for behavior in behaviors:
+            target = _node_id(behavior.key)
+            if behavior.value.capability_id == capability.local_id and target in nodes:
+                for index, failure in enumerate(capability.value.failure_modes):
+                    callouts.append(DiagramCallout(
+                        f"failure:{capability.key}:{index}", failure, target, "failure", [capability.key],
+                    ))
     if omitted:
         warnings.append(Diagnostic("warning", "CONOPS_OVERVIEW_BOUNDED", f"{omitted} operational paths omitted (limit {limit})", view="conops"))
     if not nodes:
@@ -328,7 +440,7 @@ def project_conops(
         warnings.append(Diagnostic("warning", "CONOPS_SPARSE_FALLBACK", "No operational entities were available", view="conops"))
     spec = DiagramSpec(
         "conops", "Concept of Operations", nodes=list(nodes.values()), edges=list(edges.values()), groups=groups,
-        lanes=lanes, callouts=[DiagramCallout("conops:omitted", f"{omitted} paths available in drilldown")][:1] if omitted else [],
+        lanes=lanes, callouts=callouts[:6],
         warnings=[*context.diagnostics, *warnings], drilldowns=drilldowns,
         provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
     )
@@ -451,21 +563,55 @@ def _functional_drilldown(
             detail_flows[key].count += 1 if detail_flows[key].evidence else 0
             detail_flows[key].evidence.append(evidence)
     edges.extend(detail_flows.values())
-    related_behaviors = sorted({key for item in subtree for key in behavior_links[item.key]})
-    related_components = sorted({key for item in subtree for key in component_links[item.key]})
-    for key in [*related_behaviors, *related_components]:
+    relevant = set(subtree_keys)
+    relevant.update(key for item in subtree for key in behavior_links[item.key])
+    relevant.update(key for item in subtree for key in component_links[item.key])
+    for behavior_key in list(relevant):
+        behavior = context.entity(behavior_key, diagnose=False)
+        if not behavior or behavior.entity_type != "behavior":
+            continue
+        actor = _find_local(context, behavior.model, behavior.value.actor_id or behavior.value.actor)
+        if actor:
+            relevant.add(actor.key)
+        for reference in behavior.value.interface_refs:
+            interface = _find_local(context, behavior.model, reference)
+            if interface:
+                relevant.add(interface.key)
+    for interface in context.entities("interface"):
+        provider = _find_local(context, interface.model, interface.value.provider)
+        consumer = _find_local(context, interface.model, interface.value.consumer)
+        if interface.key in relevant or any(item and item.key in relevant for item in (provider, consumer)):
+            relevant.add(interface.key)
+            if provider:
+                relevant.add(provider.key)
+            if consumer:
+                relevant.add(consumer.key)
+    for item in subtree:
+        for reference in item.value.requirements:
+            requirement = _find_local(context, item.model, reference)
+            if requirement:
+                relevant.add(requirement.key)
+    present = {node.entity_ref for node in nodes if node.entity_ref}
+    for key in sorted(relevant - present):
         entity = context.entity(key, diagnose=False)
         if entity:
             nodes.append(DiagramNode(_node_id(key), entity.name, entity.entity_type, entity_ref=key, evidence=[_provenance(entity)]))
-    interfaces = [
-        item for item in context.entities("interface")
-        if any(ref in {item.value.provider, item.value.consumer} for ref in [context.entity(key, diagnose=False).local_id for key in related_components])
-        or any(item.local_id in (context.entity(key, diagnose=False).value.interface_refs or []) for key in related_behaviors)
-    ]
-    for interface in interfaces:
-        nodes.append(DiagramNode(_node_id(interface.key), interface.name, "interface", entity_ref=interface.key, evidence=[_provenance(interface)]))
+    present = {node.entity_ref for node in nodes if node.entity_ref}
+    canonical_keys: set[tuple[str, str, str]] = set()
+    for relationship in context.relationships():
+        if relationship.source in present and relationship.target in present:
+            key = (relationship.source, relationship.target, relationship.kind)
+            canonical_keys.add(key)
+            edges.append(DiagramEdge(_node_id(relationship.source), _node_id(relationship.target), relationship.kind,
+                                     evidence=[_relationship_provenance(relationship)]))
+    for behavior_key in sorted(key for key in present if context.entity(key, diagnose=False).entity_type == "behavior"):
+        behavior = context.entity(behavior_key, diagnose=False)
+        actor = _find_local(context, behavior.model, behavior.value.actor_id or behavior.value.actor)
+        if actor and actor.key in present and (actor.key, behavior.key, "participates") not in canonical_keys:
+            edges.append(DiagramEdge(_node_id(actor.key), _node_id(behavior.key), "participates", inferred=True,
+                                     evidence=[_derived("behavior-actor", [actor.key, behavior.key])]))
     owner_refs = [item.key for item in subtree]
-    requirements = sorted({value for item in subtree for value in item.value.requirements})
+    requirements = sorted({value for item in subtree for value in item.value.requirements if not _find_local(context, item.model, value)})
     moes = sorted({value for item in subtree for value in item.value.moes})
     failures = sorted({value for item in subtree for value in item.value.failure_modes})
     nodes.extend(_support_nodes(capability, "requirement", requirements))
@@ -474,6 +620,13 @@ def _functional_drilldown(
     nodes.extend(_support_nodes(capability, "monitoring", sorted({value for item in subtree for value in item.value.monitored})))
     return DiagramSpec(f"functional-detail:{capability.key}", f"Function: {capability.name}", direction="TB", nodes=nodes, edges=edges,
                        provenance=DiagramProvenance("capability-subtree", owner_refs))
+
+
+def _entity_list_spec(identifier: str, title: str, entities: Iterable[IndexedEntity]) -> DiagramSpec:
+    return DiagramSpec(identifier, title, nodes=[
+        DiagramNode(_node_id(item.key), item.name, item.entity_type, entity_ref=item.key, evidence=[_provenance(item)])
+        for item in sorted(entities, key=lambda value: value.key)
+    ])
 
 
 def project_functional_architecture(
@@ -513,8 +666,11 @@ def project_functional_architecture(
     if not roots:
         candidates = [item for item in context.entities("capability") if item.key not in hidden]
     behavior_links, component_links = _capability_links(context)
-    reserve = 1 if any(component_links.values()) and limit > 1 else 0
+    allocated = {key for values in component_links.values() for key in values}
+    orphans = [item for item in context.entities("component") if item.key not in allocated]
+    all_capabilities = [item for item in context.entities("capability") if item.key not in hidden]
     deduplicated = list({item.key: item for item in candidates}.values())
+    reserve = (1 if orphans else 0) + (1 if len(all_capabilities) > max(0, limit - (1 if orphans else 0)) else 0)
     root_keys = {root.key for root in presentation_roots}
     deduplicated.sort(key=lambda item: (item.key not in featured, item.key not in root_keys, order.get(item.key, len(order)), item.key))
     selected = deduplicated[:min(12, max(0, limit - reserve))]
@@ -571,18 +727,21 @@ def project_functional_architecture(
         if evidence:
             edges.append(DiagramEdge(_node_id(flow.source), _node_id(flow.target), flow.kind, flow.label, evidence=evidence, inferred=flow.inferred, style="solid"))
 
-    allocated = {key for values in component_links.values() for key in values}
-    orphan_count = len([item for item in context.entities("component") if item.key not in allocated])
-    if reserve and len(nodes) < limit:
-        summary_id = "functional:allocation-summary"
-        nodes.append(DiagramNode(summary_id, "System Allocation", "system", status="summary", badges=[f"components:{len(allocated)}", f"unallocated:{orphan_count}"]))
-        for capability in selected:
-            if component_links[capability.key]:
-                evidence = _derived("allocation-summary", [capability.key, *component_links[capability.key]], count=len(component_links[capability.key]))
-                edges.append(DiagramEdge(_node_id(capability.key), summary_id, "allocation", style="dashed", evidence=[evidence], count=len(component_links[capability.key])))
-    if orphan_count:
-        groups.append(DiagramGroup("functional:orphans", f"Unallocated Functions ({orphan_count})", "warning", order=99))
-    omitted = len(deduplicated) - len(selected)
+    omitted_entities = [item for item in all_capabilities if item.key not in selected_keys]
+    omitted = len(omitted_entities)
+    if orphans and len(nodes) < limit:
+        summary_id = "functional:orphan-summary"
+        drilldown_id = "drilldown:functional-orphans"
+        nodes.append(DiagramNode(summary_id, f"Unallocated Functions ({len(orphans)})", "summary", status="orphan",
+                                 drilldown_ref=drilldown_id, badges=[f"components:{len(orphans)}"]))
+        drilldowns.append(DiagramDrilldown(drilldown_id, summary_id, spec=_entity_list_spec("functional-orphans", "Unallocated Functions", orphans)))
+        groups.append(DiagramGroup("functional:orphans", f"Unallocated Functions ({len(orphans)})", "warning", order=99))
+    if omitted and len(nodes) < limit:
+        summary_id = "functional:omitted-summary"
+        drilldown_id = "drilldown:functional-omitted"
+        nodes.append(DiagramNode(summary_id, f"More Functions ({omitted})", "summary", status="omitted",
+                                 drilldown_ref=drilldown_id, badges=[f"capabilities:{omitted}"]))
+        drilldowns.append(DiagramDrilldown(drilldown_id, summary_id, spec=_entity_list_spec("functional-omitted", "Omitted Functions", omitted_entities)))
     if omitted:
         warnings.append(Diagnostic("warning", "FUNCTIONAL_OVERVIEW_BOUNDED", f"{omitted} functional blocks omitted (limit {limit})", view="functional"))
     if not nodes:
