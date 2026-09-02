@@ -652,13 +652,19 @@ def _structural_eligibility_issues(raw: dict, target: Path) -> list[dict]:
         ("interfaces", "consumer"),
         ("components", "parent_id"),
     )
-    list_refs = (
-        "requirements", "interface_refs", "component_ids", "children", "triggers",
-    )
+    list_refs = {
+        "requirements": ("REQ-", "req-"),
+        "interface_refs": ("IF-", "if-"),
+        "component_ids": ("COMP-", "comp-"),
+        "children": tuple(),
+        "triggers": ("BEH-", "beh-"),
+    }
 
-    def _add_dangling(entity_id: str, field: str, referenced_id: str) -> None:
-        looks_like_id = bool(re.fullmatch(r"[A-Z]+-[A-Za-z0-9.-]+|[a-z][a-z0-9-]+", referenced_id))
-        if referenced_id and looks_like_id and referenced_id not in known_ids:
+    def _add_dangling(
+        entity_id: str, field: str, referenced_id: str, prefixes: tuple[str, ...] | None = None,
+    ) -> None:
+        is_id = prefixes is None or not prefixes or referenced_id.startswith(prefixes)
+        if referenced_id and is_id and referenced_id not in known_ids:
             issues.append({
                 "path": str(target), "severity": "error", "code": "STRUCTURAL_DANGLING_REF",
                 "message": f"Entity {entity_id} field {field} references unknown entity {referenced_id}",
@@ -673,9 +679,9 @@ def _structural_eligibility_issues(raw: dict, target: Path) -> list[dict]:
         for entity in group:
             if not isinstance(entity, dict):
                 continue
-            for field in list_refs:
+            for field, prefixes in list_refs.items():
                 for referenced_id in entity.get(field, []):
-                    _add_dangling(entity.get("id", ""), field, referenced_id)
+                    _add_dangling(entity.get("id", ""), field, referenced_id, prefixes)
     for behavior in entities.get("behaviors", []):
         for step in behavior.get("structured_steps", []):
             _add_dangling(

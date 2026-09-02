@@ -369,8 +369,8 @@ class TestWrittenPaths:
         entities = {
             "components": [{
                 "id": "COMP-1", "name": "Comp", "status": "ACTIVE",
-                "requirements": ["Must remain available"],
-                "interface_refs": ["Python call contract"],
+                "requirements": ["must-remain-available"],
+                "interface_refs": ["python-call-contract"],
             }],
         }
 
@@ -379,6 +379,29 @@ class TestWrittenPaths:
         ))
 
         assert result.output.promoted is True
+
+    @pytest.mark.parametrize(
+        ("field", "missing_id"),
+        [("requirements", "REQ-MISSING"), ("interface_refs", "IF-MISSING")],
+    )
+    def test_typed_missing_list_references_block_promotion(self, tmp_path, field, missing_id):
+        entities = {
+            "components": [{
+                "id": "COMP-1", "name": "Comp", "status": "ACTIVE",
+                field: [missing_id],
+            }],
+        }
+
+        result = EmitStage().run(_make_ctx(
+            tmp_path, SynthesizeResult(sos_model_yaml=_model(entities=entities)),
+        ))
+
+        assert result.output.promoted is False
+        assert any(
+            issue["code"] == "STRUCTURAL_DANGLING_REF"
+            and missing_id in issue["message"]
+            for issue in result.output.final_validation_issues
+        )
 
     def test_candidate_enrichment_defect_is_validated_before_promotion(self, tmp_path):
         canonical = tmp_path / ".architecture-model.yaml"

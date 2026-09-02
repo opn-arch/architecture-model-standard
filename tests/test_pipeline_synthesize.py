@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
+from architecture_model.pipeline.emit import EmitStage
 from architecture_model.pipeline.protocol import (
     Evidence,
     LLMCallRecord,
@@ -272,6 +273,30 @@ class TestDecideStages:
 
 
 class TestBuildSystemModelYaml:
+    def test_nested_interface_target_remaps_through_collision_id_map(self, tmp_path):
+        owner = _FakeComponent(
+            "ITEM A", "Owner", ["owner.py"], interfaces=[{
+                "name": "target", "kind": "requires", "target_component": "ITEM-A",
+            }],
+        )
+        target = _FakeComponent("ITEM-A", "Target", ["target.py"])
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([owner, target])),
+            "infer": _stage_result(_FakeInferOutput()),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+        model_yaml = _build_system_model_yaml(
+            SystemBoundary("SYS-1", "System", files=["owner.py", "target.py"]), results,
+        )
+        parsed = yaml.safe_load(model_yaml)
+        components = {item["name"]: item for item in parsed["entities"]["components"]}
+
+        assert components["Owner"]["interfaces"][0]["target_component"] == components["Target"]["id"]
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path)
+        ctx.cache["synthesize"] = _stage_result(SynthesizeResult(sos_model_yaml=model_yaml))
+        emit = EmitStage().run(ctx)
+        assert emit.output.promoted is True
+
     def test_structured_step_component_ref_remaps_after_local_id_collision(self):
         behavior = _FakeBehavior(
             id="BEH-1", source_file="worker.py", capability_id="ITEM A",
@@ -809,6 +834,39 @@ class TestRunWithoutCoordinator:
 
 
 class TestRunWithCoordinator:
+    def test_overlapping_full_boundaries_use_disjoint_scoped_files(self, tmp_path):
+        coordinator = MockCoordinator()
+        boundaries = [
+            SystemBoundary(
+                "SYS-broad", "Broad", files=["pkg/a.py", "pkg/nested/b.py"],
+                component_ids=["COMP-2"], is_full_system=True,
+            ),
+            SystemBoundary(
+                "SYS-specific", "Specific", files=["pkg/nested/b.py"],
+                component_ids=["COMP-1"], is_full_system=True,
+            ),
+        ]
+        ctx = _make_ctx(
+            tmp_path,
+            decompose=_stage_result(DecomposeResult(systems=boundaries)),
+            observe=_stage_result(_FakeObserveOutput()),
+            infer=_stage_result(_FakeInferOutput()),
+            allocate=_stage_result(_FakeAllocOutput()),
+            relate=_stage_result(_FakeRelateOutput()),
+        )
+        ctx.config["coordinator"] = coordinator
+
+        result = SynthesizeStage().run(ctx)
+
+        scoped = {item.scope: [str(path) for path in item.scope_files] for item in coordinator.contexts}
+        assert scoped == {
+            "SYS-broad": ["pkg/a.py"],
+            "SYS-specific": ["pkg/nested/b.py"],
+        }
+        assert [model.system_id for model in result.output.system_models] == [
+            "SYS-broad", "SYS-specific",
+        ]
+
     def test_scoped_allocation_groups_trim_values_not_target_names(self, tmp_path):
         ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / "out")
         ctx.prior_corrections = [Evidence(

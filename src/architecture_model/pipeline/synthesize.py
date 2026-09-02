@@ -406,6 +406,11 @@ def _build_system_model_yaml(
                         for item in typed_interfaces
                     ]
                 components.append(comp_dict)
+    for component in components:
+        for interface in component.get("interfaces", []):
+            target = interface.get("target_component", "")
+            if target:
+                interface["target_component"] = _register_id(target)
 
     comp_ids = {c["id"] for c in components}
     raw_relationships = getattr(
@@ -961,6 +966,46 @@ def _is_shared(entity: Any) -> bool:
     )
 
 
+def _exclusive_full_boundaries(
+    boundaries: list[SystemBoundary], allocate_result: StageResult | None,
+) -> list[SystemBoundary]:
+    """Clone full boundaries with one deterministic owner per source file."""
+    component_by_file = {
+        _normalized_path(path): component.id
+        for component in sorted(
+            getattr(getattr(allocate_result, "output", None), "components", []),
+            key=lambda item: item.id,
+        )
+        for path in component.files
+    }
+    candidates_by_file: dict[str, list[SystemBoundary]] = {}
+    for boundary in boundaries:
+        for path in boundary.files:
+            candidates_by_file.setdefault(_normalized_path(path), []).append(boundary)
+    owner_by_file: dict[str, str] = {}
+    for path, candidates in candidates_by_file.items():
+        component_id = component_by_file.get(path, "")
+        owner = min(
+            candidates,
+            key=lambda boundary: (
+                0 if component_id and component_id in boundary.component_ids else 1,
+                len({_normalized_path(item) for item in boundary.files}),
+                boundary.system_id,
+            ),
+        )
+        owner_by_file[path] = owner.system_id
+    result = []
+    for boundary in boundaries:
+        scoped = deepcopy(boundary)
+        scoped.files = [
+            path for path in boundary.files
+            if owner_by_file.get(_normalized_path(path)) == boundary.system_id
+        ]
+        if scoped.files:
+            result.append(scoped)
+    return result
+
+
 def _build_sos_model(
     systems: list[SystemModel],
     inlines: list[SystemBoundary],
@@ -1190,7 +1235,12 @@ class SynthesizeStage:
         coordinator = ctx.config.get("coordinator")
 
         system_models: list[SystemModel] = []
-        full_boundaries = [boundary for boundary in decompose_result.systems if boundary.is_full_system]
+        full_boundaries = _exclusive_full_boundaries(
+            [boundary for boundary in decompose_result.systems if boundary.is_full_system],
+            ctx.get("allocate"),
+        )
+        scoped_decompose = deepcopy(decompose_result)
+        scoped_decompose.systems = full_boundaries
         boundary_slugs = _system_slugs([
             SystemModel(system_id=boundary.system_id, name=boundary.name, model_yaml="pending")
             for boundary in full_boundaries
@@ -1300,7 +1350,7 @@ class SynthesizeStage:
         sos = _build_sos_model(
             system_models,
             decompose_result.inline_components,
-            decompose_result,
+            scoped_decompose,
             ctx.cache,
             project_name=ctx.repo_path.name,
         )
