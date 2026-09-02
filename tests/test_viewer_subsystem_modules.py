@@ -40,6 +40,47 @@ def _parts(html: str) -> tuple[dict, str, list[dict]]:
     return data, script, parser.items
 
 
+def _write_history(repo: Path, *records: dict) -> None:
+    history = repo / ".architecture" / "pipeline-history.jsonl"
+    history.parent.mkdir(exist_ok=True)
+    history.write_text("".join(json.dumps(record) + "\n" for record in records))
+
+
+def _history_run(run_id: str, scope: str, path: str = "src/shared.py") -> dict:
+    return {
+        "run_id": run_id,
+        "started_at": "2026-09-02T01:02:03Z",
+        "completed_at": "2026-09-02T01:02:04Z",
+        "duration_ms": 1,
+        "source": "MCP",
+        "invocation": "architect_pipeline",
+        "status": "completed",
+        "scope": scope,
+        "parent_run_id": "parent-run",
+        "components": [{
+            "component_id": "COMP-1",
+            "name": "Shared",
+            "timestamp": "2026-09-02T01:02:03Z",
+            "invoked_by": "allocate",
+            "scope": scope,
+            "parent_run_id": "parent-run",
+            "stages": ["allocate"],
+            "artifacts": [f".architecture-models/{run_id}/structure.yaml"],
+        }],
+        "modules": [{
+            "path": path,
+            "module": "shared",
+            "timestamp": "2026-09-02T01:02:03Z",
+            "invoked_by": "observe",
+            "scope": scope,
+            "parent_run_id": "parent-run",
+            "stage": "observe",
+            "produced_functions": [f"produced_{run_id}"],
+            "artifacts": [f".architecture-models/{run_id}/inventory.json"],
+        }],
+    }
+
+
 def _write_child(repo: Path, slug: str, *, manifest: bool = True, hostile: bool = False) -> None:
     child_dir = repo / ".architecture-models" / slug
     child_dir.mkdir(parents=True)
@@ -108,8 +149,8 @@ def test_adjacent_manifests_embed_distinct_qualified_modules_and_links(tmp_path)
     assert data["comp_modules"]["alpha::COMP-1"] == [{"path": "src/shared.py", "key": alpha_key}]
     assert data["comp_modules"]["beta::COMP-1"] == [{"path": "src/shared.py", "key": beta_key}]
     assert data["modules"][alpha_key]["canonical_path"] == "src/shared.py"
-    assert "item.path === mod.canonical_path" in script
-    assert "(!mod.system_scope || item.scope === mod.system_scope)" in script
+    assert "item.canonical_path === mod.canonical_path" in script
+    assert "item.viewer_namespace === (mod.system_scope || '')" in script
     assert not any(item["attrs"].get("src") or item["attrs"].get("href") for item in scripts)
 
 
@@ -157,7 +198,128 @@ def test_nested_same_basename_submodels_have_distinct_stable_namespaces(tmp_path
     assert data["subsystem_entities"]["SYS-ONE"] == ["one/api::COMP-1"]
     assert data["subsystem_entities"]["SYS-TWO"] == ["two/api::COMP-1"]
     assert "commentHtml('module', filepath" in script
-    assert "item.scope === mod.system_scope" in script
+    assert "item.viewer_namespace === (mod.system_scope || '')" in script
+
+
+@pytest.mark.parametrize("scope", ["SYS-models", "models", "Models"])
+def test_subsystem_history_scope_aliases_match_qualified_module(tmp_path, scope):
+    _write_child(tmp_path, "models")
+    _write_history(tmp_path, _history_run(f"run-{scope}", scope))
+    model = _parse_raw({
+        "meta": {"project": "root", "schema_version": "2.0"},
+        "entities": {"systems": [{
+            "id": "SYS-models", "name": "Models", "status": "ACTIVE",
+            "sub_model_ref": ".architecture-models/models/.architecture-model.yaml",
+        }]},
+        "relationships": [],
+    })
+
+    data, script, _ = _parts(generate_html_viewer(
+        model, tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    aliases = data["viewer_system_aliases"]["models"]
+    assert aliases["system_id"] == "SYS-models"
+    assert aliases["system_name"] == "Models"
+    assert aliases["sub_model_ref"] == ".architecture-models/models/.architecture-model.yaml"
+    assert {"SYS-models", "models", "Models"} <= set(aliases["scope_aliases"])
+    item = data["pipeline_history"][0]["modules"][0]
+    assert item["viewer_namespace"] == "models"
+    assert item["canonical_path"] == "src/shared.py"
+    assert "historyMatchesModule(item, run, mod)" in script
+    assert "Entry Timestamp:" in script
+    assert "[" + "' + escapeHtml(run.status || '') + '" + "]" in script
+    assert "Source / Invoked By:" in script
+    assert "Stages:" in script
+    assert "Produced Artifacts / Entities:" in script
+
+
+def test_same_path_scoped_history_does_not_cross_match_subsystems(tmp_path):
+    _write_child(tmp_path, "alpha")
+    _write_child(tmp_path, "beta")
+    _write_history(
+        tmp_path,
+        _history_run("run-alpha", "SYS-A"),
+        _history_run("run-beta", "SYS-B"),
+    )
+
+    data, _, _ = _parts(generate_html_viewer(
+        _root(("SYS-A", "alpha"), ("SYS-B", "beta")),
+        tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    by_run = {run["run_id"]: run["modules"][0]["viewer_namespace"] for run in data["pipeline_history"]}
+    assert by_run == {"run-beta": "beta", "run-alpha": "alpha"}
+    component_by_run = {
+        run["run_id"]: run["components"][0]["viewer_entity_id"]
+        for run in data["pipeline_history"]
+    }
+    assert component_by_run == {"run-beta": "beta::COMP-1", "run-alpha": "alpha::COMP-1"}
+    assert all(run["parent_run_id"] == "parent-run" for run in data["pipeline_history"])
+    assert data["modules"]["alpha::module::src/shared.py"]["system_scope"] == "alpha"
+    assert data["modules"]["beta::module::src/shared.py"]["system_scope"] == "beta"
+
+
+def test_nested_collision_safe_namespaces_are_explicit_history_aliases(tmp_path):
+    child = tmp_path / ".architecture-models" / "teams" / "api"
+    child.mkdir(parents=True)
+    payload = {
+        "meta": {"project": "API", "schema_version": "2.0"},
+        "entities": {"components": [{
+            "id": "COMP-1", "name": "API", "status": "ACTIVE", "files": ["src/shared.py"],
+        }]},
+        "relationships": [],
+    }
+    (child / ".architecture-model.yaml").write_text(yaml.safe_dump(payload))
+    _write_history(tmp_path, _history_run("run-nested", "SYS-API-2"))
+    model = _parse_raw({
+        "meta": {"project": "root", "schema_version": "2.0"},
+        "entities": {"systems": [
+            {"id": "SYS-API-1", "name": "API One", "status": "ACTIVE", "sub_model_ref": ".architecture-models/teams/api/.architecture-model.yaml"},
+            {"id": "SYS-API-2", "name": "API Two", "status": "ACTIVE", "sub_model_ref": ".architecture-models/teams/api/.architecture-model.yaml"},
+        ]},
+        "relationships": [],
+    })
+
+    data, _, _ = _parts(generate_html_viewer(model, tmp_path / "viewer.html", repo_path=tmp_path).read_text())
+
+    namespace = "teams/api::SYS-API-2"
+    assert namespace in data["viewer_system_aliases"]
+    assert namespace in data["viewer_system_aliases"][namespace]["scope_aliases"]
+    assert data["pipeline_history"][0]["modules"][0]["viewer_namespace"] == namespace
+    assert f"{namespace}::module::src/shared.py" in data["modules"]
+
+
+def test_unscoped_root_history_does_not_attach_to_child_only_module(tmp_path):
+    _write_child(tmp_path, "alpha")
+    _write_history(tmp_path, _history_run("root-run", ""))
+
+    data, script, _ = _parts(generate_html_viewer(
+        _root(("SYS-A", "alpha")), tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    item = data["pipeline_history"][0]["modules"][0]
+    assert item["viewer_namespace"] == ""
+    assert data["modules"]["alpha::module::src/shared.py"]["system_scope"] == "alpha"
+    assert "item.viewer_namespace === (mod.system_scope || '')" in script
+
+
+def test_alias_history_keeps_safe_data_script_and_qualified_comments(tmp_path):
+    _write_child(tmp_path, "models", hostile=True)
+    hostile = "SYS-models</script><script>pwned=1</script>"
+    _write_history(tmp_path, _history_run("run-hostile", hostile, "src/<hostile>&.py"))
+    html = generate_html_viewer(
+        _root(("SYS-models", "models")), tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text()
+    data, script, _ = _parts(html)
+
+    assert data["pipeline_history"][0]["modules"][0]["viewer_namespace"] is None
+    assert "</script><script>pwned=1</script>" not in html
+    assert "commentHtml('module', filepath, 'Add notes about this module...')" in script
+    js = tmp_path / "viewer.js"
+    js.write_text(script)
+    checked = subprocess.run(["node", "--check", js], capture_output=True, text=True)
+    assert checked.returncode == 0, checked.stderr
 
 
 def test_missing_child_manifest_creates_owned_module_stub(tmp_path):

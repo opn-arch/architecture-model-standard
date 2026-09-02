@@ -2081,6 +2081,82 @@ def _viewer_system_namespace_map(model: "ArchitectureModel", repo_path: Path | N
     }
 
 
+def _viewer_system_alias_map(
+    model: "ArchitectureModel", repo_path: Path | None,
+    namespace_map: dict[tuple[Path, str], str],
+) -> dict[str, dict]:
+    """Build explicit scope aliases for each viewer subsystem namespace."""
+    if repo_path is None:
+        return {}
+    root = repo_path.resolve()
+    aliases: dict[str, dict] = {}
+    for system in model.entities.systems:
+        if not system.sub_model_ref:
+            continue
+        path = (root / system.sub_model_ref).resolve()
+        namespace = namespace_map.get((path, system.id))
+        if namespace is None:
+            continue
+        relative = path.relative_to(root).as_posix()
+        parent_ref = Path(relative).parent.as_posix()
+        ref_namespace = parent_ref.removeprefix(".architecture-models/")
+        scope_aliases = {
+            namespace, system.id, system.name, relative, parent_ref, ref_namespace,
+            system.source_block,
+        }
+        aliases[namespace] = {
+            "viewer_namespace": namespace,
+            "system_id": system.id,
+            "system_name": system.name,
+            "sub_model_ref": relative,
+            "scope_aliases": sorted(alias for alias in scope_aliases if alias),
+        }
+    return aliases
+
+
+def _normalize_viewer_history(
+    history: list[dict] | dict, aliases: dict[str, dict],
+    root_components: dict[str, set[str]],
+) -> list[dict] | dict:
+    """Attach canonical paths and unambiguous subsystem ownership to history records."""
+    if not isinstance(history, list):
+        return history
+    alias_owners: dict[str, list[str]] = {}
+    for namespace, entry in aliases.items():
+        for alias in entry["scope_aliases"]:
+            alias_owners.setdefault(alias, []).append(namespace)
+
+    def owner(scope: str) -> str | None:
+        if not scope:
+            return ""
+        owners = alias_owners.get(scope, [])
+        return owners[0] if len(owners) == 1 else None
+
+    for run in history:
+        run_scope = str(run.get("scope") or "")
+        run["viewer_namespace"] = owner(run_scope)
+        for item in run.get("modules", []):
+            item_scope = str(item.get("scope") or run_scope)
+            item["canonical_path"] = _normalize_module_path(str(item.get("path") or ""))
+            namespace = owner(item_scope)
+            component_id = str(item.get("component_id") or "")
+            if namespace is None and item["canonical_path"] in root_components.get(component_id, set()):
+                namespace = ""
+            item["viewer_namespace"] = namespace
+        for item in run.get("components", []):
+            item_scope = str(item.get("scope") or run_scope)
+            namespace = owner(item_scope)
+            item["viewer_namespace"] = namespace
+            component_id = str(item.get("component_id") or "")
+            if namespace is None and component_id in root_components:
+                namespace = ""
+                item["viewer_namespace"] = namespace
+            item["viewer_entity_id"] = (
+                f"{namespace}::{component_id}" if namespace else component_id
+            ) if namespace is not None else None
+    return history
+
+
 def _load_submodel_view_data(
     model: "ArchitectureModel", repo_path: Path | None, root_modules: dict[str, dict],
     namespace_map: dict[tuple[Path, str], str],
@@ -2334,6 +2410,7 @@ def generate_html_viewer(
         root_manifest_modules = _manifest_module_records(root / ".architecture-models" / "manifest.json", root) or {}
     root_modules = {**scanned_modules, **root_manifest_modules}
     namespace_map = _viewer_system_namespace_map(model, repo_path)
+    system_aliases = _viewer_system_alias_map(model, repo_path, namespace_map)
     sub_props, sub_comp_files, subsystem_entities, sub_modules, sub_comp_modules = _load_submodel_view_data(
         model, repo_path, root_modules, namespace_map,
     )
@@ -2382,7 +2459,16 @@ def generate_html_viewer(
     ops_data = _load_ops_data(repo_path)
 
     # ── 5f. Pipeline history ──────────────────────────────────────
-    pipeline_history = _load_pipeline_history(repo_path)
+    root_components = {
+        component.id: {
+            normalized for file_path in (component.files or [])
+            if (normalized := _normalize_module_path(file_path))
+        }
+        for component in model.entities.components
+    }
+    pipeline_history = _normalize_viewer_history(
+        _load_pipeline_history(repo_path), system_aliases, root_components,
+    )
 
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
@@ -2405,6 +2491,7 @@ def generate_html_viewer(
         "viewer_system_namespaces": {
             system_id: namespace for (_path, system_id), namespace in namespace_map.items()
         },
+        "viewer_system_aliases": system_aliases,
     }
     data_json = _json.dumps(diagram_data, ensure_ascii=False).translate(str.maketrans({
         "<": "\\u003c", ">": "\\u003e", "&": "\\u0026",
@@ -2788,6 +2875,11 @@ def generate_html_viewer(
             return Array.isArray(D.pipeline_history) ? D.pipeline_history : [];
         }}
 
+        function historyMatchesModule(item, run, mod) {{
+            return item.canonical_path === mod.canonical_path
+                && item.viewer_namespace === (mod.system_scope || '');
+        }}
+
         function renderRunHistory(runs, itemSelector) {{
             if (!runs || !runs.length) return '';
             var html = '<div class="mod-section"><div class="mod-section-title">Run History (' + runs.length + ')</div>';
@@ -3153,10 +3245,10 @@ def generate_html_viewer(
             }}
             var entityId = eid;
             var componentRuns = pipelineRuns().filter(function(run) {{
-                return (run.components || []).some(function(item) {{ return item.component_id === entityId; }});
+                return (run.components || []).some(function(item) {{ return item.viewer_entity_id === entityId; }});
             }});
             html += renderRunHistory(componentRuns, function(run) {{
-                return (run.components || []).filter(function(item) {{ return item.component_id === entityId; }});
+                return (run.components || []).filter(function(item) {{ return item.viewer_entity_id === entityId; }});
             }});
 
             // Source files section (for components)
@@ -3324,12 +3416,12 @@ def generate_html_viewer(
 
             var moduleRuns = pipelineRuns().filter(function(run) {{
                 return (run.modules || []).some(function(item) {{
-                    return item.path === mod.canonical_path && (!mod.system_scope || item.scope === mod.system_scope);
+                    return historyMatchesModule(item, run, mod);
                 }});
             }});
             html += renderRunHistory(moduleRuns, function(run) {{
                 return (run.modules || []).filter(function(item) {{
-                    return item.path === mod.canonical_path && (!mod.system_scope || item.scope === mod.system_scope);
+                    return historyMatchesModule(item, run, mod);
                 }});
             }});
             var comment = commentHtml('module', filepath, 'Add notes about this module...');
