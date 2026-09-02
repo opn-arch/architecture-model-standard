@@ -1,6 +1,8 @@
 import random
 from pathlib import Path
 
+import pytest
+
 from architecture_model.core.parser import load_model
 from architecture_model.core.se_view_projectors import project_use_cases
 from architecture_model.core.view_context import ArchitectureViewContext
@@ -73,6 +75,21 @@ entities:
 relationships: []
 """)
     return ArchitectureViewContext.load(load_model(tmp_path / ".architecture-model.yaml"), tmp_path)
+
+
+def _nested_specs(spec):
+    result = [spec]
+    for drilldown in spec.drilldowns:
+        if drilldown.spec:
+            result.extend(_nested_specs(drilldown.spec))
+    return result
+
+
+def _assert_hidden_and_edges_safe(spec, hidden_ref: str) -> None:
+    for nested in _nested_specs(spec):
+        assert all(node.entity_ref != hidden_ref for node in nested.nodes)
+        node_ids = {node.id for node in nested.nodes}
+        assert all(edge.source in node_ids and edge.target in node_ids for edge in nested.edges)
 
 
 def test_use_cases_selects_bounded_actor_goal_catalog_with_honest_links(tmp_path):
@@ -234,3 +251,52 @@ def test_use_case_formal_external_actor_and_states_retain_evidence(tmp_path):
     detail = next(item.spec for item in spec.drilldowns if item.id == case.drilldown_ref)
     state = next(node for node in detail.nodes if node.kind == "state")
     assert state.label == "Waiting" and state.evidence
+
+
+def test_use_case_hidden_formal_actor_is_not_reintroduced_as_inferred(tmp_path):
+    hidden = Selector(qualified_id="root::ACT-OPS", resolved_id="root::ACT-OPS")
+    spec = project_use_cases(_context(tmp_path), ViewCuration(hide=[hidden]))
+
+    _assert_hidden_and_edges_safe(spec, "root::ACT-OPS")
+    assert all(node.label != "Operator" for nested in _nested_specs(spec) for node in nested.nodes)
+    assert all(
+        not (node.inferred and node.label == "ACT-OPS")
+        for nested in _nested_specs(spec) for node in nested.nodes
+    )
+
+
+@pytest.mark.parametrize("hidden_ref", [
+    "root::ACT-OPS",
+    "root::EXT-AUDIT",
+    "root::SYS-WEB",
+    "web::COMP-1",
+    "root::BEH-00",
+    "web::IF-1",
+    "root::REQ-1",
+])
+def test_use_case_hide_applies_recursively_per_entity_type(tmp_path, hidden_ref):
+    context = _context(tmp_path)
+    if hidden_ref == "root::EXT-AUDIT":
+        from architecture_model.core.types import ExternalSystem, Status
+        external = ExternalSystem(id="EXT-AUDIT", name="Audit Service", status=Status.ACTIVE)
+        context.models["root"].entities.external_systems.append(external)
+        behavior = context.models["root"].entities.behaviors[0]
+        behavior.actor = external.name
+        behavior.actor_id = external.id
+    hidden = Selector(qualified_id=hidden_ref, resolved_id=hidden_ref)
+    spec = project_use_cases(
+        ArchitectureViewContext(context.root, context.models, []),
+        ViewCuration(hide=[hidden]),
+    )
+
+    _assert_hidden_and_edges_safe(spec, hidden_ref)
+    if hidden_ref == "root::SYS-WEB":
+        assert all(
+            hidden_ref not in group.id and group.label != "Web"
+            for nested in _nested_specs(spec) for group in nested.groups
+        )
+    if hidden_ref == "root::REQ-1":
+        assert all(
+            "requirements:0" in node.badges
+            for node in spec.nodes if node.kind == "use-case"
+        )

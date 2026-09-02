@@ -1,6 +1,8 @@
 import random
 from pathlib import Path
 
+import pytest
+
 from architecture_model.core.parser import load_model
 from architecture_model.core.se_view_projectors import project_logical_architecture
 from architecture_model.core.view_context import ArchitectureViewContext
@@ -70,6 +72,21 @@ relationships:
   - {from: COMP-1, to: CAP-1, type: realizes}
 """)
     return ArchitectureViewContext.load(load_model(tmp_path / ".architecture-model.yaml"), tmp_path)
+
+
+def _nested_specs(spec):
+    result = [spec]
+    for drilldown in spec.drilldowns:
+        if drilldown.spec:
+            result.extend(_nested_specs(drilldown.spec))
+    return result
+
+
+def _assert_hidden_and_edges_safe(spec, hidden_ref: str) -> None:
+    for nested in _nested_specs(spec):
+        assert all(node.entity_ref != hidden_ref for node in nested.nodes)
+        node_ids = {node.id for node in nested.nodes}
+        assert all(edge.source in node_ids and edge.target in node_ids for edge in nested.edges)
 
 
 def test_logical_projects_tiered_systems_aggregates_and_semantic_exchanges(tmp_path):
@@ -258,3 +275,38 @@ def test_logical_hidden_nonpriority_interface_never_renders_indirectly(tmp_path)
     )
     web = next(node for node in spec.nodes if node.entity_ref == "root::SYS-WEB")
     assert "interfaces:0" in web.badges
+
+
+@pytest.mark.parametrize("hidden_ref", [
+    "root::ACT-1",
+    "root::EXT-1",
+    "root::SYS-WEB",
+    "web::COMP-1",
+    "web::CAP-1",
+    "web::IF-1",
+    "web::REQ-1",
+])
+def test_logical_hide_applies_recursively_per_entity_type(tmp_path, hidden_ref):
+    hidden = Selector(qualified_id=hidden_ref, resolved_id=hidden_ref)
+    spec = project_logical_architecture(_context(tmp_path), ViewCuration(hide=[hidden]))
+
+    _assert_hidden_and_edges_safe(spec, hidden_ref)
+
+
+def test_logical_hide_applies_to_presentation_groups_and_membership(tmp_path):
+    aggregate = CuratedGroup(
+        "workers", "Background Workers", "aggregate",
+        members=["root::INLINE-0", "root::INLINE-2"],
+    )
+    curation = ViewCuration(
+        groups=[aggregate],
+        aggregate_components=[
+            Selector(qualified_id="root::INLINE-0", resolved_id="root::INLINE-0"),
+            Selector(qualified_id="root::INLINE-2", resolved_id="root::INLINE-2"),
+        ],
+        hide=[Selector(qualified_id="workers")],
+    )
+    spec = project_logical_architecture(_context(tmp_path), curation)
+
+    assert all(group.id != "workers" for nested in _nested_specs(spec) for group in nested.groups)
+    assert all(node.group != "workers" for nested in _nested_specs(spec) for node in nested.nodes)
