@@ -81,12 +81,18 @@ def _history_run(run_id: str, scope: str, path: str = "src/shared.py") -> dict:
     }
 
 
-def _write_child(repo: Path, slug: str, *, manifest: bool = True, hostile: bool = False) -> None:
+def _write_child(
+    repo: Path, slug: str, *, manifest: bool = True, hostile: bool = False,
+    meta: dict | None = None,
+) -> None:
     child_dir = repo / ".architecture-models" / slug
     child_dir.mkdir(parents=True)
     file_name = "src/<hostile>&.py" if hostile else "src/shared.py"
     (child_dir / ".architecture-model.yaml").write_text(yaml.safe_dump({
-        "meta": {"project": slug, "schema_version": "2.0", "source_artifacts": [file_name]},
+        "meta": {
+            "project": slug, "schema_version": "2.0", "source_artifacts": [file_name],
+            **(meta or {}),
+        },
         "entities": {"components": [{
             "id": "COMP-1", "name": f"{slug} component", "status": "ACTIVE", "files": [file_name],
         }]},
@@ -264,6 +270,57 @@ def test_subsystem_history_scope_aliases_are_canonicalized_without_changing_disp
     assert run["viewer_namespace"] == "models"
     assert run["modules"][0]["viewer_namespace"] == "models"
     assert run["components"][0]["viewer_entity_id"] == "models::COMP-1"
+
+
+def test_child_raw_system_id_and_system_alias_match_parenthesized_history_scope(tmp_path):
+    _write_child(
+        tmp_path, "alembic-versions",
+        meta={"system_id": "SYS-alembic-(versions)", "system": "Alembic (versions)"},
+    )
+    _write_history(tmp_path, _history_run("run-versions", "SYS-alembic-(versions)"))
+    model = _parse_raw({
+        "meta": {"project": "root", "schema_version": "2.0"},
+        "entities": {"systems": [{
+            "id": "sys-alembic-versions", "name": "Alembic Versions", "status": "ACTIVE",
+            "sub_model_ref": ".architecture-models/alembic-versions/.architecture-model.yaml",
+        }]},
+        "relationships": [],
+    })
+
+    data, _, _ = _parts(generate_html_viewer(
+        model, tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    aliases = data["viewer_system_aliases"]["alembic-versions"]
+    assert "SYS-alembic-(versions)" in aliases["scope_aliases"]
+    assert "Alembic (versions)" in aliases["scope_aliases"]
+    assert "sys-alembic-(versions)" in aliases["canonical_scope_aliases"]
+    run = data["pipeline_history"][0]
+    assert run["modules"][0]["viewer_namespace"] == "alembic-versions"
+    assert run["components"][0]["viewer_entity_id"] == "alembic-versions::COMP-1"
+
+
+def test_duplicate_child_raw_system_id_is_ambiguous_without_path_identity(tmp_path):
+    for slug in ("alpha", "beta"):
+        _write_child(tmp_path, slug, meta={"system_id": "SYS-shared-(raw)"})
+    _write_history(
+        tmp_path,
+        _history_run("ambiguous-raw", "SYS-shared-(raw)"),
+        _history_run("alpha-path", ".architecture-models/alpha"),
+    )
+
+    data, _, _ = _parts(generate_html_viewer(
+        _root(("SYS-ALPHA", "alpha"), ("SYS-BETA", "beta")),
+        tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    assert "SYS-shared-(raw)" in data["viewer_system_aliases"]["alpha"]["scope_aliases"]
+    assert "SYS-shared-(raw)" in data["viewer_system_aliases"]["beta"]["scope_aliases"]
+    by_run = {run["run_id"]: run for run in data["pipeline_history"]}
+    assert by_run["ambiguous-raw"]["modules"][0]["viewer_namespace"] is None
+    assert by_run["ambiguous-raw"]["components"][0]["viewer_entity_id"] is None
+    assert by_run["alpha-path"]["modules"][0]["viewer_namespace"] == "alpha"
+    assert by_run["alpha-path"]["components"][0]["viewer_entity_id"] == "alpha::COMP-1"
 
 
 def test_case_colliding_system_ids_require_unique_path_alias_to_avoid_history_leak(tmp_path):

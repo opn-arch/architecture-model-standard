@@ -2107,6 +2107,10 @@ def _viewer_system_alias_map(
     """Build explicit scope aliases for each viewer subsystem namespace."""
     if repo_path is None:
         return {}
+    import yaml
+
+    from architecture_model.core.parser import load_model
+
     root = repo_path.resolve()
     aliases: dict[str, dict] = {}
     for system in model.entities.systems:
@@ -2123,6 +2127,14 @@ def _viewer_system_alias_map(
             namespace, system.id, system.name, relative, parent_ref, ref_namespace,
             system.source_block,
         }
+        try:
+            load_model(path)
+            raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+            child_meta = raw.get("meta", {}) if isinstance(raw, dict) else {}
+            if isinstance(child_meta, dict):
+                scope_aliases.update((child_meta.get("system_id"), child_meta.get("system")))
+        except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError):
+            pass
         display_aliases = sorted(alias for alias in scope_aliases if alias)
         aliases[namespace] = {
             "viewer_namespace": namespace,
