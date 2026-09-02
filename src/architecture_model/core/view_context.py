@@ -103,7 +103,7 @@ class ArchitectureViewContext:
             for entity_type, values in vars(model.entities).items():
                 if not isinstance(values, list):
                     continue
-                singular = entity_type[:-1] if entity_type.endswith("s") else entity_type
+                singular = "capability" if entity_type == "capabilities" else entity_type[:-1] if entity_type.endswith("s") else entity_type
                 for entity in values:
                     if not hasattr(entity, "id"):
                         continue
@@ -178,6 +178,15 @@ class ArchitectureViewContext:
     def child_models(self, model: str) -> list[str]:
         return sorted(child for child, parent in self._parents.items() if parent == model)
 
+    def child_models_for_system(self, system_key: str) -> list[str]:
+        system = self.entity(system_key)
+        if not system or system.entity_type != "system":
+            return []
+        return sorted(
+            model for model in self.child_models(system.model)
+            if system.local_id in self._system_aliases.get(model, set())
+        )
+
     def children(self, model: str) -> list[str]:
         return self.child_models(model)
 
@@ -220,6 +229,9 @@ class ArchitectureViewContext:
 
     def incoming(self, key: str, kind: str | None = None) -> list[IndexedRelationship]:
         return self._filtered_relationships(self._incoming.get(key, []), kind)
+
+    def relationships(self, kind: str | None = None) -> list[IndexedRelationship]:
+        return self._filtered_relationships(self._relationships, kind)
 
     @staticmethod
     def _filtered_relationships(values: Iterable[IndexedRelationship], kind: str | None) -> list[IndexedRelationship]:

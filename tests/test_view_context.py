@@ -183,6 +183,8 @@ def test_context_indexes_explicit_cross_model_relationships_and_hierarchy(tmp_pa
     assert context.outgoing("a::COMP-1")[0].target == "b::COMP-2"
     assert context.parent_model("b") == "a"
     assert context.child_models("root") == ["a"]
+    assert context.child_models_for_system("root::SYS-A") == ["a"]
+    assert {item.source for item in context.relationships("depends-on")} == {"root::ROOT-COMP", "a::COMP-1"}
     assert context.ancestors("b") == ["a", "root"]
     assert context.parent("b") == "a"
     assert context.children("root") == ["a"]
