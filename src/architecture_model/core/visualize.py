@@ -2140,14 +2140,13 @@ def _viewer_system_alias_map(
 
 def _normalize_viewer_history(
     history: list[dict] | dict, aliases: dict[str, dict],
-    root_components: dict[str, set[str]],
 ) -> list[dict] | dict:
     """Attach canonical paths and unambiguous subsystem ownership to history records."""
     if not isinstance(history, list):
         return history
     def owner(scope: str) -> str | None:
         canonical_scope = _canonical_scope_alias(scope)
-        if not canonical_scope:
+        if canonical_scope in {"", "root"}:
             return ""
         owners = [
             namespace for namespace, entry in aliases.items()
@@ -2162,18 +2161,12 @@ def _normalize_viewer_history(
             item_scope = str(item.get("scope") or run_scope)
             item["canonical_path"] = _normalize_module_path(str(item.get("path") or ""))
             namespace = owner(item_scope)
-            component_id = str(item.get("component_id") or "")
-            if namespace is None and item["canonical_path"] in root_components.get(component_id, set()):
-                namespace = ""
             item["viewer_namespace"] = namespace
         for item in run.get("components", []):
             item_scope = str(item.get("scope") or run_scope)
             namespace = owner(item_scope)
             item["viewer_namespace"] = namespace
             component_id = str(item.get("component_id") or "")
-            if namespace is None and component_id in root_components:
-                namespace = ""
-                item["viewer_namespace"] = namespace
             item["viewer_entity_id"] = (
                 f"{namespace}::{component_id}" if namespace else component_id
             ) if namespace is not None else None
@@ -2482,15 +2475,8 @@ def generate_html_viewer(
     ops_data = _load_ops_data(repo_path)
 
     # ── 5f. Pipeline history ──────────────────────────────────────
-    root_components = {
-        component.id: {
-            normalized for file_path in (component.files or [])
-            if (normalized := _normalize_module_path(file_path))
-        }
-        for component in model.entities.components
-    }
     pipeline_history = _normalize_viewer_history(
-        _load_pipeline_history(repo_path), system_aliases, root_components,
+        _load_pipeline_history(repo_path), system_aliases,
     )
 
     # ── 6. JSON data blob ─────────────────────────────────────────

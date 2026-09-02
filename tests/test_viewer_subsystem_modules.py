@@ -297,6 +297,43 @@ def test_case_colliding_system_ids_require_unique_path_alias_to_avoid_history_le
     assert by_run["beta-namespace"]["components"][0]["viewer_entity_id"] == "beta::COMP-1"
 
 
+def test_ambiguous_nonempty_scope_does_not_fall_back_to_shared_root_component_or_path(tmp_path):
+    _write_child(tmp_path, "alpha")
+    _write_child(tmp_path, "beta")
+    ambiguous = _history_run("ambiguous", "sYs-A")
+    root = _history_run("root", "")
+    root_alias = _history_run("root-alias", " ROOT ")
+    ambiguous["modules"][0]["component_id"] = "COMP-1"
+    root["modules"][0]["component_id"] = "COMP-1"
+    root_alias["modules"][0]["component_id"] = "COMP-1"
+    _write_history(tmp_path, ambiguous, root, root_alias)
+    model = _parse_raw({
+        "meta": {"project": "root", "schema_version": "2.0"},
+        "entities": {
+            "systems": [
+                {"id": "SYS-A", "name": "First", "status": "ACTIVE", "sub_model_ref": ".architecture-models/alpha/.architecture-model.yaml"},
+                {"id": "sys-a", "name": "Second", "status": "ACTIVE", "sub_model_ref": ".architecture-models/beta/.architecture-model.yaml"},
+            ],
+            "components": [{
+                "id": "COMP-1", "name": "Root shared", "status": "ACTIVE", "files": ["src/shared.py"],
+            }],
+        },
+        "relationships": [],
+    })
+
+    data, _, _ = _parts(generate_html_viewer(
+        model, tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    by_run = {run["run_id"]: run for run in data["pipeline_history"]}
+    assert by_run["ambiguous"]["modules"][0]["viewer_namespace"] is None
+    assert by_run["ambiguous"]["components"][0]["viewer_entity_id"] is None
+    assert by_run["root"]["modules"][0]["viewer_namespace"] == ""
+    assert by_run["root"]["components"][0]["viewer_entity_id"] == "COMP-1"
+    assert by_run["root-alias"]["modules"][0]["viewer_namespace"] == ""
+    assert by_run["root-alias"]["components"][0]["viewer_entity_id"] == "COMP-1"
+
+
 def test_same_path_scoped_history_does_not_cross_match_subsystems(tmp_path):
     _write_child(tmp_path, "alpha")
     _write_child(tmp_path, "beta")
