@@ -484,13 +484,26 @@ def bound_diagram_spec(
         )
 
     def visit(current: DiagramSpec, depth: int) -> DiagramSpec:
+        def prune_empty_containers(value: DiagramSpec) -> DiagramSpec:
+            if value.layout != "logical-detail":
+                return value
+            containers = [*value.groups, *value.lanes]
+            occupied = {node.group for node in value.nodes if node.group} | {node.lane for node in value.nodes if node.lane}
+            parents = {item.parent for item in containers if item.id in occupied and item.parent}
+            while not parents <= occupied:
+                occupied.update(parents)
+                parents = {item.parent for item in containers if item.id in occupied and item.parent}
+            value.groups = [item for item in value.groups if item.id in occupied]
+            value.lanes = [item for item in value.lanes if item.id in occupied]
+            return value
+
         result = deepcopy(current)
         result.drilldowns = [
             DiagramDrilldown(item.id, item.source, item.target, item.spec_ref, item.route, visit(item.spec, depth + 1) if item.spec else None)
             for item in result.drilldowns
         ]
         if len(result.nodes) <= max_nodes and len(result.edges) <= max_edges:
-            return result
+            return prune_empty_containers(result)
 
         ordered = list(result.nodes)
         keep_count = max_nodes - 1
@@ -501,7 +514,7 @@ def bound_diagram_spec(
             result.edges = result.edges[:max_edges]
             result.nodes = selected
             result.drilldowns = [item for item in result.drilldowns if item.source in selected_ids]
-            return result
+            return prune_empty_containers(result)
         if depth >= max_depth:
             raise ValueError(f"Diagram drilldown depth exceeds safe limit {max_depth}: {current.id}")
 
@@ -535,7 +548,7 @@ def bound_diagram_spec(
             "bounded": True,
             "omitted_edge_records": [asdict(edge) for edge in original_edges if edge not in retained_edges and edge not in child_edges],
         }
-        return result
+        return prune_empty_containers(result)
 
     bounded_spec = visit(spec, 0)
     bounded_spec.validate()

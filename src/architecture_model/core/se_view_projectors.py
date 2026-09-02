@@ -208,7 +208,10 @@ def _scenario_drilldown(context: ArchitectureViewContext, behavior: IndexedEntit
     nodes.extend(_support_nodes(behavior, "moe", getattr(behavior.value, "moes", []) or ["No measures defined"]))
     nodes.extend(_support_nodes(behavior, "failure", getattr(behavior.value, "failure_modes", []) or ["No failure modes defined"]))
     nodes.extend(_support_nodes(behavior, "monitoring", getattr(behavior.value, "monitored", []) or []))
-    return DiagramSpec(f"conops-detail:{behavior.key}", f"Scenario: {behavior.name}", nodes=nodes, edges=edges)
+    return DiagramSpec(
+        f"conops-detail:{behavior.key}", f"Scenario: {behavior.name}",
+        layout="operational-detail", nodes=nodes, edges=edges,
+    )
 
 
 def _participant_drilldown(
@@ -249,7 +252,10 @@ def _participant_drilldown(
         refs = [item.key] if entity is None else [entity.key, item.key]
         edges.append(DiagramEdge(root.id, detail_id, "participates", inferred=True,
                                  evidence=[_derived("participant-association", refs)]))
-    return DiagramSpec(f"participant-detail:{node.id}", f"Participant: {node.label}", nodes=nodes, edges=edges)
+    return DiagramSpec(
+        f"participant-detail:{node.id}", f"Participant: {node.label}",
+        layout="detail-cards", nodes=nodes, edges=edges,
+    )
 
 
 def _external_evidence(context: ArchitectureViewContext) -> dict[str, tuple[str, list[DiagramProvenance]]]:
@@ -321,7 +327,10 @@ def _merge_specs(identifier: str, title: str, specs: Iterable[DiagramSpec]) -> D
                 existing.count += edge.count
                 existing.evidence = list(dict.fromkeys([*existing.evidence, *edge.evidence]))
         warnings.extend(spec.warnings)
-    return DiagramSpec(identifier, title, nodes=list(nodes.values()), edges=list(edges.values()), warnings=warnings)
+    return DiagramSpec(
+        identifier, title, layout="operational-detail",
+        nodes=list(nodes.values()), edges=list(edges.values()), warnings=warnings,
+    )
 
 
 def _curated_scenario_spec(
@@ -480,7 +489,7 @@ def _project_curated_conops(
         drilldowns.append(DiagramDrilldown(
             drilldown_id, external_id,
             spec=DiagramSpec(
-                f"conops-external:{external_id}", label,
+                f"conops-external:{external_id}", label, layout="detail-cards",
                 nodes=[DiagramNode(item.id, item.name, "external", inferred=True, evidence=_curated_provenance(item.evidence)) for item in group],
             ),
         ))
@@ -494,14 +503,14 @@ def _project_curated_conops(
         ))
         drilldowns.append(DiagramDrilldown(
             drilldown_id, system_id,
-            spec=_entity_list_spec("conops-system-boundary", "Operational System Boundary", boundary_systems),
+            spec=_logical_entity_spec("conops-system-boundary", "Operational System Boundary", boundary_systems, layout="operational-detail"),
         ))
     callouts: list[DiagramCallout] = []
     if reserve_outcome:
         outcome_id = "conops:outcomes"
         outcome_evidence = [evidence for values in scenario_outcomes.values() for _, _, items in values for evidence in items]
         outcome_detail = DiagramSpec(
-            "conops-outcomes", "Operational Outcomes",
+            "conops-outcomes", "Operational Outcomes", layout="detail-cards",
             nodes=[
                 DiagramNode(
                     f"outcome:{scenario_id}:{index}", value, "outcome", subtitle=scenario_id,
@@ -944,7 +953,7 @@ def _functional_drilldown(
     nodes.extend(_support_nodes(capability, "moe", moes))
     nodes.extend(_support_nodes(capability, "failure", failures))
     nodes.extend(_support_nodes(capability, "monitoring", sorted({value for item in subtree for value in item.value.monitored})))
-    return DiagramSpec(f"functional-detail:{capability.key}", f"Function: {capability.name}", direction="TB", nodes=nodes, edges=edges,
+    return DiagramSpec(f"functional-detail:{capability.key}", f"Function: {capability.name}", direction="TB", layout="functional-detail", nodes=nodes, edges=edges,
                        provenance=DiagramProvenance("capability-subtree", owner_refs))
 
 
@@ -995,6 +1004,8 @@ def _project_curated_functional(
             for capability in capabilities
         ]
         detail = _merge_specs(f"functional-detail:{group.id}", f"Function: {group.label}", details)
+        detail.layout = "functional-detail"
+        detail.edges = _logical_backbone(detail.edges, detail.nodes, 12)
         detail.provenance = _derived("curated-functional-group", [item.key for item in capabilities], group=group.id)
         drilldowns.append(DiagramDrilldown(drilldown_id, group.id, spec=detail))
     flows: dict[tuple[str, str, str, str], DiagramEdge] = {}
@@ -1231,8 +1242,10 @@ def _logical_facets(
     }
 
 
-def _logical_entity_spec(identifier: str, title: str, entities: Iterable[IndexedEntity]) -> DiagramSpec:
-    return DiagramSpec(identifier, title, nodes=[
+def _logical_entity_spec(
+    identifier: str, title: str, entities: Iterable[IndexedEntity], *, layout: str = "detail-cards",
+) -> DiagramSpec:
+    return DiagramSpec(identifier, title, layout=layout, nodes=[
         DiagramNode(_node_id(item.key), item.name, item.entity_type, entity_ref=item.key, evidence=[_provenance(item)])
         for item in sorted(entities, key=lambda value: value.key)
     ])
@@ -1252,10 +1265,9 @@ def _logical_system_drilldown(
     reserve = 1 if len(entities) > max_nodes else 0
     selected = entities[:max_nodes - reserve]
     selected_keys = {item.key for item in selected}
-    groups = [DiagramGroup(f"detail-tier:{tier}", label, "tier", order=index) for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)]
     nodes = []
     for item in selected:
-        group = f"detail-tier:{_logical_tier(item)}" if item.entity_type in {"component", "layer"} else ""
+        lane = f"detail-tier:{_logical_tier(item)}"
         badges = _badges(item)
         if item.entity_type == "component":
             badges.extend([
@@ -1263,7 +1275,7 @@ def _logical_system_drilldown(
                 f"monitoring:{len(item.value.monitored) + len(item.value.observability)}",
             ])
         nodes.append(DiagramNode(
-            _node_id(item.key), _label(item, curation), item.entity_type, group=group,
+            _node_id(item.key), _label(item, curation), item.entity_type, lane=lane,
             entity_ref=item.key, badges=badges, evidence=[_provenance(item)],
         ))
     edges = [
@@ -1272,7 +1284,17 @@ def _logical_system_drilldown(
         if visible(rel.source) and visible(rel.target)
         and rel.source in selected_keys and rel.target in selected_keys
     ]
-    warnings = []
+    populated_tiers = {node.lane for node in nodes if node.lane}
+    lanes = [
+        DiagramGroup(f"detail-tier:{tier}", label, "tier", order=index)
+        for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)
+        if f"detail-tier:{tier}" in populated_tiers
+    ]
+    omitted_tiers = [label for tier, label, _ in _LOGICAL_TIERS if f"detail-tier:{tier}" not in populated_tiers]
+    warnings = [Diagnostic(
+        "info", "LOGICAL_EMPTY_GROUP_OMITTED",
+        f"Empty logical tiers omitted: {', '.join(omitted_tiers)}", view="logical",
+    )] if omitted_tiers else []
     omitted = [item for item in entities if item.key not in selected_keys]
     drilldowns = []
     if omitted:
@@ -1291,8 +1313,8 @@ def _logical_system_drilldown(
             f"{len(omitted)} internal entities omitted", view="logical",
         ))
     return DiagramSpec(
-        f"logical-detail:{system.key}", f"System: {system.name}", direction="TB",
-        nodes=nodes, edges=edges, groups=groups, warnings=warnings, drilldowns=drilldowns,
+        f"logical-detail:{system.key}", f"System: {system.name}", direction="TB", layout="logical-detail",
+        nodes=nodes, edges=_logical_backbone(edges, nodes, 6), lanes=lanes, warnings=warnings, drilldowns=drilldowns,
         provenance=_derived("system-boundary", [system.key, *[item.key for item in entities]]),
     )
 
@@ -1888,7 +1910,7 @@ def _use_case_drilldown(
                     evidence=[_derived("behavior-state-transition", [behavior.key], state=state.name)],
                 ))
     return DiagramSpec(
-        f"use-case-detail:{behavior.key}", f"Use Case: {behavior.name}", direction="TB",
+        f"use-case-detail:{behavior.key}", f"Use Case: {behavior.name}", direction="TB", layout="use-case-sequence",
         nodes=nodes, edges=edges, groups=groups, warnings=warnings,
         provenance=_derived("behavior-detail", [behavior.key]),
     )

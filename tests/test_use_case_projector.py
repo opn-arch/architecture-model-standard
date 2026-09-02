@@ -119,6 +119,7 @@ def test_use_case_structured_drilldown_has_sequence_io_errors_and_outcomes(tmp_p
     case = next(node for node in spec.nodes if node.entity_ref == "root::BEH-00")
     detail = next(item.spec for item in spec.drilldowns if item.id == case.drilldown_ref)
     assert detail is not None
+    assert detail.layout == "use-case-sequence"
     steps = sorted((node for node in detail.nodes if node.kind == "step"), key=lambda node: node.metrics["order"])
     assert len(steps) == 2
     assert steps[0].metrics["input"] == "request-0" and steps[1].metrics["output"] == "result-0"
@@ -131,6 +132,9 @@ def test_use_case_structured_drilldown_has_sequence_io_errors_and_outcomes(tmp_p
     assert any(node.kind == "precondition" for node in detail.nodes)
     assert any(node.kind in {"postcondition", "success-criterion", "moe"} for node in detail.nodes)
     assert {group.kind for group in detail.groups} >= {"lane"}
+    assert [node.metrics["order"] for node in detail.nodes if node.kind == "step"] == sorted(
+        node.metrics["order"] for node in detail.nodes if node.kind == "step"
+    )
 
 
 def test_use_case_plain_steps_are_marked_lower_evidence(tmp_path):

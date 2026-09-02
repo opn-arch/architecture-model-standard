@@ -281,6 +281,7 @@ def test_conops_curated_scenarios_are_primary_aggregates_with_flows_and_drilldow
     )
     scenario = next(node for node in spec.nodes if node.id == "scenario-acquire")
     detail = next(item.spec for item in spec.drilldowns if item.id == scenario.drilldown_ref)
+    assert detail.layout == "operational-detail"
     refs = {node.entity_ref for node in detail.nodes}
     assert {"root::BEH-2", "root::SYS-1", "root::IF-1"} <= refs
     assert any(node.kind == "failure" for node in detail.nodes)
@@ -342,12 +343,14 @@ relationships: []
     outcomes = next(node for node in spec.nodes if node.id == "conops:outcomes")
     assert outcomes.badges == ["outcomes:5", "scenarios:5"] and outcomes.inferred
     outcome_detail = next(item.spec for item in spec.drilldowns if item.id == outcomes.drilldown_ref)
+    assert outcome_detail.layout == "detail-cards"
     assert {node.label for node in outcome_detail.nodes} == {f"Outcome {index}" for index in range(5)}
     assert all(node.inferred and node.evidence for node in outcome_detail.nodes)
     boundary = next(node for node in spec.nodes if node.id == "conops:system-boundary")
     assert boundary.label == "Operational System Boundary"
     assert all(any(edge.source == scenario.id and edge.target == boundary.id for edge in spec.edges) for scenario in scenarios)
     boundary_detail = next(item.spec for item in spec.drilldowns if item.id == boundary.drilldown_ref)
+    assert boundary_detail.layout == "operational-detail"
     assert len([node for node in boundary_detail.nodes if node.kind == "system"]) == 8
     bundled_detail_refs = {
         child.id
@@ -424,6 +427,10 @@ def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows(
         "ext-github-opencode", "ext-onedrive-onenote", "ext-ai-services",
         "ext-oura", "ext-google-sheets",
     }
+    assert all(
+        item.spec.layout == "detail-cards"
+        for node in externals for item in spec.drilldowns if item.id == node.drilldown_ref
+    )
     assert len([
         edge for edge in spec.edges
         if edge.kind in {"exchange", "operational-flow", "data-flow"} and edge.target != "conops:outcomes"

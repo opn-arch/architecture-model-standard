@@ -1018,3 +1018,103 @@ def test_drilldown_panels_are_keyed_exactly_and_nested_specs_render_independentl
     assert panels["a-link"].diagram_id == "detail-a"
     assert panels["z-link"].diagram_id == "detail-z"
     assert panels["z-link"].drilldowns["deep-link"].diagram_id == "deep"
+
+
+@pytest.mark.parametrize("layout", ["detail-cards", "operational-detail", "functional-detail", "logical-detail", "use-case-sequence"])
+def test_semantic_drilldown_layouts_are_compact_and_well_utilized(layout: str) -> None:
+    lanes = [DiagramGroup("lane-a", "Primary", "tier", order=0), DiagramGroup("lane-b", "Secondary", "tier", order=1)] if layout == "logical-detail" else []
+    nodes = [
+        DiagramNode(
+            f"n-{index}", f"Node {index}",
+            "capability" if layout == "functional-detail" and index < 3 else "step" if layout == "use-case-sequence" else "component",
+            lane="lane-a" if lanes and index < 6 else "lane-b" if lanes else "",
+            metrics={"order": index} if layout == "use-case-sequence" else {},
+        )
+        for index in range(12)
+    ]
+    edges = [DiagramEdge(f"n-{index}", f"n-{index + 1}", "next") for index in range(11)]
+    root = _root(render_diagram_svg(DiagramSpec("semantic", "Semantic", layout=layout, nodes=nodes, edges=edges, lanes=lanes)))
+    _, _, width, height = [float(value) for value in root.attrib["viewBox"].split()]
+    rendered = _boxes(root)
+
+    assert width <= 1800 and height <= 1200
+    assert sum(box[2] * box[3] for box in rendered) / (width * height) >= .25
+    nodes_by_id = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+    for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+        unrelated = [box for identifier, box in nodes_by_id.items() if identifier not in {edge.attrib["data-source"], edge.attrib["data-target"]}]
+        assert all(not _segment_crosses_box(segment, box) for segment in _route_segments(edge.attrib["d"]) for box in unrelated)
+    assert _visual_crossings(root)[0] <= 1
+
+
+def test_conops_overview_shows_only_source_and_scenario_chain_labels_with_full_titles() -> None:
+    spec = DiagramSpec(
+        "conops-labels", "ConOps", layout="operational-lanes",
+        lanes=[
+            DiagramGroup("actors", "Actors", "lane", order=0), DiagramGroup("scenarios", "Scenarios", "lane", order=1),
+            DiagramGroup("boundary", "Boundary", "lane", order=2), DiagramGroup("outcomes", "Outcomes", "lane", order=3),
+        ],
+        nodes=[
+            DiagramNode("external", "Source", "external", lane="actors"),
+            DiagramNode("acquire", "Acquire", "scenario", lane="scenarios"),
+            DiagramNode("enrich", "Enrich", "scenario", lane="scenarios"),
+            DiagramNode("system", "System", "system", lane="boundary"),
+            DiagramNode("outcome", "Outcome", "outcome", lane="outcomes"),
+        ],
+        edges=[
+            DiagramEdge("external", "acquire", "exchange", "Source records", title="Full source provenance"),
+            DiagramEdge("acquire", "enrich", "operational-flow", "Validated records", title="Full scenario exchange"),
+            DiagramEdge("acquire", "system", "allocation", "Delivered by", title="Full allocation provenance"),
+            DiagramEdge("enrich", "outcome", "operational-flow", "Published outcomes", title="Full outcome provenance"),
+        ],
+    )
+    root = _root(render_diagram_svg(spec))
+    labels = root.findall(".//svg:text[@data-edge-label]", SVG)
+
+    assert {label.text for label in labels} == {"Source records", "Validated records"}
+    assert all(edge.find("svg:title", SVG).text.startswith("Full ") for edge in root.findall(".//svg:path[@data-edge-id]", SVG))
+
+
+@pytest.mark.skipif(shutil.which("rsvg-convert") is None, reason="rsvg-convert is optional")
+def test_real_logs_db_largest_curated_panels_meet_drilldown_geometry(tmp_path) -> None:
+    from architecture_model.core.view_curation import load_viewer_curation
+
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    curated = load_viewer_curation(repo, context).views
+    specs = {
+        "conops": project_conops(context, curated.conops),
+        "functional": project_functional_architecture(context, curated.functional),
+        "logical": project_logical_architecture(context, curated.logical),
+        "use-cases": project_use_cases(context, curated.use_cases),
+    }
+    for name, root_spec in specs.items():
+        descendants = [root_spec]
+        for spec in descendants:
+            descendants.extend(item.spec for item in spec.drilldowns if item.spec)
+        rendered = [(spec, _root(render_diagram_svg(spec))) for spec in descendants]
+        spec, root = max(rendered, key=lambda item: len(item[1].findall(".//svg:g[@data-node-id]", SVG)))
+        _, _, width, height = [float(value) for value in root.attrib["viewBox"].split()]
+        nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+        containers = root.findall(".//svg:g[@data-container-id]", SVG)
+
+        assert width <= 1800 and height <= 1200, (name, spec.id, width, height)
+        if width > 800 or height > 800:
+            utilization = sum(box[2] * box[3] for box in nodes.values()) / (width * height)
+            assert utilization >= .25, (name, spec.id, utilization)
+        assert all(any(node.lane == item.attrib["data-container-id"] or node.group == item.attrib["data-container-id"] for node in spec.nodes) for item in containers)
+        for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+            unrelated = [box for identifier, box in nodes.items() if identifier not in {edge.attrib["data-source"], edge.attrib["data-target"]}]
+            assert all(not _segment_crosses_box(segment, box) for segment in _route_segments(edge.attrib["d"]) for box in unrelated), (name, spec.id)
+        assert _visual_crossings(root)[0] <= 1, (name, spec.id, _visual_crossings(root))
+
+        svg_path, png_path = tmp_path / f"{name}-{spec.id.replace(':', '-')}.svg", tmp_path / f"{name}.png"
+        svg_path.write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
+        subprocess.run(["rsvg-convert", str(svg_path), "-o", str(png_path)], check=True, capture_output=True)
+        assert png_path.stat().st_size > 0
+
+    conops = _root(render_diagram_svg(specs["conops"]))
+    labels = [_box(item) for item in conops.findall(".//svg:text[@data-edge-label]", SVG)]
+    assert all(not _overlaps(first, second) for index, first in enumerate(labels) for second in labels[index + 1:])
+    assert _visual_crossings(conops) == (0, 0)

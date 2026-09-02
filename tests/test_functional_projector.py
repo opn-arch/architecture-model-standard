@@ -255,6 +255,7 @@ def test_functional_curated_groups_are_primary_and_translate_member_flows(tmp_pa
     assert (spec.edges[0].source, spec.edges[0].target, spec.edges[0].count) == ("function-input", "function-output", 2)
     assert len(spec.edges[0].evidence) == 2
     detail = next(item.spec for item in spec.drilldowns if item.source == "function-input")
+    assert detail.layout == "functional-detail"
     assert {"root::CAP-A", "root::CAP-B"} <= {node.entity_ref for node in detail.nodes}
     assert all(node.label != "More Functions" for node in spec.nodes)
 

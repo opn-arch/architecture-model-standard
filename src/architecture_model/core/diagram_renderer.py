@@ -386,6 +386,81 @@ def _catalog_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[st
     return boxes
 
 
+def _semantic_detail_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, _Box]:
+    """Place drilldown content densely while preserving its semantic order."""
+    lane_order = {lane.id: index for index, lane in enumerate(sorted(spec.lanes, key=lambda item: (item.order, item.id)))}
+    ranks = _ranks(spec)
+
+    def key(node: DiagramNode) -> tuple[Any, ...]:
+        if spec.layout == "use-case-sequence":
+            return (0 if node.kind in {"actor", "external", "use-case"} else 1 if node.kind == "step" else 2,
+                    node.metrics.get("order", 0), node.id)
+        if spec.layout == "functional-detail":
+            return (ranks[node.id], 0 if node.kind in {"functional-block", "function", "capability"} else 1, node.kind, node.id)
+        if spec.layout == "logical-detail":
+            return (lane_order.get(node.lane, len(lane_order)), ranks[node.id], node.kind, node.id)
+        return (ranks[node.id], node.kind, node.id)
+
+    ordered = sorted(spec.nodes, key=key)
+    boxes: dict[str, _Box] = {}
+    origin_x, origin_y = options.margin + 20, options.margin + 72
+    x_step, y_step = options.node_width + 24, options.node_height + 24
+    if spec.layout == "operational-detail":
+        neighbors: dict[str, set[str]] = {node.id: set() for node in ordered}
+        for edge in spec.edges:
+            neighbors[edge.source].add(edge.target)
+            neighbors[edge.target].add(edge.source)
+        seen: set[str] = set()
+        components: list[list[DiagramNode]] = []
+        by_id = {node.id: node for node in ordered}
+        for node in ordered:
+            if node.id in seen:
+                continue
+            stack, component = [node.id], []
+            while stack:
+                identifier = stack.pop()
+                if identifier in seen:
+                    continue
+                seen.add(identifier)
+                component.append(by_id[identifier])
+                stack.extend(sorted(neighbors[identifier] - seen, reverse=True))
+            components.append(sorted(component, key=lambda item: (-len(neighbors[item.id]), key(item))))
+        if len(components) > 1:
+            rows = [component[index:index + 5] for component in components if len(component) > 1 for index in range(0, len(component), 5)]
+            isolated = [component[0] for component in components if len(component) == 1]
+            rows.extend(isolated[index:index + 5] for index in range(0, len(isolated), 5))
+            for row, members in enumerate(rows):
+                for column, node in enumerate(members):
+                    boxes[node.id] = _Box(origin_x + column * x_step, origin_y + row * y_step,
+                                          options.node_width, _node_height(node, options))
+            return boxes
+    if spec.layout == "logical-detail" and spec.lanes:
+        y = origin_y
+        for lane in sorted(spec.lanes, key=lambda item: (item.order, item.id)):
+            members = [node for node in ordered if node.lane == lane.id]
+            for index, node in enumerate(members):
+                row, column = divmod(index, 5)
+                if row % 2:
+                    column = 4 - column
+                boxes[node.id] = _Box(origin_x + column * x_step, y + row * y_step,
+                                      options.node_width, _node_height(node, options))
+            row_count = max(1, (len(members) + 4) // 5)
+            y += row_count * y_step + 32
+        unassigned = [node for node in ordered if not node.lane]
+        for column, node in enumerate(unassigned):
+            boxes[node.id] = _Box(origin_x + column * x_step, y, options.node_width, _node_height(node, options))
+        return boxes
+
+    columns = min(6 if spec.layout == "use-case-sequence" else 4, max(len(ordered), 1))
+    for index, node in enumerate(ordered):
+        row, column = divmod(index, columns)
+        if row % 2:
+            column = columns - column - 1
+        boxes[node.id] = _Box(origin_x + column * x_step, origin_y + row * y_step,
+                              options.node_width, _node_height(node, options))
+    return boxes
+
+
 def _use_case_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], index: int) -> str:
     source, target = boxes[edge.source], boxes[edge.target]
     if edge.kind != "participates":
@@ -443,7 +518,9 @@ def _operational_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], nodes: dic
 
 def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
     direction = spec.direction.upper()
-    if spec.layout == "functional-flow":
+    if spec.layout in {"detail-cards", "operational-detail", "functional-detail", "logical-detail", "use-case-sequence"}:
+        boxes = _semantic_detail_layout(spec, options)
+    elif spec.layout == "functional-flow":
         boxes = _functional_flow_layout(spec, options)
     elif spec.layout == "use-case-catalog":
         boxes = _catalog_layout(spec, options)
@@ -746,6 +823,34 @@ def _lane_edge_path(source: _Box, target: _Box, direction: str, track: int, obst
     return _points_path(candidates[-1])
 
 
+def _semantic_edge_path(source: _Box, target: _Box, track: int) -> str:
+    """Route through the compact grid gutters instead of across detail cards."""
+    offset = 8 + track * 2
+    source_center = source.x + source.width / 2
+    target_center = target.x + target.width / 2
+    if source.y == target.y:
+        gutter_y = source.y - offset
+        return _points_path([
+            (source_center, source.y), (source_center, gutter_y),
+            (target_center, gutter_y), (target_center, target.y),
+        ])
+    downward = source.y < target.y
+    source_y = source.y + source.height if downward else source.y
+    target_y = target.y if downward else target.y + target.height
+    source_gutter = source_y + (offset if downward else -offset)
+    target_gutter = target_y - (offset if downward else -offset)
+    corridor_x = (
+        min(source.x, target.x) - offset
+        if downward
+        else max(source.x + source.width, target.x + target.width) + offset
+    )
+    return _points_path([
+        (source_center, source_y), (source_center, source_gutter),
+        (corridor_x, source_gutter), (corridor_x, target_gutter),
+        (target_center, target_gutter), (target_center, target_y),
+    ])
+
+
 def _edge_style(edge: DiagramEdge) -> str:
     requested = edge.style.lower().strip()
     if requested not in _ALLOWED_EDGE_STYLES:
@@ -781,7 +886,10 @@ def _edge_svg(
         classes.append("is-critical")
     visible_label = "" if (
         layout == "logical-tiers" and kind in _DEPENDENCY_EDGE_KINDS and edge.count == 1
-        or layout == "operational-lanes" and nodes and nodes[edge.source].kind == "scenario" and nodes[edge.target].kind in {"system", "outcome"}
+        or layout == "operational-lanes" and nodes and not (
+            nodes[edge.source].kind in {"actor", "external"} and nodes[edge.target].kind == "scenario"
+            or nodes[edge.source].kind == "scenario" and nodes[edge.target].kind == "scenario"
+        )
     ) else edge.label
     if layout == "operational-lanes" and visible_label:
         visible_label = _lines(visible_label, 18, 1)[0]
@@ -789,7 +897,7 @@ def _edge_svg(
     label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
     track = index % 5
     obstacles = [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]
-    path = _operational_edge_path(edge, boxes, nodes or {}, index) if layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if layout == "use-case-catalog" else _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
+    path = _operational_edge_path(edge, boxes, nodes or {}, index) if layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if layout == "use-case-catalog" else _semantic_edge_path(boxes[edge.source], boxes[edge.target], track) if layout in {"detail-cards", "operational-detail", "functional-detail", "logical-detail", "use-case-sequence"} else _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
     evidence_title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
     detailed_label = edge.title or edge.label
@@ -991,10 +1099,15 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
         parallel_totals[(edge.source, edge.target)] = parallel_totals.get((edge.source, edge.target), 0) + 1
     parallel_seen: dict[tuple[str, str], int] = {}
     occupied_labels: list[_Box] = []
-    lane_aware = bool(spec.lanes) or spec.layout in {"functional-flow", "use-case-catalog"}
+    lane_aware = bool(spec.lanes) or spec.layout in {
+        "functional-flow", "use-case-catalog", "detail-cards", "operational-detail",
+        "functional-detail", "logical-detail", "use-case-sequence",
+    }
     node_lookup = {node.id: node for node in spec.nodes}
     routed_paths = [
-        _operational_edge_path(edge, boxes, node_lookup, index) if spec.layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if spec.layout == "use-case-catalog" else _lane_edge_path(
+        _operational_edge_path(edge, boxes, node_lookup, index) if spec.layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if spec.layout == "use-case-catalog" else _semantic_edge_path(
+            boxes[edge.source], boxes[edge.target], index % 5,
+        ) if spec.layout in {"detail-cards", "operational-detail", "functional-detail", "logical-detail", "use-case-sequence"} else _lane_edge_path(
             boxes[edge.source], boxes[edge.target], spec.direction.upper(), index % 5,
             [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}],
         ) if lane_aware else _edge_path(

@@ -124,7 +124,7 @@ def test_logical_system_drilldown_contains_layers_components_interfaces_and_face
     assert {"web::COMP-1", "web::IF-1", "web::CAP-1", "web::REQ-1"} <= {
         node.entity_ref for node in detail.nodes
     }
-    assert any(group.kind == "tier" for group in detail.groups)
+    assert any(lane.kind == "tier" for lane in detail.lanes)
     assert any(edge.kind == "exposes" for edge in detail.edges)
     component = next(node for node in detail.nodes if node.entity_ref == "web::COMP-1")
     assert {"monitoring:1", "failures:1"} <= set(component.badges)
@@ -363,6 +363,21 @@ def test_real_logs_db_logical_curation_has_one_five_lane_tier_representation():
     assert all(edge.evidence and edge.count >= 1 for edge in spec.edges)
     assert any(edge.style == "cycle" for edge in spec.edges)
     assert all(node.kind not in {"actor", "external", "summary"} for node in spec.nodes)
+    details = [item.spec for item in spec.drilldowns if item.spec and item.spec.id.startswith("logical-detail:")]
+    assert details
+    assert all(detail.layout == "logical-detail" for detail in details)
+    assert all(detail.lanes and not detail.groups for detail in details)
+    assert all(any(node.lane == lane.id for node in detail.nodes) for detail in details for lane in detail.lanes)
+    assert all(len({lane.label for lane in detail.lanes}) == len(detail.lanes) for detail in details)
+
+
+def test_logical_drilldown_omits_empty_tiers_and_reports_them(tmp_path):
+    spec = project_logical_architecture(_context(tmp_path))
+    detail = next(item.spec for item in spec.drilldowns if item.spec and item.spec.id.startswith("logical-detail:"))
+
+    assert detail.layout == "logical-detail"
+    assert all(any(node.lane == lane.id for node in detail.nodes) for lane in detail.lanes)
+    assert any(item.code == "LOGICAL_EMPTY_GROUP_OMITTED" for item in detail.warnings)
 
 
 def test_curated_logical_selects_deterministic_connected_backbone_and_preserves_full_edges(tmp_path):
