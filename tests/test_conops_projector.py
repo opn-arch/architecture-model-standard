@@ -1,8 +1,10 @@
 from pathlib import Path
 
+import pytest
+
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import CuratedExternal, CuratedGroup, EvidenceRecord, Selector, ViewCuration
+from architecture_model.core.view_curation import CuratedExternal, CuratedFlow, CuratedGroup, EvidenceRecord, Selector, ViewCuration, load_viewer_curation
 from architecture_model.core.se_view_projectors import project_conops
 
 
@@ -169,10 +171,10 @@ def test_conops_drilldown_and_curation_are_structural(tmp_path):
         drilldowns={"mission-detail": Selector(qualified_id="root::BEH-0", resolved_id="root::BEH-0")},
     )
     spec = project_conops(context, curation)
-    scenario = next(node for node in spec.nodes if node.entity_ref == "root::BEH-0")
+    scenario = next(node for node in spec.nodes if node.id == "priority")
     detail = next(item for item in spec.drilldowns if item.id == scenario.drilldown_ref).spec
-    assert scenario.drilldown_ref == "mission-detail"
-    assert scenario.label == "Curated Mission" and scenario.group == "priority"
+    assert scenario.label == "Priority"
+    assert next(node for node in detail.nodes if node.entity_ref == "root::BEH-0").label == "Curated Mission"
     assert detail and {node.kind for node in detail.nodes} >= {"behavior", "interface", "system", "requirement", "moe", "failure"}
 
 
@@ -242,3 +244,55 @@ def test_conops_renamed_actor_drilldown_uses_canonical_identity(tmp_path):
     observer = next(node for node in spec.nodes if node.entity_ref == "root::ACT-2")
     observer_detail = next(item.spec for item in spec.drilldowns if item.id == observer.drilldown_ref)
     assert "root::BEH-0" not in {node.entity_ref for node in observer_detail.nodes}
+
+
+def test_conops_curated_scenarios_are_primary_aggregates_with_flows_and_drilldowns(tmp_path):
+    context = _context(tmp_path, behaviors=4)
+    evidence = [EvidenceRecord("docs/evidence.md", "Observed curated exchange")]
+    curation = ViewCuration(
+        featured=[Selector(qualified_id="root::BEH-2", resolved_id="root::BEH-2")],
+        order=["root::BEH-2", "root::BEH-0"],
+        scenarios=[
+            CuratedGroup("scenario-acquire", "Acquire Knowledge", order=1, members=["root::BEH-2", "root::SYS-1"]),
+            CuratedGroup("scenario-use", "Use Knowledge", order=2, members=["root::BEH-0"]),
+        ],
+        externals=[CuratedExternal("ext-source", "Source System", True, evidence)],
+        flows=[
+            CuratedFlow("ext-source", "scenario-acquire", "exchange", "records", True, evidence),
+            CuratedFlow("scenario-acquire", "scenario-use", "operational-flow", "knowledge", True, evidence),
+            CuratedFlow("root::BEH-2", "root::BEH-0", "data-flow", "member evidence", True, evidence),
+        ],
+    )
+    spec = project_conops(context, curation, max_overview_nodes=6)
+    assert len(spec.nodes) <= 6
+    assert [node.label for node in spec.nodes if node.kind == "scenario"] == ["Acquire Knowledge", "Use Knowledge"]
+    assert all(node.entity_ref not in {"root::BEH-1", "root::BEH-3"} for node in spec.nodes)
+    assert {(edge.source, edge.target) for edge in spec.edges} >= {
+        ("ext-source", "scenario-acquire"), ("scenario-acquire", "scenario-use"),
+    }
+    assert any(
+        edge.source == "scenario-acquire" and edge.target == "scenario-use" and edge.label == "member evidence"
+        for edge in spec.edges
+    )
+    assert all(edge.evidence and edge.inferred for edge in spec.edges if edge.kind in {"exchange", "operational-flow"})
+    scenario = next(node for node in spec.nodes if node.id == "scenario-acquire")
+    detail = next(item.spec for item in spec.drilldowns if item.id == scenario.drilldown_ref)
+    refs = {node.entity_ref for node in detail.nodes}
+    assert {"root::BEH-2", "root::SYS-1", "root::IF-1"} <= refs
+    assert any(node.kind == "failure" for node in detail.nodes)
+    assert not spec.callouts
+
+
+def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows():
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    curation = load_viewer_curation(repo, context).views.conops
+    spec = project_conops(context, curation)
+    labels = [node.label for node in spec.nodes if node.kind == "scenario"]
+    assert labels == ["Acquire Knowledge", "Enrich & Organize", "Search & Use", "Review & Govern", "Learn & Improve"]
+    assert all("CLI" not in node.label and "Audit Kb" not in node.label for node in spec.nodes)
+    assert {node.id for node in spec.nodes} >= {"ext-github-opencode", "ext-ai-services"}
+    assert len([edge for edge in spec.edges if edge.kind in {"exchange", "operational-flow", "data-flow"}]) == 10
+    assert len(spec.nodes) <= 15

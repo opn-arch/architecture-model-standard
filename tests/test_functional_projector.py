@@ -1,9 +1,11 @@
 import random
 from pathlib import Path
 
+import pytest
+
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import CuratedFlow, CuratedGroup, EvidenceRecord, Selector, ViewCuration
+from architecture_model.core.view_curation import CuratedFlow, CuratedGroup, EvidenceRecord, Selector, ViewCuration, load_viewer_curation
 from architecture_model.core.se_view_projectors import project_functional_architecture
 
 
@@ -172,10 +174,12 @@ def test_functional_groups_featured_capabilities_and_bounds_orphans(tmp_path):
         hide=[Selector(qualified_id="root::CAP-A", resolved_id="root::CAP-A")],
     )
     spec = project_functional_architecture(context, curation, max_overview_nodes=4)
-    nodes = {node.entity_ref: node for node in spec.nodes if node.entity_ref}
     assert len(spec.nodes) <= 4
-    assert "root::CAP-A" not in nodes
-    assert nodes["root::CAP-B"].group == "priority"
+    assert [(node.id, node.label) for node in spec.nodes] == [("priority", "Priority")]
+    detail = next(item.spec for item in spec.drilldowns if item.source == "priority")
+    refs = {node.entity_ref for node in detail.nodes}
+    assert "root::CAP-A" not in refs
+    assert "root::CAP-B" in refs
 
 
 def test_functional_curated_drilldown_key_replaces_generated_presentation_id(tmp_path):
@@ -227,3 +231,45 @@ def test_functional_orphan_and_omitted_summaries_are_bounded_and_navigable(tmp_p
         detail = next(item.spec for item in spec.drilldowns if item.id == node.drilldown_ref)
         assert detail and detail.nodes
         assert all(item.entity_ref and item.evidence for item in detail.nodes)
+
+
+def test_functional_curated_groups_are_primary_and_translate_member_flows(tmp_path):
+    context = _context(tmp_path, ["MISSION", "CAP-A", "CAP-B", "CAP-C"])
+    evidence = [EvidenceRecord("docs/evidence.md", "Observed functional exchange")]
+    curation = ViewCuration(
+        groups=[
+            CuratedGroup("function-input", "Input", order=1, members=["root::CAP-A", "root::CAP-B"]),
+            CuratedGroup("function-output", "Output", order=2, members=["root::CAP-C"]),
+        ],
+        flows=[
+            CuratedFlow("root::CAP-A", "root::CAP-C", "data-flow", "records", True, evidence),
+            CuratedFlow("root::CAP-B", "root::CAP-C", "data-flow", "records", True, evidence),
+        ],
+    )
+    spec = project_functional_architecture(context, curation, max_overview_nodes=3)
+    assert [(node.id, node.label) for node in spec.nodes] == [
+        ("function-input", "Input"), ("function-output", "Output"),
+    ]
+    assert len(spec.edges) == 1
+    assert (spec.edges[0].source, spec.edges[0].target, spec.edges[0].count) == ("function-input", "function-output", 2)
+    assert len(spec.edges[0].evidence) == 2
+    detail = next(item.spec for item in spec.drilldowns if item.source == "function-input")
+    assert {"root::CAP-A", "root::CAP-B"} <= {node.entity_ref for node in detail.nodes}
+    assert all(node.label != "More Functions" for node in spec.nodes)
+
+
+def test_real_logs_db_functional_curation_projects_exact_groups_and_flows():
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    curation = load_viewer_curation(repo, context).views.functional
+    spec = project_functional_architecture(context, curation)
+    assert [node.label for node in spec.nodes] == [
+        "Ingestion", "Classification & Enrichment", "Curation & Audit", "Search & Graph",
+        "Review & Lifecycle", "Project Context", "Documentation Automation",
+        "Training & Evaluation", "Architecture & Drift", "Persistence & Schema",
+    ]
+    assert len(spec.edges) == 7
+    assert all("001" not in node.label and "010" not in node.label and "More Functions" not in node.label for node in spec.nodes)
+    assert len(spec.nodes) <= 15

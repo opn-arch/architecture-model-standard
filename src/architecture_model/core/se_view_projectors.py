@@ -60,6 +60,16 @@ def _curated_provenance(evidence: Iterable[EvidenceRecord]) -> list[DiagramProve
     return [DiagramProvenance("curated-inference", source_files=[item.source], context={"claim": item.claim}) for item in evidence]
 
 
+def _curated_flow_provenance(flow: object) -> list[DiagramProvenance]:
+    return [
+        DiagramProvenance(
+            "curated-inference", source_files=[item.source],
+            context={"claim": item.claim, "source": flow.source, "target": flow.target},
+        )
+        for item in flow.evidence
+    ]
+
+
 def _find_local(context: ArchitectureViewContext, owner: str, reference: str) -> IndexedEntity | None:
     if not reference:
         return None
@@ -269,6 +279,178 @@ def _owning_system(context: ArchitectureViewContext, model: str) -> IndexedEntit
     return None
 
 
+def _merge_specs(identifier: str, title: str, specs: Iterable[DiagramSpec]) -> DiagramSpec:
+    nodes: dict[str, DiagramNode] = {}
+    edges: dict[tuple[str, str, str, str], DiagramEdge] = {}
+    warnings: list[Diagnostic] = []
+    for spec in specs:
+        nodes.update((node.id, node) for node in spec.nodes)
+        for edge in spec.edges:
+            key = (edge.source, edge.target, edge.kind, edge.label)
+            if key not in edges:
+                edges[key] = edge
+            else:
+                existing = edges[key]
+                existing.count += edge.count
+                existing.evidence = list(dict.fromkeys([*existing.evidence, *edge.evidence]))
+        warnings.extend(spec.warnings)
+    return DiagramSpec(identifier, title, nodes=list(nodes.values()), edges=list(edges.values()), warnings=warnings)
+
+
+def _curated_scenario_spec(
+    context: ArchitectureViewContext, scenario: object, curation: ViewCuration,
+) -> DiagramSpec:
+    members = [context.entity(key, diagnose=False) for key in scenario.members]
+    members = [item for item in members if item]
+    behaviors = [item for item in members if item.entity_type == "behavior"]
+    systems = [item for item in members if item.entity_type == "system"]
+    specs = [_scenario_drilldown(context, behavior, curation) for behavior in behaviors]
+    merged = _merge_specs(f"conops-detail:{scenario.id}", f"Scenario: {scenario.label}", specs)
+    present = {node.entity_ref for node in merged.nodes if node.entity_ref}
+    for system in systems:
+        if system.key not in present:
+            merged.nodes.append(DiagramNode(
+                _node_id(system.key), _label(system, curation), "system",
+                entity_ref=system.key, evidence=[_provenance(system)],
+            ))
+    merged.provenance = _derived("curated-scenario", [item.key for item in members], scenario=scenario.id)
+    merged.validate()
+    return merged
+
+
+def _project_curated_conops(
+    context: ArchitectureViewContext, curation: ViewCuration, limit: int,
+) -> DiagramSpec:
+    warnings = _curation_diagnostics("conops", context, curation)
+    featured = {item.resolved_id for item in curation.featured if item.resolved_id}
+    order = {key: index for index, key in enumerate(curation.order)}
+    scenarios = sorted(curation.scenarios, key=lambda item: (
+        not any(member in featured for member in item.members),
+        min((order.get(member, len(order)) for member in item.members), default=len(order)),
+        item.order, item.id,
+    ))
+    flow_external_ids = {endpoint for flow in curation.flows for endpoint in (flow.source, flow.target)}
+    externals = [item for item in curation.externals if item.id in flow_external_ids]
+    scenario_count = min(len(scenarios), limit)
+    support_budget = max(0, limit - scenario_count)
+    member_systems = sorted({
+        item.key: item for scenario in scenarios[:scenario_count] for key in scenario.members
+        if (item := context.entity(key, diagnose=False)) and item.entity_type == "system"
+    }.values(), key=lambda item: item.key)
+    member_behaviors = [
+        item for scenario in scenarios[:scenario_count] for key in scenario.members
+        if (item := context.entity(key, diagnose=False)) and item.entity_type == "behavior"
+    ]
+    outcome_values = sorted({value for item in member_behaviors for value in [*item.value.postconditions, *item.value.goals, *item.value.moes] if value})
+    reserve_system = bool(member_systems) and support_budget > 0
+    reserve_outcome = bool(outcome_values) and support_budget > int(reserve_system)
+    external_budget = max(0, support_budget - int(reserve_system) - int(reserve_outcome))
+    aggregate_externals = len(externals) > external_budget and external_budget > 0
+    selected_externals = [] if aggregate_externals else externals[:external_budget]
+    nodes: list[DiagramNode] = []
+    drilldowns: list[DiagramDrilldown] = []
+    endpoint_ids: dict[str, str] = {}
+    for scenario in scenarios[:scenario_count]:
+        endpoint_ids.update({member: scenario.id for member in scenario.members})
+        members = [context.entity(key, diagnose=False) for key in scenario.members]
+        members = [item for item in members if item]
+        behaviors = [item for item in members if item.entity_type == "behavior"]
+        systems = [item for item in members if item.entity_type == "system"]
+        interfaces = sorted({ref for item in behaviors for ref in item.value.interface_refs})
+        requirements = sorted({ref for item in behaviors for ref in item.value.requirements})
+        evidence = [_provenance(item) for item in members]
+        drilldown_id = f"drilldown:{scenario.id}"
+        nodes.append(DiagramNode(
+            scenario.id, scenario.label, "scenario", lane="scenarios", drilldown_ref=drilldown_id,
+            badges=[f"behaviors:{len(behaviors)}", f"systems:{len(systems)}", f"interfaces:{len(interfaces)}", f"requirements:{len(requirements)}"],
+            evidence=evidence,
+        ))
+        endpoint_ids[scenario.id] = scenario.id
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, scenario.id, spec=_curated_scenario_spec(context, scenario, curation),
+        ))
+    for external in selected_externals:
+        evidence = _curated_provenance(external.evidence)
+        drilldown_id = f"drilldown:{external.id}"
+        node = DiagramNode(external.id, external.name, "external", lane="actors", status="inferred",
+                           inferred=True, drilldown_ref=drilldown_id, evidence=evidence)
+        nodes.append(node)
+        endpoint_ids[external.id] = external.id
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, external.id,
+            spec=_participant_drilldown(context, node, None, evidence, curation),
+        ))
+    if aggregate_externals:
+        aggregate_id = "conops:external-sources"
+        evidence = [item for external in externals for item in _curated_provenance(external.evidence)]
+        drilldown_id = f"drilldown:{aggregate_id}"
+        nodes.append(DiagramNode(
+            aggregate_id, f"External Sources ({len(externals)})", "external", lane="actors",
+            status="summary", inferred=True, drilldown_ref=drilldown_id, evidence=evidence,
+        ))
+        for external in externals:
+            endpoint_ids[external.id] = aggregate_id
+        detail_nodes = [DiagramNode(
+            external.id, external.name, "external", inferred=True,
+            evidence=_curated_provenance(external.evidence),
+        ) for external in externals]
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, aggregate_id,
+            spec=DiagramSpec("conops-external-sources", "External Sources", nodes=detail_nodes),
+        ))
+    if reserve_system:
+        system_id = "conops:system-boundary"
+        drilldown_id = f"drilldown:{system_id}"
+        nodes.append(DiagramNode(
+            system_id, "System Boundary", "system", lane="boundary", status="summary",
+            drilldown_ref=drilldown_id, badges=[f"systems:{len(member_systems)}"],
+            evidence=[_provenance(item) for item in member_systems],
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, system_id,
+            spec=_entity_list_spec("conops-system-boundary", "Participating Systems", member_systems),
+        ))
+    callouts: list[DiagramCallout] = []
+    if reserve_outcome:
+        outcome_id = "conops:outcomes"
+        nodes.append(DiagramNode(
+            outcome_id, "Operational Outcomes", "outcome", lane="outcomes", status="summary",
+            badges=[f"outcomes:{len(outcome_values)}"],
+            evidence=[_derived("curated-scenario-outcomes", [item.key for item in member_behaviors])],
+        ))
+    elif not outcome_values and nodes:
+        callouts.append(DiagramCallout(
+            "conops:outcomes-unspecified", "Operational outcomes not specified", nodes[0].id,
+            "diagnostic", [item.key for item in member_behaviors],
+        ))
+    flow_values: dict[tuple[str, str, str, str], DiagramEdge] = {}
+    canonical_nodes = {node.entity_ref: node.id for node in nodes if node.entity_ref}
+    for flow in curation.flows:
+        source = endpoint_ids.get(flow.source, canonical_nodes.get(flow.source, flow.source if flow.source in {node.id for node in nodes} else ""))
+        target = endpoint_ids.get(flow.target, canonical_nodes.get(flow.target, flow.target if flow.target in {node.id for node in nodes} else ""))
+        if not source or not target or source == target:
+            continue
+        key = (source, target, flow.kind, flow.label)
+        evidence = _curated_flow_provenance(flow)
+        if key not in flow_values:
+            flow_values[key] = DiagramEdge(source, target, flow.kind, flow.label, inferred=flow.inferred, evidence=[])
+        edge = flow_values[key]
+        edge.count += 1 if edge.evidence else 0
+        edge.evidence.extend(item for item in evidence if item not in edge.evidence)
+    spec = DiagramSpec(
+        "conops", "Concept of Operations", nodes=nodes, edges=list(flow_values.values()),
+        lanes=[
+            DiagramGroup("actors", "Actors and Externals", "lane", order=0),
+            DiagramGroup("scenarios", "Operational Scenarios", "lane", order=1),
+            DiagramGroup("boundary", "System Boundary", "lane", order=2),
+            DiagramGroup("outcomes", "Operational Outcomes", "lane", order=3),
+        ], callouts=callouts, warnings=warnings, drilldowns=drilldowns,
+        provenance=DiagramProvenance("curated-conops", context={"max_overview_nodes": limit}),
+    )
+    spec.validate()
+    return spec
+
+
 def project_conops(
     context: ArchitectureViewContext, curation: ViewCuration | None = None,
     *, max_overview_nodes: int = DEFAULT_MAX_OVERVIEW_NODES,
@@ -276,6 +458,8 @@ def project_conops(
     """Project complete operational paths under one global node budget."""
     curation = curation or ViewCuration()
     limit = max(1, max_overview_nodes)
+    if curation.scenarios:
+        return _project_curated_conops(context, curation, limit)
     warnings = _curation_diagnostics("conops", context, curation)
     hidden = {item.resolved_id for item in curation.hide if item.resolved_id}
     featured = {item.resolved_id for item in curation.featured if item.resolved_id}
@@ -649,6 +833,90 @@ def _entity_list_spec(identifier: str, title: str, entities: Iterable[IndexedEnt
     ])
 
 
+def _project_curated_functional(
+    context: ArchitectureViewContext, curation: ViewCuration, limit: int,
+) -> DiagramSpec:
+    warnings = _curation_diagnostics("functional", context, curation)
+    featured = {item.resolved_id for item in curation.featured if item.resolved_id}
+    groups = sorted(curation.groups, key=lambda item: (item.order, item.id))
+    member_to_group: dict[str, str] = {}
+    for group in groups:
+        for member in group.members:
+            member_to_group.setdefault(member, group.id)
+    outside_featured = sorted(featured - set(member_to_group))
+    reserve_warning = bool(outside_featured) and limit > 0
+    selected_groups = groups[:max(0, limit - int(reserve_warning))]
+    behavior_links, component_links = _capability_links(context)
+    nodes: list[DiagramNode] = []
+    drilldowns: list[DiagramDrilldown] = []
+    selected_ids = {group.id for group in selected_groups}
+    for group in selected_groups:
+        capabilities = [context.entity(key, diagnose=False) for key in group.members]
+        capabilities = [item for item in capabilities if item and item.entity_type == "capability"]
+        behavior_count = sum(len(behavior_links[item.key]) for item in capabilities)
+        component_count = len({key for item in capabilities for key in component_links[item.key]})
+        requirements = len({value for item in capabilities for value in item.value.requirements})
+        moes = len({value for item in capabilities for value in item.value.moes})
+        failures = len({value for item in capabilities for value in item.value.failure_modes})
+        evidence = [_provenance(item) for item in capabilities]
+        drilldown_id = f"drilldown:{group.id}"
+        nodes.append(DiagramNode(
+            group.id, group.label, "functional-block", drilldown_ref=drilldown_id,
+            badges=[
+                f"capabilities:{len(capabilities)}", f"behaviors:{behavior_count}",
+                f"components:{component_count}", f"requirements:{requirements}",
+                f"moes:{moes}", f"failures:{failures}",
+            ], evidence=evidence,
+        ))
+        details = [
+            _functional_drilldown(context, capability, curation, behavior_links, component_links)
+            for capability in capabilities
+        ]
+        detail = _merge_specs(f"functional-detail:{group.id}", f"Function: {group.label}", details)
+        detail.provenance = _derived("curated-functional-group", [item.key for item in capabilities], group=group.id)
+        drilldowns.append(DiagramDrilldown(drilldown_id, group.id, spec=detail))
+    flows: dict[tuple[str, str, str, str], DiagramEdge] = {}
+    for flow in curation.flows:
+        source = member_to_group.get(flow.source, flow.source)
+        target = member_to_group.get(flow.target, flow.target)
+        if source not in selected_ids or target not in selected_ids or source == target:
+            continue
+        key = (source, target, flow.kind, flow.label)
+        evidence = _curated_flow_provenance(flow)
+        if key not in flows:
+            flows[key] = DiagramEdge(source, target, flow.kind, flow.label, inferred=flow.inferred, evidence=[])
+        edge = flows[key]
+        edge.count += 1 if edge.evidence else 0
+        edge.evidence.extend(item for item in evidence if item not in edge.evidence)
+    if outside_featured and len(nodes) < limit:
+        entities = [context.entity(key, diagnose=False) for key in outside_featured]
+        entities = [item for item in entities if item]
+        summary_id = "functional:featured-outside-groups"
+        drilldown_id = f"drilldown:{summary_id}"
+        nodes.append(DiagramNode(
+            summary_id, f"Featured Functions Outside Groups ({len(entities)})", "summary",
+            status="warning", drilldown_ref=drilldown_id,
+            evidence=[_provenance(item) for item in entities],
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, summary_id,
+            spec=_entity_list_spec("functional-featured-outside-groups", "Featured Functions Outside Groups", entities),
+        ))
+    if len(groups) > len(selected_groups):
+        warnings.append(Diagnostic(
+            "warning", "FUNCTIONAL_OVERVIEW_BOUNDED",
+            f"{len(groups) - len(selected_groups)} curated functional groups omitted (limit {limit})",
+            view="functional",
+        ))
+    spec = DiagramSpec(
+        "functional", "Functional Architecture", direction="TB", nodes=nodes,
+        edges=list(flows.values()), warnings=warnings, drilldowns=drilldowns,
+        provenance=DiagramProvenance("curated-functional", context={"max_overview_nodes": limit}),
+    )
+    spec.validate()
+    return spec
+
+
 def project_functional_architecture(
     context: ArchitectureViewContext, curation: ViewCuration | None = None,
     *, max_overview_nodes: int = DEFAULT_MAX_OVERVIEW_NODES,
@@ -656,6 +924,8 @@ def project_functional_architecture(
     """Project bounded capability roots, decomposition, supported flows, and allocation summaries."""
     curation = curation or ViewCuration()
     limit = max(1, max_overview_nodes)
+    if curation.groups:
+        return _project_curated_functional(context, curation, limit)
     warnings = _curation_diagnostics("functional", context, curation)
     hidden = {item.resolved_id for item in curation.hide if item.resolved_id}
     featured = {item.resolved_id for item in curation.featured if item.resolved_id}
