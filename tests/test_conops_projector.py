@@ -166,7 +166,7 @@ def test_conops_drilldown_and_curation_are_structural(tmp_path):
     context = _context(tmp_path)
     curation = ViewCuration(
         featured=[Selector(qualified_id="root::BEH-0", resolved_id="root::BEH-0")],
-        scenarios=[CuratedGroup("priority", "Priority", members=["root::BEH-0"])],
+        scenarios=[CuratedScenario("priority", "Priority", members=["root::BEH-0"])],
         labels={"root::BEH-0": "Curated Mission"},
         drilldowns={"mission-detail": Selector(qualified_id="root::BEH-0", resolved_id="root::BEH-0")},
     )
@@ -253,8 +253,8 @@ def test_conops_curated_scenarios_are_primary_aggregates_with_flows_and_drilldow
         featured=[Selector(qualified_id="root::BEH-2", resolved_id="root::BEH-2")],
         order=["root::BEH-2", "root::BEH-0"],
         scenarios=[
-            CuratedGroup("scenario-acquire", "Acquire Knowledge", order=1, members=["root::BEH-2", "root::SYS-1"]),
-            CuratedGroup("scenario-use", "Use Knowledge", order=2, members=["root::BEH-0"]),
+            CuratedScenario("scenario-acquire", "Acquire Knowledge", order=1, members=["root::BEH-2", "root::SYS-1"]),
+            CuratedScenario("scenario-use", "Use Knowledge", order=2, members=["root::BEH-0"]),
         ],
         externals=[CuratedExternal("ext-source", "Source System", True, evidence)],
         flows=[
@@ -275,7 +275,10 @@ def test_conops_curated_scenarios_are_primary_aggregates_with_flows_and_drilldow
         edge.source == "scenario-acquire" and edge.target == "scenario-use" and edge.label == "member evidence"
         for edge in spec.edges
     )
-    assert all(edge.evidence and edge.inferred for edge in spec.edges if edge.kind in {"exchange", "operational-flow"})
+    assert all(
+        edge.evidence and edge.inferred for edge in spec.edges
+        if edge.kind in {"exchange", "operational-flow"} and edge.target != "conops:outcomes"
+    )
     scenario = next(node for node in spec.nodes if node.id == "scenario-acquire")
     detail = next(item.spec for item in spec.drilldowns if item.id == scenario.drilldown_ref)
     refs = {node.entity_ref for node in detail.nodes}
@@ -319,10 +322,10 @@ relationships: []
         for index in range(5)
     ]
     externals = [
-        CuratedExternal("github", "GitHub / OpenCode", True, evidence, "knowledge-source"),
-        CuratedExternal("onedrive", "OneDrive / OneNote", True, evidence, "knowledge-source"),
-        CuratedExternal("oura", "Oura", True, evidence, "knowledge-source"),
-        CuratedExternal("sheets", "Google Sheets", True, evidence, "knowledge-source"),
+        CuratedExternal("github", "GitHub / OpenCode", True, evidence, "source-system"),
+        CuratedExternal("onedrive", "OneDrive / OneNote", True, evidence, "source-system"),
+        CuratedExternal("oura", "Oura", True, evidence, "source-system"),
+        CuratedExternal("sheets", "Google Sheets", True, evidence, "source-system"),
         CuratedExternal("ai", "AI Services", True, evidence, "ai-service"),
     ]
     flows = [
@@ -358,6 +361,49 @@ relationships: []
     assert len(context.entities("external_system")) == 0
 
 
+def test_curated_conops_does_not_bundle_missing_or_incompatible_external_roles(tmp_path):
+    context = _context(tmp_path)
+    evidence = [EvidenceRecord("docs/evidence.md", "Observed exchange")]
+    curation = ViewCuration(
+        scenarios=[CuratedScenario("scenario", "Scenario", members=["root::BEH-0"])],
+        externals=[
+            CuratedExternal("unknown-a", "Unknown A", True, evidence),
+            CuratedExternal("unknown-b", "Unknown B", True, evidence),
+            CuratedExternal("source", "Source", True, evidence, "source-system"),
+            CuratedExternal("ai", "AI", True, evidence, "ai-service"),
+        ],
+        flows=[CuratedFlow(item, "scenario", "exchange", "records", True, evidence) for item in (
+            "unknown-a", "unknown-b", "source", "ai",
+        )],
+    )
+
+    spec = project_conops(context, curation)
+
+    assert {node.label for node in spec.nodes if node.kind == "external"} == {
+        "Unknown A", "Unknown B", "Source", "AI",
+    }
+
+
+def test_curated_outcomes_are_primary_supplemented_by_postconditions_and_connected(tmp_path):
+    context = _context(tmp_path)
+    evidence = [EvidenceRecord("docs/evidence.md", "Curated outcome evidence")]
+    scenario = CuratedScenario(
+        "scenario", "Scenario", members=["root::BEH-0"],
+        goal="Not an outcome", outcomes=["Curated outcome"], moes=["Fast"], evidence=evidence,
+    )
+
+    spec = project_conops(context, ViewCuration(scenarios=[scenario]))
+    detail = next(item.spec for item in spec.drilldowns if item.id == "drilldown:conops:outcomes")
+    scenario_detail = next(item.spec for item in spec.drilldowns if item.id == "drilldown:scenario")
+
+    assert [node.label for node in detail.nodes] == ["Curated outcome", "Outcome 0"]
+    assert any(edge.source == "scenario" and edge.target == "conops:outcomes" and edge.evidence for edge in spec.edges)
+    assert all(node.label not in {"Not an outcome", "Latency", "Fast"} for node in detail.nodes)
+    assert {("goal", "Not an outcome"), ("moe", "Fast")} <= {
+        (node.kind, node.label) for node in scenario_detail.nodes
+    }
+
+
 def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows():
     repo = Path("/Users/baigm2/Documents/Projects/logs_db")
     if not (repo / ".architecture/viewer-curation.yaml").is_file():
@@ -369,8 +415,7 @@ def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows(
     assert labels == ["Acquire Knowledge", "Enrich & Organize", "Search & Use", "Review & Govern", "Learn & Improve"]
     assert all("CLI" not in node.label and "Audit Kb" not in node.label for node in spec.nodes)
     externals = [node for node in spec.nodes if node.kind == "external"]
-    assert [node.label for node in externals] == ["Knowledge Sources", "AI Services"]
-    assert {node.badges[0] for node in externals} == {"externals:1", "externals:4"}
+    assert len(externals) == 5
     external_children = {
         child.id for node in externals for item in spec.drilldowns
         if item.id == node.drilldown_ref for child in item.spec.nodes
@@ -379,14 +424,24 @@ def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows(
         "ext-github-opencode", "ext-onedrive-onenote", "ext-ai-services",
         "ext-oura", "ext-google-sheets",
     }
-    assert len([edge for edge in spec.edges if edge.kind in {"exchange", "operational-flow", "data-flow"}]) == 10
+    assert len([
+        edge for edge in spec.edges
+        if edge.kind in {"exchange", "operational-flow", "data-flow"} and edge.target != "conops:outcomes"
+    ]) == 10
     assert len(spec.nodes) <= 15
     boundary = next(node for node in spec.nodes if node.id == "conops:system-boundary")
     assert any(boundary.id in {edge.source, edge.target} for edge in spec.edges)
     boundary_detail = next(item.spec for item in spec.drilldowns if item.id == boundary.drilldown_ref)
-    assert len([node for node in boundary_detail.nodes if node.kind == "system"]) == 8
+    assert len([node for node in boundary_detail.nodes if node.kind == "system"]) == 6
+    assert {node.entity_ref for node in boundary_detail.nodes} == {
+        "root::sys-models", "root::sys-project-documentation-orchestration",
+        "root::sys-schemas", "root::sys-scripts-conversation-analyzer",
+        "root::sys-scripts-ingestion", "root::sys-web-routes-routers",
+    }
     outcomes = next(node for node in spec.nodes if node.id == "conops:outcomes")
     outcome_detail = next(item.spec for item in spec.drilldowns if item.id == outcomes.drilldown_ref)
     assert outcomes.badges and outcome_detail.nodes
+    assert all(any(edge.source == scenario.id and edge.target == outcomes.id for edge in spec.edges)
+               for scenario in curation.scenarios)
     allocations = [edge for edge in spec.edges if edge.kind == "allocation"]
     assert allocations and all(not edge.label and edge.title for edge in allocations)

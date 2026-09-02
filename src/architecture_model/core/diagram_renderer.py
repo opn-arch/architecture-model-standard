@@ -35,6 +35,7 @@ class DiagramRenderOptions:
     rank_gap: int = 110
     node_gap: int = 46
     margin: int = 48
+    theme: str = "light"
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,7 @@ class DiagramPanel:
     warnings: tuple[DiagramPanelDiagnostic, ...]
     provenance: DiagramProvenance
     drilldowns: MappingProxyType[str, "DiagramPanel"]
+    theme: str = "light"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -91,6 +93,7 @@ class DiagramPanel:
             "warnings": [item.to_dict() for item in self.warnings],
             "provenance": self.provenance.to_dict(),
             "drilldowns": {key: value.to_dict() for key, value in sorted(self.drilldowns.items())},
+            "theme": self.theme,
         }
 
 
@@ -303,20 +306,84 @@ def _functional_flow_layout(spec: DiagramSpec, options: DiagramRenderOptions) ->
 
 
 def _catalog_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, _Box]:
-    """Fill a bounded catalog canvas instead of stacking unconnected cases."""
-    cases = sorted((node for node in spec.nodes if node.kind in {"use-case", "scenario", "behavior"}), key=lambda node: node.id)
-    support = sorted((node for node in spec.nodes if node not in cases), key=lambda node: (node.kind, node.id))
-    ordered = [*cases, *support]
-    columns = min(3, max(1, len(ordered)))
+    """Place actors left of actor-contiguous use-case rows."""
+    cases = [node for node in spec.nodes if node.kind in {"use-case", "scenario", "behavior"}]
+    actors = sorted((node for node in spec.nodes if node.kind in {"actor", "external"}), key=lambda node: node.id)
+    support = sorted((node for node in spec.nodes if node not in cases and node not in actors), key=lambda node: (node.kind, node.id))
+    actor_order = {node.id: index for index, node in enumerate(actors)}
+    memberships: dict[str, list[int]] = defaultdict(list)
+    for edge in spec.edges:
+        if edge.kind == "participates" and edge.source in actor_order:
+            memberships[edge.target].append(actor_order[edge.source])
+    cases.sort(key=lambda node: (tuple(memberships[node.id]) or (len(actors),), node.id))
     boxes: dict[str, _Box] = {}
-    for index, node in enumerate(ordered):
-        column, row = index % columns, index // columns
-        boxes[node.id] = _Box(
-            options.margin + 20 + column * (options.node_width + 54),
-            options.margin + 72 + row * (max(options.node_height, _node_height(node, options)) + 42),
-            options.node_width, _node_height(node, options),
+    case_x = options.margin + options.node_width + 140
+    y = options.margin + 72
+    grouped = {
+        membership: [node for node in cases if tuple(memberships[node.id]) == membership]
+        for membership in sorted({tuple(memberships[node.id]) for node in cases})
+    }
+    exclusive_columns = {
+        membership[0]: index for index, membership in enumerate(
+            sorted(value for value in grouped if len(value) == 1)
         )
+    }
+    for membership, members in grouped.items():
+        row_heights: list[int] = []
+        for index in range(0, len(members), 2):
+            row_heights.append(max(_node_height(node, options) for node in members[index:index + 2]))
+        row_y = [y]
+        for height in row_heights[:-1]:
+            row_y.append(row_y[-1] + height + 8)
+        for index, node in enumerate(members):
+            if len(membership) > 1 and all(value in exclusive_columns for value in membership):
+                column = sum(exclusive_columns[value] for value in membership) / len(membership)
+            elif len(membership) == 1:
+                column = exclusive_columns[membership[0]]
+            else:
+                column = 0
+            boxes[node.id] = _Box(
+                int(case_x + (column + index % 2) * (options.node_width + 54)), row_y[index // 2],
+                options.node_width, _node_height(node, options),
+            )
+        y += sum(row_heights) + max(0, len(row_heights) - 1) * 8 + 42
+    for actor in actors:
+        targets = [edge.target for edge in spec.edges if edge.kind == "participates" and edge.source == actor.id and edge.target in boxes]
+        height = _node_height(actor, options)
+        top = min((boxes[target].y for target in targets), default=options.margin + 72)
+        boxes[actor.id] = _Box(options.margin + 20, top, options.node_width, height)
+    support_y = options.margin + 72
+    support_x = case_x + 2 * (options.node_width + 54)
+    for node in support:
+        height = _node_height(node, options)
+        boxes[node.id] = _Box(support_x, support_y, options.node_width, height)
+        support_y += height + 24
     return boxes
+
+
+def _use_case_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], index: int) -> str:
+    source, target = boxes[edge.source], boxes[edge.target]
+    if edge.kind != "participates":
+        return _lane_edge_path(source, target, "LR", index % 5, [
+            box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}
+        ])
+    sx, sy = source.x + source.width, source.y + source.height / 2
+    tx, ty = target.x, target.y + target.height / 2
+    bus_x = sx + 24 + (sum(ord(char) for char in edge.source) % 5) * 8
+    intervening = [
+        box for identifier, box in boxes.items()
+        if identifier not in {edge.source, edge.target}
+        and box.x > bus_x and box.x < tx and box.y < ty < box.y + box.height
+    ]
+    if intervening:
+        track_y = source.y - 12 - index % 3 * 4
+        target_right = target.x + target.width + 18
+        return _points_path([
+            (sx, sy), (bus_x, sy), (bus_x, track_y),
+            (target_right, track_y), (target_right, ty),
+            (target.x + target.width, ty),
+        ])
+    return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
 
 
 def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
@@ -622,7 +689,7 @@ def _edge_svg(
     label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
     track = index % 5
     obstacles = [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]
-    path = _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
+    path = _use_case_edge_path(edge, boxes, index) if layout == "use-case-catalog" else _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
     evidence_title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
     detailed_label = edge.title or edge.label
@@ -674,11 +741,15 @@ def _edge_svg(
     return "".join(result)
 
 
-def _stylesheet() -> str:
+def _stylesheet(theme: str) -> str:
+    palette = {
+        "light": ("#172033", "#475569", "#f8fafc", "#475569"),
+        "dark": ("#f8fafc", "#cbd5e1", "#1e293b", "#cbd5e1"),
+    }
+    text, muted, surface, edge = palette[theme]
     return """<style>
-.diagram { --diagram-text: #172033; --diagram-muted: #475569; --diagram-label-halo: #f8fafc; font-family: system-ui, sans-serif; color: var(--diagram-text); }
-@media (prefers-color-scheme: dark) { .diagram { --diagram-text: #f8fafc; --diagram-muted: #cbd5e1; --diagram-label-halo: #172033; } }
-.diagram-node .node-shape { fill: #f8fafc; stroke: #334155; stroke-width: 1.5; }
+.diagram { --diagram-text: TEXT; --diagram-muted: MUTED; --diagram-surface: SURFACE; --diagram-edge: EDGE; --diagram-label-halo: SURFACE; font-family: system-ui, sans-serif; color: var(--diagram-text); }
+.diagram-node .node-shape { fill: var(--diagram-surface); stroke: var(--diagram-edge); stroke-width: 1.5; }
 .diagram-node.is-inferred .node-shape { stroke-dasharray: 7 5; }
 .kind-system .node-shape { fill: #eef6ff; stroke: #1d4ed8; }
 .kind-functional-block .node-shape,.kind-function .node-shape { fill: #ecfdf5; stroke: #047857; }
@@ -686,7 +757,7 @@ def _stylesheet() -> str:
 .kind-requirement .node-shape { fill: #fffbeb; stroke: #a16207; }
 .container { fill: #f8fafc; fill-opacity: .28; stroke: #94a3b8; stroke-width: 1; }
 .container.system { stroke-width: 3; }
-.diagram-edge { fill: none; stroke: #475569; stroke-width: 1.5; }
+.diagram-edge { fill: none; stroke: var(--diagram-edge); stroke-width: 1.5; }
 .diagram-edge.is-critical { stroke: #b91c1c; stroke-width: 3; }
 .node-label,.node-subtitle,.edge-label,.footer-text,.container-label,.diagram-title { fill: var(--diagram-text); dominant-baseline: middle; }
 .node-label { text-anchor: middle; font-size: 13px; font-weight: 600; }
@@ -698,7 +769,7 @@ def _stylesheet() -> str:
 .diagram-subtitle { font-size: 12px; fill: var(--diagram-muted); }
 .diagnostic-error { fill: #b91c1c; }.diagnostic-warning { fill: #a16207; }
 .evidence-indicator { fill: #2563eb; }
-</style>"""
+</style>""".replace("TEXT", text).replace("MUTED", muted).replace("SURFACE", surface).replace("EDGE", edge)
 
 
 def _footer(spec: DiagramSpec, start_y: int, boxes: dict[str, _Box], width: int) -> str:
@@ -737,6 +808,8 @@ def _overlaps(first: _Box, second: _Box) -> bool:
 
 
 def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int, int]:
+    if options.theme not in {"light", "dark"}:
+        raise ValueError(f"Unsupported diagram theme: {options.theme}")
     spec.validate()
     for edge in spec.edges:
         _edge_style(edge)
@@ -747,7 +820,8 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
         f'<svg xmlns="http://www.w3.org/2000/svg" class="diagram" data-diagram-id="{_text(spec.id)}" data-pan-zoom="true" width="100%" height="auto" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="{title_id} {desc_id}">',
         f'<title id="{title_id}">{_text(spec.title)}</title>',
         f'<desc id="{desc_id}">{_text(spec.subtitle or "Architecture diagram")}</desc>',
-        _stylesheet(),
+        f'<rect data-canvas-background="true" width="{width}" height="{height}" fill="{"#ffffff" if options.theme == "light" else "#0f172a"}"/>',
+        _stylesheet(options.theme),
         f'<defs><marker id="{arrow_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker></defs>',
         f'<text class="diagram-title" x="{options.margin}" y="30">{_text(spec.title)}</text>',
     ]
@@ -776,7 +850,7 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     occupied_labels: list[_Box] = []
     lane_aware = bool(spec.lanes) or spec.layout in {"functional-flow", "use-case-catalog"}
     routed_paths = [
-        _lane_edge_path(
+        _use_case_edge_path(edge, boxes, index) if spec.layout == "use-case-catalog" else _lane_edge_path(
             boxes[edge.source], boxes[edge.target], spec.direction.upper(), index % 5,
             [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}],
         ) if lane_aware else _edge_path(
@@ -839,4 +913,5 @@ def render_diagram_panel(spec: DiagramSpec, options: DiagramRenderOptions | None
         warnings=tuple(DiagramPanelDiagnostic.from_diagnostic(item) for item in sorted(warnings, key=lambda item: (item.severity, item.code, item.message))),
         provenance=spec.provenance,
         drilldowns=MappingProxyType(render_diagram_drilldowns(spec, selected)),
+        theme=selected.theme,
     )

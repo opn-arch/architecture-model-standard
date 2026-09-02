@@ -619,6 +619,53 @@ def test_external_requires_inferred_true_and_structured_repo_evidence(tmp_path):
         assert curation.diagnostics
 
 
+@pytest.mark.parametrize("kind", [
+    "source-system", "ai-service", "telemetry", "legacy-adapter", "external-service",
+])
+def test_external_kind_allowlist_loads_explicit_roles(tmp_path, kind):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    path = tmp_path / f"external-{kind}.yaml"
+    path.write_text(f"""version: 1
+views:
+  conops:
+    externals:
+      - id: EXT
+        name: External
+        kind: {kind}
+        inferred: true
+        evidence: [{{source: evidence.md, claim: observed}}]
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+
+    assert loaded.diagnostics == []
+    assert loaded.views.conops.externals[0].kind == kind
+
+
+def test_external_unknown_explicit_kind_fails_view_closed(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    path = tmp_path / "external-unknown-kind.yaml"
+    path.write_text("""version: 1
+views:
+  conops:
+    externals:
+      - id: EXT
+        name: External
+        kind: repository-ish
+        inferred: true
+        evidence: [{source: evidence.md, claim: observed}]
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+
+    assert loaded.views.conops == type(loaded.views.conops)()
+    assert any(item.code == "CURATION_EXTERNAL_KIND_UNSUPPORTED" for item in loaded.diagnostics)
+
+
 def test_group_members_are_qualified_resolved_presentation_selectors(tmp_path):
     context = _context(tmp_path)
     path = tmp_path / "groups.yaml"

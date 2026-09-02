@@ -17,6 +17,7 @@ T = TypeVar("T")
 VIEW_NAMES = ("conops", "functional", "logical", "use_cases")
 CANONICAL_LINK_KINDS = {item.value for item in RelationType}
 INFERRED_FLOW_KINDS = {"exchange", "operational-flow", "data-flow"}
+EXTERNAL_KINDS = {"source-system", "ai-service", "telemetry", "legacy-adapter", "external-service"}
 VIEW_KEYS = {
     "featured", "hide", "order", "labels", "externals", "scenarios", "groups",
     "flows", "tiers", "aggregate_components",
@@ -68,7 +69,7 @@ class CuratedExternal:
     name: str
     inferred: bool
     evidence: list[EvidenceRecord]
-    kind: str = "external"
+    kind: str = ""
 
 
 @dataclass
@@ -409,8 +410,12 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         if identifier in identifiers:
             _diag(diagnostics, "CURATION_ID_DUPLICATE", f"Duplicate presentation ID ignored: {identifier}", view=view_name)
             continue
+        kind = str(value.get("kind", ""))
+        if kind and kind not in EXTERNAL_KINDS:
+            _diag(diagnostics, "CURATION_EXTERNAL_KIND_UNSUPPORTED", f"Unsupported external kind: {kind}", view=view_name)
+            raise _InvalidView("external")
         identifiers.add(identifier)
-        result.externals.append(CuratedExternal(identifier, name, True, evidence, str(value.get("kind", "external"))))
+        result.externals.append(CuratedExternal(identifier, name, True, evidence, kind))
     presentation_ids = {item.id for item in result.groups + result.scenarios + result.tiers + result.externals}
     flow_keys: set[tuple[str, str, str, str]] = set()
     for value in _collection(raw, "flows", diagnostics, list, view_name):

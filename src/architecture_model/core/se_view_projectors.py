@@ -332,6 +332,18 @@ def _curated_scenario_spec(
     systems = [item for item in members if item.entity_type == "system"]
     specs = [_scenario_drilldown(context, behavior, curation) for behavior in behaviors]
     merged = _merge_specs(f"conops-detail:{scenario.id}", f"Scenario: {scenario.label}", specs)
+    if scenario.goal:
+        merged.nodes.extend(_curated_support_nodes(
+            behaviors[0] if behaviors else members[0], "goal", [scenario.goal], scenario,
+        ))
+    if scenario.moes:
+        merged.nodes.extend(_curated_support_nodes(
+            behaviors[0] if behaviors else members[0], "moe", scenario.moes, scenario,
+        ))
+    if scenario.requirements:
+        merged.nodes.extend(_curated_support_nodes(
+            behaviors[0] if behaviors else members[0], "requirement", scenario.requirements, scenario,
+        ))
     present = {node.entity_ref for node in merged.nodes if node.entity_ref}
     for system in systems:
         if system.key not in present:
@@ -363,9 +375,10 @@ def _project_curated_conops(
         )
         for item in externals
     }
-    external_groups: dict[tuple[tuple[str, str], ...], list[object]] = defaultdict(list)
+    external_groups: dict[tuple[str, tuple[tuple[str, str], ...]], list[object]] = defaultdict(list)
     for external in externals:
-        external_groups[tuple(flows_by_external[external.id])].append(external)
+        role = external.kind or f"unknown:{external.id}"
+        external_groups[(role, tuple(flows_by_external[external.id]))].append(external)
     bundled_externals = sorted(external_groups.values(), key=lambda items: (
         tuple(flows_by_external[items[0].id]),
         all("ai" in item.kind.casefold() or "ai" in item.name.casefold() for item in items),
@@ -382,14 +395,15 @@ def _project_curated_conops(
                 owned[item.key] = item
             elif item and item.entity_type == "behavior":
                 owned.update((system.key, system) for system in _behavior_systems(context, item, lambda _: True))
+                for interface in _behavior_interfaces(context, item, lambda _: True):
+                    system = _interface_system(context, interface)
+                    if system:
+                        owned[system.key] = system
         scenario_systems[scenario.id] = sorted(owned.values(), key=lambda item: item.key)
     member_systems = sorted({
         item.key: item for values in scenario_systems.values() for item in values
     }.values(), key=lambda item: item.key)
-    boundary_systems = (
-        sorted(context.entities("system"), key=lambda item: item.key)
-        if len(member_systems) > 3 else member_systems
-    )
+    boundary_systems = member_systems
     member_behaviors = [
         item for scenario in scenarios[:scenario_count] for key in scenario.members
         if (item := context.entity(key, diagnose=False)) and item.entity_type == "behavior"
@@ -401,25 +415,19 @@ def _project_curated_conops(
             if (item := context.entity(key, diagnose=False)) and item.entity_type == "behavior"
         ]
         canonical = sorted({value for item in behaviors for value in item.value.postconditions if value})
-        if not canonical:
-            canonical = sorted({value for item in behaviors for value in item.value.goals if value})
-        if not canonical:
-            canonical = sorted({value for item in behaviors for value in item.value.moes if value})
-        if canonical:
+        scenario_outcomes[scenario.id] = [
+            (value, True, _curated_provenance(scenario.evidence)) for value in scenario.outcomes
+        ]
+        scenario_outcomes[scenario.id].extend(
+            (value, False, [_derived("behavior-outcome", [item.key for item in behaviors], scenario=scenario.id)])
+            for value in canonical if value not in scenario.outcomes
+        )
+        if not scenario_outcomes[scenario.id]:
             scenario_outcomes[scenario.id] = [
-                (value, False, [_derived("behavior-outcome", [item.key for item in behaviors], scenario=scenario.id)])
-                for value in canonical
+                (flow.label, True, _curated_flow_provenance(flow))
+                for flow in curation.flows
+                if flow.source == scenario.id and flow.label and flow.inferred and flow.evidence
             ]
-        else:
-            scenario_outcomes[scenario.id] = [
-                (value, True, _curated_provenance(scenario.evidence)) for value in scenario.outcomes
-            ]
-            if not scenario_outcomes[scenario.id]:
-                scenario_outcomes[scenario.id] = [
-                    (flow.label, True, _curated_flow_provenance(flow))
-                    for flow in curation.flows
-                    if flow.source == scenario.id and flow.label and flow.inferred and flow.evidence
-                ]
     outcome_values = [value for values in scenario_outcomes.values() for value in values]
     reserve_system = bool(member_systems) and support_budget > 0
     reserve_outcome = bool(outcome_values) and support_budget > int(reserve_system)
@@ -457,8 +465,8 @@ def _project_curated_conops(
             "\0".join(item.id for item in group).encode()
         ).hexdigest()[:10] if aggregate else group[0].id
         label = (
-            "Knowledge Sources" if aggregate and not any("ai" in item.kind.casefold() or "ai" in item.name.casefold() for item in group)
-            else "AI Services" if all("ai" in item.kind.casefold() or "ai" in item.name.casefold() for item in group)
+            "Knowledge Sources" if aggregate and all(item.kind == "source-system" for item in group)
+            else "AI Services" if aggregate and all(item.kind == "ai-service" for item in group)
             else f"External Sources ({len(group)})" if aggregate else group[0].name
         )
         evidence = [value for external in group for value in _curated_provenance(external.evidence)]
@@ -539,6 +547,16 @@ def _project_curated_conops(
                     scenario.id, system_id, "allocation",
                     evidence=[_derived("curated-scenario-system-membership", [item.key for item in systems], scenario=scenario.id)],
                     title="Scenario delivered by participating system boundary",
+                )
+    if reserve_outcome:
+        for scenario in scenarios[:scenario_count]:
+            values = scenario_outcomes[scenario.id]
+            if values:
+                flow_values[(scenario.id, outcome_id, "operational-flow", "outcomes")] = DiagramEdge(
+                    scenario.id, outcome_id, "operational-flow", "outcomes",
+                    inferred=any(inferred for _, inferred, _ in values),
+                    evidence=[item for _, _, evidence in values for item in evidence],
+                    title="Scenario operational outcomes",
                 )
     spec = DiagramSpec(
         "conops", "Concept of Operations", layout="operational-lanes", nodes=nodes, edges=list(flow_values.values()),
@@ -1591,8 +1609,8 @@ def project_logical_architecture(
         overview_edges = _logical_backbone(overview_edges, selected, 9)
     connected = {endpoint for edge in edge_values.values() for endpoint in (edge.source, edge.target)}
     for node in selected:
-        if node.id not in connected and "isolated" not in node.badges:
-            node.badges.append("isolated")
+        if node.id not in connected and "No cross-system dependency" not in node.badges:
+            node.badges.append("No cross-system dependency")
     full_dependency_details.sort(key=lambda item: (
         str(item["source"]), str(item["target"]), str(item["kind"]), str(item["model"]),
     ))

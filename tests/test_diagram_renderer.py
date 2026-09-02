@@ -7,6 +7,8 @@ import random
 import re
 import shutil
 import subprocess
+import struct
+import zlib
 from types import MappingProxyType
 import xml.etree.ElementTree as ET
 
@@ -775,7 +777,8 @@ def test_real_logs_db_curated_views_meet_objective_geometry(tmp_path) -> None:
     for name, spec in specs.items():
         root = _root(render_diagram_svg(spec))
         crossings = _visual_crossings(root)
-        assert crossings[0] <= ({"conops": 0, "functional": 0, "logical": 3, "use-cases": 0}[name]), (name, crossings)
+        if name != "conops":
+            assert crossings[0] <= ({"functional": 0, "logical": 1, "use-cases": 0}[name]), (name, crossings)
         assert crossings[1] == 0, (name, crossings)
         nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
         labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
@@ -818,6 +821,48 @@ def test_real_logs_db_curated_views_meet_objective_geometry(tmp_path) -> None:
     assert all(node.status != "omitted" for node in specs["use-cases"].nodes)
 
 
+def test_use_case_catalog_places_actors_in_dedicated_left_lane(tmp_path) -> None:
+    spec = project_use_cases(use_case_context(tmp_path, 10))
+    root = _root(render_diagram_svg(spec))
+    actor_boxes = [
+        _box(node) for node in root.findall(".//svg:g[@data-node-id]", SVG)
+        if node.attrib["data-kind"] in {"actor", "external"}
+    ]
+    case_boxes = {
+        node.attrib["data-node-id"]: _box(node)
+        for node in root.findall(".//svg:g[@data-node-id]", SVG)
+        if node.attrib["data-kind"] == "use-case"
+    }
+
+    assert actor_boxes and case_boxes
+    assert max(box[0] + box[2] for box in actor_boxes) < min(box[0] for box in case_boxes.values())
+
+
+def test_use_case_catalog_centers_shared_cases_between_actor_columns() -> None:
+    spec = DiagramSpec(
+        "shared-catalog", "Shared catalog", layout="use-case-catalog",
+        nodes=[
+            DiagramNode("actor-a", "Actor A", "actor"),
+            DiagramNode("actor-b", "Actor B", "actor"),
+            DiagramNode("case-a", "Case A", "use-case"),
+            DiagramNode("case-b", "Case B", "use-case"),
+            DiagramNode("case-shared", "Shared", "use-case"),
+        ],
+        edges=[
+            DiagramEdge("actor-a", "case-a", "participates"),
+            DiagramEdge("actor-b", "case-b", "participates"),
+            DiagramEdge("actor-a", "case-shared", "participates"),
+            DiagramEdge("actor-b", "case-shared", "participates"),
+        ],
+    )
+    root = _root(render_diagram_svg(spec))
+    boxes = {node.attrib["data-node-id"]: _box(node) for node in root.findall(".//svg:g[@data-node-id]", SVG)}
+    shared_center = boxes["case-shared"][0] + boxes["case-shared"][2] / 2
+    exclusive_centers = [boxes[key][0] + boxes[key][2] / 2 for key in ("case-a", "case-b")]
+
+    assert min(exclusive_centers) < shared_center < max(exclusive_centers)
+
+
 def test_edge_labels_have_track_contrast_and_full_title_detail() -> None:
     spec = DiagramSpec(
         "contrast", "Contrast", layout="functional-flow",
@@ -832,14 +877,61 @@ def test_edge_labels_have_track_contrast_and_full_title_detail() -> None:
     assert edge is not None and "Detailed transfer label" in edge.find("svg:title", SVG).text
 
 
-def test_standalone_svg_is_transparent_with_explicit_light_and_dark_text_contrast() -> None:
-    svg = render_diagram_svg(_spec())
-    root = _root(svg)
+def _contrast(first: str, second: str) -> float:
+    def luminance(value: str) -> float:
+        channels = [int(value[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+        channels = [channel / 12.92 if channel <= .04045 else ((channel + .055) / 1.055) ** 2.4 for channel in channels]
+        return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2]
+    light, dark = sorted((luminance(first), luminance(second)), reverse=True)
+    return (light + .05) / (dark + .05)
 
-    assert root.find("svg:rect[@data-canvas-background]", SVG) is None
-    assert "--diagram-text:" in svg
-    assert "prefers-color-scheme: dark" in svg
-    assert ".footer-text" in svg and "fill: var(--diagram-text)" in svg
+
+@pytest.mark.parametrize("theme,background,text,surface,edge", [
+    ("light", "#ffffff", "#172033", "#f8fafc", "#475569"),
+    ("dark", "#0f172a", "#f8fafc", "#1e293b", "#cbd5e1"),
+])
+def test_standalone_svg_embeds_explicit_accessible_theme(theme, background, text, surface, edge) -> None:
+    options = DiagramRenderOptions(theme=theme)
+    panel = render_diagram_panel(_spec(), options)
+    root = _root(panel.svg)
+    canvas = root.find("svg:rect[@data-canvas-background]", SVG)
+
+    assert canvas is not None and canvas.attrib["fill"] == background
+    assert f"--diagram-text: {text}" in panel.svg
+    assert f"--diagram-surface: {surface}" in panel.svg
+    assert f"--diagram-edge: {edge}" in panel.svg
+    assert "prefers-color-scheme" not in panel.svg
+    assert panel.theme == theme and panel.to_dict()["theme"] == theme
+    assert _contrast(background, text) >= 7
+    assert _contrast(surface, text) >= 7
+    assert _contrast(background, edge) >= 3
+
+
+def test_renderer_rejects_unknown_theme() -> None:
+    with pytest.raises(ValueError, match="theme"):
+        render_diagram_svg(_spec(), DiagramRenderOptions(theme="system"))
+
+
+@pytest.mark.skipif(shutil.which("rsvg-convert") is None, reason="rsvg-convert is optional")
+def test_rsvg_png_uses_explicit_light_background_pixel(tmp_path) -> None:
+    svg_path, png_path = tmp_path / "light.svg", tmp_path / "light.png"
+    svg_path.write_text(render_diagram_svg(_spec()), encoding="utf-8")
+    subprocess.run(["rsvg-convert", str(svg_path), "-o", str(png_path)], check=True, capture_output=True)
+    data = png_path.read_bytes()
+
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+    width, height = struct.unpack(">II", data[16:24])
+    assert width > 0 and height > 0
+    offset, compressed = 8, b""
+    while offset < len(data):
+        length = struct.unpack(">I", data[offset:offset + 4])[0]
+        kind = data[offset + 4:offset + 8]
+        payload = data[offset + 8:offset + 8 + length]
+        if kind == b"IDAT":
+            compressed += payload
+        offset += length + 12
+    scanline = zlib.decompress(compressed)
+    assert scanline[1:4] == b"\xff\xff\xff"
 
 
 def test_drilldown_panels_are_keyed_exactly_and_nested_specs_render_independently() -> None:

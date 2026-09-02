@@ -389,7 +389,7 @@ def test_curated_logical_selects_deterministic_connected_backbone_and_preserves_
     assert first.to_dict() == second.to_dict()
     assert len(first.edges) <= 9
     assert {edge.source for edge in first.edges} | {edge.target for edge in first.edges} >= {
-        node.id for node in first.nodes if "isolated" not in node.badges
+        node.id for node in first.nodes if "No cross-system dependency" not in node.badges
     }
     facet = first.facets["logical_dependencies"]
     assert facet["full_count"] == 19
@@ -404,3 +404,20 @@ def test_curated_logical_selects_deterministic_connected_backbone_and_preserves_
     system_details = [item.spec for item in first.drilldowns if item.source.startswith("node:root::SYS-")]
     assert all(detail.facets["logical_dependencies"]["edges"] for detail in system_details)
     assert any(callout.id == "logical:dependency-backbone" for callout in first.callouts)
+
+
+def test_logical_canonical_isolates_are_explained_and_keep_drilldowns(tmp_path):
+    spec = project_logical_architecture(
+        _context(tmp_path),
+        ViewCuration(tiers=[
+            CuratedGroup("all", "All", "tier", members=["root::SYS-WEB", "root::SYS-DOMAIN"]),
+        ]),
+    )
+
+    isolates = [node for node in spec.nodes if node.kind in {"system", "aggregate"} and not any(
+        node.id in {edge["overview_source"], edge["overview_target"]}
+        for edge in spec.facets["logical_dependencies"]["edges"]
+    )]
+    assert isolates
+    assert all("No cross-system dependency" in node.badges and node.drilldown_ref for node in isolates)
+    assert all("isolated" not in node.badges for node in spec.nodes)

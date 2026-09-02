@@ -362,3 +362,13 @@ requirements:
   status: proposed
   created_at: '2026-09-02T21:27:33.910058+00:00'
   context: Explicit delivery and verification constraints.
+- id: REQ-40
+  text: Final review fixes must provide zero-crossing actual-profile use-case actor
+    associations, exact participating ConOps boundaries, role-compatible external
+    bundling, curated-primary connected outcomes, explicit light/dark standalone SVG
+    themes recorded in panels, explained canonical logical isolates, and updated actual-profile
+    geometry tests.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:06:39.189185+00:00'
+  context: User requested strict TDD and a new commit after 50a5f72.
