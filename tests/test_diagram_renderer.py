@@ -366,6 +366,42 @@ def test_node_text_blocks_are_spaced_and_contained_with_subtitle_and_badges() ->
     assert badge[1] - (subtitle[1] + subtitle[3]) >= 6
 
 
+@pytest.mark.parametrize("projector", ["conops", "logical", "use-cases"])
+def test_actual_actor_glyph_region_does_not_overlap_text(projector: str, tmp_path) -> None:
+    root = _root(render_diagram_svg(_actual_specs(tmp_path)[projector]))
+    actors = [node for node in root.findall(".//svg:g[@data-node-id]", SVG) if node.attrib["data-kind"] == "actor"]
+
+    assert actors
+    for actor in actors:
+        glyph = actor.find("svg:g[@data-actor-glyph]", SVG)
+        assert glyph is not None
+        glyph_box = _box(glyph)
+        text_boxes = [_box(item) for item in actor.findall("svg:text[@data-text-role]", SVG)]
+        assert text_boxes
+        assert all(not _overlaps(glyph_box, text_box) for text_box in text_boxes)
+        actor_box = _box(actor)
+        assert glyph_box[1] >= actor_box[1]
+        assert max(box[1] + box[3] for box in text_boxes) <= actor_box[1] + actor_box[3]
+
+
+def test_actor_height_expands_for_wrapped_label_subtitle_and_badges() -> None:
+    actor = DiagramNode(
+        "actor",
+        "A long actor name that wraps onto another line",
+        "actor",
+        subtitle="External operating role",
+        badges=["active", "verified"],
+    )
+    root = _root(render_diagram_svg(DiagramSpec("actor-layout", "Actor layout", nodes=[actor])))
+    rendered = root.find(".//svg:g[@data-node-id='actor']", SVG)
+
+    assert rendered is not None
+    glyph = _box(rendered.find("svg:g[@data-actor-glyph]", SVG))
+    text_boxes = [_box(item) for item in rendered.findall("svg:text[@data-text-role]", SVG)]
+    assert float(rendered.attrib["data-height"]) > DiagramRenderOptions().node_height
+    assert min(box[1] for box in text_boxes) >= glyph[1] + glyph[3] + 6
+
+
 def test_accessibility_ids_are_namespaced_for_multiple_inline_panels() -> None:
     first = _root(render_diagram_svg(DiagramSpec("first", "First")))
     second = _root(render_diagram_svg(DiagramSpec("second", "Second")))

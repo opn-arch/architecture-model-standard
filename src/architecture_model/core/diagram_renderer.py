@@ -190,6 +190,8 @@ def _node_height(node: DiagramNode, options: DiagramRenderOptions) -> int:
         content_height += 18
     if node.badges:
         content_height += 16
+    if node.kind.lower().replace("_", "-") == "actor":
+        content_height += 76
     return max(options.node_height, content_height + 12)
 
 
@@ -289,7 +291,7 @@ def _shape(node: DiagramNode, box: _Box) -> str:
         return f'<polygon {common} points="{points}"/>'
     if kind == "actor":
         cx = x + width / 2
-        return f'<circle {common} cx="{cx:g}" cy="{y + 17:g}" r="12"/><path {common} d="M {cx:g} {y + 29} V {y + 57} M {cx - 24:g} {y + 39} H {cx + 24:g} M {cx:g} {y + 57} L {cx - 20:g} {y + 82} M {cx:g} {y + 57} L {cx + 20:g} {y + 82}"/>'
+        return f'<g data-actor-glyph="true" data-x="{cx - 24:g}" data-y="{y + 5:g}" data-width="48" data-height="77"><circle {common} cx="{cx:g}" cy="{y + 17:g}" r="12"/><path {common} d="M {cx:g} {y + 29} V {y + 57} M {cx - 24:g} {y + 39} H {cx + 24:g} M {cx:g} {y + 57} L {cx - 20:g} {y + 82} M {cx:g} {y + 57} L {cx + 20:g} {y + 82}"/></g>'
     if kind == "system":
         return f'<rect {common} x="{x}" y="{y}" width="{width}" height="{height}" rx="8"/><rect {common} x="{x + 6}" y="{y + 6}" width="{width - 12}" height="{height - 12}" rx="5"/>'
     if kind in {"requirement", "callout", "note"}:
@@ -329,7 +331,7 @@ def _node_svg(node: DiagramNode, box: _Box, view_id: str) -> str:
     if node.entity_ref or node.drilldown_ref:
         attributes.extend(['tabindex="0"', 'role="button"', 'data-keyboard-action="activate"'])
     parts = [f'<g {" ".join(attributes)}><title>{_text(node.label)}</title>', _shape(node, box)]
-    cursor = box.y + 12
+    cursor = box.y + (88 if node.kind.lower().replace("_", "-") == "actor" else 12)
     text_x = box.x + 8
     text_width = box.width - 16
     for line in _lines(node.label, 24, 2):
