@@ -6,6 +6,7 @@ import json
 import hashlib
 import re
 import time
+from copy import deepcopy
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -240,13 +241,19 @@ def _evidence_files(metadata: dict[str, Any]) -> set[str]:
         files.update(_normalized_path(path) for path in value)
     allocations = metadata.get("file_allocations", {})
     if isinstance(allocations, dict):
-        files.update(_normalized_path(path) for path in allocations)
+        for values in allocations.values():
+            if isinstance(values, (str, Path)):
+                values = [values]
+            files.update(_normalized_path(path) for path in values)
     elif isinstance(allocations, list):
         for allocation in allocations:
             if isinstance(allocation, dict):
-                path = allocation.get("file") or allocation.get("source_file")
-                if path:
-                    files.add(_normalized_path(path))
+                values = allocation.get("files")
+                if values is None:
+                    values = [allocation.get("file") or allocation.get("source_file")]
+                if isinstance(values, (str, Path)):
+                    values = [values]
+                files.update(_normalized_path(path) for path in values if path)
             elif allocation:
                 files.add(_normalized_path(allocation))
     return files
@@ -257,33 +264,72 @@ def _scoped_evidence(
 ) -> tuple[list[Any], list[LLMCallRecord]]:
     """Select boundary-local corrections and their exact LLM provenance."""
     boundary_files = {_normalized_path(path) for path in boundary.files}
-    calls_by_resolution = {
-        call.resolution_id: call for call in ctx.llm_calls if call.resolution_id
-    }
+    calls_by_resolution: dict[str, list[LLMCallRecord]] = {}
+    for call in ctx.llm_calls:
+        if call.resolution_id:
+            calls_by_resolution.setdefault(call.resolution_id, []).append(call)
 
     def _matches(evidence: Any) -> bool:
         if evidence.metadata.get("shared") is True or evidence.metadata.get("project_wide") is True:
             return True
         files = _evidence_files(evidence.metadata)
         resolution_id = str(evidence.metadata.get("resolution_id", ""))
-        call = calls_by_resolution.get(resolution_id)
-        if call:
-            files.update(_normalized_path(path) for path in call.files_sent)
+        calls = calls_by_resolution.get(resolution_id, [])
+        if len(calls) == 1:
+            files.update(_normalized_path(path) for path in calls[0].files_sent)
         return bool(files & boundary_files)
 
-    corrections = [
-        evidence
-        for evidence in ctx.prior_corrections
-        if _matches(evidence)
-    ]
+    corrections = []
+    for evidence in ctx.prior_corrections:
+        if not _matches(evidence):
+            continue
+        scoped = deepcopy(evidence)
+        allocations = scoped.metadata.get("file_allocations")
+        if isinstance(allocations, dict):
+            scoped.metadata["file_allocations"] = {
+                target: [
+                    str(path) for path in (values if isinstance(values, list) else [values])
+                    if _normalized_path(path) in boundary_files
+                ]
+                for target, values in allocations.items()
+            }
+            scoped.metadata["file_allocations"] = {
+                target: values
+                for target, values in scoped.metadata["file_allocations"].items()
+                if values
+            }
+        elif isinstance(allocations, list) and allocations and isinstance(allocations[0], dict):
+            groups = []
+            for allocation in allocations:
+                values = allocation.get("files", [])
+                values = values if isinstance(values, list) else [values]
+                scoped_values = [
+                    str(path) for path in values
+                    if _normalized_path(path) in boundary_files
+                ]
+                if scoped_values:
+                    group = deepcopy(allocation)
+                    group["files"] = scoped_values
+                    groups.append(group)
+            scoped.metadata["file_allocations"] = groups
+        for field in ("source_files", "files_sent"):
+            if field in scoped.metadata:
+                values = scoped.metadata[field]
+                values = values if isinstance(values, list) else [values]
+                scoped.metadata[field] = [
+                    str(path) for path in values
+                    if _normalized_path(path) in boundary_files
+                ]
+        corrections.append(scoped)
     resolution_ids = {
         str(evidence.metadata.get("resolution_id"))
         for evidence in corrections
         if evidence.metadata.get("resolution_id")
     }
     calls = [
-        call for call in ctx.llm_calls
-        if call.resolution_id and call.resolution_id in resolution_ids
+        resolution_calls[0]
+        for resolution_id in resolution_ids
+        if len(resolution_calls := calls_by_resolution.get(resolution_id, [])) == 1
     ]
     return corrections, calls
 
@@ -324,11 +370,22 @@ def _build_system_model_yaml(
 
     # Extract from allocate results
     alloc_result = results.get("allocate")
+    allocation_components = list(
+        getattr(getattr(alloc_result, "output", None), "components", [])
+    )
+    file_owner: dict[str, str] = {}
+    for comp in sorted(allocation_components, key=lambda item: item.id):
+        for path in getattr(comp, "files", []):
+            file_owner.setdefault(_normalized_path(path), comp.id)
     if alloc_result and alloc_result.output:
         output = alloc_result.output
         if hasattr(output, "components"):
             for comp in output.components:
-                comp_files = {_normalized_path(path) for path in getattr(comp, "files", [])}
+                comp_files = {
+                    _normalized_path(path)
+                    for path in getattr(comp, "files", [])
+                    if file_owner.get(_normalized_path(path)) == comp.id
+                }
                 if file_set and not comp_files.intersection(file_set):
                     continue
                 namespaced_id = _register_id(comp.id)
@@ -339,7 +396,8 @@ def _build_system_model_yaml(
                 if hasattr(comp, "files") and comp.files:
                     comp_dict["files"] = [
                         str(path) for path in comp.files
-                        if not file_set or _normalized_path(path) in file_set
+                        if file_owner.get(_normalized_path(path)) == comp.id
+                        and (not file_set or _normalized_path(path) in file_set)
                     ]
                 typed_interfaces = getattr(comp, "interfaces", None)
                 if typed_interfaces:
@@ -361,6 +419,7 @@ def _build_system_model_yaml(
     # Extract from infer results
     infer_result = results.get("infer")
     selected_capability_ids: set[str] = set()
+    capability_inputs: dict[str, Any] = {}
     if infer_result and infer_result.output:
         output = infer_result.output
         if hasattr(output, "capabilities"):
@@ -368,11 +427,21 @@ def _build_system_model_yaml(
                 cap_sources = {
                     _normalized_path(path) for path in getattr(cap, "source_files", [])
                 }
-                if file_set and not cap_sources.intersection(file_set) and cap.id not in realized_cap_ids:
+                realized_by_selected = cap.id in realized_cap_ids
+                selected_owned_files = {
+                    path for component in components for path in component.get("files", [])
+                }
+                if file_set and not cap_sources.intersection(file_set) and not (
+                    realized_by_selected
+                    and not cap_sources
+                    and selected_owned_files
+                    and selected_owned_files.issubset(file_set)
+                ):
                     continue
                 cap_dict = _capability_dict(cap)
                 selected_capability_ids.add(cap.id)
                 cap_dict["id"] = _register_id(cap.id)
+                capability_inputs[cap_dict["id"]] = cap
                 capabilities.append(cap_dict)
 
     cap_ids = {c["id"] for c in capabilities}
@@ -386,9 +455,14 @@ def _build_system_model_yaml(
                 source_file = _normalized_path(getattr(beh, "source_file", ""))
                 if (
                     file_set
-                    and source_file not in file_set
-                    and beh.capability_id not in selected_capability_ids
-                    and not (boundary.is_full_system and not source_file)
+                    and (
+                        (source_file and source_file not in file_set)
+                        or (
+                            not source_file
+                            and beh.capability_id not in selected_capability_ids
+                            and not boundary.is_full_system
+                        )
+                    )
                 ):
                     continue
                 capability_id = (
@@ -418,7 +492,17 @@ def _build_system_model_yaml(
                     beh_dict["triggers"] = beh.triggers
                 existing_structured = getattr(beh, "structured_steps", None)
                 if existing_structured:
-                    beh_dict["structured_steps"] = existing_structured
+                    beh_dict["structured_steps"] = [
+                        {
+                            **(asdict(step) if is_dataclass(step) else dict(step)),
+                            "component_ref": _register_id(
+                                getattr(step, "component_ref", "")
+                                if is_dataclass(step)
+                                else step.get("component_ref", "")
+                            ),
+                        }
+                        for step in existing_structured
+                    ]
                 behaviors.append(beh_dict)
 
     # Extract actors from infer results (all are system-wide)
@@ -472,9 +556,25 @@ def _build_system_model_yaml(
         and specify_result.output
         and hasattr(specify_result.output, "requirements")
     ):
+        direct_requirement_ids = {
+            rel.to_id for rel in raw_relationships
+            if rel.rel_type == "satisfies"
+            and rel.from_id in selected_component_ids | selected_capability_ids
+        }
+        direct_requirement_ids.update(
+            rel.to_id for rel in raw_relationships
+            if rel.rel_type == "satisfies"
+            and rel.from_id in {
+                getattr(behavior, "id", "")
+                for behavior in getattr(getattr(infer_result, "output", None), "behaviors", [])
+                if _normalized_path(getattr(behavior, "source_file", "")) in file_set
+            }
+        )
         scoped_requirements = [
             req for req in specify_result.output.requirements
-            if not file_set or _normalized_path(req.source_file) in file_set
+            if not file_set
+            or _normalized_path(req.source_file) in file_set
+            or req.id in direct_requirement_ids
         ]
         requirements = _merge_requirements([_requirement_dict(req) for req in scoped_requirements])
         requirement_source_by_key = {
@@ -484,13 +584,13 @@ def _build_system_model_yaml(
         for requirement in requirements:
             requirement["id"] = _register_id(requirement["id"])
         file_to_comp = {
-            str(source): _register_id(comp.id)
-            for comp in getattr(getattr(alloc_result, "output", None), "components", [])
-            for source in comp.files
+            path: _register_id(owner)
+            for path, owner in file_owner.items()
+            if owner in selected_component_ids
         }
         for requirement in requirements:
             component_id = file_to_comp.get(
-                str(requirement_source_by_key.get(requirement["content_hash"], ""))
+                _normalized_path(requirement_source_by_key.get(requirement["content_hash"], ""))
             )
             if component_id and component_id in comp_ids:
                 relationships.append(
@@ -567,15 +667,15 @@ def _build_system_model_yaml(
                 )
 
     file_to_comp = {
-        str(source): _register_id(comp.id)
-        for comp in getattr(getattr(alloc_result, "output", None), "components", [])
-        for source in comp.files
+        path: _register_id(owner)
+        for path, owner in file_owner.items()
+        if owner in selected_component_ids
     }
     relationship_keys = {
         (rel["from"], rel["to"], rel["type"]) for rel in relationships
     }
     for behavior in behaviors:
-        component_id = file_to_comp.get(str(behavior.get("source_file", "")))
+        component_id = file_to_comp.get(_normalized_path(behavior.get("source_file", "")))
         capability_id = behavior.get("capability_id", "")
         if component_id and behavior.get("steps") and not behavior.get("structured_steps"):
             behavior["structured_steps"] = [
@@ -617,21 +717,52 @@ def _build_system_model_yaml(
     for component in components:
         realized = realized_by_component.get(component["id"], [])
         owned_files = [_normalized_path(path) for path in component.get("files", [])]
-        requirement_ids = _unique([
-            requirement_id
-            for path in owned_files for requirement_id in requirements_by_file.get(path, [])
-        ])
+        requirement_ids = _unique(
+            [
+                relationship["to"] for relationship in relationships
+                if relationship["from"] == component["id"]
+                and relationship["type"] == "satisfies"
+                and relationship["to"] in requirements_by_id
+            ]
+            + [
+                requirement_id
+                for path in owned_files for requirement_id in requirements_by_file.get(path, [])
+            ]
+        )
         interface_ids = interfaces_by_component.get(component["id"], [])
         if realized:
-            intents = _unique([capability.get("intent") for capability in realized])
-            if intents:
-                component["intent"] = intents[0] if len(intents) == 1 else "; ".join(intents)
+            owned_file_set = {_normalized_path(path) for path in component.get("files", [])}
+            primary = min(
+                realized,
+                key=lambda capability: (
+                    -len(
+                        owned_file_set
+                        & {
+                            _normalized_path(path)
+                            for path in getattr(
+                                capability_inputs.get(capability["id"]), "source_files", []
+                            )
+                        }
+                    ),
+                    -float(getattr(capability_inputs.get(capability["id"]), "confidence", 0.0)),
+                    capability["id"],
+                ),
+            )
+            if primary.get("intent"):
+                component["intent"] = primary["intent"]
             for field in ("goals", "failure_modes", "monitored", "moes", "trade_offs"):
                 values = _unique([
                     value for capability in realized for value in capability.get(field, [])
                 ])
                 if values:
                     component[field] = values
+            other_intents = _unique([
+                capability.get("intent")
+                for capability in realized
+                if capability is not primary
+            ])
+            if other_intents:
+                component["goals"] = _unique(component.get("goals", []) + other_intents)
             value_functions = _unique([
                 capability.get("value_function") for capability in realized
             ])
@@ -644,6 +775,7 @@ def _build_system_model_yaml(
             component.setdefault("extensions", {})["semantic_derivation"] = {
                 "method": "realized_capabilities",
                 "capabilities": [capability["id"] for capability in realized],
+                "primary_capability": primary["id"],
             }
         if requirement_ids:
             component["requirements"] = requirement_ids
@@ -671,32 +803,48 @@ def _build_system_model_yaml(
         if interface_ids:
             component["interface_refs"] = interface_ids
 
+    direct_refs: dict[str, dict[str, list[str]]] = {}
+    for relationship in relationships:
+        if relationship["to"] in requirements_by_id:
+            direct_refs.setdefault(relationship["from"], {}).setdefault("requirements", []).append(
+                relationship["to"]
+            )
+        if relationship["to"] in {interface["id"] for interface in interfaces}:
+            direct_refs.setdefault(relationship["from"], {}).setdefault("interface_refs", []).append(
+                relationship["to"]
+            )
+
     for capability in capabilities:
-        realizing_components = [
-            component for component in components
-            if capability in realized_by_component.get(component["id"], [])
-        ]
-        requirement_ids = _unique([
-            requirement_id for component in realizing_components
-            for requirement_id in component.get("requirements", [])
-        ])
-        interface_ids = _unique([
-            interface_id for component in realizing_components
-            for interface_id in component.get("interface_refs", [])
-        ])
+        raw_capability = capability_inputs.get(capability["id"])
+        source_files = {
+            _normalized_path(path) for path in getattr(raw_capability, "source_files", [])
+        }
+        requirement_ids = _unique(
+            direct_refs.get(capability["id"], {}).get("requirements", [])
+            + [
+                requirement_id for path in source_files
+                for requirement_id in requirements_by_file.get(path, [])
+            ]
+        )
+        interface_ids = _unique(
+            direct_refs.get(capability["id"], {}).get("interface_refs", [])
+        )
         if requirement_ids:
             capability["requirements"] = _unique(capability.get("requirements", []) + requirement_ids)
         if interface_ids:
             capability["interface_refs"] = _unique(capability.get("interface_refs", []) + interface_ids)
 
     for behavior in behaviors:
-        component_id = component_by_file.get(_normalized_path(behavior.get("source_file", "")))
-        component = next((item for item in components if item["id"] == component_id), None)
-        if component:
-            if component.get("requirements"):
-                behavior["requirements"] = list(component["requirements"])
-            if component.get("interface_refs"):
-                behavior["interface_refs"] = list(component["interface_refs"])
+        source_file = _normalized_path(behavior.get("source_file", ""))
+        requirement_ids = _unique(
+            direct_refs.get(behavior["id"], {}).get("requirements", [])
+            + requirements_by_file.get(source_file, [])
+        )
+        interface_ids = _unique(direct_refs.get(behavior["id"], {}).get("interface_refs", []))
+        if requirement_ids:
+            behavior["requirements"] = requirement_ids
+        if interface_ids:
+            behavior["interface_refs"] = interface_ids
 
     local_ids = {
         entity["id"]
@@ -805,6 +953,14 @@ def _rewrite_inline_refs(value: Any, id_remap: dict[str, str]) -> Any:
     return rewritten
 
 
+def _is_shared(entity: Any) -> bool:
+    """Return whether a pipeline entity is explicitly project-wide."""
+    extensions = getattr(entity, "extensions", {})
+    return getattr(entity, "shared", False) is True or (
+        isinstance(extensions, dict) and extensions.get("shared") is True
+    )
+
+
 def _build_sos_model(
     systems: list[SystemModel],
     inlines: list[SystemBoundary],
@@ -880,9 +1036,78 @@ def _build_sos_model(
         if entity.get("id")
     }
     inline_relationships: list[dict[str, Any]] = []
+    allocation_output = getattr(getattr(top_results.get("allocate"), "output", None), "components", [])
+    inference_output = getattr(top_results.get("infer"), "output", None)
+    shared_components = [component for component in allocation_output if _is_shared(component)]
+    shared_capabilities = [
+        capability for capability in getattr(inference_output, "capabilities", [])
+        if _is_shared(capability)
+    ]
+    shared_ids = {
+        entity.id for entity in shared_components + shared_capabilities
+    }
+    if shared_components:
+        shared_results = dict(top_results)
+        shared_results["allocate"] = StageResult(
+            output=type(getattr(top_results["allocate"], "output"))(
+                components=shared_components
+            ),
+            quality=top_results["allocate"].quality,
+        )
+        if inference_output is not None:
+            shared_results["infer"] = StageResult(
+                output=type(inference_output)(
+                    capabilities=shared_capabilities,
+                    actors=[],
+                    behaviors=[
+                        behavior for behavior in getattr(inference_output, "behaviors", [])
+                        if _is_shared(behavior)
+                    ],
+                ),
+                quality=top_results["infer"].quality,
+            )
+        relate_output = getattr(getattr(top_results.get("relate"), "output", None), "relationships", [])
+        shared_results["relate"] = StageResult(
+            output=type(getattr(top_results["relate"], "output"))(
+                relationships=[
+                    relationship for relationship in relate_output
+                    if relationship.from_id in shared_ids and relationship.to_id in shared_ids
+                ]
+            ),
+            quality=top_results["relate"].quality,
+        )
+        shared_files = sorted({
+            str(path) for component in shared_components for path in component.files
+        })
+        shared_projection = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("shared", "Shared", files=shared_files, is_full_system=False),
+            shared_results,
+            project_name,
+        ))
+        for group_name, entities in shared_projection.get("entities", {}).items():
+            if group_name != "actors":
+                sos_dict["entities"].setdefault(group_name, []).extend(entities)
+                used_ids.update(entity["id"] for entity in entities if entity.get("id"))
+        inline_relationships.extend(shared_projection.get("relationships", []))
+    boundary_owner: dict[str, str] = {
+        _normalized_path(path): boundary.system_id
+        for boundary in sorted(decompose.systems, key=lambda item: item.system_id)
+        for path in boundary.files
+    }
+    for boundary in sorted(inlines, key=lambda item: item.system_id):
+        for path in boundary.files:
+            boundary_owner.setdefault(_normalized_path(path), boundary.system_id)
     for boundary in inlines:
+        owned_files = [
+            path for path in boundary.files
+            if boundary_owner.get(_normalized_path(path)) == boundary.system_id
+        ]
+        if not owned_files:
+            continue
+        owned_boundary = deepcopy(boundary)
+        owned_boundary.files = owned_files
         projection = yaml.safe_load(
-            _build_system_model_yaml(boundary, top_results, project_name)
+            _build_system_model_yaml(owned_boundary, top_results, project_name)
         )
         projected_entities = projection.get("entities", {})
         if not projected_entities.get("components"):

@@ -42,7 +42,13 @@ def _apply_behavior_resolutions(
     """Create deterministic workflows only from explicit workflow metadata."""
     known = {(behavior.source_file, behavior.intent) for behavior in behaviors}
     for evidence in get_resolutions_for_stage(ctx, "infer"):
-        files = [str(path) for path in evidence.metadata.get("source_files", [])]
+        files = [
+            str(path)
+            for path in (
+                evidence.metadata.get("source_files")
+                or evidence.metadata.get("files_sent", [])
+            )
+        ]
         steps = evidence.metadata.get("steps")
         behavior_name = str(evidence.metadata.get("behavior_name", "")).strip()
         if not files or not behavior_name or not isinstance(steps, list):

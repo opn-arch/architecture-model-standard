@@ -126,6 +126,26 @@ def do_another():
         assert capability.intent == behavior.intent
         assert capability.goals == behavior.steps
 
+    def test_complex_behavior_accepts_files_sent_as_source_evidence(self, tmp_path):
+        (tmp_path / "workflow.py").write_text("def run():\n    pass\n")
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = ObserveStage().run(ctx)
+        ctx.prior_corrections = [Evidence(
+            source="llm_analysis", confidence=0.9, raw="load -> save",
+            location="complex_behavior", metadata={
+                "behavior_name": "Files sent workflow",
+                "steps": ["load", "save"],
+                "files_sent": ["workflow.py"],
+                "intent": "Persist workflow data",
+            },
+        )]
+
+        result = InferStage().run(ctx)
+
+        behavior = next(item for item in result.output.behaviors if item.name == "Files sent workflow")
+        assert behavior.source_file == "workflow.py"
+        assert behavior.capability_id
+
     def test_free_text_resolution_does_not_invent_workflow_steps(self, tmp_path):
         from architecture_model.pipeline.protocol import LLMCallRecord
 

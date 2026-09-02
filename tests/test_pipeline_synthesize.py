@@ -26,6 +26,7 @@ from architecture_model.pipeline.synthesize import (
     _build_system_model_yaml,
     _decide_stages,
     _merge_requirements,
+    _scoped_evidence,
 )
 from architecture_model.pipeline.synthesize_types import (
     SoSModel,
@@ -148,6 +149,7 @@ class _FakeBehavior:
     postconditions: list[str] = field(default_factory=lambda: ["request is stored"])
     frequency: str = "per request"
     pattern: str = "sequential"
+    structured_steps: list[dict] = field(default_factory=list)
 
 
 def _make_ctx(tmp_path: Path, **cache_extras: StageResult) -> PipelineContext:
@@ -270,6 +272,139 @@ class TestDecideStages:
 
 
 class TestBuildSystemModelYaml:
+    def test_structured_step_component_ref_remaps_after_local_id_collision(self):
+        behavior = _FakeBehavior(
+            id="BEH-1", source_file="worker.py", capability_id="ITEM A",
+            structured_steps=[{"order": 1, "action": "Run", "component_ref": "ITEM-A"}],
+        )
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("ITEM-A", "Worker", ["worker.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[_FakeCapability("ITEM A", "Work", source_files=["worker.py"])],
+                behaviors=[behavior],
+            )),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("ITEM-A", "ITEM A", "realizes"),
+            ])),
+        }
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("SYS-1", "System", files=["worker.py"]), results,
+        ))
+        component_id = parsed["entities"]["components"][0]["id"]
+        step = parsed["entities"]["behaviors"][0]["structured_steps"][0]
+        assert step["component_ref"] == component_id
+
+    def test_duplicate_file_allocation_uses_stable_single_component_owner(self):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-2", "Later", ["shared.py"]),
+                _FakeComponent("COMP-1", "Primary", ["shared.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput()),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("COMP-inline", "Inline", files=["shared.py"]), results,
+        ))
+        assert [(item["id"], item["files"]) for item in parsed["entities"]["components"]] == [
+            ("COMP-1", ["shared.py"]),
+        ]
+
+    def test_component_uses_one_primary_capability_intent(self):
+        first = _FakeCapability(
+            "CAP-2", "Secondary", intent="Secondary intent", goals=["Secondary goal"],
+            source_files=["owned.py"],
+        )
+        first.confidence = 0.5
+        primary = _FakeCapability(
+            "CAP-1", "Primary", intent="Primary intent", goals=["Primary goal"],
+            source_files=["owned.py"],
+        )
+        primary.confidence = 0.9
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Worker", ["owned.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(capabilities=[first, primary])),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "CAP-2", "realizes"),
+                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
+            ])),
+        }
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("SYS-1", "System", files=["owned.py"]), results,
+        ))
+        component = parsed["entities"]["components"][0]
+        assert component["intent"] == "Primary intent"
+        assert ";" not in component["intent"]
+        assert "Secondary intent" in component["goals"]
+        assert component["extensions"]["semantic_derivation"]["primary_capability"] == "CAP-1"
+
+    def test_child_refs_are_direct_or_source_aligned_not_component_wide(self):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Worker", ["a.py", "b.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[
+                    _FakeCapability("CAP-1", "A", source_files=["a.py"]),
+                    _FakeCapability("CAP-2", "B", source_files=["b.py"]),
+                ],
+                behaviors=[
+                    _FakeBehavior("BEH-1", "A flow", source_file="a.py", capability_id="CAP-1"),
+                    _FakeBehavior("BEH-2", "B flow", source_file="b.py", capability_id="CAP-2"),
+                ],
+            )),
+            "specify": _stage_result(_FakeSpecifyOutput(
+                interfaces=[_FakeInterface("IF-1", "A API", "COMP-1")],
+                requirements=[
+                    _FakeRequirement("REQ-1", "A req", "a.py", text="A must be 5"),
+                    _FakeRequirement("REQ-2", "B req", "b.py", text="B must be 5"),
+                ],
+            )),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
+                _FakeRelationship("COMP-1", "CAP-2", "realizes"),
+                _FakeRelationship("CAP-2", "IF-1", "exposes"),
+            ])),
+        }
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("SYS-1", "System", files=["a.py", "b.py"]), results,
+        ))
+        caps = {item["id"]: item for item in parsed["entities"]["capabilities"]}
+        behaviors = {item["id"]: item for item in parsed["entities"]["behaviors"]}
+        assert caps["CAP-1"]["requirements"] == ["REQ-1"]
+        assert "interface_refs" not in caps["CAP-1"]
+        assert caps["CAP-2"]["requirements"] == ["REQ-2"]
+        assert caps["CAP-2"]["interface_refs"] == ["IF-1"]
+        assert behaviors["BEH-1"]["requirements"] == ["REQ-1"]
+        assert behaviors["BEH-2"]["requirements"] == ["REQ-2"]
+        assert "interface_refs" not in behaviors["BEH-1"]
+
+    def test_source_bearing_behavior_does_not_follow_capability_across_boundary(self):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Worker", ["inline.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[_FakeCapability("CAP-1", "Work", source_files=["inline.py"])],
+                behaviors=[
+                    _FakeBehavior("BEH-1", "Local", source_file="inline.py", capability_id="CAP-1"),
+                    _FakeBehavior("BEH-2", "Foreign", source_file="system.py", capability_id="CAP-1"),
+                ],
+            )),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
+            ])),
+        }
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("COMP-inline", "Inline", files=["inline.py"], is_full_system=False),
+            results,
+        ))
+        assert [behavior["name"] for behavior in parsed["entities"]["behaviors"]] == ["Local"]
+
     def test_normalization_collisions_are_unique_within_projection(self):
         results = {
             "allocate": _stage_result(_FakeAllocOutput([
@@ -372,9 +507,9 @@ class TestBuildSystemModelYaml:
         assert projected_interface["type"] == "internal"
         assert projected_interface["provider"] == "COMP-1"
         assert projected_capability["requirements"] == ["REQ-1"]
-        assert projected_capability["interface_refs"] == ["IF-1"]
+        assert "interface_refs" not in projected_capability
         assert projected_behavior["requirements"] == ["REQ-1"]
-        assert projected_behavior["interface_refs"] == ["IF-1"]
+        assert "interface_refs" not in projected_behavior
         assert projected_behavior["structured_steps"][0]["component_ref"] == "COMP-1"
         assert {tuple(rel.values()) for rel in parsed["relationships"]} >= {
             ("COMP-1", "IF-1", "exposes"),
@@ -408,6 +543,24 @@ class TestBuildSystemModelYaml:
         assert component["value_function"] == "min(1, actual / 5)"
         assert component["rationale"] == "Source constant defines the supported minimum"
         assert component["extensions"]["semantic_derivation"]["requirements"] == ["REQ-1"]
+
+    def test_component_requirement_refs_include_direct_satisfies_edges(self):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Worker", ["worker.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput()),
+            "specify": _stage_result(_FakeSpecifyOutput(requirements=[
+                _FakeRequirement("REQ-1", "External requirement", "external.py"),
+            ])),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "REQ-1", "satisfies"),
+            ])),
+        }
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("SYS-1", "System", files=["worker.py"]), results,
+        ))
+        assert parsed["entities"]["components"][0]["requirements"] == ["REQ-1"]
 
     def test_produces_valid_yaml(self):
         boundary = SystemBoundary(system_id="SYS-core", name="Core")
@@ -656,6 +809,64 @@ class TestRunWithoutCoordinator:
 
 
 class TestRunWithCoordinator:
+    def test_scoped_allocation_groups_trim_values_not_target_names(self, tmp_path):
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / "out")
+        ctx.prior_corrections = [Evidence(
+            "user_confirmation", 1.0, "allocation", "ambiguous_module", {
+                "resolution_id": "alloc-1",
+                "file_allocations": {
+                    "Alpha Group": ["alpha/a.py", "beta/b.py"],
+                    "Beta Group": ["beta/c.py"],
+                },
+            },
+        )]
+
+        corrections, _calls = _scoped_evidence(
+            ctx, SystemBoundary("SYS-a", "Alpha", files=["alpha/a.py"]),
+        )
+
+        assert corrections[0].metadata["file_allocations"] == {
+            "Alpha Group": ["alpha/a.py"],
+        }
+
+    def test_scoped_allocation_list_records_trim_each_group(self, tmp_path):
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / "out")
+        ctx.prior_corrections = [Evidence(
+            "user_confirmation", 1.0, "allocation", "ambiguous_module", {
+                "file_allocations": [
+                    {"target_name": "Alpha", "files": ["alpha/a.py", "beta/b.py"]},
+                    {"target_name": "Beta", "files": ["beta/c.py"]},
+                ],
+            },
+        )]
+
+        corrections, _calls = _scoped_evidence(
+            ctx, SystemBoundary("SYS-a", "Alpha", files=["alpha/a.py"]),
+        )
+
+        assert corrections[0].metadata["file_allocations"] == [
+            {"target_name": "Alpha", "files": ["alpha/a.py"]},
+        ]
+
+    def test_duplicate_resolution_id_declines_ambiguous_provenance(self, tmp_path):
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / "out")
+        ctx.prior_corrections = [Evidence(
+            "llm_analysis", 0.9, "alpha", "complex_behavior", {
+                "resolution_id": "duplicate", "source_files": ["alpha.py"],
+            },
+        )]
+        ctx.llm_calls = [
+            LLMCallRecord("infer", "alpha", resolution_id="duplicate", files_sent=["alpha.py"]),
+            LLMCallRecord("infer", "beta", resolution_id="duplicate", files_sent=["beta.py"]),
+        ]
+
+        corrections, calls = _scoped_evidence(
+            ctx, SystemBoundary("SYS-a", "Alpha", files=["alpha.py"]),
+        )
+
+        assert [item.raw for item in corrections] == ["alpha"]
+        assert calls == []
+
     def test_scoped_runs_receive_only_boundary_corrections_and_provenance(self, tmp_path):
         coordinator = MockCoordinator()
         boundaries = [
@@ -813,6 +1024,52 @@ class TestRunWithCoordinator:
 
 
 class TestSoSModel:
+    def test_explicitly_shared_entities_stay_top_level_when_file_is_subsystem_owned(self):
+        component = _FakeComponent("COMP-shared", "Shared", ["shared.py"])
+        component.shared = True
+        capability = _FakeCapability("CAP-shared", "Shared cap", source_files=["shared.py"])
+        capability.shared = True
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([component])),
+            "infer": _stage_result(_FakeInferOutput(capabilities=[capability])),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-shared", "CAP-shared", "realizes"),
+            ])),
+        }
+        decompose = DecomposeResult(
+            systems=[SystemBoundary("SYS-1", "System", files=["shared.py"])],
+            inline_components=[SystemBoundary(
+                "COMP-inline", "Inline", files=["shared.py"], is_full_system=False,
+            )],
+        )
+
+        parsed = yaml.safe_load(_build_sos_model([], decompose.inline_components, decompose, results).model_yaml)
+
+        assert [item["id"] for item in parsed["entities"]["components"]] == ["comp-shared"]
+        assert [item["id"] for item in parsed["entities"]["capabilities"]] == ["cap-shared"]
+        assert parsed["relationships"] == [{
+            "from": "comp-shared", "to": "cap-shared", "type": "realizes",
+        }]
+
+    def test_overlapping_inline_boundaries_have_one_deterministic_owner(self):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Shared", ["shared.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(capabilities=[
+                _FakeCapability("CAP-1", "Shared cap", source_files=["shared.py"]),
+            ])),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
+            ])),
+        }
+        boundaries = [
+            SystemBoundary("COMP-z", "Zulu", files=["shared.py"], is_full_system=False),
+            SystemBoundary("COMP-a", "Alpha", files=["shared.py"], is_full_system=False),
+        ]
+        parsed = yaml.safe_load(_build_sos_model([], boundaries, DecomposeResult(), results).model_yaml)
+        assert [item["name"] for item in parsed["entities"]["components"]] == ["Shared"]
+        assert len(parsed["entities"]["capabilities"]) == 1
     def test_inline_projections_merge_with_collision_safe_references(self):
         inline_a = SystemBoundary(
             system_id="COMP-a", name="Inline A", files=["inline_a.py"],

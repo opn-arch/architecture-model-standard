@@ -50,6 +50,10 @@ class TestRecursiveDecomposition:
             "INLINE_B_LIMIT = 9\n"
             "@router.get('/inline-b')\ndef inline_b(): return INLINE_B_LIMIT\n"
         )
+        (subsystem / "worker_0.py").write_text(
+            "MIN_BATCH_0 = 5\n\ndef process_0():\n    return MIN_BATCH_0\n"
+            "\ndef subsystem_shared():\n    return True\n"
+        )
 
         class FixedDecompose:
             name = "decompose"
@@ -65,7 +69,7 @@ class TestRecursiveDecomposition:
                         inline_components=[
                             SystemBoundary(
                                 system_id="COMP-inline-a", name="Inline A",
-                                files=["inline_a.py"], is_full_system=False,
+                                files=["inline_a.py", "engine/worker_0.py"], is_full_system=False,
                             ),
                             SystemBoundary(
                                 system_id="COMP-inline-b", name="Inline B",
@@ -128,6 +132,9 @@ class TestRecursiveDecomposition:
         assert not ({"Inline A workflow", "Inline B workflow"} & subsystem_behavior_names)
         assert len(root.entities.systems) == 1
         assert len(root.entities.components) == 2
+        assert not any(
+            "engine/worker_0.py" in component.files for component in root.entities.components
+        )
         assert all(component.intent and component.goals for component in root.entities.components), [
             (component.name, component.intent, component.goals) for component in root.entities.components
         ] + [

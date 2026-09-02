@@ -645,6 +645,49 @@ def _structural_eligibility_issues(raw: dict, target: Path) -> list[dict]:
                     "path": str(target), "severity": "error", "code": "STRUCTURAL_DANGLING_REF",
                     "message": f"Relationship {endpoint} references unknown entity {entity_id}",
                 })
+    scalar_refs = (
+        ("behaviors", "capability_id"),
+        ("behaviors", "actor_id"),
+        ("interfaces", "provider"),
+        ("interfaces", "consumer"),
+        ("components", "parent_id"),
+    )
+    list_refs = (
+        "requirements", "interface_refs", "component_ids", "children", "triggers",
+    )
+
+    def _add_dangling(entity_id: str, field: str, referenced_id: str) -> None:
+        looks_like_id = bool(re.fullmatch(r"[A-Z]+-[A-Za-z0-9.-]+|[a-z][a-z0-9-]+", referenced_id))
+        if referenced_id and looks_like_id and referenced_id not in known_ids:
+            issues.append({
+                "path": str(target), "severity": "error", "code": "STRUCTURAL_DANGLING_REF",
+                "message": f"Entity {entity_id} field {field} references unknown entity {referenced_id}",
+            })
+
+    for group_name, field in scalar_refs:
+        for entity in entities.get(group_name, []):
+            _add_dangling(entity.get("id", ""), field, entity.get(field, ""))
+    for group in entities.values():
+        if not isinstance(group, list):
+            continue
+        for entity in group:
+            if not isinstance(entity, dict):
+                continue
+            for field in list_refs:
+                for referenced_id in entity.get(field, []):
+                    _add_dangling(entity.get("id", ""), field, referenced_id)
+    for behavior in entities.get("behaviors", []):
+        for step in behavior.get("structured_steps", []):
+            _add_dangling(
+                behavior.get("id", ""), "structured_steps.component_ref",
+                step.get("component_ref", ""),
+            )
+    for component in entities.get("components", []):
+        for interface in component.get("interfaces", []):
+            _add_dangling(
+                component.get("id", ""), "interfaces.target_component",
+                interface.get("target_component", ""),
+            )
     return issues
 
 
