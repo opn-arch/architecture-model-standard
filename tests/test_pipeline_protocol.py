@@ -8,6 +8,7 @@ from architecture_model.pipeline.protocol import (
     Claim,
     Diagnostic,
     Evidence,
+    LLMCallRecord,
     PipelineContext,
     QualityMetrics,
     SOURCE_WEIGHTS,
@@ -164,6 +165,46 @@ class TestPipelineContext:
     def test_domain_custom(self):
         ctx = PipelineContext(repo_path=Path("/tmp"), output_dir=Path("/tmp"), domain="electrical")
         assert ctx.domain == "electrical"
+
+
+class TestLLMCallRecord:
+    def test_preserves_legacy_positional_argument_order(self):
+        record = LLMCallRecord(
+            "infer",
+            "capability naming",
+            "2026-08-11T10:00:00",
+            ["src/foo.py"],
+            ["COMP-1"],
+            "Name this capability",
+            100,
+            200,
+            50,
+            350,
+            "test-model",
+            1200,
+            True,
+            False,
+            0.8,
+            3,
+            "legacy positional call",
+        )
+
+        assert record.timestamp == "2026-08-11T10:00:00"
+        assert record.files_sent == ["src/foo.py"]
+        assert record.slices_sent == ["COMP-1"]
+        assert record.prompt_template == "Name this capability"
+        assert record.prompt_tokens == 100
+        assert record.context_tokens == 200
+        assert record.completion_tokens == 50
+        assert record.total_tokens == 350
+        assert record.model == "test-model"
+        assert record.duration_ms == 1200
+        assert record.cached is True
+        assert record.output_used is False
+        assert record.confidence == 0.8
+        assert record.items_produced == 3
+        assert record.notes == "legacy positional call"
+        assert record.resolution_id == ""
 
 
 class TestHierarchicalQuality:

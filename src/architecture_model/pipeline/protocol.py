@@ -246,7 +246,6 @@ class LLMCallRecord:
 
     stage: str
     purpose: str
-    resolution_id: str = ""
     timestamp: str = ""
     files_sent: list[str] = field(default_factory=list)
     slices_sent: list[str] = field(default_factory=list)
@@ -262,6 +261,7 @@ class LLMCallRecord:
     confidence: float = 0.0
     items_produced: int = 0
     notes: str = ""
+    resolution_id: str = ""
 
 
 @dataclass
