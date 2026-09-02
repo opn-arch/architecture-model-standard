@@ -228,6 +228,38 @@ def test_drilldown_can_own_a_valid_nested_spec_and_round_trip():
     assert DiagramSpec.from_dict(payload).drilldowns[0].spec.to_dict() == detail.to_dict()
 
 
+def test_drilldown_serialization_preserves_association_with_reverse_insertion_and_mismatched_ids():
+    deepest = DiagramSpec("deep-z", "Deep", nodes=[DiagramNode("deep-node", "Deep", "behavior")])
+    detail_for_a = DiagramSpec(
+        "spec-z", "Detail A",
+        nodes=[DiagramNode("detail-a", "Detail A", "behavior", drilldown_ref="nested-a")],
+        drilldowns=[DiagramDrilldown("nested-a", "detail-a", spec=deepest)],
+    )
+    detail_for_z = DiagramSpec("spec-a", "Detail Z", nodes=[DiagramNode("detail-z", "Detail Z", "behavior")])
+    overview = DiagramSpec(
+        "overview", "Overview",
+        nodes=[
+            DiagramNode("source-a", "A", "scenario", drilldown_ref="drill-a"),
+            DiagramNode("source-z", "Z", "scenario", drilldown_ref="drill-z"),
+        ],
+        drilldowns=[
+            DiagramDrilldown("drill-z", "source-z", spec=detail_for_z),
+            DiagramDrilldown("drill-a", "source-a", spec=detail_for_a),
+        ],
+    )
+
+    payload = overview.to_dict()
+    by_id = {item["id"]: item for item in payload["drilldowns"]}
+    assert by_id["drill-a"]["source"] == "source-a"
+    assert by_id["drill-a"]["spec"]["id"] == "spec-z"
+    assert by_id["drill-a"]["spec"]["drilldowns"][0]["spec"]["id"] == "deep-z"
+    assert by_id["drill-z"]["source"] == "source-z"
+    assert by_id["drill-z"]["spec"]["id"] == "spec-a"
+
+    restored = DiagramSpec.from_dict(payload).to_dict()
+    assert restored == payload
+
+
 @pytest.mark.parametrize("context", [{"bad": math.inf}, {"bad": object()}])
 def test_provenance_context_rejects_non_json_values(context):
     with pytest.raises(ValueError, match="Provenance context"):

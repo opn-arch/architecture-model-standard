@@ -366,12 +366,19 @@ class DiagramSpec:
             data["nodes"][index]["evidence"] = [item.to_dict() for item in node.evidence]
         for index, edge in enumerate(sorted(self.edges, key=lambda item: (item.source, item.target, item.kind, item.label))):
             data["edges"][index]["evidence"] = [item.to_dict() for item in edge.evidence]
-        for index, drilldown in enumerate(sorted(self.drilldowns, key=lambda item: item.id)):
+        data["drilldowns"] = []
+        for drilldown in sorted(self.drilldowns, key=lambda item: item.id):
+            item = {
+                "id": drilldown.id,
+                "source": drilldown.source,
+                "target": drilldown.target,
+                "spec_ref": drilldown.spec_ref,
+                "route": drilldown.route,
+            }
             if drilldown.spec:
-                data["drilldowns"][index]["spec"] = drilldown.spec.to_dict()
-            else:
-                data["drilldowns"][index].pop("spec", None)
-        for key in ("groups", "lanes", "callouts", "legend", "drilldowns"):
+                item["spec"] = drilldown.spec.to_dict()
+            data["drilldowns"].append(item)
+        for key in ("groups", "lanes", "callouts", "legend"):
             data[key] = sorted(data[key], key=lambda item: (item.get("order", 0), item["id"]))
         data["warnings"] = sorted(data["warnings"], key=lambda item: (item["severity"], item["code"], item["message"]))
         return _json_safe(data)
