@@ -446,7 +446,7 @@ def test_node_text_blocks_are_spaced_and_contained_with_subtitle_and_badges() ->
 
     assert node is not None
     node_box = _box(node)
-    blocks = [_box(item) for item in node.findall("svg:text[@data-text-role]", SVG)]
+    blocks = [_box(item) for item in node.findall(".//svg:text[@data-text-role]", SVG)]
     assert len(blocks) >= 4
     for index, first in enumerate(blocks):
         assert node_box[0] <= first[0] and node_box[1] <= first[1]
@@ -454,9 +454,38 @@ def test_node_text_blocks_are_spaced_and_contained_with_subtitle_and_badges() ->
         assert first[1] + first[3] <= node_box[1] + node_box[3]
         for second in blocks[index + 1 :]:
             assert not _overlaps(first, second)
-    subtitle = _box(node.find("svg:text[@data-text-role='subtitle']", SVG))
-    badge = _box(node.find("svg:text[@data-text-role='badge']", SVG))
+    subtitle = _box(node.find(".//svg:text[@data-text-role='subtitle']", SVG))
+    badge = _box(node.find(".//svg:text[@data-text-role='badge']", SVG))
     assert badge[1] - (subtitle[1] + subtitle[3]) >= 6
+
+
+def test_hostile_unbroken_node_text_is_pixel_wrapped_ellipsized_and_clipped() -> None:
+    token = "W" * 240
+    spec = DiagramSpec(
+        "hostile-text", "Hostile text",
+        nodes=[DiagramNode("hostile", token, "actor", subtitle=token, badges=[token])],
+    )
+
+    root = _root(render_diagram_svg(spec))
+    node = root.find(".//svg:g[@data-node-id='hostile']", SVG)
+    clips = root.findall(".//svg:clipPath", SVG)
+
+    assert node is not None
+    assert len(clips) == 1
+    text_group = node.find("svg:g[@data-node-text]", SVG)
+    assert text_group is not None
+    assert text_group.attrib["clip-path"] == f"url(#{clips[0].attrib['id']})"
+    assert token in text_group.find("svg:title", SVG).text
+    assert "…" in "".join(text_group.itertext())
+    node_box = _box(node)
+    for text in text_group.findall("svg:text", SVG):
+        box = _box(text)
+        assert node_box[0] <= box[0] and box[0] + box[2] <= node_box[0] + node_box[2]
+        assert node_box[1] <= box[1] and box[1] + box[3] <= node_box[1] + node_box[3]
+    glyph = _box(node.find("svg:g[@data-actor-glyph]", SVG))
+    clip_rect = clips[0].find("svg:rect", SVG)
+    assert clip_rect is not None
+    assert float(clip_rect.attrib["y"]) >= glyph[1] + glyph[3]
 
 
 @pytest.mark.parametrize("projector", ["conops", "logical", "use-cases"])
@@ -469,7 +498,7 @@ def test_actual_actor_glyph_region_does_not_overlap_text(projector: str, tmp_pat
         glyph = actor.find("svg:g[@data-actor-glyph]", SVG)
         assert glyph is not None
         glyph_box = _box(glyph)
-        text_boxes = [_box(item) for item in actor.findall("svg:text[@data-text-role]", SVG)]
+        text_boxes = [_box(item) for item in actor.findall(".//svg:text[@data-text-role]", SVG)]
         assert text_boxes
         assert all(not _overlaps(glyph_box, text_box) for text_box in text_boxes)
         actor_box = _box(actor)
@@ -490,7 +519,7 @@ def test_actor_height_expands_for_wrapped_label_subtitle_and_badges() -> None:
 
     assert rendered is not None
     glyph = _box(rendered.find("svg:g[@data-actor-glyph]", SVG))
-    text_boxes = [_box(item) for item in rendered.findall("svg:text[@data-text-role]", SVG)]
+    text_boxes = [_box(item) for item in rendered.findall(".//svg:text[@data-text-role]", SVG)]
     assert float(rendered.attrib["data-height"]) > DiagramRenderOptions().node_height
     assert min(box[1] for box in text_boxes) >= glyph[1] + glyph[3] + 6
 
@@ -638,7 +667,7 @@ def test_actual_projector_geometry_has_no_visual_collisions(projector: str, tmp_
     nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
 
     for node in root.findall(".//svg:g[@data-node-id]", SVG):
-        text_boxes = [_box(item) for item in node.findall("svg:text[@data-text-role]", SVG)]
+        text_boxes = [_box(item) for item in node.findall(".//svg:text[@data-text-role]", SVG)]
         assert all(not _overlaps(first, second) for index, first in enumerate(text_boxes) for second in text_boxes[index + 1 :])
 
     group_labels = root.findall(".//svg:text[@data-group-label]", SVG)
@@ -863,10 +892,105 @@ def test_real_logs_db_curated_views_meet_objective_geometry(tmp_path) -> None:
         if label.attrib["data-edge-label"] in dependency_ids
     ]
     assert all("×" in label or "(" in label for label in visible_dependency_labels)
-    assert all(edge.attrib["stroke-width"] == "2" for edge in logical_dependencies if "is-critical" in edge.attrib["class"])
+    assert all(float(edge.attrib["stroke-width"]) < 2 for edge in logical_dependencies if "is-critical" in edge.attrib["class"])
 
     assert len([node for node in specs["use-cases"].nodes if node.kind == "use-case"]) == 10
     assert all(node.status != "omitted" for node in specs["use-cases"].nodes)
+
+
+def _real_logs_db_specs() -> dict[str, DiagramSpec]:
+    from architecture_model.core.view_curation import load_viewer_curation
+
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    curated = load_viewer_curation(repo, context).views
+    return {
+        "conops": project_conops(context, curated.conops),
+        "logical": project_logical_architecture(context, curated.logical),
+        "use-cases": project_use_cases(context, curated.use_cases),
+    }
+
+
+def test_real_conops_is_centered_compact_and_locally_routed() -> None:
+    root = _root(render_diagram_svg(_real_logs_db_specs()["conops"]))
+    nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+    scenarios = [box for identifier, box in nodes.items() if identifier.startswith("scenario-")]
+    assert len(scenarios) == 5
+    stack_top = min(box[1] for box in scenarios)
+    stack_bottom = max(box[1] + box[3] for box in scenarios)
+    middle_third = (stack_top + (stack_bottom - stack_top) / 3, stack_bottom - (stack_bottom - stack_top) / 3)
+    for identifier in ("conops:system-boundary", "conops:outcomes"):
+        center = nodes[identifier][1] + nodes[identifier][3] / 2
+        assert middle_third[0] <= center <= middle_third[1]
+
+    _, _, width, height = [float(value) for value in root.attrib["viewBox"].split()]
+    for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+        segments = _route_segments(edge.attrib["d"])
+        xs = [coordinate for segment in segments for coordinate in (segment[0], segment[2])]
+        ys = [coordinate for segment in segments for coordinate in (segment[1], segment[3])]
+        assert (max(xs) - min(xs)) + (max(ys) - min(ys)) <= .7 * (width + height)
+        unrelated = [box for identifier, box in nodes.items() if identifier not in {edge.attrib["data-source"], edge.attrib["data-target"]}]
+        assert all(not _segment_crosses_box(segment, box) for segment in segments for box in unrelated)
+        assert "data-full-label" in edge.attrib
+    labels = root.findall(".//svg:text[@data-edge-label]", SVG)
+    assert all(len(label.text or "") <= 18 and len((label.text or "").split()) <= 3 for label in labels)
+    assert all(not _overlaps(_box(first), _box(second)) for index, first in enumerate(labels) for second in labels[index + 1:])
+
+
+def test_real_use_cases_form_two_actor_owned_route_bands() -> None:
+    spec = _real_logs_db_specs()["use-cases"]
+    root = _root(render_diagram_svg(spec))
+    bands = root.findall(".//svg:g[@data-actor-band]", SVG)
+    assert len(bands) == 2
+    assert sorted(int(item.attrib["data-case-count"]) for item in bands) == [4, 6]
+    nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+    for band in bands:
+        box = _box(band)
+        member_ids = band.attrib["data-members"].split()
+        assert len(member_ids) == int(band.attrib["data-case-count"]) + 1
+        assert all(
+            box[0] <= nodes[identifier][0] and nodes[identifier][0] + nodes[identifier][2] <= box[0] + box[2]
+            and box[1] <= nodes[identifier][1] and nodes[identifier][1] + nodes[identifier][3] <= box[1] + box[3]
+            for identifier in member_ids
+        )
+        for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+            if edge.attrib["data-source"] != member_ids[0]:
+                continue
+            for x1, y1, x2, y2 in _route_segments(edge.attrib["d"]):
+                assert box[0] <= min(x1, x2) and max(x1, x2) <= box[0] + box[2]
+                assert box[1] <= min(y1, y2) and max(y1, y2) <= box[1] + box[3]
+    assert _visual_crossings(root)[0] == 0
+    _, _, width, height = [float(value) for value in root.attrib["viewBox"].split()]
+    assert width <= 1800 and height <= 1200
+
+
+def test_real_logical_dependencies_use_clear_tier_gutters_without_labels() -> None:
+    spec = _real_logs_db_specs()["logical"]
+    assert all("No cross-system dependency" not in node.badges for node in spec.nodes)
+    assert any("No cross-system link" in node.badges for node in spec.nodes)
+    root = _root(render_diagram_svg(spec))
+    lanes = [_box(item) for item in root.findall(".//svg:g[@data-container-id]", SVG)]
+    dependency_ids = {
+        edge.attrib["id"] for edge in root.findall(".//svg:path[@data-edge-id]", SVG)
+        if edge.attrib["data-kind"] in {"dependency", "depends-on"}
+    }
+    assert not [
+        label for label in root.findall(".//svg:text[@data-edge-label]", SVG)
+        if label.attrib["data-edge-label"] in dependency_ids
+    ]
+    for edge in root.findall(".//svg:path[@data-edge-id]", SVG):
+        if edge.attrib["id"] not in dependency_ids:
+            continue
+        for segment in _route_segments(edge.attrib["d"]):
+            for left, top, lane_width, lane_height in lanes:
+                right, bottom = left + lane_width, top + lane_height
+                assert not (segment[0] == segment[2] and segment[0] in {left, right} and max(min(segment[1], segment[3]), top) < min(max(segment[1], segment[3]), bottom))
+                assert not (segment[1] == segment[3] and segment[1] in {top, top + 24, bottom} and max(min(segment[0], segment[2]), left) < min(max(segment[0], segment[2]), right))
+        if "is-critical" in edge.attrib["class"]:
+            assert float(edge.attrib["stroke-width"]) < 2
+    assert _visual_crossings(root)[0] <= 1
 
 
 def test_use_case_catalog_places_actors_in_dedicated_left_lane(tmp_path) -> None:
@@ -886,7 +1010,7 @@ def test_use_case_catalog_places_actors_in_dedicated_left_lane(tmp_path) -> None
     assert max(box[0] + box[2] for box in actor_boxes) < min(box[0] for box in case_boxes.values())
 
 
-def test_use_case_catalog_centers_shared_cases_between_actor_columns() -> None:
+def test_use_case_catalog_assigns_shared_case_once_without_crossing_actor_bands() -> None:
     spec = DiagramSpec(
         "shared-catalog", "Shared catalog", layout="use-case-catalog",
         nodes=[
@@ -905,10 +1029,11 @@ def test_use_case_catalog_centers_shared_cases_between_actor_columns() -> None:
     )
     root = _root(render_diagram_svg(spec))
     boxes = {node.attrib["data-node-id"]: _box(node) for node in root.findall(".//svg:g[@data-node-id]", SVG)}
-    shared_center = boxes["case-shared"][0] + boxes["case-shared"][2] / 2
-    exclusive_centers = [boxes[key][0] + boxes[key][2] / 2 for key in ("case-a", "case-b")]
-
-    assert min(exclusive_centers) < shared_center < max(exclusive_centers)
+    bands = root.findall(".//svg:g[@data-actor-band]", SVG)
+    assert len(bands) == 2
+    owners = [band for band in bands if "case-shared" in band.attrib["data-members"].split()]
+    assert len(owners) == 2
+    assert boxes["case-shared"][1] < boxes["actor-b"][1]
 
 
 def test_edge_labels_have_track_contrast_and_full_title_detail() -> None:

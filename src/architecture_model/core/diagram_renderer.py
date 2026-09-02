@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import hashlib
 from html import escape
 import re
-import textwrap
 from types import MappingProxyType
 from typing import Any
 
@@ -153,12 +152,47 @@ def _text(value: object) -> str:
     return escape(value, quote=True)
 
 
-def _lines(value: str, width: int, limit: int) -> list[str]:
-    lines = textwrap.wrap(" ".join(value.split()), width=width, break_long_words=True) or [""]
-    if len(lines) > limit:
-        lines = lines[:limit]
-        lines[-1] = lines[-1][:-1].rstrip() + "\u2026"
-    return lines
+def _text_width(value: str, font_size: int = 13) -> int:
+    """Estimate rendered system-ui width conservatively without font dependencies."""
+    return int(sum(.9 if char in "MW@#%&" else .3 if char in "ilI.,:;|'" else .58 for char in value) * font_size)
+
+
+def _lines(value: str, width: int, limit: int, *, pixels: bool = False, font_size: int = 13) -> list[str]:
+    text = " ".join(value.split())
+    capacity = width if pixels else max(width * int(font_size * .58), 1)
+    lines: list[str] = []
+    remaining = text
+    while remaining and len(lines) < limit:
+        if _text_width(remaining, font_size) <= capacity:
+            lines.append(remaining)
+            remaining = ""
+            break
+        split = 0
+        for index in range(1, len(remaining) + 1):
+            if _text_width(remaining[:index], font_size) > capacity:
+                break
+            split = index
+        split = max(split, 1)
+        word_break = remaining.rfind(" ", 0, split + 1)
+        if word_break > 0:
+            split = word_break
+        lines.append(remaining[:split].rstrip())
+        remaining = remaining[split:].lstrip()
+    if remaining and lines:
+        while lines[-1] and _text_width(lines[-1] + "\u2026", font_size) > capacity:
+            lines[-1] = lines[-1][:-1].rstrip()
+        lines[-1] += "\u2026"
+    return lines or [""]
+
+
+def _compact_label(value: str) -> str:
+    stopwords = {"a", "an", "and", "by", "for", "from", "in", "of", "on", "the", "to", "via", "with"}
+    words = [word for word in re.findall(r"[A-Za-z0-9]+", value) if word.casefold() not in stopwords][:3]
+    label = " ".join(words)
+    while len(label) > 18 and words:
+        words.pop()
+        label = " ".join(words)
+    return label or _lines(value, 18, 1)[0]
 
 
 def _ranks(spec: DiagramSpec) -> dict[str, int]:
@@ -222,7 +256,7 @@ def _crossing_minimized_order(
 
 
 def _node_height(node: DiagramNode, options: DiagramRenderOptions) -> int:
-    label_rows = len(_lines(node.label, 24, 2))
+    label_rows = len(_lines(node.label, options.node_width - 16, 2, pixels=True))
     content_height = 20 + label_rows * 16
     if node.subtitle:
         content_height += 18
@@ -268,7 +302,32 @@ def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, 
     origin_x = options.margin + 20
     origin_y = options.margin + 72 + header
 
-    if direction == "TB":
+    if spec.layout == "operational-lanes":
+        x = origin_x
+        scenario_members = next((lane_members[lane.id] for lane in ordered_lanes if lane.id == "scenarios"), [])
+        scenario_heights = [_node_height(node, options) for node in scenario_members]
+        scenario_top = origin_y
+        scenario_bottom = scenario_top + sum(scenario_heights) + max(0, len(scenario_heights) - 1) * 34
+        stack_center = (scenario_top + scenario_bottom) / 2
+        for lane in ordered_lanes:
+            members = lane_members[lane.id]
+            if lane.id == "scenarios":
+                y = scenario_top
+                for node, height in zip(members, scenario_heights):
+                    boxes[node.id] = _Box(x, y, options.node_width, height)
+                    y += height + 34
+            elif len(members) == 1:
+                height = _node_height(members[0], options)
+                boxes[members[0].id] = _Box(x, int(stack_center - height / 2), options.node_width, height)
+            else:
+                heights = [_node_height(node, options) for node in members]
+                total = sum(heights) + max(0, len(heights) - 1) * options.node_gap
+                y = int(stack_center - total / 2)
+                for node, height in zip(members, heights):
+                    boxes[node.id] = _Box(x, y, options.node_width, height)
+                    y += height + options.node_gap
+            x += options.node_width + 90
+    elif direction == "TB":
         y = origin_y
         for lane in ordered_lanes:
             members = lane_members[lane.id]
@@ -331,52 +390,32 @@ def _functional_flow_layout(spec: DiagramSpec, options: DiagramRenderOptions) ->
 
 
 def _catalog_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, _Box]:
-    """Place actors left of actor-contiguous use-case rows."""
+    """Place each actor and its cases in one horizontal swim band."""
     cases = [node for node in spec.nodes if node.kind in {"use-case", "scenario", "behavior"}]
     actors = sorted((node for node in spec.nodes if node.kind in {"actor", "external"}), key=lambda node: node.id)
     support = sorted((node for node in spec.nodes if node not in cases and node not in actors), key=lambda node: (node.kind, node.id))
     actor_order = {node.id: index for index, node in enumerate(actors)}
-    memberships: dict[str, list[int]] = defaultdict(list)
+    memberships: dict[str, list[str]] = defaultdict(list)
     for edge in spec.edges:
         if edge.kind == "participates" and edge.source in actor_order:
-            memberships[edge.target].append(actor_order[edge.source])
-    cases.sort(key=lambda node: (tuple(memberships[node.id]) or (len(actors),), node.id))
+            memberships[edge.target].append(edge.source)
+    cases.sort(key=lambda node: (min((actor_order[item] for item in memberships[node.id]), default=len(actors)), node.id))
     boxes: dict[str, _Box] = {}
-    case_x = options.margin + options.node_width + 140
+    case_x = options.margin + options.node_width + 76
     y = options.margin + 72
-    grouped = {
-        membership: [node for node in cases if tuple(memberships[node.id]) == membership]
-        for membership in sorted({tuple(memberships[node.id]) for node in cases})
-    }
-    exclusive_columns = {
-        membership[0]: index for index, membership in enumerate(
-            sorted(value for value in grouped if len(value) == 1)
-        )
-    }
-    for membership, members in grouped.items():
-        row_heights: list[int] = []
-        for index in range(0, len(members), 2):
-            row_heights.append(max(_node_height(node, options) for node in members[index:index + 2]))
-        row_y = [y]
-        for height in row_heights[:-1]:
-            row_y.append(row_y[-1] + height + 8)
-        for index, node in enumerate(members):
-            if len(membership) > 1 and all(value in exclusive_columns for value in membership):
-                column = sum(exclusive_columns[value] for value in membership) / len(membership)
-            elif len(membership) == 1:
-                column = exclusive_columns[membership[0]]
-            else:
-                column = 0
-            boxes[node.id] = _Box(
-                int(case_x + (column + index % 2) * (options.node_width + 54)), row_y[index // 2],
-                options.node_width, _node_height(node, options),
-            )
-        y += sum(row_heights) + max(0, len(row_heights) - 1) * 8 + 42
     for actor in actors:
-        targets = [edge.target for edge in spec.edges if edge.kind == "participates" and edge.source == actor.id and edge.target in boxes]
-        height = _node_height(actor, options)
-        top = min((boxes[target].y for target in targets), default=options.margin + 72)
-        boxes[actor.id] = _Box(options.margin + 20, top, options.node_width, height)
+        members = [node for node in cases if actor.id in memberships[node.id] and actor.id == min(memberships[node.id], key=lambda item: actor_order[item])]
+        row_heights = [max((_node_height(node, options) for node in members[index:index + 5]), default=options.node_height) for index in range(0, len(members), 5)] or [options.node_height]
+        band_height = sum(row_heights) + max(0, len(row_heights) - 1) * 24
+        for index, node in enumerate(members):
+            row, column = divmod(index, 5)
+            boxes[node.id] = _Box(case_x + column * (options.node_width + 24), y + sum(row_heights[:row]) + row * 24, options.node_width, _node_height(node, options))
+        actor_height = _node_height(actor, options)
+        boxes[actor.id] = _Box(options.margin + 20, y + max(0, (band_height - actor_height) // 2), options.node_width, actor_height)
+        y += band_height + 58
+    unowned = [node for node in cases if node.id not in boxes]
+    for index, node in enumerate(unowned):
+        boxes[node.id] = _Box(case_x + index * (options.node_width + 24), y, options.node_width, _node_height(node, options))
     support_y = options.margin + 72
     support_x = case_x + 2 * (options.node_width + 54)
     for node in support:
@@ -464,26 +503,14 @@ def _semantic_detail_layout(spec: DiagramSpec, options: DiagramRenderOptions) ->
 def _use_case_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], index: int) -> str:
     source, target = boxes[edge.source], boxes[edge.target]
     if edge.kind != "participates":
-        return _lane_edge_path(source, target, "LR", index % 5, [
+        return _lane_edge_path(source, target, "TB", index % 5, [
             box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}
         ])
     sx, sy = source.x + source.width, source.y + source.height / 2
-    tx, ty = target.x, target.y + target.height / 2
-    bus_x = sx + 24 + (sum(ord(char) for char in edge.source) % 5) * 8
-    intervening = [
-        box for identifier, box in boxes.items()
-        if identifier not in {edge.source, edge.target}
-        and box.x > bus_x and box.x < tx and box.y < ty < box.y + box.height
-    ]
-    if intervening:
-        track_y = source.y - 12 - index % 3 * 4
-        target_right = target.x + target.width + 18
-        return _points_path([
-            (sx, sy), (bus_x, sy), (bus_x, track_y),
-            (target_right, track_y), (target_right, ty),
-            (target.x + target.width, ty),
-        ])
-    return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
+    tx, ty = target.x + target.width / 2, target.y
+    bus_x = sx + 28
+    bus_y = target.y - 10
+    return _points_path([(sx, sy), (bus_x, sy), (bus_x, bus_y), (tx, bus_y), (tx, ty)])
 
 
 def _operational_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], nodes: dict[str, DiagramNode], index: int) -> str:
@@ -498,22 +525,49 @@ def _operational_edge_path(edge: DiagramEdge, boxes: dict[str, _Box], nodes: dic
         bus_x = tx - 24 - index % 5 * 8
         return _points_path([(sx, sy), (bus_x, sy), (bus_x, ty), (tx, ty)])
     if source_node.kind == "scenario" and target_node.kind == "scenario":
-        boundary_x = source.x + source.width
-        return _points_path([(boundary_x, sy), (boundary_x, ty), (target.x + target.width, ty)])
+        downward = target.y > source.y
+        source_y = source.y + source.height if downward else source.y
+        target_y = target.y if downward else target.y + target.height
+        gap = abs(target_y - source_y)
+        if gap <= 40:
+            return _points_path([(source.x + source.width / 2, source_y), (target.x + target.width / 2, target_y)])
+        channel_x = source.x - 16
+        return _points_path([(source.x, source_y), (channel_x, source_y), (channel_x, target_y), (target.x, target_y)])
     if source_node.kind == "scenario" and target_node.kind in {"system", "outcome"}:
         boundary_boxes = [box for identifier, box in boxes.items() if nodes[identifier].kind == "system"]
         boundary_left = min((box.x for box in boundary_boxes), default=target.x)
-        trunk_x = source.x + source.width + max((boundary_left - source.x - source.width) / 2, 18)
+        trunk_x = boundary_left - 24
         if target_node.kind == "system":
             return _points_path([(source.x + source.width, sy), (trunk_x, sy), (trunk_x, ty), (target.x, ty)])
-        bottom = max(box.y + box.height for box in boxes.values()) + 20
-        target_right = target.x + target.width
-        outer_right = max(box.x + box.width for box in boxes.values()) + 20
+        boundary = next((box for identifier, box in boxes.items() if nodes[identifier].kind == "system"), source)
+        outcome_bus = target.x - 24
+        bridge_y = boundary.y - 16
         return _points_path([
-            (source.x + source.width, sy), (trunk_x, sy), (trunk_x, bottom),
-            (outer_right, bottom), (outer_right, ty), (target_right, ty),
+            (source.x + source.width, sy), (trunk_x, sy), (trunk_x, bridge_y),
+            (outcome_bus, bridge_y), (outcome_bus, ty), (target.x, ty),
         ])
     return _lane_edge_path(source, target, "LR", index % 5, obstacles)
+
+
+def _logical_edge_path(source: _Box, target: _Box, track: int, obstacles: list[_Box]) -> str:
+    """Route cross-tier dependencies through the center of tier gutters."""
+    if source.y == target.y:
+        return _lane_edge_path(source, target, "TB", track, [])
+    downward = source.y < target.y
+    sy = source.y + source.height if downward else source.y
+    ty = target.y if downward else target.y + target.height
+    source_gutter = sy + (14 if downward else -14)
+    target_gutter = ty - (14 if downward else -14)
+    sx, tx = source.x + source.width / 2, target.x + target.width / 2
+    boundaries = sorted({box.x for box in [source, target, *obstacles]} | {box.x + box.width for box in [source, target, *obstacles]})
+    candidates = [(left + right) / 2 for left, right in zip(boundaries, boundaries[1:]) if right - left >= 20]
+    candidates.sort(key=lambda value: (abs(value - (sx + tx) / 2), value))
+    for corridor_x in candidates:
+        points = [(sx, sy), (sx, source_gutter), (corridor_x, source_gutter),
+                  (corridor_x, target_gutter), (tx, target_gutter), (tx, ty)]
+        if not any(_segment_intersects_box(first, second, box) for first, second in zip(points, points[1:]) for box in obstacles):
+            return _points_path(points)
+    return _lane_edge_path(source, target, "TB", track, obstacles)
 
 
 def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
@@ -680,7 +734,7 @@ def _text_svg(role: str, value: str, x: float, y: float, width: float, height: f
     )
 
 
-def _node_svg(node: DiagramNode, box: _Box, view_id: str) -> str:
+def _node_svg(node: DiagramNode, box: _Box, view_id: str, clip_id: str) -> str:
     classes = ["diagram-node", f"kind-{_text(node.kind.lower().replace('_', '-'))}"]
     if node.inferred:
         classes.append("is-inferred")
@@ -705,18 +759,21 @@ def _node_svg(node: DiagramNode, box: _Box, view_id: str) -> str:
     cursor = box.y + (88 if node.kind.lower().replace("_", "-") == "actor" else 12)
     text_x = box.x + 8
     text_width = box.width - 16
-    for line in _lines(node.label, 24, 2):
+    full_text = " | ".join(value for value in (node.label, node.subtitle, " | ".join(sorted(node.badges))) if value)
+    parts.append(f'<g data-node-text="true" clip-path="url(#{clip_id})"><title>{_text(full_text)}</title>')
+    for line in _lines(node.label, text_width, 2, pixels=True):
         parts.append(_text_svg("title", line, text_x, cursor, text_width, 14, "node-label"))
         cursor += 16
     if node.subtitle:
-        subtitle = _lines(node.subtitle, 28, 1)[0]
+        subtitle = _lines(node.subtitle, text_width, 1, pixels=True, font_size=10)[0]
         cursor += 4
         parts.append(_text_svg("subtitle", subtitle, text_x, cursor, text_width, 10, "node-subtitle"))
         cursor += 10
     if node.badges:
-        badge = _lines(" | ".join(sorted(node.badges)), 30, 1)[0]
+        badge = _lines(" | ".join(sorted(node.badges)), text_width, 1, pixels=True, font_size=8)[0]
         cursor += 6
         parts.append(_text_svg("badge", badge, text_x, cursor, text_width, 10, "node-badge"))
+    parts.append("</g>")
     if node.evidence:
         parts.append(f'<g class="evidence-indicator" data-evidence="true"><title>{_text(_provenance_text(node.evidence))}</title><circle cx="{box.x + box.width - 8}" cy="{box.y + 8}" r="4"/></g>')
     parts.append("</g>")
@@ -885,26 +942,26 @@ def _edge_svg(
     if edge.critical or edge.style.lower() in {"critical", "cycle"}:
         classes.append("is-critical")
     visible_label = "" if (
-        layout == "logical-tiers" and kind in _DEPENDENCY_EDGE_KINDS and edge.count == 1
+        layout == "logical-tiers" and kind in _DEPENDENCY_EDGE_KINDS
         or layout == "operational-lanes" and nodes and not (
             nodes[edge.source].kind in {"actor", "external"} and nodes[edge.target].kind == "scenario"
             or nodes[edge.source].kind == "scenario" and nodes[edge.target].kind == "scenario"
         )
     ) else edge.label
     if layout == "operational-lanes" and visible_label:
-        visible_label = _lines(visible_label, 18, 1)[0]
+        visible_label = _compact_label(visible_label)
     label_text = _lines(visible_label + (f" ({edge.count})" if edge.count != 1 else ""), 28, 1)[0] if visible_label or edge.count != 1 else ""
     label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
     track = index % 5
     obstacles = [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]
-    path = _operational_edge_path(edge, boxes, nodes or {}, index) if layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if layout == "use-case-catalog" else _semantic_edge_path(boxes[edge.source], boxes[edge.target], track) if layout in {"detail-cards", "operational-detail", "functional-detail", "logical-detail", "use-case-sequence"} else _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
+    path = _operational_edge_path(edge, boxes, nodes or {}, index) if layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if layout == "use-case-catalog" else _logical_edge_path(boxes[edge.source], boxes[edge.target], track, obstacles) if layout == "logical-tiers" and kind in _DEPENDENCY_EDGE_KINDS else _semantic_edge_path(boxes[edge.source], boxes[edge.target], track) if layout in {"detail-cards", "operational-detail", "functional-detail", "logical-detail", "use-case-sequence"} else _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
     evidence_title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
     detailed_label = edge.title or edge.label
     title = f"{detailed_label}: {evidence_title}" if detailed_label else evidence_title
-    label = visible_label + (f" ({edge.count})" if edge.count != 1 else "")
+    label = visible_label + (f" ({edge.count})" if visible_label and edge.count != 1 else "")
     result = [
-        f'<path id="edge-{index}" class="{" ".join(classes)}" data-edge-id="edge-{index}" data-source="{_text(edge.source)}" data-target="{_text(edge.target)}" data-kind="{_text(edge.kind)}" data-label-hidden="{str(not bool(label)).lower()}" d="{path}" style="{dash}"{marker}><title>{_text(title)}</title></path>'
+        f'<path id="edge-{index}" class="{" ".join(classes)}" data-edge-id="edge-{index}" data-source="{_text(edge.source)}" data-target="{_text(edge.target)}" data-kind="{_text(edge.kind)}" data-full-label="{_text(detailed_label)}" data-label-hidden="{str(not bool(label)).lower()}" d="{path}" style="{dash}"{marker}><title>{_text(title)}</title></path>'
     ]
     if label:
         source, target = boxes[edge.source], boxes[edge.target]
@@ -959,7 +1016,7 @@ def _stylesheet(theme: str) -> str:
 .container { fill: SURFACE; fill-opacity: .28; stroke: EDGE; stroke-width: 1; }
 .container.system { stroke-width: 3; }
 .diagram-edge { fill: none; stroke: EDGE; stroke-width: 1.5; }
-.diagram-edge.is-critical { stroke: CRITICAL; stroke-width: 2; }
+.diagram-edge.is-critical { stroke: CRITICAL; stroke-width: 1.25; opacity: .8; }
 .node-label,.node-subtitle,.edge-label,.footer-text,.container-label,.diagram-title { fill: TEXT; dominant-baseline: middle; }
 .node-label { text-anchor: middle; font-size: 13px; font-weight: 600; }
 .node-subtitle { text-anchor: middle; font-size: 10px; fill: #64748b; }
@@ -989,7 +1046,7 @@ def _explicit_presentation(svg: str, theme: str) -> str:
             additions.extend((
                 'fill="none"' if "fill=" not in attributes else "",
                 f'stroke="{palette["critical"] if "is-critical" in class_names else palette["edge"]}"' if "stroke=" not in attributes else "",
-                f'stroke-width="{2 if "is-critical" in class_names else 1.5}"' if "stroke-width=" not in attributes else "",
+                f'stroke-width="{1.25 if "is-critical" in class_names else 1.5}"' if "stroke-width=" not in attributes else "",
             ))
         elif "node-shape" in class_names:
             additions.extend((
@@ -1073,11 +1130,20 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
         f'<desc id="{desc_id}">{_text(spec.subtitle or "Architecture diagram")}</desc>',
         f'<rect data-canvas-background="true" width="{width}" height="{height}" fill="{"#ffffff" if options.theme == "light" else "#0f172a"}"/>',
         _stylesheet(options.theme),
-        f'<defs><marker id="{arrow_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="{_PALETTES[options.theme]["edge"]}" stroke="none"/></marker></defs>',
+        f'<defs><marker id="{arrow_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="{_PALETTES[options.theme]["edge"]}" stroke="none"/></marker>',
         f'<text class="diagram-title" x="{options.margin}" y="30">{_text(spec.title)}</text>',
     ]
     if spec.subtitle:
         parts.append(f'<text class="diagram-subtitle" x="{options.margin}" y="51">{_text(_lines(spec.subtitle, 80, 1)[0])}</text>')
+    clip_ids: dict[str, str] = {}
+    for index, node in enumerate(sorted(spec.nodes, key=lambda item: item.id)):
+        box = boxes[node.id]
+        clip_id = f"{namespace}-node-clip-{index}"
+        clip_ids[node.id] = clip_id
+        actor_offset = 84 if node.kind.lower().replace("_", "-") == "actor" else 4
+        clip_y = box.y + actor_offset
+        parts.append(f'<clipPath id="{clip_id}"><rect x="{box.x + 4}" y="{clip_y}" width="{box.width - 8}" height="{max(box.height - actor_offset - 4, 1)}"/></clipPath>')
+    parts.append("</defs>")
     container_lookup = {item.id: item for item in [*spec.groups, *spec.lanes]}
     group_label_boxes: list[_Box] = []
     for identifier, box in sorted(containers.items(), key=lambda item: (container_lookup[item[0]].order, item[0])):
@@ -1105,7 +1171,7 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     }
     node_lookup = {node.id: node for node in spec.nodes}
     routed_paths = [
-        _operational_edge_path(edge, boxes, node_lookup, index) if spec.layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if spec.layout == "use-case-catalog" else _semantic_edge_path(
+        _operational_edge_path(edge, boxes, node_lookup, index) if spec.layout == "operational-lanes" else _use_case_edge_path(edge, boxes, index) if spec.layout == "use-case-catalog" else _logical_edge_path(boxes[edge.source], boxes[edge.target], index % 5, [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]) if spec.layout == "logical-tiers" and edge.kind.lower().replace("_", "-") in _DEPENDENCY_EDGE_KINDS else _semantic_edge_path(
             boxes[edge.source], boxes[edge.target], index % 5,
         ) if spec.layout in {"detail-cards", "operational-detail", "functional-detail", "logical-detail", "use-case-sequence"} else _lane_edge_path(
             boxes[edge.source], boxes[edge.target], spec.direction.upper(), index % 5,
@@ -1129,8 +1195,17 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
             node_lookup,
         )
         parts.append(edge_svg.replace('url(#arrow)', f'url(#{arrow_id})'))
+    if spec.layout == "use-case-catalog":
+        for actor in sorted((node for node in spec.nodes if node.kind in {"actor", "external"}), key=lambda node: boxes[node.id].y):
+            targets = [edge.target for edge in ordered_edges if edge.kind == "participates" and edge.source == actor.id and edge.target in boxes]
+            members = [actor.id, *targets]
+            member_boxes = [boxes[identifier] for identifier in members]
+            band = _Box(min(box.x for box in member_boxes) - 12, min(box.y for box in member_boxes) - 12,
+                       max(box.x + box.width for box in member_boxes) - min(box.x for box in member_boxes) + 24,
+                       max(box.y + box.height for box in member_boxes) - min(box.y for box in member_boxes) + 24)
+            parts.append(f'<g data-actor-band="{_text(actor.id)}" data-case-count="{len(targets)}" data-members="{_text(" ".join(members))}" data-x="{band.x}" data-y="{band.y}" data-width="{band.width}" data-height="{band.height}"><rect class="actor-band" x="{band.x}" y="{band.y}" width="{band.width}" height="{band.height}" rx="8" fill="none" stroke="none"/></g>')
     for node in sorted(spec.nodes, key=lambda item: item.id):
-        parts.append(_node_svg(node, boxes[node.id], spec.id))
+        parts.append(_node_svg(node, boxes[node.id], spec.id, clip_ids[node.id]))
     footer_start = max([box.y + box.height for box in [*boxes.values(), *containers.values()]] + [160]) + 38
     parts.append(_footer(spec, footer_start, boxes, width))
     parts.append("</svg>")

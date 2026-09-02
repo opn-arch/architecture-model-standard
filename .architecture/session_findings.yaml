@@ -135,4 +135,63 @@ findings:
   priority: should
   timestamp: '2026-09-02T21:41:59.171140+00:00'
   synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: 'Implemented strict TDD curated visual fixes: untargeted callouts have no
+    leader; targeted callouts route orthogonally ar'
+  description: 'Implemented strict TDD curated visual fixes: untargeted callouts have
+    no leader; targeted callouts route orthogonally around nodes; ConOps uses distinct
+    exterior route channels and hides boundary/outcome labels while preserving semantic
+    edges; all public projector specs recursively bound to 25 nodes/40 edges using
+    deterministic summary/page drilldowns; renderer defaults and safety reflow cap
+    actual logs-db panels at 2400x1800; actual logs-db integration test traverses
+    every nested panel and resolves refs. Focused 164 passed. Full 2366 passed with
+    9 known failures.'
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T22:59:06.010555+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented strict TDD curated SE Markdown alignment. Shared build_curated_views
+    context and view curation with reposito
+  description: Implemented strict TDD curated SE Markdown alignment. Shared build_curated_views
+    context and view curation with repository-aware SE generators, preserving direct
+    model-only legacy output. Added curated ConOps, Functional Analysis, Logical Architecture,
+    and Use Cases narrative renderers with evidence/inference markers, safe table
+    escaping, exact spec nodes/edges/order, drilldown details, and omission appendices.
+    Focused 71 tests pass. Full suite reports expected 9 known failures and 2369 passes
+    including 3 initial new tests; one additional label-only regression was added
+    afterward and focused tests pass. Architecture gate remains false due pre-existing
+    model coverage/allocation gaps.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T23:16:05.152828+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented requested semantic curated drilldown layouts with strict TDD.
+    Focused visual suites pass 170/170. Actual log
+  description: Implemented requested semantic curated drilldown layouts with strict
+    TDD. Focused visual suites pass 170/170. Actual logs-db largest-panel regression
+    renders PNGs and checks >=25% utilization, <=1800x1200, no empty containers, no
+    route-through-node, <=1 edge crossing, and ConOps zero crossings/label overlap.
+    Full suite has 9 unrelated existing failures among 2496 tests. Architecture gate
+    remains red from pre-existing model quality.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T23:31:08.207734+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented strict TDD visual fixes requested for ConOps operational-lanes,
+    use-case-catalog, logical-tiers, and text cl
+  description: 'Implemented strict TDD visual fixes requested for ConOps operational-lanes,
+    use-case-catalog, logical-tiers, and text clipping. Added real logs-db optional-profile
+    geometry tests and generated/reviewed rsvg PNGs under /tmp/logs-db-curated-polish-20260902.
+    Focused suite: 178 passed.'
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T23:50:34.127584+00:00'
+  synced: false
 synced: []

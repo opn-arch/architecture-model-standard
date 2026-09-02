@@ -372,3 +372,109 @@ requirements:
   status: proposed
   created_at: '2026-09-02T22:06:39.189185+00:00'
   context: User requested strict TDD and a new commit after 50a5f72.
+- id: REQ-41
+  text: Resolve critical SVG presentation colors explicitly by render-time light/dark
+    theme, with contrast tests and librsvg-compatible attributes.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.596005+00:00'
+  context: Release blocker 1
+- id: REQ-42
+  text: Render embedded viewer panels and drilldowns in dark theme while standalone
+    exports use light theme, with accurate panel metadata.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.618980+00:00'
+  context: Release blocker 2
+- id: REQ-43
+  text: Route ConOps operational lanes deterministically with noncrossing buses, no
+    collisions, compact labels, and dimensions at most 1800x1200.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.642519+00:00'
+  context: Release blocker 3
+- id: REQ-44
+  text: Improve logical-tier executive backbone by hiding single dependency labels,
+    retaining titles, using aggregate labels safely, reducing cycle visual dominance,
+    and avoiding clipping/crossings.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.666423+00:00'
+  context: Release blocker 4
+- id: REQ-45
+  text: Semantic external-role bundling must yield four overview nodes while preserving
+    all five source external entries in drilldowns.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.690120+00:00'
+  context: Release blocker 5
+- id: REQ-46
+  text: Standalone SVG generation and CLI must load the same curation and view context
+    as viewer, support explicit/no-curation plumbing, use curated projectors, and
+    render light theme.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.713972+00:00'
+  context: Release blocker 6
+- id: REQ-47
+  text: SE Markdown documents must render and reference existing curated SVGs when
+    repository/output context is available while preserving narrative-only model API
+    compatibility.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.738418+00:00'
+  context: Release blocker 7
+- id: REQ-48
+  text: Use one shared helper to build and render curated specs for viewer, exports,
+    and docs without circular imports.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.763820+00:00'
+  context: Release blocker 8
+- id: REQ-49
+  text: Add temp-repository and optional actual logs-db integration coverage comparing
+    DiagramSpec IDs across viewer, exports, and docs plus contrast, routing, dimensions,
+    links, security, and offline checks.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.789600+00:00'
+  context: Release blocker 9
+- id: REQ-50
+  text: 'Run focused and full suites, preserve telemetry dirt, and create commit fix(viewer):
+    unify curated rendering outputs.'
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:29:10.815330+00:00'
+  context: Release blocker 10
+- id: REQ-51
+  text: Fix curated viewer callout routing, ConOps operational-lane routing, bounded
+    recursively complete drilldowns, and actual logs-db artifact coverage while preserving
+    viewer/export/docs overview parity, themes, and security.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T22:45:57.207210+00:00'
+  context: Strict TDD; direct panels <=2400x1800, primary nodes <=25, edges <=40;
+    no unrelated-node route crossings or unresolved drilldowns; preserve all entities
+    recursively.
+- id: REQ-52
+  text: SE Markdown generated with repository curation must consume the exact shared
+    DiagramSpec, ArchitectureViewContext, and curation used by SVG/viewer generation,
+    while model-only direct APIs retain legacy output; curated ConOps, Functional
+    Analysis, Logical Architecture, and Use Cases must mirror curated nodes, edges,
+    order, drilldowns, evidence/inference status, omissions, and safely escaped text,
+    with actual logs-db and temporary-fixture parity tests.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T23:07:24.803065+00:00'
+  context: 'Strict TDD fix requested at commit 14a0294; preserve pre-existing telemetry
+    dirt and commit as fix(docs): align SE narratives with curated views.'
+- id: REQ-53
+  text: Polish curated ConOps operational-lanes, use-case-catalog, and logical-tiers
+    diagrams with compact node-driven geometry, non-overlapping in-band routing, clipped
+    pixel-aware text, direct visual acceptance tests against the logs-db optional
+    profile, and preserve narrative/spec parity and interactions.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T23:40:13.319672+00:00'
+  context: 'User supplied requirements A-E (1-14), requested strict TDD, visual PNG
+    review, full verification, and commit fix(viewer): polish executive diagram layouts.'

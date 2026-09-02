@@ -1632,8 +1632,8 @@ def project_logical_architecture(
         overview_edges = _logical_backbone(overview_edges, selected, 9)
     connected = {endpoint for edge in edge_values.values() for endpoint in (edge.source, edge.target)}
     for node in selected:
-        if node.id not in connected and "No cross-system dependency" not in node.badges:
-            node.badges.append("No cross-system dependency")
+        if node.id not in connected and "No cross-system link" not in node.badges:
+            node.badges.append("No cross-system link")
     full_dependency_details.sort(key=lambda item: (
         str(item["source"]), str(item["target"]), str(item["kind"]), str(item["model"]),
     ))

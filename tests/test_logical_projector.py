@@ -404,7 +404,7 @@ def test_curated_logical_selects_deterministic_connected_backbone_and_preserves_
     assert first.to_dict() == second.to_dict()
     assert len(first.edges) <= 9
     assert {edge.source for edge in first.edges} | {edge.target for edge in first.edges} >= {
-        node.id for node in first.nodes if "No cross-system dependency" not in node.badges
+        node.id for node in first.nodes if "No cross-system link" not in node.badges
     }
     facet = first.facets["logical_dependencies"]
     assert facet["full_count"] == 19
@@ -434,5 +434,5 @@ def test_logical_canonical_isolates_are_explained_and_keep_drilldowns(tmp_path):
         for edge in spec.facets["logical_dependencies"]["edges"]
     )]
     assert isolates
-    assert all("No cross-system dependency" in node.badges and node.drilldown_ref for node in isolates)
+    assert all("No cross-system link" in node.badges and node.drilldown_ref for node in isolates)
     assert all("isolated" not in node.badges for node in spec.nodes)
