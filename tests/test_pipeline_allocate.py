@@ -1,12 +1,14 @@
 """Tests for the allocate pipeline stage."""
 import pytest
 from pathlib import Path
-from architecture_model.pipeline.allocate import AllocateStage
+from architecture_model.pipeline.allocate import AllocateStage, _apply_allocation_resolutions
+from architecture_model.pipeline.allocate_types import ComponentAllocation
 from architecture_model.pipeline.observe import ObserveStage
 from architecture_model.pipeline.infer import InferStage
 from architecture_model.pipeline.protocol import Evidence, PipelineContext, QualityMetrics, StageResult
 from architecture_model.pipeline.infer_types import InferenceResult, InferredCapability
 from architecture_model.pipeline.observe_types import Inventory, ModuleRecord
+from architecture_model.pipeline.relate import RelateStage
 
 
 def _run_pipeline(tmp_path):
@@ -150,6 +152,50 @@ def list_articles():
         component = next(c for c in result.output.components if c.name == "Resolved Group")
         assert component.files == [Path("a.py"), Path("b.py")]
         assert component.evidence == ["These modules form one bounded concern"]
+
+    def test_structured_allocation_mapping_preserves_groups_and_unique_ids(self, tmp_path):
+        modules = [ModuleRecord(path=Path(name)) for name in ("a.py", "b.py", "c.py")]
+        components = [
+            ComponentAllocation(id="COMP-1", name="Keep A", files=[Path("a.py")]),
+            ComponentAllocation(id="COMP-3", name="Keep C", capability_id="CAP-1", files=[Path("c.py")]),
+        ]
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.prior_corrections = [
+            Evidence(
+                source="user_confirmation",
+                confidence=1.0,
+                raw="Explicit regrouping",
+                location="ambiguous_module",
+                metadata={"file_allocations": {"Group A": ["a.py"], "Group B": ["b.py"]}},
+            )
+        ]
+
+        _apply_allocation_resolutions(ctx, components, modules, "library", [])
+
+        assert [(component.name, component.files) for component in components] == [
+            ("Keep C", [Path("c.py")]),
+            ("Group A", [Path("a.py")]),
+            ("Group B", [Path("b.py")]),
+        ]
+        assert [component.id for component in components] == ["COMP-3", "COMP-4", "COMP-5"]
+        assert len({component.id for component in components}) == len(components)
+
+        ctx.cache["observe"] = StageResult(Inventory(modules=modules), QualityMetrics(100))
+        ctx.cache["infer"] = StageResult(
+            InferenceResult(capabilities=[InferredCapability(id="CAP-1", name="Keep C")]),
+            QualityMetrics(100),
+        )
+        from architecture_model.pipeline.allocate_types import AllocationResult
+        ctx.cache["allocate"] = StageResult(AllocationResult(components=components), QualityMetrics(100))
+        relationships = RelateStage().run(ctx).output.relationships
+        entity_ids = {component.id for component in components} | {"CAP-1"}
+        assert relationships
+        assert all(
+            endpoint in entity_ids
+            for relationship in relationships
+            for endpoint in (relationship.from_id, relationship.to_id)
+            if endpoint.startswith("COMP-") or endpoint.startswith("CAP-")
+        )
 
 
 class TestAllocatePerComponentQuality:

@@ -39,20 +39,22 @@ def _apply_behavior_resolutions(
     behaviors: list[InferredBehavior],
     diagnostics: list[Diagnostic],
 ) -> None:
-    """Create deterministic workflows from structured complex-behavior evidence."""
+    """Create deterministic workflows only from explicit workflow metadata."""
     known = {(behavior.source_file, behavior.intent) for behavior in behaviors}
     for evidence in get_resolutions_for_stage(ctx, "infer"):
-        files = [str(path) for path in evidence.metadata.get("files_sent", [])]
-        if not files or not evidence.raw.strip():
+        files = [str(path) for path in evidence.metadata.get("source_files", [])]
+        steps = evidence.metadata.get("steps")
+        behavior_name = str(evidence.metadata.get("behavior_name", "")).strip()
+        if not files or not behavior_name or not isinstance(steps, list):
             continue
+        steps = [str(step).strip() for step in steps if str(step).strip()]
+        if not steps:
+            continue
+        intent = str(evidence.metadata.get("intent", "")).strip()
         for source_file in files:
-            key = (source_file, evidence.raw.strip())
+            key = (source_file, intent)
             if key in known:
                 continue
-            separators = r"\s*(?:->|→|\n|;|\bthen\b)\s*"
-            steps = [step.strip(" .") for step in re.split(separators, evidence.raw) if step.strip(" .")]
-            if not steps:
-                steps = [evidence.raw.strip()]
             capability_id = next(
                 (
                     capability.id
@@ -61,16 +63,15 @@ def _apply_behavior_resolutions(
                 ),
                 "",
             )
-            target_name = str(evidence.metadata.get("target_name", "")).strip()
             behaviors.append(
                 InferredBehavior(
                     id=f"BEH-{len(behaviors) + 1}",
-                    name=target_name or f"{Path(source_file).stem.replace('_', ' ').title()} workflow",
+                    name=behavior_name,
                     capability_id=capability_id,
                     steps=steps,
                     behavior_type="workflow",
                     source_file=source_file,
-                    intent=evidence.raw.strip(),
+                    intent=intent,
                 )
             )
             known.add(key)

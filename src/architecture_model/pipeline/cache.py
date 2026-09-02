@@ -273,6 +273,18 @@ class PipelineCache:
 
             shutil.rmtree(self.cache_dir)
 
+    def invalidate(self, stage_names: list[str]) -> None:
+        """Remove selected persisted stages from this cache scope."""
+        invalidated = set(stage_names)
+        for stage_name in invalidated:
+            (self.cache_dir / f"{stage_name}.json").unlink(missing_ok=True)
+        meta = self._read_meta()
+        meta["stages_completed"] = [
+            name for name in meta.get("stages_completed", []) if name not in invalidated
+        ]
+        if self.cache_dir.exists():
+            (self.cache_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+
     def _update_meta(self, stage_name: str) -> None:
         """Update meta.json with completed stage."""
         meta = self._read_meta()

@@ -246,6 +246,7 @@ class LLMCallRecord:
 
     stage: str
     purpose: str
+    resolution_id: str = ""
     timestamp: str = ""
     files_sent: list[str] = field(default_factory=list)
     slices_sent: list[str] = field(default_factory=list)

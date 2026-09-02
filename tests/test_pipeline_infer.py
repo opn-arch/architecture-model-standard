@@ -107,7 +107,12 @@ def do_another():
                 confidence=1.0,
                 raw="validate input -> persist record -> publish event",
                 location="complex_behavior",
-                metadata={"files_sent": ["workflow.py"], "target_name": "Record workflow"},
+                metadata={
+                    "behavior_name": "Record workflow",
+                    "steps": ["validate input", "persist record", "publish event"],
+                    "source_files": ["workflow.py"],
+                    "intent": "validate input -> persist record -> publish event",
+                },
             )
         ]
 
@@ -118,7 +123,7 @@ def do_another():
         assert behavior.intent == "validate input -> persist record -> publish event"
         assert behavior.steps == ["validate input", "persist record", "publish event"]
 
-    def test_complex_behavior_resolution_uses_llm_call_files(self, tmp_path):
+    def test_free_text_resolution_does_not_invent_workflow_steps(self, tmp_path):
         from architecture_model.pipeline.protocol import LLMCallRecord
 
         (tmp_path / "workflow.py").write_text("def run():\n    pass\n")
@@ -127,13 +132,32 @@ def do_another():
         ctx.prior_corrections = [
             Evidence(source="llm_analysis", confidence=0.9, raw="load -> transform -> save", location="complex_behavior")
         ]
-        ctx.llm_calls = [
-            LLMCallRecord(stage="infer", purpose="resolve uncertainty: complex_behavior", files_sent=["workflow.py"])
-        ]
+        ctx.llm_calls = [LLMCallRecord(stage="infer", purpose="resolve uncertainty: complex_behavior", files_sent=["workflow.py"])]
 
         result = InferStage().run(ctx)
 
-        assert any(b.source_file == "workflow.py" and b.steps == ["load", "transform", "save"] for b in result.output.behaviors)
+        assert not any(b.source_file == "workflow.py" for b in result.output.behaviors)
+
+    def test_resolution_provenance_matches_stable_identity(self, tmp_path):
+        from architecture_model.pipeline.corrections import get_resolutions_for_stage
+        from architecture_model.pipeline.protocol import LLMCallRecord
+
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.prior_corrections = [
+            Evidence(source="llm_analysis", confidence=0.9, raw="first", location="complex_behavior", metadata={"resolution_id": "res-1"}),
+            Evidence(source="llm_analysis", confidence=0.9, raw="second", location="complex_behavior", metadata={"resolution_id": "res-2"}),
+            Evidence(source="llm_analysis", confidence=0.9, raw="legacy", location="complex_behavior"),
+        ]
+        ctx.llm_calls = [
+            LLMCallRecord(stage="infer", purpose="resolve uncertainty: complex_behavior", resolution_id="res-2", files_sent=["second.py"]),
+            LLMCallRecord(stage="infer", purpose="resolve uncertainty: complex_behavior", resolution_id="res-1", files_sent=["first.py"]),
+        ]
+
+        resolutions = get_resolutions_for_stage(ctx, "infer")
+
+        assert resolutions[0].metadata["files_sent"] == ["first.py"]
+        assert resolutions[1].metadata["files_sent"] == ["second.py"]
+        assert "files_sent" not in resolutions[2].metadata
 
     def test_infer_description_uses_docstrings(self, tmp_path):
         """Capability descriptions should incorporate module/function docstrings."""

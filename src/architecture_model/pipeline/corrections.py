@@ -24,10 +24,10 @@ def get_resolutions_for_stage(ctx: PipelineContext, stage_name: str) -> list:
             continue
         if evidence.metadata.get("for_stage", stage_name) != stage_name:
             continue
-        if not evidence.metadata.get("files_sent"):
-            purpose = f"resolve uncertainty: {evidence.location}"
+        if not evidence.metadata.get("files_sent") and evidence.metadata.get("resolution_id"):
+            resolution_id = evidence.metadata["resolution_id"]
             call = next(
-                (item for item in ctx.llm_calls if item.stage == stage_name and item.purpose == purpose),
+                (item for item in ctx.llm_calls if item.resolution_id == resolution_id),
                 None,
             )
             if call:

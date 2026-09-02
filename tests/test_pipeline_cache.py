@@ -167,6 +167,18 @@ class TestPipelineCache:
         cache.clear()
         assert not cache.exists()
 
+    def test_invalidate_removes_selected_stage_files_and_meta(self, cache):
+        cache.save_stage("observe", _make_result())
+        cache.save_stage("infer", _make_result())
+        cache.save_stage("allocate", _make_result())
+
+        cache.invalidate(["infer", "allocate"])
+
+        assert cache.load_stage("observe") is not None
+        assert cache.load_stage("infer") is None
+        assert cache.load_stage("allocate") is None
+        assert cache._read_meta()["stages_completed"] == ["observe"]
+
     def test_exists(self, cache):
         assert not cache.exists()
         cache.save_stage("observe", _make_result())

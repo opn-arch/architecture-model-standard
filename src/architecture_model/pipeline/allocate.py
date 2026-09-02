@@ -9,6 +9,7 @@ Strategy:
 
 from __future__ import annotations
 
+import re
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -340,45 +341,63 @@ def _apply_allocation_resolutions(
 ) -> None:
     """Apply explicit ambiguous-module file groups without parsing free text."""
     module_paths = {module.path for module in modules}
+    used_ids = {component.id for component in components}
+    numeric_ids = [int(match.group(1)) for item in used_ids if (match := re.fullmatch(r"COMP-(\d+)", item))]
+    next_id = max(numeric_ids, default=0) + 1
     for evidence in get_resolutions_for_stage(ctx, "allocate"):
         file_values = evidence.metadata.get("file_allocations") or evidence.metadata.get("files_sent", [])
         if isinstance(file_values, dict):
-            file_values = [
-                path
-                for paths in file_values.values()
-                for path in (paths if isinstance(paths, list) else [paths])
+            groups = [
+                {"target_name": name, "files": paths, "target_kind": "component"}
+                for name, paths in file_values.items()
             ]
-        files = [Path(path) for path in file_values]
-        files = [path for path in files if path in module_paths]
-        if not files:
-            continue
-        target_name = str(evidence.metadata.get("target_name", "")).strip()
-        target_kind = str(evidence.metadata.get("target_kind", "component")).strip()
-        if target_kind not in ("", "component"):
-            continue
-        for component in components:
-            component.files = [path for path in component.files if path not in files]
-        component = next(
-            (item for item in components if target_name and item.name == target_name),
-            None,
-        )
-        if component is None:
-            component = ComponentAllocation(
-                id=f"COMP-{len(components) + 1}",
-                name=target_name or Path(files[0]).parent.name.replace("_", " ").title() or "Resolved Group",
-                layer=_infer_layer(files, project_type),
+        elif file_values and isinstance(file_values[0], dict):
+            groups = file_values
+        else:
+            groups = [{
+                "target_name": evidence.metadata.get("target_name", ""),
+                "target_kind": evidence.metadata.get("target_kind", "component"),
+                "files": file_values,
+            }]
+        assigned_in_resolution: set[Path] = set()
+        for group in groups:
+            target_kind = str(group.get("target_kind", "component")).strip()
+            if target_kind not in ("", "component"):
+                continue
+            values = group.get("files", [])
+            files = [Path(path) for path in (values if isinstance(values, list) else [values])]
+            files = [path for path in files if path in module_paths and path not in assigned_in_resolution]
+            if not files:
+                continue
+            assigned_in_resolution.update(files)
+            target_name = str(group.get("target_name", "")).strip()
+            for component in components:
+                component.files = [path for path in component.files if path not in files]
+            component = next(
+                (item for item in components if target_name and item.name == target_name),
+                None,
             )
-            components.append(component)
-        component.files.extend(path for path in files if path not in component.files)
-        component.evidence.append(evidence.raw)
-        diagnostics.append(
-            Diagnostic(
-                severity="info",
-                code="resolution_applied",
-                message=f"Applied explicit allocation evidence to {component.id}",
-                context={"files": [str(path) for path in files]},
+            if component is None:
+                while f"COMP-{next_id}" in used_ids:
+                    next_id += 1
+                component = ComponentAllocation(
+                    id=f"COMP-{next_id}",
+                    name=target_name or Path(files[0]).parent.name.replace("_", " ").title() or "Resolved Group",
+                    layer=_infer_layer(files, project_type),
+                )
+                used_ids.add(component.id)
+                next_id += 1
+                components.append(component)
+            component.files.extend(path for path in files if path not in component.files)
+            component.evidence.append(evidence.raw)
+            diagnostics.append(
+                Diagnostic(
+                    severity="info",
+                    code="resolution_applied",
+                    message=f"Applied explicit allocation evidence to {component.id}",
+                    context={"files": [str(path) for path in files]},
+                )
             )
-        )
     components[:] = [component for component in components if component.files]
 
 
