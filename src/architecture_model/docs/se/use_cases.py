@@ -11,7 +11,9 @@ def _rel_type_str(rt: object) -> str:
     return rt.value if hasattr(rt, "value") else str(rt)
 
 
-def generate_use_cases(model: ArchitectureModel, manifest: object | None = None) -> str:
+def generate_use_cases(
+    model: ArchitectureModel, manifest: object | None = None, *, diagram_reference: str = "",
+) -> str:
     lines: list[str] = []
     project = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
     lines.append(f"# Use Cases: {project}")
@@ -133,6 +135,8 @@ def generate_use_cases(model: ArchitectureModel, manifest: object | None = None)
     # --- Use Case Diagram ---
     lines.append("## Use Case Diagram")
     lines.append("")
+    if diagram_reference:
+        lines.extend([diagram_reference, ""])
     if model.entities.actors and (use_case_behaviors or other_behaviors):
         lines.append("```mermaid")
         lines.append("graph LR")

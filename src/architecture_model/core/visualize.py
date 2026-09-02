@@ -3023,14 +3023,14 @@ def generate_html_viewer(
             return html + '</details>';
         }}
 
-        function showPipelineHistory() {{
+        function showPipelineHistory(pushHistory) {{
             var runs = pipelineRuns();
             if (!runs || !runs.length) {{ content.innerHTML = '<p>No pipeline history available.</p>'; return; }}
             var cur = content.dataset.currentType;
             var curId = content.dataset.currentId;
             var curLabel = content.dataset.currentLabel;
-            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
-            content.dataset.currentType = 'pipeline-history';
+            if (pushHistory !== false && cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            content.dataset.currentType = 'history';
             content.dataset.currentId = 'pipeline-history';
             content.dataset.currentLabel = 'Pipeline History';
             var html = renderBreadcrumbs('Pipeline History');
@@ -3068,18 +3068,22 @@ def generate_html_viewer(
 
         function goBack() {{
             if (navHistory.length === 0) return;
-            var prev = navHistory.pop();
-            if (prev.type === 'view') showView(prev.id, false);
-            else if (prev.type === 'module') showModule(prev.id);
-            else showEntity(prev.id, false);
+            restoreNavigationState(navHistory.pop());
         }}
 
         function goToHistory(idx) {{
             var target = navHistory[idx];
             navHistory = navHistory.slice(0, idx);
-            if (target.type === 'view') showView(target.id, false);
-            else if (target.type === 'module') showModule(target.id);
-            else showEntity(target.id, false);
+            restoreNavigationState(target);
+        }}
+
+        function restoreNavigationState(state) {{
+            if (!state) return;
+            if (state.type === 'view') showView(state.id, false);
+            else if (state.type === 'drilldown') showCuratedDrilldown(state.viewId, state.specId, state.entityRef, false);
+            else if (state.type === 'module') showModule(state.id, false);
+            else if (state.type === 'history') showPipelineHistory(false);
+            else if (state.type === 'entity') showEntity(state.id, false);
         }}
 
         /* ── Property card HTML ───────────────────────────────── */
@@ -3318,7 +3322,7 @@ def generate_html_viewer(
                 node.setAttribute('aria-label', node.textContent.trim() || 'Open diagram node');
                 function activate(ev) {{
                     if (ev) ev.preventDefault();
-                    if (node.dataset.drilldownRef) showDrilldown(viewKey, node.dataset.drilldownRef, node.dataset.entityRef);
+                    if (node.dataset.drilldownRef) showCuratedDrilldown(viewKey, node.dataset.drilldownRef, node.dataset.entityRef);
                     else if (node.dataset.entityRef) showEntity(resolveNativeEntity(node.dataset.entityRef));
                 }}
                 node.addEventListener('click', activate);
@@ -3350,12 +3354,13 @@ def generate_html_viewer(
             var comment = commentHtml('view', viewCommentId(viewKey, panel.diagram_id), 'Add notes about this architecture view...');
             return {{html: html + comment.html + '</div>', comment: comment.value}};
         }}
-        function showDrilldown(viewKey, drilldownRef, entityRef) {{
+        function showCuratedDrilldown(viewKey, drilldownRef, entityRef, pushHistory) {{
             var view = D.se_views[viewKey];
             var panel = view && view.panel && view.panel.drilldowns[drilldownRef];
             if (!panel) return;
-            navHistory.push({{type: 'view', id: viewKey, label: view.label}});
+            if (pushHistory !== false) navHistory.push({{type: 'view', id: viewKey, label: view.label}});
             content.dataset.currentType = 'drilldown'; content.dataset.currentId = viewKey + ':' + drilldownRef; content.dataset.currentLabel = panel.diagram_id;
+            content.dataset.currentViewId = viewKey; content.dataset.currentSpecId = drilldownRef; content.dataset.currentEntityRef = entityRef || '';
             var rendered = nativePanelHtml(viewKey, view, panel, entityRef);
             content.innerHTML = renderBreadcrumbs(panel.diagram_id) + '<h2 class="content-header">' + escapeHtml(panel.diagram_id) + '</h2>' + rendered.html;
             wireComment(content.querySelector('.comment-textarea'), rendered.comment);
@@ -3400,7 +3405,8 @@ def generate_html_viewer(
                 var cur = content.dataset.currentType;
                 var curId = content.dataset.currentId;
                 var curLabel = content.dataset.currentLabel;
-                if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+                if (cur === 'drilldown') navHistory.push({{type: cur, viewId: content.dataset.currentViewId, specId: content.dataset.currentSpecId, entityRef: content.dataset.currentEntityRef, label: curLabel}});
+                else if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
             }}
 
             var p = D.properties[eid] || {{}};
@@ -3520,14 +3526,14 @@ def generate_html_viewer(
         }};
 
         /* ── Show Module detail ────────────────────────────────── */
-        window.showModule = function(filepath) {{
+        window.showModule = function(filepath, pushHistory) {{
             var mod = D.modules && D.modules[filepath];
             if (!mod) return;
 
             var cur = content.dataset.currentType;
             var curId = content.dataset.currentId;
             var curLabel = content.dataset.currentLabel;
-            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            if (pushHistory !== false && cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
 
             var canonicalPath = mod.canonical_path || filepath;
             var fname = canonicalPath.split('/').pop();

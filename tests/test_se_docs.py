@@ -3,6 +3,9 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 import hashlib
+import json
+import re
+import xml.etree.ElementTree as ET
 
 
 class TestChangelog:
@@ -146,6 +149,60 @@ class TestConOps:
 
 
 class TestOrchestrator:
+    def test_curated_views_share_specs_with_viewer_and_are_referenced_by_narratives(self, tmp_path: Path) -> None:
+        from architecture_model.core.parser import save_model
+        from architecture_model.core.visualize import generate_html_viewer
+        from architecture_model.docs.se.generator import generate_se_docs
+
+        model = _make_model()
+        save_model(model, tmp_path / ".architecture-model.yaml")
+        docs_dir = tmp_path / "docs" / "se"
+        result = generate_se_docs(
+            model, docs_dir, repo_root=tmp_path,
+            doc_filter=["conops", "functional_analysis", "logical_architecture", "use_cases"],
+        )
+        html = generate_html_viewer(model, tmp_path / "viewer.html", repo_path=tmp_path).read_text()
+        payload = json.loads(re.search(r'<script id="viewer-data" type="application/json">(.*?)</script>', html, re.S).group(1))
+        expected = {
+            "conops": ("conops.md", "conops.svg"),
+            "functional": ("functional-analysis.md", "functional-architecture.svg"),
+            "logical": ("logical-architecture.md", "logical-architecture.svg"),
+            "use-cases": ("use-cases.md", "use-cases.svg"),
+        }
+
+        assert not result["errors"]
+        for view, (markdown_name, svg_name) in expected.items():
+            svg_path = docs_dir / svg_name
+            root = ET.parse(svg_path).getroot()
+            markdown = (docs_dir / markdown_name).read_text()
+            spec = payload["se_views"][view]["spec"]
+            svg_nodes = {element.attrib["data-node-id"] for element in root.iter() if "data-node-id" in element.attrib}
+            assert root.attrib["data-diagram-id"] == spec["id"]
+            assert svg_nodes == {node["id"] for node in spec["nodes"]}
+            assert f"![{spec['title']}]({svg_name})" in markdown
+            assert str(svg_path) in result["generated"]
+
+    def test_filtered_curated_doc_writes_only_its_native_svg(self, tmp_path: Path) -> None:
+        from architecture_model.core.parser import save_model
+        from architecture_model.docs.se.generator import generate_se_docs
+
+        model = _make_model()
+        save_model(model, tmp_path / ".architecture-model.yaml")
+        output = tmp_path / "docs"
+        generate_se_docs(model, output, repo_root=tmp_path, doc_filter=["conops"])
+
+        assert {path.name for path in output.glob("*.svg")} == {"conops.svg"}
+
+    def test_model_only_generators_keep_legacy_markdown_without_native_svg_reference(self) -> None:
+        from architecture_model.docs.se.conops import generate_conops
+        from architecture_model.docs.se.functional_analysis import generate_functional_analysis
+        from architecture_model.docs.se.logical_architecture import generate_logical_architecture
+        from architecture_model.docs.se.use_cases import generate_use_cases
+
+        model = _make_model()
+        for generate in (generate_conops, generate_functional_analysis, generate_logical_architecture, generate_use_cases):
+            assert ".svg)" not in generate(model)
+
     def test_generate_se_docs_creates_files(self, tmp_path: Path) -> None:
         from architecture_model.docs.se.generator import generate_se_docs
         model = _make_model()

@@ -118,6 +118,34 @@ def generate_se_docs(
     system_id = getattr(model.meta, "system_id", "") or "SYS-unknown"
 
     result: dict[str, Any] = {"generated": [], "skipped": [], "preserved_edits": [], "errors": []}
+    native_views: dict[str, tuple[Any, str]] = {}
+    if repo_root is not None:
+        from architecture_model.core.diagram_renderer import render_diagram_panel
+        from architecture_model.core.se_view_projectors import (
+            project_conops,
+            project_functional_architecture,
+            project_logical_architecture,
+            project_use_cases,
+        )
+        from architecture_model.core.view_context import ArchitectureViewContext
+        from architecture_model.core.view_curation import load_viewer_curation
+
+        context = ArchitectureViewContext.load(model, repo_root)
+        curation = load_viewer_curation(repo_root, context)
+        definitions = {
+            "conops": (project_conops, curation.views.conops, "conops.svg"),
+            "functional_analysis": (project_functional_architecture, curation.views.functional, "functional-architecture.svg"),
+            "logical_architecture": (project_logical_architecture, curation.views.logical, "logical-architecture.svg"),
+            "use_cases": (project_use_cases, curation.views.use_cases, "use-cases.svg"),
+        }
+        for key, (projector, view_curation, filename) in definitions.items():
+            if doc_filter and key not in doc_filter:
+                continue
+            spec = projector(context, view_curation)
+            svg_path = output_dir / filename
+            svg_path.write_text(render_diagram_panel(spec).svg + "\n", encoding="utf-8")
+            result["generated"].append(str(svg_path))
+            native_views[key] = (spec, filename)
 
     # Determine which docs to generate
     to_generate: list[tuple[str, str, str, str]] = []  # (key, module, display, filename)
@@ -169,6 +197,12 @@ def generate_se_docs(
                     reviews=reviews,
                     enrichments=enrichments,
                     repo_root=repo_root,
+                )
+            elif key in native_views:
+                spec, svg_filename = native_views[key]
+                md_content = gen_func(
+                    model, manifest,
+                    diagram_reference=f"![{spec.title}]({svg_filename})",
                 )
             else:
                 md_content = gen_func(model, manifest)

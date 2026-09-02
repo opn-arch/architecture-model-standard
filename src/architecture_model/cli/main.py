@@ -546,7 +546,7 @@ def _cmd_visualize(args) -> int:
     if not out_dir.is_absolute():
         out_dir = root / out_dir
 
-    paths = generate_all_diagrams(model, out_dir)
+    paths = generate_all_diagrams(model, out_dir, repo_path=root)
     print(f"Generated {len(paths)} diagrams in {out_dir}/")
     for name in sorted(paths):
         print(f"  {paths[name].name}")
@@ -604,7 +604,7 @@ def _cmd_docs(args) -> int:
                 doc_filter = [f.strip() for f in formats_arg.split(",") if f.strip() != "se_all"]
                 if not doc_filter:
                     doc_filter = None
-            se_result = generate_se_docs(model, se_dir, manifest, doc_filter=doc_filter)
+            se_result = generate_se_docs(model, se_dir, manifest, doc_filter=doc_filter, repo_root=repo)
             se_count = len(se_result.get("generated", []))
             print(f"Generated {se_count} SE documents in {se_dir}/")
         except Exception as e:

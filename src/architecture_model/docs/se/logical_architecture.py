@@ -10,7 +10,9 @@ def _rel_type_str(rt: object) -> str:
     return rt.value if hasattr(rt, "value") else str(rt)
 
 
-def generate_logical_architecture(model: ArchitectureModel, manifest: object | None = None) -> str:
+def generate_logical_architecture(
+    model: ArchitectureModel, manifest: object | None = None, *, diagram_reference: str = "",
+) -> str:
     lines: list[str] = []
     project = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
     lines.append(f"# Logical Architecture: {project}")
@@ -19,6 +21,8 @@ def generate_logical_architecture(model: ArchitectureModel, manifest: object | N
     # --- Layer Structure ---
     lines.append("## Layer Structure")
     lines.append("")
+    if diagram_reference:
+        lines.extend([diagram_reference, ""])
     if model.entities.layers:
         sorted_layers = sorted(model.entities.layers, key=lambda la: getattr(la, "order", 0))
         lines.append("| Order | Layer | Technologies | Directories |")

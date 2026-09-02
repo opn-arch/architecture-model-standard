@@ -73,7 +73,7 @@ def test_viewer_contains_accessible_navigation_facets_comments_and_zoom(tmp_path
 
     assert "data-drilldown-ref" in html
     assert "data-entity-ref" in html
-    assert "showDrilldown" in html
+    assert "showCuratedDrilldown" in html
     assert "[['zoom-in','Zoom in'],['zoom-out','Zoom out'],['fit','Fit diagram'],['reset','Reset diagram']]" in html
     assert "pointerdown" in html and "touch-action" in html
     assert "ev.key === 'Enter' || ev.key === ' '" in html
@@ -155,4 +155,48 @@ def test_generated_javascript_parses_with_node(tmp_path: Path) -> None:
     js = tmp_path / "viewer.js"
     js.write_text(script, encoding="utf-8")
     result = subprocess.run(["node", "--check", str(js)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
+def test_drilldown_entity_back_restores_exact_drilldown_then_overview(tmp_path: Path) -> None:
+    model = load_model(_write_model(tmp_path))
+    html = generate_html_viewer(model, tmp_path / "viewer.html", repo_path=tmp_path).read_text()
+    data = _viewer_data(html)
+    data["pipeline_history"] = [{"run_id": "run-1", "started_at": "now", "status": "complete", "stages": []}]
+    script = re.findall(r"<script(?: [^>]*)?>(.*?)</script>", html, re.S)[1]
+    view_key, drilldown_id = next(
+        (key, next(iter(view["panel"]["drilldowns"])))
+        for key, view in data["se_views"].items() if view.get("panel", {}).get("drilldowns")
+    )
+    entity_ref = next(
+        node["entity_ref"] for node in data["se_views"][view_key]["spec"]["nodes"]
+        if node.get("drilldown_ref") == drilldown_id and node.get("entity_ref")
+    )
+    harness = f"""
+const vm = require('vm');
+const noop = () => {{}};
+const classList = {{add:noop, remove:noop, toggle:noop, contains:()=>false}};
+const element = {{dataset:{{}}, style:{{}}, classList, value:'', textContent:'', innerHTML:'',
+  addEventListener:noop, querySelectorAll:()=>[], querySelector:()=>null, setAttribute:noop}};
+const content = Object.assign({{}}, element, {{dataset:{{}}, querySelector:()=>null}});
+const dataElement = Object.assign({{}}, element, {{textContent:{json.dumps(json.dumps(data))}}});
+const document = {{getElementById:id=>id==='viewer-data'?dataElement:id==='content'?content:element,
+  querySelectorAll:()=>[], querySelector:()=>Object.assign({{}},element), createElement:()=>Object.assign({{}},element)}};
+const context = {{console, document, Blob, URL, alert:noop, MutationObserver:function(){{this.observe=noop}},
+  localStorage:{{getItem:()=>null,setItem:noop,length:0,key:()=>null}}, innerWidth:1200,
+  atob,btoa,escape,unescape,encodeURIComponent,decodeURIComponent}};
+context.window=context; vm.createContext(context); vm.runInContext({json.dumps(script)}, context);
+context.wireNativePanel=noop;
+context.showView({json.dumps(view_key)}, false);
+context.showCuratedDrilldown({json.dumps(view_key)}, {json.dumps(drilldown_id)}, {json.dumps(entity_ref)});
+context.showEntity(context.resolveNativeEntity({json.dumps(entity_ref)}));
+context.goBack();
+if (content.dataset.currentType !== 'drilldown' || content.dataset.currentViewId !== {json.dumps(view_key)} || content.dataset.currentSpecId !== {json.dumps(drilldown_id)}) throw new Error('did not restore exact drilldown: '+JSON.stringify(content.dataset));
+context.goBack();
+if (content.dataset.currentType !== 'view' || content.dataset.currentId !== {json.dumps(view_key)}) throw new Error('did not restore overview: '+JSON.stringify(content.dataset));
+context.navHistory.push({{type:'history', id:'pipeline-history', label:'Pipeline History'}});
+context.goBack();
+if (content.dataset.currentType !== 'history') throw new Error('did not restore pipeline history: '+JSON.stringify(content.dataset));
+"""
+    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

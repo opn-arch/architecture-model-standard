@@ -10,7 +10,9 @@ def _rel_type_str(rt: object) -> str:
     return rt.value if hasattr(rt, "value") else str(rt)
 
 
-def generate_functional_analysis(model: ArchitectureModel, manifest: object | None = None) -> str:
+def generate_functional_analysis(
+    model: ArchitectureModel, manifest: object | None = None, *, diagram_reference: str = "",
+) -> str:
     lines: list[str] = []
     project = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
     lines.append(f"# Functional Analysis: {project}")
@@ -48,6 +50,8 @@ def generate_functional_analysis(model: ArchitectureModel, manifest: object | No
     # --- Functional Decomposition ---
     lines.append("## Functional Decomposition")
     lines.append("")
+    if diagram_reference:
+        lines.extend([diagram_reference, ""])
     # Build hierarchy from contains relationships
     contains = [r for r in model.relationships if _rel_type_str(r.type) == "contains"]
     cap_map = {c.id: c for c in model.entities.capabilities}

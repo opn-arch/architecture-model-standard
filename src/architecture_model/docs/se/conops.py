@@ -14,7 +14,9 @@ def _constraint_type_str(ct: object) -> str:
     return ct.value if hasattr(ct, "value") else str(ct)
 
 
-def generate_conops(model: ArchitectureModel, manifest: object | None = None) -> str:
+def generate_conops(
+    model: ArchitectureModel, manifest: object | None = None, *, diagram_reference: str = "",
+) -> str:
     """Generate Concept of Operations document from model data."""
     lines: list[str] = []
     project = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
@@ -29,6 +31,8 @@ def generate_conops(model: ArchitectureModel, manifest: object | None = None) ->
     comp_count = len(model.entities.components)
     lines.append(f"{project} provides {cap_count} capabilities implemented across {comp_count} components.")
     lines.append("")
+    if diagram_reference:
+        lines.extend([diagram_reference, ""])
     if model.entities.capabilities:
         lines.append("**Core Capabilities:**")
         lines.append("")
