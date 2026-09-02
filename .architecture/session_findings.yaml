@@ -1,2 +1,122 @@
-findings: []
+findings:
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented Task 1 with strict TDD in feat/curated-se-views. Commit 6ab857d
+    adds DiagramSpec, hierarchy-aware Architectu
+  description: 'Implemented Task 1 with strict TDD in feat/curated-se-views. Commit
+    6ab857d adds DiagramSpec, hierarchy-aware ArchitectureViewContext, safe viewer
+    curation loader, and tests. Focused tests: 14 passed. Full prescribed suite: 2112
+    passed, 109 skipped, 9 failures independently reproduced as existing/environment
+    failures. Architecture gate remained below repository-wide thresholds due stale
+    coverage/allocation model metrics.'
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T17:11:02.203673+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented ConOps and Functional Architecture DiagramSpec projectors with
+    strict TDD. Added bounded deterministic overv
+  description: Implemented ConOps and Functional Architecture DiagramSpec projectors
+    with strict TDD. Added bounded deterministic overviews, qualified hierarchy handling,
+    evidence-backed edges/inferred externals, sparse and invalid-curation diagnostics,
+    capability decomposition/flow/allocation distinctions, orphan presentation, and
+    drilldown references. Focused 79 passed; full 2180 passed with the documented
+    9 baseline failures.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T17:57:53.391054+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: 'Implemented Logical Architecture and Use Case DiagramSpec projectors with
+    strict RED-GREEN cycles. Added bounded tiered '
+  description: Implemented Logical Architecture and Use Case DiagramSpec projectors
+    with strict RED-GREEN cycles. Added bounded tiered systems and semantic inline
+    aggregates, canonical edge aggregation/provenance/cycles/criticality, hierarchy
+    counts/facets, interfaces and bounded system drilldowns. Added actor-balanced
+    use-case catalogs, evidence-backed participants, structured/plain steps, system
+    lanes/nodes, I/O, errors, states, compensations, outcomes, requirements/MoEs,
+    actor and omitted drilldowns. Focused 114 pass; full 2215 pass and exact 9 known
+    failures.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T18:40:42.494694+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented native stdlib-only offline SVG rendering for DiagramSpec using
+    strict TDD. Added frozen DiagramPanel with SV
+  description: Implemented native stdlib-only offline SVG rendering for DiagramSpec
+    using strict TDD. Added frozen DiagramPanel with SVG, toolbar actions, dimensions/viewBox,
+    diagnostics and recursive exact-key drilldown serialization. Focused renderer/projector
+    tests pass (117); full baseline is 2245 passed, 9 unrelated known failures, 109
+    skipped. Architecture gate remains pre-existing failure due global model coverage/constraint
+    allocation.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T19:18:02.081660+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented and committed curated DiagramSpec SE views in HTML viewer and
+    CLI as 8d17734. Four native views use one hier
+  description: Implemented and committed curated DiagramSpec SE views in HTML viewer
+    and CLI as 8d17734. Four native views use one hierarchy context, curation fallback/status,
+    rendered recursive drilldowns, accessible pan/zoom/facets/comments, safe JSON/SVG,
+    optional SVG exports, and CLI --curation/--no-curation. Focused post-commit suite
+    314 passed. Full suite 2303 passed, 109 skipped, 9 known failures matching baseline.
+    Architecture gate remains false due pre-existing model coverage/constraint allocation
+    deficits.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T19:53:24.932592+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Using the real logs-db diagnosis, implemented explicit curated ConOps scenario
+    aggregates and Functional group aggregate
+  description: Using the real logs-db diagnosis, implemented explicit curated ConOps
+    scenario aggregates and Functional group aggregates. Curated flows translate presentation
+    and member endpoints, preserve evidence and aggregate duplicates. Member-rich
+    drilldowns, bounded external/system/outcome support, no unrelated CLI/migration/summary
+    noise. Focused 101 passed; full 2313 passed with same 9 baseline failures.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T20:38:27.002372+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented strict-TDD logical projector and lane renderer fix requested
+    after 46538eb. Projector now emits exactly cura
+  description: Implemented strict-TDD logical projector and lane renderer fix requested
+    after 46538eb. Projector now emits exactly curated tiers or five automatic DiagramLane
+    entries, assigns systems/aggregate nodes by lane only, preserves aggregate drilldowns
+    and aggregated relationship provenance/count/cycle styling, and prioritizes interfaces.
+    Renderer places TB lanes horizontally and LR lanes vertically without dependency
+    ranking, reserves headers, contains nodes, and uses bounded obstacle-aware reusable
+    edge tracks. Actual logs-db integration validates five lanes, 8 systems, 3 aggregates,
+    <=15 nodes, <=1800x1200 SVG, cycle styling, collision safety, and rsvg when installed.
+    Focused tests 82 passed. Full suite had 9 unrelated pre-existing/environment failures
+    among 2436 tests. Commit caac8f8.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T20:45:18.132903+00:00'
+  synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented approved view-aware presentation fixes with strict TDD. Projectors
+    now emit operational-lanes, functional-fl
+  description: Implemented approved view-aware presentation fixes with strict TDD.
+    Projectors now emit operational-lanes, functional-flow, logical-tiers, and use-case-catalog
+    layouts; curated ConOps has evidence-backed boundary allocation; logical curated
+    mode suppresses unrelated actors and omitted summary and supports hidden dependency
+    facet; use-case featured omissions are callouts; renderer uses compact layouts,
+    local routing and collision-aware high-contrast labels. Focused suite 182 passed.
+    Full suite 2334 passed, 109 skipped, 9 unrelated baseline failures. Architecture
+    gate remains blocked by stale repository-wide model coverage.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T21:20:13.406803+00:00'
+  synced: false
 synced: []

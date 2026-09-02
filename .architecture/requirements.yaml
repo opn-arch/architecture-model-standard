@@ -1,0 +1,329 @@
+requirements:
+- id: REQ-1
+  text: Implement typed DiagramSpec presentation models, hierarchy-aware ArchitectureViewContext,
+    and a safe deterministic viewer curation loader without modifying visualization
+    behavior.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:05:07.050018+00:00'
+  context: Task 1 approved architecture; presentation-only curation, evidence-backed
+    inferred externals, qualified IDs, strict TDD, backward compatibility.
+- id: REQ-2
+  text: Harden DiagramSpec, ArchitectureViewContext, and viewer curation with typed
+    provenance/drilldowns, complete reference and JSON safety validation, cross-model
+    hierarchy relationships, malformed-input fallback, evidence claims, presentation-only
+    inferred flow kinds, and globally unique presentation IDs.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:14:04.443361+00:00'
+  context: Spec review follow-up; strict TDD and a new commit without amend.
+- id: REQ-3
+  text: Complete curated SE view foundations with typed per-element provenance and
+    structured diagnostics, document-wide ID uniqueness, entity containment ancestry,
+    diagnostic lookup behavior, fail-closed per-view curation, mission/capability
+    roots and drilldowns, and safe bounded presentation text.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:22:57.705373+00:00'
+  context: Remaining foundation blockers; strict TDD and new commit.
+- id: REQ-4
+  text: Fail curated views closed on unknown keys in every nested record and recursively
+    validate presentation labels/descriptions while preserving safe mathematical comparison
+    text.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:30:28.277686+00:00'
+  context: Sole remaining foundation blocker; exact raw_svg selector and script group
+    regressions.
+- id: REQ-5
+  text: Require exactly one selector mode, invoke semantic curation validation during
+    load, and enforce frozen provenance plus runtime nested DiagramSpec types.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:35:53.579119+00:00'
+  context: Quality findings follow-up; strict TDD and new commit.
+- id: REQ-6
+  text: Require evidence-backed inferred curated externals and noncanonical flows,
+    and make DiagramProvenance deeply immutable while preserving JSON list/dict serialization.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:41:23.905880+00:00'
+  context: Two final blockers; strict TDD and new commit.
+- id: REQ-7
+  text: Recursively deep-freeze DiagramProvenance context for mappings, sequences,
+    and deterministic sets, reject invalid values, and thaw to JSON structures.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:46:54.561845+00:00'
+  context: Sole final blocker; strict TDD and new commit.
+- id: REQ-8
+  text: Implement a bounded ConOps DiagramSpec projector with semantic actor/external-to-scenario-to-interface-to-system
+    paths, outcomes, evidence-backed inference, hierarchy-aware context, deterministic
+    clustering, diagnostics, and drilldowns.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:51:47.938426+00:00'
+  context: User-specified ConOps projector requirements.
+- id: REQ-9
+  text: Implement a bounded top-down Functional Architecture DiagramSpec projector
+    with discovered mission root, deterministic capability grouping, distinct decomposition/flow/allocation
+    edges, rich badges and I/O, curated presentation overrides, orphan warnings, and
+    drilldowns.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:51:47.942995+00:00'
+  context: User-specified Functional Architecture projector requirements.
+- id: REQ-10
+  text: Projector output must validate DiagramSpec, use typed provenance, safe plain
+    labels and qualified entity refs, add no renderer/viewer integration, and be covered
+    by strict TDD including hierarchy, bounds, determinism, sparse fallback, curation,
+    provenance, and diagnostics cases.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T17:51:47.948123+00:00'
+  context: Shared implementation and testing constraints.
+- id: REQ-11
+  text: Address all eight projector review findings with coherent global overview
+    bounds, evidence-specific functional flows, automatic evidence-backed externals,
+    multiple capability roots, actual typed drilldown specs, complete curation consumption,
+    and adversarial tests.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:02:27.536203+00:00'
+  context: User-requested review remediation with TDD and new commit.
+- id: REQ-12
+  text: 'Complete remaining projector blockers: visible degraded interface paths,
+    actor/external drilldowns, bounded failure callouts, semantically connected functional
+    drilldowns, and navigable orphan/omitted summary drilldowns.'
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:15:04.716353+00:00'
+  context: User-requested final blockers with TDD and new commit.
+- id: REQ-13
+  text: Make failure callout identities globally unique and deterministic with duplicate
+    aggregation, and make participant drilldowns resolve exclusively through canonical
+    qualified entity identity rather than curated labels.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:22:34.707447+00:00'
+  context: User-requested final identity blockers with TDD and new commit.
+- id: REQ-14
+  text: DiagramSpec drilldown serialization must preserve each drilldown key/item's
+    associated nested spec while sorting deterministically, including reverse insertion
+    order and IDs that sort differently from nested spec IDs.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:27:05.585559+00:00'
+  context: User-requested serialization blocker with TDD and new commit.
+- id: REQ-15
+  text: Implement bounded Logical Architecture and actor-goal Use Case DiagramSpec
+    projectors on the se_view_projectors.py foundation through commit 8088697, with
+    canonical references, semantic provenance, deterministic bounded output, curation
+    support, drilldowns, strict TDD, focused/full verification, self-review, and no
+    renderer/viewer integration.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:32:20.256281+00:00'
+  context: User supplied detailed acceptance criteria including tiers, aggregation,
+    interfaces, badges, structured behavior drilldowns, duplicate-ID safety, dense/sparse
+    tests, expected baseline, and requested commit message.
+- id: REQ-16
+  text: Featured use cases must be selected first and guaranteed in a bounded catalog
+    unless hidden or invalid; curation order applies, actor round-robin fills remaining
+    capacity, and omitted summaries exclude selected featured cases.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:43:45.834106+00:00'
+  component: COMP-CORE
+  context: Code review finding requested with strict TDD and a new commit.
+- id: REQ-17
+  text: Logical overview budgeting must prioritize and atomically include at least
+    one evidence-backed important cross-system explicit interface with both connected
+    systems before lower-priority aggregates, never orphan the interface, and remain
+    within the global node limit.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:43:45.934679+00:00'
+  component: COMP-CORE
+  context: Code review finding requested with saturated fixture coverage, focused/full
+    verification, and a new commit.
+- id: REQ-18
+  text: Logical priority interface candidates must exclude every curation-hidden qualified
+    selector before budget reservation; systems connected only through a hidden interface
+    must not be forced into the overview by that interface.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:51:43.677092+00:00'
+  component: COMP-CORE
+  context: Sole blocker requested as strict TDD regression and new commit.
+- id: REQ-19
+  text: Logical projection must build one curation-visible interface candidate list
+    and use it consistently for priority selection, general selection, edges, and
+    drilldowns so hidden nonpriority interfaces cannot render indirectly.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T18:56:59.149297+00:00'
+  component: COMP-CORE
+  context: Sole blocker requested with strict TDD, exact nonpriority regression, focused/full
+    tests, and new commit.
+- id: REQ-20
+  text: Logical and use-case projectors must centralize curation.hide visibility for
+    actors, external systems, systems, components, capabilities, behaviors, interfaces,
+    requirements, and presentation groups, applying it before selection, reservation,
+    edges, and all drilldowns so hidden entities never leak or create dangling edges.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:02:08.907617+00:00'
+  component: COMP-CORE
+  context: Broad blocker requested with actor-specific and parameterized per-type
+    TDD regressions and new commit.
+- id: REQ-21
+  text: Provide a deterministic, browser-independent, stdlib-only offline SVG renderer
+    and interaction panel payload for DiagramSpec, including LR/TB grouped layered
+    layout, semantic shapes and edge styles, safe text/accessibility metadata, legends/diagnostics/provenance,
+    exact drilldown mapping, and comprehensive structural tests without visualize
+    integration.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:10:56.563631+00:00'
+  context: 'User supplied 12 explicit renderer and verification requirements and requested
+    strict TDD, self-review, full baseline testing, and commit feat(viewer): render
+    curated diagrams offline.'
+- id: REQ-22
+  text: Harden the native DiagramSpec renderer with item-aware bounded footers, obstacle-aware
+    edge routing, complete namespaced accessibility/identity metadata, pre-render
+    validation, total deterministic ordering, deeply immutable panel payloads, target/evidence-aware
+    callouts, validated semantic edge styles, minimum-canvas bounds semantics, and
+    structural tests using all four actual projectors.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:22:32.675370+00:00'
+  component: COMP-CORE
+  context: Follow-up review requests ten renderer corrections under strict TDD and
+    a new commit.
+- id: REQ-23
+  text: Eliminate SVG visual geometry blockers through calculated non-overlapping
+    node text blocks, collision-aware edge labels, padded bottom-up nested groups,
+    general obstacle-aware Manhattan routing with unique lanes, and geometry analyzer
+    tests over all four actual projector outputs plus optional rsvg rendering.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:32:12.813572+00:00'
+  component: COMP-CORE
+  context: User requested strict TDD and a new commit for five visual blockers.
+- id: REQ-24
+  text: Reserve a distinct actor glyph region and place wrapped actor title, subtitle,
+    and badges outside it without overlap, dynamically increasing actor node height,
+    with geometry tests over actual ConOps, logical, and use-case outputs.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:41:53.880663+00:00'
+  component: COMP-CORE
+  context: Sole visual blocker follow-up; strict TDD and new commit requested.
+- id: REQ-25
+  text: Integrate curated DiagramSpec ConOps, Functional Architecture, Logical Architecture,
+    and Use Cases views into the self-contained HTML viewer and CLI while preserving
+    compatibility, security, accessibility, comments, exports, and automatic fallback
+    behavior.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:46:19.538051+00:00'
+  component: COMP-CORE
+  context: User supplied detailed 11-point implementation and test requirements; strict
+    TDD, commit, and self-review requested.
+- id: REQ-26
+  text: Fix typed viewer navigation so drilldown to entity and back restores the exact
+    drilldown, then its overview, without history corruption; add Node runtime regression.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:58:17.916928+00:00'
+  component: COMP-CORE
+  context: Integration review finding 1.
+- id: REQ-27
+  text: Integrate shared ArchitectureViewContext, curation, DiagramSpec projectors,
+    and native SVGs into ConOps, Functional Analysis, Logical Architecture, and Use
+    Cases Markdown artifacts when repository context is available while preserving
+    model-only APIs and narratives.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:58:17.933763+00:00'
+  component: COMP-CORE
+  context: Integration review finding 2.
+- id: REQ-28
+  text: Ensure the visualize CLI passes repository context to generate_all_diagrams
+    so canonical projects always emit the four native SVG files while direct calls
+    remain backward compatible.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T19:58:17.950671+00:00'
+  component: COMP-CLI
+  context: Integration review finding 3.
+- id: REQ-29
+  text: 'Fix the existing SyntaxError in src/architecture_model/docs/se/doc_context.py
+    while preserving intended SE context generation behavior; add a regression exercising
+    the affected branch; verify targeted tests, compileall, and full suite; create
+    commit fix(docs): restore SE context generation.'
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T20:09:44.165186+00:00'
+  context: User requested strict TDD and a new commit in curated-se-views worktree.
+- id: REQ-30
+  text: In explicit curated mode, project ConOps scenarios and Functional groups as
+    primary aggregate nodes, translate curated flows to aggregate endpoints, preserve
+    member detail in drilldowns, enforce global bounds/determinism, and avoid unrelated
+    automatic nodes or noisy failures.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T20:33:26.144218+00:00'
+  context: User-specified logs-db diagnosis and exact curated projection behavior.
+- id: REQ-31
+  text: Use-case projection must select every valid visible explicitly featured use
+    case before supporting participants within the global 15-node budget, without
+    a fixed nine-case cap; omitted summaries may contain only nonfeatured cases and
+    must never displace featured cases.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T20:46:02.587652+00:00'
+  component: COMP-CORE
+  context: Requested for real logs-db use-case semantics after caac8f8.
+- id: REQ-32
+  text: Use-case curation must minimally support evidence-backed presentation-only
+    actor associations and fallback goal, trigger, precondition, postcondition/success
+    outcome, and MoE annotations when canonical behavior fields are absent, validate
+    fail-closed, preserve canonical-first semantics, and never mutate the model.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T20:46:02.604946+00:00'
+  component: COMP-CORE
+  context: Requested for real logs-db aggregate workflows with missing canonical actor
+    and intent fields.
+- id: REQ-33
+  text: Use-case overview and drilldowns must render evidence-backed inferred actor
+    participation with dashed provenance edges, ten logs-db featured cases, no unintended
+    isolated nodes, canonical triggers/contains links, canonical structured lanes,
+    inferred annotation badges/provenance, and component-evidence failure counts only
+    at catalog level.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T20:46:02.622900+00:00'
+  component: COMP-CORE
+  context: Requires unit tests plus actual logs-db profile compatibility test; profile
+    must not be edited and exact YAML additions must be reported.
+- id: REQ-34
+  text: Rendered logs-db ConOps, Functional Architecture, Logical Architecture, and
+    Use Cases specs must match the approved structures, preserve evidence-backed semantics,
+    enforce fail-closed secure curation, and respect all overview bounds.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T21:02:14.365832+00:00'
+  context: Acceptance review of commits 46538eb, caac8f8, and 1174252; no edits.
+- id: REQ-35
+  text: When canonical actor-to-behavior participation and a curated inferred association
+    identify the same pair, emit one edge in overview and actor drilldown; canonical
+    provenance, inferred=false, and canonical style win, while curated evidence may
+    be appended secondarily.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T21:05:30.050223+00:00'
+  component: COMP-CORE
+  context: Canonical-precedence blocker requested with strict TDD and new commit.

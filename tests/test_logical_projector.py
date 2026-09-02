@@ -153,6 +153,7 @@ def test_logical_curation_controls_tiers_labels_aggregation_hiding_and_drilldown
         drilldowns={"domain-detail": Selector(qualified_id="root::SYS-DOMAIN", resolved_id="root::SYS-DOMAIN")},
     )
     spec = project_logical_architecture(context, curation)
+    assert spec.layout == "logical-tiers"
     domain = next(node for node in spec.nodes if node.entity_ref == "root::SYS-DOMAIN")
     workers = next(node for node in spec.nodes if node.kind == "aggregate" and node.label == "Background Workers")
     assert [lane.id for lane in spec.lanes] == ["custom-web", "custom-domain"]
@@ -162,6 +163,7 @@ def test_logical_curation_controls_tiers_labels_aggregation_hiding_and_drilldown
     assert workers.lane == "custom-domain" and not workers.group and workers.drilldown_ref
     assert workers.kind == "aggregate" and workers.metrics["members"] == "root::INLINE-0, root::INLINE-2"
     assert all(node.entity_ref != "root::INLINE-1" for node in spec.nodes)
+    assert all(node.kind not in {"actor", "external", "summary"} for node in spec.nodes)
 
 
 def test_logical_is_globally_bounded_deterministic_and_omissions_are_drillable(tmp_path):
@@ -213,7 +215,20 @@ def test_logical_aggregated_exchange_reports_count_and_label(tmp_path):
         if edge.kind == "depends-on" and edge.source == "node:root::SYS-WEB"
     )
     assert edge.count == 2
-    assert edge.label == "depends-on (2)"
+    assert edge.label == "depends ×2"
+    assert "depends-on" in edge.title
+
+
+def test_logical_curation_can_hide_dependency_facet_for_clean_tier_map(tmp_path):
+    curation = ViewCuration(
+        tiers=[CuratedGroup("tier-domain", "Domain", "tier", members=["root::SYS-WEB", "root::SYS-DOMAIN"])],
+        hide=[Selector(qualified_id="logical:dependencies")],
+    )
+
+    spec = project_logical_architecture(_context(tmp_path), curation)
+
+    assert spec.layout == "logical-tiers"
+    assert all(edge.kind != "depends-on" for edge in spec.edges)
 
 
 def test_logical_saturated_budget_keeps_cross_system_interface_path_atomic(tmp_path):
@@ -347,3 +362,4 @@ def test_real_logs_db_logical_curation_has_one_five_lane_tier_representation():
     assert all(lane.label != "Other" for lane in spec.lanes)
     assert all(edge.evidence and edge.count >= 1 for edge in spec.edges)
     assert any(edge.style == "cycle" for edge in spec.edges)
+    assert all(node.kind not in {"actor", "external", "summary"} for node in spec.nodes)

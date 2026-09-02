@@ -264,6 +264,7 @@ def test_conops_curated_scenarios_are_primary_aggregates_with_flows_and_drilldow
         ],
     )
     spec = project_conops(context, curation, max_overview_nodes=6)
+    assert spec.layout == "operational-lanes"
     assert len(spec.nodes) <= 6
     assert [node.label for node in spec.nodes if node.kind == "scenario"] == ["Acquire Knowledge", "Use Knowledge"]
     assert all(node.entity_ref not in {"root::BEH-1", "root::BEH-3"} for node in spec.nodes)
@@ -281,6 +282,10 @@ def test_conops_curated_scenarios_are_primary_aggregates_with_flows_and_drilldow
     assert {"root::BEH-2", "root::SYS-1", "root::IF-1"} <= refs
     assert any(node.kind == "failure" for node in detail.nodes)
     assert not spec.callouts
+    boundary = next(node for node in spec.nodes if node.id == "conops:system-boundary")
+    assert boundary.lane == "boundary"
+    assert any(edge.source == "scenario-acquire" and edge.target == boundary.id for edge in spec.edges)
+    assert all(node.kind not in {"actor", "external"} for node in spec.nodes if node.lane == "outcomes")
 
 
 def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows():
@@ -296,3 +301,7 @@ def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows(
     assert {node.id for node in spec.nodes} >= {"ext-github-opencode", "ext-ai-services"}
     assert len([edge for edge in spec.edges if edge.kind in {"exchange", "operational-flow", "data-flow"}]) == 10
     assert len(spec.nodes) <= 15
+    boundary = next(node for node in spec.nodes if node.id == "conops:system-boundary")
+    assert any(boundary.id in {edge.source, edge.target} for edge in spec.edges)
+    allocations = [edge for edge in spec.edges if edge.kind == "allocation"]
+    assert allocations and all(not edge.label and edge.title for edge in allocations)

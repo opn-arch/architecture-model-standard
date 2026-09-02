@@ -217,9 +217,10 @@ def test_use_case_all_ten_featured_render_before_supporting_nodes(tmp_path):
     cases = [node.entity_ref for node in spec.nodes if node.kind == "use-case"]
     assert cases == list(reversed(featured_keys))
     assert len(spec.nodes) <= 15
-    omitted = next(node for node in spec.nodes if node.status == "omitted")
-    omitted_detail = next(item.spec for item in spec.drilldowns if item.id == omitted.drilldown_ref)
-    assert not {node.entity_ref for node in omitted_detail.nodes}.intersection(featured_keys)
+    assert spec.layout == "use-case-catalog"
+    assert all(node.status != "omitted" for node in spec.nodes)
+    omitted = next(callout for callout in spec.callouts if callout.id == "use-cases:omitted")
+    assert omitted.kind == "omitted-count" and omitted.target
 
 
 def test_use_case_curated_associations_and_annotations_are_inferred_canonical_first_and_nonmutating(tmp_path):
@@ -491,6 +492,8 @@ def test_real_logs_db_use_case_profile_renders_all_ten_featured():
     assert len(featured) == 10
     assert cases[:10] == featured
     assert len(spec.nodes) <= 15
+    assert spec.layout == "use-case-catalog"
+    assert all(node.status != "omitted" for node in spec.nodes)
 
 
 def test_logs_db_profile_accepts_proposed_evidenced_use_case_additions(tmp_path):

@@ -247,6 +247,7 @@ def test_functional_curated_groups_are_primary_and_translate_member_flows(tmp_pa
         ],
     )
     spec = project_functional_architecture(context, curation, max_overview_nodes=3)
+    assert spec.layout == "functional-flow"
     assert [(node.id, node.label) for node in spec.nodes] == [
         ("function-input", "Input"), ("function-output", "Output"),
     ]
@@ -265,6 +266,7 @@ def test_real_logs_db_functional_curation_projects_exact_groups_and_flows():
     context = ArchitectureViewContext.from_repo(repo)
     curation = load_viewer_curation(repo, context).views.functional
     spec = project_functional_architecture(context, curation)
+    assert spec.layout == "functional-flow"
     assert [node.label for node in spec.nodes] == [
         "Ingestion", "Classification & Enrichment", "Curation & Audit", "Search & Graph",
         "Review & Lifecycle", "Project Context", "Documentation Automation",

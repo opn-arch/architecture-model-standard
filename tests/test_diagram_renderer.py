@@ -691,6 +691,109 @@ def test_real_logs_db_logical_svg_is_practically_bounded_and_collision_free(tmp_
         assert png_path.stat().st_size > 0
 
 
+def test_view_aware_layouts_are_compact_and_edge_labels_do_not_collide(tmp_path) -> None:
+    specs = _actual_specs(tmp_path)
+    expected = {
+        "conops": "operational-lanes",
+        "functional": "functional-flow",
+        "logical": "logical-tiers",
+        "use-cases": "use-case-catalog",
+    }
+    for name, spec in specs.items():
+        assert spec.layout == expected[name]
+        root = _root(render_diagram_svg(spec))
+        _, _, width, height = [float(value) for value in root.attrib["viewBox"].split()]
+        if name == "functional":
+            assert width <= 1400 and height <= 900
+            nodes = _boxes(root)
+            occupied = sum(box[2] * box[3] for box in nodes)
+            assert occupied / (width * height) >= .08
+        labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
+        nodes = _boxes(root)
+        assert all(not _overlaps(label, node) for label in labels for node in nodes)
+        assert all(not _overlaps(first, second) for index, first in enumerate(labels) for second in labels[index + 1:])
+
+
+def test_logical_tier_cycles_use_distinct_routes(tmp_path) -> None:
+    spec = project_logical_architecture(logical_context(tmp_path))
+    root = _root(render_diagram_svg(spec))
+    routes = {
+        (edge.attrib["data-source"], edge.attrib["data-target"]): edge.attrib["d"]
+        for edge in root.findall(".//svg:path[@data-edge-id]", SVG)
+        if edge.attrib["data-kind"] == "depends-on"
+    }
+    assert routes[("node:root::SYS-WEB", "node:root::SYS-DOMAIN")] != routes[("node:root::SYS-DOMAIN", "node:root::SYS-WEB")]
+
+
+def test_real_logs_db_curated_views_meet_objective_geometry(tmp_path) -> None:
+    from architecture_model.core.view_curation import load_viewer_curation
+
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    curated = load_viewer_curation(repo, context).views
+    specs = {
+        "conops": project_conops(context, curated.conops),
+        "functional": project_functional_architecture(context, curated.functional),
+        "logical": project_logical_architecture(context, curated.logical),
+        "use-cases": project_use_cases(context, curated.use_cases),
+    }
+    for name, spec in specs.items():
+        root = _root(render_diagram_svg(spec))
+        nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
+        labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
+        assert all(not _overlaps(label, node) for label in labels for node in nodes.values()), name
+        assert all(not _overlaps(first, second) for index, first in enumerate(labels) for second in labels[index + 1:]), name
+        if shutil.which("rsvg-convert"):
+            svg_path, png_path = tmp_path / f"{name}.svg", tmp_path / f"{name}.png"
+            svg_path.write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
+            subprocess.run(["rsvg-convert", str(svg_path), "-o", str(png_path)], check=True, capture_output=True)
+            assert png_path.stat().st_size > 0
+
+    conops_root = _root(render_diagram_svg(specs["conops"]))
+    conops_lanes = {item.attrib["data-container-id"]: _box(item) for item in conops_root.findall(".//svg:g[@data-container-id]", SVG)}
+    for node in conops_root.findall(".//svg:g[@data-node-id]", SVG):
+        lane = next(item.lane for item in specs["conops"].nodes if item.id == node.attrib["data-node-id"])
+        assert lane in conops_lanes
+        node_x, node_y, node_width, node_height = _box(node)
+        lane_x, lane_y, lane_width, lane_height = conops_lanes[lane]
+        assert lane_x <= node_x and lane_y <= node_y
+        assert node_x + node_width <= lane_x + lane_width
+        assert node_y + node_height <= lane_y + lane_height
+    boundary = next(node for node in specs["conops"].nodes if node.id == "conops:system-boundary")
+    assert any(boundary.id in {edge.source, edge.target} for edge in specs["conops"].edges)
+
+    functional_root = _root(render_diagram_svg(specs["functional"]))
+    _, _, width, height = [float(value) for value in functional_root.attrib["viewBox"].split()]
+    functional_boxes = _boxes(functional_root)
+    assert width <= 1400 and height <= 900
+    assert sum(box[2] * box[3] for box in functional_boxes) / (width * height) >= .08
+
+    assert len(specs["logical"].lanes) == 5
+    assert all(node.kind not in {"actor", "external", "summary"} for node in specs["logical"].nodes)
+    logical_root = _root(render_diagram_svg(specs["logical"]))
+    cycle_paths = [edge.attrib["d"] for edge in logical_root.findall(".//svg:path[@data-edge-id]", SVG) if "is-critical" in edge.attrib["class"]]
+    assert len(cycle_paths) == len(set(cycle_paths))
+
+    assert len([node for node in specs["use-cases"].nodes if node.kind == "use-case"]) == 10
+    assert all(node.status != "omitted" for node in specs["use-cases"].nodes)
+
+
+def test_edge_labels_have_track_contrast_and_full_title_detail() -> None:
+    spec = DiagramSpec(
+        "contrast", "Contrast", layout="functional-flow",
+        nodes=[DiagramNode("a", "A", "component"), DiagramNode("b", "B", "component")],
+        edges=[DiagramEdge("a", "b", "data-flow", "compact", title="Detailed transfer label")],
+    )
+    root = _root(render_diagram_svg(spec))
+    label = root.find(".//svg:text[@data-edge-label]", SVG)
+    edge = root.find(".//svg:path[@data-edge-id]", SVG)
+
+    assert label is not None and "edge-label-contrast" in label.attrib["class"]
+    assert edge is not None and "Detailed transfer label" in edge.find("svg:title", SVG).text
+
+
 def test_drilldown_panels_are_keyed_exactly_and_nested_specs_render_independently() -> None:
     deepest = DiagramSpec("deep", "Deep", nodes=[DiagramNode("deep-node", "Deep node", "outcome")])
     detail_z = DiagramSpec(

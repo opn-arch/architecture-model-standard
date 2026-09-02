@@ -145,6 +145,7 @@ class DiagramEdge:
     style: str = ""
     critical: bool = False
     count: int = 1
+    title: str = ""
 
     def __post_init__(self) -> None:
         self.evidence = _provenance_list(self.evidence)

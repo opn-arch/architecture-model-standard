@@ -75,6 +75,14 @@ def _curated_flow_provenance(flow: object) -> list[DiagramProvenance]:
     ]
 
 
+def _compact_edge_label(value: str, limit: int = 22) -> str:
+    words = " ".join(value.split()).split()
+    if len(" ".join(words)) <= limit:
+        return " ".join(words)
+    compact = " ".join(word for word in words if word.casefold() not in {"and", "the", "of"})
+    return compact if len(compact) <= limit else compact[:limit - 1].rstrip() + "…"
+
+
 def _find_local(context: ArchitectureViewContext, owner: str, reference: str) -> IndexedEntity | None:
     if not reference:
         return None
@@ -448,15 +456,28 @@ def _project_curated_conops(
         target = endpoint_ids.get(flow.target, canonical_nodes.get(flow.target, flow.target if flow.target in {node.id for node in nodes} else ""))
         if not source or not target or source == target:
             continue
-        key = (source, target, flow.kind, flow.label)
+        display_label = _compact_edge_label(flow.label)
+        key = (source, target, flow.kind, display_label)
         evidence = _curated_flow_provenance(flow)
         if key not in flow_values:
-            flow_values[key] = DiagramEdge(source, target, flow.kind, flow.label, inferred=flow.inferred, evidence=[])
+            flow_values[key] = DiagramEdge(source, target, flow.kind, display_label, inferred=flow.inferred, evidence=[], title=flow.label)
         edge = flow_values[key]
         edge.count += 1 if edge.evidence else 0
         edge.evidence.extend(item for item in evidence if item not in edge.evidence)
+    if reserve_system:
+        for scenario in scenarios[:scenario_count]:
+            systems = [
+                item for key in scenario.members
+                if (item := context.entity(key, diagnose=False)) and item.entity_type == "system"
+            ]
+            if systems:
+                flow_values[(scenario.id, system_id, "allocation", "")] = DiagramEdge(
+                    scenario.id, system_id, "allocation",
+                    evidence=[_derived("curated-scenario-system-membership", [item.key for item in systems], scenario=scenario.id)],
+                    title="Scenario delivered by participating system boundary",
+                )
     spec = DiagramSpec(
-        "conops", "Concept of Operations", nodes=nodes, edges=list(flow_values.values()),
+        "conops", "Concept of Operations", layout="operational-lanes", nodes=nodes, edges=list(flow_values.values()),
         lanes=[
             DiagramGroup("actors", "Actors and Externals", "lane", order=0),
             DiagramGroup("scenarios", "Operational Scenarios", "lane", order=1),
@@ -661,7 +682,7 @@ def project_conops(
         include(DiagramNode("conops:empty", "Operational context unavailable", "warning", lane="scenarios"))
         warnings.append(Diagnostic("warning", "CONOPS_SPARSE_FALLBACK", "No operational entities were available", view="conops"))
     spec = DiagramSpec(
-        "conops", "Concept of Operations", nodes=list(nodes.values()), edges=list(edges.values()), groups=groups,
+        "conops", "Concept of Operations", layout="operational-lanes", nodes=list(nodes.values()), edges=list(edges.values()), groups=groups,
         lanes=lanes, callouts=callouts[:6],
         warnings=[*context.diagnostics, *warnings], drilldowns=drilldowns,
         provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
@@ -899,10 +920,11 @@ def _project_curated_functional(
         target = member_to_group.get(flow.target, flow.target)
         if source not in selected_ids or target not in selected_ids or source == target:
             continue
-        key = (source, target, flow.kind, flow.label)
+        display_label = _compact_edge_label(flow.label)
+        key = (source, target, flow.kind, display_label)
         evidence = _curated_flow_provenance(flow)
         if key not in flows:
-            flows[key] = DiagramEdge(source, target, flow.kind, flow.label, inferred=flow.inferred, evidence=[])
+            flows[key] = DiagramEdge(source, target, flow.kind, display_label, inferred=flow.inferred, evidence=[], title=flow.label)
         edge = flows[key]
         edge.count += 1 if edge.evidence else 0
         edge.evidence.extend(item for item in evidence if item not in edge.evidence)
@@ -927,7 +949,7 @@ def _project_curated_functional(
             view="functional",
         ))
     spec = DiagramSpec(
-        "functional", "Functional Architecture", direction="TB", nodes=nodes,
+        "functional", "Functional Architecture", direction="TB", layout="functional-flow", nodes=nodes,
         edges=list(flows.values()), warnings=warnings, drilldowns=drilldowns,
         provenance=DiagramProvenance("curated-functional", context={"max_overview_nodes": limit}),
     )
@@ -1056,7 +1078,7 @@ def project_functional_architecture(
         nodes.append(DiagramNode("functional:empty", "Functional architecture unavailable", "warning"))
         warnings.append(Diagnostic("warning", "FUNCTIONAL_SPARSE_FALLBACK", "No capabilities were available", view="functional"))
     spec = DiagramSpec(
-        "functional", "Functional Architecture", direction="TB", nodes=nodes, edges=edges, groups=groups,
+        "functional", "Functional Architecture", direction="TB", layout="functional-flow", nodes=nodes, edges=edges, groups=groups,
         warnings=[*context.diagnostics, *warnings], drilldowns=drilldowns,
         provenance=DiagramProvenance("architecture-view-context", [item.key for item in roots],
                                      context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
@@ -1289,7 +1311,11 @@ def project_logical_architecture(
             drilldown_id, f"aggregate:{identifier}", spec=_logical_entity_spec(f"detail:{identifier}", label, members),
         ))
 
-    actors = [item for kind in ("actor", "external_system") for item in context.entities(kind) if visible(item)]
+    featured = {item.resolved_id for item in curation.featured if item.resolved_id}
+    actors = [
+        item for kind in ("actor", "external_system") for item in context.entities(kind)
+        if visible(item) and (not curation.tiers or item.key in featured)
+    ]
     actor_nodes = [DiagramNode(
         _node_id(item.key), _label(item, curation), "actor" if item.entity_type == "actor" else "external",
         entity_ref=item.key, evidence=[_provenance(item)],
@@ -1308,7 +1334,6 @@ def project_logical_architecture(
         distinct = sorted(set(endpoint_systems))
         if len(distinct) == 2 and all(key in system_node_by_ref for key in distinct):
             cross_system_interfaces.append((interface, distinct[0], distinct[1]))
-    featured = {item.resolved_id for item in curation.featured if item.resolved_id}
     relationship_importance = defaultdict(int)
     for relationship in context.relationships():
         if relationship.kind in _LOGICAL_EDGE_KINDS:
@@ -1360,7 +1385,9 @@ def project_logical_architecture(
 
     edge_values: dict[tuple[str, str, str], DiagramEdge] = {}
     for relationship in context.relationships():
-        if relationship.kind not in _LOGICAL_EDGE_KINDS:
+        if relationship.kind not in _LOGICAL_EDGE_KINDS or (
+            relationship.kind == "depends-on" and not visible("logical:dependencies")
+        ):
             continue
         if not visible(relationship.source) or not visible(relationship.target):
             continue
@@ -1377,7 +1404,10 @@ def project_logical_architecture(
         edge.critical = edge.critical or getattr(relationship.value.strength, "value", "") == "strong" or bool(relationship.value.extensions.get("critical"))
     pairs = {(edge.source, edge.target) for edge in edge_values.values() if edge.kind == "depends-on"}
     for edge in edge_values.values():
-        edge.label = edge.kind if edge.count == 1 else f"{edge.kind} ({edge.count})"
+        edge.title = edge.kind if edge.count == 1 else f"{edge.kind}: {edge.count} relationships"
+        edge.label = "depends" if edge.kind == "depends-on" else edge.kind
+        if edge.count != 1:
+            edge.label += f" ×{edge.count}"
         if edge.kind == "depends-on" and (edge.target, edge.source) in pairs:
             edge.style = "cycle"
 
@@ -1423,7 +1453,7 @@ def project_logical_architecture(
             )
 
     omitted_nodes = [node for node in candidates if node.id not in selected_ids]
-    if omitted_nodes and len(selected) < limit:
+    if omitted_nodes and len(selected) < limit and not curation.tiers:
         summary_id = "logical:omitted-summary"
         drilldown_id = "drilldown:logical-omitted"
         selected.append(DiagramNode(summary_id, f"More Logical Elements ({len(omitted_nodes)})", "summary", status="omitted", drilldown_ref=drilldown_id))
@@ -1435,7 +1465,7 @@ def project_logical_architecture(
         warnings.append(Diagnostic("warning", "LOGICAL_OVERVIEW_BOUNDED", f"{len(omitted_nodes)} logical elements omitted (limit {limit})", view="logical"))
     used_drilldowns = {node.drilldown_ref for node in selected if node.drilldown_ref}
     spec = DiagramSpec(
-        "logical", "Logical Architecture", direction="TB", nodes=selected,
+        "logical", "Logical Architecture", direction="TB", layout="logical-tiers", nodes=selected,
         edges=list(edge_values.values()), lanes=lanes,
         warnings=[*context.diagnostics, *warnings],
         drilldowns=[item for item in drilldowns if item.id in used_drilldowns],
@@ -1904,7 +1934,18 @@ def project_use_cases(
         item for item in behaviors
         if item.key not in selected_keys and item.key not in featured and visible(item)
     ]
-    if omitted and len(nodes) < limit:
+    if omitted and len(nodes) < limit and featured:
+        callouts = [DiagramCallout(
+            "use-cases:omitted", f"{len(omitted)} additional use cases", nodes[0].id,
+            "omitted-count", [item.key for item in omitted],
+        )]
+        warnings.append(Diagnostic(
+            "warning", "USE_CASE_OVERVIEW_BOUNDED",
+            f"{len(omitted)} use cases omitted (limit {limit})", view="use_cases",
+        ))
+    else:
+        callouts = []
+    if omitted and len(nodes) < limit and not featured:
         summary_id = "use-cases:omitted-summary"
         drilldown_id = "drilldown:use-cases-omitted"
         nodes.append(DiagramNode(
@@ -1924,7 +1965,8 @@ def project_use_cases(
         warnings.append(Diagnostic("warning", "USE_CASE_SPARSE_FALLBACK", "No behaviors were available", view="use_cases"))
     used_drilldowns = {node.drilldown_ref for node in nodes if node.drilldown_ref}
     spec = DiagramSpec(
-        "use-cases", "Use Cases", direction="LR", nodes=nodes, edges=edges,
+        "use-cases", "Use Cases", direction="LR", layout="use-case-catalog", nodes=nodes, edges=edges,
+        callouts=callouts,
         warnings=[*context.diagnostics, *warnings],
         drilldowns=[item for item in drilldowns if item.id in used_drilldowns],
         provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),

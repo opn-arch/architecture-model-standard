@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 import hashlib
 from html import escape
@@ -243,9 +244,51 @@ def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, 
     return boxes
 
 
+def _functional_flow_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, _Box]:
+    """Use compact topological columns without a global routing band."""
+    ranks = _ranks(spec)
+    buckets: dict[int, list[DiagramNode]] = defaultdict(list)
+    for node in sorted(spec.nodes, key=lambda item: (ranks[item.id], item.id)):
+        buckets[ranks[node.id]].append(node)
+    columns = sorted(buckets)
+    x_step = options.node_width + 74
+    available_height = 720
+    boxes: dict[str, _Box] = {}
+    for column, rank in enumerate(columns):
+        members = buckets[rank]
+        heights = [_node_height(node, options) for node in members]
+        gap = min(54, max(24, (available_height - sum(heights)) // max(len(members) - 1, 1)))
+        y = options.margin + 72
+        for node, height in zip(members, heights):
+            boxes[node.id] = _Box(options.margin + 20 + column * x_step, y, options.node_width, height)
+            y += height + gap
+    return boxes
+
+
+def _catalog_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, _Box]:
+    """Fill a bounded catalog canvas instead of stacking unconnected cases."""
+    cases = sorted((node for node in spec.nodes if node.kind in {"use-case", "scenario", "behavior"}), key=lambda node: node.id)
+    support = sorted((node for node in spec.nodes if node not in cases), key=lambda node: (node.kind, node.id))
+    ordered = [*cases, *support]
+    columns = min(3, max(1, len(ordered)))
+    boxes: dict[str, _Box] = {}
+    for index, node in enumerate(ordered):
+        column, row = index % columns, index // columns
+        boxes[node.id] = _Box(
+            options.margin + 20 + column * (options.node_width + 54),
+            options.margin + 72 + row * (max(options.node_height, _node_height(node, options)) + 42),
+            options.node_width, _node_height(node, options),
+        )
+    return boxes
+
+
 def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str, _Box], dict[str, _Box], int, int]:
     direction = spec.direction.upper()
-    if spec.lanes:
+    if spec.layout == "functional-flow":
+        boxes = _functional_flow_layout(spec, options)
+    elif spec.layout == "use-case-catalog":
+        boxes = _catalog_layout(spec, options)
+    elif spec.lanes:
         boxes = _lane_layout(spec, options)
     else:
         ranks = _ranks(spec)
@@ -296,12 +339,25 @@ def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str,
                 container_boxes[identifier] = _Box(left, top, right - left, bottom - top)
             else:
                 empty_index = sum(1 for item in container_boxes.values() if item.width == options.node_width + 40 and item.height == options.node_height + 50)
-                container_boxes[identifier] = _Box(
-                    options.margin + empty_index * (options.node_width + options.node_gap),
-                    options.margin + 42,
-                    options.node_width + 40,
-                    options.node_height + 50,
-                )
+                if container in spec.lanes and spec.layout in {"operational-lanes", "logical-tiers"}:
+                    lane_index = sorted(spec.lanes, key=lambda item: (item.order, item.id)).index(container)
+                    if direction == "TB":
+                        container_boxes[identifier] = _Box(
+                            options.margin, options.margin + 72 + lane_index * (options.node_height + 56),
+                            options.node_width + 40, options.node_height + 50,
+                        )
+                    else:
+                        container_boxes[identifier] = _Box(
+                            options.margin + lane_index * (options.node_width + options.rank_gap), options.margin + 72,
+                            options.node_width + 40, options.node_height + 50,
+                        )
+                else:
+                    container_boxes[identifier] = _Box(
+                        options.margin + empty_index * (options.node_width + options.node_gap),
+                        options.margin + 42,
+                        options.node_width + 40,
+                        options.node_height + 50,
+                    )
             del pending[identifier]
             changed = True
         if not changed:
@@ -486,7 +542,12 @@ def _edge_style(edge: DiagramEdge) -> str:
     return "operational"
 
 
-def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: int, margin: int, lane_step: int, lane_aware: bool = False) -> str:
+def _edge_svg(
+    edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: int,
+    margin: int, lane_step: int, lane_aware: bool = False,
+    occupied_labels: list[_Box] | None = None,
+    layout: str = "flowchart",
+) -> str:
     kind = edge.kind.lower().replace("_", "-")
     semantic_style = _edge_style(edge)
     classes = ["diagram-edge", f"kind-{_text(kind)}", f"edge-style-{semantic_style}"]
@@ -495,15 +556,17 @@ def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: 
         classes.append("is-inferred")
     if edge.critical or edge.style.lower() in {"critical", "cycle"}:
         classes.append("is-critical")
-    label_text = _lines(edge.label + (f" ({edge.count})" if edge.count != 1 else ""), 28, 1)[0] if edge.label or edge.count != 1 else ""
+    visible_label = "" if layout == "logical-tiers" and kind in _DEPENDENCY_EDGE_KINDS and edge.count == 1 else edge.label
+    label_text = _lines(visible_label + (f" ({edge.count})" if edge.count != 1 else ""), 28, 1)[0] if visible_label or edge.count != 1 else ""
     label_width = min(max(len(label_text) * 6, 30), 168) if label_text else 30
     track = index % 5
     obstacles = [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}]
     path = _lane_edge_path(boxes[edge.source], boxes[edge.target], direction, track, obstacles) if lane_aware else _edge_path(boxes[edge.source], boxes[edge.target], direction, index, margin, lane_step)
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
     evidence_title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
-    title = f"{edge.label}: {evidence_title}" if edge.label else evidence_title
-    label = edge.label + (f" ({edge.count})" if edge.count != 1 else "")
+    detailed_label = edge.title or edge.label
+    title = f"{detailed_label}: {evidence_title}" if detailed_label else evidence_title
+    label = visible_label + (f" ({edge.count})" if edge.count != 1 else "")
     result = [
         f'<path id="edge-{index}" class="{" ".join(classes)}" data-edge-id="edge-{index}" data-source="{_text(edge.source)}" data-target="{_text(edge.target)}" data-kind="{_text(edge.kind)}" data-label-hidden="{str(not bool(label)).lower()}" d="{path}" style="{dash}"{marker}><title>{_text(title)}</title></path>'
     ]
@@ -521,15 +584,22 @@ def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: 
         else:
             x = (source.x + source.width + target.x) / 2 - label_width / 2
             y = margin + 72 + index * 18 - 13
-        if lane_aware:
+        if lane_aware or occupied_labels is not None:
+            occupied = [*boxes.values(), *(occupied_labels or [])]
             candidates = [(x, y)]
-            for distance in range(1, 9):
-                candidates.extend([(x + distance * 22, y), (x - distance * 22, y)])
+            for distance in range(1, 14):
+                candidates.extend([
+                    (x + distance * 18, y), (x - distance * 18, y),
+                    (x, y + distance * 14), (x, y - distance * 14),
+                ])
             x, y = next((
                 (candidate_x, candidate_y) for candidate_x, candidate_y in candidates
-                if not any(_overlaps(_Box(int(candidate_x), int(candidate_y), label_width, 12), box) for box in obstacles)
+                if candidate_x >= margin and candidate_y >= 58
+                and not any(_overlaps(_Box(int(candidate_x), int(candidate_y), label_width, 12), box) for box in occupied)
             ), (x, y))
-        result.append(f'<text class="edge-label" data-edge-label="edge-{index}" data-x="{x:g}" data-y="{y:g}" data-width="{label_width:g}" data-height="12" x="{x + label_width / 2:g}" y="{y + 9:g}">{_text(label_text)}</text>')
+        if occupied_labels is not None:
+            occupied_labels.append(_Box(int(x), int(y), label_width, 12))
+        result.append(f'<text class="edge-label edge-label-contrast" data-edge-label="edge-{index}" data-x="{x:g}" data-y="{y:g}" data-width="{label_width:g}" data-height="12" x="{x + label_width / 2:g}" y="{y + 9:g}">{_text(label_text)}</text>')
     if edge.evidence:
         result.append(f'<g class="evidence-indicator" data-evidence="true"><title>{_text(title)}</title><circle cx="{boxes[edge.source].x + boxes[edge.source].width + 6}" cy="{boxes[edge.source].y + 6}" r="4"/></g>')
     return "".join(result)
@@ -553,6 +623,7 @@ def _stylesheet() -> str:
 .node-subtitle { text-anchor: middle; font-size: 10px; fill: #64748b; }
 .node-badge { font-size: 8px; fill: #475569; }
 .edge-label,.footer-text,.container-label { font-size: 10px; }
+.edge-label-contrast { paint-order: stroke; stroke: #f8fafc; stroke-width: 4px; stroke-linejoin: round; }
 .diagram-title { font-size: 20px; font-weight: 700; }
 .diagram-subtitle { font-size: 12px; fill: #64748b; }
 .diagnostic-error { fill: #b91c1c; }.diagnostic-warning { fill: #a16207; }
@@ -585,7 +656,7 @@ def _footer(spec: DiagramSpec, start_y: int, boxes: dict[str, _Box], width: int)
 
 def _edge_key(edge: DiagramEdge) -> tuple[Any, ...]:
     evidence = tuple(repr(item.to_dict()) for item in edge.evidence)
-    return edge.source, edge.target, edge.kind, edge.label, edge.count, edge.style, edge.critical, edge.inferred, evidence
+    return edge.source, edge.target, edge.kind, edge.label, edge.count, edge.style, edge.critical, edge.inferred, edge.title, evidence
 
 
 def _overlaps(first: _Box, second: _Box) -> bool:
@@ -632,12 +703,16 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     for edge in ordered_edges:
         parallel_totals[(edge.source, edge.target)] = parallel_totals.get((edge.source, edge.target), 0) + 1
     parallel_seen: dict[tuple[str, str], int] = {}
+    occupied_labels: list[_Box] = []
     for index, edge in enumerate(ordered_edges):
         if edge.source not in boxes or edge.target not in boxes:
             continue
         key = (edge.source, edge.target)
         parallel_seen[key] = parallel_seen.get(key, 0) + 1
-        edge_svg = _edge_svg(edge, boxes, spec.direction.upper(), index, options.margin, edge_lane_step, bool(spec.lanes))
+        edge_svg = _edge_svg(
+            edge, boxes, spec.direction.upper(), index, options.margin, edge_lane_step,
+            bool(spec.lanes) or spec.layout in {"functional-flow", "use-case-catalog"}, occupied_labels, spec.layout,
+        )
         parts.append(edge_svg.replace('url(#arrow)', f'url(#{arrow_id})'))
     for node in sorted(spec.nodes, key=lambda item: item.id):
         parts.append(_node_svg(node, boxes[node.id], spec.id))
