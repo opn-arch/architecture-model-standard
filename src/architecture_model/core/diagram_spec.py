@@ -27,15 +27,22 @@ class Diagnostic:
         return asdict(self)
 
 
-def _provenance_list(values: Iterable["DiagramProvenance | str | dict[str, Any]"]) -> list["DiagramProvenance"]:
+def _provenance_list(values: Iterable["DiagramProvenance | str | dict[str, Any]"] | Any) -> list["DiagramProvenance"] | Any:
+    if not isinstance(values, list):
+        return values
     result: list[DiagramProvenance] = []
     for value in values:
         if isinstance(value, DiagramProvenance):
             result.append(value)
         elif isinstance(value, dict):
-            result.append(DiagramProvenance(**value))
-        else:
+            try:
+                result.append(DiagramProvenance(**value))
+            except TypeError:
+                result.append(value)
+        elif isinstance(value, str):
             result.append(DiagramProvenance(source=str(value)))
+        else:
+            result.append(value)
     return result
 
 
@@ -139,7 +146,7 @@ class LegendEntry:
     description: str = ""
 
 
-@dataclass
+@dataclass(frozen=True)
 class DiagramProvenance:
     source: str = ""
     entity_refs: list[str] = field(default_factory=list)
@@ -185,6 +192,39 @@ class DiagramSpec:
             ]
 
     def validate(self) -> None:
+        def require_list(name: str, value: Any, item_type: type) -> None:
+            if not isinstance(value, list) or any(not isinstance(item, item_type) for item in value):
+                raise ValueError(f"Invalid diagram type for {name}: expected list[{item_type.__name__}]")
+
+        require_list("nodes", self.nodes, DiagramNode)
+        require_list("edges", self.edges, DiagramEdge)
+        require_list("groups", self.groups, DiagramGroup)
+        require_list("lanes", self.lanes, DiagramGroup)
+        require_list("callouts", self.callouts, DiagramCallout)
+        require_list("legend", self.legend, LegendEntry)
+        require_list("warnings", self.warnings, Diagnostic)
+        require_list("drilldowns", self.drilldowns, DiagramDrilldown)
+        if not isinstance(self.provenance, DiagramProvenance):
+            raise ValueError("Invalid diagram type for provenance: expected DiagramProvenance")
+        provenances = [self.provenance]
+        for node in self.nodes:
+            require_list(f"node {node.id} evidence", node.evidence, DiagramProvenance)
+            require_list(f"node {node.id} badges", node.badges, str)
+            if not isinstance(node.metrics, dict) or any(
+                not isinstance(key, str) or not isinstance(value, (str, int, float, bool, type(None)))
+                or isinstance(value, float) and not math.isfinite(value)
+                for key, value in node.metrics.items()
+            ):
+                raise ValueError(f"Invalid diagram type for node {node.id} metrics: expected JSON primitives")
+            provenances.extend(node.evidence)
+        for edge in self.edges:
+            require_list(f"edge {edge.source} evidence", edge.evidence, DiagramProvenance)
+            provenances.extend(edge.evidence)
+        for provenance in provenances:
+            if not isinstance(provenance.source, str):
+                raise ValueError("Invalid diagram type for provenance source: expected str")
+            require_list("provenance entity_refs", provenance.entity_refs, str)
+
         def validate_text(value: Any) -> None:
             if isinstance(value, str):
                 _validate_text(value)

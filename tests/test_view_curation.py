@@ -62,10 +62,10 @@ views:
 
     curation = load_viewer_curation(tmp_path, context)
 
-    assert [item.resolved_id for item in curation.views.conops.featured] == ["root::COMP-1"]
+    assert curation.views.conops.featured == []
     assert any("ambiguous" in warning.message.lower() for warning in curation.diagnostics)
     assert any("Duplicate selector" in warning.message for warning in curation.diagnostics)
-    assert curation.views.conops.labels == {"root::COMP-1": "Primary"}
+    assert curation.views.conops.labels == {}
 
 
 def test_external_and_flow_evidence_must_be_safe_and_present(tmp_path):
@@ -226,9 +226,7 @@ views:
     curation = load_viewer_curation(tmp_path, context, path)
     assert curation.views.functional.tiers == []
     assert curation.views.functional.externals == []
-    endpoint_warnings = validate_view_curation(curation.views.functional, context)
-    assert any("unknown target" in warning.message for warning in endpoint_warnings)
-    assert isinstance(curation.views.functional.flows[0].evidence[0], EvidenceRecord)
+    assert any("unknown target" in warning.message for warning in curation.diagnostics)
 
 
 def test_invalid_view_fails_closed_while_other_view_survives(tmp_path):
@@ -371,3 +369,43 @@ views:
     curation = load_viewer_curation(tmp_path, context, path)
     assert curation.views.logical.flows[0].label == "Latency < 10ms"
     assert curation.views.logical.flows[0].evidence[0].claim == "Observed p < 0.05"
+
+
+def test_empty_or_multi_mode_selector_invalidates_view(tmp_path):
+    context = _context(tmp_path)
+    for name, selector in (("empty", "{}"), ("multi", "{qualified_id: root::COMP-1, name: Shared}"), ("system-only", "{system: root}")):
+        path = tmp_path / f"{name}.yaml"
+        path.write_text(f"version: 1\nviews:\n  conops:\n    featured: [{selector}]\n", encoding="utf-8")
+        curation = load_viewer_curation(tmp_path, context, path)
+        assert curation.views.conops == type(curation.views.conops)(), name
+        assert any(item.code == "CURATION_SELECTOR_INVALID" for item in curation.diagnostics), name
+
+
+def test_semantic_validation_invalidates_view_for_unknown_references(tmp_path):
+    context = _context(tmp_path)
+    cases = {
+        "label": "labels: {root::MISSING: Label}",
+        "parent": "groups: [{id: child, label: Child, parent: missing}]",
+        "root": "preferred_capability_root: root::MISSING",
+        "flow": "groups: [{id: a, label: A}]\n    flows: [{source: a, target: missing}]",
+    }
+    for name, body in cases.items():
+        path = tmp_path / f"semantic-{name}.yaml"
+        path.write_text(f"version: 1\nviews:\n  functional:\n    {body}\n", encoding="utf-8")
+        curation = load_viewer_curation(tmp_path, context, path)
+        assert curation.views.functional == type(curation.views.functional)(), name
+        assert any(item.code.startswith("CURATION_SEMANTIC") for item in curation.diagnostics), name
+
+
+def test_flow_can_reference_resolved_aggregate_selector(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "aggregate-flow.yaml"
+    path.write_text("""version: 1
+views:
+  logical:
+    aggregate_components: [root::COMP-1]
+    groups: [{id: clients, label: Clients}]
+    flows: [{source: clients, target: root::COMP-1}]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert len(curation.views.logical.flows) == 1

@@ -169,6 +169,17 @@ def _selector(raw: Any, diagnostics: list[Diagnostic] | None = None, view: str =
         return None
     if diagnostics is not None:
         _check_keys(raw, SELECTOR_KEYS, diagnostics, view, "selector")
+    modes = [key for key in SELECTOR_KEYS - {"system"} if raw.get(key) not in (None, "")]
+    if len(modes) != 1:
+        if diagnostics is not None:
+            _diag(diagnostics, "CURATION_SELECTOR_INVALID", "Selector requires exactly one mode plus optional system", view=view)
+            raise _InvalidView("selector")
+        return None
+    if raw.get("system") and modes[0] == "qualified_id":
+        if diagnostics is not None:
+            _diag(diagnostics, "CURATION_SELECTOR_INVALID", "Qualified selector cannot include system scope", view=view)
+            raise _InvalidView("selector")
+        return None
     return Selector(**{key: str(value) for key, value in raw.items() if key in SELECTOR_KEYS and value is not None})
 
 
@@ -255,6 +266,7 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
                 description = selector.qualified_id or selector.local_id or selector.name or selector.source_file or selector.tag
                 code = "CURATION_SELECTOR_AMBIGUOUS" if selector.name or selector.local_id else "CURATION_SELECTOR_UNRESOLVED"
                 _diag(diagnostics, code, f"Ambiguous selector ignored: {description}" if code.endswith("AMBIGUOUS") else f"Unresolved selector ignored: {description}", view=view_name)
+                getattr(result, field_name).append(selector)
                 continue
             selector.resolved_id = matches[0].key
             if selector.resolved_id in seen:
@@ -309,9 +321,6 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         if inferred and not evidence:
             _diag(diagnostics, "CURATION_EVIDENCE_INVALID", f"Inferred curated flow requires evidence: {source} -> {target}", view=view_name)
             raise _InvalidView("flow")
-        if not inferred and not ({source, target} <= presentation_ids):
-            _diag(diagnostics, "CURATION_FLOW_ENDPOINT_INVALID", f"Curated flow must link presentation groups: {source} -> {target}", view=view_name)
-            raise _InvalidView("flow")
         flow_label = _text(value.get("label", ""), diagnostics, view_name, "flow label")
         if value.get("description") is not None:
             _text(value["description"], diagnostics, view_name, "flow description")
@@ -329,7 +338,7 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
             selector = _selector(value, diagnostics, view_name)
             if selector is None or not selector.resolve(context):
                 _diag(diagnostics, "CURATION_SELECTOR_UNRESOLVED", f"Unresolved selector in {field_name}", view=view_name)
-            else:
+            if selector is not None:
                 setattr(result, field_name, selector)
     drilldowns = _collection(raw, "drilldowns", diagnostics, dict, view_name)
     for key, value in sorted(drilldowns.items()):
@@ -345,12 +354,27 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
 def validate_view_curation(view: ViewCuration, context: ArchitectureViewContext) -> list[Diagnostic]:
     identifiers = {entity.key for entity in context.entities()}
     identifiers.update(item.id for item in view.groups + view.scenarios + view.tiers + view.externals)
+    identifiers.update(item.resolved_id for item in view.aggregate_components if item.resolved_id)
     diagnostics: list[Diagnostic] = []
+    for target in view.labels:
+        if target not in identifiers:
+            _diag(diagnostics, "CURATION_SEMANTIC_LABEL_TARGET", f"Unknown label target: {target}")
+    group_ids = {item.id for item in view.groups + view.scenarios + view.tiers}
+    for group in view.groups + view.scenarios + view.tiers:
+        if group.parent and group.parent not in group_ids:
+            _diag(diagnostics, "CURATION_SEMANTIC_GROUP_PARENT", f"Unknown group parent: {group.parent}")
+    for field_name in ("preferred_capability_root", "mission_root"):
+        selector = getattr(view, field_name)
+        if selector is not None and selector.resolved_id not in identifiers:
+            _diag(diagnostics, "CURATION_SEMANTIC_ROOT", f"Unknown {field_name}: {selector.resolved_id}")
+    for selector in [*view.featured, *view.aggregate_components, *view.hide, *view.drilldowns.values()]:
+        if not selector.resolved_id or selector.resolved_id not in identifiers:
+            _diag(diagnostics, "CURATION_SEMANTIC_SELECTOR", f"Unknown resolved selector: {selector.resolved_id}")
     for flow in view.flows:
         if flow.source not in identifiers:
-            _diag(diagnostics, "CURATION_FLOW_ENDPOINT_UNKNOWN", f"Curated flow has unknown source: {flow.source}")
+            _diag(diagnostics, "CURATION_SEMANTIC_FLOW_ENDPOINT", f"Curated flow has unknown source: {flow.source}")
         if flow.target not in identifiers:
-            _diag(diagnostics, "CURATION_FLOW_ENDPOINT_UNKNOWN", f"Curated flow has unknown target: {flow.target}")
+            _diag(diagnostics, "CURATION_SEMANTIC_FLOW_ENDPOINT", f"Curated flow has unknown target: {flow.target}")
     return diagnostics
 
 
@@ -382,5 +406,10 @@ def load_viewer_curation(
         return ViewerCuration(diagnostics=[Diagnostic("warning", "CURATION_ROOT_INVALID", f"Unknown curation view: {name}") for name in unknown])
     parsed = {}
     for name in VIEW_NAMES:
-        parsed[name] = _parse_view(raw["views"].get(name, {}), root, context, diagnostics, name)
+        view = _parse_view(raw["views"].get(name, {}), root, context, diagnostics, name)
+        semantic = validate_view_curation(view, context)
+        if semantic:
+            diagnostics.extend(Diagnostic(item.severity, item.code, item.message, view=name, source=item.source, context=item.context) for item in semantic)
+            view = ViewCuration()
+        parsed[name] = view
     return ViewerCuration(1, CuratedViews(**parsed), diagnostics)

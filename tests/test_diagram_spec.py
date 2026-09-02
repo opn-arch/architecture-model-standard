@@ -1,5 +1,6 @@
 import json
 import math
+from dataclasses import FrozenInstanceError
 from typing import get_type_hints
 
 import pytest
@@ -115,20 +116,19 @@ def test_drilldown_route_is_external_and_not_treated_as_internal_id():
 @pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf, object()])
 def test_json_serialization_rejects_non_json_values(value):
     spec = DiagramSpec("x", "X", nodes=[DiagramNode("n", "N", "component", metrics={"bad": value})])
-    with pytest.raises(ValueError, match="JSON-safe"):
+    with pytest.raises(ValueError, match="Invalid diagram type"):
         spec.to_dict()
 
 
-def test_set_serialization_is_hash_order_independent():
-    first = DiagramSpec("x", "X", provenance={"entity_refs": {"b", "a"}}).to_dict()
-    second = DiagramSpec("x", "X", provenance={"entity_refs": {"a", "b"}}).to_dict()
-    assert first == second
-    assert first["provenance"]["entity_refs"] == ["a", "b"]
+def test_provenance_entity_refs_reject_sets_even_if_deterministic():
+    spec = DiagramSpec("x", "X", provenance={"entity_refs": {"b", "a"}})
+    with pytest.raises(ValueError, match="Invalid diagram type"):
+        spec.to_dict()
 
 
 def test_json_serialization_rejects_non_string_mapping_keys():
     spec = DiagramSpec("x", "X", nodes=[DiagramNode("n", "N", "component", metrics={1: "bad"})])
-    with pytest.raises(ValueError, match="mapping key"):
+    with pytest.raises(ValueError, match="Invalid diagram type"):
         spec.to_dict()
 
 
@@ -172,3 +172,24 @@ def test_structured_diagnostics_serialize_as_dicts():
         {"severity": "warning", "code": "LEGACY", "view": "", "source": "", "message": "legacy", "context": {}},
         {"severity": "warning", "code": "TEST", "view": "x", "source": "", "message": "message", "context": {}},
     ]
+
+
+def test_provenance_is_frozen_and_nested_types_are_validated():
+    provenance = DiagramProvenance(source="model", entity_refs=["root::A"])
+    with pytest.raises(FrozenInstanceError):
+        provenance.source = "changed"
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        DiagramSpec("x", "X", provenance=DiagramProvenance("model", "root::A")),
+        DiagramSpec("x", "X", nodes=[DiagramNode("a", "A", "component", evidence="model")]),
+        DiagramSpec("x", "X", nodes=[DiagramNode("a", "A", "component", evidence=[object()])]),
+        DiagramSpec("x", "X", nodes=[DiagramNode("a", "A", "component", metrics={"bad": [1]})]),
+        DiagramSpec("x", "X", nodes="not-a-list"),
+    ],
+)
+def test_diagram_spec_rejects_invalid_nested_runtime_types(spec):
+    with pytest.raises(ValueError, match="Invalid diagram type"):
+        spec.validate()
