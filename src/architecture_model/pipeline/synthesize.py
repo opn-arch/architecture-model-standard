@@ -498,6 +498,10 @@ def _build_system_model_yaml(
                         for item in typed_interfaces
                     ]
                 components.append(comp_dict)
+    local_component_id_remap = {
+        component_id: id_remap[component_id]
+        for component_id in selected_component_ids
+    }
     for component in components:
         for interface in component.get("interfaces", []):
             target = interface.get("target_component", "")
@@ -597,16 +601,16 @@ def _build_system_model_yaml(
                     beh_dict["triggers"] = beh.triggers
                 existing_structured = getattr(beh, "structured_steps", None)
                 if existing_structured:
-                    local_owner_id = _local_owner_id(source_file)
                     beh_dict["structured_steps"] = [
                         {
                             **(asdict(step) if is_dataclass(step) else dict(step)),
-                            "component_ref": _register_id(
-                                local_owner_id or (
-                                    getattr(step, "component_ref", "")
-                                    if is_dataclass(step)
-                                    else step.get("component_ref", "")
-                                )
+                            "component_ref": local_component_id_remap.get(
+                                getattr(step, "component_ref", "")
+                                if is_dataclass(step)
+                                else step.get("component_ref", ""),
+                                getattr(step, "component_ref", "")
+                                if is_dataclass(step)
+                                else step.get("component_ref", ""),
                             ),
                         }
                         for step in existing_structured

@@ -427,6 +427,78 @@ class TestBuildSystemModelYaml:
         step = parsed["entities"]["behaviors"][0]["structured_steps"][0]
         assert step["component_ref"] == component_id
 
+    def test_structured_steps_preserve_valid_cross_component_ownership(self):
+        behavior = _FakeBehavior(
+            id="BEH-1", source_file="first.py", capability_id="CAP-1",
+            structured_steps=[
+                {"order": 1, "action": "Read", "component_ref": "COMP-1"},
+                {"order": 2, "action": "Write", "component_ref": "COMP-2"},
+            ],
+        )
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Reader", ["first.py"]),
+                _FakeComponent("COMP-2", "Writer", ["second.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[_FakeCapability(
+                    "CAP-1", "Transfer data", source_files=["first.py", "second.py"],
+                )],
+                behaviors=[behavior],
+            )),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+
+        raw = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary(
+                "SYS-1", "Transfer", files=["first.py", "second.py"],
+                is_full_system=True,
+            ),
+            results,
+        ))
+
+        assert [
+            step["component_ref"]
+            for step in raw["entities"]["behaviors"][0]["structured_steps"]
+        ] == ["COMP-1", "COMP-2"]
+
+    def test_unknown_structured_step_ref_remains_for_structural_gate(self, tmp_path):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Reader", ["first.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[_FakeCapability("CAP-1", "Read", source_files=["first.py"])],
+                behaviors=[_FakeBehavior(
+                    id="BEH-1", source_file="first.py", capability_id="CAP-1",
+                    structured_steps=[{
+                        "order": 1, "action": "Delegate", "component_ref": "COMP-MISSING",
+                    }],
+                )],
+            )),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+        model_yaml = _build_system_model_yaml(
+            SystemBoundary("SYS-1", "Reader", files=["first.py"], is_full_system=True),
+            results,
+        )
+
+        raw = yaml.safe_load(model_yaml)
+        assert raw["entities"]["behaviors"][0]["structured_steps"][0][
+            "component_ref"
+        ] == "COMP-MISSING"
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture")
+        ctx.cache["synthesize"] = _stage_result(SynthesizeResult(sos_model_yaml=model_yaml))
+
+        emitted = EmitStage().run(ctx).output
+
+        assert emitted.promoted is False
+        assert any(
+            issue["code"] == "STRUCTURAL_DANGLING_REF"
+            and "structured_steps.component_ref" in issue["message"]
+            for issue in emitted.final_validation_issues
+        )
+
     def test_duplicate_file_allocation_uses_stable_single_component_owner(self):
         results = {
             "allocate": _stage_result(_FakeAllocOutput([
