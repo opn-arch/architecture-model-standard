@@ -2047,6 +2047,25 @@ def _load_pipeline_history(repo_path: Path | None = None) -> list[dict] | dict:
     return [record.to_dict() for record in records] if records else {}
 
 
+def _canonical_scope_alias(value: object) -> str:
+    """Canonicalize identity aliases without changing their display values."""
+    import re
+    import unicodedata
+
+    normalized = unicodedata.normalize("NFKC", str(value or "")).strip().casefold()
+    normalized = re.sub(r"[\\/]+", "/", normalized)
+    normalized = "/".join(
+        re.sub(r"[-_\s]+", "-", part).strip("-")
+        for part in normalized.split("/")
+    )
+    return normalized.rstrip("/")
+
+
+def _viewer_submodel_path(root: Path, sub_model_ref: str) -> Path:
+    """Resolve a submodel reference after portable separator normalization."""
+    return (root / str(sub_model_ref).replace("\\", "/")).resolve()
+
+
 def _viewer_system_namespace_map(model: "ArchitectureModel", repo_path: Path | None) -> dict[tuple[Path, str], str]:
     """Assign stable viewer namespaces from canonical submodel paths and system IDs."""
     if repo_path is None:
@@ -2056,7 +2075,7 @@ def _viewer_system_namespace_map(model: "ArchitectureModel", repo_path: Path | N
     for system in model.entities.systems:
         if not system.sub_model_ref:
             continue
-        path = (root / system.sub_model_ref).resolve()
+        path = _viewer_submodel_path(root, system.sub_model_ref)
         try:
             relative = path.relative_to(root)
         except ValueError:
@@ -2093,7 +2112,7 @@ def _viewer_system_alias_map(
     for system in model.entities.systems:
         if not system.sub_model_ref:
             continue
-        path = (root / system.sub_model_ref).resolve()
+        path = _viewer_submodel_path(root, system.sub_model_ref)
         namespace = namespace_map.get((path, system.id))
         if namespace is None:
             continue
@@ -2104,12 +2123,17 @@ def _viewer_system_alias_map(
             namespace, system.id, system.name, relative, parent_ref, ref_namespace,
             system.source_block,
         }
+        display_aliases = sorted(alias for alias in scope_aliases if alias)
         aliases[namespace] = {
             "viewer_namespace": namespace,
             "system_id": system.id,
             "system_name": system.name,
             "sub_model_ref": relative,
-            "scope_aliases": sorted(alias for alias in scope_aliases if alias),
+            "scope_aliases": display_aliases,
+            "canonical_scope_aliases": sorted({
+                canonical for alias in display_aliases
+                if (canonical := _canonical_scope_alias(alias))
+            }),
         }
     return aliases
 
@@ -2121,15 +2145,14 @@ def _normalize_viewer_history(
     """Attach canonical paths and unambiguous subsystem ownership to history records."""
     if not isinstance(history, list):
         return history
-    alias_owners: dict[str, list[str]] = {}
-    for namespace, entry in aliases.items():
-        for alias in entry["scope_aliases"]:
-            alias_owners.setdefault(alias, []).append(namespace)
-
     def owner(scope: str) -> str | None:
-        if not scope:
+        canonical_scope = _canonical_scope_alias(scope)
+        if not canonical_scope:
             return ""
-        owners = alias_owners.get(scope, [])
+        owners = [
+            namespace for namespace, entry in aliases.items()
+            if canonical_scope in entry["canonical_scope_aliases"]
+        ]
         return owners[0] if len(owners) == 1 else None
 
     for run in history:
@@ -2175,7 +2198,7 @@ def _load_submodel_view_data(
     for system in model.entities.systems:
         if not system.sub_model_ref:
             continue
-        path = (root / system.sub_model_ref).resolve()
+        path = _viewer_submodel_path(root, system.sub_model_ref)
         namespace = namespace_map.get((path, system.id))
         if namespace is None:
             continue

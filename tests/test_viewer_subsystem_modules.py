@@ -234,6 +234,69 @@ def test_subsystem_history_scope_aliases_match_qualified_module(tmp_path, scope)
     assert "Produced Artifacts / Entities:" in script
 
 
+@pytest.mark.parametrize("history_scope", ["  sys_MODELS  ", "ＳＹＳ－ＭＯＤＥＬＳ"])
+def test_subsystem_history_scope_aliases_are_canonicalized_without_changing_display_values(
+    tmp_path, history_scope,
+):
+    _write_child(tmp_path, "models")
+    _write_history(tmp_path, _history_run("run-models", history_scope))
+    model = _parse_raw({
+        "meta": {"project": "root", "schema_version": "2.0"},
+        "entities": {"systems": [{
+            "id": "SYS-models", "name": "Models", "status": "ACTIVE",
+            "sub_model_ref": ".architecture-models\\models\\.architecture-model.yaml",
+        }]},
+        "relationships": [],
+    })
+
+    data, _, _ = _parts(generate_html_viewer(
+        model, tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    aliases = data["viewer_system_aliases"]["models"]
+    assert aliases["system_id"] == "SYS-models"
+    assert aliases["scope_aliases"] == sorted({
+        "models", "SYS-models", "Models",
+        ".architecture-models/models/.architecture-model.yaml",
+        ".architecture-models/models",
+    })
+    run = data["pipeline_history"][0]
+    assert run["viewer_namespace"] == "models"
+    assert run["modules"][0]["viewer_namespace"] == "models"
+    assert run["components"][0]["viewer_entity_id"] == "models::COMP-1"
+
+
+def test_case_colliding_system_ids_require_unique_path_alias_to_avoid_history_leak(tmp_path):
+    _write_child(tmp_path, "alpha")
+    _write_child(tmp_path, "beta")
+    _write_history(
+        tmp_path,
+        _history_run("ambiguous", "sYs-A"),
+        _history_run("alpha-path", ".architecture-models\\alpha"),
+        _history_run("beta-namespace", " BETA "),
+    )
+    model = _parse_raw({
+        "meta": {"project": "root", "schema_version": "2.0"},
+        "entities": {"systems": [
+            {"id": "SYS-A", "name": "First", "status": "ACTIVE", "sub_model_ref": ".architecture-models/alpha/.architecture-model.yaml"},
+            {"id": "sys-a", "name": "Second", "status": "ACTIVE", "sub_model_ref": ".architecture-models/beta/.architecture-model.yaml"},
+        ]},
+        "relationships": [],
+    })
+
+    data, _, _ = _parts(generate_html_viewer(
+        model, tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    by_run = {run["run_id"]: run for run in data["pipeline_history"]}
+    assert by_run["ambiguous"]["modules"][0]["viewer_namespace"] is None
+    assert by_run["ambiguous"]["components"][0]["viewer_entity_id"] is None
+    assert by_run["alpha-path"]["modules"][0]["viewer_namespace"] == "alpha"
+    assert by_run["alpha-path"]["components"][0]["viewer_entity_id"] == "alpha::COMP-1"
+    assert by_run["beta-namespace"]["modules"][0]["viewer_namespace"] == "beta"
+    assert by_run["beta-namespace"]["components"][0]["viewer_entity_id"] == "beta::COMP-1"
+
+
 def test_same_path_scoped_history_does_not_cross_match_subsystems(tmp_path):
     _write_child(tmp_path, "alpha")
     _write_child(tmp_path, "beta")
