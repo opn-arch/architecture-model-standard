@@ -149,6 +149,34 @@ def test_use_case_curation_overrides_featured_order_hide_labels_and_drilldown(tm
     assert all(node.entity_ref != "root::BEH-00" for node in spec.nodes)
 
 
+def test_use_case_featured_are_guaranteed_first_then_actor_round_robin_fills(tmp_path):
+    context = _context(tmp_path)
+    for index, behavior in enumerate(context.models["root"].entities.behaviors):
+        behavior.actor = f"Actor {index:02}"
+        behavior.actor_id = ""
+    featured = [
+        Selector(qualified_id="root::BEH-14", resolved_id="root::BEH-14"),
+        Selector(qualified_id="root::BEH-12", resolved_id="root::BEH-12"),
+    ]
+    curation = ViewCuration(
+        featured=featured,
+        order=["root::BEH-12", "root::BEH-14", "root::BEH-03"],
+    )
+
+    spec = project_use_cases(
+        ArchitectureViewContext(context.root, context.models, []),
+        curation,
+        max_overview_nodes=6,
+    )
+
+    cases = [node.entity_ref for node in spec.nodes if node.kind == "use-case"]
+    assert cases[:2] == ["root::BEH-12", "root::BEH-14"]
+    assert "root::BEH-03" in cases[2:]
+    omitted = next(item.spec for item in spec.drilldowns if item.id == "drilldown:use-cases-omitted")
+    omitted_refs = {node.entity_ref for node in omitted.nodes}
+    assert not omitted_refs.intersection({"root::BEH-12", "root::BEH-14"})
+
+
 def test_use_cases_are_deterministic_with_duplicate_local_ids(tmp_path):
     context = _context(tmp_path)
     first = project_use_cases(context).to_dict()

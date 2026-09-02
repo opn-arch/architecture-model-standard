@@ -186,3 +186,19 @@ def test_logical_aggregated_exchange_reports_count_and_label(tmp_path):
     )
     assert edge.count == 2
     assert edge.label == "depends-on (2)"
+
+
+def test_logical_saturated_budget_keeps_cross_system_interface_path_atomic(tmp_path):
+    spec = project_logical_architecture(
+        _context(tmp_path, inline_count=20, actor_count=20),
+        max_overview_nodes=4,
+    )
+    refs = {node.entity_ref for node in spec.nodes}
+    interface = next(node for node in spec.nodes if node.entity_ref == "domain::IF-1")
+    assert len(spec.nodes) <= 4
+    assert {"root::SYS-WEB", "root::SYS-DOMAIN", "domain::IF-1"} <= refs
+    ports = [edge for edge in spec.edges if edge.kind == "interface-port" and interface.id in {edge.source, edge.target}]
+    assert {edge.source for edge in ports} == {"node:root::SYS-WEB", "node:root::SYS-DOMAIN"}
+    assert all(node.kind != "interface" or len([
+        edge for edge in spec.edges if node.id in {edge.source, edge.target}
+    ]) >= 2 for node in spec.nodes)

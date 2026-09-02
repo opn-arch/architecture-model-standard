@@ -965,10 +965,39 @@ def project_logical_architecture(
         entity_ref=item.key, evidence=[_provenance(item)],
     ) for item in actors]
 
+    system_node_by_ref = {node.entity_ref: node for node in system_nodes}
+    cross_system_interfaces: list[tuple[IndexedEntity, str, str]] = []
+    for interface in context.entities("interface"):
+        endpoint_systems = []
+        for reference in (interface.value.provider, interface.value.consumer):
+            endpoint = _find_local(context, interface.model, reference)
+            if endpoint and endpoint.model in model_owner:
+                endpoint_systems.append(model_owner[endpoint.model])
+            elif endpoint and endpoint.entity_type == "system":
+                endpoint_systems.append(endpoint.key)
+        distinct = sorted(set(endpoint_systems))
+        if len(distinct) == 2 and all(key in system_node_by_ref for key in distinct):
+            cross_system_interfaces.append((interface, distinct[0], distinct[1]))
+    cross_system_interfaces.sort(key=lambda item: item[0].key)
+
+    priority_nodes: list[DiagramNode] = []
+    priority_interface = cross_system_interfaces[0] if cross_system_interfaces and limit >= 3 else None
+    if priority_interface:
+        interface, source_system, target_system = priority_interface
+        priority_nodes = [
+            system_node_by_ref[source_system],
+            DiagramNode(
+                _node_id(interface.key), _label(interface, curation), "interface",
+                entity_ref=interface.key, evidence=[_provenance(interface)],
+            ),
+            system_node_by_ref[target_system],
+        ]
+
     candidates = [*system_nodes, *aggregate_nodes, *actor_nodes]
     candidates.sort(key=lambda node: (node.kind not in {"system", "aggregate"}, order.get(node.entity_ref, len(order)), node.id))
-    reserve = 1 if len(candidates) > limit else 0
-    selected = candidates[:max(0, limit - reserve)]
+    remaining = [node for node in candidates if node.id not in {item.id for item in priority_nodes}]
+    reserve = 1 if len(priority_nodes) + len(remaining) > limit else 0
+    selected = [*priority_nodes, *remaining[:max(0, limit - reserve - len(priority_nodes))]]
     selected_ids = {node.id for node in selected}
     selected_refs = {node.entity_ref for node in selected if node.entity_ref}
     aggregate_owner = {
@@ -1018,7 +1047,14 @@ def project_logical_architecture(
         if len(owners) > 1 or related_actor or any(rel.target == interface.key or rel.source == interface.key for rel in context.relationships("consumes")):
             interfaces.append(interface)
     for interface in interfaces:
-        if len(selected) >= limit - reserve:
+        if interface.key in {node.entity_ref for node in selected}:
+            continue
+        endpoints = [
+            endpoint for endpoint_name in (interface.value.provider, interface.value.consumer)
+            if (endpoint := _find_local(context, interface.model, endpoint_name))
+        ]
+        endpoint_owners = {owner(endpoint.key) for endpoint in endpoints} - {""}
+        if not endpoint_owners or not endpoint_owners <= selected_ids or len(selected) >= limit - reserve:
             break
         node = DiagramNode(_node_id(interface.key), _label(interface, curation), "interface", entity_ref=interface.key, evidence=[_provenance(interface)])
         if node.id not in selected_ids:
@@ -1030,6 +1066,16 @@ def project_logical_architecture(
             if endpoint_owner in selected_ids:
                 evidence = _derived("interface-endpoint", [interface.key, endpoint.key], protocol=interface.value.protocol)
                 edge_values[(endpoint_owner, node.id, "interface-port")] = DiagramEdge(endpoint_owner, node.id, "interface-port", evidence=[evidence])
+    for interface, source_system, target_system in cross_system_interfaces:
+        interface_id = _node_id(interface.key)
+        if interface_id not in selected_ids:
+            continue
+        for system_key in (source_system, target_system):
+            system_id = _node_id(system_key)
+            evidence = _derived("interface-endpoint", [interface.key, system_key], protocol=interface.value.protocol)
+            edge_values[(system_id, interface_id, "interface-port")] = DiagramEdge(
+                system_id, interface_id, "interface-port", evidence=[evidence],
+            )
 
     omitted_nodes = [node for node in candidates if node.id not in selected_ids]
     if omitted_nodes and len(selected) < limit:
@@ -1294,10 +1340,25 @@ def project_use_cases(
         actor_name = actor.key if actor else " ".join((behavior.value.actor or "Unassigned").split()).casefold()
         by_actor[actor_name].append(behavior)
     for values in by_actor.values():
-        values.sort(key=lambda item: (item.key not in featured, order.get(item.key, len(order)), item.key))
+        values.sort(key=lambda item: (order.get(item.key, len(order)), item.key))
     selected: list[IndexedEntity] = []
-    actor_keys = sorted(by_actor)
+    actor_keys = sorted(
+        by_actor,
+        key=lambda actor_key: (
+            order.get(by_actor[actor_key][0].key, len(order)) if by_actor[actor_key] else len(order),
+            by_actor[actor_key][0].key if by_actor[actor_key] else actor_key,
+            actor_key,
+        ),
+    )
     case_limit = min(9, len(behaviors), max(0, limit - (1 if len(behaviors) > limit else 0)))
+    featured_behaviors = sorted(
+        (item for item in behaviors if item.key in featured),
+        key=lambda item: (order.get(item.key, len(order)), item.key),
+    )
+    selected.extend(featured_behaviors[:case_limit])
+    selected_keys = {item.key for item in selected}
+    for actor_key in actor_keys:
+        by_actor[actor_key] = [item for item in by_actor[actor_key] if item.key not in selected_keys]
     while len(selected) < case_limit and any(by_actor.values()):
         for actor_key in actor_keys:
             if by_actor[actor_key] and len(selected) < case_limit:
