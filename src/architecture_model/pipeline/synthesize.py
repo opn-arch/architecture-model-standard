@@ -7,7 +7,7 @@ import hashlib
 import re
 import time
 from copy import deepcopy
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -219,6 +219,44 @@ def _normalized_path(path: Any) -> str:
     return Path(str(path)).as_posix().lstrip("./")
 
 
+@dataclass(frozen=True)
+class FileOwnership:
+    """Canonical file ownership for one synthesis run.
+
+    Component ties use stable component ID. Boundary ties prefer explicit
+    component membership, then full systems, smaller boundaries, and stable ID.
+    """
+
+    component_by_file: dict[str, str]
+    boundary_by_file: dict[str, str]
+
+
+def _build_file_ownership(
+    components: list[Any], boundaries: list[SystemBoundary],
+) -> FileOwnership:
+    component_by_file: dict[str, str] = {}
+    for component in sorted(components, key=lambda item: item.id):
+        for path in component.files:
+            component_by_file.setdefault(_normalized_path(path), component.id)
+    candidates: dict[str, list[SystemBoundary]] = {}
+    for boundary in boundaries:
+        for path in boundary.files:
+            candidates.setdefault(_normalized_path(path), []).append(boundary)
+    boundary_by_file = {}
+    for path, options in candidates.items():
+        component_id = component_by_file.get(path, "")
+        boundary_by_file[path] = min(
+            options,
+            key=lambda boundary: (
+                0 if component_id and component_id in boundary.component_ids else 1,
+                0 if boundary.is_full_system else 1,
+                len({_normalized_path(item) for item in boundary.files}),
+                boundary.system_id,
+            ),
+        ).system_id
+    return FileOwnership(component_by_file, boundary_by_file)
+
+
 def _interface_type(value: str) -> str:
     """Map extraction interface categories to canonical schema values."""
     return {
@@ -260,10 +298,15 @@ def _evidence_files(metadata: dict[str, Any]) -> set[str]:
 
 
 def _scoped_evidence(
-    ctx: PipelineContext, boundary: SystemBoundary
+    ctx: PipelineContext, boundary: SystemBoundary, ownership: FileOwnership | None = None,
 ) -> tuple[list[Any], list[LLMCallRecord]]:
     """Select boundary-local corrections and their exact LLM provenance."""
-    boundary_files = {_normalized_path(path) for path in boundary.files}
+    boundary_files = {
+        _normalized_path(path) for path in boundary.files
+        if ownership is None
+        or ownership.boundary_by_file.get(_normalized_path(path), boundary.system_id)
+        == boundary.system_id
+    }
     calls_by_resolution: dict[str, list[LLMCallRecord]] = {}
     for call in ctx.llm_calls:
         if call.resolution_id:
@@ -338,6 +381,7 @@ def _build_system_model_yaml(
     boundary: SystemBoundary,
     results: dict[str, StageResult],
     project_name: str = "",
+    ownership: FileOwnership | None = None,
 ) -> str:
     """Build a YAML model string from scoped pipeline results."""
     components: list[dict[str, Any]] = []
@@ -373,10 +417,10 @@ def _build_system_model_yaml(
     allocation_components = list(
         getattr(getattr(alloc_result, "output", None), "components", [])
     )
-    file_owner: dict[str, str] = {}
-    for comp in sorted(allocation_components, key=lambda item: item.id):
-        for path in getattr(comp, "files", []):
-            file_owner.setdefault(_normalized_path(path), comp.id)
+    if ownership is None:
+        ownership = _build_file_ownership(allocation_components, [boundary])
+    file_owner = ownership.component_by_file
+    local_component_ids = {component.id for component in allocation_components}
     if alloc_result and alloc_result.output:
         output = alloc_result.output
         if hasattr(output, "components"):
@@ -384,7 +428,16 @@ def _build_system_model_yaml(
                 comp_files = {
                     _normalized_path(path)
                     for path in getattr(comp, "files", [])
-                    if file_owner.get(_normalized_path(path)) == comp.id
+                    if (
+                        file_owner.get(_normalized_path(path)) == comp.id
+                        or file_owner.get(_normalized_path(path)) not in local_component_ids
+                    )
+                    and (
+                        ownership.boundary_by_file.get(
+                            _normalized_path(path), boundary.system_id
+                        ) == boundary.system_id
+                        or (_is_shared(comp) and boundary.system_id == "shared")
+                    )
                 }
                 if file_set and not comp_files.intersection(file_set):
                     continue
@@ -396,7 +449,16 @@ def _build_system_model_yaml(
                 if hasattr(comp, "files") and comp.files:
                     comp_dict["files"] = [
                         str(path) for path in comp.files
-                        if file_owner.get(_normalized_path(path)) == comp.id
+                        if (
+                            file_owner.get(_normalized_path(path)) == comp.id
+                            or file_owner.get(_normalized_path(path)) not in local_component_ids
+                        )
+                        and (
+                            ownership.boundary_by_file.get(
+                                _normalized_path(path), boundary.system_id
+                            ) == boundary.system_id
+                            or (_is_shared(comp) and boundary.system_id == "shared")
+                        )
                         and (not file_set or _normalized_path(path) in file_set)
                     ]
                 typed_interfaces = getattr(comp, "interfaces", None)
@@ -589,9 +651,8 @@ def _build_system_model_yaml(
         for requirement in requirements:
             requirement["id"] = _register_id(requirement["id"])
         file_to_comp = {
-            path: _register_id(owner)
-            for path, owner in file_owner.items()
-            if owner in selected_component_ids
+            _normalized_path(path): component["id"]
+            for component in components for path in component.get("files", [])
         }
         for requirement in requirements:
             component_id = file_to_comp.get(
@@ -672,9 +733,8 @@ def _build_system_model_yaml(
                 )
 
     file_to_comp = {
-        path: _register_id(owner)
-        for path, owner in file_owner.items()
-        if owner in selected_component_ids
+        _normalized_path(path): component["id"]
+        for component in components for path in component.get("files", [])
     }
     relationship_keys = {
         (rel["from"], rel["to"], rel["type"]) for rel in relationships
@@ -715,10 +775,6 @@ def _build_system_model_yaml(
     def _unique(values: list[Any]) -> list[Any]:
         return list(dict.fromkeys(value for value in values if value))
 
-    component_by_file = {
-        _normalized_path(path): component["id"]
-        for component in components for path in component.get("files", [])
-    }
     for component in components:
         realized = realized_by_component.get(component["id"], [])
         owned_files = [_normalized_path(path) for path in component.get("files", [])]
@@ -967,39 +1023,15 @@ def _is_shared(entity: Any) -> bool:
 
 
 def _exclusive_full_boundaries(
-    boundaries: list[SystemBoundary], allocate_result: StageResult | None,
+    boundaries: list[SystemBoundary], ownership: FileOwnership,
 ) -> list[SystemBoundary]:
     """Clone full boundaries with one deterministic owner per source file."""
-    component_by_file = {
-        _normalized_path(path): component.id
-        for component in sorted(
-            getattr(getattr(allocate_result, "output", None), "components", []),
-            key=lambda item: item.id,
-        )
-        for path in component.files
-    }
-    candidates_by_file: dict[str, list[SystemBoundary]] = {}
-    for boundary in boundaries:
-        for path in boundary.files:
-            candidates_by_file.setdefault(_normalized_path(path), []).append(boundary)
-    owner_by_file: dict[str, str] = {}
-    for path, candidates in candidates_by_file.items():
-        component_id = component_by_file.get(path, "")
-        owner = min(
-            candidates,
-            key=lambda boundary: (
-                0 if component_id and component_id in boundary.component_ids else 1,
-                len({_normalized_path(item) for item in boundary.files}),
-                boundary.system_id,
-            ),
-        )
-        owner_by_file[path] = owner.system_id
     result = []
     for boundary in boundaries:
         scoped = deepcopy(boundary)
         scoped.files = [
             path for path in boundary.files
-            if owner_by_file.get(_normalized_path(path)) == boundary.system_id
+            if ownership.boundary_by_file.get(_normalized_path(path)) == boundary.system_id
         ]
         if scoped.files:
             result.append(scoped)
@@ -1012,6 +1044,7 @@ def _build_sos_model(
     decompose: DecomposeResult,
     top_results: dict[str, StageResult],
     project_name: str = "",
+    ownership: FileOwnership | None = None,
 ) -> SoSModel:
     """Assemble the System-of-Systems model."""
     # Actors remain top-level external context. Internal inferred entities stay
@@ -1020,6 +1053,11 @@ def _build_sos_model(
     capabilities: list[dict[str, Any]] = []
     behaviors: list[dict[str, Any]] = []
 
+    if ownership is None:
+        ownership = _build_file_ownership(
+            list(getattr(getattr(top_results.get("allocate"), "output", None), "components", [])),
+            list(decompose.systems) + list(inlines),
+        )
     infer_result = top_results.get("infer")
     if infer_result and infer_result.output:
         output = infer_result.output
@@ -1128,31 +1166,24 @@ def _build_sos_model(
             SystemBoundary("shared", "Shared", files=shared_files, is_full_system=False),
             shared_results,
             project_name,
+            ownership,
         ))
         for group_name, entities in shared_projection.get("entities", {}).items():
             if group_name != "actors":
                 sos_dict["entities"].setdefault(group_name, []).extend(entities)
                 used_ids.update(entity["id"] for entity in entities if entity.get("id"))
         inline_relationships.extend(shared_projection.get("relationships", []))
-    boundary_owner: dict[str, str] = {
-        _normalized_path(path): boundary.system_id
-        for boundary in sorted(decompose.systems, key=lambda item: item.system_id)
-        for path in boundary.files
-    }
-    for boundary in sorted(inlines, key=lambda item: item.system_id):
-        for path in boundary.files:
-            boundary_owner.setdefault(_normalized_path(path), boundary.system_id)
     for boundary in inlines:
         owned_files = [
             path for path in boundary.files
-            if boundary_owner.get(_normalized_path(path)) == boundary.system_id
+            if ownership.boundary_by_file.get(_normalized_path(path)) == boundary.system_id
         ]
         if not owned_files:
             continue
         owned_boundary = deepcopy(boundary)
         owned_boundary.files = owned_files
         projection = yaml.safe_load(
-            _build_system_model_yaml(owned_boundary, top_results, project_name)
+            _build_system_model_yaml(owned_boundary, top_results, project_name, ownership)
         )
         projected_entities = projection.get("entities", {})
         if not projected_entities.get("components"):
@@ -1235,9 +1266,14 @@ class SynthesizeStage:
         coordinator = ctx.config.get("coordinator")
 
         system_models: list[SystemModel] = []
+        all_boundaries = list(decompose_result.systems) + list(decompose_result.inline_components)
+        ownership = _build_file_ownership(
+            list(getattr(getattr(ctx.get("allocate"), "output", None), "components", [])),
+            all_boundaries,
+        )
         full_boundaries = _exclusive_full_boundaries(
             [boundary for boundary in decompose_result.systems if boundary.is_full_system],
-            ctx.get("allocate"),
+            ownership,
         )
         scoped_decompose = deepcopy(decompose_result)
         scoped_decompose.systems = full_boundaries
@@ -1261,7 +1297,9 @@ class SynthesizeStage:
                 sub_results = scoped_cache.load_all()
                 sub_llm_calls = scoped_cache.load_llm_calls()
 
-                model_yaml = _build_system_model_yaml(boundary, sub_results, ctx.repo_path.name)
+                model_yaml = _build_system_model_yaml(
+                    boundary, sub_results, ctx.repo_path.name, ownership
+                )
                 manifest_json = _build_manifest_json(sub_results)
                 report_md = generate_pipeline_report(
                     sub_results,
@@ -1291,7 +1329,9 @@ class SynthesizeStage:
                 )
             elif coordinator is not None:
                 # Create scoped context and run deterministically
-                prior_corrections, provenance_calls = _scoped_evidence(ctx, boundary)
+                prior_corrections, provenance_calls = _scoped_evidence(
+                    ctx, boundary, ownership
+                )
                 sub_ctx = PipelineContext(
                     repo_path=ctx.repo_path,
                     output_dir=ctx.output_dir / slug,
@@ -1309,7 +1349,9 @@ class SynthesizeStage:
                 sub_results = coordinator.run_to(last_stage, sub_ctx)
                 sub_llm_calls = list(sub_ctx.llm_calls)
 
-                model_yaml = _build_system_model_yaml(boundary, sub_results, ctx.repo_path.name)
+                model_yaml = _build_system_model_yaml(
+                    boundary, sub_results, ctx.repo_path.name, ownership
+                )
                 manifest_json = _build_manifest_json(sub_results)
                 report_md = generate_pipeline_report(
                     sub_results,
@@ -1353,6 +1395,7 @@ class SynthesizeStage:
             scoped_decompose,
             ctx.cache,
             project_name=ctx.repo_path.name,
+            ownership=ownership,
         )
 
         # Top-level reports

@@ -23,6 +23,7 @@ from architecture_model.pipeline.synthesize import (
     FULL_PIPELINE_STAGES,
     SynthesizeStage,
     _build_manifest_json,
+    _build_file_ownership,
     _build_sos_model,
     _build_system_model_yaml,
     _decide_stages,
@@ -834,6 +835,72 @@ class TestRunWithoutCoordinator:
 
 
 class TestRunWithCoordinator:
+    def test_shared_file_component_cannot_emit_under_non_owner_system(self, tmp_path):
+        component = _FakeComponent("COMP-1", "Shared component", ["shared.py"])
+        coordinator = MockCoordinator(results={
+            "allocate": _stage_result(_FakeAllocOutput([component])),
+            "infer": _stage_result(_FakeInferOutput(capabilities=[
+                _FakeCapability("CAP-1", "Shared work", source_files=["shared.py"]),
+            ])),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
+            ])),
+        })
+        boundaries = [
+            SystemBoundary(
+                "SYS-1", "Owner", files=["owner.py", "shared.py"],
+                component_ids=["COMP-1"], is_full_system=True,
+            ),
+            SystemBoundary(
+                "SYS-2", "Other", files=["other.py", "shared.py"],
+                component_ids=["COMP-2"], is_full_system=True,
+            ),
+        ]
+        ctx = _make_ctx(
+            tmp_path,
+            decompose=_stage_result(DecomposeResult(systems=boundaries)),
+            observe=_stage_result(_FakeObserveOutput()),
+            infer=_stage_result(_FakeInferOutput()),
+            allocate=_stage_result(_FakeAllocOutput([component])),
+            relate=_stage_result(_FakeRelateOutput()),
+        )
+        ctx.config["coordinator"] = coordinator
+
+        result = SynthesizeStage().run(ctx).output
+
+        scoped = {item.scope: [str(path) for path in item.scope_files] for item in coordinator.contexts}
+        assert scoped["SYS-1"] == ["owner.py", "shared.py"]
+        assert scoped["SYS-2"] == ["other.py"]
+        models = {item.system_id: yaml.safe_load(item.model_yaml) for item in result.system_models}
+        assert [item["id"] for item in models["SYS-1"]["entities"]["components"]] == ["COMP-1"]
+        assert models["SYS-2"]["entities"].get("components", []) == []
+
+    def test_file_ownership_has_one_documented_precedence_map(self):
+        components = [
+            _FakeComponent("COMP-2", "Second", ["shared.py"]),
+            _FakeComponent("COMP-1", "First", ["shared.py"]),
+        ]
+        boundaries = [
+            SystemBoundary(
+                "SYS-z", "Broad", files=["a.py", "shared.py"],
+                component_ids=["COMP-2"], is_full_system=True,
+            ),
+            SystemBoundary(
+                "SYS-a", "Specific", files=["shared.py"],
+                component_ids=["COMP-1"], is_full_system=True,
+            ),
+        ]
+
+        ownership = _build_file_ownership(components, boundaries)
+
+        assert ownership.component_by_file == {
+            "shared.py": "COMP-1",
+        }
+        assert ownership.boundary_by_file == {
+            "a.py": "SYS-z",
+            "shared.py": "SYS-a",
+        }
+
     def test_overlapping_full_boundaries_use_disjoint_scoped_files(self, tmp_path):
         coordinator = MockCoordinator()
         boundaries = [
