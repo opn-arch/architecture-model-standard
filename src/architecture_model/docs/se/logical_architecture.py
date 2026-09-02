@@ -12,7 +12,11 @@ def _rel_type_str(rt: object) -> str:
 
 def generate_logical_architecture(
     model: ArchitectureModel, manifest: object | None = None, *, diagram_reference: str = "",
+    artifact_context: dict | None = None,
 ) -> str:
+    if artifact_context is not None:
+        from .curated import render_logical
+        return render_logical(model, artifact_context, diagram_reference)
     lines: list[str] = []
     project = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
     lines.append(f"# Logical Architecture: {project}")

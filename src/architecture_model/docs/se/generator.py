@@ -118,7 +118,7 @@ def generate_se_docs(
     system_id = getattr(model.meta, "system_id", "") or "SYS-unknown"
 
     result: dict[str, Any] = {"generated": [], "skipped": [], "preserved_edits": [], "errors": []}
-    native_views: dict[str, tuple[Any, str]] = {}
+    native_views: dict[str, dict[str, Any]] = {}
     if repo_root is not None:
         from architecture_model.core.curated_views import build_curated_views
 
@@ -136,7 +136,7 @@ def generate_se_docs(
             svg_path = output_dir / filename
             svg_path.write_text(view["panel"].svg + "\n", encoding="utf-8")
             result["generated"].append(str(svg_path))
-            native_views[key] = (spec, filename)
+            native_views[key] = view
 
     # Determine which docs to generate
     to_generate: list[tuple[str, str, str, str]] = []  # (key, module, display, filename)
@@ -190,11 +190,12 @@ def generate_se_docs(
                     repo_root=repo_root,
                 )
             elif key in native_views:
-                spec, svg_filename = native_views[key]
-                md_content = gen_func(
-                    model, manifest,
-                    diagram_reference=f"![{spec.title}]({svg_filename})",
-                )
+                view = native_views[key]
+                spec, svg_filename = view["spec"], view["filename"]
+                kwargs = {"diagram_reference": f"![{spec.title}]({svg_filename})"}
+                if view["curation"]["status"] != "auto":
+                    kwargs["artifact_context"] = view
+                md_content = gen_func(model, manifest, **kwargs)
             else:
                 md_content = gen_func(model, manifest)
         except Exception as e:

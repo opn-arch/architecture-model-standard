@@ -67,6 +67,8 @@ def build_curated_views(
             "filename": filename,
             "spec": spec,
             "panel": render_diagram_panel(spec, options),
+            "context": context,
+            "view_curation": selected,
             "curation": {
                 "status": "partial" if diagnostics else "curated" if exists else "auto",
                 "path": str(candidate) if use_curation else "disabled",

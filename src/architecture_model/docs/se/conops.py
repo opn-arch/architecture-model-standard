@@ -16,8 +16,12 @@ def _constraint_type_str(ct: object) -> str:
 
 def generate_conops(
     model: ArchitectureModel, manifest: object | None = None, *, diagram_reference: str = "",
+    artifact_context: dict | None = None,
 ) -> str:
     """Generate Concept of Operations document from model data."""
+    if artifact_context is not None:
+        from .curated import render_conops
+        return render_conops(model, artifact_context, diagram_reference)
     lines: list[str] = []
     project = getattr(model.meta, "project", "") or getattr(model.meta, "system", "") or "System"
 
