@@ -2833,13 +2833,10 @@ def generate_html_viewer(
                 html += '<div class="deepen-hint">Then regenerate the viewer with: architecture-model viewer .</div>';
                 html += '</div>';
             }}
-            var proj = (D.meta && D.meta.project) || 'unknown';
-            var cKey = 'arch-comment:' + proj + ':' + eid;
-            var saved = storageGet(cKey);
-            html += '<div class="comment-section"><div class="comment-label">Notes</div>';
-            html += '<textarea class="comment-textarea" data-entity-id="' + escapeHtml(eid) + '" placeholder="Add notes about this entity..."></textarea></div>';
+            var comment = commentHtml('entity', eid, 'Add notes about this entity...');
+            html += comment.html;
             html += '</div>';
-            return {{html: html, comment: saved}};
+            return {{html: html, comment: comment.value}};
         }}
 
         /* ── Show SE view ─────────────────────────────────────── */
@@ -2849,9 +2846,35 @@ def generate_html_viewer(
         function storageSet(key, value) {{
             try {{ localStorage.setItem(key, value); return true; }} catch (e) {{ return false; }}
         }}
-        function saveComment(eid, val) {{
+        function commentToken(kind, id) {{
+            return kind === 'module' ? 'module:' + encodeURIComponent(String(id).split('\\\\').join('/')) : String(id);
+        }}
+        function commentKey(kind, id) {{
             var proj = (D.meta && D.meta.project) || 'unknown';
-            storageSet('arch-comment:' + proj + ':' + eid, val);
+            return 'arch-comment:' + proj + ':' + commentToken(kind, id);
+        }}
+        function commentHtml(kind, id, placeholder) {{
+            var value = storageGet(commentKey(kind, id));
+            var html = '<div class="comment-section"><div class="comment-label">Notes</div>';
+            html += '<textarea class="comment-textarea" data-comment-kind="' + escapeHtml(kind)
+                + '" data-comment-id="' + escapeHtml(id) + '" placeholder="' + escapeHtml(placeholder) + '"></textarea></div>';
+            return {{html: html, value: value}};
+        }}
+        function wireComment(box, value) {{
+            if (!box) return;
+            box.value = value;
+            box.addEventListener('input', function() {{ saveComment(this.dataset.commentKind, this.dataset.commentId, this.value); }});
+        }}
+        function saveComment(kind, id, val) {{
+            storageSet(commentKey(kind, id), val);
+        }}
+        function knownCommentToken(token) {{
+            if (token.indexOf('module:') === 0) {{
+                var path;
+                try {{ path = decodeURIComponent(token.substring(7)); }} catch (e) {{ return false; }}
+                return Object.prototype.hasOwnProperty.call(D.modules || {{}}, path);
+            }}
+            return Object.prototype.hasOwnProperty.call(D.properties || {{}}, token);
         }}
         function exportComments() {{
             var proj = (D.meta && D.meta.project) || 'unknown';
@@ -2861,11 +2884,11 @@ def generate_html_viewer(
             for (var i = 0; i < keys.length; i++) {{
                 var k = keys[i];
                 var pfx = 'arch-comment:' + proj + ':';
-                if (k.indexOf(pfx) === 0) {{
-                    var eid = k.substring(pfx.length);
+                if (k && k.indexOf(pfx) === 0) {{
+                    var token = k.substring(pfx.length);
                     var val = storageGet(k);
-                    if (val) {{
-                        lines.push(eid + ':');
+                    if (val && knownCommentToken(token)) {{
+                        lines.push(token.indexOf('module:') === 0 ? '"' + token + '":' : token + ':');
                         lines.push('  comment: |');
                         var vlines = val.split('\\n');
                         for (var j = 0; j < vlines.length; j++) lines.push('    ' + vlines[j]);
@@ -2888,22 +2911,26 @@ def generate_html_viewer(
                 var text = e.target.result;
                 var proj = (D.meta && D.meta.project) || 'unknown';
                 var lines = text.split('\\n');
-                var curId = null;
+                var curToken = null;
                 var curLines = [];
+                function flushComment() {{
+                    if (curToken && curLines.length) storageSet('arch-comment:' + proj + ':' + curToken, curLines.join('\\n'));
+                }}
                 for (var i = 0; i < lines.length; i++) {{
                     var line = lines[i];
-                    if (line.match(/^[A-Z][A-Z0-9_-]+.*:$/)) {{
-                        if (curId && curLines.length) storageSet('arch-comment:' + proj + ':' + curId, curLines.join('\\n'));
+                    if (line.match(/^(?:"[^"]+"|[A-Z][A-Z0-9_-]+.*):$/)) {{
+                        flushComment();
                         var candidate = line.replace(/:$/, '').trim();
-                        curId = Object.prototype.hasOwnProperty.call(D.properties, candidate) ? candidate : null;
+                        if (candidate.charAt(0) === '"' && candidate.charAt(candidate.length - 1) === '"') candidate = candidate.slice(1, -1);
+                        curToken = knownCommentToken(candidate) ? candidate : null;
                         curLines = [];
                     }} else if (line.indexOf('  comment: |') === 0) {{
                         // skip marker
-                    }} else if (curId && line.match(/^    /)) {{
+                    }} else if (curToken && line.match(/^    /)) {{
                         curLines.push(line.substring(4));
                     }}
                 }}
-                if (curId && curLines.length) storageSet('arch-comment:' + proj + ':' + curId, curLines.join('\\n'));
+                flushComment();
                 alert('Comments imported. Refresh to see them.');
                 input.value = '';
             }};
@@ -3010,7 +3037,7 @@ def generate_html_viewer(
             }}
             content.innerHTML = html;
             var commentBox = content.querySelector('.comment-textarea');
-            if (commentBox) commentBox.value = card.comment;
+            wireComment(commentBox, card.comment);
 
             // Wire accordion
             content.querySelectorAll('.accordion-header').forEach(function(hdr) {{
@@ -3055,7 +3082,6 @@ def generate_html_viewer(
                     target.style.display = target.style.display === 'none' ? 'block' : 'none';
                 }});
             }});
-            if (commentBox) commentBox.addEventListener('input', function() {{ saveComment(this.dataset.entityId, this.value); }});
             closeMobileNav();
         }};
 
@@ -3075,12 +3101,12 @@ def generate_html_viewer(
             content.dataset.currentLabel = fname;
 
             var html = renderBreadcrumbs(fname);
-            html += '<h2 class="content-header">' + fname + '</h2>';
-            html += '<div class="content-subtitle">' + filepath + '</div>';
+            html += '<h2 class="content-header">' + escapeHtml(fname) + '</h2>';
+            html += '<div class="content-subtitle">' + escapeHtml(filepath) + '</div>';
 
             // Module docstring
             if (mod.doc) {{
-                html += '<div class="mod-doc">' + mod.doc + '</div>';
+                html += '<div class="mod-doc">' + escapeHtml(mod.doc) + '</div>';
             }}
 
             // Functions
@@ -3090,9 +3116,9 @@ def generate_html_viewer(
                 for (var fi = 0; fi < mod.funcs.length; fi++) {{
                     var f = mod.funcs[fi];
                     html += '<div class="mod-item">';
-                    html += '<div class="mod-func-name">' + f.name + '</div>';
-                    if (f.sig) html += '<div class="mod-func-sig">' + f.sig + '</div>';
-                    if (f.doc) html += '<div class="mod-func-doc">' + f.doc + '</div>';
+                    html += '<div class="mod-func-name">' + escapeHtml(f.name) + '</div>';
+                    if (f.sig) html += '<div class="mod-func-sig">' + escapeHtml(f.sig) + '</div>';
+                    if (f.doc) html += '<div class="mod-func-doc">' + escapeHtml(f.doc) + '</div>';
                     html += '</div>';
                 }}
                 html += '</div>';
@@ -3105,9 +3131,9 @@ def generate_html_viewer(
                 for (var ci = 0; ci < mod.classes.length; ci++) {{
                     var c = mod.classes[ci];
                     html += '<div class="mod-item">';
-                    html += '<div class="mod-class-name">' + c.name + '</div>';
+                    html += '<div class="mod-class-name">' + escapeHtml(c.name) + '</div>';
                     if (c.methods && c.methods.length > 0) {{
-                        html += '<div class="mod-class-methods">' + c.methods.join(', ') + '</div>';
+                        html += '<div class="mod-class-methods">' + c.methods.map(escapeHtml).join(', ') + '</div>';
                     }}
                     html += '</div>';
                 }}
@@ -3118,7 +3144,7 @@ def generate_html_viewer(
             if (mod.consts && mod.consts.length > 0) {{
                 html += '<div class="mod-section">';
                 html += '<div class="mod-section-title">Constants (' + mod.consts.length + ')</div>';
-                html += '<div class="mod-consts">' + mod.consts.join(', ') + '</div>';
+                html += '<div class="mod-consts">' + mod.consts.map(escapeHtml).join(', ') + '</div>';
                 html += '</div>';
             }}
 
@@ -3128,8 +3154,11 @@ def generate_html_viewer(
             html += renderRunHistory(moduleRuns, function(run) {{
                 return (run.modules || []).filter(function(item) {{ return item.path === filepath; }});
             }});
+            var comment = commentHtml('module', filepath, 'Add notes about this module...');
+            html += comment.html;
 
             content.innerHTML = html;
+            wireComment(content.querySelector('.comment-textarea'), comment.value);
             closeMobileNav();
         }};
 

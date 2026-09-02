@@ -210,7 +210,7 @@ class TestGenerateAll:
         assert "Alpha component" in html
         assert "Beta component" in html
         assert '"display_id": "COMP-1"' in html
-        assert "'arch-comment:' + proj + ':' + eid" in html
+        assert "commentHtml('entity', eid" in html
 
     def test_viewer_qualifies_subsystem_relationship_endpoints(self, tmp_path):
         path = tmp_path / ".architecture-models" / "alpha" / ".architecture-model.yaml"
