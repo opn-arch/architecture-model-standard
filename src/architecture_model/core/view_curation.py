@@ -25,6 +25,7 @@ VIEW_KEYS = {
 USE_CASE_VIEW_KEYS = {"actors", "associations", "annotations"}
 SELECTOR_KEYS = {"qualified_id", "local_id", "system", "name", "source_file", "tag"}
 GROUP_KEYS = {"id", "label", "kind", "parent", "order", "description", "members"}
+SCENARIO_KEYS = GROUP_KEYS | {"goal", "outcomes", "requirements", "moes", "evidence"}
 EXTERNAL_KEYS = {"id", "name", "inferred", "evidence", "kind", "description"}
 FLOW_KEYS = {"source", "target", "kind", "label", "description", "inferred", "evidence"}
 EVIDENCE_KEYS = {"source", "claim"}
@@ -81,6 +82,15 @@ class CuratedGroup:
 
 
 @dataclass
+class CuratedScenario(CuratedGroup):
+    goal: str = ""
+    outcomes: list[str] = field(default_factory=list)
+    requirements: list[str] = field(default_factory=list)
+    moes: list[str] = field(default_factory=list)
+    evidence: list[EvidenceRecord] = field(default_factory=list)
+
+
+@dataclass
 class CuratedFlow:
     source: str
     target: str
@@ -125,7 +135,7 @@ class ViewCuration:
     order: list[str] = field(default_factory=list)
     labels: dict[str, str] = field(default_factory=dict)
     externals: list[CuratedExternal] = field(default_factory=list)
-    scenarios: list[CuratedGroup] = field(default_factory=list)
+    scenarios: list[CuratedScenario] = field(default_factory=list)
     groups: list[CuratedGroup] = field(default_factory=list)
     flows: list[CuratedFlow] = field(default_factory=list)
     tiers: list[CuratedGroup] = field(default_factory=list)
@@ -283,6 +293,51 @@ def _groups(raw: Any, diagnostics: list[Diagnostic], label: str, identifiers: se
     return sorted(result, key=lambda item: (item.order, item.id))
 
 
+def _scenarios(
+    raw: Any, root: Path, diagnostics: list[Diagnostic], identifiers: set[str],
+    view: str, context: ArchitectureViewContext,
+) -> list[CuratedScenario]:
+    result: list[CuratedScenario] = []
+    for value in raw if isinstance(raw, list) else []:
+        if not isinstance(value, dict) or not value.get("id") or not value.get("label"):
+            _diag(diagnostics, "CURATION_VALUE_INVALID", "Invalid scenario entry", view=view)
+            raise _InvalidView("scenario")
+        _check_keys(value, SCENARIO_KEYS, diagnostics, view, "scenario")
+        identifier = str(value["id"])
+        if identifier in identifiers:
+            _diag(diagnostics, "CURATION_ID_DUPLICATE", f"Duplicate presentation ID ignored: {identifier}", view=view)
+            continue
+        try:
+            order = int(value.get("order", 0))
+        except (TypeError, ValueError) as exc:
+            _diag(diagnostics, "CURATION_VALUE_INVALID", f"Invalid scenario order: {identifier}", view=view)
+            raise _InvalidView("scenario") from exc
+        members = value.get("members", [])
+        if not isinstance(members, list):
+            _diag(diagnostics, "CURATION_VALUE_INVALID", f"Invalid scenario members: {identifier}", view=view)
+            raise _InvalidView("scenario")
+        resolved_members: list[str] = []
+        for member in members:
+            selector = _selector(member, diagnostics, view)
+            if selector is None or not selector.resolve(context):
+                _diag(diagnostics, "CURATION_SELECTOR_UNRESOLVED", f"Unresolved scenario member: {member}", view=view)
+                raise _InvalidView("scenario")
+            resolved_members.append(selector.resolved_id)
+        goal = _text(value.get("goal", ""), diagnostics, view, "scenario goal")
+        outcomes = _safe_text_list(value.get("outcomes"), diagnostics, view, "scenario outcomes")
+        requirements = _safe_text_list(value.get("requirements"), diagnostics, view, "scenario requirements")
+        moes = _safe_text_list(value.get("moes"), diagnostics, view, "scenario moes")
+        annotated = bool(goal or outcomes or requirements or moes)
+        evidence = _evidence(value.get("evidence"), root, diagnostics, f"scenario {identifier}", view) if annotated or value.get("evidence") is not None else []
+        identifiers.add(identifier)
+        result.append(CuratedScenario(
+            identifier, _text(value["label"], diagnostics, view, "scenario label"),
+            str(value.get("kind", "scenario")), str(value.get("parent", "")), order,
+            resolved_members, goal, outcomes, requirements, moes, evidence,
+        ))
+    return sorted(result, key=lambda item: (item.order, item.id))
+
+
 def _parse_view(raw: Any, root: Path, context: ArchitectureViewContext, diagnostics: list[Diagnostic], view_name: str) -> ViewCuration:
     if not isinstance(raw, dict):
         _diag(diagnostics, "CURATION_VIEW_INVALID", "Invalid view curation; expected dict", view=view_name)
@@ -333,7 +388,10 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         _diag(diagnostics, "CURATION_TEXT_UNSAFE", str(exc), view=view_name)
         raise _InvalidView("labels") from exc
     result.groups = _groups(_collection(raw, "groups", diagnostics, list, view_name), diagnostics, "group", identifiers, view_name, context)
-    result.scenarios = _groups(_collection(raw, "scenarios", diagnostics, list, view_name), diagnostics, "scenario", identifiers, view_name, context)
+    result.scenarios = _scenarios(
+        _collection(raw, "scenarios", diagnostics, list, view_name), root,
+        diagnostics, identifiers, view_name, context,
+    )
     result.tiers = _groups(_collection(raw, "tiers", diagnostics, list, view_name), diagnostics, "tier", identifiers, view_name, context)
     for value in _collection(raw, "externals", diagnostics, list, view_name):
         if not isinstance(value, dict):

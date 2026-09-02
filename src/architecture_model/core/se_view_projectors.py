@@ -357,22 +357,74 @@ def _project_curated_conops(
     ))
     flow_external_ids = {endpoint for flow in curation.flows for endpoint in (flow.source, flow.target)}
     externals = [item for item in curation.externals if item.id in flow_external_ids]
+    flows_by_external = {
+        item.id: sorted(
+            (flow.target, flow.kind) for flow in curation.flows if flow.source == item.id
+        )
+        for item in externals
+    }
+    external_groups: dict[tuple[tuple[str, str], ...], list[object]] = defaultdict(list)
+    for external in externals:
+        external_groups[tuple(flows_by_external[external.id])].append(external)
+    bundled_externals = sorted(external_groups.values(), key=lambda items: (
+        tuple(flows_by_external[items[0].id]),
+        all("ai" in item.kind.casefold() or "ai" in item.name.casefold() for item in items),
+        items[0].id,
+    ))
     scenario_count = min(len(scenarios), limit)
     support_budget = max(0, limit - scenario_count)
+    scenario_systems: dict[str, list[IndexedEntity]] = {}
+    for scenario in scenarios[:scenario_count]:
+        owned: dict[str, IndexedEntity] = {}
+        for key in scenario.members:
+            item = context.entity(key, diagnose=False)
+            if item and item.entity_type == "system":
+                owned[item.key] = item
+            elif item and item.entity_type == "behavior":
+                owned.update((system.key, system) for system in _behavior_systems(context, item, lambda _: True))
+        scenario_systems[scenario.id] = sorted(owned.values(), key=lambda item: item.key)
     member_systems = sorted({
-        item.key: item for scenario in scenarios[:scenario_count] for key in scenario.members
-        if (item := context.entity(key, diagnose=False)) and item.entity_type == "system"
+        item.key: item for values in scenario_systems.values() for item in values
     }.values(), key=lambda item: item.key)
+    boundary_systems = (
+        sorted(context.entities("system"), key=lambda item: item.key)
+        if len(member_systems) > 3 else member_systems
+    )
     member_behaviors = [
         item for scenario in scenarios[:scenario_count] for key in scenario.members
         if (item := context.entity(key, diagnose=False)) and item.entity_type == "behavior"
     ]
-    outcome_values = sorted({value for item in member_behaviors for value in [*item.value.postconditions, *item.value.goals, *item.value.moes] if value})
+    scenario_outcomes: dict[str, list[tuple[str, bool, list[DiagramProvenance]]]] = {}
+    for scenario in scenarios[:scenario_count]:
+        behaviors = [
+            item for key in scenario.members
+            if (item := context.entity(key, diagnose=False)) and item.entity_type == "behavior"
+        ]
+        canonical = sorted({value for item in behaviors for value in item.value.postconditions if value})
+        if not canonical:
+            canonical = sorted({value for item in behaviors for value in item.value.goals if value})
+        if not canonical:
+            canonical = sorted({value for item in behaviors for value in item.value.moes if value})
+        if canonical:
+            scenario_outcomes[scenario.id] = [
+                (value, False, [_derived("behavior-outcome", [item.key for item in behaviors], scenario=scenario.id)])
+                for value in canonical
+            ]
+        else:
+            scenario_outcomes[scenario.id] = [
+                (value, True, _curated_provenance(scenario.evidence)) for value in scenario.outcomes
+            ]
+            if not scenario_outcomes[scenario.id]:
+                scenario_outcomes[scenario.id] = [
+                    (flow.label, True, _curated_flow_provenance(flow))
+                    for flow in curation.flows
+                    if flow.source == scenario.id and flow.label and flow.inferred and flow.evidence
+                ]
+    outcome_values = [value for values in scenario_outcomes.values() for value in values]
     reserve_system = bool(member_systems) and support_budget > 0
     reserve_outcome = bool(outcome_values) and support_budget > int(reserve_system)
     external_budget = max(0, support_budget - int(reserve_system) - int(reserve_outcome))
-    aggregate_externals = len(externals) > external_budget and external_budget > 0
-    selected_externals = [] if aggregate_externals else externals[:external_budget]
+    selected_external_groups = bundled_externals[:external_budget]
     nodes: list[DiagramNode] = []
     drilldowns: list[DiagramDrilldown] = []
     endpoint_ids: dict[str, str] = {}
@@ -381,69 +433,84 @@ def _project_curated_conops(
         members = [context.entity(key, diagnose=False) for key in scenario.members]
         members = [item for item in members if item]
         behaviors = [item for item in members if item.entity_type == "behavior"]
-        systems = [item for item in members if item.entity_type == "system"]
+        systems = scenario_systems[scenario.id]
         interfaces = sorted({ref for item in behaviors for ref in item.value.interface_refs})
         requirements = sorted({ref for item in behaviors for ref in item.value.requirements})
         evidence = [_provenance(item) for item in members]
         drilldown_id = f"drilldown:{scenario.id}"
+        canonical_goal = next((goal for item in behaviors for goal in item.value.goals if goal), "")
+        inferred_goal = not canonical_goal and bool(scenario.goal)
         nodes.append(DiagramNode(
             scenario.id, scenario.label, "scenario", lane="scenarios", drilldown_ref=drilldown_id,
+            subtitle=canonical_goal or scenario.goal,
             badges=[f"behaviors:{len(behaviors)}", f"systems:{len(systems)}", f"interfaces:{len(interfaces)}", f"requirements:{len(requirements)}"],
-            evidence=evidence,
+            inferred=inferred_goal, status="inferred" if inferred_goal else "",
+            evidence=[*evidence, *(_curated_provenance(scenario.evidence) if inferred_goal else [])],
         ))
         endpoint_ids[scenario.id] = scenario.id
         drilldowns.append(DiagramDrilldown(
             drilldown_id, scenario.id, spec=_curated_scenario_spec(context, scenario, curation),
         ))
-    for external in selected_externals:
-        evidence = _curated_provenance(external.evidence)
-        drilldown_id = f"drilldown:{external.id}"
-        node = DiagramNode(external.id, external.name, "external", lane="actors", status="inferred",
-                           inferred=True, drilldown_ref=drilldown_id, evidence=evidence)
+    for group in selected_external_groups:
+        aggregate = len(group) > 1
+        external_id = "conops:external:" + hashlib.sha256(
+            "\0".join(item.id for item in group).encode()
+        ).hexdigest()[:10] if aggregate else group[0].id
+        label = (
+            "Knowledge Sources" if aggregate and not any("ai" in item.kind.casefold() or "ai" in item.name.casefold() for item in group)
+            else "AI Services" if all("ai" in item.kind.casefold() or "ai" in item.name.casefold() for item in group)
+            else f"External Sources ({len(group)})" if aggregate else group[0].name
+        )
+        evidence = [value for external in group for value in _curated_provenance(external.evidence)]
+        drilldown_id = f"drilldown:{external_id}"
+        node = DiagramNode(external_id, label, "external", lane="actors", status="summary" if aggregate else "inferred",
+                           inferred=True, drilldown_ref=drilldown_id, badges=[f"externals:{len(group)}"], evidence=evidence)
         nodes.append(node)
-        endpoint_ids[external.id] = external.id
+        for external in group:
+            endpoint_ids[external.id] = external_id
         drilldowns.append(DiagramDrilldown(
-            drilldown_id, external.id,
-            spec=_participant_drilldown(context, node, None, evidence, curation),
-        ))
-    if aggregate_externals:
-        aggregate_id = "conops:external-sources"
-        evidence = [item for external in externals for item in _curated_provenance(external.evidence)]
-        drilldown_id = f"drilldown:{aggregate_id}"
-        nodes.append(DiagramNode(
-            aggregate_id, f"External Sources ({len(externals)})", "external", lane="actors",
-            status="summary", inferred=True, drilldown_ref=drilldown_id, evidence=evidence,
-        ))
-        for external in externals:
-            endpoint_ids[external.id] = aggregate_id
-        detail_nodes = [DiagramNode(
-            external.id, external.name, "external", inferred=True,
-            evidence=_curated_provenance(external.evidence),
-        ) for external in externals]
-        drilldowns.append(DiagramDrilldown(
-            drilldown_id, aggregate_id,
-            spec=DiagramSpec("conops-external-sources", "External Sources", nodes=detail_nodes),
+            drilldown_id, external_id,
+            spec=DiagramSpec(
+                f"conops-external:{external_id}", label,
+                nodes=[DiagramNode(item.id, item.name, "external", inferred=True, evidence=_curated_provenance(item.evidence)) for item in group],
+            ),
         ))
     if reserve_system:
         system_id = "conops:system-boundary"
         drilldown_id = f"drilldown:{system_id}"
         nodes.append(DiagramNode(
-            system_id, "System Boundary", "system", lane="boundary", status="summary",
-            drilldown_ref=drilldown_id, badges=[f"systems:{len(member_systems)}"],
-            evidence=[_provenance(item) for item in member_systems],
+            system_id, "Operational System Boundary", "system", lane="boundary", status="summary",
+            drilldown_ref=drilldown_id, badges=[f"systems:{len(boundary_systems)}"],
+            evidence=[_provenance(item) for item in boundary_systems],
         ))
         drilldowns.append(DiagramDrilldown(
             drilldown_id, system_id,
-            spec=_entity_list_spec("conops-system-boundary", "Participating Systems", member_systems),
+            spec=_entity_list_spec("conops-system-boundary", "Operational System Boundary", boundary_systems),
         ))
     callouts: list[DiagramCallout] = []
     if reserve_outcome:
         outcome_id = "conops:outcomes"
+        outcome_evidence = [evidence for values in scenario_outcomes.values() for _, _, items in values for evidence in items]
+        outcome_detail = DiagramSpec(
+            "conops-outcomes", "Operational Outcomes",
+            nodes=[
+                DiagramNode(
+                    f"outcome:{scenario_id}:{index}", value, "outcome", subtitle=scenario_id,
+                    inferred=inferred, status="inferred" if inferred else "canonical", evidence=evidence,
+                )
+                for scenario_id, values in sorted(scenario_outcomes.items())
+                for index, (value, inferred, evidence) in enumerate(values)
+            ],
+        )
+        drilldown_id = f"drilldown:{outcome_id}"
         nodes.append(DiagramNode(
             outcome_id, "Operational Outcomes", "outcome", lane="outcomes", status="summary",
-            badges=[f"outcomes:{len(outcome_values)}"],
-            evidence=[_derived("curated-scenario-outcomes", [item.key for item in member_behaviors])],
+            inferred=any(inferred for values in scenario_outcomes.values() for _, inferred, _ in values),
+            drilldown_ref=drilldown_id,
+            badges=[f"outcomes:{len(outcome_values)}", f"scenarios:{sum(bool(values) for values in scenario_outcomes.values())}"],
+            evidence=outcome_evidence,
         ))
+        drilldowns.append(DiagramDrilldown(drilldown_id, outcome_id, spec=outcome_detail))
     elif not outcome_values and nodes:
         callouts.append(DiagramCallout(
             "conops:outcomes-unspecified", "Operational outcomes not specified", nodes[0].id,
@@ -466,10 +533,7 @@ def _project_curated_conops(
         edge.evidence.extend(item for item in evidence if item not in edge.evidence)
     if reserve_system:
         for scenario in scenarios[:scenario_count]:
-            systems = [
-                item for key in scenario.members
-                if (item := context.entity(key, diagnose=False)) and item.entity_type == "system"
-            ]
+            systems = scenario_systems[scenario.id]
             if systems:
                 flow_values[(scenario.id, system_id, "allocation", "")] = DiagramEdge(
                     scenario.id, system_id, "allocation",
@@ -1214,6 +1278,69 @@ def _logical_system_drilldown(
     )
 
 
+def _logical_backbone(edges: Iterable[DiagramEdge], nodes: Iterable[DiagramNode], limit: int = 9) -> list[DiagramEdge]:
+    node_values = {node.id: node for node in nodes}
+    lane_order = {lane: index for index, lane in enumerate(dict.fromkeys(node.lane for node in nodes))}
+    candidates: list[DiagramEdge] = []
+    paired: set[tuple[str, str]] = set()
+    values = list(edges)
+    directions = {(edge.source, edge.target, edge.kind) for edge in values}
+    for edge in sorted(values, key=lambda item: (item.source, item.target, item.kind, item.label)):
+        if edge.kind == "depends-on" and (edge.target, edge.source, edge.kind) in directions:
+            pair = tuple(sorted((edge.source, edge.target)))
+            if pair in paired:
+                continue
+            paired.add(pair)
+            reverse = next(item for item in values if item.source == edge.target and item.target == edge.source and item.kind == edge.kind)
+            selected = edge if (edge.source, edge.target) == pair else reverse
+            candidates.append(DiagramEdge(
+                selected.source, selected.target, selected.kind, "cycle",
+                evidence=list(dict.fromkeys([*edge.evidence, *reverse.evidence])),
+                style="cycle", critical=edge.critical or reverse.critical,
+                count=edge.count + reverse.count,
+                title=f"Reciprocal depends-on: {edge.count + reverse.count} relationships",
+            ))
+        else:
+            candidates.append(edge)
+
+    def score(edge: DiagramEdge) -> tuple[int, int, int, int, str, str, str]:
+        source_lane = lane_order.get(node_values[edge.source].lane, 99)
+        target_lane = lane_order.get(node_values[edge.target].lane, 99)
+        return (
+            0 if edge.kind == "interface-port" else 1,
+            0 if abs(source_lane - target_lane) == 1 else 1,
+            -edge.count,
+            0 if edge.critical or edge.style == "cycle" else 1,
+            edge.source, edge.target, edge.kind,
+        )
+
+    parent = {identifier: identifier for identifier in node_values}
+
+    def root(identifier: str) -> str:
+        while parent[identifier] != identifier:
+            parent[identifier] = parent[parent[identifier]]
+            identifier = parent[identifier]
+        return identifier
+
+    selected: list[DiagramEdge] = []
+    deferred: list[DiagramEdge] = []
+    for edge in sorted(candidates, key=score):
+        source_root, target_root = root(edge.source), root(edge.target)
+        if source_root != target_root and len(selected) < limit:
+            parent[target_root] = source_root
+            selected.append(edge)
+        else:
+            deferred.append(edge)
+    extras = 0
+    for edge in sorted(deferred, key=score):
+        if len(selected) >= limit:
+            break
+        if edge.kind == "interface-port" or extras < 1 and (edge.critical or edge.style == "cycle"):
+            selected.append(edge)
+            extras += edge.kind != "interface-port"
+    return selected
+
+
 def project_logical_architecture(
     context: ArchitectureViewContext, curation: ViewCuration | None = None,
     *, max_overview_nodes: int = DEFAULT_MAX_OVERVIEW_NODES,
@@ -1384,6 +1511,7 @@ def project_logical_architecture(
         return aggregate_owner.get(key, "")
 
     edge_values: dict[tuple[str, str, str], DiagramEdge] = {}
+    full_dependency_details: list[dict[str, str | int | bool]] = []
     for relationship in context.relationships():
         if relationship.kind not in _LOGICAL_EDGE_KINDS or (
             relationship.kind == "depends-on" and not visible("logical:dependencies")
@@ -1394,6 +1522,12 @@ def project_logical_architecture(
         source, target = owner(relationship.source), owner(relationship.target)
         if not source or not target or source == target or source not in selected_ids or target not in selected_ids:
             continue
+        full_dependency_details.append({
+            "source": relationship.source, "target": relationship.target,
+            "overview_source": source, "overview_target": target,
+            "kind": relationship.kind, "model": relationship.model,
+            "critical": getattr(relationship.value.strength, "value", "") == "strong" or bool(relationship.value.extensions.get("critical")),
+        })
         key = (source, target, relationship.kind)
         if key not in edge_values:
             edge_values[key] = DiagramEdge(source, target, relationship.kind, evidence=[])
@@ -1452,6 +1586,37 @@ def project_logical_architecture(
                 system_id, interface_id, "interface-port", evidence=[evidence],
             )
 
+    overview_edges = list(edge_values.values())
+    if curation.tiers:
+        overview_edges = _logical_backbone(overview_edges, selected, 9)
+    connected = {endpoint for edge in edge_values.values() for endpoint in (edge.source, edge.target)}
+    for node in selected:
+        if node.id not in connected and "isolated" not in node.badges:
+            node.badges.append("isolated")
+    full_dependency_details.sort(key=lambda item: (
+        str(item["source"]), str(item["target"]), str(item["kind"]), str(item["model"]),
+    ))
+    dependency_facet = {
+        "displayed_count": len(overview_edges),
+        "full_count": len(full_dependency_details),
+        "edges": full_dependency_details,
+    }
+    for drilldown in drilldowns:
+        if not drilldown.spec:
+            continue
+        source_node = next((node for node in selected if node.drilldown_ref == drilldown.id), None)
+        members = {source_node.entity_ref} if source_node and source_node.entity_ref else set()
+        if source_node and source_node.kind == "aggregate":
+            members.update(str(source_node.metrics.get("members", "")).split(", "))
+        relevant = [
+            item for item in full_dependency_details
+            if item["source"] in members or item["target"] in members
+            or item["overview_source"] == source_node.id or item["overview_target"] == source_node.id
+        ] if source_node else []
+        drilldown.spec.facets["logical_dependencies"] = {
+            "full_count": len(relevant), "edges": relevant,
+        }
+
     omitted_nodes = [node for node in candidates if node.id not in selected_ids]
     if omitted_nodes and len(selected) < limit and not curation.tiers:
         summary_id = "logical:omitted-summary"
@@ -1466,10 +1631,19 @@ def project_logical_architecture(
     used_drilldowns = {node.drilldown_ref for node in selected if node.drilldown_ref}
     spec = DiagramSpec(
         "logical", "Logical Architecture", direction="TB", layout="logical-tiers", nodes=selected,
-        edges=list(edge_values.values()), lanes=lanes,
+        edges=overview_edges, lanes=lanes,
+        callouts=[DiagramCallout(
+            "logical:dependency-backbone",
+            f"Showing {len(overview_edges)} of {len(full_dependency_details)} dependency/interface relationships",
+            kind="summary", evidence=["logical_dependencies"],
+        )] if curation.tiers and full_dependency_details else [],
         warnings=[*context.diagnostics, *warnings],
         drilldowns=[item for item in drilldowns if item.id in used_drilldowns],
-        provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
+        provenance=DiagramProvenance("architecture-view-context", context={
+            "curated": curation != ViewCuration(), "max_overview_nodes": limit,
+            "displayed_dependency_edges": len(overview_edges), "full_dependency_edges": len(full_dependency_details),
+        }),
+        facets={"logical_dependencies": dependency_facet},
     )
     spec.validate()
     return spec

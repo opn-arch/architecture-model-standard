@@ -237,6 +237,7 @@ class DiagramSpec:
     warnings: list[Diagnostic] = field(default_factory=list)
     provenance: DiagramProvenance = field(default_factory=DiagramProvenance)
     drilldowns: list[DiagramDrilldown] = field(default_factory=list)
+    facets: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.warnings = _diagnostics(self.warnings)
@@ -266,6 +267,9 @@ class DiagramSpec:
         require_list("drilldowns", self.drilldowns, DiagramDrilldown)
         if not isinstance(self.provenance, DiagramProvenance):
             raise ValueError("Invalid diagram type for provenance: expected DiagramProvenance")
+        if not isinstance(self.facets, dict):
+            raise ValueError("Invalid diagram type for facets: expected dict")
+        _json_safe(self.facets)
         provenances = [self.provenance]
         for node in self.nodes:
             require_list(f"node {node.id} evidence", node.evidence, DiagramProvenance)
@@ -400,6 +404,7 @@ class DiagramSpec:
                 **{key: value for key, value in item.items() if key != "spec"},
                 spec=cls.from_dict(item["spec"]) if item.get("spec") else None,
             ) for item in data.get("drilldowns", [])],
+            facets=data.get("facets", {}),
         )
         spec.validate()
         return spec

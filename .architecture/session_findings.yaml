@@ -119,4 +119,20 @@ findings:
   priority: should
   timestamp: '2026-09-02T21:20:13.406803+00:00'
   synced: false
+- type: requirement
+  system: architecture-model-standard
+  title: Implemented strict-TDD executive architecture backbones. Curated scenarios
+    now support evidence-backed goal/outcomes/req
+  description: Implemented strict-TDD executive architecture backbones. Curated scenarios
+    now support evidence-backed goal/outcomes/requirements/moes and fail closed. Curated
+    ConOps bundles convergent externals, provides one outcomes aggregate, and a connected
+    full operational system boundary. Curated logical mode uses a deterministic <=9
+    connectivity backbone with complete facets/drilldowns. Renderer minimizes crossings
+    and provides transparent theme-safe text. Focused tests pass; full suite has nine
+    pre-existing failures in untouched modules. Architecture gate remains false due
+    to stale model coverage/allocation.
+  capability: ''
+  priority: should
+  timestamp: '2026-09-02T21:41:59.171140+00:00'
+  synced: false
 synced: []

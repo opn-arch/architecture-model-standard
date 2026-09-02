@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
 from architecture_model.core.view_curation import (
@@ -628,3 +630,65 @@ views:
 """, encoding="utf-8")
     curation = load_viewer_curation(tmp_path, context, path)
     assert curation.views.functional.groups[0].members == ["root::COMP-1"]
+
+
+def test_conops_scenario_annotations_load_with_repo_evidence(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "docs/conops.md"
+    evidence.parent.mkdir()
+    evidence.write_text("scenario evidence", encoding="utf-8")
+    path = tmp_path / "scenario.yaml"
+    path.write_text("""version: 1
+views:
+  conops:
+    scenarios:
+      - id: search
+        label: Search and Use
+        members: [root::BEH-1]
+        goal: Find grounded knowledge
+        outcomes: [Grounded answer returned]
+        requirements: [Results cite evidence]
+        moes: [Answer within one second]
+        evidence:
+          - {source: docs/conops.md, claim: Search goal and outcome are documented.}
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+
+    assert loaded.diagnostics == []
+    scenario = loaded.views.conops.scenarios[0]
+    assert scenario.members == ["root::BEH-1"]
+    assert scenario.goal == "Find grounded knowledge"
+    assert scenario.outcomes == ["Grounded answer returned"]
+    assert scenario.requirements == ["Results cite evidence"]
+    assert scenario.moes == ["Answer within one second"]
+    assert scenario.evidence == [EvidenceRecord("docs/conops.md", "Search goal and outcome are documented.")]
+
+
+@pytest.mark.parametrize("body", [
+    "goal: Inferred without evidence",
+    "outcomes: not-a-list\n        evidence: [{source: docs/conops.md, claim: malformed}]",
+    "goal: Unsafe\n        raw_svg: '<circle />'\n        evidence: [{source: docs/conops.md, claim: unsafe}]",
+    "goal: Missing source\n        evidence: [{source: docs/missing.md, claim: missing}]",
+    "goal: Escaping source\n        evidence: [{source: ../outside.md, claim: escaping}]",
+])
+def test_conops_scenario_annotations_fail_closed_when_not_structurally_evidenced(tmp_path, body):
+    context = _context(tmp_path)
+    evidence = tmp_path / "docs/conops.md"
+    evidence.parent.mkdir()
+    evidence.write_text("scenario evidence", encoding="utf-8")
+    path = tmp_path / "scenario-invalid.yaml"
+    path.write_text(f"""version: 1
+views:
+  conops:
+    scenarios:
+      - id: search
+        label: Search
+        members: [root::BEH-1]
+        {body}
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+
+    assert loaded.views.conops == type(loaded.views.conops)()
+    assert loaded.diagnostics

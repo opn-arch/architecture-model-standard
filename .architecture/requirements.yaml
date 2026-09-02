@@ -327,3 +327,38 @@ requirements:
   created_at: '2026-09-02T21:05:30.050223+00:00'
   component: COMP-CORE
   context: Canonical-precedence blocker requested with strict TDD and new commit.
+- id: REQ-36
+  text: Curated ConOps must support evidence-backed scenario presentation annotations,
+    inferred goal/outcome fallback, external bundling, connected operational system
+    boundaries, compact visible labels, and lossless drilldown provenance.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T21:27:33.557222+00:00'
+  context: User-specified implementation scope A; annotations must fail closed and
+    never mutate the canonical model.
+- id: REQ-37
+  text: Explicit curated logical mode must select a deterministic connectivity-preserving
+    dependency/interface backbone of at most 9 overview edges while retaining complete
+    canonical dependency details in drilldowns/facets.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T21:27:33.577671+00:00'
+  context: User-specified implementation scope B; preserve five lanes, eight systems,
+    three aggregate nodes, cycle semantics, and avoid fabrication.
+- id: REQ-38
+  text: Renderer routing must minimize crossings for operational, functional, and
+    logical curated views and keep standalone transparent SVG text readable across
+    white and dark backgrounds.
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T21:27:33.693669+00:00'
+  context: User-specified implementation scope C; target actual-profile crossings
+    ConOps 0, Functional 0, Logical <=3.
+- id: REQ-39
+  text: 'Changes must follow strict TDD, pass focused and full tests including schema,
+    semantic-loss, geometry, dimensions, and rsvg checks, avoid editing the logs-db
+    profile, and be committed as ''fix(viewer): curate executive architecture backbones''.'
+  priority: must
+  status: proposed
+  created_at: '2026-09-02T21:27:33.910058+00:00'
+  context: Explicit delivery and verification constraints.

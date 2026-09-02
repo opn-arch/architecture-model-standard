@@ -363,3 +363,44 @@ def test_real_logs_db_logical_curation_has_one_five_lane_tier_representation():
     assert all(edge.evidence and edge.count >= 1 for edge in spec.edges)
     assert any(edge.style == "cycle" for edge in spec.edges)
     assert all(node.kind not in {"actor", "external", "summary"} for node in spec.nodes)
+
+
+def test_curated_logical_selects_deterministic_connected_backbone_and_preserves_full_edges(tmp_path):
+    context = _context(tmp_path)
+    from copy import deepcopy
+
+    dependencies = [
+        relationship for relationship in context.models["root"].relationships
+        if relationship.type.value == "depends-on"
+    ]
+    context.models["root"].relationships = dependencies
+    while len(context.models["root"].relationships) < 19:
+        context.models["root"].relationships.append(deepcopy(dependencies[len(context.models["root"].relationships) % 2]))
+    curation = ViewCuration(tiers=[
+        CuratedGroup("web", "Web", "tier", order=0, members=["root::SYS-WEB"]),
+        CuratedGroup("domain", "Domain", "tier", order=1, members=["root::SYS-DOMAIN"]),
+    ])
+    context = ArchitectureViewContext(context.root, context.models, [])
+
+    first = project_logical_architecture(context, curation)
+    random.Random(37).shuffle(context.models["root"].relationships)
+    second = project_logical_architecture(ArchitectureViewContext(context.root, context.models, []), curation)
+
+    assert first.to_dict() == second.to_dict()
+    assert len(first.edges) <= 9
+    assert {edge.source for edge in first.edges} | {edge.target for edge in first.edges} >= {
+        node.id for node in first.nodes if "isolated" not in node.badges
+    }
+    facet = first.facets["logical_dependencies"]
+    assert facet["full_count"] == 19
+    assert len(facet["edges"]) == 19
+    assert facet["displayed_count"] == len(first.edges)
+    cycle_edges = [edge for edge in first.edges if edge.style == "cycle"]
+    assert len(cycle_edges) == 1
+    assert {(edge["overview_source"], edge["overview_target"]) for edge in facet["edges"]} >= {
+        ("node:root::SYS-WEB", "node:root::SYS-DOMAIN"),
+        ("node:root::SYS-DOMAIN", "node:root::SYS-WEB"),
+    }
+    system_details = [item.spec for item in first.drilldowns if item.source.startswith("node:root::SYS-")]
+    assert all(detail.facets["logical_dependencies"]["edges"] for detail in system_details)
+    assert any(callout.id == "logical:dependency-backbone" for callout in first.callouts)

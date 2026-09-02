@@ -184,6 +184,36 @@ def _ranks(spec: DiagramSpec) -> dict[str, int]:
     return ranks
 
 
+def _crossing_minimized_order(
+    buckets: dict[int | str, list[DiagramNode]], edges: list[DiagramEdge], order: list[int | str],
+) -> dict[int | str, list[DiagramNode]]:
+    neighbors: dict[str, set[str]] = defaultdict(set)
+    for edge in edges:
+        neighbors[edge.source].add(edge.target)
+        neighbors[edge.target].add(edge.source)
+    result = {key: sorted(values, key=lambda node: node.id) for key, values in buckets.items()}
+    sweeps = ((order[1:], -1), (list(reversed(order[:-1])), 1)) * 4
+    for sweep, offset in sweeps:
+        positions = {node.id: index for key in order for index, node in enumerate(result[key])}
+        groups = {node.id: key for key in order for node in result[key]}
+        for key in sweep:
+            key_index = order.index(key)
+            reference = key_index + offset
+            adjacent = {order[reference]} if 0 <= reference < len(order) else set()
+            positions = {node.id: index for group in order for index, node in enumerate(result[group])}
+            result[key].sort(key=lambda node: (
+                sum(
+                    positions[item] for item in neighbors[node.id]
+                    if item in groups and groups[item] in adjacent
+                ) / len([
+                    item for item in neighbors[node.id]
+                    if item in groups and groups[item] in adjacent
+                ]) if any(item in groups and groups[item] in adjacent for item in neighbors[node.id]) else positions[node.id],
+                node.id,
+            ))
+    return result
+
+
 def _node_height(node: DiagramNode, options: DiagramRenderOptions) -> int:
     label_rows = len(_lines(node.label, 24, 2))
     content_height = 20 + label_rows * 16
@@ -199,10 +229,16 @@ def _node_height(node: DiagramNode, options: DiagramRenderOptions) -> int:
 def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, _Box]:
     """Place lane members by lane order, independent of graph cycles."""
     direction = spec.direction.upper()
+    ordered_lanes = sorted(spec.lanes, key=lambda item: (item.order, item.id))
+    lane_order = [lane.id for lane in ordered_lanes]
     lane_members = {
-        lane.id: sorted((node for node in spec.nodes if node.lane == lane.id), key=lambda node: (node.kind, node.id))
-        for lane in spec.lanes
+        lane.id: [node for node in spec.nodes if node.lane == lane.id]
+        for lane in ordered_lanes
     }
+    if spec.layout == "logical-tiers":
+        lane_members = _crossing_minimized_order(lane_members, spec.edges, lane_order)
+    else:
+        lane_members = {key: sorted(values, key=lambda node: (node.kind, node.id)) for key, values in lane_members.items()}
     assigned = {node.id for members in lane_members.values() for node in members}
     unassigned = sorted((node for node in spec.nodes if node.id not in assigned), key=lambda node: (node.kind, node.id))
     boxes: dict[str, _Box] = {}
@@ -213,7 +249,7 @@ def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, 
 
     if direction == "TB":
         y = origin_y
-        for lane in sorted(spec.lanes, key=lambda item: (item.order, item.id)):
+        for lane in ordered_lanes:
             members = lane_members[lane.id]
             for index, node in enumerate(members):
                 boxes[node.id] = _Box(
@@ -228,7 +264,7 @@ def _lane_layout(spec: DiagramSpec, options: DiagramRenderOptions) -> dict[str, 
             )
     else:
         x = origin_x
-        for lane in sorted(spec.lanes, key=lambda item: (item.order, item.id)):
+        for lane in ordered_lanes:
             members = lane_members[lane.id]
             y = origin_y
             for node in members:
@@ -251,6 +287,7 @@ def _functional_flow_layout(spec: DiagramSpec, options: DiagramRenderOptions) ->
     for node in sorted(spec.nodes, key=lambda item: (ranks[item.id], item.id)):
         buckets[ranks[node.id]].append(node)
     columns = sorted(buckets)
+    buckets = _crossing_minimized_order(buckets, spec.edges, columns)
     x_step = options.node_width + 74
     available_height = 720
     boxes: dict[str, _Box] = {}
@@ -478,6 +515,29 @@ def _points_path(points: list[tuple[float, float]]) -> str:
     return " ".join(parts)
 
 
+def _path_segments(path: str) -> list[tuple[float, float, float, float]]:
+    tokens = re.findall(r"[MLHV]|-?\d+(?:\.\d+)?", path)
+    index = 0
+    x = y = 0.0
+    segments: list[tuple[float, float, float, float]] = []
+    while index < len(tokens):
+        command = tokens[index]
+        index += 1
+        if command in {"M", "L"}:
+            next_x, next_y = float(tokens[index]), float(tokens[index + 1])
+            index += 2
+        elif command == "H":
+            next_x, next_y = float(tokens[index]), y
+            index += 1
+        else:
+            next_x, next_y = x, float(tokens[index])
+            index += 1
+        if command != "M":
+            segments.append((x, y, next_x, next_y))
+        x, y = next_x, next_y
+    return segments
+
+
 def _lane_edge_path(source: _Box, target: _Box, direction: str, track: int, obstacles: list[_Box]) -> str:
     offset = 10 + track * 8
     candidates: list[list[tuple[float, float]]] = []
@@ -547,6 +607,7 @@ def _edge_svg(
     margin: int, lane_step: int, lane_aware: bool = False,
     occupied_labels: list[_Box] | None = None,
     layout: str = "flowchart",
+    routed_paths: list[str] | None = None,
 ) -> str:
     kind = edge.kind.lower().replace("_", "-")
     semantic_style = _edge_style(edge)
@@ -591,11 +652,19 @@ def _edge_svg(
                 candidates.extend([
                     (x + distance * 18, y), (x - distance * 18, y),
                     (x, y + distance * 14), (x, y - distance * 14),
+                    (x + distance * 18, y + distance * 14),
+                    (x + distance * 18, y - distance * 14),
+                    (x - distance * 18, y + distance * 14),
+                    (x - distance * 18, y - distance * 14),
                 ])
             x, y = next((
                 (candidate_x, candidate_y) for candidate_x, candidate_y in candidates
                 if candidate_x >= margin and candidate_y >= 58
                 and not any(_overlaps(_Box(int(candidate_x), int(candidate_y), label_width, 12), box) for box in occupied)
+                and not any(
+                    _segment_intersects_box((x1, y1), (x2, y2), _Box(int(candidate_x), int(candidate_y), label_width, 12))
+                    for routed in (routed_paths or []) for x1, y1, x2, y2 in _path_segments(routed)
+                )
             ), (x, y))
         if occupied_labels is not None:
             occupied_labels.append(_Box(int(x), int(y), label_width, 12))
@@ -607,7 +676,8 @@ def _edge_svg(
 
 def _stylesheet() -> str:
     return """<style>
-.diagram { font-family: system-ui, sans-serif; color: #172033; }
+.diagram { --diagram-text: #172033; --diagram-muted: #475569; --diagram-label-halo: #f8fafc; font-family: system-ui, sans-serif; color: var(--diagram-text); }
+@media (prefers-color-scheme: dark) { .diagram { --diagram-text: #f8fafc; --diagram-muted: #cbd5e1; --diagram-label-halo: #172033; } }
 .diagram-node .node-shape { fill: #f8fafc; stroke: #334155; stroke-width: 1.5; }
 .diagram-node.is-inferred .node-shape { stroke-dasharray: 7 5; }
 .kind-system .node-shape { fill: #eef6ff; stroke: #1d4ed8; }
@@ -618,14 +688,14 @@ def _stylesheet() -> str:
 .container.system { stroke-width: 3; }
 .diagram-edge { fill: none; stroke: #475569; stroke-width: 1.5; }
 .diagram-edge.is-critical { stroke: #b91c1c; stroke-width: 3; }
-.node-label,.node-subtitle,.edge-label,.footer-text,.container-label { fill: #172033; dominant-baseline: middle; }
+.node-label,.node-subtitle,.edge-label,.footer-text,.container-label,.diagram-title { fill: var(--diagram-text); dominant-baseline: middle; }
 .node-label { text-anchor: middle; font-size: 13px; font-weight: 600; }
 .node-subtitle { text-anchor: middle; font-size: 10px; fill: #64748b; }
-.node-badge { font-size: 8px; fill: #475569; }
+.node-badge { font-size: 8px; fill: var(--diagram-muted); }
 .edge-label,.footer-text,.container-label { font-size: 10px; }
-.edge-label-contrast { paint-order: stroke; stroke: #f8fafc; stroke-width: 4px; stroke-linejoin: round; }
+.edge-label-contrast { paint-order: stroke; stroke: var(--diagram-label-halo); stroke-width: 4px; stroke-linejoin: round; }
 .diagram-title { font-size: 20px; font-weight: 700; }
-.diagram-subtitle { font-size: 12px; fill: #64748b; }
+.diagram-subtitle { font-size: 12px; fill: var(--diagram-muted); }
 .diagnostic-error { fill: #b91c1c; }.diagnostic-warning { fill: #a16207; }
 .evidence-indicator { fill: #2563eb; }
 </style>"""
@@ -704,6 +774,18 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
         parallel_totals[(edge.source, edge.target)] = parallel_totals.get((edge.source, edge.target), 0) + 1
     parallel_seen: dict[tuple[str, str], int] = {}
     occupied_labels: list[_Box] = []
+    lane_aware = bool(spec.lanes) or spec.layout in {"functional-flow", "use-case-catalog"}
+    routed_paths = [
+        _lane_edge_path(
+            boxes[edge.source], boxes[edge.target], spec.direction.upper(), index % 5,
+            [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}],
+        ) if lane_aware else _edge_path(
+            boxes[edge.source], boxes[edge.target], spec.direction.upper(), index,
+            options.margin, edge_lane_step,
+        )
+        for index, edge in enumerate(ordered_edges)
+        if edge.source in boxes and edge.target in boxes
+    ]
     for index, edge in enumerate(ordered_edges):
         if edge.source not in boxes or edge.target not in boxes:
             continue
@@ -711,7 +793,8 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
         parallel_seen[key] = parallel_seen.get(key, 0) + 1
         edge_svg = _edge_svg(
             edge, boxes, spec.direction.upper(), index, options.margin, edge_lane_step,
-            bool(spec.lanes) or spec.layout in {"functional-flow", "use-case-catalog"}, occupied_labels, spec.layout,
+            lane_aware, occupied_labels, spec.layout,
+            [path for path_index, path in enumerate(routed_paths) if path_index != index],
         )
         parts.append(edge_svg.replace('url(#arrow)', f'url(#{arrow_id})'))
     for node in sorted(spec.nodes, key=lambda item: item.id):

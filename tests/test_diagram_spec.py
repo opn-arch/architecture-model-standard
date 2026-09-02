@@ -39,6 +39,23 @@ def test_diagram_spec_serializes_deterministically_and_json_safely():
     assert DiagramSpec.from_dict(payload).to_dict() == payload
 
 
+def test_diagram_spec_round_trips_hidden_full_dependency_facets():
+    facets = {
+        "logical_dependencies": {
+            "displayed_count": 1,
+            "full_count": 2,
+            "edges": [
+                {"source": "a", "target": "b", "kind": "depends-on", "count": 1},
+                {"source": "b", "target": "a", "kind": "depends-on", "count": 1},
+            ],
+        },
+    }
+    payload = DiagramSpec("logical", "Logical", facets=facets).to_dict()
+
+    assert payload["facets"] == facets
+    assert DiagramSpec.from_dict(payload).to_dict() == payload
+
+
 @pytest.mark.parametrize(
     "spec, message",
     [

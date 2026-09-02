@@ -4,7 +4,7 @@ import pytest
 
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import CuratedExternal, CuratedFlow, CuratedGroup, EvidenceRecord, Selector, ViewCuration, load_viewer_curation
+from architecture_model.core.view_curation import CuratedExternal, CuratedFlow, CuratedGroup, CuratedScenario, EvidenceRecord, Selector, ViewCuration, load_viewer_curation
 from architecture_model.core.se_view_projectors import project_conops
 
 
@@ -288,6 +288,76 @@ def test_conops_curated_scenarios_are_primary_aggregates_with_flows_and_drilldow
     assert all(node.kind not in {"actor", "external"} for node in spec.nodes if node.lane == "outcomes")
 
 
+def test_curated_conops_bundles_externals_outcomes_and_operational_boundary_without_loss(tmp_path):
+    path = tmp_path / ".architecture-model.yaml"
+    systems = "\n".join(
+        f"    - {{id: SYS-{index}, name: System {index}, status: ACTIVE}}"
+        for index in range(8)
+    )
+    behaviors = "\n".join(
+        f"    - {{id: BEH-{index}, name: Scenario Behavior {index}, status: ACTIVE}}"
+        for index in range(5)
+    )
+    path.write_text(f"""meta: {{project: executive, schema_version: '2.0'}}
+entities:
+  systems:
+{systems}
+  behaviors:
+{behaviors}
+relationships: []
+""", encoding="utf-8")
+    context = ArchitectureViewContext.from_repo(tmp_path)
+    evidence = [EvidenceRecord("docs/conops.md", "Executive scenario evidence")]
+    scenarios = [
+        CuratedScenario(
+            f"scenario-{index}", f"Scenario {index}", members=[
+                f"root::BEH-{index}", f"root::SYS-{index}",
+                *([f"root::SYS-{index + 5}"] if index < 3 else []),
+            ],
+            goal=f"Goal {index}", outcomes=[f"Outcome {index}"], evidence=evidence,
+        )
+        for index in range(5)
+    ]
+    externals = [
+        CuratedExternal("github", "GitHub / OpenCode", True, evidence, "knowledge-source"),
+        CuratedExternal("onedrive", "OneDrive / OneNote", True, evidence, "knowledge-source"),
+        CuratedExternal("oura", "Oura", True, evidence, "knowledge-source"),
+        CuratedExternal("sheets", "Google Sheets", True, evidence, "knowledge-source"),
+        CuratedExternal("ai", "AI Services", True, evidence, "ai-service"),
+    ]
+    flows = [
+        CuratedFlow(item.id, "scenario-0" if item.kind == "knowledge-source" else "scenario-1", "exchange", f"Full transfer label for {item.name}", True, evidence)
+        for item in externals
+    ]
+
+    spec = project_conops(context, ViewCuration(scenarios=scenarios, externals=externals, flows=flows))
+
+    assert len([node for node in spec.nodes if node.kind == "scenario"]) == 5
+    external_nodes = [node for node in spec.nodes if node.kind == "external"]
+    assert [node.label for node in external_nodes] == ["Knowledge Sources", "AI Services"]
+    assert {node.badges[0] for node in external_nodes} == {"externals:1", "externals:4"}
+    outcomes = next(node for node in spec.nodes if node.id == "conops:outcomes")
+    assert outcomes.badges == ["outcomes:5", "scenarios:5"] and outcomes.inferred
+    outcome_detail = next(item.spec for item in spec.drilldowns if item.id == outcomes.drilldown_ref)
+    assert {node.label for node in outcome_detail.nodes} == {f"Outcome {index}" for index in range(5)}
+    assert all(node.inferred and node.evidence for node in outcome_detail.nodes)
+    boundary = next(node for node in spec.nodes if node.id == "conops:system-boundary")
+    assert boundary.label == "Operational System Boundary"
+    assert all(any(edge.source == scenario.id and edge.target == boundary.id for edge in spec.edges) for scenario in scenarios)
+    boundary_detail = next(item.spec for item in spec.drilldowns if item.id == boundary.drilldown_ref)
+    assert len([node for node in boundary_detail.nodes if node.kind == "system"]) == 8
+    bundled_detail_refs = {
+        child.id
+        for node in external_nodes
+        for item in spec.drilldowns if item.id == node.drilldown_ref
+        for child in item.spec.nodes
+    }
+    assert bundled_detail_refs == {item.id for item in externals}
+    assert len(spec.nodes) <= 15
+    assert all(len(edge.label) <= 22 and (not edge.label or edge.title) for edge in spec.edges)
+    assert len(context.entities("external_system")) == 0
+
+
 def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows():
     repo = Path("/Users/baigm2/Documents/Projects/logs_db")
     if not (repo / ".architecture/viewer-curation.yaml").is_file():
@@ -298,10 +368,25 @@ def test_real_logs_db_conops_curation_projects_five_scenarios_and_curated_flows(
     labels = [node.label for node in spec.nodes if node.kind == "scenario"]
     assert labels == ["Acquire Knowledge", "Enrich & Organize", "Search & Use", "Review & Govern", "Learn & Improve"]
     assert all("CLI" not in node.label and "Audit Kb" not in node.label for node in spec.nodes)
-    assert {node.id for node in spec.nodes} >= {"ext-github-opencode", "ext-ai-services"}
+    externals = [node for node in spec.nodes if node.kind == "external"]
+    assert [node.label for node in externals] == ["Knowledge Sources", "AI Services"]
+    assert {node.badges[0] for node in externals} == {"externals:1", "externals:4"}
+    external_children = {
+        child.id for node in externals for item in spec.drilldowns
+        if item.id == node.drilldown_ref for child in item.spec.nodes
+    }
+    assert external_children == {
+        "ext-github-opencode", "ext-onedrive-onenote", "ext-ai-services",
+        "ext-oura", "ext-google-sheets",
+    }
     assert len([edge for edge in spec.edges if edge.kind in {"exchange", "operational-flow", "data-flow"}]) == 10
     assert len(spec.nodes) <= 15
     boundary = next(node for node in spec.nodes if node.id == "conops:system-boundary")
     assert any(boundary.id in {edge.source, edge.target} for edge in spec.edges)
+    boundary_detail = next(item.spec for item in spec.drilldowns if item.id == boundary.drilldown_ref)
+    assert len([node for node in boundary_detail.nodes if node.kind == "system"]) == 8
+    outcomes = next(node for node in spec.nodes if node.id == "conops:outcomes")
+    outcome_detail = next(item.spec for item in spec.drilldowns if item.id == outcomes.drilldown_ref)
+    assert outcomes.badges and outcome_detail.nodes
     allocations = [edge for edge in spec.edges if edge.kind == "allocation"]
     assert allocations and all(not edge.label and edge.title for edge in allocations)

@@ -156,6 +156,39 @@ def _segment_crosses_box(segment: tuple[float, float, float, float], box: tuple[
     return True
 
 
+def _proper_segment_crossing(first, second) -> bool:
+    ax1, ay1, ax2, ay2 = first
+    bx1, by1, bx2, by2 = second
+    if ax1 == ax2 and by1 == by2:
+        return min(ay1, ay2) < by1 < max(ay1, ay2) and min(bx1, bx2) < ax1 < max(bx1, bx2)
+    if ay1 == ay2 and bx1 == bx2:
+        return min(ax1, ax2) < bx1 < max(ax1, ax2) and min(by1, by2) < ay1 < max(by1, by2)
+    return False
+
+
+def _visual_crossings(root: ET.Element) -> tuple[int, int]:
+    edges = root.findall(".//svg:path[@data-edge-id]", SVG)
+    edge_crossings = 0
+    for index, first in enumerate(edges):
+        for second in edges[index + 1:]:
+            if {first.attrib["data-source"], first.attrib["data-target"]} & {second.attrib["data-source"], second.attrib["data-target"]}:
+                continue
+            edge_crossings += any(
+                _proper_segment_crossing(a, b)
+                for a in _route_segments(first.attrib["d"])
+                for b in _route_segments(second.attrib["d"])
+            )
+    label_crossings = 0
+    for label in root.findall(".//svg:text[@data-edge-label]", SVG):
+        label_box = _box(label)
+        own = label.attrib["data-edge-label"]
+        label_crossings += any(
+            edge.attrib["id"] != own and any(_segment_crosses_box(segment, label_box) for segment in _route_segments(edge.attrib["d"]))
+            for edge in edges
+        )
+    return edge_crossings, label_crossings
+
+
 def _actual_specs(tmp_path: Path) -> dict[str, DiagramSpec]:
     paths = {name: tmp_path / name for name in ("conops", "functional", "logical", "use-cases")}
     for path in paths.values():
@@ -741,10 +774,15 @@ def test_real_logs_db_curated_views_meet_objective_geometry(tmp_path) -> None:
     }
     for name, spec in specs.items():
         root = _root(render_diagram_svg(spec))
+        crossings = _visual_crossings(root)
+        assert crossings[0] <= ({"conops": 0, "functional": 0, "logical": 3, "use-cases": 0}[name]), (name, crossings)
+        assert crossings[1] == 0, (name, crossings)
         nodes = {item.attrib["data-node-id"]: _box(item) for item in root.findall(".//svg:g[@data-node-id]", SVG)}
         labels = [_box(item) for item in root.findall(".//svg:text[@data-edge-label]", SVG)]
         assert all(not _overlaps(label, node) for label in labels for node in nodes.values()), name
         assert all(not _overlaps(first, second) for index, first in enumerate(labels) for second in labels[index + 1:]), name
+        _, _, view_width, view_height = [float(value) for value in root.attrib["viewBox"].split()]
+        assert view_width <= 1800 and view_height <= 1200, name
         if shutil.which("rsvg-convert"):
             svg_path, png_path = tmp_path / f"{name}.svg", tmp_path / f"{name}.png"
             svg_path.write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
@@ -792,6 +830,16 @@ def test_edge_labels_have_track_contrast_and_full_title_detail() -> None:
 
     assert label is not None and "edge-label-contrast" in label.attrib["class"]
     assert edge is not None and "Detailed transfer label" in edge.find("svg:title", SVG).text
+
+
+def test_standalone_svg_is_transparent_with_explicit_light_and_dark_text_contrast() -> None:
+    svg = render_diagram_svg(_spec())
+    root = _root(svg)
+
+    assert root.find("svg:rect[@data-canvas-background]", SVG) is None
+    assert "--diagram-text:" in svg
+    assert "prefers-color-scheme: dark" in svg
+    assert ".footer-text" in svg and "fill: var(--diagram-text)" in svg
 
 
 def test_drilldown_panels_are_keyed_exactly_and_nested_specs_render_independently() -> None:
