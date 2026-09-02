@@ -198,6 +198,28 @@ def test_provenance_is_deeply_immutable_and_serializes_collections():
     }
 
 
+def test_provenance_deep_freezes_every_context_input_shape():
+    nested_list = [{"values": [2, 1]}]
+    tuple_pairs = (("nested", nested_list), ("members", {"b", "a"}))
+    provenance = DiagramProvenance(context=tuple_pairs)
+
+    nested_list[0]["values"].append(3)
+    nested_list.append({"changed": True})
+
+    assert provenance.to_dict()["context"] == {
+        "members": ["a", "b"],
+        "nested": [{"values": [2, 1]}],
+    }
+    with pytest.raises(TypeError):
+        provenance.context[0][1][0][0] = "changed"
+
+
+@pytest.mark.parametrize("context", [{"bad": math.inf}, {"bad": object()}])
+def test_provenance_context_rejects_non_json_values(context):
+    with pytest.raises(ValueError, match="Provenance context"):
+        DiagramProvenance(context=context)
+
+
 @pytest.mark.parametrize(
     "spec",
     [

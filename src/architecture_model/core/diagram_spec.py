@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from collections.abc import Mapping
 from enum import Enum
 import math
 import re
@@ -83,11 +84,18 @@ def _json_safe(value: Any) -> Any:
     raise ValueError(f"Value is not JSON-safe: {type(value).__name__}")
 
 
+class _FrozenJsonMapping(tuple):
+    """Marker tuple that preserves mapping semantics while remaining immutable."""
+
+
 def _freeze_json(value: Any) -> Any:
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         if any(not isinstance(key, str) for key in value):
             raise ValueError("Provenance context keys must be strings")
-        return tuple((key, _freeze_json(item)) for key, item in sorted(value.items()))
+        return _FrozenJsonMapping((key, _freeze_json(item)) for key, item in sorted(value.items()))
+    if isinstance(value, set):
+        frozen = [_freeze_json(item) for item in value]
+        return tuple(sorted(frozen, key=lambda item: repr(_thaw_json(item))))
     if isinstance(value, (list, tuple)):
         return tuple(_freeze_json(item) for item in value)
     if isinstance(value, float) and not math.isfinite(value):
@@ -98,9 +106,9 @@ def _freeze_json(value: Any) -> Any:
 
 
 def _thaw_json(value: Any) -> Any:
+    if isinstance(value, _FrozenJsonMapping):
+        return {key: _thaw_json(item) for key, item in value}
     if isinstance(value, tuple):
-        if all(isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str) for item in value):
-            return {key: _thaw_json(item) for key, item in value}
         return [_thaw_json(item) for item in value]
     return value
 
@@ -180,8 +188,14 @@ class DiagramProvenance:
             object.__setattr__(self, "entity_refs", tuple(self.entity_refs))
         if isinstance(self.source_files, (list, tuple)):
             object.__setattr__(self, "source_files", tuple(self.source_files))
-        if isinstance(self.context, dict):
-            object.__setattr__(self, "context", _freeze_json(self.context))
+        context = self.context
+        if isinstance(context, tuple) and not isinstance(context, _FrozenJsonMapping):
+            if all(isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str) for item in context):
+                context = dict(context)
+        frozen = _freeze_json(context)
+        if not isinstance(frozen, _FrozenJsonMapping):
+            raise ValueError("Provenance context must be a mapping")
+        object.__setattr__(self, "context", frozen)
 
     def to_dict(self) -> dict[str, Any]:
         result = {
