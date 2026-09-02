@@ -18,7 +18,12 @@ from architecture_model.core.diagram_spec import (
     DiagramSpec,
 )
 from architecture_model.core.view_context import ArchitectureViewContext, IndexedEntity, IndexedRelationship
-from architecture_model.core.view_curation import EvidenceRecord, ViewCuration, validate_view_curation
+from architecture_model.core.view_curation import (
+    CuratedUseCaseAnnotation,
+    EvidenceRecord,
+    ViewCuration,
+    validate_view_curation,
+)
 
 
 DEFAULT_MAX_OVERVIEW_NODES = 15
@@ -134,6 +139,19 @@ def _support_nodes(owner: IndexedEntity, kind: str, values: Iterable[str]) -> li
         DiagramNode(
             f"detail:{owner.key}:{kind}:{index}", value, kind,
             evidence=[_derived(f"{owner.entity_type}-{kind}", [owner.key])],
+        )
+        for index, value in enumerate(values)
+    ]
+
+
+def _curated_support_nodes(
+    owner: IndexedEntity, kind: str, values: Iterable[str], annotation: CuratedUseCaseAnnotation,
+) -> list[DiagramNode]:
+    evidence = _curated_provenance(annotation.evidence)
+    return [
+        DiagramNode(
+            f"detail:{owner.key}:{kind}:curated:{index}", value, kind,
+            status="inferred", inferred=True, badges=["inferred"], evidence=evidence,
         )
         for index, value in enumerate(values)
     ]
@@ -1473,12 +1491,23 @@ def _behavior_interfaces(
 
 def _use_case_drilldown(
     context: ArchitectureViewContext, behavior: IndexedEntity, curation: ViewCuration,
-    visible: Callable[[str | IndexedEntity], bool],
+    visible: Callable[[str | IndexedEntity], bool], annotation: CuratedUseCaseAnnotation | None = None,
 ) -> DiagramSpec:
+    goal = next(iter(behavior.value.goals), "") or (annotation.goal if annotation else "")
+    trigger = behavior.value.trigger or (annotation.trigger if annotation else "")
+    uses_annotation = bool(annotation and (
+        (not behavior.value.trigger and annotation.trigger)
+        or (not behavior.value.goals and annotation.goal)
+        or (not behavior.value.preconditions and annotation.preconditions)
+        or (not behavior.value.postconditions and (annotation.postconditions or annotation.success_outcome))
+        or (not behavior.value.moes and annotation.moes)
+    ))
     nodes = [DiagramNode(
         _node_id(behavior.key), _label(behavior, curation), "use-case", entity_ref=behavior.key,
-        subtitle=" | ".join(value for value in (behavior.value.trigger, next(iter(behavior.value.goals), "")) if value),
-        badges=_badges(behavior), evidence=[_provenance(behavior)],
+        subtitle=" | ".join(value for value in (trigger, goal) if value),
+        badges=[*_badges(behavior), *(["inferred"] if uses_annotation else [])],
+        inferred=uses_annotation,
+        evidence=[_provenance(behavior), *(_curated_provenance(annotation.evidence) if uses_annotation and annotation else [])],
     )]
     edges: list[DiagramEdge] = []
     groups: list[DiagramGroup] = []
@@ -1579,13 +1608,19 @@ def _use_case_drilldown(
                 evidence=[_relationship_provenance(relationship)],
             ))
     support = [
-        ("precondition", behavior.value.preconditions),
-        ("postcondition", behavior.value.postconditions),
-        ("success-criterion", behavior.value.goals),
-        ("moe", behavior.value.moes),
+        ("precondition", behavior.value.preconditions, annotation.preconditions if annotation else []),
+        ("postcondition", behavior.value.postconditions, annotation.postconditions if annotation else []),
+        ("success-criterion", behavior.value.goals, [annotation.goal] if annotation and annotation.goal else []),
+        (
+            "success-outcome", behavior.value.postconditions or behavior.value.goals,
+            [annotation.success_outcome] if annotation and annotation.success_outcome else [],
+        ),
+        ("moe", behavior.value.moes, annotation.moes if annotation else []),
     ]
-    for kind, values in support:
-        nodes.extend(_support_nodes(behavior, kind, values))
+    for kind, canonical, curated in support:
+        nodes.extend(_support_nodes(behavior, kind, canonical))
+        if not canonical and curated and annotation:
+            nodes.extend(_curated_support_nodes(behavior, kind, curated, annotation))
     for reference in behavior.value.requirements:
         requirement = _find_local(context, behavior.model, reference)
         if requirement and visible(requirement):
@@ -1640,7 +1675,9 @@ def _actor_use_case_drilldown(
     actor_id: str, label: str, entity: IndexedEntity | None,
     behaviors: Iterable[IndexedEntity], evidence: list[DiagramProvenance], curation: ViewCuration,
     visible: Callable[[str | IndexedEntity], bool],
+    inferred_associations: dict[str, list[DiagramProvenance]] | None = None,
 ) -> DiagramSpec:
+    inferred_associations = inferred_associations or {}
     actor_node = DiagramNode(
         f"detail:{actor_id}", label, "actor", entity_ref=entity.key if entity else "",
         inferred=entity is None, evidence=[_provenance(entity)] if entity else evidence,
@@ -1650,11 +1687,13 @@ def _actor_use_case_drilldown(
     goals = list(entity.value.goals) if entity else []
     for behavior in sorted((item for item in behaviors if visible(item)), key=lambda item: item.key):
         node_id = _node_id(behavior.key)
+        inferred_evidence = inferred_associations.get(behavior.key)
         nodes.append(DiagramNode(node_id, _label(behavior, curation), "use-case", entity_ref=behavior.key, evidence=[_provenance(behavior)]))
         edges.append(DiagramEdge(
             actor_node.id, node_id, "participates",
-            evidence=[_derived("behavior-actor", [behavior.key, *([entity.key] if entity else [])])],
-            inferred=entity is None,
+            evidence=inferred_evidence or [_derived("behavior-actor", [behavior.key, *([entity.key] if entity else [])])],
+            inferred=bool(inferred_evidence) or entity is None,
+            style="dashed" if inferred_evidence else "",
         ))
         goals.extend(behavior.value.goals)
     for index, goal in enumerate(sorted(set(goals))):
@@ -1672,6 +1711,7 @@ def project_use_cases(
     warnings = _curation_diagnostics("use_case", context, curation)
     visible = _visibility(curation)
     featured = {item.resolved_id for item in curation.featured if item.resolved_id}
+    annotations = {item.use_case: item for item in curation.annotations if visible(item.use_case)}
     order = {key: index for index, key in enumerate(curation.order)}
     behaviors = [item for item in context.entities("behavior") if visible(item)]
     by_actor: dict[str, list[IndexedEntity]] = defaultdict(list)
@@ -1690,11 +1730,12 @@ def project_use_cases(
             actor_key,
         ),
     )
-    case_limit = min(9, len(behaviors), max(0, limit - (1 if len(behaviors) > limit else 0)))
     featured_behaviors = sorted(
         (item for item in behaviors if item.key in featured),
         key=lambda item: (order.get(item.key, len(order)), item.key),
     )
+    catalog_target = max(10, len(featured_behaviors))
+    case_limit = min(catalog_target, len(behaviors), limit)
     selected.extend(featured_behaviors[:case_limit])
     selected_keys = {item.key for item in selected}
     for actor_key in actor_keys:
@@ -1709,22 +1750,39 @@ def project_use_cases(
     drilldowns: list[DiagramDrilldown] = []
     for behavior in selected:
         systems = _behavior_systems(context, behavior, visible)
+        annotation = annotations.get(behavior.key)
         drilldown_id = _drilldown_id(curation, behavior.key)
-        outcome = next(iter(behavior.value.postconditions or behavior.value.goals), "")
+        goal = next(iter(behavior.value.goals), "") or (annotation.goal if annotation else "")
+        trigger = behavior.value.trigger or (annotation.trigger if annotation else "")
+        outcome = next(iter(behavior.value.postconditions or behavior.value.goals), "") or (
+            annotation.success_outcome or next(iter(annotation.postconditions), "") if annotation else ""
+        )
+        uses_annotation = bool(annotation and (
+            (not behavior.value.trigger and annotation.trigger)
+            or (not behavior.value.goals and annotation.goal)
+            or (not behavior.value.postconditions and (annotation.postconditions or annotation.success_outcome))
+            or (not behavior.value.preconditions and annotation.preconditions)
+            or (not behavior.value.moes and annotation.moes)
+        ))
         badges = _badges(behavior)
         visible_requirements = [
             requirement for reference in behavior.value.requirements
             if (requirement := _find_local(context, behavior.model, reference)) and visible(requirement)
         ]
         badges[0] = f"requirements:{len(visible_requirements)}"
+        if uses_annotation:
+            badges.append("inferred")
+        node_evidence = [_provenance(behavior), *(_curated_provenance(annotation.evidence) if uses_annotation and annotation else [])]
         nodes.append(DiagramNode(
             _node_id(behavior.key), _label(behavior, curation), "use-case",
-            subtitle=" | ".join(value for value in (behavior.value.trigger, next(iter(behavior.value.goals), ""), outcome) if value),
+            subtitle=" | ".join(value for value in (trigger, goal, outcome) if value),
             entity_ref=behavior.key, drilldown_ref=drilldown_id, badges=badges,
-            metrics={"implementing_systems": ", ".join(item.name for item in systems)}, evidence=[_provenance(behavior)],
+            inferred="inferred" in badges,
+            metrics={"implementing_systems": ", ".join(item.name for item in systems)}, evidence=node_evidence,
         ))
         drilldowns.append(DiagramDrilldown(
-            drilldown_id, _node_id(behavior.key), spec=_use_case_drilldown(context, behavior, curation, visible),
+            drilldown_id, _node_id(behavior.key),
+            spec=_use_case_drilldown(context, behavior, curation, visible, annotation),
         ))
 
     participant_values: dict[str, tuple[str, IndexedEntity | None, list[DiagramProvenance], list[IndexedEntity]]] = {}
@@ -1743,6 +1801,33 @@ def project_use_cases(
         if key not in participant_values:
             participant_values[key] = (label, actor, evidence, [])
         participant_values[key][3].append(behavior)
+    curated_actor_by_id = {item.id: item for item in curation.actors if visible(item.id)}
+    curated_associations = []
+    inferred_by_actor: dict[str, dict[str, list[DiagramProvenance]]] = defaultdict(dict)
+    for association in curation.associations:
+        associated = [
+            context.entity(key, diagnose=False) for key in association.use_cases
+            if key in selected_keys and visible(key)
+        ]
+        associated = [item for item in associated if item and item.entity_type == "behavior"]
+        if not associated or not visible(association.actor):
+            continue
+        actor = context.entity(association.actor, diagnose=False)
+        curated_actor = curated_actor_by_id.get(association.actor)
+        if actor:
+            key, label = actor.key, _label(actor, curation)
+        elif curated_actor:
+            key, label = curated_actor.id, curated_actor.name
+        else:
+            continue
+        evidence = _curated_provenance(association.evidence)
+        if key not in participant_values:
+            participant_values[key] = (label, actor, evidence, [])
+        for behavior in associated:
+            if behavior not in participant_values[key][3]:
+                participant_values[key][3].append(behavior)
+            curated_associations.append((key, behavior.key, evidence))
+            inferred_by_actor[key][behavior.key] = evidence
     for key, (label, actor, evidence, actor_behaviors) in sorted(participant_values.items()):
         if len(nodes) >= limit - (1 if len(behaviors) > len(selected) else 0):
             break
@@ -1755,7 +1840,10 @@ def project_use_cases(
         ))
         drilldowns.append(DiagramDrilldown(
             drilldown_id, node_id,
-            spec=_actor_use_case_drilldown(node_id, label, actor, actor_behaviors, evidence, curation, visible),
+            spec=_actor_use_case_drilldown(
+                node_id, label, actor, actor_behaviors, evidence, curation, visible,
+                inferred_associations=inferred_by_actor.get(key),
+            ),
         ))
 
     node_by_ref = {node.entity_ref: node.id for node in nodes if node.entity_ref}
@@ -1781,7 +1869,21 @@ def project_use_cases(
                     actor_node, _node_id(behavior.key), "participates", evidence=evidence,
                     inferred=actor is None,
                 ))
-    omitted = [item for item in behaviors if item.key not in selected_keys and visible(item)]
+    for actor_key, behavior_key, evidence in curated_associations:
+        actor_node = _node_id(actor_key) if context.entity(actor_key, diagnose=False) else actor_key
+        if actor_node in {node.id for node in nodes}:
+            edges = [
+                edge for edge in edges
+                if not (edge.source == actor_node and edge.target == _node_id(behavior_key) and edge.kind == "participates")
+            ]
+            edges.append(DiagramEdge(
+                actor_node, _node_id(behavior_key), "participates", evidence=evidence,
+                inferred=True, style="dashed",
+            ))
+    omitted = [
+        item for item in behaviors
+        if item.key not in selected_keys and item.key not in featured and visible(item)
+    ]
     if omitted and len(nodes) < limit:
         summary_id = "use-cases:omitted-summary"
         drilldown_id = "drilldown:use-cases-omitted"

@@ -3,6 +3,9 @@ from pathlib import Path
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
 from architecture_model.core.view_curation import (
+    CuratedUseCaseActor,
+    CuratedUseCaseAnnotation,
+    CuratedUseCaseAssociation,
     EvidenceRecord,
     Selector,
     load_viewer_curation,
@@ -18,6 +21,14 @@ def _context(tmp_path: Path) -> ArchitectureViewContext:
   project: curation
   schema_version: '2.0'
 entities:
+  actors:
+    - id: ACT-1
+      name: API Consumer
+      status: ACTIVE
+  behaviors:
+    - id: BEH-1
+      name: Search Knowledge
+      status: ACTIVE
   components:
     - id: COMP-1
       name: Shared
@@ -30,6 +41,149 @@ entities:
 relationships: []
 """, encoding="utf-8")
     return ArchitectureViewContext.load(load_model(model_path), tmp_path)
+
+
+def test_use_case_actors_associations_and_annotations_load_with_evidence(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "docs/use-cases.md"
+    evidence.parent.mkdir()
+    evidence.write_text("use-case evidence", encoding="utf-8")
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  use_cases:
+    actors:
+      - id: knowledge-worker
+        name: Knowledge Worker
+        inferred: true
+        evidence:
+          - {source: docs/use-cases.md, claim: Knowledge workers search project records.}
+    associations:
+      - actor: {qualified_id: root::ACT-1}
+        use_cases: [{qualified_id: root::BEH-1}]
+        inferred: true
+        evidence:
+          - {source: docs/use-cases.md, claim: API consumers invoke knowledge search.}
+      - actor: knowledge-worker
+        use_cases: [root::BEH-1]
+        inferred: true
+        evidence:
+          - {source: docs/use-cases.md, claim: Knowledge workers use knowledge search.}
+    annotations:
+      - use_case: {qualified_id: root::BEH-1}
+        goal: Find grounded project knowledge
+        trigger: User submits a search
+        preconditions: [Project access is authorized]
+        postconditions: [Grounded results are returned]
+        success_outcome: Relevant evidence is available
+        moes: [Results arrive within one second]
+        evidence:
+          - {source: docs/use-cases.md, claim: Search behavior and outcomes are defined here.}
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+    view = loaded.views.use_cases
+
+    assert loaded.diagnostics == []
+    assert [(actor.id, actor.name) for actor in view.actors] == [("knowledge-worker", "Knowledge Worker")]
+    assert [association.actor for association in view.associations] == ["root::ACT-1", "knowledge-worker"]
+    assert all(association.use_cases == ["root::BEH-1"] for association in view.associations)
+    annotation = view.annotations[0]
+    assert annotation.use_case == "root::BEH-1"
+    assert annotation.goal == "Find grounded project knowledge"
+    assert annotation.moes == ["Results arrive within one second"]
+
+
+def test_use_case_semantics_fail_closed_for_missing_evidence_and_unknown_keys(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  use_cases:
+    actors:
+      - {id: worker, name: Worker, inferred: true, evidence: []}
+    associations:
+      - actor: worker
+        use_cases: [root::COMP-1]
+        inferred: true
+        evidence: []
+    annotations:
+      - use_case: root::BEH-1
+        goal: Search
+        mystery: rejected
+        evidence: []
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+
+    assert loaded.views.use_cases == type(loaded.views.use_cases)()
+    assert loaded.diagnostics
+
+
+def test_use_case_only_keys_are_rejected_in_other_views(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  logical:
+    actors:
+      - id: worker
+        name: Worker
+        inferred: true
+        evidence:
+          - {source: evidence.md, claim: Worker evidence.}
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+
+    assert loaded.views.logical == type(loaded.views.logical)()
+    assert any(item.code == "CURATION_KEY_UNSUPPORTED" for item in loaded.diagnostics)
+
+
+def test_use_case_empty_annotations_and_duplicate_associations_fail_closed(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  use_cases:
+    associations:
+      - &association
+        actor: root::ACT-1
+        use_cases: [root::BEH-1]
+        inferred: true
+        evidence:
+          - {source: evidence.md, claim: API consumer uses search.}
+      - *association
+    annotations:
+      - use_case: root::BEH-1
+        evidence:
+          - {source: evidence.md, claim: Empty annotation is invalid.}
+""", encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context, path)
+
+    assert loaded.views.use_cases == type(loaded.views.use_cases)()
+    assert loaded.diagnostics
+
+
+def test_validate_use_case_semantics_rejects_unknown_manual_references(tmp_path):
+    context = _context(tmp_path)
+    evidence = [EvidenceRecord("evidence.md", "Manual evidence")]
+    view = type(load_viewer_curation(tmp_path, context).views.use_cases)(
+        actors=[CuratedUseCaseActor("worker", "Worker", True, evidence)],
+        associations=[CuratedUseCaseAssociation("missing-actor", ["root::MISSING"], True, evidence)],
+        annotations=[CuratedUseCaseAnnotation("root::MISSING", goal="Missing", evidence=evidence)],
+    )
+
+    diagnostics = validate_view_curation(view, context)
+
+    assert any(item.code == "CURATION_SEMANTIC_ASSOCIATION_ACTOR" for item in diagnostics)
+    assert any(item.code == "CURATION_SEMANTIC_ASSOCIATION_USE_CASE" for item in diagnostics)
+    assert any(item.code == "CURATION_SEMANTIC_ANNOTATION_USE_CASE" for item in diagnostics)
 
 
 def test_missing_and_invalid_curation_fall_back_without_crashing(tmp_path):

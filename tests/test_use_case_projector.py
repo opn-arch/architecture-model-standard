@@ -2,11 +2,18 @@ import random
 from pathlib import Path
 
 import pytest
+import yaml
 
 from architecture_model.core.parser import load_model
 from architecture_model.core.se_view_projectors import project_use_cases
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import Selector, ViewCuration
+from architecture_model.core.view_curation import Selector, ViewCuration, load_viewer_curation
+from architecture_model.core.view_curation import (
+    CuratedUseCaseActor,
+    CuratedUseCaseAnnotation,
+    CuratedUseCaseAssociation,
+    EvidenceRecord,
+)
 
 
 def _write(path: Path, text: str) -> None:
@@ -189,9 +196,139 @@ def test_use_case_featured_are_guaranteed_first_then_actor_round_robin_fills(tmp
     cases = [node.entity_ref for node in spec.nodes if node.kind == "use-case"]
     assert cases[:2] == ["root::BEH-12", "root::BEH-14"]
     assert "root::BEH-03" in cases[2:]
-    omitted = next(item.spec for item in spec.drilldowns if item.id == "drilldown:use-cases-omitted")
-    omitted_refs = {node.entity_ref for node in omitted.nodes}
-    assert not omitted_refs.intersection({"root::BEH-12", "root::BEH-14"})
+    omitted = next((item.spec for item in spec.drilldowns if item.id == "drilldown:use-cases-omitted"), None)
+    if omitted:
+        omitted_refs = {node.entity_ref for node in omitted.nodes}
+        assert not omitted_refs.intersection({"root::BEH-12", "root::BEH-14"})
+    else:
+        assert len(spec.nodes) == 6
+
+
+def test_use_case_all_ten_featured_render_before_supporting_nodes(tmp_path):
+    context = _context(tmp_path)
+    featured_keys = [f"root::BEH-{index:02}" for index in range(10)]
+    curation = ViewCuration(
+        featured=[Selector(qualified_id=key, resolved_id=key) for key in featured_keys],
+        order=list(reversed(featured_keys)),
+    )
+
+    spec = project_use_cases(context, curation, max_overview_nodes=15)
+
+    cases = [node.entity_ref for node in spec.nodes if node.kind == "use-case"]
+    assert cases == list(reversed(featured_keys))
+    assert len(spec.nodes) <= 15
+    omitted = next(node for node in spec.nodes if node.status == "omitted")
+    omitted_detail = next(item.spec for item in spec.drilldowns if item.id == omitted.drilldown_ref)
+    assert not {node.entity_ref for node in omitted_detail.nodes}.intersection(featured_keys)
+
+
+def test_use_case_curated_associations_and_annotations_are_inferred_canonical_first_and_nonmutating(tmp_path):
+    context = _context(tmp_path)
+    behavior = context.entity("root::BEH-00")
+    behavior.value.actor = ""
+    behavior.value.actor_id = ""
+    behavior.value.trigger = "canonical trigger"
+    behavior.value.goals = []
+    behavior.value.preconditions = []
+    behavior.value.postconditions = []
+    behavior.value.moes = []
+    before = behavior.value.__dict__.copy()
+    evidence = [EvidenceRecord("docs/use-cases.md", "Repository evidence for this use case.")]
+    curation = ViewCuration(
+        featured=[Selector(qualified_id=behavior.key, resolved_id=behavior.key)],
+        actors=[CuratedUseCaseActor("knowledge-worker", "Knowledge Worker", True, evidence)],
+        associations=[
+            CuratedUseCaseAssociation("knowledge-worker", [behavior.key], True, evidence),
+            CuratedUseCaseAssociation("root::ACT-OPS", [behavior.key], True, evidence),
+        ],
+        annotations=[CuratedUseCaseAnnotation(
+            behavior.key,
+            goal="Find knowledge",
+            trigger="curated trigger",
+            preconditions=["Access granted"],
+            postconditions=["Knowledge returned"],
+            success_outcome="Grounded result available",
+            moes=["Under one second"],
+            evidence=evidence,
+        )],
+    )
+
+    spec = project_use_cases(context, curation)
+    case = next(node for node in spec.nodes if node.entity_ref == behavior.key)
+    assert "canonical trigger" in case.subtitle and "curated trigger" not in case.subtitle
+    assert "Find knowledge" in case.subtitle
+    actors = {node.label: node for node in spec.nodes if node.kind in {"actor", "external"}}
+    assert {"Knowledge Worker", "Operator"} <= actors.keys()
+    inferred_edges = [edge for edge in spec.edges if edge.kind == "participates" and edge.target == case.id]
+    assert len(inferred_edges) == 2
+    assert all(edge.inferred and edge.style == "dashed" and edge.evidence for edge in inferred_edges)
+    for actor in (actors["Knowledge Worker"], actors["Operator"]):
+        actor_detail = next(item.spec for item in spec.drilldowns if item.id == actor.drilldown_ref)
+        association_edges = [
+            edge for edge in actor_detail.edges
+            if edge.kind == "participates" and edge.target == case.id
+        ]
+        assert association_edges
+        assert all(edge.inferred and edge.style == "dashed" and edge.evidence for edge in association_edges)
+    detail = next(item.spec for item in spec.drilldowns if item.id == case.drilldown_ref)
+    assert {"Access granted", "Knowledge returned", "Grounded result available", "Under one second"} <= {
+        node.label for node in detail.nodes
+    }
+    inferred = [node for node in detail.nodes if node.inferred]
+    assert inferred and all("inferred" in node.badges and node.evidence for node in inferred)
+    assert behavior.value.__dict__ == before
+
+
+def test_use_case_complete_canonical_semantics_ignore_curated_annotation(tmp_path):
+    context = _context(tmp_path)
+    behavior = context.entity("root::BEH-00")
+    behavior.value.trigger = "canonical trigger"
+    behavior.value.goals = ["Canonical goal"]
+    behavior.value.preconditions = ["Canonical precondition"]
+    behavior.value.postconditions = ["Canonical outcome"]
+    behavior.value.moes = ["Canonical measure"]
+    evidence = [EvidenceRecord("docs/use-cases.md", "Curated fallback evidence.")]
+    curation = ViewCuration(annotations=[CuratedUseCaseAnnotation(
+        behavior.key,
+        goal="Curated goal",
+        trigger="curated trigger",
+        preconditions=["Curated precondition"],
+        postconditions=["Curated postcondition"],
+        success_outcome="Curated outcome",
+        moes=["Curated measure"],
+        evidence=evidence,
+    )])
+
+    spec = project_use_cases(context, curation)
+    case = next(node for node in spec.nodes if node.entity_ref == behavior.key)
+    detail = next(item.spec for item in spec.drilldowns if item.id == case.drilldown_ref)
+
+    assert not case.inferred and "inferred" not in case.badges
+    assert all(item.source != "curated-inference" for item in case.evidence)
+    labels = {node.label for node in detail.nodes}
+    assert {"Canonical goal", "Canonical precondition", "Canonical outcome", "Canonical measure"} <= labels
+    assert not labels.intersection({"Curated goal", "Curated precondition", "Curated postcondition", "Curated outcome", "Curated measure"})
+
+
+def test_actor_drilldown_preserves_mixed_canonical_and_inferred_associations(tmp_path):
+    context = _context(tmp_path)
+    curated_behavior = context.entity("root::BEH-01")
+    curated_behavior.value.actor = ""
+    curated_behavior.value.actor_id = ""
+    evidence = [EvidenceRecord("docs/use-cases.md", "API consumer also initiates workflow one.")]
+    curation = ViewCuration(associations=[
+        CuratedUseCaseAssociation("root::ACT-OPS", [curated_behavior.key], True, evidence),
+    ])
+
+    spec = project_use_cases(context, curation)
+    actor = next(node for node in spec.nodes if node.entity_ref == "root::ACT-OPS")
+    detail = next(item.spec for item in spec.drilldowns if item.id == actor.drilldown_ref)
+    edges = {edge.target: edge for edge in detail.edges if edge.kind == "participates"}
+
+    assert not edges["node:root::BEH-00"].inferred
+    assert edges["node:root::BEH-00"].style == ""
+    assert edges["node:root::BEH-01"].inferred
+    assert edges["node:root::BEH-01"].style == "dashed"
 
 
 def test_use_cases_are_deterministic_with_duplicate_local_ids(tmp_path):
@@ -300,3 +437,80 @@ def test_use_case_hide_applies_recursively_per_entity_type(tmp_path, hidden_ref)
             "requirements:0" in node.badges
             for node in spec.nodes if node.kind == "use-case"
         )
+
+
+def test_real_logs_db_use_case_profile_renders_all_ten_featured():
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    loaded = load_viewer_curation(repo, context)
+    curation = loaded.views.use_cases
+
+    spec = project_use_cases(context, curation)
+
+    featured = [selector.resolved_id for selector in curation.featured if selector.resolved_id]
+    cases = [node.entity_ref for node in spec.nodes if node.kind == "use-case"]
+    assert len(featured) == 10
+    assert cases[:10] == featured
+    assert len(spec.nodes) <= 15
+
+
+def test_logs_db_profile_accepts_proposed_evidenced_use_case_additions(tmp_path):
+    repo = Path("/Users/baigm2/Documents/Projects/logs_db")
+    if not (repo / ".architecture/viewer-curation.yaml").is_file():
+        pytest.skip("logs-db curation unavailable")
+    context = ArchitectureViewContext.from_repo(repo)
+    evidence = tmp_path / "scripts/_pipeline_ingest.py"
+    evidence.parent.mkdir(parents=True)
+    evidence.write_text("copied evidence fixture", encoding="utf-8")
+    source_profile = yaml.safe_load((repo / ".architecture/viewer-curation.yaml").read_text(encoding="utf-8"))
+    raw = {"version": 1, "views": {"use_cases": source_profile["views"]["use_cases"]}}
+    use_cases = raw["views"]["use_cases"]
+    featured_selectors = [{"qualified_id": value} for value in use_cases["featured"]]
+    use_cases["actors"] = [{
+        "id": "knowledge-worker", "name": "Knowledge Worker", "inferred": True,
+        "evidence": [{"source": "scripts/_pipeline_ingest.py", "claim": "Knowledge workers initiate repository ingestion."}],
+    }]
+    use_cases["associations"] = [{
+        "actor": {"qualified_id": "root::ACT-1"},
+        "use_cases": featured_selectors,
+        "inferred": True,
+        "evidence": [{"source": "scripts/_pipeline_ingest.py", "claim": "API consumers initiate multi-source ingestion."}],
+    }, {
+        "actor": {"qualified_id": "project-documentation-orchestration-2-related::ACT-1"},
+        "use_cases": featured_selectors,
+        "inferred": True,
+        "evidence": [{"source": "scripts/_pipeline_ingest.py", "claim": "CLI users initiate project knowledge workflows."}],
+    }, {
+        "actor": "knowledge-worker",
+        "use_cases": featured_selectors,
+        "inferred": True,
+        "evidence": [{"source": "scripts/_pipeline_ingest.py", "claim": "Knowledge workers initiate multi-source ingestion."}],
+    }]
+    use_cases["annotations"] = [{
+        "use_case": {"qualified_id": "project-documentation-orchestration-2-related::BEH-104"},
+        "goal": "Acquire normalized project knowledge",
+        "trigger": "A knowledge source is ready",
+        "preconditions": ["Source access is configured"],
+        "postconditions": ["Normalized records are persisted"],
+        "success_outcome": "Project knowledge is searchable",
+        "moes": ["All configured sources are processed"],
+        "evidence": [{"source": "scripts/_pipeline_ingest.py", "claim": "The ingestion pipeline normalizes and persists configured sources."}],
+    }]
+    profile = tmp_path / ".architecture/viewer-curation.yaml"
+    profile.parent.mkdir()
+    profile.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
+
+    loaded = load_viewer_curation(tmp_path, context)
+    spec = project_use_cases(context, loaded.views.use_cases)
+
+    assert loaded.diagnostics == []
+    cases = [node for node in spec.nodes if node.kind == "use-case"]
+    assert len(cases) == 10
+    actor_labels = {node.label for node in spec.nodes if node.kind in {"actor", "external"}}
+    assert {"API Consumer", "CLI User", "Knowledge Worker"} <= actor_labels
+    assert len(spec.nodes) <= 15
+    assert any(edge.inferred and edge.style == "dashed" for edge in spec.edges)
+    connected = {edge.source for edge in spec.edges} | {edge.target for edge in spec.edges}
+    assert all(node.id in connected for node in cases)

@@ -22,11 +22,18 @@ VIEW_KEYS = {
     "flows", "tiers", "aggregate_components",
     "preferred_capability_root", "mission_root", "drilldowns",
 }
+USE_CASE_VIEW_KEYS = {"actors", "associations", "annotations"}
 SELECTOR_KEYS = {"qualified_id", "local_id", "system", "name", "source_file", "tag"}
 GROUP_KEYS = {"id", "label", "kind", "parent", "order", "description", "members"}
 EXTERNAL_KEYS = {"id", "name", "inferred", "evidence", "kind", "description"}
 FLOW_KEYS = {"source", "target", "kind", "label", "description", "inferred", "evidence"}
 EVIDENCE_KEYS = {"source", "claim"}
+USE_CASE_ACTOR_KEYS = {"id", "name", "inferred", "evidence"}
+ASSOCIATION_KEYS = {"actor", "use_cases", "inferred", "evidence"}
+ANNOTATION_KEYS = {
+    "use_case", "goal", "trigger", "preconditions", "postconditions",
+    "success_outcome", "moes", "evidence",
+}
 
 
 @dataclass
@@ -84,6 +91,34 @@ class CuratedFlow:
 
 
 @dataclass
+class CuratedUseCaseActor:
+    id: str
+    name: str
+    inferred: bool
+    evidence: list[EvidenceRecord]
+
+
+@dataclass
+class CuratedUseCaseAssociation:
+    actor: str
+    use_cases: list[str]
+    inferred: bool
+    evidence: list[EvidenceRecord]
+
+
+@dataclass
+class CuratedUseCaseAnnotation:
+    use_case: str
+    goal: str = ""
+    trigger: str = ""
+    preconditions: list[str] = field(default_factory=list)
+    postconditions: list[str] = field(default_factory=list)
+    success_outcome: str = ""
+    moes: list[str] = field(default_factory=list)
+    evidence: list[EvidenceRecord] = field(default_factory=list)
+
+
+@dataclass
 class ViewCuration:
     featured: list[Selector] = field(default_factory=list)
     hide: list[Selector] = field(default_factory=list)
@@ -98,6 +133,9 @@ class ViewCuration:
     preferred_capability_root: Selector | None = None
     mission_root: Selector | None = None
     drilldowns: dict[str, Selector] = field(default_factory=dict)
+    actors: list[CuratedUseCaseActor] = field(default_factory=list)
+    associations: list[CuratedUseCaseAssociation] = field(default_factory=list)
+    annotations: list[CuratedUseCaseAnnotation] = field(default_factory=list)
     safe_text: bool = True
 
 
@@ -249,7 +287,8 @@ def _parse_view(raw: Any, root: Path, context: ArchitectureViewContext, diagnost
     if not isinstance(raw, dict):
         _diag(diagnostics, "CURATION_VIEW_INVALID", "Invalid view curation; expected dict", view=view_name)
         return ViewCuration()
-    unknown = sorted(set(raw) - VIEW_KEYS)
+    allowed = VIEW_KEYS | (USE_CASE_VIEW_KEYS if view_name == "use_cases" else set())
+    unknown = sorted(set(raw) - allowed)
     if unknown:
         for key in unknown:
             _diag(diagnostics, "CURATION_KEY_UNSUPPORTED", f"Unknown {view_name} key: {key}", view=view_name)
@@ -341,6 +380,8 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         result.flows.append(CuratedFlow(source, target, kind, flow_label, inferred, evidence))
     result.externals.sort(key=lambda item: item.id)
     result.flows.sort(key=lambda item: (item.source, item.target, item.kind, item.label))
+    if view_name == "use_cases":
+        _parse_use_case_semantics(raw, root, context, diagnostics, result, identifiers)
     for field_name in ("preferred_capability_root", "mission_root"):
         value = raw.get(field_name)
         if value is not None:
@@ -360,9 +401,109 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
     return result
 
 
+def _safe_text_list(raw: Any, diagnostics: list[Diagnostic], view: str, field_name: str) -> list[str]:
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        _diag(diagnostics, "CURATION_VALUE_INVALID", f"Invalid {field_name}; expected list", view=view)
+        raise _InvalidView(field_name)
+    return [_text(value, diagnostics, view, field_name) for value in raw]
+
+
+def _resolved_entity_selector(
+    raw: Any, context: ArchitectureViewContext, diagnostics: list[Diagnostic], view: str,
+    owner: str, entity_type: str,
+) -> str:
+    selector = _selector(raw, diagnostics, view)
+    if selector is None or not selector.resolve(context):
+        _diag(diagnostics, "CURATION_SELECTOR_UNRESOLVED", f"Unresolved {owner} selector", view=view)
+        raise _InvalidView(owner)
+    entity = context.entity(selector.resolved_id, diagnose=False)
+    if not entity or entity.entity_type != entity_type:
+        _diag(diagnostics, "CURATION_SELECTOR_INVALID", f"{owner} must select {entity_type}", view=view)
+        raise _InvalidView(owner)
+    return selector.resolved_id
+
+
+def _parse_use_case_semantics(
+    raw: dict[str, Any], root: Path, context: ArchitectureViewContext,
+    diagnostics: list[Diagnostic], result: ViewCuration, identifiers: set[str],
+) -> None:
+    actor_ids: set[str] = set()
+    for value in _collection(raw, "actors", diagnostics, list, "use_cases"):
+        if not isinstance(value, dict):
+            raise _InvalidView("actors")
+        _check_keys(value, USE_CASE_ACTOR_KEYS, diagnostics, "use_cases", "use-case actor")
+        identifier = str(value.get("id", ""))
+        name = _text(value.get("name", ""), diagnostics, "use_cases", "actor name")
+        evidence = _evidence(value.get("evidence"), root, diagnostics, f"actor {identifier}", "use_cases")
+        if not identifier or not name or value.get("inferred") is not True or identifier in identifiers or identifier in actor_ids:
+            _diag(diagnostics, "CURATION_ACTOR_INVALID", f"Invalid inferred use-case actor: {identifier}", view="use_cases")
+            raise _InvalidView("actors")
+        actor_ids.add(identifier)
+        result.actors.append(CuratedUseCaseActor(identifier, name, True, evidence))
+    identifiers.update(actor_ids)
+
+    association_keys: set[tuple[str, tuple[str, ...]]] = set()
+    for value in _collection(raw, "associations", diagnostics, list, "use_cases"):
+        if not isinstance(value, dict):
+            raise _InvalidView("associations")
+        _check_keys(value, ASSOCIATION_KEYS, diagnostics, "use_cases", "use-case association")
+        actor_raw = value.get("actor")
+        if isinstance(actor_raw, str) and actor_raw in actor_ids:
+            actor = actor_raw
+        else:
+            actor = _resolved_entity_selector(actor_raw, context, diagnostics, "use_cases", "association actor", "actor")
+        use_cases_raw = value.get("use_cases")
+        if not isinstance(use_cases_raw, list) or not use_cases_raw:
+            _diag(diagnostics, "CURATION_VALUE_INVALID", "Association requires nonempty use_cases", view="use_cases")
+            raise _InvalidView("associations")
+        use_cases = [
+            _resolved_entity_selector(item, context, diagnostics, "use_cases", "association use case", "behavior")
+            for item in use_cases_raw
+        ]
+        evidence = _evidence(value.get("evidence"), root, diagnostics, "use-case association", "use_cases")
+        if value.get("inferred") is not True:
+            _diag(diagnostics, "CURATION_ASSOCIATION_INVALID", "Use-case association must be inferred", view="use_cases")
+            raise _InvalidView("associations")
+        association_key = (actor, tuple(use_cases))
+        if association_key in association_keys:
+            _diag(diagnostics, "CURATION_ASSOCIATION_DUPLICATE", f"Duplicate use-case association: {actor}", view="use_cases")
+            raise _InvalidView("associations")
+        association_keys.add(association_key)
+        result.associations.append(CuratedUseCaseAssociation(actor, use_cases, True, evidence))
+
+    seen_annotations: set[str] = set()
+    for value in _collection(raw, "annotations", diagnostics, list, "use_cases"):
+        if not isinstance(value, dict):
+            raise _InvalidView("annotations")
+        _check_keys(value, ANNOTATION_KEYS, diagnostics, "use_cases", "use-case annotation")
+        use_case = _resolved_entity_selector(value.get("use_case"), context, diagnostics, "use_cases", "annotation use case", "behavior")
+        if use_case in seen_annotations:
+            _diag(diagnostics, "CURATION_ANNOTATION_DUPLICATE", f"Duplicate annotation: {use_case}", view="use_cases")
+            raise _InvalidView("annotations")
+        seen_annotations.add(use_case)
+        evidence = _evidence(value.get("evidence"), root, diagnostics, f"annotation {use_case}", "use_cases")
+        semantic_keys = ANNOTATION_KEYS - {"use_case", "evidence"}
+        if not any(value.get(key) for key in semantic_keys):
+            _diag(diagnostics, "CURATION_ANNOTATION_INVALID", f"Annotation has no semantic fields: {use_case}", view="use_cases")
+            raise _InvalidView("annotations")
+        result.annotations.append(CuratedUseCaseAnnotation(
+            use_case=use_case,
+            goal=_text(value.get("goal", ""), diagnostics, "use_cases", "annotation goal"),
+            trigger=_text(value.get("trigger", ""), diagnostics, "use_cases", "annotation trigger"),
+            preconditions=_safe_text_list(value.get("preconditions"), diagnostics, "use_cases", "annotation preconditions"),
+            postconditions=_safe_text_list(value.get("postconditions"), diagnostics, "use_cases", "annotation postconditions"),
+            success_outcome=_text(value.get("success_outcome", ""), diagnostics, "use_cases", "annotation success outcome"),
+            moes=_safe_text_list(value.get("moes"), diagnostics, "use_cases", "annotation moes"),
+            evidence=evidence,
+        ))
+
+
 def validate_view_curation(view: ViewCuration, context: ArchitectureViewContext) -> list[Diagnostic]:
     identifiers = {entity.key for entity in context.entities()}
     identifiers.update(item.id for item in view.groups + view.scenarios + view.tiers + view.externals)
+    identifiers.update(item.id for item in view.actors)
     identifiers.update(item.resolved_id for item in view.aggregate_components if item.resolved_id)
     diagnostics: list[Diagnostic] = []
     for target in view.labels:
@@ -393,6 +534,19 @@ def validate_view_curation(view: ViewCuration, context: ArchitectureViewContext)
                 diagnostics, "CURATION_SEMANTIC_FLOW_EVIDENCE",
                 f"Noncanonical curated flow must be inferred with evidence: {flow.source} -> {flow.target}",
             )
+    for association in view.associations:
+        actor = context.entity(association.actor, diagnose=False)
+        presentation_actor = any(item.id == association.actor for item in view.actors)
+        if not presentation_actor and (not actor or actor.entity_type != "actor"):
+            _diag(diagnostics, "CURATION_SEMANTIC_ASSOCIATION_ACTOR", f"Unknown association actor: {association.actor}")
+        for use_case in association.use_cases:
+            entity = context.entity(use_case, diagnose=False)
+            if not entity or entity.entity_type != "behavior":
+                _diag(diagnostics, "CURATION_SEMANTIC_ASSOCIATION_USE_CASE", f"Unknown association use case: {use_case}")
+    for annotation in view.annotations:
+        entity = context.entity(annotation.use_case, diagnose=False)
+        if not entity or entity.entity_type != "behavior":
+            _diag(diagnostics, "CURATION_SEMANTIC_ANNOTATION_USE_CASE", f"Unknown annotation use case: {annotation.use_case}")
     return diagnostics
 
 
