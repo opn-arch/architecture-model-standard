@@ -1,4 +1,4 @@
-"""Deterministic, bounded ConOps and functional architecture projections."""
+"""Deterministic, bounded systems-engineering view projections."""
 
 from __future__ import annotations
 
@@ -764,4 +764,642 @@ def project_functional_architecture(
     return spec
 
 
-__all__ = ["DEFAULT_MAX_OVERVIEW_NODES", "project_conops", "project_functional_architecture"]
+_LOGICAL_TIERS = (
+    ("web", "Web", ("web", "ui", "frontend", "api", "gateway")),
+    ("application", "Application / Orchestration", ("application", "orchestration", "workflow", "pipeline", "cli")),
+    ("domain", "Domain / Service", ("domain", "service", "core", "business")),
+    ("data", "Data / Contracts", ("data", "repository", "store", "schema", "contract", "model")),
+    ("infrastructure", "Infrastructure", ("infrastructure", "infra", "deployment", "monitor", "adapter")),
+)
+_LOGICAL_EDGE_KINDS = {"depends-on", "produces", "consumes", "transforms", "subscribes-to", "uses"}
+
+
+def _logical_tier(entity: IndexedEntity) -> str:
+    value = entity.value
+    kind = getattr(getattr(value, "kind", ""), "value", getattr(value, "kind", ""))
+    evidence = " ".join([
+        getattr(value, "layer", ""), str(kind), entity.name,
+        *getattr(value, "files", []), *getattr(value, "responsibilities", []),
+    ]).casefold()
+    for tier, _, terms in _LOGICAL_TIERS:
+        if any(term in evidence for term in terms):
+            return tier
+    return "domain"
+
+
+def _system_models(context: ArchitectureViewContext) -> tuple[dict[str, IndexedEntity], dict[str, str]]:
+    systems: dict[str, IndexedEntity] = {}
+    model_owner: dict[str, str] = {}
+    for system in context.entities("system"):
+        children = context.child_models_for_system(system.key)
+        if not children:
+            continue
+        systems[system.key] = system
+        for child in children:
+            model_owner[child] = system.key
+    return systems, model_owner
+
+
+def _logical_facets(context: ArchitectureViewContext, models: Iterable[str]) -> tuple[list[str], dict[str, str | int | bool]]:
+    namespaces = set(models)
+    capabilities = sum(len(context.entities("capability", model)) for model in namespaces)
+    interfaces = sum(len(context.entities("interface", model)) for model in namespaces)
+    components = sum(len(context.entities("component", model)) for model in namespaces)
+    requirements = sum(len(context.entities("requirement", model)) for model in namespaces)
+    monitoring = sum(
+        len(getattr(item.value, "monitored", []) or []) + len(getattr(item.value, "observability", []) or [])
+        for model in namespaces for item in context.entities("component", model)
+    )
+    failures = sum(
+        len(getattr(item.value, "failure_modes", []) or [])
+        for model in namespaces for item in context.entities(model=model)
+    )
+    badges = [f"components:{components}", f"interfaces:{interfaces}", f"capabilities:{capabilities}"]
+    return badges, {
+        "requirements": requirements, "monitoring": monitoring, "failures": failures,
+        "facet:capabilities": capabilities > 0, "facet:requirements": requirements > 0,
+        "facet:monitoring": monitoring > 0,
+    }
+
+
+def _logical_entity_spec(identifier: str, title: str, entities: Iterable[IndexedEntity]) -> DiagramSpec:
+    return DiagramSpec(identifier, title, nodes=[
+        DiagramNode(_node_id(item.key), item.name, item.entity_type, entity_ref=item.key, evidence=[_provenance(item)])
+        for item in sorted(entities, key=lambda value: value.key)
+    ])
+
+
+def _logical_system_drilldown(
+    context: ArchitectureViewContext, system: IndexedEntity, models: list[str], curation: ViewCuration,
+    *, max_nodes: int = 36,
+) -> DiagramSpec:
+    entities = [
+        item for model in models for item in context.entities(model=model)
+        if item.entity_type in {"layer", "component", "interface", "capability", "requirement"}
+    ]
+    priority = {"layer": 0, "component": 1, "interface": 2, "capability": 3, "requirement": 4}
+    entities.sort(key=lambda item: (priority.get(item.entity_type, 9), item.key))
+    reserve = 1 if len(entities) > max_nodes else 0
+    selected = entities[:max_nodes - reserve]
+    selected_keys = {item.key for item in selected}
+    groups = [DiagramGroup(f"detail-tier:{tier}", label, "tier", order=index) for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)]
+    nodes = []
+    for item in selected:
+        group = f"detail-tier:{_logical_tier(item)}" if item.entity_type in {"component", "layer"} else ""
+        badges = _badges(item)
+        if item.entity_type == "component":
+            badges.extend([
+                f"failures:{len(item.value.failure_modes)}",
+                f"monitoring:{len(item.value.monitored) + len(item.value.observability)}",
+            ])
+        nodes.append(DiagramNode(
+            _node_id(item.key), _label(item, curation), item.entity_type, group=group,
+            entity_ref=item.key, badges=badges, evidence=[_provenance(item)],
+        ))
+    edges = [
+        DiagramEdge(_node_id(rel.source), _node_id(rel.target), rel.kind, evidence=[_relationship_provenance(rel)])
+        for rel in context.relationships()
+        if rel.source in selected_keys and rel.target in selected_keys
+    ]
+    warnings = []
+    omitted = [item for item in entities if item.key not in selected_keys]
+    drilldowns = []
+    if omitted:
+        summary_id = f"logical-detail:{system.key}:omitted"
+        drilldown_id = f"drilldown:{summary_id}"
+        nodes.append(DiagramNode(
+            summary_id, f"More Internal Elements ({len(omitted)})", "summary",
+            status="omitted", drilldown_ref=drilldown_id,
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, summary_id,
+            spec=_logical_entity_spec(f"{summary_id}:entities", "Omitted Internal Elements", omitted),
+        ))
+        warnings.append(Diagnostic(
+            "warning", "LOGICAL_DRILLDOWN_BOUNDED",
+            f"{len(omitted)} internal entities omitted", view="logical",
+        ))
+    return DiagramSpec(
+        f"logical-detail:{system.key}", f"System: {system.name}", direction="TB",
+        nodes=nodes, edges=edges, groups=groups, warnings=warnings, drilldowns=drilldowns,
+        provenance=_derived("system-boundary", [system.key, *[item.key for item in entities]]),
+    )
+
+
+def project_logical_architecture(
+    context: ArchitectureViewContext, curation: ViewCuration | None = None,
+    *, max_overview_nodes: int = DEFAULT_MAX_OVERVIEW_NODES,
+) -> DiagramSpec:
+    """Project canonical systems and bounded presentation-only inline aggregates."""
+    curation = curation or ViewCuration()
+    limit = max(1, max_overview_nodes)
+    warnings = _curation_diagnostics("logical", context, curation)
+    hidden = {item.resolved_id for item in curation.hide if item.resolved_id}
+    order = {key: index for index, key in enumerate(curation.order)}
+    systems, model_owner = _system_models(context)
+    tier_defs = {tier: (label, index) for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)}
+    groups = [DiagramGroup(f"logical-tier:{tier}", label, "tier", order=index) for tier, (label, index) in tier_defs.items()]
+    membership: dict[str, str] = {}
+    for curated in curation.tiers:
+        groups.append(DiagramGroup(curated.id, curated.label, "tier", curated.parent, curated.order))
+        membership.update({member: curated.id for member in curated.members})
+
+    system_nodes: list[DiagramNode] = []
+    drilldowns: list[DiagramDrilldown] = []
+    for key, system in sorted(systems.items(), key=lambda item: (order.get(item[0], len(order)), item[0])):
+        if key in hidden:
+            continue
+        models = context.child_models_for_system(key)
+        badges, metrics = _logical_facets(context, models)
+        if not any(int(badge.rsplit(":", 1)[1]) for badge in badges):
+            continue
+        drilldown_id = _drilldown_id(curation, key)
+        system_nodes.append(DiagramNode(
+            _node_id(key), _label(system, curation), "system", group=membership.get(key, f"logical-tier:{_logical_tier(system)}"),
+            entity_ref=key, drilldown_ref=drilldown_id, badges=badges, metrics=metrics, evidence=[_provenance(system)],
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, _node_id(key), spec=_logical_system_drilldown(context, system, models, curation),
+        ))
+
+    aggregate_members = {item.resolved_id for item in curation.aggregate_components if item.resolved_id}
+    curated_aggregates = [item for item in curation.groups if item.kind == "aggregate"]
+    consumed: set[str] = set()
+    aggregates: list[tuple[str, str, str, list[IndexedEntity]]] = []
+    for group in curated_aggregates:
+        members = [
+            entity for key in group.members
+            if key in aggregate_members and key not in hidden
+            and (entity := context.entity(key, diagnose=False)) and entity.entity_type == "component"
+        ]
+        if members:
+            consumed.update(item.key for item in members)
+            groups.append(DiagramGroup(group.id, group.label, "aggregate", group.parent, group.order))
+            aggregates.append((group.id, group.label, group.id, members))
+    inline = [
+        item for item in context.entities("component", "root")
+        if item.key not in hidden and item.key not in consumed
+    ]
+    semantic: dict[str, list[IndexedEntity]] = defaultdict(list)
+    for component in inline:
+        semantic[_logical_tier(component)].append(component)
+    for tier, members in sorted(semantic.items(), key=lambda item: tier_defs[item[0]][1]):
+        aggregates.append((f"logical-inline:{tier}", f"Inline {tier_defs[tier][0]}", f"logical-tier:{tier}", members))
+
+    aggregate_nodes: list[DiagramNode] = []
+    for identifier, label, group, members in aggregates:
+        refs = [item.key for item in sorted(members, key=lambda value: value.key)]
+        drilldown_id = f"drilldown:{identifier}"
+        aggregate_nodes.append(DiagramNode(
+            f"aggregate:{identifier}", label, "aggregate", group=group, drilldown_ref=drilldown_id,
+            badges=[f"components:{len(refs)}"], metrics={"members": ", ".join(refs)},
+            evidence=[_derived("presentation-aggregate", refs)],
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, f"aggregate:{identifier}", spec=_logical_entity_spec(f"detail:{identifier}", label, members),
+        ))
+
+    actors = [item for kind in ("actor", "external_system") for item in context.entities(kind) if item.key not in hidden]
+    actor_nodes = [DiagramNode(
+        _node_id(item.key), _label(item, curation), "actor" if item.entity_type == "actor" else "external",
+        entity_ref=item.key, evidence=[_provenance(item)],
+    ) for item in actors]
+
+    candidates = [*system_nodes, *aggregate_nodes, *actor_nodes]
+    candidates.sort(key=lambda node: (node.kind not in {"system", "aggregate"}, order.get(node.entity_ref, len(order)), node.id))
+    reserve = 1 if len(candidates) > limit else 0
+    selected = candidates[:max(0, limit - reserve)]
+    selected_ids = {node.id for node in selected}
+    selected_refs = {node.entity_ref for node in selected if node.entity_ref}
+    aggregate_owner = {
+        member: node.id for node in aggregate_nodes
+        for member in str(node.metrics.get("members", "")).split(", ") if member
+    }
+
+    def owner(key: str) -> str:
+        entity = context.entity(key, diagnose=False)
+        if not entity:
+            return ""
+        if key in selected_refs:
+            return _node_id(key)
+        if entity.model in model_owner:
+            return _node_id(model_owner[entity.model])
+        return aggregate_owner.get(key, "")
+
+    edge_values: dict[tuple[str, str, str], DiagramEdge] = {}
+    for relationship in context.relationships():
+        if relationship.kind not in _LOGICAL_EDGE_KINDS:
+            continue
+        source, target = owner(relationship.source), owner(relationship.target)
+        if not source or not target or source == target or source not in selected_ids or target not in selected_ids:
+            continue
+        key = (source, target, relationship.kind)
+        if key not in edge_values:
+            edge_values[key] = DiagramEdge(source, target, relationship.kind, evidence=[])
+        edge = edge_values[key]
+        if edge.evidence:
+            edge.count += 1
+        edge.evidence.append(_relationship_provenance(relationship))
+        edge.critical = edge.critical or getattr(relationship.value.strength, "value", "") == "strong" or bool(relationship.value.extensions.get("critical"))
+    pairs = {(edge.source, edge.target) for edge in edge_values.values() if edge.kind == "depends-on"}
+    for edge in edge_values.values():
+        edge.label = edge.kind if edge.count == 1 else f"{edge.kind} ({edge.count})"
+        if edge.kind == "depends-on" and (edge.target, edge.source) in pairs:
+            edge.style = "cycle"
+
+    interfaces = []
+    for interface in context.entities("interface"):
+        endpoints = [
+            item for reference in (interface.value.provider, interface.value.consumer)
+            if (item := _find_local(context, interface.model, reference))
+        ]
+        owners = {owner(item.key) for item in endpoints} - {""}
+        related_actor = any(item.entity_type in {"actor", "external_system"} for item in endpoints)
+        if len(owners) > 1 or related_actor or any(rel.target == interface.key or rel.source == interface.key for rel in context.relationships("consumes")):
+            interfaces.append(interface)
+    for interface in interfaces:
+        if len(selected) >= limit - reserve:
+            break
+        node = DiagramNode(_node_id(interface.key), _label(interface, curation), "interface", entity_ref=interface.key, evidence=[_provenance(interface)])
+        if node.id not in selected_ids:
+            selected.append(node)
+            selected_ids.add(node.id)
+        for endpoint_name in (interface.value.provider, interface.value.consumer):
+            endpoint = _find_local(context, interface.model, endpoint_name)
+            endpoint_owner = owner(endpoint.key) if endpoint else ""
+            if endpoint_owner in selected_ids:
+                evidence = _derived("interface-endpoint", [interface.key, endpoint.key], protocol=interface.value.protocol)
+                edge_values[(endpoint_owner, node.id, "interface-port")] = DiagramEdge(endpoint_owner, node.id, "interface-port", evidence=[evidence])
+
+    omitted_nodes = [node for node in candidates if node.id not in selected_ids]
+    if omitted_nodes and len(selected) < limit:
+        summary_id = "logical:omitted-summary"
+        drilldown_id = "drilldown:logical-omitted"
+        selected.append(DiagramNode(summary_id, f"More Logical Elements ({len(omitted_nodes)})", "summary", status="omitted", drilldown_ref=drilldown_id))
+        omitted_entities = [context.entity(node.entity_ref, diagnose=False) for node in omitted_nodes if node.entity_ref]
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, summary_id,
+            spec=_logical_entity_spec("logical-omitted", "Omitted Logical Elements", [item for item in omitted_entities if item]),
+        ))
+        warnings.append(Diagnostic("warning", "LOGICAL_OVERVIEW_BOUNDED", f"{len(omitted_nodes)} logical elements omitted (limit {limit})", view="logical"))
+    used_drilldowns = {node.drilldown_ref for node in selected if node.drilldown_ref}
+    spec = DiagramSpec(
+        "logical", "Logical Architecture", direction="TB", nodes=selected,
+        edges=list(edge_values.values()), groups=groups,
+        warnings=[*context.diagnostics, *warnings],
+        drilldowns=[item for item in drilldowns if item.id in used_drilldowns],
+        provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
+    )
+    spec.validate()
+    return spec
+
+
+def _behavior_actor(context: ArchitectureViewContext, behavior: IndexedEntity) -> IndexedEntity | None:
+    return _find_local(context, behavior.model, behavior.value.actor_id or behavior.value.actor)
+
+
+def _behavior_components(context: ArchitectureViewContext, behavior: IndexedEntity) -> list[IndexedEntity]:
+    result: dict[str, IndexedEntity] = {}
+    for step in behavior.value.structured_steps:
+        component = _find_local(context, behavior.model, step.component_ref)
+        if component and component.entity_type in {"component", "system"}:
+            result[component.key] = component
+    for relationship in context.incoming(behavior.key, "traces-to"):
+        component = context.entity(relationship.source, diagnose=False)
+        if component and component.entity_type in {"component", "system"}:
+            result[component.key] = component
+    return sorted(result.values(), key=lambda item: item.key)
+
+
+def _behavior_systems(
+    context: ArchitectureViewContext, behavior: IndexedEntity,
+) -> list[IndexedEntity]:
+    systems, model_owner = _system_models(context)
+    result: dict[str, IndexedEntity] = {}
+    for component in _behavior_components(context, behavior):
+        if component.entity_type == "system":
+            result[component.key] = component
+        elif component.model in model_owner:
+            owner = systems[model_owner[component.model]]
+            result[owner.key] = owner
+    return sorted(result.values(), key=lambda item: item.name)
+
+
+def _behavior_interfaces(context: ArchitectureViewContext, behavior: IndexedEntity) -> list[IndexedEntity]:
+    return sorted({
+        interface.key: interface for reference in behavior.value.interface_refs
+        if (interface := _find_local(context, behavior.model, reference)) and interface.entity_type == "interface"
+    }.values(), key=lambda item: item.key)
+
+
+def _use_case_drilldown(
+    context: ArchitectureViewContext, behavior: IndexedEntity, curation: ViewCuration,
+) -> DiagramSpec:
+    nodes = [DiagramNode(
+        _node_id(behavior.key), _label(behavior, curation), "use-case", entity_ref=behavior.key,
+        subtitle=" | ".join(value for value in (behavior.value.trigger, next(iter(behavior.value.goals), "")) if value),
+        badges=_badges(behavior), evidence=[_provenance(behavior)],
+    )]
+    edges: list[DiagramEdge] = []
+    groups: list[DiagramGroup] = []
+    warnings: list[Diagnostic] = []
+    actor = _behavior_actor(context, behavior)
+    if actor:
+        actor_kind = "external" if actor.entity_type == "external_system" else "actor"
+        nodes.append(DiagramNode(_node_id(actor.key), actor.name, actor_kind, entity_ref=actor.key, evidence=[_provenance(actor)]))
+        edges.append(DiagramEdge(
+            _node_id(actor.key), _node_id(behavior.key), "initiates",
+            evidence=[_derived("behavior-actor", [behavior.key, actor.key])],
+        ))
+
+    systems, model_owner = _system_models(context)
+    steps = sorted(behavior.value.structured_steps, key=lambda item: (item.order, item.action, item.component_ref))
+    plain = False
+    if not steps:
+        plain = True
+        steps = [type("PlainStep", (), {
+            "order": index, "action": action, "component_ref": "", "actor": "",
+            "input": "", "output": "", "error_handling": "",
+        })() for index, action in enumerate(behavior.value.steps, 1)]
+        warnings.append(Diagnostic(
+            "warning", "USE_CASE_PLAIN_STEP_FALLBACK",
+            f"{behavior.name} uses unstructured plain steps", view="use_cases", source=behavior.source_path,
+        ))
+    previous = ""
+    participants: dict[str, IndexedEntity] = {}
+    for index, step in enumerate(steps):
+        component = _find_local(context, behavior.model, step.component_ref)
+        lane = ""
+        if component:
+            participants[component.key] = component
+            owner = model_owner.get(component.model, component.key if component.entity_type == "system" else "")
+            lane = f"lane:{behavior.key}:{owner or component.key}"
+            if lane not in {item.id for item in groups}:
+                label_entity = systems.get(owner, component)
+                groups.append(DiagramGroup(lane, label_entity.name, "lane", order=len(groups)))
+        step_id = f"step:{behavior.key}:{index + 1}"
+        nodes.append(DiagramNode(
+            step_id, step.action, "step", group=lane, status="lower-evidence" if plain else "structured",
+            metrics={"order": step.order, "input": step.input, "output": step.output},
+            evidence=[_derived("plain-behavior-step" if plain else "structured-behavior-step", [behavior.key], order=step.order)],
+        ))
+        if previous:
+            edges.append(DiagramEdge(
+                previous, step_id, "next",
+                evidence=[_derived("ordered-step-transition", [behavior.key], source_order=index, target_order=index + 1)],
+            ))
+        previous = step_id
+        if step.error_handling:
+            error_id = f"error:{behavior.key}:{index + 1}"
+            nodes.append(DiagramNode(
+                error_id, step.error_handling, "error", status="alternate-path",
+                evidence=[_derived("step-error-handling", [behavior.key], order=step.order)],
+            ))
+            edges.append(DiagramEdge(
+                step_id, error_id, "error", style="dotted",
+                evidence=[_derived("step-error-handling", [behavior.key], order=step.order)],
+            ))
+
+    for component in sorted(participants.values(), key=lambda item: item.key):
+        nodes.append(DiagramNode(
+            _node_id(component.key), component.name, component.entity_type, entity_ref=component.key,
+            badges=[
+                f"failures:{len(component.value.failure_modes)}",
+                f"monitoring:{len(component.value.monitored) + len(getattr(component.value, 'observability', []))}",
+            ], evidence=[_provenance(component)],
+        ))
+    participant_systems: dict[str, IndexedEntity] = {}
+    for component in participants.values():
+        owner_key = model_owner.get(component.model, "")
+        if owner_key:
+            participant_systems[owner_key] = systems[owner_key]
+    for system in sorted(participant_systems.values(), key=lambda item: item.key):
+        nodes.append(DiagramNode(
+            _node_id(system.key), system.name, "system", entity_ref=system.key,
+            evidence=[_provenance(system)],
+        ))
+        for component in participants.values():
+            if model_owner.get(component.model) == system.key:
+                edges.append(DiagramEdge(
+                    _node_id(system.key), _node_id(component.key), "owns",
+                    evidence=[_derived("hierarchy-system-ownership", [system.key, component.key], model=component.model)],
+                ))
+    for interface in _behavior_interfaces(context, behavior):
+        nodes.append(DiagramNode(_node_id(interface.key), interface.name, "interface", entity_ref=interface.key, evidence=[_provenance(interface)]))
+    for relationship in context.relationships():
+        refs = {node.entity_ref for node in nodes if node.entity_ref}
+        if relationship.source in refs and relationship.target in refs:
+            edges.append(DiagramEdge(
+                _node_id(relationship.source), _node_id(relationship.target), relationship.kind,
+                evidence=[_relationship_provenance(relationship)],
+            ))
+    support = [
+        ("precondition", behavior.value.preconditions),
+        ("postcondition", behavior.value.postconditions),
+        ("success-criterion", behavior.value.goals),
+        ("moe", behavior.value.moes),
+    ]
+    for kind, values in support:
+        nodes.extend(_support_nodes(behavior, kind, values))
+    for reference in behavior.value.requirements:
+        requirement = _find_local(context, behavior.model, reference)
+        if requirement:
+            nodes.append(DiagramNode(_node_id(requirement.key), requirement.name, "requirement", entity_ref=requirement.key, evidence=[_provenance(requirement)]))
+        else:
+            nodes.extend(_support_nodes(behavior, "requirement", [reference]))
+    existing_errors = {node.label.casefold() for node in nodes if node.kind == "error"}
+    additional_errors = [*behavior.value.failure_modes]
+    for component in participants.values():
+        additional_errors.extend(component.value.failure_modes)
+    for index, failure in enumerate(sorted(set(additional_errors))):
+        if failure.casefold() in existing_errors:
+            continue
+        error_id = f"failure:{behavior.key}:{index + 1}"
+        nodes.append(DiagramNode(error_id, failure, "error", status="failure-mode", evidence=[_derived("failure-mode", [behavior.key])]))
+        edges.append(DiagramEdge(
+            _node_id(behavior.key), error_id, "error", style="dotted",
+            evidence=[_derived("failure-mode", [behavior.key])],
+        ))
+    for index, compensation in enumerate(behavior.value.compensations):
+        compensation_id = f"compensation:{behavior.key}:{index + 1}"
+        nodes.append(DiagramNode(
+            compensation_id, compensation.compensate, "compensation", status="alternate-path",
+            evidence=[_derived("behavior-compensation", [behavior.key], step=compensation.step)],
+        ))
+        edges.append(DiagramEdge(
+            _node_id(behavior.key), compensation_id, "compensates", style="dotted",
+            evidence=[_derived("behavior-compensation", [behavior.key], step=compensation.step)],
+        ))
+    state_ids = {state.name: f"state:{behavior.key}:{index + 1}" for index, state in enumerate(behavior.value.states)}
+    for state in behavior.value.states:
+        state_id = state_ids[state.name]
+        nodes.append(DiagramNode(
+            state_id, state.name, "state",
+            evidence=[_derived("behavior-state", [behavior.key], state=state.name)],
+        ))
+        for transition in state.transitions:
+            target = state_ids.get(str(transition.get("to", "")))
+            if target:
+                edges.append(DiagramEdge(
+                    state_id, target, "transition", str(transition.get("on", "")),
+                    evidence=[_derived("behavior-state-transition", [behavior.key], state=state.name)],
+                ))
+    return DiagramSpec(
+        f"use-case-detail:{behavior.key}", f"Use Case: {behavior.name}", direction="TB",
+        nodes=nodes, edges=edges, groups=groups, warnings=warnings,
+        provenance=_derived("behavior-detail", [behavior.key]),
+    )
+
+
+def _actor_use_case_drilldown(
+    actor_id: str, label: str, entity: IndexedEntity | None,
+    behaviors: Iterable[IndexedEntity], evidence: list[DiagramProvenance], curation: ViewCuration,
+) -> DiagramSpec:
+    actor_node = DiagramNode(
+        f"detail:{actor_id}", label, "actor", entity_ref=entity.key if entity else "",
+        inferred=entity is None, evidence=[_provenance(entity)] if entity else evidence,
+    )
+    nodes = [actor_node]
+    edges = []
+    goals = list(entity.value.goals) if entity else []
+    for behavior in sorted(behaviors, key=lambda item: item.key):
+        node_id = _node_id(behavior.key)
+        nodes.append(DiagramNode(node_id, _label(behavior, curation), "use-case", entity_ref=behavior.key, evidence=[_provenance(behavior)]))
+        edges.append(DiagramEdge(
+            actor_node.id, node_id, "participates",
+            evidence=[_derived("behavior-actor", [behavior.key, *([entity.key] if entity else [])])],
+            inferred=entity is None,
+        ))
+        goals.extend(behavior.value.goals)
+    for index, goal in enumerate(sorted(set(goals))):
+        nodes.append(DiagramNode(f"goal:{actor_id}:{index + 1}", goal, "goal", evidence=[_derived("actor-goal", [entity.key] if entity else [])]))
+    return DiagramSpec(f"actor-use-cases:{actor_id}", f"Actor: {label}", nodes=nodes, edges=edges)
+
+
+def project_use_cases(
+    context: ArchitectureViewContext, curation: ViewCuration | None = None,
+    *, max_overview_nodes: int = DEFAULT_MAX_OVERVIEW_NODES,
+) -> DiagramSpec:
+    """Project a bounded actor-goal catalog with evidence-rich behavior drilldowns."""
+    curation = curation or ViewCuration()
+    limit = max(1, max_overview_nodes)
+    warnings = _curation_diagnostics("use_case", context, curation)
+    hidden = {item.resolved_id for item in curation.hide if item.resolved_id}
+    featured = {item.resolved_id for item in curation.featured if item.resolved_id}
+    order = {key: index for index, key in enumerate(curation.order)}
+    behaviors = [item for item in context.entities("behavior") if item.key not in hidden]
+    by_actor: dict[str, list[IndexedEntity]] = defaultdict(list)
+    for behavior in behaviors:
+        actor = _behavior_actor(context, behavior)
+        actor_name = actor.key if actor else " ".join((behavior.value.actor or "Unassigned").split()).casefold()
+        by_actor[actor_name].append(behavior)
+    for values in by_actor.values():
+        values.sort(key=lambda item: (item.key not in featured, order.get(item.key, len(order)), item.key))
+    selected: list[IndexedEntity] = []
+    actor_keys = sorted(by_actor)
+    case_limit = min(9, len(behaviors), max(0, limit - (1 if len(behaviors) > limit else 0)))
+    while len(selected) < case_limit and any(by_actor.values()):
+        for actor_key in actor_keys:
+            if by_actor[actor_key] and len(selected) < case_limit:
+                selected.append(by_actor[actor_key].pop(0))
+    selected.sort(key=lambda item: (item.key not in featured, order.get(item.key, len(order)), item.key))
+    selected_keys = {item.key for item in selected}
+    nodes: list[DiagramNode] = []
+    drilldowns: list[DiagramDrilldown] = []
+    for behavior in selected:
+        systems = _behavior_systems(context, behavior)
+        drilldown_id = _drilldown_id(curation, behavior.key)
+        outcome = next(iter(behavior.value.postconditions or behavior.value.goals), "")
+        nodes.append(DiagramNode(
+            _node_id(behavior.key), _label(behavior, curation), "use-case",
+            subtitle=" | ".join(value for value in (behavior.value.trigger, next(iter(behavior.value.goals), ""), outcome) if value),
+            entity_ref=behavior.key, drilldown_ref=drilldown_id, badges=_badges(behavior),
+            metrics={"implementing_systems": ", ".join(item.name for item in systems)}, evidence=[_provenance(behavior)],
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, _node_id(behavior.key), spec=_use_case_drilldown(context, behavior, curation),
+        ))
+
+    participant_values: dict[str, tuple[str, IndexedEntity | None, list[DiagramProvenance], list[IndexedEntity]]] = {}
+    for behavior in selected:
+        actor = _behavior_actor(context, behavior)
+        if actor:
+            key, label, evidence = actor.key, _label(actor, curation), [_provenance(actor)]
+        else:
+            label = " ".join(behavior.value.actor.split())
+            if not label:
+                continue
+            key = f"inferred-actor:{label.casefold()}"
+            evidence = [_derived("behavior-actor-name", [behavior.key], actor=label)]
+        if key not in participant_values:
+            participant_values[key] = (label, actor, evidence, [])
+        participant_values[key][3].append(behavior)
+    for key, (label, actor, evidence, actor_behaviors) in sorted(participant_values.items()):
+        if len(nodes) >= limit - (1 if len(behaviors) > len(selected) else 0):
+            break
+        node_id = _node_id(key) if actor else key
+        drilldown_id = f"drilldown:{node_id}"
+        participant_kind = "external" if not actor or actor.entity_type == "external_system" else "actor"
+        nodes.append(DiagramNode(
+            node_id, label, participant_kind, entity_ref=actor.key if actor else "",
+            drilldown_ref=drilldown_id, inferred=actor is None, evidence=evidence,
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, node_id,
+            spec=_actor_use_case_drilldown(node_id, label, actor, actor_behaviors, evidence, curation),
+        ))
+
+    node_by_ref = {node.entity_ref: node.id for node in nodes if node.entity_ref}
+    edges: list[DiagramEdge] = []
+    for relationship in context.relationships():
+        if relationship.kind not in {"triggers", "contains"}:
+            continue
+        if relationship.source in selected_keys and relationship.target in selected_keys:
+            edges.append(DiagramEdge(
+                _node_id(relationship.source), _node_id(relationship.target), relationship.kind,
+                evidence=[_relationship_provenance(relationship)],
+            ))
+    for key, (_, actor, evidence, actor_behaviors) in participant_values.items():
+        actor_node = _node_id(key) if actor else key
+        if actor_node not in {node.id for node in nodes}:
+            continue
+        for behavior in actor_behaviors:
+            if behavior.key in selected_keys:
+                edges.append(DiagramEdge(
+                    actor_node, _node_id(behavior.key), "participates", evidence=evidence,
+                    inferred=actor is None,
+                ))
+    omitted = [item for item in behaviors if item.key not in selected_keys]
+    if omitted and len(nodes) < limit:
+        summary_id = "use-cases:omitted-summary"
+        drilldown_id = "drilldown:use-cases-omitted"
+        nodes.append(DiagramNode(
+            summary_id, f"More Use Cases ({len(omitted)})", "summary", status="omitted",
+            drilldown_ref=drilldown_id, badges=[f"behaviors:{len(omitted)}"],
+        ))
+        drilldowns.append(DiagramDrilldown(
+            drilldown_id, summary_id,
+            spec=_logical_entity_spec("use-cases-omitted", "Omitted Use Cases", omitted),
+        ))
+        warnings.append(Diagnostic(
+            "warning", "USE_CASE_OVERVIEW_BOUNDED",
+            f"{len(omitted)} use cases omitted (limit {limit})", view="use_cases",
+        ))
+    if not nodes:
+        nodes.append(DiagramNode("use-cases:empty", "Use case evidence unavailable", "warning"))
+        warnings.append(Diagnostic("warning", "USE_CASE_SPARSE_FALLBACK", "No behaviors were available", view="use_cases"))
+    used_drilldowns = {node.drilldown_ref for node in nodes if node.drilldown_ref}
+    spec = DiagramSpec(
+        "use-cases", "Use Cases", direction="LR", nodes=nodes, edges=edges,
+        warnings=[*context.diagnostics, *warnings],
+        drilldowns=[item for item in drilldowns if item.id in used_drilldowns],
+        provenance=DiagramProvenance("architecture-view-context", context={"curated": curation != ViewCuration(), "max_overview_nodes": limit}),
+    )
+    spec.validate()
+    return spec
+
+
+__all__ = [
+    "DEFAULT_MAX_OVERVIEW_NODES", "project_conops", "project_functional_architecture",
+    "project_logical_architecture", "project_use_cases",
+]
