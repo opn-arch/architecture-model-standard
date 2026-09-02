@@ -57,12 +57,12 @@ def test_find_tests_for_scope_flat_layout(tmp_path):
     (tmp_path / "colorama" / "ansi.py").write_text("# ansi module")
     (tmp_path / "colorama" / "winterm.py").write_text("# winterm module")
     (tmp_path / "tests").mkdir()
-    (tmp_path / "tests" / "test_ansi.py").write_text("# test ansi")
-    (tmp_path / "tests" / "test_winterm.py").write_text("# test winterm")
+    (tmp_path / "tests" / "test_ansi.py").write_text("from colorama import ansi")
+    (tmp_path / "tests" / "test_winterm.py").write_text("from colorama import winterm")
     (tmp_path / "tests" / "test_unrelated.py").write_text("# unrelated")
 
-    scope_stems = {"ansi", "winterm", "__init__"}
-    results = _find_tests_for_scope(tmp_path, scope_stems)
+    scope_files = [tmp_path / "colorama" / "ansi.py", tmp_path / "colorama" / "winterm.py"]
+    results = _find_tests_for_scope(tmp_path, scope_files)
 
     targets = {r.targets[0] for r in results}
     assert targets == {"ansi", "winterm"}
@@ -74,9 +74,11 @@ def test_find_tests_for_scope_suffix_style(tmp_path):
     from architecture_model.pipeline.observe import _find_tests_for_scope
 
     (tmp_path / "tests").mkdir()
-    (tmp_path / "tests" / "parser_test.py").write_text("# test parser")
+    parser = tmp_path / "parser.py"
+    parser.write_text("def parse(): pass")
+    (tmp_path / "tests" / "parser_test.py").write_text("from parser import parse")
 
-    results = _find_tests_for_scope(tmp_path, {"parser"})
+    results = _find_tests_for_scope(tmp_path, [parser])
     assert len(results) == 1
     assert results[0].targets == ["parser"]
 
@@ -85,5 +87,5 @@ def test_find_tests_for_scope_no_test_dir(tmp_path):
     """Should return empty if no tests/ directory exists."""
     from architecture_model.pipeline.observe import _find_tests_for_scope
 
-    results = _find_tests_for_scope(tmp_path, {"ansi"})
+    results = _find_tests_for_scope(tmp_path, [tmp_path / "ansi.py"])
     assert results == []

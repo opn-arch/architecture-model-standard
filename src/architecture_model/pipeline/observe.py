@@ -97,8 +97,7 @@ class ObserveStage:
         # In scoped mode, also discover test files from common test directories
         # that target the scoped source files (flat test layouts like tests/test_ansi.py)
         if ctx.scope_files and not test_files:
-            scope_stems = {f.stem for f in py_files if f.suffix == ".py"}
-            test_files = _find_tests_for_scope(ctx.repo_path, scope_stems)
+            test_files = _find_tests_for_scope(ctx.repo_path, py_files)
 
         # Docs
         docs = _find_docs(ctx.repo_path)
@@ -580,7 +579,7 @@ def _find_test_files(py_files: list[Path], root: Path) -> list[TestFileRecord]:
 
 
 def _find_tests_for_scope(
-    root: Path, scope_stems: set[str],
+    root: Path, scope_files: list[Path],
 ) -> list[TestFileRecord]:
     """Discover test files targeting scoped source stems in flat test layouts.
 
@@ -588,6 +587,10 @@ def _find_tests_for_scope(
     test_<stem>.py or <stem>_test.py where <stem> is a scoped source file.
     """
     results: list[TestFileRecord] = []
+    scope_modules = {
+        ".".join(path.relative_to(root).with_suffix("").parts)
+        for path in scope_files if path.suffix == ".py"
+    }
     for test_dir_name in ("tests", "test"):
         test_dir = root / test_dir_name
         if not test_dir.is_dir():
@@ -595,10 +598,32 @@ def _find_tests_for_scope(
         for tf in test_dir.rglob("*.py"):
             name = tf.stem
             target = name.removeprefix("test_").removesuffix("_test")
-            if target and target != name and target in scope_stems:
+            imports_scope = bool(_test_imports(tf) & scope_modules)
+            path_context = any(
+                tuple(tf.relative_to(test_dir).parts[:-1]) == tuple(module.split(".")[:-1])
+                for module in scope_modules
+            )
+            stem_matches = any(target == module.rsplit(".", 1)[-1] for module in scope_modules)
+            if target and target != name and stem_matches and (imports_scope or path_context):
                 rel = tf.relative_to(root)
                 results.append(TestFileRecord(path=rel, targets=[target]))
     return results
+
+
+def _test_imports(path: Path) -> set[str]:
+    """Return concrete module names imported by a Python test file."""
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError):
+        return set()
+    imports: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imports.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imports.add(node.module)
+            imports.update(f"{node.module}.{alias.name}" for alias in node.names)
+    return imports
 
 
 def _find_docs(root: Path) -> list[DocRecord]:

@@ -200,9 +200,9 @@ class TestDecideStages:
         )
         assert _decide_stages(b) == FULL_PIPELINE_STAGES
 
-    def test_small_system_gets_abbreviated(self):
+    def test_small_full_system_gets_complete_pipeline(self):
         b = SystemBoundary(system_id="S1", name="Small", files=["a.py", "b.py"])
-        assert _decide_stages(b) == ABBREVIATED_STAGES
+        assert _decide_stages(b) == FULL_PIPELINE_STAGES
 
     def test_boundary_at_8(self):
         b = SystemBoundary(
@@ -214,7 +214,14 @@ class TestDecideStages:
         b = SystemBoundary(
             system_id="S1", name="Edge", files=[f"f{i}.py" for i in range(7)]
         )
-        assert _decide_stages(b) == ABBREVIATED_STAGES
+        assert _decide_stages(b) == FULL_PIPELINE_STAGES
+
+    def test_five_file_full_system_runs_through_validate(self):
+        boundary = SystemBoundary(
+            system_id="SYS-5", name="Five", files=[f"f{i}.py" for i in range(5)],
+            is_full_system=True,
+        )
+        assert _decide_stages(boundary) == FULL_PIPELINE_STAGES
 
 
 # ---------------------------------------------------------------------------
@@ -522,9 +529,9 @@ class TestRunWithCoordinator:
         alpha_call = [c for c in coordinator.calls if c[1] == "SYS-a"][0]
         assert alpha_call[0] == "validate"  # >= 8 files
 
-        # Small system gets infer as last stage
+        # Every full system gets validate as last stage
         beta_call = [c for c in coordinator.calls if c[1] == "SYS-b"][0]
-        assert beta_call[0] == "infer"  # < 8 files
+        assert beta_call[0] == "validate"
 
         # System models have YAML
         for sm in synth.system_models:
@@ -568,6 +575,19 @@ class TestRunWithCoordinator:
 
 
 class TestSoSModel:
+    def test_normalized_slug_collisions_get_distinct_stable_model_refs(self):
+        systems = [
+            SystemModel(system_id="SYS-1", name="A B", model_yaml="meta: {}"),
+            SystemModel(system_id="SYS-2", name="A-B", model_yaml="meta: {}"),
+        ]
+
+        first = yaml.safe_load(_build_sos_model(systems, [], DecomposeResult(), {}).model_yaml)
+        second = yaml.safe_load(_build_sos_model(systems, [], DecomposeResult(), {}).model_yaml)
+        refs = [system["sub_model_ref"] for system in first["entities"]["systems"]]
+
+        assert len(set(refs)) == 2
+        assert refs == [system["sub_model_ref"] for system in second["entities"]["systems"]]
+        assert all(ref.startswith(".architecture-models/a-b-") for ref in refs)
     def test_inter_system_edges(self):
         systems = [
             SystemModel(system_id="SYS-a", name="A", model_yaml="meta: {}"),

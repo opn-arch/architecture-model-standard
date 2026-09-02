@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 import yaml
 from pathlib import Path
+import os
 
 from architecture_model.pipeline.emit import EmitStage, _slugify
 from architecture_model.pipeline.emit_types import EmitResult
@@ -262,3 +263,75 @@ class TestWrittenPaths:
         assert result.output.final_validation_issues
         assert Path(result.output.candidate_path).exists()
         assert result.quality.score == result.output.final_model_score
+
+    def test_transaction_rolls_back_root_and_subsystem_on_second_replace_failure(
+        self, tmp_path, monkeypatch
+    ):
+        root = tmp_path / ".architecture-model.yaml"
+        subsystem = tmp_path / ".architecture-models" / "core" / ".architecture-model.yaml"
+        subsystem.parent.mkdir(parents=True)
+        old_root = _model(project="old-root").encode()
+        old_subsystem = _model(project="old-core").encode()
+        root.write_bytes(old_root)
+        subsystem.write_bytes(old_subsystem)
+        synth = SynthesizeResult(
+            sos_model_yaml=_model(entities={"systems": [{
+                "id": "SYS-1", "name": "Core", "status": "ACTIVE",
+                "sub_model_ref": ".architecture-models/core/.architecture-model.yaml",
+            }]}),
+            system_models=[SystemModel(
+                system_id="SYS-1", name="Core", model_yaml=_model(project="new-core")
+            )],
+        )
+        real_replace = os.replace
+        candidate_replacements = 0
+
+        def fail_second_candidate(source, target):
+            nonlocal candidate_replacements
+            if ".architecture-model-candidates" in str(source):
+                candidate_replacements += 1
+                if candidate_replacements == 2:
+                    raise OSError("injected second replacement failure")
+            return real_replace(source, target)
+
+        monkeypatch.setattr("architecture_model.pipeline.emit.os.replace", fail_second_candidate)
+
+        result = EmitStage().run(_make_ctx(tmp_path, synth))
+
+        assert result.output.promoted is False
+        assert root.read_bytes() == old_root
+        assert subsystem.read_bytes() == old_subsystem
+        assert not list(tmp_path.rglob("*.architecture-backup"))
+
+    def test_structural_warning_for_dangling_reference_blocks_promotion(self, tmp_path):
+        canonical = tmp_path / ".architecture-model.yaml"
+        canonical.write_text(_model(project="existing"))
+        invalid = _model(
+            entities={"capabilities": [{"id": "CAP-1", "name": "Cap", "status": "ACTIVE"}]},
+            relationships=[{"from": "CAP-1", "to": "CAP-MISSING", "type": "depends-on"}],
+        )
+
+        result = EmitStage().run(_make_ctx(tmp_path, SynthesizeResult(sos_model_yaml=invalid)))
+
+        assert result.output.promoted is False
+        assert yaml.safe_load(canonical.read_text())["meta"]["project"] == "existing"
+        assert any(issue["code"] == "STRUCTURAL_DANGLING_REF" for issue in result.output.final_validation_issues)
+
+    def test_candidate_enrichment_defect_is_validated_before_promotion(self, tmp_path):
+        canonical = tmp_path / ".architecture-model.yaml"
+        old_bytes = _model(project="existing").encode()
+        canonical.write_bytes(old_bytes)
+        ctx = _make_ctx(tmp_path, SynthesizeResult(sos_model_yaml=_model(project="candidate")))
+
+        def invalid_enrichment(path, _ctx, _synth):
+            raw = yaml.safe_load(path.read_text())
+            raw["relationships"] = [{"from": "CAP-1", "to": "CAP-MISSING", "type": "depends-on"}]
+            path.write_text(yaml.safe_dump(raw))
+
+        ctx.config["final_model_enricher"] = invalid_enrichment
+
+        result = EmitStage().run(ctx)
+
+        assert result.output.promoted is False
+        assert canonical.read_bytes() == old_bytes
+        assert "CAP-MISSING" in Path(result.output.candidate_path).read_text()

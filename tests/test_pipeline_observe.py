@@ -135,6 +135,28 @@ mod = importlib.import_module(name)
         assert [test.path for test in api_result.test_files] == [Path("tests/test_api.py")]
         assert [test.path for test in model_result.test_files] == [Path("tests/test_models.py")]
 
+    def test_scoped_test_discovery_uses_package_context_not_basename(self, tmp_path):
+        alpha = tmp_path / "alpha" / "api.py"
+        beta = tmp_path / "beta" / "api.py"
+        alpha.parent.mkdir()
+        beta.parent.mkdir()
+        alpha.write_text("def alpha(): pass\n")
+        beta.write_text("def beta(): pass\n")
+        alpha_test = tmp_path / "tests" / "alpha" / "test_api.py"
+        beta_test = tmp_path / "tests" / "beta" / "test_api.py"
+        alpha_test.parent.mkdir(parents=True)
+        beta_test.parent.mkdir(parents=True)
+        alpha_test.write_text("from alpha.api import alpha\n")
+        beta_test.write_text("from beta.api import beta\n")
+
+        observed = ObserveStage().run(PipelineContext(
+            repo_path=tmp_path,
+            output_dir=tmp_path / ".arch",
+            scope_files=[alpha],
+        )).output
+
+        assert [test.path for test in observed.test_files] == [Path("tests/alpha/test_api.py")]
+
 
 class TestObservePerModuleQuality:
     def test_module_record_has_quality_score(self):

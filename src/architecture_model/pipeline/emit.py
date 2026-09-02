@@ -24,6 +24,7 @@ from architecture_model.pipeline.synthesize import (
     _merge_requirements,
     _requirement_dict,
     _requirement_key,
+    _system_slugs,
 )
 
 
@@ -164,10 +165,14 @@ class EmitStage:
             _write_file(out_dir / "lessons.md", synth.lessons_md, result)
 
         # 4. Write per-system artifacts
+        system_slugs = _system_slugs([sm for sm in synth.system_models if sm.model_yaml])
+        if len(system_slugs) != len([sm for sm in synth.system_models if sm.model_yaml]):
+            raise ValueError("Duplicate system IDs cannot be assigned unique model paths")
         for sm in synth.system_models:
-            sys_dir = out_dir / _slugify(sm.name)
+            slug = system_slugs.get(sm.system_id, _slugify(sm.name))
+            sys_dir = out_dir / slug
             if sm.model_yaml:
-                candidate = candidate_dir / _slugify(sm.name) / ".architecture-model.yaml"
+                candidate = candidate_dir / slug / ".architecture-model.yaml"
                 _write_candidate(candidate, sm.model_yaml, result)
                 candidate_paths.append((candidate, sys_dir / ".architecture-model.yaml"))
             if sm.manifest_json:
@@ -283,6 +288,10 @@ class EmitStage:
 
         # 9. Validate the complete staged hierarchy before replacing any canonical file.
         if candidate_paths:
+            enricher = ctx.config.get("final_model_enricher")
+            if enricher:
+                for candidate, _target in candidate_paths:
+                    enricher(candidate, ctx, synth)
             _validate_and_promote_models(ctx, candidate_paths, result, diagnostics)
 
         # 9b. Generate docs only from promoted canonical models.
@@ -444,8 +453,9 @@ class EmitStage:
                 )
 
         # Per-subsystem models
+        system_slugs = _system_slugs([sm for sm in synth.system_models if sm.model_yaml])
         for sm in synth.system_models:
-            sys_dir = out_dir / _slugify(sm.name)
+            sys_dir = out_dir / system_slugs.get(sm.system_id, _slugify(sm.name))
             sys_model_path = sys_dir / ".architecture-model.yaml"
             if sys_model_path.exists():
                 try:
@@ -574,6 +584,7 @@ def _validate_and_promote_models(
                     "code": issue.code,
                     "message": issue.message,
                 })
+            issues.extend(_structural_eligibility_issues(raw, target))
             if target == ctx.repo_path / ".architecture-model.yaml":
                 for system in raw.get("entities", {}).get("systems", []):
                     ref = system.get("sub_model_ref", "")
@@ -599,15 +610,94 @@ def _validate_and_promote_models(
         ))
         return
 
-    for candidate, target in candidate_paths:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        os.replace(candidate, target)
-        result.written_paths.append(str(target))
-    result.promoted = True
-    diagnostics.append(Diagnostic(
-        severity="info", code="FINAL_MODEL_PROMOTED",
-        message=f"Validated and promoted {len(candidate_paths)} canonical model files",
-    ))
+    _promote_transaction(candidate_paths, result, diagnostics)
+
+
+def _structural_eligibility_issues(raw: dict, target: Path) -> list[dict]:
+    """Return promotion-blocking structural issues independent of quality scoring."""
+    issues: list[dict] = []
+    meta = raw.get("meta") if isinstance(raw, dict) else None
+    required_meta = ("project", "schema_version", "generated_at")
+    for field in required_meta:
+        if not isinstance(meta, dict) or not meta.get(field):
+            issues.append({
+                "path": str(target), "severity": "error", "code": "STRUCTURAL_MISSING_META",
+                "message": f"Required meta.{field} is missing",
+            })
+    entities = raw.get("entities", {}) if isinstance(raw, dict) else {}
+    ids = [
+        entity.get("id")
+        for group in entities.values() if isinstance(group, list)
+        for entity in group if isinstance(entity, dict) and entity.get("id")
+    ]
+    duplicate_ids = sorted({entity_id for entity_id in ids if ids.count(entity_id) > 1})
+    for entity_id in duplicate_ids:
+        issues.append({
+            "path": str(target), "severity": "error", "code": "STRUCTURAL_DUPLICATE_ID",
+            "message": f"Duplicate entity ID {entity_id}",
+        })
+    known_ids = set(ids)
+    for relationship in raw.get("relationships", []):
+        for endpoint in ("from", "to"):
+            entity_id = relationship.get(endpoint, "")
+            if entity_id not in known_ids:
+                issues.append({
+                    "path": str(target), "severity": "error", "code": "STRUCTURAL_DANGLING_REF",
+                    "message": f"Relationship {endpoint} references unknown entity {entity_id}",
+                })
+    return issues
+
+
+def _promote_transaction(
+    candidate_paths: list[tuple[Path, Path]],
+    result: EmitResult,
+    diagnostics: list[Diagnostic],
+) -> None:
+    """Install all canonical models or restore every prior file byte-for-byte."""
+    backups: list[tuple[Path, Path]] = []
+    installed: list[Path] = []
+    candidate_bytes = {candidate: candidate.read_bytes() for candidate, _ in candidate_paths}
+    try:
+        for _candidate, target in candidate_paths:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            backup = target.with_name(target.name + ".architecture-backup")
+            if backup.exists():
+                backup.unlink()
+            if target.exists():
+                os.replace(target, backup)
+                backups.append((backup, target))
+        for candidate, target in candidate_paths:
+            os.replace(candidate, target)
+            installed.append(target)
+        result.written_paths.extend(str(target) for target in installed)
+        result.promoted = True
+        diagnostics.append(Diagnostic(
+            severity="info", code="FINAL_MODEL_PROMOTED",
+            message=f"Validated and promoted {len(candidate_paths)} canonical model files",
+        ))
+    except Exception as exc:
+        for target in reversed(installed):
+            if target.exists():
+                target.unlink()
+        for backup, target in reversed(backups):
+            if backup.exists():
+                os.replace(backup, target)
+        for candidate, content in candidate_bytes.items():
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            candidate.write_bytes(content)
+        result.promoted = False
+        result.final_validation_issues.append({
+            "path": result.candidate_path, "severity": "error",
+            "code": "PROMOTION_TRANSACTION_FAILED", "message": str(exc),
+        })
+        diagnostics.append(Diagnostic(
+            severity="error", code="PROMOTION_TRANSACTION_FAILED",
+            message=f"Canonical model transaction rolled back: {exc}",
+        ))
+    finally:
+        for backup, _target in backups:
+            if backup.exists():
+                backup.unlink()
 
 
 def _inline_reviews(out_dir: Path, reviews: list[ArtifactReview]) -> int:

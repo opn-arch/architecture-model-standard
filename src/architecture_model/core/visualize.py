@@ -2016,6 +2016,11 @@ def _load_submodel_view_data(
             item = dict(value)
             item["display_id"] = entity_id
             item["model"] = slug
+            relationships = item.get("relationships", {})
+            for relation in relationships.get("outgoing", []):
+                relation["target"] = qualified_ids.get(relation["target"], relation["target"])
+            for relation in relationships.get("incoming", []):
+                relation["source"] = qualified_ids.get(relation["source"], relation["source"])
             properties[qualified] = item
         for component in sub_model.entities.components:
             if component.files:

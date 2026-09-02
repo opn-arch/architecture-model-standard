@@ -211,3 +211,28 @@ class TestGenerateAll:
         assert "Beta component" in html
         assert '"display_id": "COMP-1"' in html
         assert "'arch-comment:' + proj + ':' + eid" in html
+
+    def test_viewer_qualifies_subsystem_relationship_endpoints(self, tmp_path):
+        path = tmp_path / ".architecture-models" / "alpha" / ".architecture-model.yaml"
+        path.parent.mkdir(parents=True)
+        path.write_text(yaml.safe_dump({
+            "meta": {"project": "alpha", "schema_version": "2.0", "source_artifacts": ["a.py"]},
+            "entities": {
+                "components": [{"id": "COMP-1", "name": "One", "status": "ACTIVE"}],
+                "capabilities": [{"id": "CAP-1", "name": "Cap", "status": "ACTIVE"}],
+            },
+            "relationships": [{"from": "COMP-1", "to": "CAP-1", "type": "realizes"}],
+        }))
+        root = ArchitectureModel(
+            meta=ModelMeta(project="root", schema_version="2.0"),
+            entities=Entities(systems=[System(
+                id="SYS-1", name="Alpha", status=Status.ACTIVE,
+                sub_model_ref=".architecture-models/alpha/.architecture-model.yaml",
+            )]),
+        )
+
+        html = generate_html_viewer(root, tmp_path / "viewer.html", repo_path=tmp_path).read_text()
+
+        assert '"target": "alpha::CAP-1"' in html
+        assert '"source": "alpha::COMP-1"' in html
+        assert "alpha::COMP-1" in html and "alpha::CAP-1" in html

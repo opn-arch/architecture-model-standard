@@ -168,7 +168,7 @@ def _merge_requirements(*groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _decide_stages(boundary: SystemBoundary) -> list[str]:
     """Decide which pipeline stages to run based on system complexity."""
-    if len(boundary.files) >= 8:
+    if boundary.is_full_system:
         return list(FULL_PIPELINE_STAGES)
     return list(ABBREVIATED_STAGES)
 
@@ -183,6 +183,21 @@ def _schema_id(entity_id: str) -> str:
     if re.fullmatch(r"[A-Z]+-[A-Z]?-?\d+|[a-z][a-z0-9-]+", entity_id):
         return entity_id
     return _slugify(entity_id)
+
+
+def _system_slugs(systems: list[SystemModel]) -> dict[str, str]:
+    """Allocate stable unique filesystem slugs keyed by system ID."""
+    bases: dict[str, list[SystemModel]] = {}
+    for system in systems:
+        bases.setdefault(_slugify(system.name) or "system", []).append(system)
+    result: dict[str, str] = {}
+    for base, colliding in bases.items():
+        for system in colliding:
+            suffix = hashlib.sha256(system.system_id.encode()).hexdigest()[:8]
+            result[system.system_id] = (
+                f"{base}-{suffix}" if len(colliding) > 1 else base
+            )
+    return result
 
 
 def _build_system_model_yaml(
@@ -504,8 +519,9 @@ def _build_sos_model(
         )
 
     # Build SoS YAML
+    slugs = _system_slugs([system for system in systems if system.model_yaml])
     source_artifacts = [
-        f".architecture-models/{_slugify(system.name)}/.architecture-model.yaml"
+        f".architecture-models/{slugs[system.system_id]}/.architecture-model.yaml"
         for system in systems if system.model_yaml
     ] + [str(path) for boundary in inlines for path in boundary.files]
     sos_dict: dict[str, Any] = {
@@ -522,7 +538,7 @@ def _build_sos_model(
                     "id": _schema_id(s.system_id),
                     "name": s.name,
                     "status": "ACTIVE",
-                    "sub_model_ref": f".architecture-models/{_slugify(s.name)}/.architecture-model.yaml",
+                    "sub_model_ref": f".architecture-models/{slugs[s.system_id]}/.architecture-model.yaml",
                 }
                 for s in systems if s.model_yaml
             ],
@@ -590,17 +606,20 @@ class SynthesizeStage:
         coordinator = ctx.config.get("coordinator")
 
         system_models: list[SystemModel] = []
+        full_boundaries = [boundary for boundary in decompose_result.systems if boundary.is_full_system]
+        boundary_slugs = _system_slugs([
+            SystemModel(system_id=boundary.system_id, name=boundary.name, model_yaml="pending")
+            for boundary in full_boundaries
+        ])
 
         # Process full systems
-        for boundary in decompose_result.systems:
-            if not boundary.is_full_system:
-                continue
+        for boundary in full_boundaries:
 
             stages = _decide_stages(boundary)
             last_stage = stages[-1]
 
             # Check for pre-existing scoped cache (from agent's enriched MCP runs)
-            slug = _slugify(boundary.name)
+            slug = boundary_slugs[boundary.system_id]
             scoped_cache_dir = ctx.output_dir.parent / slug
             scoped_cache = PipelineCache(scoped_cache_dir)
             if scoped_cache.exists():

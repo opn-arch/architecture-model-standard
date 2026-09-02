@@ -10,6 +10,13 @@ from architecture_model.pipeline.specify import SpecifyStage
 from architecture_model.pipeline.contract import ContractStage
 from architecture_model.pipeline.validate import ValidateStage
 from architecture_model.pipeline.protocol import PipelineContext
+from architecture_model.pipeline.protocol import QualityMetrics, StageResult
+from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
+from architecture_model.pipeline.synthesize import SynthesizeStage
+from architecture_model.pipeline.emit import EmitStage
+from architecture_model.core.parser import load_model
+from architecture_model.core.validator import validate_model
+from architecture_model.core.visualize import generate_html_viewer
 
 
 def _make_coordinator():
@@ -26,6 +33,78 @@ def _make_coordinator():
 
 
 class TestRecursiveDecomposition:
+    def test_two_system_recursive_hierarchy_is_scoped_valid_and_viewable(self, tmp_path):
+        alpha = tmp_path / "alpha"
+        beta = tmp_path / "beta"
+        alpha.mkdir()
+        beta.mkdir()
+        for index in range(5):
+            route = (
+                "from fastapi import APIRouter\nrouter = APIRouter()\n"
+                "@router.get('/alpha')\ndef alpha_route(): return {}\n"
+                if index == 0 else ""
+            )
+            (alpha / f"api_{index}.py").write_text(route + f"def alpha_{index}(): return {index}\n")
+            (beta / f"model_{index}.py").write_text(f"class Model{index}: pass\n")
+        inline = tmp_path / "shared.py"
+        inline.write_text("def shared(): return True\n")
+
+        class FixedDecompose:
+            name = "decompose"
+            requires = ["validate"]
+
+            def run(self, _ctx):
+                return StageResult(
+                    output=DecomposeResult(
+                        systems=[
+                            SystemBoundary(
+                                system_id="SYS-1", name="Alpha", is_full_system=True,
+                                files=[str(path.relative_to(tmp_path)) for path in sorted(alpha.glob("*.py"))],
+                            ),
+                            SystemBoundary(
+                                system_id="SYS-2", name="Beta", is_full_system=True,
+                                files=[str(path.relative_to(tmp_path)) for path in sorted(beta.glob("*.py"))],
+                            ),
+                        ],
+                        inline_components=[SystemBoundary(
+                            system_id="COMP-9", name="Shared", is_full_system=False,
+                            files=["shared.py"],
+                        )],
+                    ),
+                    quality=QualityMetrics(score=100),
+                )
+
+        stages = _make_coordinator()._stages | {
+            "decompose": FixedDecompose(),
+            "synthesize": SynthesizeStage(),
+            "emit": EmitStage(),
+        }
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture")
+
+        result = PipelineCoordinator(stages).run_recursive(ctx)
+
+        root = load_model(tmp_path / ".architecture-model.yaml")
+        assert len(root.entities.systems) == 2
+        assert [component.name for component in root.entities.components] == ["Shared"]
+        assert root.entities.capabilities == [] and root.entities.behaviors == []
+        refs = [system.sub_model_ref for system in root.entities.systems]
+        assert len(set(refs)) == 2
+        submodels = [load_model(tmp_path / ref) for ref in refs]
+        assert all(model.entities.components and model.relationships for model in submodels)
+        assert all(not [i for i in validate_model(model).issues if i.severity.value == "ERROR"] for model in submodels)
+        assert not [i for i in validate_model(root).issues if i.severity.value == "ERROR"]
+        alpha_model = next(model for model in submodels if model.meta.system == "Alpha")
+        beta_model = next(model for model in submodels if model.meta.system == "Beta")
+        assert any("alpha" in artifact for artifact in alpha_model.meta.source_artifacts)
+        assert not any("alpha" in artifact for artifact in beta_model.meta.source_artifacts)
+        emit = result["results"]["emit"].output
+        assert emit.promoted and emit.final_model_score > 0
+        assert emit.extraction_score > 0
+        report = (tmp_path / ".architecture-models" / "pipeline-report.md").read_text()
+        assert "Final Model Score" in report and "Promoted:** yes" in report
+        viewer = generate_html_viewer(root, tmp_path / "viewer.html", repo_path=tmp_path).read_text()
+        assert "alpha::" in viewer and "beta::" in viewer
+
     def test_run_recursive_writes_artifacts(self, tmp_path):
         (tmp_path / "app.py").write_text("def main(): pass")
         ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture")
