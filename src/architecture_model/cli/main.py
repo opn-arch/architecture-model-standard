@@ -143,6 +143,9 @@ def main(argv: list[str] | None = None) -> int:
     p_viewer.add_argument("--title", help="Page title (default: project name from model meta)")
     p_viewer.add_argument("--no-docs", action="store_true", help="Skip embedding SE docs and operational artifacts")
     p_viewer.add_argument("--zip", action="store_true", help="Also produce a zip file alongside the HTML")
+    curation_group = p_viewer.add_mutually_exclusive_group()
+    curation_group.add_argument("--curation", metavar="PATH", help="Viewer curation YAML path")
+    curation_group.add_argument("--no-curation", action="store_true", help="Disable viewer curation auto-discovery")
 
     # --- repair ---
     p_repair = subparsers.add_parser("repair", help="Backfill missing entities from subsidiary models")
@@ -1138,10 +1141,13 @@ def _cmd_viewer(args) -> int:
     # Title
     title = args.title or getattr(model.meta, "project", "") or "Architecture Viewer"
 
-    # Repo path for doc/manifest embedding (None if --no-docs)
-    embed_repo = None if args.no_docs else repo_path
-
-    result_path = generate_html_viewer(model, output_path, title=title, repo_path=embed_repo)
+    curation_path = Path(args.curation) if getattr(args, "curation", None) else None
+    if curation_path is not None and not curation_path.is_file():
+        print(f"WARNING: Curation file is unreadable; using automatic views: {curation_path}")
+    result_path = generate_html_viewer(
+        model, output_path, title=title, repo_path=repo_path, include_docs=not args.no_docs,
+        curation_path=curation_path, use_curation=not getattr(args, "no_curation", False),
+    )
     size_kb = result_path.stat().st_size / 1024
     print(f"Viewer: {result_path} ({size_kb:.0f}KB)")
 

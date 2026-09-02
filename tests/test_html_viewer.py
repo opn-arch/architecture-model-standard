@@ -121,14 +121,14 @@ class TestHtmlViewerV2:
 
         assert not re.search(r"(?:src|href)=[\"']https?://", html)
 
-    def test_has_behavior_model_nav(self, tmp_path):
+    def test_has_use_cases_nav(self, tmp_path):
         html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
-        assert "Behavior Model" in html
+        assert "Use Cases" in html
 
     def test_has_7_se_views(self, tmp_path):
         html = (generate_html_viewer(_make_model(), tmp_path / "viewer.html")).read_text()
         for view in ["ConOps", "Functional Architecture", "Logical Architecture",
-                      "Behavior Model", "ICD", "Requirements", "System Decomposition"]:
+                     "Use Cases", "ICD", "Requirements", "System Decomposition"]:
             assert view in html, f"Missing SE view: {view}"
 
     def test_has_breadcrumb_support(self, tmp_path):

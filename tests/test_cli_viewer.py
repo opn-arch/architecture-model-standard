@@ -35,6 +35,28 @@ relationships:
 
 
 class TestViewerCLI:
+    def test_curation_and_no_curation_are_mutually_exclusive(self, model_dir):
+        curation = model_dir / "curation.yaml"
+        curation.write_text("version: 1\nviews: {}\n")
+        with pytest.raises(SystemExit):
+            main(["viewer", str(model_dir), "--curation", str(curation), "--no-curation"])
+
+    def test_explicit_invalid_curation_warns_and_exits_zero(self, model_dir, capsys):
+        out = model_dir / "viewer.html"
+        missing = model_dir / "missing.yaml"
+        rc = main(["viewer", str(model_dir), "-o", str(out), "--curation", str(missing)])
+        assert rc == 0
+        assert "warning" in capsys.readouterr().out.lower()
+        assert out.exists()
+
+    def test_no_curation_disables_default_discovery(self, model_dir):
+        curation = model_dir / ".architecture" / "viewer-curation.yaml"
+        curation.parent.mkdir()
+        curation.write_text("version: nope\n")
+        out = model_dir / "viewer.html"
+        assert main(["viewer", str(model_dir), "-o", str(out), "--no-curation"]) == 0
+        assert "CURATION_ROOT_INVALID" not in out.read_text()
+
     def test_generates_html_file(self, model_dir):
         out = model_dir / "viewer.html"
         rc = main(["viewer", str(model_dir), "-o", str(out)])
@@ -84,6 +106,7 @@ class TestViewerCLI:
         # Without docs should be smaller (or at least not contain the doc content)
         html = out2.read_text()
         assert "Big document content here" not in html
+        assert ".architecture/viewer-curation.yaml" in html
 
     def test_missing_model_returns_error(self, tmp_path):
         rc = main(["viewer", str(tmp_path)])

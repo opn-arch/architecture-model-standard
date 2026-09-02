@@ -21,6 +21,17 @@ from html import escape
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from .diagram_renderer import render_diagram_panel
+from .diagram_spec import Diagnostic, DiagramSpec
+from .se_view_projectors import (
+    project_conops,
+    project_functional_architecture,
+    project_logical_architecture,
+    project_use_cases,
+)
+from .view_context import ArchitectureViewContext
+from .view_curation import ViewCuration, load_viewer_curation
+
 if TYPE_CHECKING:
     from .types import ArchitectureModel
 
@@ -2341,6 +2352,9 @@ def generate_html_viewer(
     output_path: Path,
     title: str = "Architecture Viewer",
     repo_path: Path | None = None,
+    curation_path: Path | None = None,
+    use_curation: bool = True,
+    include_docs: bool = True,
 ) -> Path:
     """Generate a self-contained HTML viewer with 7 SE model views and universal click navigation.
 
@@ -2365,26 +2379,56 @@ def generate_html_viewer(
 
     output_path = Path(output_path)
 
-    # Collect all entity IDs for click injection
+    project_root = Path(repo_path).resolve() if repo_path is not None else output_path.parent.resolve()
+    view_context = ArchitectureViewContext.load(model, project_root)
+    curation = load_viewer_curation(project_root, view_context, curation_path) if use_curation else None
+    curation_candidate = Path(curation_path) if curation_path is not None else project_root / ".architecture/viewer-curation.yaml"
+    curation_candidate = curation_candidate if curation_candidate.is_absolute() else project_root / curation_candidate
+    curation_exists = use_curation and curation_candidate.is_file()
+    native_projectors = {
+        "conops": ("ConOps", "Concept of Operations", project_conops, "conops"),
+        "functional": ("Functional Architecture", "Functional Analysis (SA-4.2)", project_functional_architecture, "functional"),
+        "logical": ("Logical Architecture", "Logical Decomposition (SA-4.3)", project_logical_architecture, "logical"),
+        "use-cases": ("Use Cases", "Use Case Analysis", project_use_cases, "use_cases"),
+    }
+    se_views: dict[str, dict] = {}
+    for key, (label, subtitle, projector, curation_name) in native_projectors.items():
+        view_diagnostics = [item for item in (curation.diagnostics if curation else []) if not item.view or item.view == curation_name]
+        selected = getattr(curation.views, curation_name) if curation is not None else ViewCuration()
+        try:
+            spec = projector(view_context, selected)
+        except ValueError as exc:
+            diagnostic = Diagnostic(
+                "warning", "VIEW_PROJECTION_INVALID",
+                f"Unsafe or invalid presentation data omitted; automatic {label} view unavailable",
+                view=curation_name, source="model",
+            )
+            spec = DiagramSpec(key, label, subtitle, warnings=[diagnostic])
+            view_diagnostics.append(diagnostic)
+        spec.warnings.extend(item for item in view_context.diagnostics if item not in spec.warnings)
+        spec.warnings.extend(item for item in view_diagnostics if item not in spec.warnings)
+        panel = render_diagram_panel(spec)
+        se_views[key] = {
+            "label": label, "subtitle": subtitle, "renderer": "native",
+            "spec": spec.to_dict(), "panel": panel.to_dict(),
+            "warnings": [item.to_dict() for item in spec.warnings],
+            "curation": {
+                "status": "partial" if view_diagnostics else "curated" if curation_exists else "auto",
+                "path": str(curation_candidate) if use_curation else "disabled",
+            },
+        }
+
+    # Collect all entity IDs for compatibility Mermaid click injection.
     all_ids = model.all_entity_ids
 
-    # ── 1. Generate 7 SE overview diagrams (with click injection) ─
-    se_views: dict[str, dict[str, str]] = {
-        "conops": {"label": "ConOps", "subtitle": "Concept of Operations",
-                   "mermaid": inject_click_handlers(generate_conops_diagram(model), all_ids)},
-        "functional": {"label": "Functional Architecture", "subtitle": "Functional Analysis (SA-4.2)",
-                       "mermaid": inject_click_handlers(generate_functional_architecture_diagram(model), all_ids)},
-        "logical": {"label": "Logical Architecture", "subtitle": "Logical Decomposition (SA-4.3)",
-                    "mermaid": inject_click_handlers(generate_logical_architecture_diagram(model), all_ids)},
-        "behavior": {"label": "Behavior Model", "subtitle": "Use Case Analysis",
-                     "mermaid": inject_click_handlers(generate_behavior_overview_diagram(model), all_ids)},
+    se_views.update({
         "icd": {"label": "ICD", "subtitle": "Interface Control Document",
-                "mermaid": inject_click_handlers(generate_icd_diagram(model), all_ids)},
+                "renderer": "mermaid", "mermaid": inject_click_handlers(generate_icd_diagram(model), all_ids)},
         "requirements": {"label": "Requirements", "subtitle": "Requirements Analysis (SA-4.1)",
-                         "mermaid": inject_click_handlers(generate_requirements_allocation_diagram(model), all_ids)},
+                         "renderer": "mermaid", "mermaid": inject_click_handlers(generate_requirements_allocation_diagram(model), all_ids)},
         "systems": {"label": "System Decomposition", "subtitle": "Physical Architecture",
-                    "mermaid": inject_click_handlers(generate_system_decomposition_diagram(model), all_ids)},
-    }
+                    "renderer": "mermaid", "mermaid": inject_click_handlers(generate_system_decomposition_diagram(model), all_ids)},
+    })
 
     # ── 2. Entity categories for sidebar ──────────────────────────
     entity_categories: list[tuple[str, str, list]] = [
@@ -2481,10 +2525,10 @@ def generate_html_viewer(
     comp_modules.update(sub_comp_modules)
 
     # ── 5d. SE documents and component specs ──────────────────────
-    docs_data = _load_docs(repo_path)
+    docs_data = _load_docs(repo_path) if include_docs else {"se": {}, "components": {}}
 
     # ── 5e. Operational artifacts ─────────────────────────────────
-    ops_data = _load_ops_data(repo_path)
+    ops_data = _load_ops_data(repo_path) if include_docs else {}
 
     # ── 5f. Pipeline history ──────────────────────────────────────
     pipeline_history = _normalize_viewer_history(
@@ -2494,9 +2538,10 @@ def generate_html_viewer(
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "meta": {"project": model.meta.project},
-        "se_views": {k: {"label": v["label"], "subtitle": v["subtitle"], "mermaid": v["mermaid"],
-                         "svg": _render_mermaid_svg(v["mermaid"])}
-                     for k, v in se_views.items()},
+        "se_views": {
+            key: ({**view, "svg": _render_mermaid_svg(view["mermaid"])} if view["renderer"] == "mermaid" else view)
+            for key, view in se_views.items()
+        },
         "entities": explorer_data,
         "entity_svgs": {eid: {name: _render_mermaid_svg(code) for name, code in facets.items()}
                          for eid, facets in explorer_data.items()},
@@ -2684,6 +2729,16 @@ def generate_html_viewer(
         /* Diagram */
         .diagram-box {{ background: #0a0a1a; padding: 16px; border-radius: 6px;
                         border: 1px solid #0f3460; margin-bottom: 16px; overflow-x: auto; }}
+        .native-diagram-shell {{ position: relative; }}
+        .diagram-toolbar {{ position: sticky; top: 0; z-index: 2; display: flex; gap: 6px; padding: 6px; background: #11182c; }}
+        .diagram-viewport {{ overflow: auto; touch-action: none; cursor: grab; min-height: 220px; }}
+        .diagram-viewport.is-panning {{ cursor: grabbing; }}
+        .diagram-canvas {{ transform-origin: 0 0; }}
+        .diagram-canvas svg {{ min-width: 640px; }}
+        .diagram-node[tabindex] {{ cursor: pointer; }}
+        .diagram-facets {{ display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; font-size: 12px; }}
+        .diagram-legend, .diagram-status, .diagram-warnings, .diagram-provenance {{ margin: 8px 0; padding: 8px; background: #11182c; border: 1px solid #0f3460; border-radius: 4px; font-size: 12px; }}
+        .facet-hidden {{ display: none !important; }}
         .accordion {{ border-bottom: 1px solid #0f3460; }}
         .accordion-header {{ padding: 10px 0; cursor: pointer; color: #7ec8e3; font-size: 14px;
                              user-select: none; }}
@@ -2764,6 +2819,12 @@ def generate_html_viewer(
                           border-left: 3px solid #4a90d9; border-radius: 4px; background: #11182c; }}
         .decision-choice {{ color: #7ec8e3; font-weight: 700; margin-bottom: 6px; }}
         .decision-row {{ color: #c0c0d0; font-size: 12px; line-height: 1.5; }}
+        @media print {{
+            .sidebar, .hamburger, body > div, .diagram-toolbar, .diagram-facets, .comment-section {{ display: none !important; }}
+            .content {{ margin: 0; padding: 0; }}
+            body, .diagram-box {{ background: #fff; color: #000; border: 0; }}
+            .diagram-viewport {{ overflow: visible; }}
+        }}
     </style>
 </head>
 <body>
@@ -3142,6 +3203,7 @@ def generate_html_viewer(
             storageSet(commentKey(kind, id), val);
         }}
         function knownCommentToken(token) {{
+            if (token.indexOf('view:') === 0) return true;
             if (token.indexOf('module:') === 0) {{
                 var path;
                 try {{ path = decodeURIComponent(token.substring(7)); }} catch (e) {{ return false; }}
@@ -3191,7 +3253,7 @@ def generate_html_viewer(
                 }}
                 for (var i = 0; i < lines.length; i++) {{
                     var line = lines[i];
-                    if (line.match(/^(?:"[^"]+"|[A-Z][A-Z0-9_-]+.*):$/)) {{
+                    if (line.match(/^(?:"[^"]+"|view:.+|[A-Z][A-Z0-9_-]+.*):$/)) {{
                         flushComment();
                         var candidate = line.replace(/:$/, '').trim();
                         if (candidate.charAt(0) === '"' && candidate.charAt(candidate.length - 1) === '"') candidate = candidate.slice(1, -1);
@@ -3208,6 +3270,98 @@ def generate_html_viewer(
                 input.value = '';
             }};
             try {{ reader.readAsText(file); }} catch (e) {{ input.value = ''; }}
+        }}
+        function viewCommentId(viewKey, specId) {{ return 'view:' + viewKey + ':' + specId; }}
+        function resolveNativeEntity(ref) {{
+            if (D.properties[ref]) return ref;
+            if (ref.indexOf('root::') === 0 && D.properties[ref.substring(6)]) return ref.substring(6);
+            return ref;
+        }}
+        function facetFor(element) {{
+            var kind = element.dataset.kind || '';
+            if (kind === 'requirement' || kind === 'quality-attribute' || kind === 'moe') return 'requirements';
+            if (kind.indexOf('failure') >= 0 || kind.indexOf('degraded') >= 0) return 'failures';
+            if (kind.indexOf('monitor') >= 0 || kind.indexOf('observ') >= 0) return 'monitoring';
+            if (element.dataset.inferred === 'true' || element.classList.contains('is-inferred')) return 'inferred';
+            if (kind.indexOf('depend') >= 0 || element.classList.contains('is-critical')) return 'dependencies';
+            return '';
+        }}
+        function updateDiagramVisibility(shell) {{
+            var hidden = {{}};
+            shell.querySelectorAll('[data-facet]').forEach(function(input) {{ hidden[input.dataset.facet] = !input.checked; }});
+            var visible = 0;
+            shell.querySelectorAll('.diagram-node, .diagram-edge').forEach(function(item) {{
+                var hide = hidden[facetFor(item)] === true;
+                item.classList.toggle('facet-hidden', hide);
+                if (!hide) visible++;
+            }});
+            var count = shell.querySelector('[data-visible-count]');
+            if (count) count.textContent = String(visible);
+            shell.querySelectorAll('[data-legend-facet]').forEach(function(item) {{ item.classList.toggle('facet-hidden', hidden[item.dataset.legendFacet] === true); }});
+        }}
+        function wireNativePanel(shell, viewKey, panel) {{
+            var viewport = shell.querySelector('.diagram-viewport');
+            var canvas = shell.querySelector('.diagram-canvas');
+            var state = {{scale: 1, x: 0, y: 0, dragging: false, px: 0, py: 0}};
+            function transform() {{ canvas.style.transform = 'translate(' + state.x + 'px,' + state.y + 'px) scale(' + state.scale + ')'; }}
+            function diagramAction(action) {{
+                if (action === 'zoom-in') state.scale = Math.min(4, state.scale * 1.2);
+                if (action === 'zoom-out') state.scale = Math.max(.25, state.scale / 1.2);
+                if (action === 'fit') state.scale = Math.min(1, viewport.clientWidth / Math.max(panel.width, 1));
+                if (action === 'reset') state = {{scale: 1, x: 0, y: 0, dragging: false, px: 0, py: 0}};
+                transform();
+            }}
+            shell.querySelectorAll('[data-diagram-action]').forEach(function(button) {{ button.addEventListener('click', function() {{ diagramAction(this.dataset.diagramAction); }}); }});
+            shell.querySelectorAll('[data-facet]').forEach(function(input) {{ input.addEventListener('change', function() {{ updateDiagramVisibility(shell); }}); }});
+            shell.querySelectorAll('.diagram-node[data-drilldown-ref], .diagram-node[data-entity-ref]').forEach(function(node) {{
+                node.setAttribute('tabindex', '0'); node.setAttribute('role', 'button');
+                node.setAttribute('aria-label', node.textContent.trim() || 'Open diagram node');
+                function activate(ev) {{
+                    if (ev) ev.preventDefault();
+                    if (node.dataset.drilldownRef) showDrilldown(viewKey, node.dataset.drilldownRef, node.dataset.entityRef);
+                    else if (node.dataset.entityRef) showEntity(resolveNativeEntity(node.dataset.entityRef));
+                }}
+                node.addEventListener('click', activate);
+                node.addEventListener('keydown', function(ev) {{ if (ev.key === 'Enter' || ev.key === ' ') activate(ev); }});
+            }});
+            viewport.addEventListener('pointerdown', function(ev) {{ state.dragging = true; state.px = ev.clientX; state.py = ev.clientY; viewport.classList.add('is-panning'); }});
+            viewport.addEventListener('pointermove', function(ev) {{ if (!state.dragging) return; state.x += ev.clientX - state.px; state.y += ev.clientY - state.py; state.px = ev.clientX; state.py = ev.clientY; transform(); }});
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(name) {{ viewport.addEventListener(name, function() {{ state.dragging = false; viewport.classList.remove('is-panning'); }}); }});
+            shell.addEventListener('keydown', function(ev) {{
+                if (ev.target.tagName === 'TEXTAREA' || ev.target.tagName === 'INPUT') return;
+                if (ev.key === '+' || ev.key === '=') diagramAction('zoom-in');
+                if (ev.key === '-') diagramAction('zoom-out');
+                if (ev.key === '0') diagramAction('reset');
+            }});
+            updateDiagramVisibility(shell);
+        }}
+        function nativePanelHtml(viewKey, view, panel, entityRef) {{
+            var html = '<div class="native-diagram-shell" tabindex="0"><div class="diagram-toolbar" role="toolbar" aria-label="Diagram controls">';
+            [['zoom-in','Zoom in'],['zoom-out','Zoom out'],['fit','Fit diagram'],['reset','Reset diagram']].forEach(function(item) {{ html += '<button class="toolbar-btn" data-diagram-action="' + item[0] + '" aria-label="' + item[1] + '">' + item[1] + '</button>'; }});
+            html += '</div><div class="diagram-facets" aria-label="Diagram facets">';
+            [['requirements','Requirements / MoE'],['failures','Failures / degraded'],['monitoring','Monitoring'],['inferred','Inferred'],['dependencies','Dependencies / cycles']].forEach(function(item) {{ html += '<label><input type="checkbox" checked data-facet="' + item[0] + '"> ' + item[1] + '</label>'; }});
+            html += '<span>Visible: <span data-visible-count>0</span></span></div><div class="diagram-viewport"><div class="diagram-canvas">' + panel.svg + '</div></div>';
+            html += '<div class="diagram-legend"><strong>Legend</strong>: ' + (view.spec.legend || []).map(function(item) {{ var facet = facetFor({{dataset: {{kind: item.kind}}, classList: {{contains: function() {{ return false; }}}}}}); return '<span data-legend-facet="' + facet + '">' + escapeHtml(item.label) + '</span>'; }}).join(', ') + '</div>';
+            html += '<div class="diagram-status"><strong>Curation:</strong> ' + escapeHtml(view.curation.status) + ' (' + escapeHtml(view.curation.path) + ')</div>';
+            if (view.warnings && view.warnings.length) html += '<div class="diagram-warnings"><strong>Warnings</strong><br>' + view.warnings.map(function(item) {{ return escapeHtml(item.code + ': ' + item.message); }}).join('<br>') + '</div>';
+            var provenance = panel.provenance || {{}};
+            html += '<div class="diagram-provenance"><strong>Provenance:</strong> ' + escapeHtml(provenance.source || 'model') + '; ' + (provenance.entity_refs || []).length + ' entities</div>';
+            if (entityRef) html += '<p><a href="#" data-entity-detail="' + escapeHtml(entityRef) + '">Open entity detail</a></p>';
+            var comment = commentHtml('view', viewCommentId(viewKey, panel.diagram_id), 'Add notes about this architecture view...');
+            return {{html: html + comment.html + '</div>', comment: comment.value}};
+        }}
+        function showDrilldown(viewKey, drilldownRef, entityRef) {{
+            var view = D.se_views[viewKey];
+            var panel = view && view.panel && view.panel.drilldowns[drilldownRef];
+            if (!panel) return;
+            navHistory.push({{type: 'view', id: viewKey, label: view.label}});
+            content.dataset.currentType = 'drilldown'; content.dataset.currentId = viewKey + ':' + drilldownRef; content.dataset.currentLabel = panel.diagram_id;
+            var rendered = nativePanelHtml(viewKey, view, panel, entityRef);
+            content.innerHTML = renderBreadcrumbs(panel.diagram_id) + '<h2 class="content-header">' + escapeHtml(panel.diagram_id) + '</h2>' + rendered.html;
+            wireComment(content.querySelector('.comment-textarea'), rendered.comment);
+            wireNativePanel(content.querySelector('.native-diagram-shell'), viewKey, panel);
+            var detail = content.querySelector('[data-entity-detail]');
+            if (detail) detail.addEventListener('click', function(ev) {{ ev.preventDefault(); showEntity(resolveNativeEntity(this.dataset.entityDetail)); }});
         }}
         function showView(key, pushHistory) {{
             var v = D.se_views[key];
@@ -3228,7 +3382,12 @@ def generate_html_viewer(
             html += '<div class="content-subtitle">' + v.subtitle + '</div>';
             html += '<div class="diagram-box" id="dia-main"></div>';
             content.innerHTML = html;
-            renderMermaid(document.getElementById('dia-main'), v.mermaid, v.svg);
+            if (v.renderer === 'native') {{
+                var rendered = nativePanelHtml(key, v, v.panel, '');
+                document.getElementById('dia-main').innerHTML = rendered.html;
+                wireComment(content.querySelector('.comment-textarea'), rendered.comment);
+                wireNativePanel(content.querySelector('.native-diagram-shell'), key, v.panel);
+            }} else renderMermaid(document.getElementById('dia-main'), v.mermaid, v.svg);
             closeMobileNav();
         }}
 
@@ -3859,7 +4018,9 @@ def generate_entity_explorer(
     return facets
 
 
-def generate_all_diagrams(model: "ArchitectureModel", output_dir: Path) -> dict[str, Path]:
+def generate_all_diagrams(
+    model: "ArchitectureModel", output_dir: Path, repo_path: Path | None = None,
+) -> dict[str, Path]:
     """Generate all 10 standard diagrams and write to output_dir.
 
     Returns dict mapping diagram name to file path.
@@ -3906,5 +4067,18 @@ def generate_all_diagrams(model: "ArchitectureModel", output_dir: Path) -> dict[
         path = output_dir / f"{name}.mmd"
         path.write_text(content + "\n")
         paths[name] = path
+
+    if repo_path is not None:
+        context = ArchitectureViewContext.load(model, repo_path)
+        specs = {
+            "conops": project_conops(context),
+            "functional-architecture": project_functional_architecture(context),
+            "logical-architecture": project_logical_architecture(context),
+            "use-cases": project_use_cases(context),
+        }
+        for name, spec in specs.items():
+            path = output_dir / f"{name}.svg"
+            path.write_text(render_diagram_panel(spec).svg + "\n", encoding="utf-8")
+            paths[name] = path
 
     return paths
