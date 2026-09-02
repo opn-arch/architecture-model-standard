@@ -6,6 +6,7 @@ import json
 import hashlib
 import re
 import time
+from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -49,7 +50,10 @@ def _capability_dict(
     result.setdefault("id", getattr(cap, "id", ""))
     result.setdefault("name", getattr(cap, "name", ""))
     result.setdefault("status", "ACTIVE")
-    for field in ("description", "intent", "goals", "failure_modes", "monitored"):
+    for field in (
+        "description", "intent", "goals", "requirements", "rationale", "moes",
+        "value_function", "failure_modes", "trade_offs", "interface_refs", "monitored",
+    ):
         value = getattr(cap, field, None)
         if value and not result.get(field):
             result[field] = value
@@ -209,6 +213,81 @@ def _system_slugs(systems: list[SystemModel]) -> dict[str, str]:
     return result
 
 
+def _normalized_path(path: Any) -> str:
+    """Normalize evidence paths for stable boundary comparisons."""
+    return Path(str(path)).as_posix().lstrip("./")
+
+
+def _interface_type(value: str) -> str:
+    """Map extraction interface categories to canonical schema values."""
+    return {
+        "rest": "REST",
+        "websocket": "WebSocket",
+        "event": "message-queue",
+        "cli": "internal",
+        "grpc": "internal",
+        "library": "internal",
+    }.get(value.lower(), value)
+
+
+def _evidence_files(metadata: dict[str, Any]) -> set[str]:
+    """Collect every file selector supported by structured resolutions."""
+    files: set[str] = set()
+    for field in ("source_files", "files_sent"):
+        value = metadata.get(field, [])
+        if isinstance(value, (str, Path)):
+            value = [value]
+        files.update(_normalized_path(path) for path in value)
+    allocations = metadata.get("file_allocations", {})
+    if isinstance(allocations, dict):
+        files.update(_normalized_path(path) for path in allocations)
+    elif isinstance(allocations, list):
+        for allocation in allocations:
+            if isinstance(allocation, dict):
+                path = allocation.get("file") or allocation.get("source_file")
+                if path:
+                    files.add(_normalized_path(path))
+            elif allocation:
+                files.add(_normalized_path(allocation))
+    return files
+
+
+def _scoped_evidence(
+    ctx: PipelineContext, boundary: SystemBoundary
+) -> tuple[list[Any], list[LLMCallRecord]]:
+    """Select boundary-local corrections and their exact LLM provenance."""
+    boundary_files = {_normalized_path(path) for path in boundary.files}
+    calls_by_resolution = {
+        call.resolution_id: call for call in ctx.llm_calls if call.resolution_id
+    }
+
+    def _matches(evidence: Any) -> bool:
+        if evidence.metadata.get("shared") is True or evidence.metadata.get("project_wide") is True:
+            return True
+        files = _evidence_files(evidence.metadata)
+        resolution_id = str(evidence.metadata.get("resolution_id", ""))
+        call = calls_by_resolution.get(resolution_id)
+        if call:
+            files.update(_normalized_path(path) for path in call.files_sent)
+        return bool(files & boundary_files)
+
+    corrections = [
+        evidence
+        for evidence in ctx.prior_corrections
+        if _matches(evidence)
+    ]
+    resolution_ids = {
+        str(evidence.metadata.get("resolution_id"))
+        for evidence in corrections
+        if evidence.metadata.get("resolution_id")
+    }
+    calls = [
+        call for call in ctx.llm_calls
+        if call.resolution_id and call.resolution_id in resolution_ids
+    ]
+    return corrections, calls
+
+
 def _build_system_model_yaml(
     boundary: SystemBoundary,
     results: dict[str, StageResult],
@@ -220,12 +299,28 @@ def _build_system_model_yaml(
     relationships: list[dict[str, Any]] = []
 
     id_remap: dict[str, str] = {}
+    selected_component_ids: set[str] = set()
+    used_local_ids: set[str] = set()
 
     def _register_id(original_id: str) -> str:
         """Register and return one canonical subsystem ID mapping."""
         if not original_id:
             return original_id
-        return id_remap.setdefault(original_id, _schema_id(original_id))
+        if original_id in id_remap:
+            return id_remap[original_id]
+        candidate = _schema_id(original_id)
+        if candidate in used_local_ids:
+            digest = hashlib.sha256(original_id.encode()).hexdigest()
+            length = 8
+            candidate = f"{candidate}-{digest[:length]}"
+            while candidate in used_local_ids:
+                length += 2
+                candidate = f"{_schema_id(original_id)}-{digest[:length]}"
+        id_remap[original_id] = candidate
+        used_local_ids.add(candidate)
+        return candidate
+
+    file_set = {_normalized_path(path) for path in boundary.files}
 
     # Extract from allocate results
     alloc_result = results.get("allocate")
@@ -233,27 +328,54 @@ def _build_system_model_yaml(
         output = alloc_result.output
         if hasattr(output, "components"):
             for comp in output.components:
+                comp_files = {_normalized_path(path) for path in getattr(comp, "files", [])}
+                if file_set and not comp_files.intersection(file_set):
+                    continue
                 namespaced_id = _register_id(comp.id)
+                selected_component_ids.add(comp.id)
                 comp_dict: dict[str, Any] = {
                     "id": namespaced_id, "name": comp.name, "status": "ACTIVE"
                 }
                 if hasattr(comp, "files") and comp.files:
-                    comp_dict["files"] = [str(f) for f in comp.files]
+                    comp_dict["files"] = [
+                        str(path) for path in comp.files
+                        if not file_set or _normalized_path(path) in file_set
+                    ]
+                typed_interfaces = getattr(comp, "interfaces", None)
+                if typed_interfaces:
+                    comp_dict["interfaces"] = [
+                        asdict(item) if is_dataclass(item) else dict(item)
+                        for item in typed_interfaces
+                    ]
                 components.append(comp_dict)
+
+    comp_ids = {c["id"] for c in components}
+    raw_relationships = getattr(
+        getattr(results.get("relate"), "output", None), "relationships", []
+    )
+    realized_cap_ids = {
+        rel.to_id for rel in raw_relationships
+        if rel.from_id in selected_component_ids and rel.rel_type == "realizes"
+    }
 
     # Extract from infer results
     infer_result = results.get("infer")
+    selected_capability_ids: set[str] = set()
     if infer_result and infer_result.output:
         output = infer_result.output
         if hasattr(output, "capabilities"):
             for cap in output.capabilities:
+                cap_sources = {
+                    _normalized_path(path) for path in getattr(cap, "source_files", [])
+                }
+                if file_set and not cap_sources.intersection(file_set) and cap.id not in realized_cap_ids:
+                    continue
                 cap_dict = _capability_dict(cap)
+                selected_capability_ids.add(cap.id)
                 cap_dict["id"] = _register_id(cap.id)
                 capabilities.append(cap_dict)
 
     cap_ids = {c["id"] for c in capabilities}
-    comp_ids = {c["id"] for c in components}
-    file_set = set(boundary.files)
 
     # Extract behaviors from infer results (filter by capability_id)
     behaviors: list[dict[str, Any]] = []
@@ -261,6 +383,14 @@ def _build_system_model_yaml(
         output = infer_result.output
         if hasattr(output, "behaviors"):
             for beh in output.behaviors:
+                source_file = _normalized_path(getattr(beh, "source_file", ""))
+                if (
+                    file_set
+                    and source_file not in file_set
+                    and beh.capability_id not in selected_capability_ids
+                    and not (boundary.is_full_system and not source_file)
+                ):
+                    continue
                 capability_id = (
                     _register_id(beh.capability_id) if beh.capability_id else ""
                 )
@@ -315,6 +445,8 @@ def _build_system_model_yaml(
         output = specify_result.output
         if hasattr(output, "interfaces"):
             for iface in output.interfaces:
+                if iface.component_id not in selected_component_ids:
+                    continue
                 namespaced_comp_id = _register_id(iface.component_id)
                 if namespaced_comp_id not in comp_ids:
                     continue
@@ -322,14 +454,17 @@ def _build_system_model_yaml(
                     "id": _register_id(iface.id),
                     "name": iface.name,
                     "status": "ACTIVE",
-                    "interface_type": iface.interface_type,
-                    "component_id": namespaced_comp_id,
+                    "type": _interface_type(iface.interface_type),
+                    "provider": namespaced_comp_id,
                 }
                 if iface.methods:
                     iface_dict["methods"] = iface.methods
                 if iface.description:
                     iface_dict["description"] = iface.description
                 interfaces.append(iface_dict)
+                relationships.append(
+                    {"from": namespaced_comp_id, "to": iface_dict["id"], "type": "exposes"}
+                )
 
     requirements: list[dict[str, Any]] = []
     if (
@@ -337,12 +472,14 @@ def _build_system_model_yaml(
         and specify_result.output
         and hasattr(specify_result.output, "requirements")
     ):
-        requirements = _merge_requirements(
-            [_requirement_dict(req) for req in specify_result.output.requirements]
-        )
+        scoped_requirements = [
+            req for req in specify_result.output.requirements
+            if not file_set or _normalized_path(req.source_file) in file_set
+        ]
+        requirements = _merge_requirements([_requirement_dict(req) for req in scoped_requirements])
         requirement_source_by_key = {
             _requirement_key(_requirement_dict(req)): req.source_file
-            for req in specify_result.output.requirements
+            for req in scoped_requirements
         }
         for requirement in requirements:
             requirement["id"] = _register_id(requirement["id"])
@@ -367,7 +504,7 @@ def _build_system_model_yaml(
         output = observe_result.output
         if hasattr(output, "constraints"):
             for i, con in enumerate(output.constraints):
-                if con.source not in file_set:
+                if file_set and _normalized_path(con.source) not in file_set:
                     continue
                 con_dict: dict[str, Any] = {
                     "id": _register_id(f"CON-{i + 1}"),
@@ -379,6 +516,18 @@ def _build_system_model_yaml(
                 if con.constraint_type:
                     con_dict["constraint_type"] = con.constraint_type
                 constraints.append(con_dict)
+                component_id = next(
+                    (
+                        comp["id"] for comp in components
+                        if _normalized_path(con.source)
+                        in {_normalized_path(path) for path in comp.get("files", [])}
+                    ),
+                    "",
+                )
+                if component_id:
+                    relationships.append(
+                        {"from": component_id, "to": con_dict["id"], "type": "constrained-by"}
+                    )
 
     # Derive layers from unique layer values on components
     layers: list[dict[str, Any]] = []
@@ -389,6 +538,8 @@ def _build_system_model_yaml(
         and hasattr(alloc_result.output, "components")
     ):
         for comp in alloc_result.output.components:
+            if comp.id not in selected_component_ids:
+                continue
             layer = getattr(comp, "layer", "")
             if layer and layer not in seen_layers:
                 seen_layers.add(layer)
@@ -438,6 +589,127 @@ def _build_system_model_yaml(
             if component_id and target_id and key not in relationship_keys:
                 relationships.append({"from": component_id, "to": target_id, "type": rel_type})
                 relationship_keys.add(key)
+
+    capabilities_by_id = {capability["id"]: capability for capability in capabilities}
+    requirements_by_file: dict[str, list[str]] = {}
+    requirements_by_id = {requirement["id"]: requirement for requirement in requirements}
+    for requirement in requirements:
+        requirements_by_file.setdefault(
+            _normalized_path(requirement.get("source_file", "")), []
+        ).append(requirement["id"])
+    interfaces_by_component: dict[str, list[str]] = {}
+    for interface in interfaces:
+        interfaces_by_component.setdefault(interface["provider"], []).append(interface["id"])
+    realized_by_component: dict[str, list[dict[str, Any]]] = {}
+    for relationship in relationships:
+        if relationship["type"] == "realizes" and relationship["to"] in capabilities_by_id:
+            realized_by_component.setdefault(relationship["from"], []).append(
+                capabilities_by_id[relationship["to"]]
+            )
+
+    def _unique(values: list[Any]) -> list[Any]:
+        return list(dict.fromkeys(value for value in values if value))
+
+    component_by_file = {
+        _normalized_path(path): component["id"]
+        for component in components for path in component.get("files", [])
+    }
+    for component in components:
+        realized = realized_by_component.get(component["id"], [])
+        owned_files = [_normalized_path(path) for path in component.get("files", [])]
+        requirement_ids = _unique([
+            requirement_id
+            for path in owned_files for requirement_id in requirements_by_file.get(path, [])
+        ])
+        interface_ids = interfaces_by_component.get(component["id"], [])
+        if realized:
+            intents = _unique([capability.get("intent") for capability in realized])
+            if intents:
+                component["intent"] = intents[0] if len(intents) == 1 else "; ".join(intents)
+            for field in ("goals", "failure_modes", "monitored", "moes", "trade_offs"):
+                values = _unique([
+                    value for capability in realized for value in capability.get(field, [])
+                ])
+                if values:
+                    component[field] = values
+            value_functions = _unique([
+                capability.get("value_function") for capability in realized
+            ])
+            if value_functions:
+                component["value_function"] = value_functions[0]
+            component["responsibilities"] = _unique(
+                [capability["name"] for capability in realized]
+                + [goal for capability in realized for goal in capability.get("goals", [])]
+            )
+            component.setdefault("extensions", {})["semantic_derivation"] = {
+                "method": "realized_capabilities",
+                "capabilities": [capability["id"] for capability in realized],
+            }
+        if requirement_ids:
+            component["requirements"] = requirement_ids
+            requirement_sources = [requirements_by_id[item] for item in requirement_ids]
+            if not component.get("rationale"):
+                rationales = _unique([item.get("rationale") for item in requirement_sources])
+                if rationales:
+                    component["rationale"] = "; ".join(rationales)
+            if not component.get("moes"):
+                moes = _unique([
+                    moe for item in requirement_sources
+                    for moe in item.get("moes", []) or [item.get("moe")]
+                ])
+                if moes:
+                    component["moes"] = moes
+            if not component.get("value_function"):
+                value_functions = _unique([
+                    item.get("value_function") for item in requirement_sources
+                ])
+                if value_functions:
+                    component["value_function"] = value_functions[0]
+            component.setdefault("extensions", {}).setdefault(
+                "semantic_derivation", {"method": "source_ownership"}
+            )["requirements"] = requirement_ids
+        if interface_ids:
+            component["interface_refs"] = interface_ids
+
+    for capability in capabilities:
+        realizing_components = [
+            component for component in components
+            if capability in realized_by_component.get(component["id"], [])
+        ]
+        requirement_ids = _unique([
+            requirement_id for component in realizing_components
+            for requirement_id in component.get("requirements", [])
+        ])
+        interface_ids = _unique([
+            interface_id for component in realizing_components
+            for interface_id in component.get("interface_refs", [])
+        ])
+        if requirement_ids:
+            capability["requirements"] = _unique(capability.get("requirements", []) + requirement_ids)
+        if interface_ids:
+            capability["interface_refs"] = _unique(capability.get("interface_refs", []) + interface_ids)
+
+    for behavior in behaviors:
+        component_id = component_by_file.get(_normalized_path(behavior.get("source_file", "")))
+        component = next((item for item in components if item["id"] == component_id), None)
+        if component:
+            if component.get("requirements"):
+                behavior["requirements"] = list(component["requirements"])
+            if component.get("interface_refs"):
+                behavior["interface_refs"] = list(component["interface_refs"])
+
+    local_ids = {
+        entity["id"]
+        for group in (
+            components, capabilities, behaviors, actors, interfaces,
+            constraints, requirements, layers,
+        )
+        for entity in group
+    }
+    relationships = [
+        relationship for relationship in relationships
+        if relationship["from"] in local_ids and relationship["to"] in local_ids
+    ]
 
     model_dict: dict[str, Any] = {
         "meta": {
@@ -493,6 +765,46 @@ def _build_manifest_json(results: dict[str, StageResult]) -> str:
     return json.dumps({"modules": modules}, indent=2)
 
 
+def _unique_inline_id(original_id: str, boundary_id: str, used_ids: set[str]) -> str:
+    """Allocate a deterministic schema-safe ID for an inline projection."""
+    candidate = _schema_id(original_id)
+    if candidate not in used_ids:
+        used_ids.add(candidate)
+        return candidate
+    digest = hashlib.sha256(f"{boundary_id}:{original_id}".encode()).hexdigest()
+    candidate = f"{candidate}-{digest[:8]}"
+    length = 10
+    while candidate in used_ids:
+        candidate = f"{_schema_id(original_id)}-{digest[:length]}"
+        length += 2
+    used_ids.add(candidate)
+    return candidate
+
+
+def _rewrite_inline_refs(value: Any, id_remap: dict[str, str]) -> Any:
+    """Rewrite entity references throughout an inline projection."""
+    if isinstance(value, list):
+        return [_rewrite_inline_refs(item, id_remap) for item in value]
+    if not isinstance(value, dict):
+        return value
+    reference_fields = {
+        "from", "to", "component_ref", "component_id", "provider", "consumer",
+        "actor_id", "capability_id", "parent_id", "target_component",
+    }
+    list_reference_fields = {
+        "requirements", "interface_refs", "component_ids", "children", "triggers",
+    }
+    rewritten: dict[str, Any] = {}
+    for key, item in value.items():
+        if key in reference_fields and isinstance(item, str):
+            rewritten[key] = id_remap.get(item, item)
+        elif key in list_reference_fields and isinstance(item, list):
+            rewritten[key] = [id_remap.get(ref, ref) for ref in item]
+        else:
+            rewritten[key] = _rewrite_inline_refs(item, id_remap)
+    return rewritten
+
+
 def _build_sos_model(
     systems: list[SystemModel],
     inlines: list[SystemBoundary],
@@ -533,6 +845,15 @@ def _build_sos_model(
         f".architecture-models/{slugs[system.system_id]}/.architecture-model.yaml"
         for system in systems if system.model_yaml
     ] + [str(path) for boundary in inlines for path in boundary.files]
+    system_entities = [
+        {
+            "id": _schema_id(s.system_id),
+            "name": s.name,
+            "status": "ACTIVE",
+            "sub_model_ref": f".architecture-models/{slugs[s.system_id]}/.architecture-model.yaml",
+        }
+        for s in systems if s.model_yaml
+    ]
     sos_dict: dict[str, Any] = {
         "meta": {
             "project": project_name or "System-of-Systems",
@@ -542,15 +863,7 @@ def _build_sos_model(
             "source_artifacts": source_artifacts,
         },
         "entities": {
-            "systems": [
-                {
-                    "id": _schema_id(s.system_id),
-                    "name": s.name,
-                    "status": "ACTIVE",
-                    "sub_model_ref": f".architecture-models/{slugs[s.system_id]}/.architecture-model.yaml",
-                }
-                for s in systems if s.model_yaml
-            ],
+            "systems": system_entities,
         },
         "relationships": inter_system_interfaces,
     }
@@ -560,12 +873,49 @@ def _build_sos_model(
         sos_dict["entities"]["capabilities"] = capabilities
     if behaviors:
         sos_dict["entities"]["behaviors"] = behaviors
-    # Add inline components
-    if inlines:
-        sos_dict["entities"]["components"] = [
-            {"id": _schema_id(i.system_id), "name": i.name, "status": "ACTIVE", "files": i.files}
-            for i in inlines
-        ]
+    used_ids = {
+        entity["id"]
+        for group in sos_dict["entities"].values()
+        for entity in group
+        if entity.get("id")
+    }
+    inline_relationships: list[dict[str, Any]] = []
+    for boundary in inlines:
+        projection = yaml.safe_load(
+            _build_system_model_yaml(boundary, top_results, project_name)
+        )
+        projected_entities = projection.get("entities", {})
+        if not projected_entities.get("components"):
+            projected_entities["components"] = [{
+                "id": _schema_id(boundary.system_id),
+                "name": boundary.name,
+                "status": "ACTIVE",
+                "files": list(boundary.files),
+            }]
+        id_remap: dict[str, str] = {}
+        for group_name, entities in projected_entities.items():
+            if group_name == "actors":
+                continue
+            for entity in entities:
+                original_id = entity.get("id", "")
+                if original_id:
+                    id_remap[original_id] = _unique_inline_id(
+                        original_id, boundary.system_id, used_ids
+                    )
+        for group_name, entities in projected_entities.items():
+            if group_name == "actors":
+                continue
+            target = sos_dict["entities"].setdefault(group_name, [])
+            for entity in entities:
+                rewritten = _rewrite_inline_refs(entity, id_remap)
+                if entity.get("id"):
+                    rewritten["id"] = id_remap[entity["id"]]
+                target.append(rewritten)
+        inline_relationships.extend(
+            _rewrite_inline_refs(relationship, id_remap)
+            for relationship in projection.get("relationships", [])
+        )
+    sos_dict["relationships"].extend(inline_relationships)
 
     sos_yaml = yaml.dump(sos_dict, default_flow_style=False, sort_keys=False)
 
@@ -666,6 +1016,7 @@ class SynthesizeStage:
                 )
             elif coordinator is not None:
                 # Create scoped context and run deterministically
+                prior_corrections, provenance_calls = _scoped_evidence(ctx, boundary)
                 sub_ctx = PipelineContext(
                     repo_path=ctx.repo_path,
                     output_dir=ctx.output_dir / slug,
@@ -676,6 +1027,8 @@ class SynthesizeStage:
                     invocation_source=ctx.invocation_source,
                     invocation="synthesize",
                     parent_run_id=ctx.run_id or None,
+                    prior_corrections=prior_corrections,
+                    llm_calls=provenance_calls,
                 )
 
                 sub_results = coordinator.run_to(last_stage, sub_ctx)

@@ -9,7 +9,7 @@ from architecture_model.pipeline.relate import RelateStage
 from architecture_model.pipeline.specify import SpecifyStage
 from architecture_model.pipeline.contract import ContractStage
 from architecture_model.pipeline.validate import ValidateStage
-from architecture_model.pipeline.protocol import PipelineContext
+from architecture_model.pipeline.protocol import Evidence, LLMCallRecord, PipelineContext
 from architecture_model.pipeline.protocol import QualityMetrics, StageResult
 from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
 from architecture_model.pipeline.synthesize import SynthesizeStage
@@ -33,6 +33,134 @@ def _make_coordinator():
 
 
 class TestRecursiveDecomposition:
+    def test_five_file_system_and_two_inline_components_preserve_scoped_architecture(self, tmp_path):
+        subsystem = tmp_path / "engine"
+        subsystem.mkdir()
+        for index in range(5):
+            (subsystem / f"worker_{index}.py").write_text(
+                f'MIN_BATCH_{index} = {index + 5}\n\ndef process_{index}():\n    return MIN_BATCH_{index}\n'
+            )
+        (tmp_path / "inline_a.py").write_text(
+            "from fastapi import APIRouter\nrouter = APIRouter()\n"
+            "INLINE_A_LIMIT = 7\n"
+            "@router.get('/inline-a')\ndef inline_a(): return INLINE_A_LIMIT\n"
+        )
+        (tmp_path / "inline_b.py").write_text(
+            "from fastapi import APIRouter\nrouter = APIRouter()\n"
+            "INLINE_B_LIMIT = 9\n"
+            "@router.get('/inline-b')\ndef inline_b(): return INLINE_B_LIMIT\n"
+        )
+
+        class FixedDecompose:
+            name = "decompose"
+            requires = ["validate"]
+
+            def run(self, _ctx):
+                return StageResult(
+                    output=DecomposeResult(
+                        systems=[SystemBoundary(
+                            system_id="SYS-engine", name="Engine", is_full_system=True,
+                            files=[f"engine/worker_{index}.py" for index in range(5)],
+                        )],
+                        inline_components=[
+                            SystemBoundary(
+                                system_id="COMP-inline-a", name="Inline A",
+                                files=["inline_a.py"], is_full_system=False,
+                            ),
+                            SystemBoundary(
+                                system_id="COMP-inline-b", name="Inline B",
+                                files=["inline_b.py"], is_full_system=False,
+                            ),
+                        ],
+                    ),
+                    quality=QualityMetrics(score=100),
+                )
+
+        stages = _make_coordinator()._stages | {
+            "decompose": FixedDecompose(),
+            "synthesize": SynthesizeStage(),
+            "emit": EmitStage(),
+        }
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture")
+        resolutions = [
+            ("engine", "Engine workflow", "engine/worker_0.py"),
+            ("inline-a", "Inline A workflow", "inline_a.py"),
+            ("inline-b", "Inline B workflow", "inline_b.py"),
+        ]
+        ctx.prior_corrections = [
+            Evidence(
+                source="llm_analysis", confidence=0.95,
+                raw=f"validate {name} -> execute {name}", location="complex_behavior",
+                metadata={
+                    "resolution_id": f"res-{name}", "behavior_name": behavior_name,
+                    "source_files": [source_file],
+                    "steps": [f"validate {name}", f"execute {name}"],
+                    "intent": f"Reliably execute {name}",
+                },
+            )
+            for name, behavior_name, source_file in resolutions
+        ]
+        ctx.llm_calls = [
+            LLMCallRecord(
+                stage="infer", purpose=f"resolve {name}", resolution_id=f"res-{name}",
+                files_sent=[source_file],
+            )
+            for name, _behavior_name, source_file in resolutions
+        ]
+
+        result = PipelineCoordinator(stages).run_recursive(ctx)
+
+        emit = result["results"]["emit"].output
+        errors = [
+            issue for issue in emit.final_validation_issues
+            if issue.get("severity", "").lower() == "error"
+        ]
+        assert (tmp_path / ".architecture-model.yaml").exists(), "\n".join(
+            f"{issue['code']}: {issue['message']}" for issue in errors
+        )
+        root = load_model(tmp_path / ".architecture-model.yaml")
+        subsystem_model = load_model(tmp_path / root.entities.systems[0].sub_model_ref)
+        root_behavior_names = {behavior.name for behavior in root.entities.behaviors}
+        subsystem_behavior_names = {behavior.name for behavior in subsystem_model.entities.behaviors}
+        assert "Engine workflow" in subsystem_behavior_names
+        assert "Engine workflow" not in root_behavior_names
+        assert {"Inline A workflow", "Inline B workflow"} <= root_behavior_names
+        assert not ({"Inline A workflow", "Inline B workflow"} & subsystem_behavior_names)
+        assert len(root.entities.systems) == 1
+        assert len(root.entities.components) == 2
+        assert all(component.intent and component.goals for component in root.entities.components), [
+            (component.name, component.intent, component.goals) for component in root.entities.components
+        ] + [
+            (capability.name, capability.intent, capability.goals)
+            for capability in root.entities.capabilities
+        ]
+        assert all(component.requirements for component in root.entities.components)
+        assert all(component.interface_refs for component in root.entities.components)
+        assert all(behavior.steps and behavior.structured_steps for behavior in root.entities.behaviors)
+        assert all(step.component_ref for behavior in root.entities.behaviors for step in behavior.structured_steps)
+        assert all(requirement.rationale and requirement.moes and requirement.value_function for requirement in root.entities.requirements)
+        for model in (root, subsystem_model):
+            assert len(model.all_entity_ids) == sum(
+                len(group) for group in (
+                    model.entities.systems, model.entities.components,
+                    model.entities.capabilities, model.entities.behaviors,
+                    model.entities.interfaces, model.entities.requirements,
+                    model.entities.constraints, model.entities.actors, model.entities.layers,
+                )
+            )
+            assert not [issue for issue in validate_model(model).issues if issue.severity.value == "ERROR"]
+            assert all(
+                rel.from_id in model.all_entity_ids and rel.to_id in model.all_entity_ids
+                for rel in model.relationships
+            )
+        assert emit.promoted and emit.final_model_score > 0
+        viewer = generate_html_viewer(
+            root, tmp_path / "viewer.html", repo_path=tmp_path
+        ).read_text()
+        assert "engine::" in viewer
+        assert "Inline A workflow" in viewer and "Inline B workflow" in viewer
+        assert all(entity_id in viewer for entity_id in root.all_entity_ids)
+
     def test_two_system_recursive_hierarchy_is_scoped_valid_and_viewable(self, tmp_path):
         alpha = tmp_path / "alpha"
         beta = tmp_path / "beta"
@@ -85,7 +213,8 @@ class TestRecursiveDecomposition:
 
         root = load_model(tmp_path / ".architecture-model.yaml")
         assert len(root.entities.systems) == 2
-        assert [component.name for component in root.entities.components] == ["Shared"]
+        assert len(root.entities.components) == 1
+        assert root.entities.components[0].files == ["shared.py"]
         assert root.entities.capabilities == [] and root.entities.behaviors == []
         refs = [system.sub_model_ref for system in root.entities.systems]
         assert len(set(refs)) == 2

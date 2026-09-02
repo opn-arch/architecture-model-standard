@@ -119,9 +119,12 @@ def do_another():
         result = InferStage().run(ctx)
 
         behavior = next(b for b in result.output.behaviors if b.name == "Record workflow")
+        capability = next(c for c in result.output.capabilities if "workflow.py" in c.source_files)
         assert behavior.source_file == "workflow.py"
         assert behavior.intent == "validate input -> persist record -> publish event"
         assert behavior.steps == ["validate input", "persist record", "publish event"]
+        assert capability.intent == behavior.intent
+        assert capability.goals == behavior.steps
 
     def test_free_text_resolution_does_not_invent_workflow_steps(self, tmp_path):
         from architecture_model.pipeline.protocol import LLMCallRecord

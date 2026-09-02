@@ -55,19 +55,30 @@ def _apply_behavior_resolutions(
             key = (source_file, intent)
             if key in known:
                 continue
-            capability_id = next(
-                (
-                    capability.id
-                    for capability in capabilities
-                    if source_file in capability.source_files
-                ),
-                "",
+            capability = next(
+                (item for item in capabilities if source_file in item.source_files),
+                None,
             )
+            if capability is None:
+                capability = InferredCapability(
+                    id=f"CAP-{len(capabilities) + 1}",
+                    name=behavior_name,
+                    description=f"Capability evidenced by {behavior_name}",
+                    evidence_source="structured_resolution",
+                    intent=intent,
+                    goals=list(steps),
+                    source_files=[source_file],
+                )
+                capabilities.append(capability)
+            else:
+                if intent and not capability.intent:
+                    capability.intent = intent
+                capability.goals = list(dict.fromkeys(capability.goals + steps))
             behaviors.append(
                 InferredBehavior(
                     id=f"BEH-{len(behaviors) + 1}",
                     name=behavior_name,
-                    capability_id=capability_id,
+                    capability_id=capability.id,
                     steps=steps,
                     behavior_type="workflow",
                     source_file=source_file,

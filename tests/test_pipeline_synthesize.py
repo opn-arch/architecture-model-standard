@@ -11,6 +11,7 @@ import yaml
 
 from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
 from architecture_model.pipeline.protocol import (
+    Evidence,
     LLMCallRecord,
     PipelineContext,
     QualityMetrics,
@@ -43,6 +44,7 @@ class _FakeComponent:
     id: str = "COMP-1"
     name: str = "TestComp"
     files: list[str] = field(default_factory=lambda: ["a.py", "b.py"])
+    interfaces: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -52,6 +54,12 @@ class _FakeCapability:
     description: str = ""
     intent: str = ""
     goals: list[str] = field(default_factory=list)
+    failure_modes: list[str] = field(default_factory=list)
+    monitored: list[str] = field(default_factory=list)
+    source_files: list[str] = field(default_factory=lambda: ["a.py"])
+    moes: list[str] = field(default_factory=list)
+    value_function: str = ""
+    trade_offs: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -94,6 +102,36 @@ class _FakeObserveOutput:
 
 
 @dataclass
+class _FakeInterface:
+    id: str
+    name: str
+    component_id: str
+    interface_type: str = "library"
+    methods: list[str] = field(default_factory=list)
+    description: str = ""
+
+
+@dataclass
+class _FakeRequirement:
+    id: str
+    name: str
+    source_file: str
+    text: str = "Value must be at least 5"
+    rationale: str = "Source constant defines the supported minimum"
+    moe: str = "Observed value is >= 5"
+    source_type: str = "constant"
+    value_function: str = "min(1, actual / 5)"
+    priority: str = "must"
+    status: str = "ACTIVE"
+
+
+@dataclass
+class _FakeSpecifyOutput:
+    interfaces: list = field(default_factory=list)
+    requirements: list = field(default_factory=list)
+
+
+@dataclass
 class _FakeBehavior:
     id: str = "BEH-1"
     name: str = "Process request"
@@ -130,10 +168,12 @@ def _stage_result(output: Any) -> StageResult:
 class MockCoordinator:
     def __init__(self, results: dict[str, StageResult] | None = None):
         self.calls: list[tuple[str, str]] = []
+        self.contexts: list[PipelineContext] = []
         self._results = results or {}
 
     def run_to(self, target: str, ctx: PipelineContext) -> dict[str, StageResult]:
         self.calls.append((target, ctx.scope))
+        self.contexts.append(ctx)
         return dict(self._results)
 
 
@@ -230,6 +270,145 @@ class TestDecideStages:
 
 
 class TestBuildSystemModelYaml:
+    def test_normalization_collisions_are_unique_within_projection(self):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("ITEM A", "Worker", ["worker.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(capabilities=[
+                _FakeCapability("ITEM-A", "Work", source_files=["worker.py"]),
+            ])),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("ITEM A", "ITEM-A", "realizes"),
+            ])),
+        }
+
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("COMP-inline", "Inline", files=["worker.py"]), results,
+        ))
+
+        component_id = parsed["entities"]["components"][0]["id"]
+        capability_id = parsed["entities"]["capabilities"][0]["id"]
+        assert component_id != capability_id
+        assert parsed["relationships"] == [{
+            "from": component_id, "to": capability_id, "type": "realizes",
+        }]
+
+    def test_projects_only_boundary_entities_and_derives_local_semantics(self):
+        local = _FakeComponent(
+            id="COMP-1", name="Worker", files=["inline/worker.py"],
+            interfaces=[{"name": "typed", "kind": "provides", "signature": "() -> int"}],
+        )
+        foreign = _FakeComponent(id="COMP-2", name="Foreign", files=["other.py"])
+        capability = _FakeCapability(
+            id="CAP-1", name="Process jobs", intent="Process jobs reliably",
+            goals=["Complete each job"], failure_modes=["Queue stalls"],
+            monitored=["queue_depth"], source_files=["inline/worker.py"],
+            moes=["95 percent complete"], value_function="completed / total",
+            trade_offs=["Latency versus throughput"],
+        )
+        foreign_capability = _FakeCapability(
+            id="CAP-2", name="Foreign", source_files=["other.py"],
+        )
+        behavior = _FakeBehavior(
+            id="BEH-1", name="Run worker", source_file="inline/worker.py",
+            capability_id="CAP-1", steps=["Read queue", "Process job"],
+        )
+        foreign_behavior = _FakeBehavior(
+            id="BEH-2", name="Foreign flow", source_file="other.py",
+            capability_id="CAP-2",
+        )
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([local, foreign])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[capability, foreign_capability],
+                behaviors=[behavior, foreign_behavior],
+            )),
+            "specify": _stage_result(_FakeSpecifyOutput(
+                interfaces=[
+                    _FakeInterface("IF-1", "Worker API", "COMP-1", methods=["run"]),
+                    _FakeInterface("IF-2", "Foreign API", "COMP-2"),
+                ],
+                requirements=[
+                    _FakeRequirement("REQ-1", "MIN_JOBS", "inline/worker.py"),
+                    _FakeRequirement("REQ-2", "OTHER", "other.py"),
+                ],
+            )),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
+                _FakeRelationship("COMP-2", "CAP-2", "realizes"),
+            ])),
+        }
+
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary(
+                system_id="COMP-inline", name="Inline", files=["inline/worker.py"],
+                is_full_system=False,
+            ),
+            results,
+        ))
+
+        assert [item["id"] for item in parsed["entities"]["components"]] == ["COMP-1"]
+        assert [item["id"] for item in parsed["entities"]["capabilities"]] == ["CAP-1"]
+        assert [item["id"] for item in parsed["entities"]["behaviors"]] == ["BEH-1"]
+        assert [item["id"] for item in parsed["entities"]["interfaces"]] == ["IF-1"]
+        assert [item["id"] for item in parsed["entities"]["requirements"]] == ["REQ-1"]
+        component = parsed["entities"]["components"][0]
+        assert component["intent"] == "Process jobs reliably"
+        assert component["goals"] == ["Complete each job"]
+        assert component["failure_modes"] == ["Queue stalls"]
+        assert component["monitored"] == ["queue_depth"]
+        assert component["responsibilities"] == ["Process jobs", "Complete each job"]
+        assert component["requirements"] == ["REQ-1"]
+        assert component["interface_refs"] == ["IF-1"]
+        assert component["interfaces"] == local.interfaces
+        assert component["moes"] == ["95 percent complete"]
+        assert component["value_function"] == "completed / total"
+        assert component["trade_offs"] == ["Latency versus throughput"]
+        assert component["extensions"]["semantic_derivation"]["capabilities"] == ["CAP-1"]
+        projected_capability = parsed["entities"]["capabilities"][0]
+        projected_behavior = parsed["entities"]["behaviors"][0]
+        projected_interface = parsed["entities"]["interfaces"][0]
+        assert projected_interface["type"] == "internal"
+        assert projected_interface["provider"] == "COMP-1"
+        assert projected_capability["requirements"] == ["REQ-1"]
+        assert projected_capability["interface_refs"] == ["IF-1"]
+        assert projected_behavior["requirements"] == ["REQ-1"]
+        assert projected_behavior["interface_refs"] == ["IF-1"]
+        assert projected_behavior["structured_steps"][0]["component_ref"] == "COMP-1"
+        assert {tuple(rel.values()) for rel in parsed["relationships"]} >= {
+            ("COMP-1", "IF-1", "exposes"),
+            ("COMP-1", "REQ-1", "satisfies"),
+            ("COMP-1", "CAP-1", "realizes"),
+            ("COMP-1", "BEH-1", "traces-to"),
+        }
+
+    def test_component_uses_requirement_measures_when_capability_has_none(self):
+        results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP-1", "Worker", ["worker.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(capabilities=[
+                _FakeCapability("CAP-1", "Work", intent="Do work", source_files=["worker.py"]),
+            ])),
+            "specify": _stage_result(_FakeSpecifyOutput(requirements=[
+                _FakeRequirement("REQ-1", "MIN_WORK", "worker.py"),
+            ])),
+            "relate": _stage_result(_FakeRelateOutput([
+                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
+            ])),
+        }
+
+        parsed = yaml.safe_load(_build_system_model_yaml(
+            SystemBoundary("COMP-inline", "Inline", files=["worker.py"]), results,
+        ))
+
+        component = parsed["entities"]["components"][0]
+        assert component["moes"] == ["Observed value is >= 5"]
+        assert component["value_function"] == "min(1, actual / 5)"
+        assert component["rationale"] == "Source constant defines the supported minimum"
+        assert component["extensions"]["semantic_derivation"]["requirements"] == ["REQ-1"]
+
     def test_produces_valid_yaml(self):
         boundary = SystemBoundary(system_id="SYS-core", name="Core")
         results = {
@@ -477,6 +656,65 @@ class TestRunWithoutCoordinator:
 
 
 class TestRunWithCoordinator:
+    def test_scoped_runs_receive_only_boundary_corrections_and_provenance(self, tmp_path):
+        coordinator = MockCoordinator()
+        boundaries = [
+            SystemBoundary(
+                system_id="SYS-a", name="Alpha", files=["alpha/workflow.py"],
+                is_full_system=True,
+            ),
+            SystemBoundary(
+                system_id="SYS-b", name="Beta", files=["beta/workflow.py"],
+                is_full_system=True,
+            ),
+        ]
+        ctx = _make_ctx(
+            tmp_path,
+            decompose=_stage_result(DecomposeResult(systems=boundaries)),
+            observe=_stage_result(_FakeObserveOutput()),
+            infer=_stage_result(_FakeInferOutput()),
+            allocate=_stage_result(_FakeAllocOutput()),
+            relate=_stage_result(_FakeRelateOutput()),
+        )
+        ctx.run_id = "parent-run"
+        ctx.prior_corrections = [
+            Evidence("llm_analysis", 0.9, "alpha flow", "complex_behavior", {
+                "resolution_id": "res-alpha",
+            }),
+            Evidence("llm_analysis", 0.9, "beta flow", "complex_behavior", {
+                "resolution_id": "res-beta",
+                "file_allocations": {"beta/workflow.py": "COMP-beta"},
+            }),
+            Evidence("user_correction", 1.0, "shared convention", "complex_behavior", {
+                "resolution_id": "res-shared", "shared": True,
+            }),
+        ]
+        ctx.llm_calls = [
+            LLMCallRecord("infer", "alpha", resolution_id="res-alpha", files_sent=["alpha/workflow.py"]),
+            LLMCallRecord("infer", "beta", resolution_id="res-beta", files_sent=["beta/workflow.py"]),
+            LLMCallRecord("infer", "shared", resolution_id="res-shared"),
+            LLMCallRecord("infer", "unrelated", resolution_id="res-other", files_sent=["other.py"]),
+        ]
+        ctx.config["coordinator"] = coordinator
+
+        SynthesizeStage().run(ctx)
+
+        scoped = {sub_ctx.scope: sub_ctx for sub_ctx in coordinator.contexts}
+        assert [item.raw for item in scoped["SYS-a"].prior_corrections] == [
+            "alpha flow", "shared convention",
+        ]
+        assert [item.raw for item in scoped["SYS-b"].prior_corrections] == [
+            "beta flow", "shared convention",
+        ]
+        assert {call.resolution_id for call in scoped["SYS-a"].llm_calls} == {
+            "res-alpha", "res-shared",
+        }
+        assert {call.resolution_id for call in scoped["SYS-b"].llm_calls} == {
+            "res-beta", "res-shared",
+        }
+        assert all(sub_ctx.parent_run_id == "parent-run" for sub_ctx in scoped.values())
+        assert all(sub_ctx.invocation == "synthesize" for sub_ctx in scoped.values())
+
     def test_scoped_runs(self, tmp_path):
         sub_results = {
             "observe": _stage_result(_FakeObserveOutput(modules=[_FakeModule()])),
@@ -575,6 +813,84 @@ class TestRunWithCoordinator:
 
 
 class TestSoSModel:
+    def test_inline_projections_merge_with_collision_safe_references(self):
+        inline_a = SystemBoundary(
+            system_id="COMP-a", name="Inline A", files=["inline_a.py"],
+            is_full_system=False,
+        )
+        inline_b = SystemBoundary(
+            system_id="COMP-b", name="Inline B", files=["inline_b.py"],
+            is_full_system=False,
+        )
+        top_results = {
+            "allocate": _stage_result(_FakeAllocOutput([
+                _FakeComponent("COMP A", "Inline A worker", ["inline_a.py"]),
+                _FakeComponent("COMP-A", "Inline B worker", ["inline_b.py"]),
+                _FakeComponent("COMP-9", "Subsystem internal", ["system/core.py"]),
+            ])),
+            "infer": _stage_result(_FakeInferOutput(
+                capabilities=[
+                    _FakeCapability("CAP A", "Inline A cap", source_files=["inline_a.py"]),
+                    _FakeCapability("CAP-A", "Inline B cap", source_files=["inline_b.py"]),
+                    _FakeCapability("CAP-9", "Internal cap", source_files=["system/core.py"]),
+                ],
+                behaviors=[
+                    _FakeBehavior("BEH A", "Inline A flow", source_file="inline_a.py", capability_id="CAP A"),
+                    _FakeBehavior("BEH-A", "Inline B flow", source_file="inline_b.py", capability_id="CAP-A"),
+                    _FakeBehavior("BEH-9", "Internal flow", source_file="system/core.py", capability_id="CAP-9"),
+                ],
+            )),
+            "specify": _stage_result(_FakeSpecifyOutput(
+                interfaces=[
+                    _FakeInterface("IF A", "A API", "COMP A"),
+                    _FakeInterface("IF-A", "B API", "COMP-A"),
+                ],
+                requirements=[
+                    _FakeRequirement("REQ A", "A LIMIT", "inline_a.py"),
+                    _FakeRequirement("REQ-A", "B LIMIT", "inline_b.py"),
+                ],
+            )),
+            "relate": _stage_result(_FakeRelateOutput()),
+        }
+
+        parsed = yaml.safe_load(_build_sos_model(
+            [SystemModel("SYS-core", "Core", "meta: {}")],
+            [inline_a, inline_b],
+            DecomposeResult(),
+            top_results,
+            project_name="demo",
+        ).model_yaml)
+
+        assert {item["name"] for item in parsed["entities"]["components"]} == {
+            "Inline A worker", "Inline B worker",
+        }
+        assert {item["name"] for item in parsed["entities"]["capabilities"]} == {
+            "Inline A cap", "Inline B cap",
+        }
+        assert {item["name"] for item in parsed["entities"]["behaviors"]} == {
+            "Inline A flow", "Inline B flow",
+        }
+        all_ids = [
+            entity["id"] for group in parsed["entities"].values()
+            for entity in group if entity.get("id")
+        ]
+        assert len(all_ids) == len(set(all_ids)), {
+            group: [entity.get("id") for entity in entities]
+            for group, entities in parsed["entities"].items()
+        }
+        entity_ids = set(all_ids)
+        assert all(
+            relationship["from"] in entity_ids and relationship["to"] in entity_ids
+            for relationship in parsed["relationships"]
+        )
+        assert all(
+            step["component_ref"] in entity_ids
+            for behavior in parsed["entities"]["behaviors"]
+            for step in behavior["structured_steps"]
+        )
+        assert "Subsystem internal" not in str(parsed)
+        assert "Internal cap" not in str(parsed)
+
     def test_slug_allocation_is_globally_unique_for_adversarial_generated_name(self):
         from architecture_model.pipeline.synthesize import _system_slugs
         import hashlib
@@ -630,7 +946,7 @@ class TestSoSModel:
         assert len(sos.actors) == 1
         assert sos.actors[0]["name"] == "Admin"
 
-    def test_top_model_references_systems_and_keeps_inline_components_only(self):
+    def test_top_model_references_systems_and_keeps_inline_details_only(self):
         subsystem_yaml = yaml.safe_dump({
             "meta": {"project": "demo", "schema_version": "2.0"},
             "entities": {
