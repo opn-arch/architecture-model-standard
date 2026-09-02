@@ -180,6 +180,24 @@ def test_provenance_is_frozen_and_nested_types_are_validated():
         provenance.source = "changed"
 
 
+def test_provenance_is_deeply_immutable_and_serializes_collections():
+    provenance = DiagramProvenance(
+        source="model", entity_refs=["root::A"], source_files=["model.yaml"],
+        context={"line": 3, "tags": ["a", "b"]},
+    )
+    assert provenance.entity_refs == ("root::A",)
+    assert provenance.source_files == ("model.yaml",)
+    with pytest.raises((AttributeError, TypeError)):
+        provenance.entity_refs += ("root::B",)
+    with pytest.raises(TypeError):
+        provenance.context["line"] = 4
+    payload = DiagramSpec("x", "X", provenance=provenance).to_dict()["provenance"]
+    assert payload == {
+        "source": "model", "entity_refs": ["root::A"], "source_files": ["model.yaml"],
+        "context": {"line": 3, "tags": ["a", "b"]},
+    }
+
+
 @pytest.mark.parametrize(
     "spec",
     [

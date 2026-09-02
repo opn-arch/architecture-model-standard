@@ -312,9 +312,6 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         source, target, kind = str(value["source"]), str(value["target"]), str(value.get("kind", "flow"))
         inferred = value.get("inferred") is True
         evidence = _evidence(value.get("evidence"), root, diagnostics, f"flow {source} -> {target}", view_name) if inferred else []
-        if kind in CANONICAL_LINK_KINDS:
-            _diag(diagnostics, "CURATION_FLOW_CANONICAL", f"Curated flow cannot create canonical relationship: {kind}", view=view_name)
-            raise _InvalidView("flow")
         if inferred and kind not in INFERRED_FLOW_KINDS:
             _diag(diagnostics, "CURATION_FLOW_KIND_UNSUPPORTED", f"Unsupported inferred flow kind: {kind}", view=view_name)
             raise _InvalidView("flow")
@@ -375,6 +372,15 @@ def validate_view_curation(view: ViewCuration, context: ArchitectureViewContext)
             _diag(diagnostics, "CURATION_SEMANTIC_FLOW_ENDPOINT", f"Curated flow has unknown source: {flow.source}")
         if flow.target not in identifiers:
             _diag(diagnostics, "CURATION_SEMANTIC_FLOW_ENDPOINT", f"Curated flow has unknown target: {flow.target}")
+        canonical = any(
+            relationship.target == flow.target and relationship.kind == flow.kind
+            for relationship in context.outgoing(flow.source, flow.kind)
+        ) if flow.source in identifiers and flow.target in identifiers else False
+        if not canonical and (not flow.inferred or not flow.evidence):
+            _diag(
+                diagnostics, "CURATION_SEMANTIC_FLOW_EVIDENCE",
+                f"Noncanonical curated flow must be inferred with evidence: {flow.source} -> {flow.target}",
+            )
     return diagnostics
 
 

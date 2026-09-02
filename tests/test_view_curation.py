@@ -132,8 +132,9 @@ views:
       - {source: a, target: b}
 """, encoding="utf-8")
     curation = load_viewer_curation(tmp_path, context, path)
-    assert len(curation.views.functional.flows) == 1
+    assert curation.views.functional.flows == []
     assert any("Duplicate curated flow" in warning.message for warning in curation.diagnostics)
+    assert any(item.code == "CURATION_SEMANTIC_FLOW_EVIDENCE" for item in curation.diagnostics)
 
 
 def test_malformed_collections_and_orders_warn_and_fall_back(tmp_path):
@@ -408,4 +409,55 @@ views:
     flows: [{source: clients, target: root::COMP-1}]
 """, encoding="utf-8")
     curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.logical.flows == []
+    assert any(item.code == "CURATION_SEMANTIC_FLOW_EVIDENCE" for item in curation.diagnostics)
+
+
+def test_noncanonical_flow_requires_inferred_structured_evidence(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    cases = {
+        "no-evidence": "groups: [{id: a, label: A}, {id: b, label: B}]\n    flows: [{source: a, target: b}]",
+        "not-inferred": "groups: [{id: a, label: A}, {id: b, label: B}]\n    flows: [{source: a, target: b, evidence: [{source: evidence.md, claim: observed}]}]",
+        "bad-path": "groups: [{id: a, label: A}, {id: b, label: B}]\n    flows: [{source: a, target: b, inferred: true, kind: exchange, evidence: [{source: ../outside.md, claim: observed}]}]",
+    }
+    for name, body in cases.items():
+        path = tmp_path / f"flow-{name}.yaml"
+        path.write_text(f"version: 1\nviews:\n  logical:\n    {body}\n", encoding="utf-8")
+        curation = load_viewer_curation(tmp_path, context, path)
+        assert curation.views.logical == type(curation.views.logical)(), name
+        assert curation.diagnostics, name
+
+
+def test_canonical_context_relationship_can_back_evidence_free_flow(tmp_path):
+    model_path = tmp_path / ".architecture-model.yaml"
+    model_path.write_text("""meta: {project: canonical, schema_version: '2.0'}
+entities:
+  components:
+    - {id: A, name: A, status: ACTIVE}
+    - {id: B, name: B, status: ACTIVE}
+relationships:
+  - {from: A, to: B, type: depends-on}
+""", encoding="utf-8")
+    context = ArchitectureViewContext.from_repo(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  logical:
+    flows: [{source: 'root::A', target: 'root::B', kind: depends-on}]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
     assert len(curation.views.logical.flows) == 1
+
+
+def test_external_requires_inferred_true_and_structured_repo_evidence(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    for inferred, record in (("false", "{source: evidence.md, claim: observed}"), ("true", "evidence.md"), ("true", "{source: ../outside.md, claim: observed}")):
+        path = tmp_path / f"external-{inferred}-{len(record)}.yaml"
+        path.write_text(f"version: 1\nviews:\n  conops:\n    externals: [{{id: EXT, name: External, inferred: {inferred}, evidence: [{record}]}}]\n", encoding="utf-8")
+        curation = load_viewer_curation(tmp_path, context, path)
+        assert curation.views.conops.externals == []
+        assert curation.diagnostics

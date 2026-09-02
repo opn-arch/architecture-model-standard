@@ -83,6 +83,28 @@ def _json_safe(value: Any) -> Any:
     raise ValueError(f"Value is not JSON-safe: {type(value).__name__}")
 
 
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, dict):
+        if any(not isinstance(key, str) for key in value):
+            raise ValueError("Provenance context keys must be strings")
+        return tuple((key, _freeze_json(item)) for key, item in sorted(value.items()))
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json(item) for item in value)
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError("Provenance context must contain finite JSON values")
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    raise ValueError(f"Provenance context is not JSON-safe: {type(value).__name__}")
+
+
+def _thaw_json(value: Any) -> Any:
+    if isinstance(value, tuple):
+        if all(isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str) for item in value):
+            return {key: _thaw_json(item) for key, item in value}
+        return [_thaw_json(item) for item in value]
+    return value
+
+
 @dataclass
 class DiagramNode:
     id: str
@@ -149,7 +171,28 @@ class LegendEntry:
 @dataclass(frozen=True)
 class DiagramProvenance:
     source: str = ""
-    entity_refs: list[str] = field(default_factory=list)
+    entity_refs: tuple[str, ...] = field(default_factory=tuple)
+    source_files: tuple[str, ...] = field(default_factory=tuple)
+    context: tuple[tuple[str, Any], ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if isinstance(self.entity_refs, (list, tuple)):
+            object.__setattr__(self, "entity_refs", tuple(self.entity_refs))
+        if isinstance(self.source_files, (list, tuple)):
+            object.__setattr__(self, "source_files", tuple(self.source_files))
+        if isinstance(self.context, dict):
+            object.__setattr__(self, "context", _freeze_json(self.context))
+
+    def to_dict(self) -> dict[str, Any]:
+        result = {
+            "source": self.source,
+            "entity_refs": list(self.entity_refs),
+        }
+        if self.source_files:
+            result["source_files"] = list(self.source_files)
+        if self.context:
+            result["context"] = _thaw_json(self.context)
+        return result
 
 
 @dataclass
@@ -223,7 +266,12 @@ class DiagramSpec:
         for provenance in provenances:
             if not isinstance(provenance.source, str):
                 raise ValueError("Invalid diagram type for provenance source: expected str")
-            require_list("provenance entity_refs", provenance.entity_refs, str)
+            if not isinstance(provenance.entity_refs, tuple) or any(not isinstance(item, str) for item in provenance.entity_refs):
+                raise ValueError("Invalid diagram type for provenance entity_refs: expected tuple[str]")
+            if not isinstance(provenance.source_files, tuple) or any(not isinstance(item, str) for item in provenance.source_files):
+                raise ValueError("Invalid diagram type for provenance source_files: expected tuple[str]")
+            if not isinstance(provenance.context, tuple):
+                raise ValueError("Invalid diagram type for provenance context: expected immutable JSON")
 
         def validate_text(value: Any) -> None:
             if isinstance(value, str):
@@ -293,8 +341,13 @@ class DiagramSpec:
     def to_dict(self) -> dict[str, Any]:
         self.validate()
         data = asdict(self)
+        data["provenance"] = self.provenance.to_dict()
         data["nodes"] = sorted(data["nodes"], key=lambda item: item["id"])
         data["edges"] = sorted(data["edges"], key=lambda item: (item["source"], item["target"], item["kind"], item["label"]))
+        for index, node in enumerate(sorted(self.nodes, key=lambda item: item.id)):
+            data["nodes"][index]["evidence"] = [item.to_dict() for item in node.evidence]
+        for index, edge in enumerate(sorted(self.edges, key=lambda item: (item.source, item.target, item.kind, item.label))):
+            data["edges"][index]["evidence"] = [item.to_dict() for item in edge.evidence]
         for key in ("groups", "lanes", "callouts", "legend", "drilldowns"):
             data[key] = sorted(data[key], key=lambda item: (item.get("order", 0), item["id"]))
         data["warnings"] = sorted(data["warnings"], key=lambda item: (item["severity"], item["code"], item["message"]))
