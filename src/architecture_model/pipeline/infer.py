@@ -27,10 +27,60 @@ from .protocol import (
     StageResult,
     Uncertainty,
 )
-from .corrections import get_corrections_for_stage
+from .corrections import get_corrections_for_stage, get_resolutions_for_stage
 
 
 _LARGE_REPO_MODULE_THRESHOLD = 50
+
+
+def _apply_behavior_resolutions(
+    ctx: PipelineContext,
+    capabilities: list[InferredCapability],
+    behaviors: list[InferredBehavior],
+    diagnostics: list[Diagnostic],
+) -> None:
+    """Create deterministic workflows from structured complex-behavior evidence."""
+    known = {(behavior.source_file, behavior.intent) for behavior in behaviors}
+    for evidence in get_resolutions_for_stage(ctx, "infer"):
+        files = [str(path) for path in evidence.metadata.get("files_sent", [])]
+        if not files or not evidence.raw.strip():
+            continue
+        for source_file in files:
+            key = (source_file, evidence.raw.strip())
+            if key in known:
+                continue
+            separators = r"\s*(?:->|→|\n|;|\bthen\b)\s*"
+            steps = [step.strip(" .") for step in re.split(separators, evidence.raw) if step.strip(" .")]
+            if not steps:
+                steps = [evidence.raw.strip()]
+            capability_id = next(
+                (
+                    capability.id
+                    for capability in capabilities
+                    if source_file in capability.source_files
+                ),
+                "",
+            )
+            target_name = str(evidence.metadata.get("target_name", "")).strip()
+            behaviors.append(
+                InferredBehavior(
+                    id=f"BEH-{len(behaviors) + 1}",
+                    name=target_name or f"{Path(source_file).stem.replace('_', ' ').title()} workflow",
+                    capability_id=capability_id,
+                    steps=steps,
+                    behavior_type="workflow",
+                    source_file=source_file,
+                    intent=evidence.raw.strip(),
+                )
+            )
+            known.add(key)
+            diagnostics.append(
+                Diagnostic(
+                    severity="info",
+                    code="resolution_applied",
+                    message=f"Created workflow evidence for {source_file}",
+                )
+            )
 
 
 def _describe_capability(modules: list[ModuleRecord]) -> str:
@@ -213,6 +263,8 @@ class InferStage:
                         name="Web Routes",
                         description=f"HTTP routing ({len(inventory.routes)} endpoints)",
                         evidence_source="routes",
+                        source_files=sorted({str(route.file) for route in inventory.routes}),
+                        source_key="routes",
                     )
                 )
                 # Still infer actors from routes
@@ -299,6 +351,8 @@ class InferStage:
         # --- SE field enrichment: intent, goals, failure_modes, monitored ---
         _enrich_se_fields(capabilities, inventory.modules)
 
+        _apply_behavior_resolutions(ctx, capabilities, behaviors, diagnostics)
+
         result = InferenceResult(
             capabilities=capabilities,
             actors=actors,
@@ -370,6 +424,8 @@ def _infer_from_routes(
             name=f"{name} Management",
             description=f"CRUD operations for {name} ({len(group)} endpoints)",
             evidence_source="routes",
+            source_files=sorted({str(route.file) for route in group}),
+            source_key=prefix.strip("/").replace("-", "_") or "routes",
         )
         capabilities.append(cap)
 
@@ -491,6 +547,8 @@ def _infer_from_domain_modules(
                         name=cap_name,
                         description=_describe_capability([mod]),
                         evidence_source="domain_module",
+                        source_files=[str(mod.path)],
+                        source_key=mod.path.stem.lower().lstrip("_"),
                     )
                 )
                 existing_names.add(cap_name.lower())
@@ -543,6 +601,8 @@ def _infer_capabilities_by_package(
                     name=name,
                     description=_describe_capability([mod]),
                     evidence_source="package_group",
+                    source_files=[str(mod.path)],
+                    source_key=mod.path.parent.name.lower(),
                 ))
                 existing_names.add(name.lower())
         return caps
@@ -558,6 +618,8 @@ def _infer_capabilities_by_package(
                 name=cap_name,
                 description=_describe_capability(mods),
                 evidence_source="package_group",
+                source_files=sorted(str(mod.path) for mod in mods),
+                source_key=group_name.lower(),
             ))
             existing_names.add(cap_name.lower())
     return caps
@@ -633,6 +695,8 @@ def _infer_from_cli(modules: list[ModuleRecord]) -> list[InferredCapability]:
                     name=f"CLI {mod.path.stem.replace('_', ' ').title()}",
                     description=_describe_capability([mod]),
                     evidence_source="cli_pattern",
+                    source_files=[str(mod.path)],
+                    source_key=mod.path.stem.lower().lstrip("_"),
                 )
             )
     return capabilities
@@ -708,6 +772,8 @@ def _infer_behaviors(
                 capability_id=cap_id,
                 steps=[route.function_name],
                 behavior_type="route_handler",
+                source_file=str(route.file),
+                intent=route.docstring or f"Handle {route.method} {route.path}",
             )
         )
 
@@ -900,6 +966,9 @@ def _infer_infrastructure_capabilities(
     has_infra = False
     has_migrations = False
     has_config = False
+    infra_files: list[str] = []
+    migration_files: list[str] = []
+    config_files: list[str] = []
 
     for mod in modules:
         filename = mod.path.name
@@ -907,10 +976,13 @@ def _infer_infrastructure_capabilities(
 
         if filename in _INFRA_PATTERNS:
             has_infra = True
+            infra_files.append(str(mod.path))
         if parts & _MIGRATION_DIRS:
             has_migrations = True
+            migration_files.append(str(mod.path))
         if filename in _CONFIG_FILES:
             has_config = True
+            config_files.append(str(mod.path))
 
     if has_infra and "infrastructure & deployment" not in existing_names:
         capabilities.append(
@@ -919,6 +991,8 @@ def _infer_infrastructure_capabilities(
                 name="Infrastructure & Deployment",
                 description="Infrastructure and deployment configuration files",
                 evidence_source="infra_pattern",
+                source_files=sorted(infra_files),
+                source_key="infrastructure",
             )
         )
 
@@ -929,6 +1003,8 @@ def _infer_infrastructure_capabilities(
                 name="Database Migrations",
                 description="Database migration and schema management",
                 evidence_source="infra_pattern",
+                source_files=sorted(migration_files),
+                source_key="alembic",
             )
         )
 
@@ -939,6 +1015,8 @@ def _infer_infrastructure_capabilities(
                 name="Configuration",
                 description="Application configuration files",
                 evidence_source="infra_pattern",
+                source_files=sorted(config_files),
+                source_key="configuration",
             )
         )
 

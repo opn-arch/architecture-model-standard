@@ -16,6 +16,8 @@ class InferredCapability:
     goals: list[str] = field(default_factory=list)
     failure_modes: list[str] = field(default_factory=list)
     monitored: list[str] = field(default_factory=list)
+    source_files: list[str] = field(default_factory=list)
+    source_key: str = ""
 
 
 @dataclass
@@ -37,6 +39,8 @@ class InferredBehavior:
     steps: list[str] = field(default_factory=list)
     triggers: list[str] = field(default_factory=list)
     behavior_type: str = "use_case"  # use_case | workflow | route_handler
+    source_file: str = ""
+    intent: str = ""
 
 
 @dataclass

@@ -25,7 +25,7 @@ from .protocol import (
     StageResult,
     Uncertainty,
 )
-from .corrections import get_corrections_for_stage
+from .corrections import get_corrections_for_stage, get_resolutions_for_stage
 
 
 # Thresholds
@@ -92,6 +92,8 @@ class AllocateStage:
 
             # Step 5: Merge undersized components
             components = _merge_undersized(components)
+
+        _apply_allocation_resolutions(ctx, components, source_modules, project_type, diagnostics)
 
         # --- Apply prior corrections ---
         comp_by_id = {c.id: c for c in components}
@@ -265,27 +267,38 @@ def _seed_from_capabilities(
 ) -> list[ComponentAllocation]:
     """Create one component per capability, seed files by name matching.
 
-    Each file is assigned to at most one component (first match wins).
-    For package_group capabilities, matches by directory path.
-    For other capabilities, uses exact stem match.
+    Each file is assigned to at most one primary component. Stable source-file
+    evidence wins; name affinity is only a fallback for legacy capabilities.
     """
     components = []
     assigned: set[Path] = set()
+    reserved_exact = {
+        Path(path): capability.id
+        for capability in capabilities
+        for path in capability.source_files
+    }
 
     for i, cap in enumerate(capabilities, 1):
         matched_files = []
 
-        if cap.evidence_source == "package_group":
+        exact_sources = {Path(path) for path in cap.source_files}
+        for mod in modules:
+            if mod.path not in assigned and mod.path in exact_sources:
+                matched_files.append(mod.path)
+
+        if not matched_files and cap.evidence_source == "package_group":
             # Match files whose path contains this package directory
-            pkg_name = "_".join(cap.name.lower().split())
+            pkg_name = cap.source_key
             for mod in modules:
                 if mod.path in assigned:
+                    continue
+                if reserved_exact.get(mod.path) not in (None, cap.id):
                     continue
                 # Check if any parent directory matches the package name
                 parts = [p.lower() for p in mod.path.parts[:-1]]  # exclude filename
                 if pkg_name in parts:
                     matched_files.append(mod.path)
-        else:
+        elif not matched_files:
             # Original stem-matching logic for route/domain/cli caps
             cap_words = set(cap.name.lower().replace(" management", "").replace("cli ", "").split())
             cap_slug = "_".join(
@@ -294,6 +307,8 @@ def _seed_from_capabilities(
 
             for mod in modules:
                 if mod.path in assigned:
+                    continue
+                if reserved_exact.get(mod.path) not in (None, cap.id):
                     continue
                 mod_stem = mod.path.stem.lower().lstrip("_")
                 if mod_stem == cap_slug or mod_stem in cap_words:
@@ -314,6 +329,57 @@ def _seed_from_capabilities(
         components.append(comp)
 
     return components
+
+
+def _apply_allocation_resolutions(
+    ctx: PipelineContext,
+    components: list[ComponentAllocation],
+    modules: list[ModuleRecord],
+    project_type: str,
+    diagnostics: list[Diagnostic],
+) -> None:
+    """Apply explicit ambiguous-module file groups without parsing free text."""
+    module_paths = {module.path for module in modules}
+    for evidence in get_resolutions_for_stage(ctx, "allocate"):
+        file_values = evidence.metadata.get("file_allocations") or evidence.metadata.get("files_sent", [])
+        if isinstance(file_values, dict):
+            file_values = [
+                path
+                for paths in file_values.values()
+                for path in (paths if isinstance(paths, list) else [paths])
+            ]
+        files = [Path(path) for path in file_values]
+        files = [path for path in files if path in module_paths]
+        if not files:
+            continue
+        target_name = str(evidence.metadata.get("target_name", "")).strip()
+        target_kind = str(evidence.metadata.get("target_kind", "component")).strip()
+        if target_kind not in ("", "component"):
+            continue
+        for component in components:
+            component.files = [path for path in component.files if path not in files]
+        component = next(
+            (item for item in components if target_name and item.name == target_name),
+            None,
+        )
+        if component is None:
+            component = ComponentAllocation(
+                id=f"COMP-{len(components) + 1}",
+                name=target_name or Path(files[0]).parent.name.replace("_", " ").title() or "Resolved Group",
+                layer=_infer_layer(files, project_type),
+            )
+            components.append(component)
+        component.files.extend(path for path in files if path not in component.files)
+        component.evidence.append(evidence.raw)
+        diagnostics.append(
+            Diagnostic(
+                severity="info",
+                code="resolution_applied",
+                message=f"Applied explicit allocation evidence to {component.id}",
+                context={"files": [str(path) for path in files]},
+            )
+        )
+    components[:] = [component for component in components if component.files]
 
 
 def _assign_by_import_affinity(
@@ -408,23 +474,7 @@ def _split_oversized(components: list[ComponentAllocation]) -> list[ComponentAll
 
 
 def _merge_undersized(components: list[ComponentAllocation]) -> list[ComponentAllocation]:
-    """Merge components with no files into nearest neighbor.
-
-    Components with a capability_id are never merged (they're intentional).
-    Only truly empty components (0 files, no capability) get merged.
-    """
-    if len(components) <= 1:
-        return components
-
-    # Keep all components that have files OR a backing capability
-    keep = [c for c in components if c.files or c.capability_id]
-    empty = [c for c in components if not c.files and not c.capability_id]
-
-    if empty and keep:
-        # Empty components with no capability — just drop them
-        pass
-
-    # Remove empty components with no capability
+    """Drop empty seeds; source overlap preserves their capability realization."""
     return [c for c in components if c.files]
 
 

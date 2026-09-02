@@ -4,7 +4,9 @@ from pathlib import Path
 from architecture_model.pipeline.allocate import AllocateStage
 from architecture_model.pipeline.observe import ObserveStage
 from architecture_model.pipeline.infer import InferStage
-from architecture_model.pipeline.protocol import PipelineContext
+from architecture_model.pipeline.protocol import Evidence, PipelineContext, QualityMetrics, StageResult
+from architecture_model.pipeline.infer_types import InferenceResult, InferredCapability
+from architecture_model.pipeline.observe_types import Inventory, ModuleRecord
 
 
 def _run_pipeline(tmp_path):
@@ -69,6 +71,85 @@ def list_articles():
         assert "file_coverage" in result.quality.sub_scores
         assert "boundary_coherence" in result.quality.sub_scores
         assert "component_count" in result.quality.sub_scores
+
+    def test_renamed_package_capability_uses_stable_source_files(self, tmp_path):
+        modules = [ModuleRecord(path=Path("app/models/user.py"))]
+        capability = InferredCapability(
+            id="CAP-1",
+            name="Rich Persistence Domain",
+            evidence_source="package_group",
+            source_files=["app/models/user.py"],
+            source_key="models",
+        )
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = StageResult(Inventory(modules=modules), QualityMetrics(100))
+        ctx.cache["infer"] = StageResult(InferenceResult(capabilities=[capability]), QualityMetrics(100))
+
+        result = AllocateStage().run(ctx)
+
+        assert result.output.components[0].files == [Path("app/models/user.py")]
+        assert result.output.components[0].capability_id == "CAP-1"
+
+    def test_cli_exact_sources_win_over_prefix_fallback(self, tmp_path):
+        modules = [
+            ModuleRecord(path=Path("commands/backfill_uw_types.py")),
+            ModuleRecord(path=Path("commands/backfill_projects.py")),
+            ModuleRecord(path=Path("commands/seed_kb.py")),
+            ModuleRecord(path=Path("commands/seed_projects.py")),
+        ]
+        capabilities = [
+            InferredCapability(id="CAP-1", name="Renamed Backfill", evidence_source="cli_pattern", source_files=["commands/backfill_uw_types.py"], source_key="backfill_uw_types"),
+            InferredCapability(id="CAP-2", name="Projects Backfill", evidence_source="cli_pattern", source_files=["commands/backfill_projects.py"], source_key="backfill_projects"),
+            InferredCapability(id="CAP-3", name="Knowledge Seed", evidence_source="cli_pattern", source_files=["commands/seed_kb.py"], source_key="seed_kb"),
+            InferredCapability(id="CAP-4", name="Projects Seed", evidence_source="cli_pattern", source_files=["commands/seed_projects.py"], source_key="seed_projects"),
+        ]
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = StageResult(Inventory(modules=modules), QualityMetrics(100))
+        ctx.cache["infer"] = StageResult(InferenceResult(capabilities=capabilities), QualityMetrics(100))
+
+        result = AllocateStage().run(ctx)
+        files_by_cap = {c.capability_id: c.files for c in result.output.components}
+
+        assert files_by_cap["CAP-1"] == [Path("commands/backfill_uw_types.py")]
+        assert files_by_cap["CAP-2"] == [Path("commands/backfill_projects.py")]
+        assert files_by_cap["CAP-3"] == [Path("commands/seed_kb.py")]
+        assert files_by_cap["CAP-4"] == [Path("commands/seed_projects.py")]
+
+    def test_cli_prefix_fallback_cannot_steal_another_capability_exact_source(self, tmp_path):
+        modules = [ModuleRecord(path=Path("commands/backfill_projects.py"))]
+        capabilities = [
+            InferredCapability(id="CAP-1", name="CLI Backfill", evidence_source="cli_pattern", source_key="backfill"),
+            InferredCapability(id="CAP-2", name="Projects", evidence_source="cli_pattern", source_files=["commands/backfill_projects.py"], source_key="backfill_projects"),
+        ]
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = StageResult(Inventory(modules=modules), QualityMetrics(100))
+        ctx.cache["infer"] = StageResult(InferenceResult(capabilities=capabilities), QualityMetrics(100))
+
+        result = AllocateStage().run(ctx)
+
+        owner = next(c for c in result.output.components if Path("commands/backfill_projects.py") in c.files)
+        assert owner.capability_id == "CAP-2"
+
+    def test_ambiguous_module_resolution_groups_files_and_records_evidence(self, tmp_path):
+        modules = [ModuleRecord(path=Path("a.py")), ModuleRecord(path=Path("b.py"))]
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = StageResult(Inventory(modules=modules), QualityMetrics(100))
+        ctx.cache["infer"] = StageResult(InferenceResult(), QualityMetrics(100))
+        ctx.prior_corrections = [
+            Evidence(
+                source="user_confirmation",
+                confidence=1.0,
+                raw="These modules form one bounded concern",
+                location="ambiguous_module",
+                metadata={"file_allocations": ["a.py", "b.py"], "target_name": "Resolved Group"},
+            )
+        ]
+
+        result = AllocateStage().run(ctx)
+
+        component = next(c for c in result.output.components if c.name == "Resolved Group")
+        assert component.files == [Path("a.py"), Path("b.py")]
+        assert component.evidence == ["These modules form one bounded concern"]
 
 
 class TestAllocatePerComponentQuality:

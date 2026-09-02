@@ -5,7 +5,7 @@ from architecture_model.pipeline.infer import InferStage, _infer_library_behavio
 from architecture_model.pipeline.observe import ObserveStage
 from architecture_model.pipeline.observe_types import ModuleRecord, FunctionRecord, ClassRecord
 from architecture_model.pipeline.infer_types import InferredCapability, InferredBehavior
-from architecture_model.pipeline.protocol import PipelineContext, StageResult, QualityMetrics
+from architecture_model.pipeline.protocol import Evidence, PipelineContext, StageResult, QualityMetrics
 
 
 def _run_observe_then_infer(tmp_path):
@@ -95,6 +95,45 @@ def do_another():
         result = _run_observe_then_infer(tmp_path)
         categories = [u.category for u in result.uncertainties]
         assert "ambiguous_module" in categories
+
+    def test_complex_behavior_resolution_changes_infer_output(self, tmp_path):
+        workflow = tmp_path / "workflow.py"
+        workflow.write_text("def run():\n    pass\n")
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = ObserveStage().run(ctx)
+        ctx.prior_corrections = [
+            Evidence(
+                source="user_confirmation",
+                confidence=1.0,
+                raw="validate input -> persist record -> publish event",
+                location="complex_behavior",
+                metadata={"files_sent": ["workflow.py"], "target_name": "Record workflow"},
+            )
+        ]
+
+        result = InferStage().run(ctx)
+
+        behavior = next(b for b in result.output.behaviors if b.name == "Record workflow")
+        assert behavior.source_file == "workflow.py"
+        assert behavior.intent == "validate input -> persist record -> publish event"
+        assert behavior.steps == ["validate input", "persist record", "publish event"]
+
+    def test_complex_behavior_resolution_uses_llm_call_files(self, tmp_path):
+        from architecture_model.pipeline.protocol import LLMCallRecord
+
+        (tmp_path / "workflow.py").write_text("def run():\n    pass\n")
+        ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".arch")
+        ctx.cache["observe"] = ObserveStage().run(ctx)
+        ctx.prior_corrections = [
+            Evidence(source="llm_analysis", confidence=0.9, raw="load -> transform -> save", location="complex_behavior")
+        ]
+        ctx.llm_calls = [
+            LLMCallRecord(stage="infer", purpose="resolve uncertainty: complex_behavior", files_sent=["workflow.py"])
+        ]
+
+        result = InferStage().run(ctx)
+
+        assert any(b.source_file == "workflow.py" and b.steps == ["load", "transform", "save"] for b in result.output.behaviors)
 
     def test_infer_description_uses_docstrings(self, tmp_path):
         """Capability descriptions should incorporate module/function docstrings."""

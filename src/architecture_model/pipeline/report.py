@@ -128,7 +128,7 @@ def _extract_findings(stage_name: str, result: StageResult) -> list[str]:
 
             if isinstance(output, AllocationResult):
                 findings.append(f"{len(output.components)} components")
-                findings.append(f"File coverage: {output.file_coverage:.0%}")
+                findings.append(f"File coverage: {output.file_coverage:.0f}%")
                 findings.append(f"{len(output.unallocated)} unallocated files")
         except ImportError:
             pass

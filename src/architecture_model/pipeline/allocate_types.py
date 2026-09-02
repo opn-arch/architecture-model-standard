@@ -13,6 +13,7 @@ class ComponentAllocation:
     capability_id: str = ""  # which capability seeded this
     files: list[Path] = field(default_factory=list)
     layer: str = ""  # inferred layer (web, service, data, infra)
+    evidence: list[str] = field(default_factory=list)
 
 
 @dataclass

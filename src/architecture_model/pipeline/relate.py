@@ -73,13 +73,31 @@ class RelateStage:
                 )
                 realized_caps.add(comp.capability_id)
 
-        # 1b. Infer realizes for components without capability_id
-        # Match by name similarity to unrealized capabilities
+        # 1b. A capability may be realized by multiple source-owning components.
+        source_evidenced_caps = [cap for cap in inference.capabilities if cap.source_files]
+        for comp in allocation.components:
+            comp_files = {str(path) for path in comp.files}
+            for cap in source_evidenced_caps:
+                if comp_files & set(cap.source_files):
+                    key = (comp.id, cap.id)
+                    if not any(
+                        rel.rel_type == "realizes" and (rel.from_id, rel.to_id) == key
+                        for rel in relationships
+                    ):
+                        relationships.append(
+                            DerivedRelationship(
+                                from_id=comp.id,
+                                to_id=cap.id,
+                                rel_type="realizes",
+                                evidence_source="source_overlap",
+                            )
+                        )
+                    realized_caps.add(cap.id)
+
+        # 1c. Legacy fallback for components and capabilities lacking source evidence.
         unrealized_caps = [c for c in inference.capabilities if c.id not in realized_caps]
         if unrealized_caps:
             for comp in allocation.components:
-                if comp.capability_id:
-                    continue
                 # Try name matching
                 comp_words = set(comp.name.lower().replace("(", "").replace(")", "").split())
                 best_cap = None

@@ -171,3 +171,13 @@ class TestExtractFindings:
         result = _make_result(output=None)
         findings = _extract_findings("observe", result)
         assert findings == []
+
+    def test_allocate_full_coverage_is_reported_as_100_percent(self):
+        from architecture_model.pipeline.allocate_types import AllocationResult
+
+        findings = _extract_findings(
+            "allocate", _make_result(output=AllocationResult(file_coverage=100.0))
+        )
+
+        assert "File coverage: 100%" in findings
+        assert not any("10000%" in finding for finding in findings)

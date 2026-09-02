@@ -12,6 +12,30 @@ if TYPE_CHECKING:
     from .protocol import PipelineContext
 
 
+def get_resolutions_for_stage(ctx: PipelineContext, stage_name: str) -> list:
+    """Return structured invocation resolutions intended for a stage."""
+    categories = {
+        "infer": {"complex_behavior"},
+        "allocate": {"ambiguous_module"},
+    }.get(stage_name, set())
+    resolutions = []
+    for evidence in ctx.prior_corrections:
+        if evidence.location not in categories:
+            continue
+        if evidence.metadata.get("for_stage", stage_name) != stage_name:
+            continue
+        if not evidence.metadata.get("files_sent"):
+            purpose = f"resolve uncertainty: {evidence.location}"
+            call = next(
+                (item for item in ctx.llm_calls if item.stage == stage_name and item.purpose == purpose),
+                None,
+            )
+            if call:
+                evidence.metadata["files_sent"] = list(call.files_sent)
+        resolutions.append(evidence)
+    return resolutions
+
+
 def get_corrections_for_stage(
     ctx: PipelineContext, stage_name: str
 ) -> list[Correction]:

@@ -35,6 +35,30 @@ def _coordinator() -> PipelineCoordinator:
     return PipelineCoordinator(stages)
 
 
+def test_logs_db_like_pipeline_realizes_all_evidenced_capabilities(tmp_path):
+    for package_name in ("models", "routers", "schemas", "services", "alembic"):
+        package = tmp_path / "src" / "app" / package_name
+        package.mkdir(parents=True)
+        for index in range(11):
+            path = package / f"item_{index}.py"
+            if package_name == "routers":
+                path.write_text(
+                    "from fastapi import APIRouter\n"
+                    "router = APIRouter()\n\n"
+                    f"@router.get('/items/{index}')\n"
+                    f"def get_item_{index}():\n    return {{'id': {index}}}\n"
+                )
+            else:
+                path.write_text(f"def handle_{package_name}_{index}():\n    return {index}\n")
+
+    ctx = PipelineContext(repo_path=tmp_path, output_dir=tmp_path / ".architecture")
+    _coordinator().run_to("validate", ctx)
+
+    issues = ctx.get("validate").output.issues
+    assert not [issue for issue in issues if issue.rule == "capability_realization"]
+    assert ctx.get("validate").output.score == 100
+
+
 def test_real_pipeline_preserves_se_fields_and_rich_requirements(tmp_path):
     package = tmp_path / "jobs"
     package.mkdir()
