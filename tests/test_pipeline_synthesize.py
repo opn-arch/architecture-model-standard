@@ -1178,23 +1178,28 @@ class TestSoSModel:
 
     def test_overlapping_inline_boundaries_have_one_deterministic_owner(self):
         results = {
-            "allocate": _stage_result(_FakeAllocOutput([
-                _FakeComponent("COMP-1", "Shared", ["shared.py"]),
-            ])),
-            "infer": _stage_result(_FakeInferOutput(capabilities=[
-                _FakeCapability("CAP-1", "Shared cap", source_files=["shared.py"]),
-            ])),
-            "relate": _stage_result(_FakeRelateOutput([
-                _FakeRelationship("COMP-1", "CAP-1", "realizes"),
-            ])),
+            "allocate": _stage_result(_FakeAllocOutput()),
+            "infer": _stage_result(_FakeInferOutput()),
+            "relate": _stage_result(_FakeRelateOutput()),
         }
         boundaries = [
-            SystemBoundary("COMP-z", "Zulu", files=["shared.py"], is_full_system=False),
-            SystemBoundary("COMP-a", "Alpha", files=["shared.py"], is_full_system=False),
+            SystemBoundary(
+                "COMP-z", "Zulu", files=["zulu.py", "shared.py"], is_full_system=False,
+            ),
+            SystemBoundary(
+                "COMP-a", "Alpha", files=["alpha.py", "shared.py"], is_full_system=False,
+            ),
         ]
         parsed = yaml.safe_load(_build_sos_model([], boundaries, DecomposeResult(), results).model_yaml)
-        assert [item["name"] for item in parsed["entities"]["components"]] == ["Shared"]
-        assert len(parsed["entities"]["capabilities"]) == 1
+        components = parsed["entities"]["components"]
+        assert {item["name"] for item in components} == {"Alpha", "Zulu"}
+        assert sum("shared.py" in item["files"] for item in components) == 1
+        assert next(item for item in components if item["name"] == "Alpha")["files"] == [
+            "alpha.py", "shared.py",
+        ]
+        assert next(item for item in components if item["name"] == "Zulu")["files"] == [
+            "zulu.py",
+        ]
     def test_inline_projections_merge_with_collision_safe_references(self):
         inline_a = SystemBoundary(
             system_id="COMP-a", name="Inline A", files=["inline_a.py"],

@@ -1191,7 +1191,7 @@ def _build_sos_model(
                 "id": _schema_id(boundary.system_id),
                 "name": boundary.name,
                 "status": "ACTIVE",
-                "files": list(boundary.files),
+                "files": list(owned_files),
             }]
         id_remap: dict[str, str] = {}
         for group_name, entities in projected_entities.items():
