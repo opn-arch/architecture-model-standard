@@ -294,3 +294,80 @@ views:
     assert curation.views.conops.labels == {}
     assert curation.views.logical.labels["root::COMP-1"] == "Latency < 10ms"
     assert curation.views.logical.safe_text is True
+
+
+def test_unknown_raw_svg_key_in_single_selector_invalidates_view(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  conops:
+    featured:
+      - qualified_id: root::COMP-1
+        raw_svg: '<circle />'
+  logical:
+    featured: [root::COMP-1]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.conops == type(curation.views.conops)()
+    assert curation.views.logical.featured
+    assert any(item.code == "CURATION_KEY_UNSUPPORTED" and item.view == "conops" for item in curation.diagnostics)
+
+
+def test_script_group_label_invalidates_view_but_math_group_label_survives(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  conops:
+    groups:
+      - {id: bad, label: '<script>alert(1)</script>'}
+  logical:
+    groups:
+      - {id: latency, label: 'Latency < 10ms'}
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.conops.groups == []
+    assert curation.views.logical.groups[0].label == "Latency < 10ms"
+    assert any(item.code == "CURATION_TEXT_UNSAFE" and item.view == "conops" for item in curation.diagnostics)
+
+
+def test_unknown_keys_in_all_nested_record_types_fail_view_closed(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    records = {
+        "groups": "groups: [{id: g, label: G, raw_svg: x}]",
+        "externals": "externals: [{id: e, name: E, inferred: true, evidence: [{source: evidence.md, claim: c}], raw_svg: x}]",
+        "evidence": "externals: [{id: e, name: E, inferred: true, evidence: [{source: evidence.md, claim: c, raw_svg: x}]}]",
+        "flows": "groups: [{id: a, label: A}, {id: b, label: B}]\n    flows: [{source: a, target: b, raw_svg: x}]",
+    }
+    for name, body in records.items():
+        path = tmp_path / f"{name}.yaml"
+        path.write_text(f"version: 1\nviews:\n  logical:\n    {body}\n", encoding="utf-8")
+        curation = load_viewer_curation(tmp_path, context, path)
+        assert curation.views.logical == type(curation.views.logical)(), name
+        assert any(item.code == "CURATION_KEY_UNSUPPORTED" for item in curation.diagnostics), name
+
+
+def test_nested_flow_and_evidence_text_validation_preserves_math(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  logical:
+    groups: [{id: a, label: 'A < B'}, {id: b, label: B}]
+    flows:
+      - source: a
+        target: b
+        kind: exchange
+        inferred: true
+        label: 'Latency < 10ms'
+        description: 'Plain < comparison'
+        evidence: [{source: evidence.md, claim: 'Observed p < 0.05'}]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.logical.flows[0].label == "Latency < 10ms"
+    assert curation.views.logical.flows[0].evidence[0].claim == "Observed p < 0.05"

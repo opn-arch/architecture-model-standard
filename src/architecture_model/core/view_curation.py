@@ -22,6 +22,11 @@ VIEW_KEYS = {
     "flows", "tiers", "aggregate_components",
     "preferred_capability_root", "mission_root", "drilldowns",
 }
+SELECTOR_KEYS = {"qualified_id", "local_id", "system", "name", "source_file", "tag"}
+GROUP_KEYS = {"id", "label", "kind", "parent", "order", "description"}
+EXTERNAL_KEYS = {"id", "name", "inferred", "evidence", "kind", "description"}
+FLOW_KEYS = {"source", "target", "kind", "label", "description", "inferred", "evidence"}
+EVIDENCE_KEYS = {"source", "claim"}
 
 
 @dataclass
@@ -141,13 +146,30 @@ def _safe_file(root: Path, value: str, *, must_exist: bool = True) -> Path | Non
     return candidate if not must_exist or candidate.is_file() else None
 
 
-def _selector(raw: Any) -> Selector | None:
+def _check_keys(raw: dict[str, Any], allowed: set[str], diagnostics: list[Diagnostic], view: str, record: str) -> None:
+    unknown = sorted(set(raw) - allowed)
+    if unknown:
+        for key in unknown:
+            _diag(diagnostics, "CURATION_KEY_UNSUPPORTED", f"Unknown key in {record}: {key}", view=view)
+        raise _InvalidView(record)
+
+
+def _text(value: Any, diagnostics: list[Diagnostic], view: str, field_name: str) -> str:
+    try:
+        return validate_presentation_text(str(value))
+    except ValueError as exc:
+        _diag(diagnostics, "CURATION_TEXT_UNSAFE", f"Invalid {field_name}: {exc}", view=view)
+        raise _InvalidView(field_name) from exc
+
+
+def _selector(raw: Any, diagnostics: list[Diagnostic] | None = None, view: str = "") -> Selector | None:
     if isinstance(raw, str):
         return Selector(qualified_id=raw)
     if not isinstance(raw, dict):
         return None
-    allowed = {"qualified_id", "local_id", "system", "name", "source_file", "tag"}
-    return Selector(**{key: str(value) for key, value in raw.items() if key in allowed and value is not None})
+    if diagnostics is not None:
+        _check_keys(raw, SELECTOR_KEYS, diagnostics, view, "selector")
+    return Selector(**{key: str(value) for key, value in raw.items() if key in SELECTOR_KEYS and value is not None})
 
 
 def _collection(raw: dict[str, Any], key: str, diagnostics: list[Diagnostic], expected: type, view: str) -> Any:
@@ -167,7 +189,8 @@ def _evidence(raw: Any, root: Path, diagnostics: list[Diagnostic], owner: str, v
         if not isinstance(value, dict) or not value.get("source") or not value.get("claim"):
             _diag(diagnostics, "CURATION_EVIDENCE_INVALID", f"Invalid {owner} evidence record; unsafe evidence format, source and claim are required", view=view)
             raise _InvalidView(owner)
-        source, claim = str(value["source"]), str(value["claim"]).strip()
+        _check_keys(value, EVIDENCE_KEYS, diagnostics, view, "evidence")
+        source, claim = str(value["source"]), _text(value["claim"], diagnostics, view, "evidence claim").strip()
         if not claim or _safe_file(root, source) is None:
             _diag(diagnostics, "CURATION_EVIDENCE_INVALID", f"Invalid {owner} evidence record: unsafe or missing source {source}", view=view)
             raise _InvalidView(owner)
@@ -181,6 +204,7 @@ def _groups(raw: Any, diagnostics: list[Diagnostic], label: str, identifiers: se
         if not isinstance(value, dict) or not value.get("id") or not value.get("label"):
             _diag(diagnostics, "CURATION_VALUE_INVALID", f"Invalid {label} entry", view=view)
             raise _InvalidView(label)
+        _check_keys(value, GROUP_KEYS, diagnostics, view, label)
         identifier = str(value["id"])
         if identifier in identifiers:
             _diag(diagnostics, "CURATION_ID_DUPLICATE", f"Duplicate presentation ID ignored: {identifier}", view=view)
@@ -191,7 +215,10 @@ def _groups(raw: Any, diagnostics: list[Diagnostic], label: str, identifiers: se
             _diag(diagnostics, "CURATION_VALUE_INVALID", f"Invalid {label} order: {identifier}", view=view)
             raise _InvalidView(label)
         identifiers.add(identifier)
-        result.append(CuratedGroup(identifier, str(value["label"]), str(value.get("kind", label)), str(value.get("parent", "")), order))
+        group_label = _text(value["label"], diagnostics, view, f"{label} label")
+        if value.get("description") is not None:
+            _text(value["description"], diagnostics, view, f"{label} description")
+        result.append(CuratedGroup(identifier, group_label, str(value.get("kind", label)), str(value.get("parent", "")), order))
     return sorted(result, key=lambda item: (item.order, item.id))
 
 
@@ -216,7 +243,7 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
     for field_name in ("featured", "hide", "aggregate_components"):
         seen: set[str] = set()
         for value in _collection(raw, field_name, diagnostics, list, view_name):
-            selector = _selector(value)
+            selector = _selector(value, diagnostics, view_name)
             if not selector:
                 _diag(diagnostics, "CURATION_SELECTOR_INVALID", f"Invalid selector in {field_name}", view=view_name)
                 raise _InvalidView(field_name)
@@ -249,7 +276,11 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         if not isinstance(value, dict):
             _diag(diagnostics, "CURATION_VALUE_INVALID", "Invalid external", view=view_name)
             raise _InvalidView("external")
+        _check_keys(value, EXTERNAL_KEYS, diagnostics, view_name, "external")
         identifier, name = str(value.get("id", "")), str(value.get("name", ""))
+        name = _text(name, diagnostics, view_name, "external name")
+        if value.get("description") is not None:
+            _text(value["description"], diagnostics, view_name, "external description")
         evidence = _evidence(value.get("evidence"), root, diagnostics, f"external {identifier or name}", view_name)
         if not identifier or not name or value.get("inferred") is not True or not evidence:
             _diag(diagnostics, "CURATION_EXTERNAL_INVALID", f"Invalid inferred external: {identifier or name or '<unknown>'}", view=view_name)
@@ -265,6 +296,7 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         if not isinstance(value, dict) or not value.get("source") or not value.get("target"):
             _diag(diagnostics, "CURATION_FLOW_INVALID", "Invalid curated flow", view=view_name)
             raise _InvalidView("flow")
+        _check_keys(value, FLOW_KEYS, diagnostics, view_name, "flow")
         source, target, kind = str(value["source"]), str(value["target"]), str(value.get("kind", "flow"))
         inferred = value.get("inferred") is True
         evidence = _evidence(value.get("evidence"), root, diagnostics, f"flow {source} -> {target}", view_name) if inferred else []
@@ -280,7 +312,9 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         if not inferred and not ({source, target} <= presentation_ids):
             _diag(diagnostics, "CURATION_FLOW_ENDPOINT_INVALID", f"Curated flow must link presentation groups: {source} -> {target}", view=view_name)
             raise _InvalidView("flow")
-        flow_label = str(value.get("label", ""))
+        flow_label = _text(value.get("label", ""), diagnostics, view_name, "flow label")
+        if value.get("description") is not None:
+            _text(value["description"], diagnostics, view_name, "flow description")
         flow_key = (source, target, kind, flow_label)
         if flow_key in flow_keys:
             _diag(diagnostics, "CURATION_FLOW_DUPLICATE", f"Duplicate curated flow ignored: {source} -> {target}", view=view_name)
@@ -292,14 +326,14 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
     for field_name in ("preferred_capability_root", "mission_root"):
         value = raw.get(field_name)
         if value is not None:
-            selector = _selector(value)
+            selector = _selector(value, diagnostics, view_name)
             if selector is None or not selector.resolve(context):
                 _diag(diagnostics, "CURATION_SELECTOR_UNRESOLVED", f"Unresolved selector in {field_name}", view=view_name)
             else:
                 setattr(result, field_name, selector)
     drilldowns = _collection(raw, "drilldowns", diagnostics, dict, view_name)
     for key, value in sorted(drilldowns.items()):
-        selector = _selector(value)
+        selector = _selector(value, diagnostics, view_name)
         if selector is None:
             _diag(diagnostics, "CURATION_SELECTOR_INVALID", f"Invalid drilldown selector: {key}", view=view_name)
             raise _InvalidView("drilldowns")
