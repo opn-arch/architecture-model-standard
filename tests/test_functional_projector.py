@@ -3,7 +3,7 @@ from pathlib import Path
 
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import CuratedFlow, EvidenceRecord, Selector, ViewCuration
+from architecture_model.core.view_curation import CuratedFlow, CuratedGroup, EvidenceRecord, Selector, ViewCuration
 from architecture_model.core.se_view_projectors import project_functional_architecture
 
 
@@ -53,26 +53,35 @@ def test_functional_discovers_arbitrary_deep_root_and_separates_edge_semantics(t
 
     assert spec.direction == "TB"
     nodes = {node.entity_ref: node for node in spec.nodes if node.entity_ref}
-    assert "root::MISSION-X" in nodes and "root::CAP-D" in nodes
+    assert "root::MISSION-X" in nodes and "root::CAP-A" in nodes
     decomposition = [edge for edge in spec.edges if edge.kind == "decomposition"]
     assert decomposition and all(edge.style == "dotted" for edge in decomposition)
-    assert any(edge.kind in {"operational-flow", "data-flow"} and edge.style == "solid" for edge in spec.edges)
-    assert any(edge.kind == "allocation" and edge.style == "dashed" for edge in spec.edges)
-    leaf = nodes["root::CAP-D"]
+    assert all(node.kind != "component" or node.status == "summary" for node in spec.nodes)
+    detail = next(item.spec for item in spec.drilldowns if item.source == "node:root::MISSION-X")
+    assert "root::CAP-D" in {node.entity_ref for node in detail.nodes}
+    assert any(edge.kind == "operational-flow" and edge.style == "solid" for edge in detail.edges)
+    leaf = next(node for node in detail.nodes if node.entity_ref == "root::CAP-D")
     assert {"behaviors:1", "components:2", "moes:1", "failures:1", "monitoring:1"} <= set(leaf.badges)
     assert "request" in leaf.metrics["inputs"] and "result" in leaf.metrics["outputs"]
-    assert leaf.drilldown_ref
+    assert all(node.drilldown_ref for node in spec.nodes if node.kind == "capability")
+    assert all(any(item.id == node.drilldown_ref for item in spec.drilldowns) for node in spec.nodes if node.drilldown_ref)
     assert any(group.kind == "warning" for group in spec.groups)
 
 
 def test_functional_is_bounded_and_independent_of_input_order(tmp_path):
     identifiers = ["ROOT"] + [f"CAP-{index:02}" for index in range(20)]
-    first = project_functional_architecture(_context(tmp_path, identifiers)).to_dict()
-    shuffled = identifiers[1:]
-    random.Random(17).shuffle(shuffled)
-    second_context = _context(tmp_path, ["ROOT", *shuffled])
+    context = _context(tmp_path, identifiers)
+    model = context.models["root"]
+    model.relationships = [item for item in model.relationships if item.type.value != "contains"]
+    from architecture_model.core.types import Relationship, RelationType
+    model.relationships.extend(Relationship(RelationType.CONTAINS, "ROOT", item) for item in identifiers[1:])
+    first = project_functional_architecture(ArchitectureViewContext(context.root, context.models, [])).to_dict()
+    random.Random(17).shuffle(model.entities.capabilities)
+    random.Random(23).shuffle(model.relationships)
+    second_context = ArchitectureViewContext(context.root, context.models, [])
     second = project_functional_architecture(second_context).to_dict()
     assert len([node for node in first["nodes"] if node["kind"] == "capability"]) <= 12
+    assert len(first["nodes"]) <= 15
     assert any(item["code"] == "FUNCTIONAL_OVERVIEW_BOUNDED" for item in first["warnings"])
     assert first == second
 
@@ -94,3 +103,85 @@ def test_functional_curation_changes_presentation_and_requires_evidence_for_infe
         ViewCuration(flows=[CuratedFlow("missing", "root::CAP-B", "data-flow", inferred=True)]),
     )
     assert any(item.code == "FUNCTIONAL_CURATION_INVALID" for item in invalid.warnings)
+
+
+def test_functional_step_flow_uses_one_specific_capability_and_aggregates_duplicates(tmp_path):
+    path = tmp_path / ".architecture-model.yaml"
+    path.write_text("""meta: {project: flows, schema_version: '2.0'}
+entities:
+  capabilities:
+    - {id: ROOT, name: Mission, status: ACTIVE}
+    - {id: CAP-A, name: Receive, status: ACTIVE}
+    - {id: CAP-B, name: Deliver, status: ACTIVE}
+    - {id: CAP-X, name: Unsupported, status: ACTIVE}
+  components:
+    - {id: COMP-A, name: Receiver, status: ACTIVE}
+    - {id: COMP-B, name: Deliverer, status: ACTIVE}
+  behaviors:
+    - id: BEH-1
+      name: Run
+      status: ACTIVE
+      capability_id: ROOT
+      structured_steps:
+        - {order: 1, action: Receive one, component_ref: COMP-A}
+        - {order: 2, action: Deliver one, component_ref: COMP-B}
+        - {order: 3, action: Receive two, component_ref: COMP-A}
+        - {order: 4, action: Deliver two, component_ref: COMP-B}
+relationships:
+  - {from: ROOT, to: CAP-A, type: contains}
+  - {from: ROOT, to: CAP-B, type: contains}
+  - {from: ROOT, to: CAP-X, type: contains}
+  - {from: COMP-A, to: CAP-A, type: realizes}
+  - {from: COMP-A, to: CAP-X, type: realizes}
+  - {from: COMP-B, to: CAP-B, type: realizes}
+""", encoding="utf-8")
+    spec = project_functional_architecture(ArchitectureViewContext.from_repo(tmp_path))
+    flows = [edge for edge in spec.edges if edge.kind == "operational-flow"]
+    assert [(edge.source, edge.target, edge.count) for edge in flows] == [
+        ("node:root::CAP-A", "node:root::CAP-B", 2),
+        ("node:root::CAP-B", "node:root::CAP-A", 1),
+    ]
+    assert all("CAP-X" not in (edge.source + edge.target) for edge in flows)
+
+
+def test_functional_represents_disconnected_roots_and_real_drilldowns_with_global_bound(tmp_path):
+    context = _context(tmp_path, ["ROOT-A", "CAP-A"])
+    model = context.models["root"]
+    from architecture_model.core.types import Capability, Status
+    model.entities.capabilities.extend([
+        Capability("ROOT-B", "Second Mission", Status.ACTIVE),
+        Capability("CAP-B", "Second Function", Status.ACTIVE),
+    ])
+    from architecture_model.core.types import Relationship, RelationType
+    model.relationships.append(Relationship(RelationType.CONTAINS, "ROOT-B", "CAP-B"))
+    context = ArchitectureViewContext(context.root, context.models, [])
+
+    spec = project_functional_architecture(context, max_overview_nodes=6)
+    refs = {node.entity_ref for node in spec.nodes}
+    assert {"root::ROOT-A", "root::ROOT-B"} <= refs
+    assert len(spec.nodes) <= 6
+    detail = next(item.spec for item in spec.drilldowns if item.source == "node:root::ROOT-A")
+    assert detail and "root::CAP-A" in {node.entity_ref for node in detail.nodes}
+
+
+def test_functional_groups_featured_capabilities_and_bounds_orphans(tmp_path):
+    context = _context(tmp_path, ["MISSION", "CAP-A", "CAP-B"])
+    group = CuratedGroup("priority", "Priority", members=["root::CAP-B"])
+    curation = ViewCuration(
+        groups=[group], featured=[Selector(qualified_id="root::CAP-B", resolved_id="root::CAP-B")],
+        hide=[Selector(qualified_id="root::CAP-A", resolved_id="root::CAP-A")],
+    )
+    spec = project_functional_architecture(context, curation, max_overview_nodes=4)
+    nodes = {node.entity_ref: node for node in spec.nodes if node.entity_ref}
+    assert len(spec.nodes) <= 4
+    assert "root::CAP-A" not in nodes
+    assert nodes["root::CAP-B"].group == "priority"
+
+
+def test_functional_curated_drilldown_key_replaces_generated_presentation_id(tmp_path):
+    context = _context(tmp_path, ["MISSION", "CAP-A"])
+    selector = Selector(qualified_id="root::CAP-A", resolved_id="root::CAP-A")
+    spec = project_functional_architecture(context, ViewCuration(drilldowns={"inspect-function": selector}))
+    node = next(item for item in spec.nodes if item.entity_ref == "root::CAP-A")
+    assert node.drilldown_ref == "inspect-function"
+    assert next(item for item in spec.drilldowns if item.id == "inspect-function").spec is not None

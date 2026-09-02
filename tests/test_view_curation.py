@@ -461,3 +461,16 @@ def test_external_requires_inferred_true_and_structured_repo_evidence(tmp_path):
         curation = load_viewer_curation(tmp_path, context, path)
         assert curation.views.conops.externals == []
         assert curation.diagnostics
+
+
+def test_group_members_are_qualified_resolved_presentation_selectors(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "groups.yaml"
+    path.write_text("""version: 1
+views:
+  functional:
+    groups:
+      - {id: core, label: Core, members: [root::COMP-1]}
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.functional.groups[0].members == ["root::COMP-1"]

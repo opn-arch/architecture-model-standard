@@ -2,7 +2,7 @@ from pathlib import Path
 
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import CuratedExternal, EvidenceRecord, ViewCuration
+from architecture_model.core.view_curation import CuratedExternal, CuratedGroup, EvidenceRecord, Selector, ViewCuration
 from architecture_model.core.se_view_projectors import project_conops
 
 
@@ -53,8 +53,7 @@ def test_conops_bounds_primary_nodes_deterministically_and_reports_sparse_fallba
     first = project_conops(context).to_dict()
     second = project_conops(context).to_dict()
     assert first == second
-    primary = [node for node in first["nodes"] if node["kind"] in {"actor", "external", "scenario", "system"}]
-    assert len(primary) <= 15
+    assert len(first["nodes"]) <= 15
     assert any(item["code"] == "CONOPS_OVERVIEW_BOUNDED" for item in first["warnings"])
 
     sparse_path = tmp_path / "sparse" / ".architecture-model.yaml"
@@ -106,3 +105,72 @@ relationships: []
     assert systems["root::SYS-A"].badges == ["capabilities:1", "behaviors:1"]
     assert systems["root::SYS-B"].badges == ["capabilities:1", "behaviors:1"]
     assert {node.entity_ref for node in spec.nodes if node.kind == "scenario"} >= {"a::BEH-1", "b::BEH-1"}
+
+
+def test_conops_global_bound_keeps_interface_system_path_atomic(tmp_path):
+    spec = project_conops(_context(tmp_path, behaviors=12), max_overview_nodes=7)
+    assert len(spec.nodes) <= 7
+    refs = {node.entity_ref for node in spec.nodes}
+    assert ("root::IF-1" in refs) == ("root::SYS-1" in refs)
+    assert all(edge.source in {node.id for node in spec.nodes} and edge.target in {node.id for node in spec.nodes} for edge in spec.edges)
+
+
+def test_conops_infers_and_deduplicates_external_only_from_structured_evidence(tmp_path):
+    path = tmp_path / ".architecture-model.yaml"
+    path.write_text("""meta: {project: inferred, schema_version: '2.0'}
+entities:
+  behaviors:
+    - id: BEH-1
+      name: Exchange
+      status: ACTIVE
+      structured_steps:
+        - {order: 1, action: Receive, actor: Vendor API}
+        - {order: 2, action: Ignore arbitrary prose}
+  interfaces:
+    - {id: IF-1, name: Vendor REST, status: ACTIVE, provider: Vendor API, consumer: Local System, protocol: HTTPS}
+  systems:
+    - {id: SYS-1, name: Local System, status: ACTIVE}
+relationships: []
+""", encoding="utf-8")
+
+    spec = project_conops(ArchitectureViewContext.from_repo(tmp_path))
+    inferred = [node for node in spec.nodes if node.kind == "external" and node.inferred]
+    assert len(inferred) == 1
+    assert inferred[0].label == "Vendor API"
+    assert {item.source for item in inferred[0].evidence} == {"interface-endpoint", "structured-step-participant"}
+    assert all("arbitrary prose" not in node.label.lower() for node in spec.nodes)
+
+
+def test_conops_infers_external_from_structured_component_dependency(tmp_path):
+    path = tmp_path / ".architecture-model.yaml"
+    path.write_text("""meta: {project: dependencies, schema_version: '2.0'}
+entities:
+  components:
+    - id: COMP-1
+      name: Adapter
+      status: ACTIVE
+      external_dependencies:
+        - {name: Payments API, source: requirements.md, protocol: HTTPS}
+relationships: []
+""", encoding="utf-8")
+    spec = project_conops(ArchitectureViewContext.from_repo(tmp_path))
+    external = next(node for node in spec.nodes if node.label == "Payments API")
+    assert external.inferred
+    assert external.evidence[0].source == "component-external-dependency"
+    assert external.evidence[0].entity_refs == ("root::COMP-1",)
+
+
+def test_conops_drilldown_and_curation_are_structural(tmp_path):
+    context = _context(tmp_path)
+    curation = ViewCuration(
+        featured=[Selector(qualified_id="root::BEH-0", resolved_id="root::BEH-0")],
+        scenarios=[CuratedGroup("priority", "Priority", members=["root::BEH-0"])],
+        labels={"root::BEH-0": "Curated Mission"},
+        drilldowns={"mission-detail": Selector(qualified_id="root::BEH-0", resolved_id="root::BEH-0")},
+    )
+    spec = project_conops(context, curation)
+    scenario = next(node for node in spec.nodes if node.entity_ref == "root::BEH-0")
+    detail = next(item for item in spec.drilldowns if item.id == scenario.drilldown_ref).spec
+    assert scenario.drilldown_ref == "mission-detail"
+    assert scenario.label == "Curated Mission" and scenario.group == "priority"
+    assert detail and {node.kind for node in detail.nodes} >= {"behavior", "interface", "system", "requirement", "moe", "failure"}

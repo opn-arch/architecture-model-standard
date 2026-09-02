@@ -23,7 +23,7 @@ VIEW_KEYS = {
     "preferred_capability_root", "mission_root", "drilldowns",
 }
 SELECTOR_KEYS = {"qualified_id", "local_id", "system", "name", "source_file", "tag"}
-GROUP_KEYS = {"id", "label", "kind", "parent", "order", "description"}
+GROUP_KEYS = {"id", "label", "kind", "parent", "order", "description", "members"}
 EXTERNAL_KEYS = {"id", "name", "inferred", "evidence", "kind", "description"}
 FLOW_KEYS = {"source", "target", "kind", "label", "description", "inferred", "evidence"}
 EVIDENCE_KEYS = {"source", "claim"}
@@ -70,6 +70,7 @@ class CuratedGroup:
     kind: str = "group"
     parent: str = ""
     order: int = 0
+    members: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -209,7 +210,7 @@ def _evidence(raw: Any, root: Path, diagnostics: list[Diagnostic], owner: str, v
     return result
 
 
-def _groups(raw: Any, diagnostics: list[Diagnostic], label: str, identifiers: set[str], view: str) -> list[CuratedGroup]:
+def _groups(raw: Any, diagnostics: list[Diagnostic], label: str, identifiers: set[str], view: str, context: ArchitectureViewContext) -> list[CuratedGroup]:
     result: list[CuratedGroup] = []
     for value in raw if isinstance(raw, list) else []:
         if not isinstance(value, dict) or not value.get("id") or not value.get("label"):
@@ -229,7 +230,18 @@ def _groups(raw: Any, diagnostics: list[Diagnostic], label: str, identifiers: se
         group_label = _text(value["label"], diagnostics, view, f"{label} label")
         if value.get("description") is not None:
             _text(value["description"], diagnostics, view, f"{label} description")
-        result.append(CuratedGroup(identifier, group_label, str(value.get("kind", label)), str(value.get("parent", "")), order))
+        members = value.get("members", [])
+        if not isinstance(members, list):
+            _diag(diagnostics, "CURATION_VALUE_INVALID", f"Invalid {label} members: {identifier}", view=view)
+            raise _InvalidView(label)
+        resolved_members: list[str] = []
+        for member in members:
+            selector = _selector(member, diagnostics, view)
+            if selector is None or not selector.resolve(context):
+                _diag(diagnostics, "CURATION_SELECTOR_UNRESOLVED", f"Unresolved {label} member: {member}", view=view)
+                raise _InvalidView(label)
+            resolved_members.append(selector.resolved_id)
+        result.append(CuratedGroup(identifier, group_label, str(value.get("kind", label)), str(value.get("parent", "")), order, resolved_members))
     return sorted(result, key=lambda item: (item.order, item.id))
 
 
@@ -281,9 +293,9 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
     except ValueError as exc:
         _diag(diagnostics, "CURATION_TEXT_UNSAFE", str(exc), view=view_name)
         raise _InvalidView("labels") from exc
-    result.groups = _groups(_collection(raw, "groups", diagnostics, list, view_name), diagnostics, "group", identifiers, view_name)
-    result.scenarios = _groups(_collection(raw, "scenarios", diagnostics, list, view_name), diagnostics, "scenario", identifiers, view_name)
-    result.tiers = _groups(_collection(raw, "tiers", diagnostics, list, view_name), diagnostics, "tier", identifiers, view_name)
+    result.groups = _groups(_collection(raw, "groups", diagnostics, list, view_name), diagnostics, "group", identifiers, view_name, context)
+    result.scenarios = _groups(_collection(raw, "scenarios", diagnostics, list, view_name), diagnostics, "scenario", identifiers, view_name, context)
+    result.tiers = _groups(_collection(raw, "tiers", diagnostics, list, view_name), diagnostics, "tier", identifiers, view_name, context)
     for value in _collection(raw, "externals", diagnostics, list, view_name):
         if not isinstance(value, dict):
             _diag(diagnostics, "CURATION_VALUE_INVALID", "Invalid external", view=view_name)

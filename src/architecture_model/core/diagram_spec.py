@@ -144,6 +144,7 @@ class DiagramEdge:
     inferred: bool = False
     style: str = ""
     critical: bool = False
+    count: int = 1
 
     def __post_init__(self) -> None:
         self.evidence = _provenance_list(self.evidence)
@@ -216,6 +217,7 @@ class DiagramDrilldown:
     target: str = ""
     spec_ref: str = ""
     route: str = ""
+    spec: DiagramSpec | None = None
 
 
 @dataclass
@@ -343,8 +345,10 @@ class DiagramSpec:
                 raise ValueError(f"Drilldown has unknown source: {drilldown.source}")
             if drilldown.target and drilldown.target not in node_ids | container_ids:
                 raise ValueError(f"Drilldown has unknown target: {drilldown.target}")
-            if sum(bool(value) for value in (drilldown.target, drilldown.spec_ref, drilldown.route)) != 1:
-                raise ValueError(f"Drilldown {drilldown.id} must set exactly one target, spec_ref, or route")
+            if sum(bool(value) for value in (drilldown.target, drilldown.spec_ref, drilldown.route, drilldown.spec)) != 1:
+                raise ValueError(f"Drilldown {drilldown.id} must set exactly one target, spec_ref, route, or spec")
+            if drilldown.spec:
+                drilldown.spec.validate()
         for edge in self.edges:
             if edge.source not in node_ids:
                 raise ValueError(f"Edge has unknown source: {edge.source}")
@@ -362,6 +366,11 @@ class DiagramSpec:
             data["nodes"][index]["evidence"] = [item.to_dict() for item in node.evidence]
         for index, edge in enumerate(sorted(self.edges, key=lambda item: (item.source, item.target, item.kind, item.label))):
             data["edges"][index]["evidence"] = [item.to_dict() for item in edge.evidence]
+        for index, drilldown in enumerate(sorted(self.drilldowns, key=lambda item: item.id)):
+            if drilldown.spec:
+                data["drilldowns"][index]["spec"] = drilldown.spec.to_dict()
+            else:
+                data["drilldowns"][index].pop("spec", None)
         for key in ("groups", "lanes", "callouts", "legend", "drilldowns"):
             data[key] = sorted(data[key], key=lambda item: (item.get("order", 0), item["id"]))
         data["warnings"] = sorted(data["warnings"], key=lambda item: (item["severity"], item["code"], item["message"]))
@@ -379,7 +388,10 @@ class DiagramSpec:
             callouts=[DiagramCallout(**item) for item in data.get("callouts", [])],
             legend=[LegendEntry(**item) for item in data.get("legend", [])],
             warnings=[Diagnostic(**item) if isinstance(item, dict) else item for item in data.get("warnings", [])], provenance=DiagramProvenance(**data.get("provenance", {})),
-            drilldowns=[DiagramDrilldown(**item) for item in data.get("drilldowns", [])],
+            drilldowns=[DiagramDrilldown(
+                **{key: value for key, value in item.items() if key != "spec"},
+                spec=cls.from_dict(item["spec"]) if item.get("spec") else None,
+            ) for item in data.get("drilldowns", [])],
         )
         spec.validate()
         return spec

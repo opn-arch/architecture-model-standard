@@ -469,6 +469,7 @@ def _parse_component(d: dict) -> Component:
         test_contracts=test_contracts,
         observability=observability,
         interfaces=interfaces,
+        external_dependencies=d.get("external_dependencies", []),
     )
 
 
