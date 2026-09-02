@@ -25,7 +25,9 @@ def load_model_hierarchy(
         for system in current.entities.systems:
             if not system.sub_model_ref:
                 continue
-            candidate = (root / system.sub_model_ref).resolve()
+            local_candidate = (current_path.parent / system.sub_model_ref).resolve()
+            root_candidate = (root / system.sub_model_ref).resolve()
+            candidate = local_candidate if local_candidate.is_file() else root_candidate
             try:
                 candidate.relative_to(root)
             except ValueError:

@@ -68,6 +68,14 @@ class _FakeCapability:
 
 
 @dataclass
+class _FakeActor:
+    id: str
+    name: str
+    actor_type: str = "human"
+    evidence_source: str = ""
+
+
+@dataclass
 class _FakeRelationship:
     from_id: str = "COMP-1"
     to_id: str = "CAP-1"
@@ -1190,6 +1198,55 @@ class TestRunWithCoordinator:
 
 
 class TestSoSModel:
+    def test_collision_ids_and_actors_are_independent_of_input_order(self):
+        boundaries = [
+            SystemBoundary("INLINE-B", "B", files=["b.py"], is_full_system=False),
+            SystemBoundary("INLINE-A", "A", files=["a.py"], is_full_system=False),
+        ]
+        components = [
+            _FakeComponent("COMP@3", "B component", ["b.py"]),
+            _FakeComponent("COMP 3", "A component", ["a.py"]),
+        ]
+        actors = [_FakeActor("ACT A", "Actor space"), _FakeActor("ACT@A", "Actor symbol")]
+        capabilities = [
+            _FakeCapability("CAP-1", "A capability", source_files=["a.py"]),
+            _FakeCapability("CAP-2", "B capability", source_files=["b.py"]),
+        ]
+        behaviors = [
+            _FakeBehavior("BEH-1", "A behavior", source_file="a.py", capability_id="CAP-1", actor_id="ACT A"),
+            _FakeBehavior("BEH-2", "B behavior", source_file="b.py", capability_id="CAP-2", actor_id="ACT@A"),
+        ]
+
+        def build(reverse: bool) -> dict:
+            ordered_components = list(reversed(components)) if reverse else components
+            ordered_actors = list(reversed(actors)) if reverse else actors
+            results = {
+                "allocate": _stage_result(_FakeAllocOutput(ordered_components)),
+                "infer": _stage_result(_FakeInferOutput(
+                    actors=ordered_actors,
+                    capabilities=list(reversed(capabilities)) if reverse else capabilities,
+                    behaviors=list(reversed(behaviors)) if reverse else behaviors,
+                )),
+                "relate": _stage_result(_FakeRelateOutput()),
+            }
+            ordered_boundaries = list(reversed(boundaries)) if reverse else boundaries
+            return yaml.safe_load(_build_sos_model(
+                [], ordered_boundaries, DecomposeResult(), results,
+            ).model_yaml)
+
+        forward = build(False)
+        reverse = build(True)
+        assert validate_model_data(forward) == []
+        assert validate_model_data(reverse) == []
+        forward["meta"].pop("generated_at")
+        reverse["meta"].pop("generated_at")
+        assert forward == reverse
+        actor_ids = [actor["id"] for actor in forward["entities"]["actors"]]
+        assert len(actor_ids) == len(set(actor_ids)) == 2
+        assert {
+            behavior["actor_id"] for behavior in forward["entities"]["behaviors"]
+        } == set(actor_ids)
+
     def test_all_projection_collision_ids_validate_and_promote_exact_bytes(self, tmp_path):
         boundaries = [
             SystemBoundary("INLINE-A", "A", files=["a.py"], is_full_system=False),

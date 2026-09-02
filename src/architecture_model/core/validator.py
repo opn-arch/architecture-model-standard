@@ -215,6 +215,22 @@ def _check_referential_integrity(model: ArchitectureModel, result: ValidationRes
     # Also include layer IDs that might be slugified differently
     layer_ids = {layer.id for layer in model.entities.layers}
 
+    for behavior in model.entities.behaviors:
+        for field, reference in (
+            ("actor_id", behavior.actor_id),
+            ("capability_id", behavior.capability_id),
+        ):
+            if reference and reference not in all_ids:
+                result.issues.append(
+                    ValidationIssue(
+                        severity=Severity.ERROR,
+                        code="DANGLING_REF",
+                        message=f"Behavior {field} references unknown entity '{reference}'",
+                        entity_id=behavior.id,
+                        context=field,
+                    )
+                )
+
     for rel in model.relationships:
         if rel.from_id not in all_ids:
             # Check if it's a slugified reference to a known concept

@@ -6,14 +6,20 @@ from pathlib import Path
 import yaml
 import pytest
 
-from architecture_model.core.parser import _parse_raw, dump_model, load_model, save_model, validate_model_data
+from architecture_model.core.parser import (
+    _dump_behavior, _parse_behavior, _parse_raw, dump_model, load_model, save_model,
+    validate_model_data,
+)
 from architecture_model.core.types import (
+    ArchitectureModel,
     ComponentInterface,
     Constant,
     DecisionEntry,
     FunctionSignature,
+    Entities,
     Interface,
     InterfaceType,
+    ModelMeta,
     Status,
     TestContract,
 )
@@ -215,6 +221,27 @@ class TestCapabilitySEFields:
 
 
 class TestBehaviorSEFields:
+    def test_behavior_linkage_and_full_structured_step_round_trip(self):
+        raw = {
+            "id": "BEH-1", "name": "Flow", "status": "ACTIVE",
+            "actor": "Legacy user", "actor_id": "ACT-1", "capability_id": "CAP-1",
+            "structured_steps": [{
+                "order": 1, "action": "Run", "component_ref": "COMP-1",
+                "actor": "Operator", "input": "request", "output": "result",
+                "error_handling": "retry",
+            }],
+        }
+
+        behavior = _parse_behavior(raw)
+        assert behavior.actor == "Legacy user"
+        assert behavior.actor_id == "ACT-1"
+        assert behavior.capability_id == "CAP-1"
+        assert _dump_behavior(behavior) == raw
+        assert ArchitectureModel(
+            meta=ModelMeta(project="x", schema_version="2.0.0"),
+            entities=Entities(behaviors=[behavior]), relationships=[],
+        ).to_dict()["entities"]["behaviors"][0] == raw
+
     def test_parse_goals_moes_failure_modes(self):
         raw = _make_raw_entity("behaviors", {
             "goals": ["Reliable processing"],

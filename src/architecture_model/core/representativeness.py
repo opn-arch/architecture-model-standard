@@ -95,8 +95,8 @@ def compute_representativeness(
         components = [component for current in hierarchy for component in current.entities.components]
 
     # --- File Coverage ---
-    non_trivial = [m for m in modules if not _is_trivial(m)]
-    root_files = [path for component in root_components for path in component.files]
+    non_trivial = list({m.file: m for m in modules if not _is_trivial(m)}.values())
+    root_files = {path for component in root_components for path in component.files}
     result.root_local_file_coverage = (
         sum(any(_files_match(path, module.file) for path in root_files) for module in non_trivial)
         / len(non_trivial) * 100
@@ -108,9 +108,9 @@ def compute_representativeness(
         result.file_coverage = 0.0
         result.uncovered_files = [m.file for m in non_trivial]
     else:
-        all_comp_files = []
+        all_comp_files: set[str] = set()
         for c in components:
-            all_comp_files.extend(c.files or [])
+            all_comp_files.update(c.files or [])
         covered = []
         uncovered = []
         for m in non_trivial:
@@ -251,6 +251,8 @@ def compute_representativeness(
         result.file_coverage + result.relationship_accuracy +
         result.boundary_coherence + result.behavioral_coverage
     ) / 4
+    if result.hierarchy_issues:
+        result.overall = min(result.overall, 75.0)
     return result
 
 

@@ -444,7 +444,11 @@
             "properties": {
               "order": {"type": "integer", "minimum": 1},
               "action": {"type": "string"},
-              "component_ref": {"type": "string"}
+              "component_ref": {"type": "string"},
+              "actor": {"type": "string"},
+              "input": {"type": "string"},
+              "output": {"type": "string"},
+              "error_handling": {"type": "string"}
             },
             "unevaluatedProperties": false
           }

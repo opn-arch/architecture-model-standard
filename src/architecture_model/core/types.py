@@ -371,6 +371,8 @@ class Step:
 class Behavior(BaseEntity):
     trigger: str = ""
     actor: str = ""
+    actor_id: str = ""
+    capability_id: str = ""
     preconditions: list[str] = field(default_factory=list)
     postconditions: list[str] = field(default_factory=list)
     steps: list[str] = field(default_factory=list)
@@ -915,6 +917,10 @@ class ArchitectureModel:
             d["trigger"] = b.trigger
         if b.actor:
             d["actor"] = b.actor
+        if b.actor_id:
+            d["actor_id"] = b.actor_id
+        if b.capability_id:
+            d["capability_id"] = b.capability_id
         if b.preconditions:
             d["preconditions"] = b.preconditions
         if b.postconditions:

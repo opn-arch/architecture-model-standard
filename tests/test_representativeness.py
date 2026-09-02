@@ -35,6 +35,32 @@ def _edge(source, target):
 
 
 class TestFileCoverage:
+    def test_duplicate_manifest_and_component_files_count_once(self):
+        modules = [_module("a.py"), _module("a.py"), _module("b.py")]
+        model = _model(components=[_comp("C1", "A", ["a.py", "a.py"])])
+
+        result = compute_representativeness(model, modules, [])
+
+        assert result.file_coverage == 50.0
+        assert result.uncovered_files == ["b.py"]
+
+    def test_invalid_hierarchy_caps_overall_below_passing_threshold(self, tmp_path):
+        root = tmp_path / ".architecture-model.yaml"
+        root.write_text(
+            "meta: {project: root, schema_version: 2.0.0, generated_at: '2026-09-02T00:00:00Z'}\n"
+            "entities:\n"
+            "  systems:\n"
+            "  - {id: SYS-1, name: Missing, status: ACTIVE, sub_model_ref: missing.yaml}\n"
+            "  components:\n"
+            "  - {id: COMP-1, name: All, status: ACTIVE, files: [a.py]}\n"
+            "relationships: []\n"
+        )
+
+        result = compute_representativeness(load_model(root), [_module("a.py")], [])
+
+        assert result.hierarchy_issues
+        assert result.overall < 80.0
+
     def test_root_model_uses_valid_descendant_component_files(self, tmp_path):
         child = tmp_path / ".architecture-models/core/.architecture-model.yaml"
         child.parent.mkdir(parents=True)

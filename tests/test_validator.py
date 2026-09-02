@@ -219,6 +219,27 @@ class TestDuplicateIDs:
 
 
 class TestDanglingRefs:
+    @pytest.mark.parametrize("field, reference", [
+        ("actor_id", "ACT-404"),
+        ("capability_id", "CAP-404"),
+    ])
+    def test_dangling_behavior_linkage_is_error(self, field, reference):
+        behavior = Behavior(id="BEH-1", name="Flow", status=Status.ACTIVE)
+        setattr(behavior, field, reference)
+        model = ArchitectureModel(
+            meta=ModelMeta(project="test", schema_version="2.0.0"),
+            entities=Entities(behaviors=[behavior]),
+            relationships=[],
+        )
+
+        result = validate_model(model)
+
+        assert any(
+            issue.severity == Severity.ERROR
+            and issue.code == "DANGLING_REF"
+            and issue.context == field
+            for issue in result.issues
+        )
     """Test detection of relationships referencing non-existent entities."""
 
     def test_dangling_from_ref(self):

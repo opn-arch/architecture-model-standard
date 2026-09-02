@@ -205,3 +205,43 @@ def test_hierarchical_gate_rejects_cycle_and_path_traversal(tmp_path):
     assert result.phase_requirements_met is False
     assert any("cycle" in issue.lower() for issue in result.issues)
     assert any("traversal" in issue.lower() for issue in result.issues)
+
+
+def test_nested_submodel_refs_resolve_from_containing_model_directory(tmp_path):
+    _write_model(
+        tmp_path / ".architecture-model.yaml",
+        "  systems:\n  - {id: SYS-1, name: Child, status: ACTIVE, sub_model_ref: models/child.yaml}\n",
+    )
+    _write_model(
+        tmp_path / "models/child.yaml",
+        "  systems:\n  - {id: SYS-2, name: Grandchild, status: ACTIVE, sub_model_ref: nested/grandchild.yaml}\n",
+    )
+    _write_model(
+        tmp_path / "models/nested/grandchild.yaml",
+        "  components:\n  - {id: COMP-1, name: Grandchild, status: ACTIVE, files: [grandchild.py]}\n",
+    )
+    manifest = _make_manifest(filenames=["grandchild.py"])
+    manifest.project_root = str(tmp_path)
+
+    result = check_development_gate(load_model(tmp_path / ".architecture-model.yaml"), manifest)
+
+    assert result.file_coverage == 100.0
+    assert result.phase_requirements_met is True
+
+
+def test_hierarchy_rejects_symlink_that_escapes_repo(tmp_path):
+    outside = tmp_path.parent / "outside-hierarchy.yaml"
+    _write_model(outside, "  components: []\n")
+    link = tmp_path / "linked.yaml"
+    link.symlink_to(outside)
+    _write_model(
+        tmp_path / ".architecture-model.yaml",
+        "  systems:\n  - {id: SYS-1, name: Linked, status: ACTIVE, sub_model_ref: linked.yaml}\n",
+    )
+    manifest = _make_manifest(filenames=[])
+    manifest.project_root = str(tmp_path)
+
+    result = check_development_gate(load_model(tmp_path / ".architecture-model.yaml"), manifest)
+
+    assert result.phase_requirements_met is False
+    assert any("traversal" in issue.lower() for issue in result.issues)

@@ -453,7 +453,10 @@ def _build_system_model_yaml(
     if alloc_result and alloc_result.output:
         output = alloc_result.output
         if hasattr(output, "components"):
-            for comp in output.components:
+            for comp in sorted(
+                output.components,
+                key=lambda item: (item.id, item.name, tuple(sorted(map(str, item.files)))),
+            ):
                 comp_files = {
                     _normalized_path(path)
                     for path in getattr(comp, "files", [])
@@ -516,10 +519,16 @@ def _build_system_model_yaml(
     infer_result = results.get("infer")
     selected_capability_ids: set[str] = set()
     capability_inputs: dict[str, Any] = {}
+    inferred_actors = sorted(
+        getattr(getattr(infer_result, "output", None), "actors", []),
+        key=lambda item: (item.id, item.name),
+    )
+    for actor in inferred_actors:
+        _register_id(actor.id, "ACT")
     if infer_result and infer_result.output:
         output = infer_result.output
         if hasattr(output, "capabilities"):
-            for cap in output.capabilities:
+            for cap in sorted(output.capabilities, key=lambda item: (item.id, item.name)):
                 cap_sources = {
                     _normalized_path(path) for path in getattr(cap, "source_files", [])
                 }
@@ -549,7 +558,7 @@ def _build_system_model_yaml(
     if infer_result and infer_result.output:
         output = infer_result.output
         if hasattr(output, "behaviors"):
-            for beh in output.behaviors:
+            for beh in sorted(output.behaviors, key=lambda item: (item.id, item.name)):
                 source_file = _normalized_path(getattr(beh, "source_file", ""))
                 if (
                     file_set
@@ -608,7 +617,7 @@ def _build_system_model_yaml(
     if infer_result and infer_result.output:
         output = infer_result.output
         if hasattr(output, "actors"):
-            for actor in output.actors:
+            for actor in inferred_actors:
                 actor_dict: dict[str, Any] = {
                     "id": _register_id(actor.id, "ACT"),
                     "name": actor.name,
@@ -626,7 +635,7 @@ def _build_system_model_yaml(
     if specify_result and specify_result.output:
         output = specify_result.output
         if hasattr(output, "interfaces"):
-            for iface in output.interfaces:
+            for iface in sorted(output.interfaces, key=lambda item: (item.id, item.name)):
                 if iface.component_id not in selected_component_ids:
                     continue
                 namespaced_comp_id = _register_id(iface.component_id)
@@ -668,12 +677,12 @@ def _build_system_model_yaml(
                 if _normalized_path(getattr(behavior, "source_file", "")) in file_set
             }
         )
-        scoped_requirements = [
+        scoped_requirements = sorted([
             req for req in specify_result.output.requirements
             if not file_set
             or _normalized_path(req.source_file) in file_set
             or req.id in direct_requirement_ids
-        ]
+        ], key=lambda item: (item.id, item.name, str(item.source_file)))
         requirements = _merge_requirements([_requirement_dict(req) for req in scoped_requirements])
         requirement_source_by_key = {
             _requirement_key(_requirement_dict(req)): req.source_file
@@ -1067,7 +1076,7 @@ def _build_sos_model(
     """Assemble the System-of-Systems model."""
     # Actors remain top-level external context. Internal inferred entities stay
     # in their self-contained subsystem models.
-    actors: list[dict[str, Any]] = []
+    raw_actors: list[Any] = []
     capabilities: list[dict[str, Any]] = []
     behaviors: list[dict[str, Any]] = []
 
@@ -1080,22 +1089,31 @@ def _build_sos_model(
     if infer_result and infer_result.output:
         output = infer_result.output
         if hasattr(output, "actors"):
-            for actor in output.actors:
-                actors.append(
-                    {
-                        "id": _schema_id(getattr(actor, "id", "")),
-                        "name": getattr(actor, "name", ""),
-                        "status": "ACTIVE",
-                    }
-                )
+            raw_actors = list(output.actors)
 
     # Build SoS YAML
-    slugs = _system_slugs([system for system in systems if system.model_yaml])
+    systems = sorted(
+        [system for system in systems if system.model_yaml],
+        key=lambda system: (system.system_id, system.name),
+    )
+    slugs = _system_slugs(systems)
     allocator = _EntityIdAllocator()
     system_id_remap = {
         system.system_id: allocator.allocate(system.system_id, namespace="root", prefix="SYS")
-        for system in systems if system.model_yaml
+        for system in systems
     }
+    actor_id_remap = {
+        actor.id: allocator.allocate(actor.id, prefix="ACT")
+        for actor in sorted(raw_actors, key=lambda item: (item.id, item.name))
+    }
+    actors = [
+        {
+            "id": actor_id_remap[actor.id],
+            "name": actor.name,
+            "status": "ACTIVE",
+        }
+        for actor in sorted(raw_actors, key=lambda item: (item.id, item.name))
+    ]
     inter_system_interfaces: list[dict[str, Any]] = []
     for from_sys, to_sys, rel_type in decompose.inter_system_edges:
         inter_system_interfaces.append({
@@ -1103,10 +1121,10 @@ def _build_sos_model(
             "to": system_id_remap.get(to_sys, allocator.allocate(to_sys, "root", "SYS")),
             "type": rel_type,
         })
-    source_artifacts = [
+    source_artifacts = sorted([
         f".architecture-models/{slugs[system.system_id]}/.architecture-model.yaml"
-        for system in systems if system.model_yaml
-    ] + [str(path) for boundary in inlines for path in boundary.files]
+        for system in systems
+    ] + [str(path) for boundary in inlines for path in boundary.files])
     system_entities = [
         {
             "id": system_id_remap[s.system_id],
@@ -1114,7 +1132,7 @@ def _build_sos_model(
             "status": "ACTIVE",
             "sub_model_ref": f".architecture-models/{slugs[s.system_id]}/.architecture-model.yaml",
         }
-        for s in systems if s.model_yaml
+        for s in systems
     ]
     sos_dict: dict[str, Any] = {
         "meta": {
@@ -1196,7 +1214,7 @@ def _build_sos_model(
                 sos_dict["entities"].setdefault(group_name, []).extend(entities)
                 allocator.used.update(entity["id"] for entity in entities if entity.get("id"))
         inline_relationships.extend(shared_projection.get("relationships", []))
-    for boundary in inlines:
+    for boundary in sorted(inlines, key=lambda item: (item.system_id, item.name)):
         owned_files = [
             path for path in boundary.files
             if ownership.boundary_by_file.get(_normalized_path(path)) == boundary.system_id
@@ -1216,7 +1234,7 @@ def _build_sos_model(
                 "status": "ACTIVE",
                 "files": list(owned_files),
             }]
-        id_remap: dict[str, str] = {}
+        id_remap: dict[str, str] = dict(actor_id_remap)
         for group_name, entities in projected_entities.items():
             if group_name == "actors":
                 continue

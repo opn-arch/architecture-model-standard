@@ -240,6 +240,26 @@ class TestTotalBytes:
 
 # 10. Written paths tracking
 class TestWrittenPaths:
+    @pytest.mark.parametrize("field, missing_id", [
+        ("actor_id", "ACT-404"),
+        ("capability_id", "CAP-404"),
+    ])
+    def test_dangling_behavior_linkage_blocks_promotion(self, tmp_path, field, missing_id):
+        model = yaml.safe_load(_model(project="candidate"))
+        model["entities"]["behaviors"] = [{
+            "id": "BEH-1", "name": "Flow", "status": "ACTIVE", field: missing_id,
+        }]
+        ctx = _make_ctx(tmp_path, SynthesizeResult(sos_model_yaml=yaml.safe_dump(model)))
+
+        result = EmitStage().run(ctx)
+
+        assert result.output.promoted is False
+        assert any(
+            issue["code"] == "STRUCTURAL_DANGLING_REF"
+            and field in issue["message"]
+            for issue in result.output.final_validation_issues
+        )
+
     def test_paths(self, tmp_path):
         synth = SynthesizeResult(
             sos_model_yaml=_model(),

@@ -305,6 +305,8 @@ def _parse_behavior(d: dict) -> Behavior:
         **base,
         trigger=d.get("trigger", ""),
         actor=d.get("actor", ""),
+        actor_id=d.get("actor_id", ""),
+        capability_id=d.get("capability_id", ""),
         preconditions=d.get("preconditions", []),
         postconditions=d.get("postconditions", []),
         steps=d.get("steps", []),
@@ -687,6 +689,10 @@ def _dump_behavior(b: Behavior) -> dict:
         d["trigger"] = b.trigger
     if b.actor:
         d["actor"] = b.actor
+    if b.actor_id:
+        d["actor_id"] = b.actor_id
+    if b.capability_id:
+        d["capability_id"] = b.capability_id
     if b.preconditions:
         d["preconditions"] = b.preconditions
     if b.postconditions:
