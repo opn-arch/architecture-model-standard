@@ -214,3 +214,31 @@ def test_conops_restores_bounded_failure_and_error_handling_callouts(tmp_path):
     assert {item.label for item in spec.callouts} >= {"Timeout", "Use degraded mode", "System outage"}
     assert len(spec.callouts) <= 6
     assert all(item.target and item.evidence for item in spec.callouts)
+
+
+def test_conops_failure_callouts_have_global_ids_and_aggregate_same_target_text(tmp_path):
+    context = _context(tmp_path)
+    context.entity("root::CAP-1").value.failure_modes = ["Timeout"]
+    context.entity("root::SYS-1").value.failure_modes = ["Outage"]
+    first = project_conops(context)
+    second = project_conops(context)
+    assert first.to_dict() == second.to_dict()
+    assert len({item.id for item in first.callouts}) == len(first.callouts)
+    timeout = [item for item in first.callouts if item.label == "Timeout"]
+    assert len(timeout) == 1
+    assert set(timeout[0].evidence) == {"root::BEH-0", "root::CAP-1"}
+
+
+def test_conops_renamed_actor_drilldown_uses_canonical_identity(tmp_path):
+    context = _context(tmp_path)
+    context.entity("root::BEH-0").value.actor = "Operator"
+    curation = ViewCuration(labels={"root::ACT-1": "Mission Commander", "root::ACT-2": "Operator"})
+    spec = project_conops(context, curation)
+    actor = next(node for node in spec.nodes if node.entity_ref == "root::ACT-1")
+    assert actor.label == "Mission Commander"
+    detail = next(item.spec for item in spec.drilldowns if item.id == actor.drilldown_ref)
+    refs = {node.entity_ref for node in detail.nodes}
+    assert {"root::ACT-1", "root::BEH-0", "root::IF-1", "root::SYS-1"} <= refs
+    observer = next(node for node in spec.nodes if node.entity_ref == "root::ACT-2")
+    observer_detail = next(item.spec for item in spec.drilldowns if item.id == observer.drilldown_ref)
+    assert "root::BEH-0" not in {node.entity_ref for node in observer_detail.nodes}

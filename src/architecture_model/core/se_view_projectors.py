@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import hashlib
 import re
 from typing import Iterable
 
@@ -170,9 +171,9 @@ def _participant_drilldown(
     )
     nodes = [root]
     edges: list[DiagramEdge] = []
-    names = {node.label}
+    names: set[str] = set()
     if entity:
-        names.add(entity.local_id)
+        names.update({entity.local_id, entity.name})
         nodes.extend(_support_nodes(entity, "goal", entity.value.goals))
     referenced = {ref for item in evidence for ref in item.entity_refs}
     behaviors = [
@@ -405,7 +406,15 @@ def project_conops(
         drilldowns.append(DiagramDrilldown(
             drilldown_id, node.id, spec=_participant_drilldown(context, node, entity, node.evidence, curation),
         ))
-    callouts: list[DiagramCallout] = []
+    callout_values: dict[tuple[str, str], tuple[str, set[str]]] = {}
+
+    def add_callout(label: str, target: str, source: str) -> None:
+        normalized = " ".join(label.split()).casefold()
+        key = (target, normalized)
+        if key not in callout_values:
+            callout_values[key] = (" ".join(label.split()), set())
+        callout_values[key][1].add(source)
+
     for behavior in behaviors:
         target = _node_id(behavior.key)
         if target not in nodes:
@@ -414,25 +423,23 @@ def project_conops(
             *behavior.value.failure_modes,
             *[step.error_handling for step in behavior.value.structured_steps if step.error_handling],
         ]
-        for index, failure in enumerate(failures):
-            callouts.append(DiagramCallout(
-                f"failure:{behavior.key}:{index}", failure, target, "failure", [behavior.key],
-            ))
+        for failure in failures:
+            add_callout(failure, target, behavior.key)
     for system in context.entities("system"):
         target = _node_id(system.key)
         if target in nodes:
-            for index, failure in enumerate(system.value.failure_modes):
-                callouts.append(DiagramCallout(
-                    f"failure:{system.key}:{index}", failure, target, "failure", [system.key],
-                ))
+            for failure in system.value.failure_modes:
+                add_callout(failure, target, system.key)
     for capability in context.entities("capability"):
         for behavior in behaviors:
             target = _node_id(behavior.key)
             if behavior.value.capability_id == capability.local_id and target in nodes:
-                for index, failure in enumerate(capability.value.failure_modes):
-                    callouts.append(DiagramCallout(
-                        f"failure:{capability.key}:{index}", failure, target, "failure", [capability.key],
-                    ))
+                for failure in capability.value.failure_modes:
+                    add_callout(failure, target, capability.key)
+    callouts = []
+    for (target, normalized), (label, evidence) in sorted(callout_values.items()):
+        digest = hashlib.sha256(f"{target}\0{normalized}".encode()).hexdigest()[:12]
+        callouts.append(DiagramCallout(f"failure:{digest}", label, target, "failure", sorted(evidence)))
     if omitted:
         warnings.append(Diagnostic("warning", "CONOPS_OVERVIEW_BOUNDED", f"{omitted} operational paths omitted (limit {limit})", view="conops"))
     if not nodes:
