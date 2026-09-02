@@ -141,7 +141,7 @@ class TestLoadPipelineHistory:
         assert '"run_id": "run-viewer"' in html
         assert "renderRunHistory" in html
         assert "component_id === entityId" in html
-        assert "item.path === filepath" in html
+        assert "item.path === mod.canonical_path" in html
         assert "Produced Artifacts / Entities" in html
         assert "Completed" in html
         assert "Stage Started / Completed" in html

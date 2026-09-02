@@ -47,7 +47,10 @@ def minimal_model():
             "meta": {"project": "test-proj", "schema_version": "1.3"},
             "entities": {
                 "components": [
-                    {"id": "COMP-1", "name": "Foo", "status": "ACTIVE"},
+                    {
+                        "id": "COMP-1", "name": "Foo", "status": "ACTIVE",
+                        "files": ["src/shared.py", "subsystems/api/src/shared.py", "src/hostile.py"],
+                    },
                 ],
             },
             "relationships": [],

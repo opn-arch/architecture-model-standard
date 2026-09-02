@@ -1825,6 +1825,87 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
     return props
 
 
+def _normalize_module_path(value: object) -> str | None:
+    """Return a stable relative module path, rejecting absolute/traversing paths."""
+    from pathlib import PurePosixPath
+
+    raw = str(value or "").replace("\\", "/")
+    path = PurePosixPath(raw)
+    if not raw or path.is_absolute() or ".." in path.parts:
+        return None
+    normalized = str(path)
+    return normalized if normalized not in ("", ".") else None
+
+
+def _module_view_record(mod: object, canonical_path: str | None = None) -> dict:
+    """Convert a typed or serialized manifest module to compact viewer data."""
+    def field(name: str, default: object = None) -> object:
+        return mod.get(name, default) if isinstance(mod, dict) else getattr(mod, name, default)
+
+    path = canonical_path or _normalize_module_path(field("file")) or ""
+    funcs = []
+    function_records = field("functions", []) or []
+    if not isinstance(function_records, list):
+        function_records = []
+    for function in function_records:
+        get = function.get if isinstance(function, dict) else lambda key, default=None: getattr(function, key, default)
+        funcs.append({
+            "name": get("name", ""),
+            "sig": get("signature", "") or "",
+            "doc": (get("docstring", "") or "")[:200],
+        })
+    classes = []
+    class_records = field("classes", []) or []
+    if not isinstance(class_records, list):
+        class_records = []
+    for cls in class_records:
+        get = cls.get if isinstance(cls, dict) else lambda key, default=None: getattr(cls, key, default)
+        methods = get("method_details", None) or get("methods", []) or []
+        classes.append({
+            "name": get("name", ""),
+            "methods": [item.get("name", "") if isinstance(item, dict) else getattr(item, "name", item) for item in methods],
+        })
+    constants = field("module_constants", {}) or []
+    consts = list(constants) if isinstance(constants, dict) else [
+        item.get("name", "") if isinstance(item, dict) else str(item) for item in constants
+    ]
+    routes = field("routes", []) or []
+    if not isinstance(routes, list):
+        routes = []
+    return {
+        "name": field("name", None) or Path(path).name,
+        "doc": (field("docstring", "") or "")[:300],
+        "funcs": funcs,
+        "classes": classes,
+        "consts": consts,
+        "routes": routes,
+        "canonical_path": path,
+    }
+
+
+def _manifest_module_records(path: Path, root: Path) -> dict[str, dict] | None:
+    """Load module records from a repository-contained JSON manifest."""
+    import json
+
+    try:
+        resolved = path.resolve()
+        resolved.relative_to(root)
+        raw = json.loads(resolved.read_text(encoding="utf-8"))
+        records = raw.get("modules", [])
+        if not isinstance(records, list):
+            return None
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+    result = {}
+    for module in records:
+        if not isinstance(module, dict):
+            continue
+        module_path = _normalize_module_path(module.get("file"))
+        if module_path:
+            result[module_path] = _module_view_record(module, module_path)
+    return result
+
+
 def _build_module_data(repo_path: Path | None = None) -> dict[str, dict]:
     """Build compact module data from manifest for viewer embedding.
 
@@ -1840,29 +1921,9 @@ def _build_module_data(repo_path: Path | None = None) -> dict[str, dict]:
 
     modules: dict[str, dict] = {}
     for mod in manifest.modules:
-        funcs = []
-        for f in mod.functions:
-            funcs.append({
-                "name": f.name,
-                "sig": getattr(f, "signature", "") or "",
-                "doc": (getattr(f, "docstring", "") or "")[:200],
-            })
-        classes = []
-        for c in mod.classes:
-            methods = []
-            for md in (getattr(c, "method_details", None) or []):
-                methods.append(getattr(md, "name", str(md)))
-            classes.append({"name": c.name, "methods": methods})
-        consts = []
-        for c in (mod.module_constants or []):
-            consts.append(c["name"] if isinstance(c, dict) else str(c))
-        modules[mod.file] = {
-            "name": mod.name,
-            "doc": (mod.docstring or "")[:300],
-            "funcs": funcs,
-            "classes": classes,
-            "consts": consts,
-        }
+        module_path = _normalize_module_path(mod.file)
+        if module_path:
+            modules[module_path] = _module_view_record(mod, module_path)
     return modules
 
 
@@ -1987,17 +2048,19 @@ def _load_pipeline_history(repo_path: Path | None = None) -> list[dict] | dict:
 
 
 def _load_submodel_view_data(
-    model: "ArchitectureModel", repo_path: Path | None,
-) -> tuple[dict[str, dict], dict[str, list[str]], dict[str, list[str]]]:
+    model: "ArchitectureModel", repo_path: Path | None, root_modules: dict[str, dict],
+) -> tuple[dict[str, dict], dict[str, list[str]], dict[str, list[str]], dict[str, dict], dict[str, list[dict]]]:
     """Load referenced subsystem entities into qualified viewer-only data."""
     if repo_path is None:
-        return {}, {}, {}
+        return {}, {}, {}, {}, {}
     from architecture_model.core.parser import load_model
 
     root = repo_path.resolve()
     properties: dict[str, dict] = {}
     comp_files: dict[str, list[str]] = {}
     systems: dict[str, list[str]] = {}
+    modules: dict[str, dict] = {}
+    comp_modules: dict[str, list[dict]] = {}
     for system in model.entities.systems:
         if not system.sub_model_ref:
             continue
@@ -2008,6 +2071,25 @@ def _load_submodel_view_data(
         except (OSError, ValueError, KeyError, TypeError):
             continue
         slug = path.parent.name
+        owned_files = {
+            normalized
+            for component in sub_model.entities.components
+            for file_path in (component.files or [])
+            if (normalized := _normalize_module_path(file_path))
+        }
+        child_manifest = None
+        for candidate in (path.parent / "manifest.json", root / ".architecture-models" / slug / "manifest.json"):
+            child_manifest = _manifest_module_records(candidate, root)
+            if child_manifest is not None:
+                break
+        child_manifest = child_manifest or {}
+        for file_path in sorted(owned_files):
+            key = f"{slug}::module::{file_path}"
+            modules[key] = dict(child_manifest.get(file_path) or root_modules.get(file_path) or {
+                "name": Path(file_path).name, "doc": "", "funcs": [], "classes": [], "consts": [], "routes": [],
+                "canonical_path": file_path,
+            })
+            modules[key]["system_scope"] = slug
         local_props = build_entity_properties(sub_model)
         qualified_ids = {entity_id: f"{slug}::{entity_id}" for entity_id in local_props}
         systems[system.id] = list(qualified_ids.values())
@@ -2025,7 +2107,14 @@ def _load_submodel_view_data(
         for component in sub_model.entities.components:
             if component.files:
                 comp_files[qualified_ids[component.id]] = list(component.files)
-    return properties, comp_files, systems
+                links = []
+                for file_path in component.files:
+                    normalized = _normalize_module_path(file_path)
+                    if normalized:
+                        links.append({"path": normalized, "key": f"{slug}::module::{normalized}"})
+                if links:
+                    comp_modules[qualified_ids[component.id]] = links
+    return properties, comp_files, systems, modules, comp_modules
 
 
 def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
@@ -2202,14 +2291,34 @@ def generate_html_viewer(
 
     # ── 4. Property cards ─────────────────────────────────────────
     entity_props = build_entity_properties(model)
-    sub_props, sub_comp_files, subsystem_entities = _load_submodel_view_data(model, repo_path)
+    scanned_modules = _build_module_data(repo_path)
+    root_manifest_modules = {}
+    if repo_path is not None:
+        root = Path(repo_path).resolve()
+        root_manifest_modules = _manifest_module_records(root / ".architecture-models" / "manifest.json", root) or {}
+    root_modules = {**scanned_modules, **root_manifest_modules}
+    sub_props, sub_comp_files, subsystem_entities, sub_modules, sub_comp_modules = _load_submodel_view_data(
+        model, repo_path, root_modules,
+    )
     entity_props.update(sub_props)
 
     # ── 5. SID reverse mapping (sanitized → original ID) ─────────
     sid_map = {_sid(eid): eid for eid in all_ids}
 
     # ── 5b. Module data (manifest) ────────────────────────────────
-    module_data = _build_module_data(repo_path)
+    root_owned_files = {
+        normalized
+        for component in model.entities.components
+        for file_path in (component.files or [])
+        if (normalized := _normalize_module_path(file_path))
+    }
+    module_data = {path: root_modules[path] for path in sorted(root_owned_files) if path in root_modules}
+    for path in sorted(root_owned_files - module_data.keys()):
+        module_data[path] = {
+            "name": Path(path).name, "doc": "", "funcs": [], "classes": [], "consts": [], "routes": [],
+            "canonical_path": path,
+        }
+    module_data.update(sub_modules)
 
     # ── 5c. Component → files mapping ─────────────────────────────
     comp_files: dict[str, list[str]] = {}
@@ -2218,6 +2327,16 @@ def generate_html_viewer(
         if files:
             comp_files[comp.id] = list(files)
     comp_files.update(sub_comp_files)
+    comp_modules: dict[str, list[dict]] = {}
+    for component in model.entities.components:
+        links = []
+        for file_path in component.files or []:
+            normalized = _normalize_module_path(file_path)
+            if normalized:
+                links.append({"path": normalized, "key": normalized})
+        if links:
+            comp_modules[component.id] = links
+    comp_modules.update(sub_comp_modules)
 
     # ── 5d. SE documents and component specs ──────────────────────
     docs_data = _load_docs(repo_path)
@@ -2241,6 +2360,7 @@ def generate_html_viewer(
         "sid_map": sid_map,
         "modules": module_data,
         "comp_files": comp_files,
+        "comp_modules": comp_modules,
         "docs": docs_data,
         "ops": ops_data,
         "pipeline_history": pipeline_history,
@@ -3000,16 +3120,18 @@ def generate_html_viewer(
             }});
 
             // Source files section (for components)
-            var files = D.comp_files && D.comp_files[eid];
+            var files = D.comp_modules && D.comp_modules[eid];
             if (files && files.length > 0) {{
                 html += '<div class="files-section">';
                 html += '<div class="files-header">Source Modules (' + files.length + ')</div>';
                 for (var fi = 0; fi < files.length; fi++) {{
-                    var fp = files[fi];
-                    var hasData = D.modules && D.modules[fp];
+                    var file = files[fi];
+                    var fp = file.path;
+                    var moduleKey = file.key;
+                    var hasData = D.modules && D.modules[moduleKey];
                     var fname = fp.split('/').pop();
                     if (hasData) {{
-                        html += '<a class="file-link" data-module="' + escapeHtml(fp) + '">' + escapeHtml(fname) + '</a>';
+                        html += '<a class="file-link" data-module="' + escapeHtml(moduleKey) + '">' + escapeHtml(fname) + '</a>';
                     }} else {{
                         html += '<span class="file-link file-nodata">' + escapeHtml(fname) + '</span>';
                     }}
@@ -3095,14 +3217,15 @@ def generate_html_viewer(
             var curLabel = content.dataset.currentLabel;
             if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
 
-            var fname = filepath.split('/').pop();
+            var canonicalPath = mod.canonical_path || filepath;
+            var fname = canonicalPath.split('/').pop();
             content.dataset.currentType = 'module';
             content.dataset.currentId = filepath;
             content.dataset.currentLabel = fname;
 
             var html = renderBreadcrumbs(fname);
             html += '<h2 class="content-header">' + escapeHtml(fname) + '</h2>';
-            html += '<div class="content-subtitle">' + escapeHtml(filepath) + '</div>';
+            html += '<div class="content-subtitle">' + escapeHtml(canonicalPath) + '</div>';
 
             // Module docstring
             if (mod.doc) {{
@@ -3148,11 +3271,26 @@ def generate_html_viewer(
                 html += '</div>';
             }}
 
+            // Routes
+            if (mod.routes && mod.routes.length > 0) {{
+                html += '<div class="mod-section">';
+                html += '<div class="mod-section-title">Routes (' + mod.routes.length + ')</div>';
+                for (var ri = 0; ri < mod.routes.length; ri++) {{
+                    var route = mod.routes[ri];
+                    html += '<div class="mod-item">' + escapeHtml((route.method || '') + ' ' + (route.path || route.route || '')) + '</div>';
+                }}
+                html += '</div>';
+            }}
+
             var moduleRuns = pipelineRuns().filter(function(run) {{
-                return (run.modules || []).some(function(item) {{ return item.path === filepath; }});
+                return (run.modules || []).some(function(item) {{
+                    return item.path === mod.canonical_path && (!mod.system_scope || item.scope === mod.system_scope);
+                }});
             }});
             html += renderRunHistory(moduleRuns, function(run) {{
-                return (run.modules || []).filter(function(item) {{ return item.path === filepath; }});
+                return (run.modules || []).filter(function(item) {{
+                    return item.path === mod.canonical_path && (!mod.system_scope || item.scope === mod.system_scope);
+                }});
             }});
             var comment = commentHtml('module', filepath, 'Add notes about this module...');
             html += comment.html;
