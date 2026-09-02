@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 from html import escape
 import re
 import textwrap
+from types import MappingProxyType
 from typing import Any
 
 from architecture_model.core.diagram_spec import (
@@ -19,7 +21,11 @@ from architecture_model.core.diagram_spec import (
 
 @dataclass(frozen=True)
 class DiagramRenderOptions:
-    """Bounds and spacing used by the native renderer."""
+    """Preferred canvas bounds and spacing used by the native renderer.
+
+    Bounds smaller than the usable 320x240 canvas are ignored. The canvas
+    expands beyond preferred bounds rather than clipping geometry or footers.
+    """
 
     max_width: int = 4096
     max_height: int = 4096
@@ -40,6 +46,26 @@ class DiagramToolbarAction:
 
 
 @dataclass(frozen=True)
+class DiagramPanelDiagnostic:
+    severity: str
+    code: str
+    message: str
+    view: str = ""
+    source: str = ""
+    context: MappingProxyType[str, Any] = MappingProxyType({})
+
+    @classmethod
+    def from_diagnostic(cls, value: Diagnostic) -> "DiagramPanelDiagnostic":
+        return cls(value.severity, value.code, value.message, value.view, value.source, _freeze_mapping(value.context))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "severity": self.severity, "code": self.code, "message": self.message,
+            "view": self.view, "source": self.source, "context": _thaw(self.context),
+        }
+
+
+@dataclass(frozen=True)
 class DiagramPanel:
     """Renderer output suitable for contextual HTML assembly by a caller."""
 
@@ -49,8 +75,9 @@ class DiagramPanel:
     width: int
     height: int
     view_box: tuple[int, int, int, int]
-    warnings: tuple[Diagnostic, ...]
-    drilldowns: dict[str, "DiagramPanel"]
+    warnings: tuple[DiagramPanelDiagnostic, ...]
+    provenance: DiagramProvenance
+    drilldowns: MappingProxyType[str, "DiagramPanel"]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -61,6 +88,7 @@ class DiagramPanel:
             "height": self.height,
             "view_box": list(self.view_box),
             "warnings": [item.to_dict() for item in self.warnings],
+            "provenance": self.provenance.to_dict(),
             "drilldowns": {key: value.to_dict() for key, value in sorted(self.drilldowns.items())},
         }
 
@@ -79,6 +107,34 @@ _TOOLBAR = (
     DiagramToolbarAction("fit", "Fit diagram"),
     DiagramToolbarAction("reset", "Reset view"),
 )
+
+_ALLOWED_EDGE_STYLES = {"", "solid", "dashed", "dotted", "critical", "cycle"}
+_DOTTED_EDGE_KINDS = {"decomposition", "contains", "error", "compensates"}
+_DASHED_EDGE_KINDS = {"allocation", "owns", "interface-port"}
+_DATA_EDGE_KINDS = {"data", "produces", "consumes", "exposes", "uses", "connects"}
+_DEPENDENCY_EDGE_KINDS = {"dependency", "depends-on"}
+
+
+def _freeze(value: Any) -> Any:
+    if isinstance(value, dict):
+        return _freeze_mapping(value)
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(item) for item in value)
+    if isinstance(value, set):
+        return tuple(sorted((_freeze(item) for item in value), key=repr))
+    return value
+
+
+def _freeze_mapping(value: dict[str, Any]) -> MappingProxyType[str, Any]:
+    return MappingProxyType({key: _freeze(item) for key, item in sorted(value.items())})
+
+
+def _thaw(value: Any) -> Any:
+    if isinstance(value, MappingProxyType):
+        return {key: _thaw(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw(item) for item in value]
+    return value
 
 
 def _text(value: object) -> str:
@@ -101,7 +157,7 @@ def _ranks(spec: DiagramSpec) -> dict[str, int]:
     nodes = {node.id: node for node in spec.nodes}
     incoming = {identifier: 0 for identifier in nodes}
     outgoing: dict[str, list[str]] = {identifier: [] for identifier in nodes}
-    for edge in sorted(spec.edges, key=lambda item: (item.source, item.target, item.kind, item.label)):
+    for edge in sorted(spec.edges, key=_edge_key):
         if edge.source in nodes and edge.target in nodes and edge.source != edge.target:
             outgoing[edge.source].append(edge.target)
             incoming[edge.target] += 1
@@ -181,17 +237,24 @@ def _layout(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[dict[str,
                 bottom = max(box.y + box.height for box in members) + 20
                 container_boxes[identifier] = _Box(left, top, right - left, bottom - top)
             else:
-                container_boxes[identifier] = _Box(options.margin, options.margin + 42, options.node_width + 40, options.node_height + 50)
+                empty_index = sum(1 for item in container_boxes.values() if item.width == options.node_width + 40 and item.height == options.node_height + 50)
+                container_boxes[identifier] = _Box(
+                    options.margin + empty_index * (options.node_width + options.node_gap),
+                    options.margin + 42,
+                    options.node_width + 40,
+                    options.node_height + 50,
+                )
             del pending[identifier]
             changed = True
         if not changed:
             break
 
-    content_right = max([box.x + box.width for box in boxes.values()] + [320]) + options.margin
-    content_bottom = max([box.y + box.height for box in boxes.values()] + [170]) + options.margin
-    footer_rows = bool(spec.legend) + bool(spec.callouts) + bool(spec.warnings) + bool(spec.provenance.source)
-    width = min(max(content_right, 320), options.max_width)
-    height = min(max(content_bottom + footer_rows * 42, 240), options.max_height)
+    all_boxes = [*boxes.values(), *container_boxes.values()]
+    content_right = max([box.x + box.width for box in all_boxes] + [320]) + options.margin
+    content_bottom = max([box.y + box.height for box in all_boxes] + [170]) + options.margin
+    footer_items = len(spec.legend) + len(spec.callouts) + len(spec.warnings) + bool(spec.provenance.source)
+    width = max(content_right, 320)
+    height = max(content_bottom + footer_items * 36 + (24 if footer_items else 0), 240)
     return boxes, container_boxes, width, height
 
 
@@ -220,7 +283,7 @@ def _shape(node: DiagramNode, box: _Box) -> str:
     return f'<rect {common} x="{x}" y="{y}" width="{width}" height="{height}" rx="{radius}"/>'
 
 
-def _node_svg(node: DiagramNode, box: _Box) -> str:
+def _node_svg(node: DiagramNode, box: _Box, view_id: str) -> str:
     classes = ["diagram-node", f"kind-{_text(node.kind.lower().replace('_', '-'))}"]
     if node.inferred:
         classes.append("is-inferred")
@@ -231,6 +294,9 @@ def _node_svg(node: DiagramNode, box: _Box) -> str:
         f'data-kind="{_text(node.kind)}"', f'data-inferred="{str(node.inferred).lower()}"',
         f'data-status="{_text(node.status)}"', f'data-x="{box.x}"', f'data-y="{box.y}"',
         f'data-width="{box.width}"', f'data-height="{box.height}"',
+        f'aria-label="{_text(node.label)}"', f'data-view-id="{_text(view_id)}"',
+        f'data-entity-id="{_text(node.entity_ref or node.id)}"',
+        f'data-display-entity-ref="{_text(node.entity_ref or node.id)}"',
     ]
     if node.entity_ref:
         attributes.append(f'data-entity-ref="{_text(node.entity_ref)}"')
@@ -258,31 +324,54 @@ def _provenance_text(values: list[DiagramProvenance]) -> str:
     return "; ".join(filter(None, (value.source for value in values))) or "Evidence available"
 
 
-def _edge_path(source: _Box, target: _Box, direction: str, offset: int) -> str:
+def _edge_path(source: _Box, target: _Box, direction: str, offset: int, obstacles: list[_Box]) -> str:
     if direction == "TB":
         sx, sy = source.x + source.width / 2 + offset, source.y + source.height
         tx, ty = target.x + target.width / 2 + offset, target.y
+        blockers = [box for box in obstacles if source.y + source.height < box.y < target.y and box.x < sx < box.x + box.width]
+        if blockers:
+            lane = min(box.x for box in blockers) - 24 - abs(offset)
+            return f"M {sx:g} {sy:g} H {lane:g} V {ty:g} H {tx:g}"
         middle = (sy + ty) / 2 + offset
         return f"M {sx:g} {sy:g} V {middle:g} H {tx:g} V {ty:g}"
     sx, sy = source.x + source.width, source.y + source.height / 2 + offset
     tx, ty = target.x, target.y + target.height / 2 + offset
+    blockers = [box for box in obstacles if source.x + source.width < box.x < target.x and box.y < sy < box.y + box.height]
+    if blockers:
+        lane = min(box.y for box in blockers) - 24 - abs(offset)
+        return f"M {sx:g} {sy:g} V {lane:g} H {tx:g} V {ty:g}"
     middle = (sx + tx) / 2 + offset
     return f"M {sx:g} {sy:g} H {middle:g} V {ty:g} H {tx:g}"
 
 
+def _edge_style(edge: DiagramEdge) -> str:
+    requested = edge.style.lower().strip()
+    if requested not in _ALLOWED_EDGE_STYLES:
+        raise ValueError(f"Unsupported edge style: {edge.style}")
+    kind = edge.kind.lower().replace("_", "-")
+    if requested in {"dashed", "dotted"}:
+        return requested
+    if kind in _DOTTED_EDGE_KINDS:
+        return "dotted"
+    if kind in _DASHED_EDGE_KINDS or edge.inferred:
+        return "dashed"
+    if kind in _DATA_EDGE_KINDS:
+        return "data"
+    if kind in _DEPENDENCY_EDGE_KINDS:
+        return "dependency"
+    return "operational"
+
+
 def _edge_svg(edge: DiagramEdge, boxes: dict[str, _Box], direction: str, index: int, offset: int) -> str:
     kind = edge.kind.lower().replace("_", "-")
-    classes = ["diagram-edge", f"kind-{_text(kind)}"]
-    dash = ""
-    if kind == "decomposition":
-        dash = "stroke-dasharray:2 6;"
-    elif kind == "allocation" or edge.inferred:
-        dash = "stroke-dasharray:8 6;"
+    semantic_style = _edge_style(edge)
+    classes = ["diagram-edge", f"kind-{_text(kind)}", f"edge-style-{semantic_style}"]
+    dash = "stroke-dasharray:2 6;" if semantic_style == "dotted" else "stroke-dasharray:8 6;" if semantic_style == "dashed" else ""
     if edge.inferred:
         classes.append("is-inferred")
     if edge.critical or edge.style.lower() in {"critical", "cycle"}:
         classes.append("is-critical")
-    path = _edge_path(boxes[edge.source], boxes[edge.target], direction, offset)
+    path = _edge_path(boxes[edge.source], boxes[edge.target], direction, offset, [box for identifier, box in boxes.items() if identifier not in {edge.source, edge.target}])
     marker = ' marker-end="url(#arrow)"' if kind not in {"decomposition", "allocation"} else ""
     title = _provenance_text(edge.evidence) if edge.evidence else f"{edge.source} to {edge.target}"
     result = [
@@ -324,33 +413,47 @@ def _stylesheet() -> str:
 </style>"""
 
 
-def _footer(spec: DiagramSpec, start_y: int) -> str:
+def _footer(spec: DiagramSpec, start_y: int, boxes: dict[str, _Box], width: int) -> str:
     parts: list[str] = []
     y = start_y
-    if spec.legend:
-        parts.append(f'<g data-section="legend"><text class="footer-text" x="48" y="{y}">Legend: ')
-        parts.append(_text(" | ".join(f"{item.label}: {item.description}" for item in sorted(spec.legend, key=lambda item: item.id))))
-        parts.append("</text></g>")
-        y += 30
+    item_width = max(width - 96, 224)
+    for item in sorted(spec.legend, key=lambda value: value.id):
+        label = _lines(f"{item.label}: {item.description}", max(item_width // 7, 20), 2)
+        parts.append(f'<g data-section="legend" data-footer-item="legend:{_text(item.id)}" data-x="48" data-y="{y - 14}" data-width="{item_width}" data-height="32"><text class="footer-text" x="48" y="{y}">{_text(" ".join(label))}</text></g>')
+        y += 36
     for callout in sorted(spec.callouts, key=lambda item: item.id):
-        parts.append(f'<g data-callout-id="{_text(callout.id)}" data-kind="{_text(callout.kind)}"><text class="footer-text" x="48" y="{y}">{_text(callout.label)}</text></g>')
-        y += 30
+        evidence = "; ".join(callout.evidence)
+        parts.append(f'<g data-callout-id="{_text(callout.id)}" data-footer-item="callout:{_text(callout.id)}" data-kind="{_text(callout.kind)}" data-target-ref="{_text(callout.target)}" data-evidence="{_text(evidence)}" data-x="48" data-y="{y - 14}" data-width="{item_width}" data-height="32"><title>{_text(evidence or callout.label)}</title><text class="footer-text" x="48" y="{y}">{_text(_lines(callout.label, max(item_width // 7, 20), 2)[0])}</text></g>')
+        if callout.target in boxes:
+            target = boxes[callout.target]
+            parts.append(f'<path class="callout-connector" data-callout-connector="{_text(callout.id)}" data-target-ref="{_text(callout.target)}" d="M {target.x + target.width / 2:g} {target.y + target.height:g} L 48 {y - 14}"/>')
+        y += 36
     for diagnostic in sorted(spec.warnings, key=lambda item: (item.severity, item.code, item.message)):
-        parts.append(f'<g data-diagnostic-code="{_text(diagnostic.code)}" data-severity="{_text(diagnostic.severity)}"><text class="footer-text diagnostic-{_text(diagnostic.severity.lower())}" x="48" y="{y}">{_text(diagnostic.severity.upper())}: {_text(diagnostic.message)}</text></g>')
-        y += 30
+        parts.append(f'<g data-diagnostic-code="{_text(diagnostic.code)}" data-footer-item="diagnostic:{_text(diagnostic.code)}" data-severity="{_text(diagnostic.severity)}" data-x="48" data-y="{y - 14}" data-width="{item_width}" data-height="32"><text class="footer-text diagnostic-{_text(diagnostic.severity.lower())}" x="48" y="{y}">{_text(diagnostic.severity.upper())}: {_text(_lines(diagnostic.message, max(item_width // 7, 20), 2)[0])}</text></g>')
+        y += 36
     if spec.provenance.source:
-        parts.append(f'<g data-section="provenance"><text class="footer-text" x="48" y="{y}">Source: {_text(spec.provenance.source)}</text></g>')
+        parts.append(f'<g data-section="provenance" data-footer-item="provenance" data-x="48" data-y="{y - 14}" data-width="{item_width}" data-height="32"><title>{_text(str(spec.provenance.to_dict()))}</title><text class="footer-text" x="48" y="{y}">Source: {_text(spec.provenance.source)}</text></g>')
     return "".join(parts)
 
 
+def _edge_key(edge: DiagramEdge) -> tuple[Any, ...]:
+    evidence = tuple(repr(item.to_dict()) for item in edge.evidence)
+    return edge.source, edge.target, edge.kind, edge.label, edge.count, edge.style, edge.critical, edge.inferred, evidence
+
+
 def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int, int]:
+    spec.validate()
+    for edge in spec.edges:
+        _edge_style(edge)
     boxes, containers, width, height = _layout(spec, options)
+    namespace = f"diagram-{re.sub(r'[^a-zA-Z0-9_-]+', '-', spec.id).strip('-') or 'view'}-{hashlib.sha256(spec.id.encode()).hexdigest()[:8]}"
+    title_id, desc_id, arrow_id = f"{namespace}-title", f"{namespace}-desc", f"{namespace}-arrow"
     parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" class="diagram" data-diagram-id="{_text(spec.id)}" data-pan-zoom="true" width="100%" height="auto" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="diagram-title diagram-desc">',
-        f'<title id="diagram-title">{_text(spec.title)}</title>',
-        f'<desc id="diagram-desc">{_text(spec.subtitle or "Architecture diagram")}</desc>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" class="diagram" data-diagram-id="{_text(spec.id)}" data-pan-zoom="true" width="100%" height="auto" viewBox="0 0 {width} {height}" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="{title_id} {desc_id}">',
+        f'<title id="{title_id}">{_text(spec.title)}</title>',
+        f'<desc id="{desc_id}">{_text(spec.subtitle or "Architecture diagram")}</desc>',
         _stylesheet(),
-        '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker></defs>',
+        f'<defs><marker id="{arrow_id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker></defs>',
         f'<text class="diagram-title" x="{options.margin}" y="30">{_text(spec.title)}</text>',
     ]
     if spec.subtitle:
@@ -358,9 +461,9 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
     container_lookup = {item.id: item for item in [*spec.groups, *spec.lanes]}
     for identifier, box in sorted(containers.items(), key=lambda item: (container_lookup[item[0]].order, item[0])):
         container = container_lookup[identifier]
-        parts.append(f'<g data-container-id="{_text(identifier)}" data-kind="{_text(container.kind)}"><rect class="container {_text(container.kind)}" x="{box.x}" y="{box.y}" width="{box.width}" height="{box.height}" rx="8"/><text class="container-label" x="{box.x + 8}" y="{box.y + 13}">{_text(container.label)}</text></g>')
+        parts.append(f'<g data-container-id="{_text(identifier)}" data-kind="{_text(container.kind)}" data-x="{box.x}" data-y="{box.y}" data-width="{box.width}" data-height="{box.height}"><rect class="container {_text(container.kind)}" x="{box.x}" y="{box.y}" width="{box.width}" height="{box.height}" rx="8"/><text class="container-label" x="{box.x + 8}" y="{box.y + 13}">{_text(container.label)}</text></g>')
 
-    ordered_edges = sorted(spec.edges, key=lambda item: (item.source, item.target, item.kind, item.label, item.count))
+    ordered_edges = sorted(spec.edges, key=_edge_key)
     parallel_totals: dict[tuple[str, str], int] = {}
     for edge in ordered_edges:
         parallel_totals[(edge.source, edge.target)] = parallel_totals.get((edge.source, edge.target), 0) + 1
@@ -372,11 +475,12 @@ def _render(spec: DiagramSpec, options: DiagramRenderOptions) -> tuple[str, int,
         seen = parallel_seen.get(key, 0)
         offset = int((seen - (parallel_totals[key] - 1) / 2) * 18)
         parallel_seen[key] = seen + 1
-        parts.append(_edge_svg(edge, boxes, spec.direction.upper(), index, offset))
+        edge_svg = _edge_svg(edge, boxes, spec.direction.upper(), index, offset)
+        parts.append(edge_svg.replace('url(#arrow)', f'url(#{arrow_id})'))
     for node in sorted(spec.nodes, key=lambda item: item.id):
-        parts.append(_node_svg(node, boxes[node.id]))
-    footer_start = max([box.y + box.height for box in boxes.values()] + [160]) + 38
-    parts.append(_footer(spec, footer_start))
+        parts.append(_node_svg(node, boxes[node.id], spec.id))
+    footer_start = max([box.y + box.height for box in [*boxes.values(), *containers.values()]] + [160]) + 38
+    parts.append(_footer(spec, footer_start, boxes, width))
     parts.append("</svg>")
     return "".join(parts), width, height
 
@@ -402,6 +506,9 @@ def render_diagram_panel(spec: DiagramSpec, options: DiagramRenderOptions | None
 
     selected = options or DiagramRenderOptions()
     svg, width, height = _render(spec, selected)
+    warnings = list(spec.warnings)
+    if selected.max_width < 320 or selected.max_height < 240:
+        warnings.append(Diagnostic("warning", "RENDER_BOUNDS_TOO_SMALL", "Requested canvas bounds were below the usable 320x240 minimum", view=spec.id))
     return DiagramPanel(
         diagram_id=spec.id,
         svg=svg,
@@ -409,6 +516,7 @@ def render_diagram_panel(spec: DiagramSpec, options: DiagramRenderOptions | None
         width=width,
         height=height,
         view_box=(0, 0, width, height),
-        warnings=tuple(sorted(spec.warnings, key=lambda item: (item.severity, item.code, item.message))),
-        drilldowns=render_diagram_drilldowns(spec, selected),
+        warnings=tuple(DiagramPanelDiagnostic.from_diagnostic(item) for item in sorted(warnings, key=lambda item: (item.severity, item.code, item.message))),
+        provenance=spec.provenance,
+        drilldowns=MappingProxyType(render_diagram_drilldowns(spec, selected)),
     )
