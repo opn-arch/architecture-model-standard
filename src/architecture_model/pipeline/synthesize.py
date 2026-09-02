@@ -190,13 +190,22 @@ def _system_slugs(systems: list[SystemModel]) -> dict[str, str]:
     bases: dict[str, list[SystemModel]] = {}
     for system in systems:
         bases.setdefault(_slugify(system.name) or "system", []).append(system)
+    reserved = set(bases)
+    used: set[str] = set()
     result: dict[str, str] = {}
-    for base, colliding in bases.items():
+    for base in sorted(bases):
+        colliding = sorted(bases[base], key=lambda system: system.system_id)
         for system in colliding:
-            suffix = hashlib.sha256(system.system_id.encode()).hexdigest()[:8]
-            result[system.system_id] = (
-                f"{base}-{suffix}" if len(colliding) > 1 else base
-            )
+            candidate = base
+            if len(colliding) > 1 or candidate in used:
+                digest = hashlib.sha256(system.system_id.encode()).hexdigest()
+                length = 8
+                candidate = f"{base}-{digest[:length]}"
+                while candidate in reserved or candidate in used:
+                    length += 2
+                    candidate = f"{base}-{digest[:length]}"
+            result[system.system_id] = candidate
+            used.add(candidate)
     return result
 
 

@@ -575,6 +575,25 @@ class TestRunWithCoordinator:
 
 
 class TestSoSModel:
+    def test_slug_allocation_is_globally_unique_for_adversarial_generated_name(self):
+        from architecture_model.pipeline.synthesize import _system_slugs
+        import hashlib
+
+        first_suffix = hashlib.sha256(b"SYS-1").hexdigest()[:8]
+        systems = [
+            SystemModel(system_id="SYS-1", name="A B", model_yaml="x"),
+            SystemModel(system_id="SYS-2", name="A-B", model_yaml="x"),
+            SystemModel(system_id="SYS-3", name=f"A-B-{first_suffix}", model_yaml="x"),
+            SystemModel(system_id="SYS-4", name="A B", model_yaml="x"),
+        ]
+
+        forward = _system_slugs(systems)
+        reverse = _system_slugs(list(reversed(systems)))
+
+        assert len(set(forward.values())) == len(systems)
+        assert forward == reverse
+        assert set(forward) == {system.system_id for system in systems}
+
     def test_normalized_slug_collisions_get_distinct_stable_model_refs(self):
         systems = [
             SystemModel(system_id="SYS-1", name="A B", model_yaml="meta: {}"),

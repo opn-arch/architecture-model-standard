@@ -588,8 +588,9 @@ def _find_tests_for_scope(
     """
     results: list[TestFileRecord] = []
     scope_modules = {
-        ".".join(path.relative_to(root).with_suffix("").parts)
+        module
         for path in scope_files if path.suffix == ".py"
+        for module in _module_candidates(path.relative_to(root))
     }
     for test_dir_name in ("tests", "test"):
         test_dir = root / test_dir_name
@@ -604,10 +605,22 @@ def _find_tests_for_scope(
                 for module in scope_modules
             )
             stem_matches = any(target == module.rsplit(".", 1)[-1] for module in scope_modules)
-            if target and target != name and stem_matches and (imports_scope or path_context):
+            if target and target != name and (imports_scope or (stem_matches and path_context)):
                 rel = tf.relative_to(root)
                 results.append(TestFileRecord(path=rel, targets=[target]))
     return results
+
+
+def _module_candidates(path: Path) -> set[str]:
+    """Return importable suffixes without relying on repository source roots."""
+    parts = path.with_suffix("").parts
+    if len(parts) == 1:
+        return {parts[0]}
+    return {
+        ".".join(parts[index:])
+        for index in range(max(len(parts) - 1, 1))
+        if len(parts[index:]) >= 2
+    }
 
 
 def _test_imports(path: Path) -> set[str]:

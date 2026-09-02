@@ -157,6 +157,27 @@ mod = importlib.import_module(name)
 
         assert [test.path for test in observed.test_files] == [Path("tests/alpha/test_api.py")]
 
+    def test_scoped_test_discovery_normalizes_src_root_imports(self, tmp_path):
+        alpha = tmp_path / "src" / "alpha" / "api.py"
+        beta = tmp_path / "src" / "beta" / "api.py"
+        alpha.parent.mkdir(parents=True)
+        beta.parent.mkdir(parents=True)
+        alpha.write_text("def alpha(): pass\n")
+        beta.write_text("def beta(): pass\n")
+        tests = tmp_path / "tests"
+        tests.mkdir()
+        (tests / "test_alpha_api.py").write_text("from alpha.api import alpha\n")
+        (tests / "test_beta_api.py").write_text("from beta.api import beta\n")
+        (tests / "test_api.py").write_text("from beta.api import beta\n")
+
+        observed = ObserveStage().run(PipelineContext(
+            repo_path=tmp_path,
+            output_dir=tmp_path / ".arch",
+            scope_files=[alpha],
+        )).output
+
+        assert [test.path for test in observed.test_files] == [Path("tests/test_alpha_api.py")]
+
 
 class TestObservePerModuleQuality:
     def test_module_record_has_quality_score(self):
