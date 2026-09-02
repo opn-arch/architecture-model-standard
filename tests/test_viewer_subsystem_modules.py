@@ -113,6 +113,53 @@ def test_adjacent_manifests_embed_distinct_qualified_modules_and_links(tmp_path)
     assert not any(item["attrs"].get("src") or item["attrs"].get("href") for item in scripts)
 
 
+def test_nested_same_basename_submodels_have_distinct_stable_namespaces(tmp_path):
+    for parent, system_name in (("one", "First"), ("two", "Second")):
+        child_dir = tmp_path / ".architecture-models" / parent / "api"
+        child_dir.mkdir(parents=True)
+        (child_dir / ".architecture-model.yaml").write_text(yaml.safe_dump({
+            "meta": {"project": system_name, "schema_version": "2.0"},
+            "entities": {"components": [{
+                "id": "COMP-1", "name": f"{system_name} API", "status": "ACTIVE", "files": ["src/shared.py"],
+            }]},
+            "relationships": [],
+        }))
+        (child_dir / "manifest.json").write_text(json.dumps({"modules": [{
+            "file": "src/shared.py", "name": f"{parent}-shared", "functions": [], "classes": [],
+        }]}))
+    model = _parse_raw({
+        "meta": {"project": "root", "schema_version": "2.0"},
+        "entities": {"systems": [
+            {"id": "SYS-ONE", "name": "One API", "status": "ACTIVE", "sub_model_ref": ".architecture-models/one/api/.architecture-model.yaml"},
+            {"id": "SYS-TWO", "name": "Two API", "status": "ACTIVE", "sub_model_ref": ".architecture-models/two/api/.architecture-model.yaml"},
+        ]},
+        "relationships": [],
+    })
+
+    data, script, _ = _parts(generate_html_viewer(
+        model, tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    one_module = "one/api::module::src/shared.py"
+    two_module = "two/api::module::src/shared.py"
+    assert data["viewer_system_namespaces"] == {
+        "SYS-ONE": "one/api",
+        "SYS-TWO": "two/api",
+    }
+    assert data["properties"]["one/api::COMP-1"]["name"] == "First API"
+    assert data["properties"]["two/api::COMP-1"]["name"] == "Second API"
+    assert data["modules"][one_module]["name"] == "one-shared"
+    assert data["modules"][two_module]["name"] == "two-shared"
+    assert data["modules"][one_module]["system_scope"] == "one/api"
+    assert data["modules"][two_module]["system_scope"] == "two/api"
+    assert data["comp_modules"]["one/api::COMP-1"][0]["key"] == one_module
+    assert data["comp_modules"]["two/api::COMP-1"][0]["key"] == two_module
+    assert data["subsystem_entities"]["SYS-ONE"] == ["one/api::COMP-1"]
+    assert data["subsystem_entities"]["SYS-TWO"] == ["two/api::COMP-1"]
+    assert "commentHtml('module', filepath" in script
+    assert "item.scope === mod.system_scope" in script
+
+
 def test_missing_child_manifest_creates_owned_module_stub(tmp_path):
     _write_child(tmp_path, "alpha", manifest=False)
 

@@ -2047,8 +2047,43 @@ def _load_pipeline_history(repo_path: Path | None = None) -> list[dict] | dict:
     return [record.to_dict() for record in records] if records else {}
 
 
+def _viewer_system_namespace_map(model: "ArchitectureModel", repo_path: Path | None) -> dict[tuple[Path, str], str]:
+    """Assign stable viewer namespaces from canonical submodel paths and system IDs."""
+    if repo_path is None:
+        return {}
+    root = repo_path.resolve()
+    entries: list[tuple[Path, str, str]] = []
+    for system in model.entities.systems:
+        if not system.sub_model_ref:
+            continue
+        path = (root / system.sub_model_ref).resolve()
+        try:
+            relative = path.relative_to(root)
+        except ValueError:
+            continue
+        parent = relative.parent
+        parts = parent.parts
+        if parts and parts[0] == ".architecture-models":
+            parts = parts[1:]
+        base = "/".join(parts) or system.id
+        entries.append((path, system.id, base))
+
+    base_counts: dict[str, int] = {}
+    path_counts: dict[Path, int] = {}
+    for path, _system_id, base in entries:
+        base_counts[base] = base_counts.get(base, 0) + 1
+        path_counts[path] = path_counts.get(path, 0) + 1
+    return {
+        (path, system_id): (
+            f"{base}::{system_id}" if base_counts[base] > 1 or path_counts[path] > 1 else base
+        )
+        for path, system_id, base in entries
+    }
+
+
 def _load_submodel_view_data(
     model: "ArchitectureModel", repo_path: Path | None, root_modules: dict[str, dict],
+    namespace_map: dict[tuple[Path, str], str],
 ) -> tuple[dict[str, dict], dict[str, list[str]], dict[str, list[str]], dict[str, dict], dict[str, list[dict]]]:
     """Load referenced subsystem entities into qualified viewer-only data."""
     if repo_path is None:
@@ -2065,12 +2100,13 @@ def _load_submodel_view_data(
         if not system.sub_model_ref:
             continue
         path = (root / system.sub_model_ref).resolve()
+        namespace = namespace_map.get((path, system.id))
+        if namespace is None:
+            continue
         try:
-            path.relative_to(root)
             sub_model = load_model(path)
         except (OSError, ValueError, KeyError, TypeError):
             continue
-        slug = path.parent.name
         owned_files = {
             normalized
             for component in sub_model.entities.components
@@ -2078,26 +2114,26 @@ def _load_submodel_view_data(
             if (normalized := _normalize_module_path(file_path))
         }
         child_manifest = None
-        for candidate in (path.parent / "manifest.json", root / ".architecture-models" / slug / "manifest.json"):
+        for candidate in (path.parent / "manifest.json", root / ".architecture-models" / namespace / "manifest.json"):
             child_manifest = _manifest_module_records(candidate, root)
             if child_manifest is not None:
                 break
         child_manifest = child_manifest or {}
         for file_path in sorted(owned_files):
-            key = f"{slug}::module::{file_path}"
+            key = f"{namespace}::module::{file_path}"
             modules[key] = dict(child_manifest.get(file_path) or root_modules.get(file_path) or {
                 "name": Path(file_path).name, "doc": "", "funcs": [], "classes": [], "consts": [], "routes": [],
                 "canonical_path": file_path,
             })
-            modules[key]["system_scope"] = slug
+            modules[key]["system_scope"] = namespace
         local_props = build_entity_properties(sub_model)
-        qualified_ids = {entity_id: f"{slug}::{entity_id}" for entity_id in local_props}
+        qualified_ids = {entity_id: f"{namespace}::{entity_id}" for entity_id in local_props}
         systems[system.id] = list(qualified_ids.values())
         for entity_id, value in local_props.items():
             qualified = qualified_ids[entity_id]
             item = dict(value)
             item["display_id"] = entity_id
-            item["model"] = slug
+            item["model"] = namespace
             relationships = item.get("relationships", {})
             for relation in relationships.get("outgoing", []):
                 relation["target"] = qualified_ids.get(relation["target"], relation["target"])
@@ -2111,7 +2147,7 @@ def _load_submodel_view_data(
                 for file_path in component.files:
                     normalized = _normalize_module_path(file_path)
                     if normalized:
-                        links.append({"path": normalized, "key": f"{slug}::module::{normalized}"})
+                        links.append({"path": normalized, "key": f"{namespace}::module::{normalized}"})
                 if links:
                     comp_modules[qualified_ids[component.id]] = links
     return properties, comp_files, systems, modules, comp_modules
@@ -2297,8 +2333,9 @@ def generate_html_viewer(
         root = Path(repo_path).resolve()
         root_manifest_modules = _manifest_module_records(root / ".architecture-models" / "manifest.json", root) or {}
     root_modules = {**scanned_modules, **root_manifest_modules}
+    namespace_map = _viewer_system_namespace_map(model, repo_path)
     sub_props, sub_comp_files, subsystem_entities, sub_modules, sub_comp_modules = _load_submodel_view_data(
-        model, repo_path, root_modules,
+        model, repo_path, root_modules, namespace_map,
     )
     entity_props.update(sub_props)
 
@@ -2365,6 +2402,9 @@ def generate_html_viewer(
         "ops": ops_data,
         "pipeline_history": pipeline_history,
         "subsystem_entities": subsystem_entities,
+        "viewer_system_namespaces": {
+            system_id: namespace for (_path, system_id), namespace in namespace_map.items()
+        },
     }
     data_json = _json.dumps(diagram_data, ensure_ascii=False).translate(str.maketrans({
         "<": "\\u003c", ">": "\\u003e", "&": "\\u0026",
