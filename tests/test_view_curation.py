@@ -2,7 +2,13 @@ from pathlib import Path
 
 from architecture_model.core.parser import load_model
 from architecture_model.core.view_context import ArchitectureViewContext
-from architecture_model.core.view_curation import Selector, load_viewer_curation, merge_ordered
+from architecture_model.core.view_curation import (
+    EvidenceRecord,
+    Selector,
+    load_viewer_curation,
+    merge_ordered,
+    validate_view_curation,
+)
 
 
 def _context(tmp_path: Path) -> ArchitectureViewContext:
@@ -74,7 +80,9 @@ views:
       - id: EXT-GOOD
         name: Provider
         inferred: true
-        evidence: [docs/evidence.md]
+        evidence:
+          - source: docs/evidence.md
+            claim: Provider is used by the logical architecture
       - id: EXT-BAD
         name: Bad
         inferred: true
@@ -86,7 +94,10 @@ views:
       - source: clients
         target: EXT-GOOD
         inferred: true
-        evidence: [docs/evidence.md]
+        evidence:
+          - source: docs/evidence.md
+            claim: Clients exchange requests with Provider
+        kind: exchange
       - source: root::COMP-1
         target: EXT-GOOD
         kind: realizes
@@ -124,3 +135,99 @@ views:
     curation = load_viewer_curation(tmp_path, context, path)
     assert len(curation.views.functional.flows) == 1
     assert any("Duplicate curated flow" in warning for warning in curation.warnings)
+
+
+def test_malformed_collections_and_orders_warn_and_fall_back(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  logical:
+    featured: nope
+    labels: nope
+    order: nope
+    groups:
+      - {id: g, label: Group, order: not-a-number}
+    flows: nope
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.logical.groups == []
+    assert len(curation.warnings) >= 5
+
+
+def test_unknown_top_level_and_view_keys_warn(tmp_path):
+    context = _context(tmp_path)
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+unexpected: true
+views:
+  conops:
+    mystery: true
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert any("Unknown top-level key" in warning for warning in curation.warnings)
+    assert any("Unknown conops key" in warning for warning in curation.warnings)
+
+
+def test_file_only_evidence_and_non_presentation_edge_kinds_are_rejected(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  conops:
+    externals:
+      - {id: EXT-1, name: External, inferred: true, evidence: [evidence.md]}
+    groups:
+      - {id: a, label: A}
+      - {id: b, label: B}
+    flows:
+      - source: a
+        target: b
+        kind: triggers
+        inferred: true
+        evidence: [{source: evidence.md, claim: A triggers B}]
+      - source: a
+        target: b
+        kind: custom-flow
+        inferred: true
+        evidence: [{source: evidence.md, claim: A custom B}]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.conops.externals == []
+    assert curation.views.conops.flows == []
+    assert any("evidence record" in warning for warning in curation.warnings)
+    assert any("Unsupported inferred flow kind" in warning for warning in curation.warnings)
+
+
+def test_global_presentation_ids_and_deferred_endpoint_validation(tmp_path):
+    context = _context(tmp_path)
+    evidence = tmp_path / "evidence.md"
+    evidence.write_text("evidence", encoding="utf-8")
+    path = tmp_path / "curation.yaml"
+    path.write_text("""version: 1
+views:
+  functional:
+    groups:
+      - {id: shared, label: Group}
+    tiers:
+      - {id: shared, label: Tier}
+    externals:
+      - id: root::COMP-1
+        name: Collision
+        inferred: true
+        evidence: [{source: evidence.md, claim: collision}]
+    flows:
+      - source: shared
+        target: missing
+        kind: exchange
+        inferred: true
+        evidence: [{source: evidence.md, claim: missing endpoint}]
+""", encoding="utf-8")
+    curation = load_viewer_curation(tmp_path, context, path)
+    assert curation.views.functional.tiers == []
+    assert curation.views.functional.externals == []
+    endpoint_warnings = validate_view_curation(curation.views.functional, context)
+    assert any("unknown target" in warning for warning in endpoint_warnings)
+    assert isinstance(curation.views.functional.flows[0].evidence[0], EvidenceRecord)

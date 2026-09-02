@@ -62,6 +62,7 @@ class ArchitectureViewContext:
         self._outgoing: dict[str, list[IndexedRelationship]] = {}
         self._incoming: dict[str, list[IndexedRelationship]] = {}
         self._system_aliases: dict[str, set[str]] = {namespace: {namespace} for namespace in models}
+        self._parents: dict[str, str] = {}
         self._index()
 
     @classmethod
@@ -112,21 +113,6 @@ class ArchitectureViewContext:
                     source_file = getattr(entity, "source_file", None)
                     if source_file:
                         self._files.setdefault(_normalized_file(source_file), set()).add(key)
-            for relationship in model.relationships:
-                source_key = f"{namespace}::{relationship.from_id}"
-                target_key = f"{namespace}::{relationship.to_id}"
-                if source_key not in self._entities or target_key not in self._entities:
-                    self.warnings.append(
-                        f"Unresolved relationship in {namespace}: {relationship.from_id} -> {relationship.to_id}"
-                    )
-                    continue
-                kind = getattr(relationship.type, "value", str(relationship.type))
-                record = IndexedRelationship(source_key, target_key, kind, namespace, relationship)
-                self._relationships.append(record)
-                self._outgoing.setdefault(source_key, []).append(record)
-                self._incoming.setdefault(target_key, []).append(record)
-        self.warnings = sorted(set(self.warnings))
-
         for namespace, model in self.models.items():
             source = Path(getattr(model, "_source_path", self.root / ".architecture-model.yaml")).resolve()
             for parent_namespace, parent in self.models.items():
@@ -138,9 +124,55 @@ class ArchitectureViewContext:
                     fallback = (self.root / system.sub_model_ref).resolve()
                     if source in {local, fallback}:
                         self._system_aliases[namespace].update({system.id, system.name, system.source_block})
+                        self._parents[namespace] = parent_namespace
+
+        for namespace, model in sorted(self.models.items()):
+            for relationship in model.relationships:
+                source_key = self._relationship_key(namespace, relationship.from_id)
+                target_key = self._relationship_key(namespace, relationship.to_id)
+                if source_key not in self._entities or target_key not in self._entities:
+                    self.warnings.append(
+                        f"Unresolved relationship in {namespace}: {source_key} -> {target_key}"
+                    )
+                    continue
+                kind = getattr(relationship.type, "value", str(relationship.type))
+                record = IndexedRelationship(source_key, target_key, kind, namespace, relationship)
+                self._relationships.append(record)
+                self._outgoing.setdefault(source_key, []).append(record)
+                self._incoming.setdefault(target_key, []).append(record)
+        self.warnings = sorted(set(self.warnings))
+
+    @staticmethod
+    def _relationship_key(namespace: str, reference: str) -> str:
+        return reference if "::" in reference else f"{namespace}::{reference}"
 
     def entity(self, key: str) -> IndexedEntity | None:
         return self._entities.get(key)
+
+    def qualified_entity(self, model: str, local_id: str) -> IndexedEntity | None:
+        if "::" in local_id:
+            return self.entity(local_id) if local_id.startswith(f"{model}::") else None
+        return self.entity(f"{model}::{local_id}")
+
+    def parent_model(self, model: str) -> str | None:
+        return self._parents.get(model)
+
+    def parent(self, model: str) -> str | None:
+        return self.parent_model(model)
+
+    def child_models(self, model: str) -> list[str]:
+        return sorted(child for child, parent in self._parents.items() if parent == model)
+
+    def children(self, model: str) -> list[str]:
+        return self.child_models(model)
+
+    def ancestors(self, model: str) -> list[str]:
+        result: list[str] = []
+        current = self.parent_model(model)
+        while current is not None and current not in result:
+            result.append(current)
+            current = self.parent_model(current)
+        return result
 
     def entities(self, entity_type: str | None = None, model: str | None = None) -> list[IndexedEntity]:
         return [

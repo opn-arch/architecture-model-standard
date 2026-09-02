@@ -140,3 +140,73 @@ def test_context_indexes_intrinsic_links_and_loads_from_repo(tmp_path):
     assert context.linked_entities("root::BEH-1") == [
         "root::ACT-1", "root::CAP-1", "root::REQ-1"
     ]
+
+
+def test_context_indexes_explicit_cross_model_relationships_and_hierarchy(tmp_path):
+    root_path = tmp_path / ".architecture-model.yaml"
+    _write(root_path, _model("root", """  components:
+    - id: ROOT-COMP
+      name: Root
+      status: ACTIVE
+  systems:
+    - id: SYS-A
+      name: Alpha
+      status: ACTIVE
+      sub_model_ref: .architecture-models/a/.architecture-model.yaml
+""", """  - from: root::ROOT-COMP
+    to: a::COMP-1
+    type: depends-on
+"""))
+    _write(tmp_path / ".architecture-models/a/.architecture-model.yaml", _model("a", """  components:
+    - id: COMP-1
+      name: Child
+      status: ACTIVE
+  systems:
+    - id: SYS-B
+      name: Beta
+      status: ACTIVE
+      sub_model_ref: ../b/.architecture-model.yaml
+""", """  - from: COMP-1
+    to: b::COMP-2
+    type: depends-on
+"""))
+    _write(tmp_path / ".architecture-models/b/.architecture-model.yaml", _model("b", """  components:
+    - id: COMP-2
+      name: Grandchild
+      status: ACTIVE
+"""))
+
+    context = ArchitectureViewContext.from_repo(tmp_path)
+
+    assert context.outgoing("root::ROOT-COMP")[0].target == "a::COMP-1"
+    assert context.outgoing("a::COMP-1")[0].target == "b::COMP-2"
+    assert context.parent_model("b") == "a"
+    assert context.child_models("root") == ["a"]
+    assert context.ancestors("b") == ["a", "root"]
+    assert context.parent("b") == "a"
+    assert context.children("root") == ["a"]
+    assert context.qualified_entity("b", "COMP-2").key == "b::COMP-2"
+    assert context.qualified_entity("b", "root::ROOT-COMP") is None
+
+
+def test_unknown_unqualified_relationship_endpoint_is_not_guessed_in_other_model(tmp_path):
+    root_path = tmp_path / ".architecture-model.yaml"
+    _write(root_path, _model("root", """  systems:
+    - id: SYS-A
+      name: Alpha
+      status: ACTIVE
+      sub_model_ref: child.yaml
+""", """  - from: COMP-1
+    to: SYS-A
+    type: depends-on
+"""))
+    _write(tmp_path / "child.yaml", _model("child", """  components:
+    - id: COMP-1
+      name: Child only
+      status: ACTIVE
+"""))
+
+    context = ArchitectureViewContext.from_repo(tmp_path)
+
+    assert context.incoming("root::SYS-A") == []
+    assert any("root::COMP-1" in warning for warning in context.warnings)
