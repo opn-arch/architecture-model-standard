@@ -25,10 +25,10 @@ VIEW_KEYS = {
 }
 USE_CASE_VIEW_KEYS = {"actors", "associations", "annotations"}
 SELECTOR_KEYS = {"qualified_id", "local_id", "system", "name", "source_file", "tag"}
-GROUP_KEYS = {"id", "label", "kind", "parent", "order", "description", "members"}
+GROUP_KEYS = {"id", "label", "kind", "parent", "order", "members"}
 SCENARIO_KEYS = GROUP_KEYS | {"goal", "outcomes", "requirements", "moes", "evidence"}
-EXTERNAL_KEYS = {"id", "name", "inferred", "evidence", "kind", "description"}
-FLOW_KEYS = {"source", "target", "kind", "label", "description", "inferred", "evidence"}
+EXTERNAL_KEYS = {"id", "name", "inferred", "evidence", "kind"}
+FLOW_KEYS = {"source", "target", "kind", "label", "inferred", "evidence"}
 EVIDENCE_KEYS = {"source", "claim"}
 USE_CASE_ACTOR_KEYS = {"id", "name", "inferred", "evidence"}
 ASSOCIATION_KEYS = {"actor", "use_cases", "inferred", "evidence"}
@@ -277,8 +277,6 @@ def _groups(raw: Any, diagnostics: list[Diagnostic], label: str, identifiers: se
             raise _InvalidView(label)
         identifiers.add(identifier)
         group_label = _text(value["label"], diagnostics, view, f"{label} label")
-        if value.get("description") is not None:
-            _text(value["description"], diagnostics, view, f"{label} description")
         members = value.get("members", [])
         if not isinstance(members, list):
             _diag(diagnostics, "CURATION_VALUE_INVALID", f"Invalid {label} members: {identifier}", view=view)
@@ -401,8 +399,6 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
         _check_keys(value, EXTERNAL_KEYS, diagnostics, view_name, "external")
         identifier, name = str(value.get("id", "")), str(value.get("name", ""))
         name = _text(name, diagnostics, view_name, "external name")
-        if value.get("description") is not None:
-            _text(value["description"], diagnostics, view_name, "external description")
         evidence = _evidence(value.get("evidence"), root, diagnostics, f"external {identifier or name}", view_name)
         if not identifier or not name or value.get("inferred") is not True or not evidence:
             _diag(diagnostics, "CURATION_EXTERNAL_INVALID", f"Invalid inferred external: {identifier or name or '<unknown>'}", view=view_name)
@@ -433,8 +429,6 @@ def _parse_valid_view(raw: dict[str, Any], root: Path, context: ArchitectureView
             _diag(diagnostics, "CURATION_EVIDENCE_INVALID", f"Inferred curated flow requires evidence: {source} -> {target}", view=view_name)
             raise _InvalidView("flow")
         flow_label = _text(value.get("label", ""), diagnostics, view_name, "flow label")
-        if value.get("description") is not None:
-            _text(value["description"], diagnostics, view_name, "flow description")
         flow_key = (source, target, kind, flow_label)
         if flow_key in flow_keys:
             _diag(diagnostics, "CURATION_FLOW_DUPLICATE", f"Duplicate curated flow ignored: {source} -> {target}", view=view_name)

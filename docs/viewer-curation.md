@@ -100,8 +100,8 @@ loader and is not accepted in YAML.
 
 ### Nested Records
 
-A group or tier supports `id`, `label`, `kind`, `parent`, `order`,
-`description`, and `members`. Members are selectors; IDs occupy the same
+A group or tier supports `id`, `label`, `kind`, `parent`, `order`, and
+`members`. Members are selectors; IDs occupy the same
 per-view presentation namespace as canonical entities, scenarios, externals,
 and actors. `CuratedGroup` stores the resolved grouping.
 
@@ -109,13 +109,13 @@ A scenario supports all group keys plus `goal`, `outcomes`, `requirements`,
 `moes`, and `evidence`. `CuratedScenario` represents it. Semantic additions
 require evidence.
 
-An external supports `id`, `name`, `kind`, `description`, `inferred`, and
+An external supports `id`, `name`, `kind`, `inferred`, and
 `evidence`. `inferred` must be `true`. `kind` may be `source-system`,
 `ai-service`, `telemetry`, `legacy-adapter`, or `external-service`.
 `CuratedExternal` represents it.
 
-A flow supports `source`, `target`, `kind`, `label`, `description`, `inferred`,
-and `evidence`. A canonical architecture relationship may use its canonical
+A flow supports `source`, `target`, `kind`, `label`, `inferred`, and `evidence`.
+A canonical architecture relationship may use its canonical
 relationship kind without inference. A noncanonical flow must set `inferred:
 true`, include evidence, and use `exchange`, `operational-flow`, or `data-flow`.
 `CuratedFlow` represents it.
@@ -182,7 +182,7 @@ cannot inject raw HTML, SVG, JavaScript, or canonical architecture entities.
 Overview projections are deterministic and bounded to at most 25 nodes and 40
 edges per panel. Omitted detail remains available through generated drilldowns;
 explicit `drilldowns` may choose entry entities. The self-contained viewer
-supports back/forward navigation across overviews, drilldowns, entities,
+supports back navigation and breadcrumbs across overviews, drilldowns, entities,
 modules, and embedded pipeline history. Comments are stored locally in the
 browser and can be imported/exported as YAML. The generated HTML embeds model,
 documents, history, scripts, styles, and offline SVG fallbacks; it requires no

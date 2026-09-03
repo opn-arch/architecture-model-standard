@@ -520,7 +520,6 @@ views:
         kind: exchange
         inferred: true
         label: 'Latency < 10ms'
-        description: 'Plain < comparison'
         evidence: [{source: evidence.md, claim: 'Observed p < 0.05'}]
 """, encoding="utf-8")
     curation = load_viewer_curation(tmp_path, context, path)

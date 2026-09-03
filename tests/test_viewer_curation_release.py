@@ -144,3 +144,18 @@ def test_reference_covers_supported_schema_and_cli_flags(capsys):
             main([command, "--help"])
         assert result.value.code == 0
         assert "docs/viewer-curation.md" in capsys.readouterr().out
+
+
+def test_nested_allowed_key_contract_excludes_discarded_fields():
+    assert GROUP_KEYS == {"id", "label", "kind", "parent", "order", "members"}
+    assert SCENARIO_KEYS == GROUP_KEYS | {"goal", "outcomes", "requirements", "moes", "evidence"}
+    assert EXTERNAL_KEYS == {"id", "name", "inferred", "evidence", "kind"}
+    assert FLOW_KEYS == {"source", "target", "kind", "label", "inferred", "evidence"}
+
+
+def test_reference_promises_back_and_breadcrumb_navigation_only():
+    text = REFERENCE.read_text(encoding="utf-8").lower()
+
+    assert "back navigation and breadcrumbs" in text
+    assert "back/forward" not in text
+    assert "forward navigation" not in text
