@@ -54,6 +54,9 @@ architecture-model docs /path/to/project
 # Produces: component specs, dependency matrix, ICD, health report
 ```
 
+Curate the native ConOps, functional, logical, and use-case views with the
+[Viewer curation reference](docs/viewer-curation.md).
+
 ### Python API
 
 ```python

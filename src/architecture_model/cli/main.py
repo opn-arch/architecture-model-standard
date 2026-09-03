@@ -88,7 +88,10 @@ def main(argv: list[str] | None = None) -> int:
     p_docs.add_argument("--pdf", action="store_true", help="Also generate PDF output from markdown docs")
 
     # --- visualize ---
-    p_visualize = subparsers.add_parser("visualize", help="Generate Mermaid diagrams from architecture model")
+    p_visualize = subparsers.add_parser(
+        "visualize", help="Generate Mermaid diagrams from architecture model",
+        epilog="Curation reference: docs/viewer-curation.md",
+    )
     p_visualize.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_visualize.add_argument("-o", "--output", default="output/diagrams", help="Output directory (default: output/diagrams)")
     visualize_curation = p_visualize.add_mutually_exclusive_group()
@@ -139,7 +142,10 @@ def main(argv: list[str] | None = None) -> int:
                            help="Generate model feedback from code analysis")
 
     # --- viewer ---
-    p_viewer = subparsers.add_parser("viewer", help="Generate self-contained HTML architecture viewer")
+    p_viewer = subparsers.add_parser(
+        "viewer", help="Generate self-contained HTML architecture viewer",
+        epilog="Curation reference: docs/viewer-curation.md",
+    )
     p_viewer.add_argument("path", nargs="?", default=".", help="Project root directory (default: cwd)")
     p_viewer.add_argument("--model", help="Path to architecture-model.yaml (default: <path>/.architecture-model.yaml)")
     p_viewer.add_argument("-o", "--output", help="Output HTML path (default: <path>/.architecture/diagrams/viewer.html)")

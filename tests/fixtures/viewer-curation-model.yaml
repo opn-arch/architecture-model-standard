@@ -1,0 +1,40 @@
+meta:
+  project: viewer-curation-example
+  schema_version: '2.0'
+entities:
+  actors:
+    - id: ACT-1
+      name: Operator
+      status: ACTIVE
+  capabilities:
+    - id: CAP-1
+      name: Accept Requests
+      status: ACTIVE
+    - id: CAP-2
+      name: Deliver Results
+      status: ACTIVE
+  behaviors:
+    - id: BEH-1
+      name: Submit Request
+      status: ACTIVE
+    - id: BEH-2
+      name: Review Result
+      status: ACTIVE
+  components:
+    - id: COMP-1
+      name: API
+      status: ACTIVE
+      files: [src/api.py]
+      tags: [delivery]
+    - id: COMP-2
+      name: Service
+      status: ACTIVE
+      files: [src/service.py]
+      tags: [domain]
+relationships:
+  - from: COMP-1
+    to: COMP-2
+    type: depends-on
+  - from: BEH-1
+    to: BEH-2
+    type: triggers

@@ -1,0 +1,735 @@
+# Provenance: exact logs_db profile for canonical schema 2.0.0 generated 2026-09-02.
+version: 1
+views:
+  conops:
+    featured:
+      - project-documentation-orchestration-2-related::BEH-104
+      - project-documentation-orchestration-2-related::BEH-102
+      - root::BEH-350
+      - root::BEH-349
+      - root::BEH-344
+    order:
+      - project-documentation-orchestration-2-related::BEH-104
+      - project-documentation-orchestration-2-related::BEH-102
+      - root::BEH-350
+      - root::BEH-349
+      - root::BEH-344
+    labels:
+      project-documentation-orchestration-2-related::BEH-104: Acquire Multi-Source Knowledge
+      project-documentation-orchestration-2-related::BEH-102: Enrich and Organize Project Context
+      root::BEH-350: Search and Use Project Knowledge
+      root::BEH-349: Review and Govern Log Lifecycle
+      root::BEH-344: Learn and Improve by Evaluation
+    externals:
+      - id: ext-github-opencode
+        name: GitHub / OpenCode
+        kind: source-system
+        inferred: true
+        evidence:
+          - source: scripts/_pipeline_ingest.py
+            claim: GitHub items and OpenCode sessions are acquired as project knowledge sources.
+      - id: ext-onedrive-onenote
+        name: OneDrive / OneNote
+        kind: source-system
+        inferred: true
+        evidence:
+          - source: scripts/catalog_onedrive.py
+            claim: OneDrive project folders are cataloged as local project evidence.
+          - source: scripts/ingestion/ingest_onenote.py
+            claim: OneNote markdown exports are parsed and ingested as logs.
+      - id: ext-ai-services
+        name: AI Services / Ollama-Copilot
+        kind: ai-service
+        inferred: true
+        evidence:
+          - source: scripts/ingestion/_shared.py
+            claim: Ingestion calls Ollama first and falls back to the Copilot relay.
+      - id: ext-oura
+        name: Oura
+        kind: telemetry
+        inferred: true
+        evidence:
+          - source: app/services/oura_sync.py
+            claim: Oura API data is synchronized into daily readiness, sleep, and activity records.
+      - id: ext-google-sheets
+        name: Google Sheets
+        kind: legacy-adapter
+        inferred: true
+        evidence:
+          - source: write_sheet.py
+            claim: Legacy integration writes log data through the Google Sheets API.
+    scenarios:
+      - id: scenario-acquire
+        label: Acquire Knowledge
+        order: 1
+        goal: Acquire heterogeneous source records and normalize them for storage.
+        outcomes:
+          - Source records captured
+          - Normalized knowledge available
+        evidence:
+          - source: scripts/_pipeline_ingest.py
+            claim: The project pipeline ingests heterogeneous file, GitHub, and OpenCode records and persists normalized knowledge records.
+          - source: scripts/ingestion/ingest_chat.py
+            claim: Conversation and GitHub project records are transformed into a normalized session format for extraction.
+        members:
+          - project-documentation-orchestration-2-related::BEH-104
+          - root::BEH-345
+          - root::BEH-346
+          - root::BEH-347
+          - root::BEH-348
+          - root::sys-scripts-ingestion
+      - id: scenario-enrich-organize
+        label: Enrich & Organize
+        order: 2
+        goal: Classify, link, and assemble project knowledge.
+        outcomes:
+          - Ontology-linked records
+          - Grounded project context
+        evidence:
+          - source: app/services/log_pipeline.py
+            claim: The log pipeline classifies records and resolves links to knowledge-base entities.
+          - source: app/services/context_assembler.py
+            claim: Model, graph, and vector evidence are assembled into grounded entity context.
+        members:
+          - project-documentation-orchestration-2-related::BEH-102
+          - root::BEH-342
+          - root::sys-project-documentation-orchestration
+      - id: scenario-search-use
+        label: Search & Use
+        order: 3
+        goal: Retrieve relevant structured, vector, and graph evidence for users and downstream workflows.
+        outcomes:
+          - Relevant evidence retrieved
+        evidence:
+          - source: app/services/query_service.py
+            claim: The query service retrieves structured logs through multidimensional filters and project relationships.
+          - source: app/services/context_assembler.py
+            claim: The context assembler retrieves graph neighborhoods and semantically similar vector content.
+        members:
+          - root::BEH-350
+          - root::sys-web-routes-routers
+      - id: scenario-review-govern
+        label: Review & Govern
+        order: 4
+        goal: Review lifecycle changes, artifact feedback, and validation claims.
+        outcomes:
+          - Approved knowledge state
+          - Validated architecture artifacts
+        evidence:
+          - source: app/services/review_pipeline.py
+            claim: Human log changes are reclassified, recorded as events, and retained as training evidence.
+          - source: scripts/_pipeline_validate.py
+            claim: Generated artifacts are checked and a validation report is written with claim findings.
+        members:
+          - root::BEH-349
+          - project-documentation-orchestration-2-related::BEH-103
+          - project-documentation-orchestration-2-related::BEH-105
+          - root::BEH-343
+          - root::sys-models
+          - root::sys-schemas
+      - id: scenario-learn-improve
+        label: Learn & Improve
+        order: 5
+        goal: Convert corrections and benchmark results into measurable improvement evidence.
+        outcomes:
+          - Training examples
+          - Evaluation metrics
+        evidence:
+          - source: app/services/training_collector.py
+            claim: Human corrections and model outputs are persisted as training examples with acceptance and quality measures.
+          - source: scripts/eval_benchmark.py
+            claim: The evaluation benchmark computes and reports quality metrics for model outputs.
+        members:
+          - root::BEH-337
+          - root::BEH-340
+          - root::BEH-344
+          - root::sys-scripts-conversation-analyzer
+    flows:
+      - source: ext-github-opencode
+        target: scenario-acquire
+        kind: exchange
+        label: sessions and repository activity
+        inferred: true
+        evidence:
+          - source: scripts/_pipeline_ingest.py
+            claim: GitHub and OpenCode records enter the multi-source acquisition path.
+      - source: ext-onedrive-onenote
+        target: scenario-acquire
+        kind: exchange
+        label: project files and notes
+        inferred: true
+        evidence:
+          - source: scripts/ingestion/ingest_onenote.py
+            claim: Exported OneNote notes enter source ingestion.
+      - source: ext-oura
+        target: scenario-acquire
+        kind: exchange
+        label: personal telemetry
+        inferred: true
+        evidence:
+          - source: app/services/oura_sync.py
+            claim: Oura telemetry enters persistent knowledge records.
+      - source: ext-google-sheets
+        target: scenario-acquire
+        kind: exchange
+        label: legacy log records
+        inferred: true
+        evidence:
+          - source: read_sheet.py
+            claim: Existing Google Sheets records are read by the legacy integration.
+      - source: scenario-acquire
+        target: scenario-enrich-organize
+        kind: operational-flow
+        label: normalized knowledge
+        inferred: true
+        evidence:
+          - source: scripts/_pipeline_ingest.py
+            claim: Ingested source records are normalized before downstream enrichment.
+      - source: ext-ai-services
+        target: scenario-enrich-organize
+        kind: exchange
+        label: inference and enrichment
+        inferred: true
+        evidence:
+          - source: scripts/ingestion/_shared.py
+            claim: LLM services provide classification and enrichment responses.
+      - source: scenario-enrich-organize
+        target: scenario-search-use
+        kind: operational-flow
+        label: organized context
+        inferred: true
+        evidence:
+          - source: app/services/context_assembler.py
+            claim: Enriched records are assembled into retrievable project context.
+      - source: scenario-search-use
+        target: scenario-review-govern
+        kind: operational-flow
+        label: reviewed knowledge
+        inferred: true
+        evidence:
+          - source: app/services/review_pipeline.py
+            claim: Retrieved and edited records enter review and governance processing.
+      - source: scenario-review-govern
+        target: scenario-learn-improve
+        kind: data-flow
+        label: corrections and audit results
+        inferred: true
+        evidence:
+          - source: app/services/training_collector.py
+            claim: Human review corrections are captured as training evidence.
+      - source: scenario-learn-improve
+        target: scenario-enrich-organize
+        kind: operational-flow
+        label: improved prompts and models
+        inferred: true
+        evidence:
+          - source: scripts/eval_benchmark.py
+            claim: Evaluation results measure and guide subsequent enrichment quality.
+
+  functional:
+    featured:
+      - project-documentation-orchestration-2-related::CAP-3
+      - project-documentation-orchestration-2-related::CAP-23
+      - project-documentation-orchestration-2-related::CAP-64
+      - project-documentation-orchestration-2-related::CAP-34
+      - project-documentation-orchestration-2-related::CAP-36
+      - project-documentation-orchestration-2-related::CAP-12
+      - project-documentation-orchestration-2-related::CAP-47
+      - project-documentation-orchestration-2-related::CAP-42
+      - project-documentation-orchestration-2-related::CAP-14
+      - project-documentation-orchestration-2-related::CAP-44
+    order:
+      - project-documentation-orchestration-2-related::CAP-3
+      - project-documentation-orchestration-2-related::CAP-23
+      - project-documentation-orchestration-2-related::CAP-64
+      - project-documentation-orchestration-2-related::CAP-34
+      - project-documentation-orchestration-2-related::CAP-36
+      - project-documentation-orchestration-2-related::CAP-12
+      - project-documentation-orchestration-2-related::CAP-47
+      - project-documentation-orchestration-2-related::CAP-42
+      - project-documentation-orchestration-2-related::CAP-14
+      - project-documentation-orchestration-2-related::CAP-44
+    labels:
+      project-documentation-orchestration-2-related::CAP-3: Multi-Source Ingestion
+      project-documentation-orchestration-2-related::CAP-23: Classification & Enrichment
+      project-documentation-orchestration-2-related::CAP-64: Curation & Audit
+      project-documentation-orchestration-2-related::CAP-34: Search & Knowledge Graph
+      project-documentation-orchestration-2-related::CAP-36: Review & Lifecycle
+      project-documentation-orchestration-2-related::CAP-12: Project Context Assembly
+      project-documentation-orchestration-2-related::CAP-47: Documentation Automation
+      project-documentation-orchestration-2-related::CAP-42: Training & Evaluation
+      project-documentation-orchestration-2-related::CAP-14: Architecture & Drift
+      project-documentation-orchestration-2-related::CAP-44: Persistence & Schema
+    groups:
+      - id: function-ingestion
+        label: Ingestion
+        order: 1
+        members:
+          - project-documentation-orchestration-2-related::CAP-3
+      - id: function-classification-enrichment
+        label: Classification & Enrichment
+        order: 2
+        members:
+          - project-documentation-orchestration-2-related::CAP-23
+          - project-documentation-orchestration-2-related::CAP-21
+      - id: function-curation-audit
+        label: Curation & Audit
+        order: 3
+        members:
+          - project-documentation-orchestration-2-related::CAP-64
+          - project-documentation-orchestration-2-related::CAP-43
+      - id: function-search-graph
+        label: Search & Graph
+        order: 4
+        members:
+          - project-documentation-orchestration-2-related::CAP-34
+          - project-documentation-orchestration-2-related::CAP-16
+      - id: function-review-lifecycle
+        label: Review & Lifecycle
+        order: 5
+        members:
+          - project-documentation-orchestration-2-related::CAP-36
+          - project-documentation-orchestration-2-related::CAP-32
+      - id: function-project-context
+        label: Project Context
+        order: 6
+        members:
+          - project-documentation-orchestration-2-related::CAP-12
+      - id: function-documentation-automation
+        label: Documentation Automation
+        order: 7
+        members:
+          - project-documentation-orchestration-2-related::CAP-47
+          - project-documentation-orchestration-2-related::CAP-57
+      - id: function-training-evaluation
+        label: Training & Evaluation
+        order: 8
+        members:
+          - project-documentation-orchestration-2-related::CAP-42
+          - project-documentation-orchestration-2-related::CAP-43
+      - id: function-architecture-drift
+        label: Architecture & Drift
+        order: 9
+        members:
+          - project-documentation-orchestration-2-related::CAP-14
+          - project-documentation-orchestration-2-related::CAP-6
+      - id: function-persistence-schema
+        label: Persistence & Schema
+        order: 10
+        members:
+          - project-documentation-orchestration-2-related::CAP-44
+          - alembic-versions::CAP-59
+    flows:
+      - source: project-documentation-orchestration-2-related::CAP-3
+        target: project-documentation-orchestration-2-related::CAP-23
+        kind: data-flow
+        label: normalized records
+        inferred: true
+        evidence:
+          - source: scripts/_pipeline_ingest.py
+            claim: Source ingestion normalizes and persists records for ontology classification.
+      - source: project-documentation-orchestration-2-related::CAP-23
+        target: project-documentation-orchestration-2-related::CAP-36
+        kind: operational-flow
+        label: classified entries
+        inferred: true
+        evidence:
+          - source: app/services/log_pipeline.py
+            claim: Classified log entries proceed to human review and lifecycle handling.
+      - source: project-documentation-orchestration-2-related::CAP-36
+        target: project-documentation-orchestration-2-related::CAP-42
+        kind: data-flow
+        label: human corrections
+        inferred: true
+        evidence:
+          - source: app/services/training_collector.py
+            claim: Review edits are transformed into training examples.
+      - source: project-documentation-orchestration-2-related::CAP-34
+        target: project-documentation-orchestration-2-related::CAP-12
+        kind: data-flow
+        label: retrieved evidence
+        inferred: true
+        evidence:
+          - source: app/services/context_assembler.py
+            claim: Query and retrieval results are assembled into project-scoped context.
+      - source: project-documentation-orchestration-2-related::CAP-12
+        target: project-documentation-orchestration-2-related::CAP-47
+        kind: data-flow
+        label: grounded context
+        inferred: true
+        evidence:
+          - source: scripts/_pipeline_collectors.py
+            claim: Collected project context supplies grounded inputs for artifact drafting.
+      - source: project-documentation-orchestration-2-related::CAP-47
+        target: project-documentation-orchestration-2-related::CAP-64
+        kind: operational-flow
+        label: generated artifacts
+        inferred: true
+        evidence:
+          - source: scripts/audit_kb_quality.py
+            claim: Generated knowledge artifacts are audited against original sources.
+      - source: project-documentation-orchestration-2-related::CAP-14
+        target: project-documentation-orchestration-2-related::CAP-44
+        kind: data-flow
+        label: drift findings
+        inferred: true
+        evidence:
+          - source: app/services/drift_detector.py
+            claim: Model drift findings compare persisted entities with source definitions.
+
+  logical:
+    order:
+      - root::sys-web-routes-routers
+      - root::sys-project-documentation-orchestration
+      - root::sys-scripts-ingestion
+      - root::sys-scripts-conversation-analyzer
+      - root::sys-scripts-architecture-model
+      - root::sys-models
+      - root::sys-schemas
+      - root::sys-alembic-versions
+    labels:
+      root::sys-web-routes-routers: Web & API Delivery
+      root::sys-project-documentation-orchestration: Knowledge Orchestration Services
+      root::sys-scripts-ingestion: Scheduled Source Ingestion
+      root::sys-scripts-conversation-analyzer: Conversation Analysis
+      root::sys-scripts-architecture-model: Architecture Model Tooling
+      root::sys-models: Persistence Models
+      root::sys-schemas: API Data Contracts
+      root::sys-alembic-versions: Schema Migration History
+    tiers:
+      - id: tier-web
+        label: Web
+        order: 1
+        members:
+          - root::sys-web-routes-routers
+      - id: tier-application
+        label: Application / Orchestration
+        order: 2
+        members:
+          - root::sys-project-documentation-orchestration
+          - root::sys-scripts-ingestion
+          - root::sys-scripts-conversation-analyzer
+      - id: tier-domain
+        label: Domain / Service
+        order: 3
+        members:
+          - root::sys-scripts-architecture-model
+      - id: tier-data
+        label: Data / Contracts
+        order: 4
+        members:
+          - root::sys-models
+          - root::sys-schemas
+      - id: tier-infrastructure
+        label: Infrastructure
+        order: 5
+        members:
+          - root::sys-alembic-versions
+    groups:
+      - id: aggregate-inline-web
+        label: Inline Web APIs
+        kind: aggregate
+        parent: tier-web
+        order: 10
+        members:
+          - root::comp-1-1
+          - root::COMP-60
+          - root::COMP-61
+      - id: aggregate-inline-domain
+        label: Inline Knowledge Services
+        kind: aggregate
+        parent: tier-domain
+        order: 20
+        members:
+          - root::COMP-55
+          - root::COMP-56
+          - root::COMP-57
+          - root::COMP-58
+          - root::COMP-59
+          - root::COMP-62
+          - root::comp-10-2
+      - id: aggregate-inline-infrastructure
+        label: Inline Infrastructure & Legacy Adapters
+        kind: aggregate
+        parent: tier-infrastructure
+        order: 30
+        members:
+          - root::COMP-3
+          - root::COMP-4
+          - root::COMP-11
+          - root::COMP-52
+          - root::COMP-53
+          - root::comp-5-1
+    aggregate_components:
+      - root::comp-1-1
+      - root::COMP-60
+      - root::COMP-61
+      - root::COMP-55
+      - root::COMP-56
+      - root::COMP-57
+      - root::COMP-58
+      - root::COMP-59
+      - root::COMP-62
+      - root::comp-10-2
+      - root::COMP-3
+      - root::COMP-4
+      - root::COMP-11
+      - root::COMP-52
+      - root::COMP-53
+      - root::comp-5-1
+
+  use_cases:
+    featured:
+      - project-documentation-orchestration-2-related::BEH-104
+      - root::BEH-348
+      - root::BEH-347
+      - root::BEH-346
+      - project-documentation-orchestration-2-related::BEH-102
+      - root::BEH-342
+      - root::BEH-349
+      - root::BEH-350
+      - project-documentation-orchestration-2-related::BEH-103
+      - project-documentation-orchestration-2-related::BEH-105
+    order:
+      - project-documentation-orchestration-2-related::BEH-104
+      - root::BEH-348
+      - root::BEH-347
+      - root::BEH-346
+      - project-documentation-orchestration-2-related::BEH-102
+      - root::BEH-342
+      - root::BEH-349
+      - root::BEH-350
+      - project-documentation-orchestration-2-related::BEH-103
+      - project-documentation-orchestration-2-related::BEH-105
+      - root::BEH-345
+      - root::BEH-343
+      - root::BEH-337
+      - root::BEH-340
+      - root::BEH-344
+    labels:
+      project-documentation-orchestration-2-related::BEH-104: Ingest Multi-Source Knowledge
+      root::BEH-348: Ingest Conversation History
+      root::BEH-347: Ingest Coursework
+      root::BEH-346: Ingest Goals & Career Evidence
+      project-documentation-orchestration-2-related::BEH-102: Collect Project Documentation Context
+      root::BEH-342: Curate Knowledge Base Entities
+      root::BEH-349: Manage Log Capture, Review & Lifecycle
+      root::BEH-350: Manage Project Portfolio Context
+      project-documentation-orchestration-2-related::BEH-103: Manage Artifact Feedback Constraints
+      project-documentation-orchestration-2-related::BEH-105: Validate Generated Artifacts
+      root::BEH-345: Catalog Local Projects
+      root::BEH-343: Audit Ontology Completeness
+      root::BEH-337: Collect Human Correction Training Data
+      root::BEH-340: Export Fine-Tuning Dataset
+      root::BEH-344: Run Training Evaluation Benchmark
+    actors:
+      - id: knowledge-worker
+        name: Knowledge Worker
+        inferred: true
+        evidence:
+          - source: app/routers/logs.py
+            claim: Users create, update, review, archive, and restore log records through the logs API.
+          - source: app/routers/projects.py
+            claim: Users manage projects and request project detail, timeline, logs, people, processes, and comments.
+      - id: automation-operator
+        name: Automation Operator
+        inferred: true
+        evidence:
+          - source: scripts/project_pipeline.py
+            claim: Operators run ingestion, catalog, validation, artifact feedback, and training-related project workflows from the pipeline CLI.
+          - source: scripts/ingestion/_scheduler.py
+            claim: Scheduled processes run source ingestion and work-detail enrichment jobs.
+    associations:
+      - actor: knowledge-worker
+        use_cases:
+          - qualified_id: root::BEH-349
+          - qualified_id: root::BEH-350
+        inferred: true
+        evidence:
+          - source: app/routers/logs.py
+            claim: Log API operations let knowledge workers capture, edit, review, archive, and restore logs.
+          - source: app/routers/projects.py
+            claim: Project API operations let knowledge workers manage and retrieve portfolio context.
+      - actor: knowledge-worker
+        use_cases:
+          - qualified_id: root::BEH-342
+        inferred: true
+        evidence:
+          - source: scripts/update_kb.py
+            claim: Knowledge-base curation collects and deduplicates entities for saved KB artifacts.
+      - actor: knowledge-worker
+        use_cases:
+          - qualified_id: project-documentation-orchestration-2-related::BEH-102
+        inferred: true
+        evidence:
+          - source: app/services/context_assembler.py
+            claim: Project-scoped requests assemble model, graph, and vector documentation context for downstream use.
+      - actor: automation-operator
+        use_cases:
+          - qualified_id: project-documentation-orchestration-2-related::BEH-104
+          - qualified_id: root::BEH-348
+          - qualified_id: root::BEH-347
+          - qualified_id: root::BEH-346
+        inferred: true
+        evidence:
+          - source: scripts/project_pipeline.py
+            claim: The pipeline CLI lets operators initiate source, GitHub, and OpenCode ingestion workflows.
+          - source: scripts/ingestion/_scheduler.py
+            claim: The scheduler initiates unattended source ingestion jobs.
+      - actor: automation-operator
+        use_cases:
+          - qualified_id: project-documentation-orchestration-2-related::BEH-103
+        inferred: true
+        evidence:
+          - source: scripts/project_pipeline.py
+            claim: Pipeline feedback, lock, and unlock actions parse and maintain active artifact constraints.
+      - actor: automation-operator
+        use_cases:
+          - qualified_id: project-documentation-orchestration-2-related::BEH-105
+        inferred: true
+        evidence:
+          - source: scripts/project_pipeline.py
+            claim: The pipeline validate command runs artifact validation and prints its report.
+          - source: scripts/_pipeline_validate.py
+            claim: Artifact validation produces a structured validation report for generated claims.
+    annotations:
+      - use_case:
+          qualified_id: project-documentation-orchestration-2-related::BEH-104
+        goal: Acquire heterogeneous project evidence as normalized linked knowledge records.
+        trigger: An operator or scheduled ingestion job supplies a source for ingestion.
+        preconditions:
+          - The source is accessible and its project can be resolved.
+        postconditions:
+          - Normalized records and project links are persisted.
+        success_outcome: Available source records are accepted or reported without an unhandled source failure.
+        moes:
+          - Accepted records divided by attempted records
+        evidence:
+          - source: scripts/_pipeline_ingest.py
+            claim: The ingestion orchestrator reads supported sources, normalizes extracted records, persists logs, and creates project links.
+      - use_case:
+          qualified_id: root::BEH-348
+        goal: Convert conversation history into normalized knowledge and extraction candidates.
+        trigger: An operator provides chat, OpenCode, or GitHub conversation history.
+        preconditions:
+          - Conversation source data is readable.
+        postconditions:
+          - Normalized sessions and extracted conversation records are available for persistence.
+        success_outcome: Each readable conversation is normalized or its failure is reported.
+        moes:
+          - Normalized conversations divided by attempted conversations
+        evidence:
+          - source: scripts/ingestion/ingest_chat.py
+            claim: Chat, OpenCode, and GitHub records are loaded, normalized into sessions, validated, and processed for extraction.
+      - use_case:
+          qualified_id: root::BEH-347
+        goal: Convert coursework evidence into linked course, skill, assignment, and log records.
+        trigger: An operator starts coursework ingestion for an available course source.
+        preconditions:
+          - Coursework source data and database access are available.
+        postconditions:
+          - Course-related entities and links are persisted idempotently.
+        success_outcome: Coursework records are stored without duplicate constrained records.
+        moes:
+          - Persisted coursework records divided by attempted coursework records
+        evidence:
+          - source: scripts/ingestion/ingest_courses.py
+            claim: Coursework ingestion creates course, skill, assignment, and log records using idempotent database operations.
+      - use_case:
+          qualified_id: root::BEH-346
+        goal: Convert goals and career evidence into structured knowledge records.
+        trigger: An operator starts goals ingestion for an available goals source.
+        preconditions:
+          - Goal or career source data is readable.
+        postconditions:
+          - Structured goal and career evidence is persisted and linked.
+        success_outcome: Readable goal records are transformed without an unhandled source failure.
+        moes:
+          - Persisted goal records divided by attempted goal records
+        evidence:
+          - source: scripts/ingestion/ingest_goals.py
+            claim: The goals ingestion workflow parses goal and career source material and writes structured linked records.
+      - use_case:
+          qualified_id: project-documentation-orchestration-2-related::BEH-102
+        goal: Assemble grounded documentation context from structural, graph, and semantic evidence.
+        trigger: A project artifact or entity-context request needs supporting documentation context.
+        preconditions:
+          - A project or entity scope and query are available.
+        postconditions:
+          - Available model, graph, and vector context sections are merged within the context budget.
+        success_outcome: The downstream workflow receives the available required context sections.
+        moes:
+          - Required context sections present in the assembled context
+        evidence:
+          - source: app/services/context_assembler.py
+            claim: Context assembly combines model knowledge, graph relationships, and semantic vector matches under an output budget.
+      - use_case:
+          qualified_id: root::BEH-342
+        goal: Curate deduplicated knowledge-base entities from enriched records.
+        trigger: A reviewer or batch process starts knowledge-base curation.
+        preconditions:
+          - Enriched source entries are available.
+        postconditions:
+          - Deduplicated knowledge-base entities and questions are saved.
+        success_outcome: Accepted entities are retained without duplicate identifiers.
+        moes:
+          - Accepted entities without duplicate identifiers
+        evidence:
+          - source: scripts/update_kb.py
+            claim: The KB update workflow collects entities, deduplicates entities and questions, and writes curated knowledge artifacts.
+      - use_case:
+          qualified_id: root::BEH-349
+        goal: Capture logs and govern their review, completion, and archival lifecycle.
+        trigger: A user or API client creates, updates, reviews, completes, or archives a log.
+        preconditions:
+          - The request is valid and the referenced log exists for transition operations.
+        postconditions:
+          - The requested log and lifecycle state are persisted.
+        success_outcome: The requested lifecycle transition completes and remains retrievable.
+        moes:
+          - Successful lifecycle transitions divided by attempted transitions
+        evidence:
+          - source: app/routers/logs.py
+            claim: The logs router persists create and update requests and exposes review, completion, archive, and reversal transitions.
+      - use_case:
+          qualified_id: root::BEH-350
+        goal: Manage and retrieve project portfolio context for knowledge work.
+        trigger: A user or API client submits a project management or context request.
+        preconditions:
+          - The requested project exists for detail and related-context operations.
+        postconditions:
+          - Project detail, timeline, related logs, people, processes, or comments are returned or updated.
+        success_outcome: Requested project context sections are available to the caller.
+        moes:
+          - Requested context sections returned
+        evidence:
+          - source: app/routers/projects.py
+            claim: The projects router manages project records and returns detail, blockers, logs, people, processes, timeline, and comments.
+      - use_case:
+          qualified_id: project-documentation-orchestration-2-related::BEH-103
+        goal: Convert artifact feedback and structure locks into active governance constraints.
+        trigger: An operator requests feedback parsing, structure locking, or constraint review.
+        preconditions:
+          - The target project artifacts are available.
+        postconditions:
+          - Active artifact constraints are created, listed, or superseded as requested.
+        success_outcome: Applicable constraints are updated without duplicate active records.
+        moes:
+          - Constraints applied without duplicate active records
+        evidence:
+          - source: scripts/project_pipeline.py
+            claim: Feedback parsing and lock or unlock commands create, list, and supersede artifact constraints.
+      - use_case:
+          qualified_id: project-documentation-orchestration-2-related::BEH-105
+        goal: Validate generated artifacts and report evidence-backed claim findings.
+        trigger: An operator requests validation of generated project artifacts.
+        preconditions:
+          - Generated artifacts and their project manifest are available.
+        postconditions:
+          - A validation report and artifact annotations are produced.
+        success_outcome: Artifact claims receive validation results with unresolved findings reported.
+        moes:
+          - Validated claims divided by total claims
+        evidence:
+          - source: scripts/_pipeline_validate.py
+            claim: The validation pipeline checks generated artifacts against project evidence and writes a structured validation report.

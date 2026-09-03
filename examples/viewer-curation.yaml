@@ -1,0 +1,111 @@
+version: 1
+views:
+  conops:
+    featured: [root::BEH-1, root::BEH-2]
+    order: [root::BEH-1, root::BEH-2]
+    labels:
+      root::BEH-1: Receive Request
+    mission_root: root::BEH-1
+    drilldowns:
+      mission: root::BEH-1
+    externals:
+      - id: external-client
+        name: Client System
+        kind: external-service
+        inferred: true
+        evidence:
+          - source: README.md
+            claim: The example client represents an external caller.
+    scenarios:
+      - id: request-cycle
+        label: Request Cycle
+        order: 1
+        goal: Accept a request and return a reviewed result.
+        outcomes: [Reviewed result delivered]
+        requirements: [Requests remain traceable]
+        moes: [Completed requests]
+        members: [root::BEH-1, root::BEH-2]
+        evidence:
+          - source: README.md
+            claim: The example scenario illustrates presentation curation.
+    flows:
+      - source: external-client
+        target: request-cycle
+        kind: exchange
+        label: request
+        inferred: true
+        evidence:
+          - source: README.md
+            claim: The external client initiates the example request cycle.
+  functional:
+    featured: [root::CAP-1, root::CAP-2]
+    preferred_capability_root: root::CAP-1
+    groups:
+      - id: request-functions
+        label: Request Functions
+        members: [root::CAP-1, root::CAP-2]
+    flows:
+      - source: root::CAP-1
+        target: root::CAP-2
+        kind: operational-flow
+        label: accepted request
+        inferred: true
+        evidence:
+          - source: README.md
+            claim: The example presents request acceptance before result delivery.
+  logical:
+    order: [root::COMP-1, root::COMP-2]
+    tiers:
+      - id: delivery-tier
+        label: Delivery
+        order: 1
+        members: [root::COMP-1]
+      - id: domain-tier
+        label: Domain
+        order: 2
+        members: [root::COMP-2]
+    groups:
+      - id: service-aggregate
+        label: Service Aggregate
+        kind: aggregate
+        parent: domain-tier
+        members: [root::COMP-2]
+    aggregate_components: [root::COMP-2]
+    flows:
+      - source: root::COMP-1
+        target: root::COMP-2
+        kind: depends-on
+        label: invokes
+  use_cases:
+    featured: [root::BEH-1, root::BEH-2]
+    actors:
+      - id: reviewer
+        name: Reviewer
+        inferred: true
+        evidence:
+          - source: README.md
+            claim: A reviewer is introduced for the presentation example.
+    associations:
+      - actor: reviewer
+        use_cases: [root::BEH-2]
+        inferred: true
+        evidence:
+          - source: README.md
+            claim: The reviewer participates in result review.
+      - actor: root::ACT-1
+        use_cases: [root::BEH-1]
+        inferred: true
+        evidence:
+          - source: README.md
+            claim: The canonical operator submits requests in this example.
+    annotations:
+      - use_case: root::BEH-1
+        goal: Submit a valid request.
+        trigger: The operator needs a result.
+        preconditions: [The service is available]
+        postconditions: [The request is accepted]
+        success_outcome: A traceable request enters processing.
+        moes: [Accepted requests]
+        evidence:
+          - source: README.md
+            claim: The annotation demonstrates optional presentation semantics.
