@@ -92,6 +92,14 @@ class TestViewerCLI:
         se_dir = model_dir / ".architecture-models" / "docs" / "se"
         se_dir.mkdir(parents=True)
         (se_dir / "conops.md").write_text("# ConOps\n\nBig document content here.")
+        architecture = model_dir / ".architecture"
+        architecture.mkdir(exist_ok=True)
+        (architecture / "devlog.jsonl").write_text(
+            '{"log_type":"decision","title":"HISTORY-MARKER","content":"' + "history " * 20000 + '"}\n'
+        )
+        (architecture / "pipeline-history.jsonl").write_text(
+            '{"run_id":"PIPELINE-HISTORY-MARKER","started_at":"now","status":"complete","stages":[]}\n'
+        )
         out = model_dir / "v.html"
 
         # With docs (default)
@@ -106,6 +114,16 @@ class TestViewerCLI:
         # Without docs should be smaller (or at least not contain the doc content)
         html = out2.read_text()
         assert "Big document content here" not in html
+        assert "HISTORY-MARKER" not in html
+        assert "PIPELINE-HISTORY-MARKER" not in html
+        assert without_docs_size < with_docs_size * 0.7
+        assert '"docs": false' in html
+        assert '"operations": false' in html
+        assert '"history": false' in html
+        assert "Documentation unavailable in this viewer." in html
+        assert "Operational artifacts unavailable in this viewer." in html
+        assert "Pipeline history unavailable in this viewer." in html
+        assert "if (historyLink) historyLink.addEventListener" in html
         assert ".architecture/viewer-curation.yaml" in html
 
     def test_missing_model_returns_error(self, tmp_path):

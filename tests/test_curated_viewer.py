@@ -57,12 +57,14 @@ def test_viewer_embeds_four_native_specs_panels_and_drilldowns(tmp_path: Path) -
     for key in ("conops", "functional", "logical", "use-cases"):
         view = data["se_views"][key]
         assert view["renderer"] == "native"
-        assert view["panel"]["theme"] == "dark"
-        assert 'data-theme="dark"' in view["panel"]["svg"]
-        assert all(panel["theme"] == "dark" for panel in view["panel"]["drilldowns"].values())
+        panel = data["panels"][view["panel_ref"]]
+        assert panel["theme"] == "dark"
+        assert 'data-theme="dark"' in panel["svg"]
+        assert "drilldowns" not in panel
+        assert all(item["theme"] == "dark" for ref, item in data["panels"].items() if ref.startswith(key + "::"))
         assert view["spec"]["id"]
-        assert "<svg" in view["panel"]["svg"]
-        ET.fromstring(view["panel"]["svg"])
+        assert "<svg" in panel["svg"]
+        ET.fromstring(panel["svg"])
         assert "mermaid" not in view
         assert view["curation"]["status"] in {"auto", "curated", "partial"}
     assert data["se_views"]["icd"]["renderer"] == "mermaid"
@@ -140,6 +142,67 @@ entities:
     assert "child::COMP-1" in refs
 
 
+def test_model_path_provenance_loads_hierarchy_when_output_is_elsewhere(tmp_path: Path) -> None:
+    repo = tmp_path / "logs-db"
+    repo.mkdir()
+    root_path = _write_model(repo)
+    child = repo / ".architecture-models" / "child"
+    child.mkdir(parents=True)
+    root_path.write_text(root_path.read_text().replace(
+        "  actors:",
+        "  systems:\n    - {id: SYS-1, name: Child, status: ACTIVE, sub_model_ref: .architecture-models/child/.architecture-model.yaml}\n  actors:",
+    ))
+    (child / ".architecture-model.yaml").write_text(
+        "meta: {project: child, schema_version: '2.0'}\nentities:\n  components:\n    - {id: COMP-CHILD, name: Child, status: ACTIVE}\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "exports" / "viewer.html"
+
+    data = _viewer_data(generate_html_viewer(load_model(root_path), output, model_path=root_path).read_text())
+
+    assert data["subsystem_entities"]["SYS-1"] == ["child::COMP-CHILD"]
+    assert not data["viewer_warnings"]
+
+
+def test_explicit_wrong_repo_path_reports_unresolved_hierarchy(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    wrong = tmp_path / "wrong"
+    repo.mkdir()
+    wrong.mkdir()
+    root_path = _write_model(repo)
+    root_path.write_text(root_path.read_text().replace(
+        "  actors:",
+        "  systems:\n    - {id: SYS-1, name: Child, status: ACTIVE, sub_model_ref: .architecture-models/child/.architecture-model.yaml}\n  actors:",
+    ))
+
+    data = _viewer_data(generate_html_viewer(load_model(root_path), tmp_path / "viewer.html", repo_path=wrong).read_text())
+
+    assert data["viewer_warnings"] == [{
+        "code": "VIEWER_HIERARCHY_UNAVAILABLE",
+        "message": "1 referenced subsystem model could not be resolved from the selected repository root.",
+    }]
+
+
+def test_output_ancestor_is_not_inferred_from_an_unrelated_canonical_model(tmp_path: Path) -> None:
+    output_repo = tmp_path / "unrelated"
+    output_repo.mkdir()
+    _write_model(output_repo)
+    source_repo = tmp_path / "source"
+    source_repo.mkdir()
+    source_path = _write_model(source_repo)
+    source_path.write_text(source_path.read_text().replace(
+        "  actors:",
+        "  systems:\n    - {id: SYS-1, name: Child, status: ACTIVE, sub_model_ref: .architecture-models/child/.architecture-model.yaml}\n  actors:",
+    ))
+
+    data = _viewer_data(generate_html_viewer(
+        load_model(source_path), output_repo / "exports" / "viewer.html",
+    ).read_text())
+
+    assert data["viewer_system_namespaces"] == {}
+    assert data["viewer_warnings"][0]["code"] == "VIEWER_HIERARCHY_UNAVAILABLE"
+
+
 def test_generate_all_diagrams_preserves_mmd_and_adds_native_svg(tmp_path: Path) -> None:
     model = load_model(_write_model(tmp_path))
     paths = generate_all_diagrams(model, tmp_path / "diagrams", repo_path=tmp_path)
@@ -187,15 +250,18 @@ def test_generated_javascript_parses_with_node(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
 
 
-def test_drilldown_entity_back_restores_exact_drilldown_then_overview(tmp_path: Path) -> None:
+def test_drilldown_navigation_matrix_restores_exact_drilldown_then_overview(tmp_path: Path) -> None:
     model = load_model(_write_model(tmp_path))
     html = generate_html_viewer(model, tmp_path / "viewer.html", repo_path=tmp_path).read_text()
     data = _viewer_data(html)
     data["pipeline_history"] = [{"run_id": "run-1", "started_at": "now", "status": "complete", "stages": []}]
+    data["docs"] = {"se": {"sample": "<p>sample</p>"}}
+    data["ops"] = {"sample": "<p>sample</p>"}
+    data["modules"] = {"sample.py": {"canonical_path": "sample.py", "funcs": [], "classes": [], "consts": [], "routes": []}}
     script = re.findall(r"<script(?: [^>]*)?>(.*?)</script>", html, re.S)[1]
     view_key, drilldown_id = next(
-        (key, next(iter(view["panel"]["drilldowns"])))
-        for key, view in data["se_views"].items() if view.get("panel", {}).get("drilldowns")
+        (key, view["spec"]["drilldowns"][0]["id"])
+        for key, view in data["se_views"].items() if view.get("spec", {}).get("drilldowns")
     )
     entity_ref = next(
         node["entity_ref"] for node in data["se_views"][view_key]["spec"]["nodes"]
@@ -216,16 +282,24 @@ const context = {{console, document, Blob, URL, alert:noop, MutationObserver:fun
   atob,btoa,escape,unescape,encodeURIComponent,decodeURIComponent}};
 context.window=context; vm.createContext(context); vm.runInContext({json.dumps(script)}, context);
 context.wireNativePanel=noop;
-context.showView({json.dumps(view_key)}, false);
-context.showCuratedDrilldown({json.dumps(view_key)}, {json.dumps(drilldown_id)}, {json.dumps(entity_ref)});
-context.showEntity(context.resolveNativeEntity({json.dumps(entity_ref)}));
-context.goBack();
-if (content.dataset.currentType !== 'drilldown' || content.dataset.currentViewId !== {json.dumps(view_key)} || content.dataset.currentSpecId !== {json.dumps(drilldown_id)}) throw new Error('did not restore exact drilldown: '+JSON.stringify(content.dataset));
-context.goBack();
-if (content.dataset.currentType !== 'view' || content.dataset.currentId !== {json.dumps(view_key)}) throw new Error('did not restore overview: '+JSON.stringify(content.dataset));
-context.navHistory.push({{type:'history', id:'pipeline-history', label:'Pipeline History'}});
-context.goBack();
-if (content.dataset.currentType !== 'history') throw new Error('did not restore pipeline history: '+JSON.stringify(content.dataset));
+const routes = [
+  ['view', () => context.showView('icd')],
+  ['doc', () => context.showDoc('se', 'sample')],
+  ['ops', () => context.showOps('sample')],
+  ['module', () => context.showModule('sample.py')],
+  ['entity', () => context.showEntity(context.resolveNativeEntity({json.dumps(entity_ref)}))],
+  ['history', () => context.showPipelineHistory()],
+];
+for (const [name, route] of routes) {{
+  context.navHistory = [];
+  context.showView({json.dumps(view_key)}, false);
+  context.showCuratedDrilldown({json.dumps(view_key)}, {json.dumps(drilldown_id)}, {json.dumps(entity_ref)});
+  route();
+  context.goBack();
+  if (content.dataset.currentType !== 'drilldown' || content.dataset.currentViewId !== {json.dumps(view_key)} || content.dataset.currentSpecId !== {json.dumps(drilldown_id)} || content.dataset.currentEntityRef !== {json.dumps(entity_ref)}) throw new Error(name+' did not restore exact drilldown: '+JSON.stringify(content.dataset));
+  context.goBack();
+  if (content.dataset.currentType !== 'view' || content.dataset.currentId !== {json.dumps(view_key)}) throw new Error(name+' did not restore overview: '+JSON.stringify(content.dataset));
+}}
 """
     result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

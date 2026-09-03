@@ -1152,7 +1152,8 @@ def _cmd_viewer(args) -> int:
     if curation_path is not None and not curation_path.is_file():
         print(f"WARNING: Curation file is unreadable; using automatic views: {curation_path}")
     result_path = generate_html_viewer(
-        model, output_path, title=title, repo_path=repo_path, include_docs=not args.no_docs,
+        model, output_path, title=title, repo_path=repo_path, model_path=model_path,
+        include_docs=not args.no_docs, include_history=not args.no_docs,
         curation_path=curation_path, use_curation=not getattr(args, "no_curation", False),
     )
     size_kb = result_path.stat().st_size / 1024

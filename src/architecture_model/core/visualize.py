@@ -2346,6 +2346,8 @@ def generate_html_viewer(
     curation_path: Path | None = None,
     use_curation: bool = True,
     include_docs: bool = True,
+    include_history: bool = True,
+    model_path: Path | None = None,
 ) -> Path:
     """Generate a self-contained HTML viewer with 7 SE model views and universal click navigation.
 
@@ -2362,24 +2364,63 @@ def generate_html_viewer(
         model: The architecture model to visualize.
         output_path: Path to write the HTML file.
         title: Page title.
-        repo_path: If provided, generates manifest data for module-level drill-down.
+        repo_path: Explicit project root for hierarchy and repository artifacts.
+        model_path: Canonical model path used to infer the project root when
+            ``repo_path`` is omitted.
 
     Returns the path to the generated HTML file.
     """
     import json as _json
 
     output_path = Path(output_path)
+    trusted_root: Path | None = Path(repo_path).resolve() if repo_path is not None else None
+    if trusted_root is None and model_path is not None:
+        trusted_root = Path(model_path).resolve().parent
+    if trusted_root is None:
+        from .parser import dump_model, load_model
 
-    project_root = Path(repo_path).resolve() if repo_path is not None else output_path.parent.resolve()
+        for candidate in (output_path.parent, *output_path.parent.parents):
+            canonical_model = candidate / ".architecture-model.yaml"
+            if canonical_model.is_file():
+                try:
+                    if dump_model(load_model(canonical_model)) == dump_model(model):
+                        trusted_root = candidate.resolve()
+                        break
+                except (OSError, ValueError, KeyError, TypeError):
+                    continue
+    project_root = trusted_root or output_path.parent.resolve()
+    hierarchy_systems = [system for system in model.entities.systems if system.sub_model_ref]
+    unresolved_systems = sum(
+        not _viewer_submodel_path(trusted_root, system.sub_model_ref).is_file()
+        for system in hierarchy_systems
+    ) if trusted_root is not None else len(hierarchy_systems)
+    viewer_warnings = []
+    if unresolved_systems:
+        noun = "model" if unresolved_systems == 1 else "models"
+        viewer_warnings.append({
+            "code": "VIEWER_HIERARCHY_UNAVAILABLE",
+            "message": f"{unresolved_systems} referenced subsystem {noun} could not be resolved from the selected repository root.",
+        })
     native_views = build_curated_views(
-        model, project_root, curation_path=curation_path, use_curation=use_curation, theme="dark",
+        model, project_root, curation_path=curation_path,
+        use_curation=use_curation and (trusted_root is not None or curation_path is not None), theme="dark",
     )
     se_views: dict[str, dict] = {}
+    panels: dict[str, dict] = {}
+    def store_panel(view_key: str, panel_ref: str, panel_data: dict) -> None:
+        children = panel_data.pop("drilldowns", {})
+        panels[f"{view_key}::{panel_ref}"] = panel_data
+        for child_ref, child_panel in children.items():
+            store_panel(view_key, child_ref, child_panel)
+
     for key, view in native_views.items():
         spec, panel = view["spec"], view["panel"]
+        panel_ref = f"{key}::overview"
+        panel_data = panel.to_dict()
+        store_panel(key, "overview", panel_data)
         se_views[key] = {
             "label": view["label"], "subtitle": view["subtitle"], "renderer": "native",
-            "spec": spec.to_dict(), "panel": panel.to_dict(),
+            "spec": spec.to_dict(), "panel_ref": panel_ref,
             "warnings": [item.to_dict() for item in spec.warnings],
             "curation": view["curation"],
         }
@@ -2441,16 +2482,16 @@ def generate_html_viewer(
 
     # ── 4. Property cards ─────────────────────────────────────────
     entity_props = build_entity_properties(model)
-    scanned_modules = _build_module_data(repo_path)
+    scanned_modules = _build_module_data(trusted_root)
     root_manifest_modules = {}
-    if repo_path is not None:
-        root = Path(repo_path).resolve()
+    if trusted_root is not None:
+        root = trusted_root
         root_manifest_modules = _manifest_module_records(root / ".architecture-models" / "manifest.json", root) or {}
     root_modules = {**scanned_modules, **root_manifest_modules}
-    namespace_map = _viewer_system_namespace_map(model, repo_path)
-    system_aliases = _viewer_system_alias_map(model, repo_path, namespace_map)
+    namespace_map = _viewer_system_namespace_map(model, trusted_root)
+    system_aliases = _viewer_system_alias_map(model, trusted_root, namespace_map)
     sub_props, sub_comp_files, subsystem_entities, sub_modules, sub_comp_modules = _load_submodel_view_data(
-        model, repo_path, root_modules, namespace_map,
+        model, trusted_root, root_modules, namespace_map,
     )
     entity_props.update(sub_props)
 
@@ -2491,19 +2532,22 @@ def generate_html_viewer(
     comp_modules.update(sub_comp_modules)
 
     # ── 5d. SE documents and component specs ──────────────────────
-    docs_data = _load_docs(repo_path) if include_docs else {"se": {}, "components": {}}
+    docs_data = _load_docs(trusted_root) if include_docs else {"se": {}, "components": {}}
 
     # ── 5e. Operational artifacts ─────────────────────────────────
-    ops_data = _load_ops_data(repo_path) if include_docs else {}
+    ops_data = _load_ops_data(trusted_root) if include_docs else {}
 
     # ── 5f. Pipeline history ──────────────────────────────────────
     pipeline_history = _normalize_viewer_history(
-        _load_pipeline_history(repo_path), system_aliases,
-    )
+        _load_pipeline_history(trusted_root), system_aliases,
+    ) if include_history else {}
 
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "meta": {"project": model.meta.project},
+        "availability": {"docs": include_docs, "operations": include_docs, "history": include_history},
+        "viewer_warnings": viewer_warnings,
+        "panels": panels,
         "se_views": {
             key: ({**view, "svg": _render_mermaid_svg(view["mermaid"])} if view["renderer"] == "mermaid" else view)
             for key, view in se_views.items()
@@ -2811,11 +2855,11 @@ def generate_html_viewer(
 {entity_nav}
         <div class="divider"></div>
         <div class="nav-section">Documents</div>
-{docs_nav}
+{docs_nav or '            <span class="nav-link">Documentation unavailable in this viewer.</span>'}
         <div class="divider"></div>
         <div class="nav-section">Intelligence</div>
-            <a href="#" data-action="pipeline-history" class="nav-link ops-link">Pipeline History</a>
-{ops_nav}
+            {'<a href="#" data-action="pipeline-history" class="nav-link ops-link">Pipeline History</a>' if include_history else '<span class="nav-link">Pipeline history unavailable in this viewer.</span>'}
+{ops_nav or ('            <span class="nav-link">Operational artifacts unavailable in this viewer.</span>' if not include_docs else '')}
     </nav>
 
     <main class="content" id="content">
@@ -2879,13 +2923,10 @@ def generate_html_viewer(
 
         /* ── Mobile nav ───────────────────────────────────────── */
         /* ── Show Document ─────────────────────────────────────── */
-        function showDoc(category, name) {{
+        function showDoc(category, name, pushHistory) {{
             var docHtml = (D.docs && D.docs[category] && D.docs[category][name]) || '';
             if (!docHtml) {{ content.innerHTML = '<p>Document not found.</p>'; return; }}
-            var cur = content.dataset.currentType;
-            var curId = content.dataset.currentId;
-            var curLabel = content.dataset.currentLabel;
-            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            if (pushHistory !== false) pushCurrentNavigationState();
             var label = name.replace(/-/g, ' ').replace(/\\b\\w/g, function(c){{ return c.toUpperCase(); }});
             content.dataset.currentType = 'doc';
             content.dataset.currentId = category + '/' + name;
@@ -2899,13 +2940,10 @@ def generate_html_viewer(
         window.showDoc = showDoc;
 
         /* ── Show Ops artifact ────────────────────────────────── */
-        function showOps(name) {{
+        function showOps(name, pushHistory) {{
             var opsHtml = (D.ops && D.ops[name]) || '';
             if (!opsHtml) {{ content.innerHTML = '<p>Artifact not found.</p>'; return; }}
-            var cur = content.dataset.currentType;
-            var curId = content.dataset.currentId;
-            var curLabel = content.dataset.currentLabel;
-            if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            if (pushHistory !== false) pushCurrentNavigationState();
             var label = name.replace(/-/g, ' ').replace(/\\b\\w/g, function(c){{ return c.toUpperCase(); }});
             content.dataset.currentType = 'ops';
             content.dataset.currentId = name;
@@ -2992,10 +3030,7 @@ def generate_html_viewer(
         function showPipelineHistory(pushHistory) {{
             var runs = pipelineRuns();
             if (!runs || !runs.length) {{ content.innerHTML = '<p>No pipeline history available.</p>'; return; }}
-            var cur = content.dataset.currentType;
-            var curId = content.dataset.currentId;
-            var curLabel = content.dataset.currentLabel;
-            if (pushHistory !== false && cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            if (pushHistory !== false) pushCurrentNavigationState();
             content.dataset.currentType = 'history';
             content.dataset.currentId = 'pipeline-history';
             content.dataset.currentLabel = 'Pipeline History';
@@ -3043,6 +3078,22 @@ def generate_html_viewer(
             restoreNavigationState(target);
         }}
 
+        function currentNavigationState() {{
+            var type = content.dataset.currentType;
+            if (!type) return null;
+            if (type === 'drilldown') return {{
+                type: 'drilldown', viewId: content.dataset.currentViewId,
+                specId: content.dataset.currentSpecId, label: content.dataset.currentLabel,
+                entityRef: content.dataset.currentEntityRef || '',
+            }};
+            return {{type: type, id: content.dataset.currentId, label: content.dataset.currentLabel}};
+        }}
+
+        function pushCurrentNavigationState() {{
+            var state = currentNavigationState();
+            if (state) navHistory.push(state);
+        }}
+
         function restoreNavigationState(state) {{
             if (!state) return;
             if (state.type === 'view') showView(state.id, false);
@@ -3050,6 +3101,8 @@ def generate_html_viewer(
             else if (state.type === 'module') showModule(state.id, false);
             else if (state.type === 'history') showPipelineHistory(false);
             else if (state.type === 'entity') showEntity(state.id, false);
+            else if (state.type === 'doc') {{ var parts = state.id.split('/'); showDoc(parts.shift(), parts.join('/'), false); }}
+            else if (state.type === 'ops') showOps(state.id, false);
         }}
 
         /* ── Property card HTML ───────────────────────────────── */
@@ -3322,9 +3375,9 @@ def generate_html_viewer(
         }}
         function showCuratedDrilldown(viewKey, drilldownRef, entityRef, pushHistory) {{
             var view = D.se_views[viewKey];
-            var panel = view && view.panel && view.panel.drilldowns[drilldownRef];
+            var panel = view && D.panels && D.panels[viewKey + '::' + drilldownRef];
             if (!panel) return;
-            if (pushHistory !== false) navHistory.push({{type: 'view', id: viewKey, label: view.label}});
+            if (pushHistory !== false) pushCurrentNavigationState();
             content.dataset.currentType = 'drilldown'; content.dataset.currentId = viewKey + ':' + drilldownRef; content.dataset.currentLabel = panel.diagram_id;
             content.dataset.currentViewId = viewKey; content.dataset.currentSpecId = drilldownRef; content.dataset.currentEntityRef = entityRef || '';
             var rendered = nativePanelHtml(viewKey, view, panel, entityRef);
@@ -3337,16 +3390,13 @@ def generate_html_viewer(
         function showView(key, pushHistory) {{
             var v = D.se_views[key];
             if (!v) return;
-            if (pushHistory !== false) {{
-                // Push current state if exists
-                var cur = content.dataset.currentType;
-                var curId = content.dataset.currentId;
-                var curLabel = content.dataset.currentLabel;
-                if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
-            }}
+            if (pushHistory !== false) pushCurrentNavigationState();
             content.dataset.currentType = 'view';
             content.dataset.currentId = key;
             content.dataset.currentLabel = v.label;
+            content.dataset.currentViewId = '';
+            content.dataset.currentSpecId = '';
+            content.dataset.currentEntityRef = '';
 
             var html = renderBreadcrumbs(v.label);
             html += '<h2 class="content-header">' + v.label + '</h2>';
@@ -3354,10 +3404,11 @@ def generate_html_viewer(
             html += '<div class="diagram-box" id="dia-main"></div>';
             content.innerHTML = html;
             if (v.renderer === 'native') {{
-                var rendered = nativePanelHtml(key, v, v.panel, '');
+                var panel = D.panels[v.panel_ref];
+                var rendered = nativePanelHtml(key, v, panel, '');
                 document.getElementById('dia-main').innerHTML = rendered.html;
                 wireComment(content.querySelector('.comment-textarea'), rendered.comment);
-                wireNativePanel(content.querySelector('.native-diagram-shell'), key, v.panel);
+                wireNativePanel(content.querySelector('.native-diagram-shell'), key, panel);
             }} else renderMermaid(document.getElementById('dia-main'), v.mermaid, v.svg);
             closeMobileNav();
         }}
@@ -3368,11 +3419,7 @@ def generate_html_viewer(
             if (D.sid_map && D.sid_map[eid]) eid = D.sid_map[eid];
 
             if (pushHistory !== false) {{
-                var cur = content.dataset.currentType;
-                var curId = content.dataset.currentId;
-                var curLabel = content.dataset.currentLabel;
-                if (cur === 'drilldown') navHistory.push({{type: cur, viewId: content.dataset.currentViewId, specId: content.dataset.currentSpecId, entityRef: content.dataset.currentEntityRef, label: curLabel}});
-                else if (cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+                pushCurrentNavigationState();
             }}
 
             var p = D.properties[eid] || {{}};
@@ -3496,10 +3543,7 @@ def generate_html_viewer(
             var mod = D.modules && D.modules[filepath];
             if (!mod) return;
 
-            var cur = content.dataset.currentType;
-            var curId = content.dataset.currentId;
-            var curLabel = content.dataset.currentLabel;
-            if (pushHistory !== false && cur) navHistory.push({{type: cur, id: curId, label: curLabel}});
+            if (pushHistory !== false) pushCurrentNavigationState();
 
             var canonicalPath = mod.canonical_path || filepath;
             var fname = canonicalPath.split('/').pop();
@@ -3604,7 +3648,8 @@ def generate_html_viewer(
         document.querySelectorAll('[data-ops-name]').forEach(function(a) {{
             a.addEventListener('click', function(ev) {{ ev.preventDefault(); showOps(this.dataset.opsName); }});
         }});
-        document.querySelector('[data-action="pipeline-history"]').addEventListener('click', function(ev) {{ ev.preventDefault(); showPipelineHistory(); }});
+        var historyLink = document.querySelector('[data-action="pipeline-history"]');
+        if (historyLink) historyLink.addEventListener('click', function(ev) {{ ev.preventDefault(); showPipelineHistory(); }});
         document.getElementById('menu-toggle').addEventListener('click', function() {{ document.querySelector('.sidebar').classList.toggle('open'); }});
         document.getElementById('export-comments').addEventListener('click', exportComments);
         document.getElementById('import-comments').addEventListener('click', function() {{ document.getElementById('import-comments-input').click(); }});
