@@ -2932,7 +2932,7 @@ def generate_html_viewer(
             content.dataset.currentId = category + '/' + name;
             content.dataset.currentLabel = label;
             var html = renderBreadcrumbs(label);
-            html += '<h2 class="content-header">' + label + '</h2>';
+            html += '<h2 class="content-header">' + escapeHtml(label) + '</h2>';
             html += '<div class="doc-content">' + docHtml + '</div>';
             content.innerHTML = html;
             closeMobileNav();
@@ -2949,7 +2949,7 @@ def generate_html_viewer(
             content.dataset.currentId = name;
             content.dataset.currentLabel = label;
             var html = renderBreadcrumbs(label);
-            html += '<h2 class="content-header">' + label + '</h2>';
+            html += '<h2 class="content-header">' + escapeHtml(label) + '</h2>';
             html += '<div class="doc-content">' + opsHtml + '</div>';
             content.innerHTML = html;
             closeMobileNav();
@@ -2979,7 +2979,7 @@ def generate_html_viewer(
                 html += '<div class="mod-func-sig"><strong>Scope / Parent:</strong> '
                     + escapeHtml(run.scope || 'root') + ' / ' + escapeHtml(run.parent_run_id || run.parent || 'none') + '</div>';
                 html += '<div class="mod-func-sig"><strong>Duration:</strong> '
-                    + String(run.duration_ms == null ? 'Unavailable' : run.duration_ms + 'ms') + '</div>';
+                    + escapeHtml(run.duration_ms == null ? 'Unavailable' : run.duration_ms + 'ms') + '</div>';
                 var produced = (run.produced_artifacts || []).slice();
                 items.forEach(function(item) {{
                     html += '<div class="mod-func-sig"><strong>Entry Timestamp:</strong> '
@@ -2991,7 +2991,7 @@ def generate_html_viewer(
                         + escapeHtml(item.scope || run.scope || 'root') + ' / '
                         + escapeHtml(item.parent_run_id || run.parent_run_id || 'none') + '</div>';
                     html += '<div class="mod-func-sig"><strong>Duration:</strong> '
-                        + String(item.duration_ms == null ? 'Unavailable' : item.duration_ms + 'ms') + '</div>';
+                        + escapeHtml(item.duration_ms == null ? 'Unavailable' : item.duration_ms + 'ms') + '</div>';
                     produced = produced.concat(item.produced_entity_ids || [], item.artifacts || []);
                     if (item.counts) Object.keys(item.counts).forEach(function(k) {{ produced.push(k + ': ' + item.counts[k]); }});
                     produced = produced.concat(item.produced_functions || [], item.produced_classes || [],
@@ -3017,10 +3017,10 @@ def generate_html_viewer(
                 html += '<div class="mod-func-sig"><strong>Input Summary:</strong> ' + escapeHtml(JSON.stringify(s.input_summary || {{}})) + '</div>';
                 html += '<div class="mod-func-sig"><strong>Output Summary:</strong> ' + escapeHtml(JSON.stringify(s.output_summary || {{}})) + '</div>';
                 html += '<div class="mod-func-sig"><strong>Score / Confidence:</strong> '
-                    + String(s.score == null ? 'Unavailable' : s.score) + ' / '
-                    + String(s.confidence == null ? 'Unavailable' : s.confidence) + '</div>';
+                    + escapeHtml(s.score == null ? 'Unavailable' : s.score) + ' / '
+                    + escapeHtml(s.confidence == null ? 'Unavailable' : s.confidence) + '</div>';
                 html += '<div class="mod-func-sig"><strong>Duration:</strong> '
-                    + String(s.duration_ms == null ? 'Unavailable' : s.duration_ms + 'ms') + '</div>';
+                    + escapeHtml(s.duration_ms == null ? 'Unavailable' : s.duration_ms + 'ms') + '</div>';
                 html += '<div class="mod-func-doc"><strong>Artifacts:</strong> '
                     + escapeHtml((s.artifacts || []).join(', ') || 'None') + '</div></details>';
             }});
@@ -3120,7 +3120,7 @@ def generate_html_viewer(
             html += '<div class="prop-item"><div class="prop-label">Status</div><div class="prop-value">' + escapeHtml(p.status || 'N/A') + '</div></div>';
             if (p.depth) {{
                 var dc = p.depth === 'rich' ? 'depth-rich' : p.depth === 'moderate' ? 'depth-moderate' : 'depth-stub';
-                html += '<div class="prop-item"><div class="prop-label">Depth</div><div class="prop-value"><span class="depth-badge ' + dc + '">' + p.depth + '</span></div></div>';
+                html += '<div class="prop-item"><div class="prop-label">Depth</div><div class="prop-value"><span class="depth-badge ' + dc + '">' + escapeHtml(p.depth) + '</span></div></div>';
             }}
             if (p.properties) {{
                 for (var k in p.properties) {{
@@ -3399,8 +3399,8 @@ def generate_html_viewer(
             content.dataset.currentEntityRef = '';
 
             var html = renderBreadcrumbs(v.label);
-            html += '<h2 class="content-header">' + v.label + '</h2>';
-            html += '<div class="content-subtitle">' + v.subtitle + '</div>';
+            html += '<h2 class="content-header">' + escapeHtml(v.label) + '</h2>';
+            html += '<div class="content-subtitle">' + escapeHtml(v.subtitle) + '</div>';
             html += '<div class="diagram-box" id="dia-main"></div>';
             content.innerHTML = html;
             if (v.renderer === 'native') {{

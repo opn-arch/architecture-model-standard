@@ -250,6 +250,97 @@ def test_generated_javascript_parses_with_node(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
 
 
+def test_navigation_escapes_hostile_repository_values_in_dom_harness(tmp_path: Path, monkeypatch) -> None:
+    hostile = '<img src=x onerror="globalThis.pwned=(globalThis.pwned||0)+1">'
+    hostile_filename = hostile + ".md"
+    model = load_model(_write_model(tmp_path))
+    modules = {
+        hostile: {
+            "canonical_path": hostile,
+            "name": hostile,
+            "doc": "",
+            "funcs": [],
+            "classes": [],
+            "consts": [],
+            "routes": [],
+        }
+    }
+    monkeypatch.setattr("architecture_model.core.visualize._build_module_data", lambda _repo: modules)
+    docs = tmp_path / ".architecture-models" / "docs" / "se"
+    docs.mkdir(parents=True)
+    (docs / hostile_filename).write_text("# Safe\n\n<img src=x onerror=globalThis.bodyPwned=1>", encoding="utf-8")
+    html = generate_html_viewer(model, tmp_path / "viewer.html", repo_path=tmp_path).read_text()
+    data = _viewer_data(html)
+    script = re.findall(r"<script(?: [^>]*)?>(.*?)</script>", html, re.S)[1]
+    view_key = "conops"
+    panel_ref = data["se_views"][view_key]["panel_ref"]
+    panel = data["panels"][panel_ref]
+    data["se_views"][view_key].update({
+        "label": hostile,
+        "subtitle": hostile,
+        "warnings": [{"code": "HOSTILE", "message": hostile}],
+        "curation": {"status": hostile, "path": hostile},
+    })
+    data["se_views"][view_key]["spec"]["title"] = hostile
+    panel["diagram_id"] = hostile
+    panel["provenance"] = {"source": hostile, "entity_refs": []}
+    data["pipeline_history"] = [{
+        "run_id": "run-1", "started_at": "now", "status": hostile,
+        "source": hostile, "invocation": hostile, "stages": [],
+    }]
+    data["modules"][hostile] = modules[hostile]
+    data["properties"]["COMP-1"]["properties"] = {hostile: "safe value"}
+    data["properties"]["COMP-1"]["depth"] = hostile
+    doc_name = Path(hostile_filename).stem
+    harness = f"""
+const vm = require('vm');
+const noop = () => {{}};
+const classList = {{add:noop, remove:noop, toggle:noop, contains:()=>false}};
+function element() {{ return {{dataset:{{}}, style:{{}}, classList, value:'', textContent:'',
+  addEventListener:noop, querySelectorAll:()=>[], querySelector:()=>null, setAttribute:noop}}; }}
+const content = element();
+Object.defineProperty(content, 'innerHTML', {{
+  set(value) {{
+    this.html = value;
+    if (/<img\\b[^>]*onerror=/i.test(value)) throw new Error(value);
+  }},
+  get() {{ return this.html || ''; }}
+}});
+const diagram = element();
+Object.defineProperty(diagram, 'innerHTML', Object.getOwnPropertyDescriptor(content, 'innerHTML'));
+const dataElement = Object.assign(element(), {{textContent:{json.dumps(json.dumps(data))}}});
+const document = {{getElementById:id=>id==='viewer-data'?dataElement:id==='content'?content:id==='dia-main'?diagram:element(),
+  querySelectorAll:()=>[], querySelector:()=>Object.assign(element(), {{classList}}), createElement:element}};
+const context = {{console, document, Blob, URL, alert:noop, MutationObserver:function(){{this.observe=noop}},
+  localStorage:{{getItem:()=>null,setItem:noop,length:0,key:()=>null}}, innerWidth:1200,
+  atob,btoa,escape,unescape,encodeURIComponent,decodeURIComponent}};
+context.window=context; vm.createContext(context); vm.runInContext({json.dumps(script)}, context);
+context.wireNativePanel=noop;
+const routes = [
+  () => context.showDoc('se', {json.dumps(doc_name)}, false),
+  () => context.showView({json.dumps(view_key)}, false),
+  () => context.showCuratedDrilldown({json.dumps(view_key)}, 'overview', '', false),
+  () => context.showModule({json.dumps(hostile)}, false),
+  () => context.showEntity('COMP-1', false),
+  () => context.showPipelineHistory(false),
+];
+for (const route of routes) route();
+if (context.bodyPwned) throw new Error('sanitized Markdown body executed');
+if (!content.html.includes('&lt;img')) throw new Error('hostile values were not rendered as text');
+"""
+    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
+def test_native_renderer_uses_only_generated_panel_svg(tmp_path: Path) -> None:
+    data = _viewer_data(generate_html_viewer(
+        load_model(_write_model(tmp_path)), tmp_path / "viewer.html", repo_path=tmp_path,
+    ).read_text())
+
+    assert all(panel["svg"].startswith("<svg") for panel in data["panels"].values())
+    assert all("svg" not in view.get("curation", {}) for view in data["se_views"].values())
+
+
 def test_drilldown_navigation_matrix_restores_exact_drilldown_then_overview(tmp_path: Path) -> None:
     model = load_model(_write_model(tmp_path))
     html = generate_html_viewer(model, tmp_path / "viewer.html", repo_path=tmp_path).read_text()
