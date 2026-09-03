@@ -1,0 +1,6 @@
+architecture_id: config-pkg
+name: Config
+slug: config-pkg
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json

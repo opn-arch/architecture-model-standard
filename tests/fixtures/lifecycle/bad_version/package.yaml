@@ -1,0 +1,6 @@
+architecture_id: bad-version-pkg
+name: BadVersion
+slug: bad-version-pkg
+contract_version: "0.9.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json

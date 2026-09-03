@@ -1,0 +1,6 @@
+architecture_id: manifest-pkg
+name: Manifest
+slug: manifest-pkg
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json

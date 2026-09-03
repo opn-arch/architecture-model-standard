@@ -1,0 +1,6 @@
+architecture_id: bad-traversal-pkg
+name: BadTraversal
+slug: bad-traversal-pkg
+contract_version: "1.0.0"
+model_ref: ../../etc/passwd
+manifest_ref: manifest.json

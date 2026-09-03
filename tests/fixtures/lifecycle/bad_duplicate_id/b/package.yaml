@@ -1,0 +1,6 @@
+architecture_id: same-id
+name: B
+slug: dup-b
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json

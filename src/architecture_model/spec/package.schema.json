@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://architecture-model.dev/spec/package.schema.json",
+  "title": "ArchitecturePackage",
+  "description": "Descriptor for a self-contained architecture package (see architecture_model.lifecycle.package).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "architecture_id",
+    "name",
+    "slug",
+    "contract_version",
+    "model_ref",
+    "manifest_ref"
+  ],
+  "properties": {
+    "architecture_id": {
+      "type": "string",
+      "description": "Package identity (slug or UUID form).",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "contract_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "model_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path to the package's .architecture-model.yaml."
+    },
+    "manifest_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Relative path to the package's manifest.json."
+    },
+    "children": {
+      "type": "array",
+      "default": [],
+      "items": {"type": "string", "minLength": 1}
+    },
+    "owned_paths": {
+      "type": "array",
+      "default": [],
+      "items": {"type": "string", "minLength": 1}
+    },
+    "shared_paths": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "owners"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "owners": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "refs": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["architecture_id"],
+        "properties": {
+          "architecture_id": {"type": "string", "minLength": 1},
+          "at": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "revisions_dir": {
+      "type": "string",
+      "default": "revisions",
+      "minLength": 1
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "default": {},
+      "properties": {
+        "description": {"type": ["string", "null"]},
+        "tags": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "federated_ref": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

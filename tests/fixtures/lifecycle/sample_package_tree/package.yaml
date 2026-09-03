@@ -1,0 +1,24 @@
+architecture_id: root-pkg
+name: Root Package
+slug: root-pkg
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json
+children:
+  - children/manifest
+  - children/core
+  - children/config
+owned_paths:
+  - "src/**/*.py"
+shared_paths:
+  - path: "src/shared/util.py"
+    owners: ["root-pkg", "core-pkg"]
+refs:
+  - architecture_id: external-pkg
+    at: "git+https://example.com/ext.git#abc123"
+revisions_dir: revisions
+metadata:
+  description: Root package for tests
+  tags:
+    - test
+    - root

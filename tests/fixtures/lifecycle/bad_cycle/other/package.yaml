@@ -1,0 +1,8 @@
+architecture_id: cycle-b
+name: B
+slug: cycle-b
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json
+children:
+  - ..
