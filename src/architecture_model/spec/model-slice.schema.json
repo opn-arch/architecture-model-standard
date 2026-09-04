@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://architecture-model.dev/spec/model-slice.schema.json",
+  "title": "ModelSlice",
+  "description": "Reproducible curated view spec over an architecture model (see architecture_model.lifecycle.model_slice).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "contract_version",
+    "architecture_id",
+    "model_revision",
+    "scope",
+    "closure",
+    "shared_refs",
+    "selectors"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "contract_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "architecture_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["local", "descendants", "federated"]
+    },
+    "closure": {
+      "type": "string",
+      "enum": ["strict", "boundary-stubs", "transitive"]
+    },
+    "shared_refs": {
+      "type": "string",
+      "enum": ["none", "explicit", "transitive"]
+    },
+    "selectors": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "entity_kinds": {"type": ["array", "null"], "items": {"type": "string"}},
+        "entity_ids": {"type": ["array", "null"], "items": {"type": "string"}},
+        "layers": {"type": ["array", "null"], "items": {"type": "string"}},
+        "fblocks": {"type": ["array", "null"], "items": {"type": "string"}},
+        "tags": {"type": ["array", "null"], "items": {"type": "string"}},
+        "paths": {"type": ["array", "null"], "items": {"type": "string"}}
+      }
+    },
+    "curation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "include": {"type": ["array", "null"], "items": {"type": "string"}},
+        "exclude": {"type": ["array", "null"], "items": {"type": "string"}},
+        "redactions": {"type": ["array", "null"], "items": {"type": "string"}}
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "default": {}
+    },
+    "generated_at": {
+      "type": ["string", "null"]
+    },
+    "signatures": {
+      "type": ["array", "null"],
+      "items": {"type": "object"}
+    }
+  }
+}
