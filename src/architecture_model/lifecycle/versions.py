@@ -48,6 +48,7 @@ class SchemaVersions:
     AI_WORK_ORDER: Final[str] = "1.0.0"
     # Alias for AI_WORK_ORDER used by architecture_model.ai.work_order.
     WORK_ORDER: Final[str] = "1.0.0"
+    AI_JOB: Final[str] = "1.0.0"
 
     DIGEST_ALGO: Final[str] = "sha256-v1"
 
