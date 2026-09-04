@@ -33,6 +33,16 @@ from architecture_model.lifecycle.artifact_spec import (
     ViewRef,
     compute_artifact_spec_digest,
 )
+from architecture_model.lifecycle.artifact_dag import (
+    ArtifactDAG,
+    ArtifactDAGCycle,
+    ArtifactDAGError,
+    BuildStep,
+    MissingArtifactRef,
+    RebuildPlan,
+    build_artifact_dag,
+    rebuild_plan,
+)
 from architecture_model.lifecycle.renderers import (
     DEFAULT_RENDERERS,
     RendererFn,
@@ -43,6 +53,14 @@ from architecture_model.lifecycle.renderers import (
 )
 
 __all__ = [
+    "ArtifactDAG",
+    "ArtifactDAGCycle",
+    "ArtifactDAGError",
+    "BuildStep",
+    "MissingArtifactRef",
+    "RebuildPlan",
+    "build_artifact_dag",
+    "rebuild_plan",
     "ArtifactSpec",
     "Renderer",
     "SignatureSlot",
