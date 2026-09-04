@@ -1,0 +1,15 @@
+architecture_id: root-pkg
+name: Ownership Root
+slug: root-pkg
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json
+children:
+  - children/child_a
+owned_paths:
+  - "src/*.py"
+  - "children/child_a/src/util.py"
+  - "children/child_a/src/conflict.py"
+shared_paths:
+  - path: "children/child_a/src/util.py"
+    owners: ["root-pkg", "child-a"]

@@ -1,0 +1,8 @@
+architecture_id: child-a
+name: Child A
+slug: child-a
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json
+owned_paths:
+  - "src/*.py"
