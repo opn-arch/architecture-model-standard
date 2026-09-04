@@ -26,8 +26,20 @@ from architecture_model.lifecycle.view_projection import (
     SliceMismatch,
     project,
 )
+from architecture_model.lifecycle.artifact_spec import (
+    ArtifactSpec,
+    Renderer,
+    SignatureSlot,
+    ViewRef,
+    compute_artifact_spec_digest,
+)
 
 __all__ = [
+    "ArtifactSpec",
+    "Renderer",
+    "SignatureSlot",
+    "ViewRef",
+    "compute_artifact_spec_digest",
     "DEFAULT_REGISTRY",
     "ProjectedView",
     "ProjectorFn",
