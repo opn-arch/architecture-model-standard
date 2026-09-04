@@ -17,8 +17,24 @@ from architecture_model.lifecycle.view_spec import (
     ViewSpec,
     compute_view_spec_digest,
 )
+from architecture_model.lifecycle.view_projection import (
+    DEFAULT_REGISTRY,
+    ProjectedView,
+    ProjectorFn,
+    ProjectorNotFound,
+    ProjectorRegistry,
+    SliceMismatch,
+    project,
+)
 
 __all__ = [
+    "DEFAULT_REGISTRY",
+    "ProjectedView",
+    "ProjectorFn",
+    "ProjectorNotFound",
+    "ProjectorRegistry",
+    "SliceMismatch",
+    "project",
     "SchemaVersions",
     "ContractKind",
     "ModelSlice",
