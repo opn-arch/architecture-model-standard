@@ -33,6 +33,14 @@ from architecture_model.lifecycle.artifact_spec import (
     ViewRef,
     compute_artifact_spec_digest,
 )
+from architecture_model.lifecycle.renderers import (
+    DEFAULT_RENDERERS,
+    RendererFn,
+    get_renderer,
+    render_html,
+    render_markdown,
+    render_svg,
+)
 
 __all__ = [
     "ArtifactSpec",
@@ -60,4 +68,10 @@ __all__ = [
     "SliceRef",
     "ViewCuration",
     "compute_view_spec_digest",
+    "DEFAULT_RENDERERS",
+    "RendererFn",
+    "get_renderer",
+    "render_html",
+    "render_markdown",
+    "render_svg",
 ]
