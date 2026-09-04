@@ -11,6 +11,12 @@ from architecture_model.lifecycle.model_slice_materializer import (
     MaterializedSlice,
     materialize,
 )
+from architecture_model.lifecycle.view_spec import (
+    SliceRef,
+    ViewCuration,
+    ViewSpec,
+    compute_view_spec_digest,
+)
 
 __all__ = [
     "SchemaVersions",
@@ -22,4 +28,8 @@ __all__ = [
     "MaterializationWarning",
     "MaterializedSlice",
     "materialize",
+    "ViewSpec",
+    "SliceRef",
+    "ViewCuration",
+    "compute_view_spec_digest",
 ]

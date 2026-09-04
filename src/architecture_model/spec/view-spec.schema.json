@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://architecture-model.dev/spec/view-spec.schema.json",
+  "title": "ViewSpec",
+  "description": "Reproducible rendering intent over an immutable ModelSlice revision (see architecture_model.lifecycle.view_spec).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "contract_version",
+    "slice_ref",
+    "projector",
+    "output_content_kind"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "contract_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "slice_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slice_id", "model_revision"],
+      "properties": {
+        "slice_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "model_revision": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "projector": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projector_config": {
+      "type": "object",
+      "default": {}
+    },
+    "curation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "include": {"type": ["array", "null"], "items": {"type": "string"}},
+        "exclude": {"type": ["array", "null"], "items": {"type": "string"}},
+        "redactions": {"type": ["array", "null"], "items": {"type": "string"}},
+        "drill_downs": {"type": ["array", "null"], "items": {"type": "string"}}
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "default": {}
+    },
+    "output_content_kind": {
+      "type": "string",
+      "enum": ["diagram", "prose", "table"]
+    },
+    "generated_at": {
+      "type": ["string", "null"]
+    },
+    "signatures": {
+      "type": ["array", "null"],
+      "items": {"type": "object"}
+    }
+  }
+}
