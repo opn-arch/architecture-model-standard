@@ -644,3 +644,60 @@ git commit -m "feat(lifecycle): freeze contract versions and terminology"
 - If a task requires touching a file listed under "Do not modify existing public APIs", stop and ask.
 - Follow superpowers:test-driven-development inside every task.
 - Each task ends with the baseline test command passing.
+
+## Phase 1 completion report
+
+- **Date:** 2026-09-03
+- **Branch:** `feat/curated-se-views`
+- **HEAD SHA:** `22012a8`
+
+### Task → commit map
+
+| Task | Description | Commit(s) |
+|-----:|-------------|-----------|
+| T1  | Terminology + version policy | `6712fc9` |
+| T2  | Canonical serialization + digest | `8572bac` |
+| T3  | Atomic store + locks + journal | `b4bef36`, `55dee9c` |
+| T4  | ArchitecturePackage descriptor + loader | `71d51ea` |
+| T5  | Root package index | `e0d20ec` |
+| T6  | Model/manifest revision pairing | `0ba6222` |
+| T7  | Canonical package ownership | `da48761` |
+| T8  | Transactional package publication | `ec03cbe` |
+| T9  | Schema migration framework | `77aba3d` |
+| T10 | Complete semantic diff + differ delegator | `9622ad7`, `a3222d4` |
+| T11 | Semantic-intersection stale graph | `64b3286` |
+| T12 | Recursive lifecycle gates | `36bac2b` |
+| T13 | ModelSlice + JSON Schema | `5b3b30d` |
+| T14 | ModelSlice materializer + federated shared_refs | `65a6f1d`, `054118f` |
+| T15 | ViewSpec + JSON Schema | `72b5a4b` |
+| T16 | ViewSpec projector registry (SE adapters) | `17bf1fc` |
+| T17 | ArtifactSpec migration + JSON Schema | `b339f7d` |
+| T18 | SVG/Markdown/HTML + AI-context/ZIP renderers | `ae8db76`, `c7b2e64` |
+| T19 | ArtifactSpec DAG + rebuild plan | `d4a64c7` |
+| T20 | WorkOrder + typed Proposal contracts | `88581c8` |
+| T21 | Work-order job state machine | `237272a` |
+| T22 | Typed proposal validators | `22012a8` |
+
+### Final test totals
+
+- Full suite (excluding pre-existing-ignore `tests/test_config_loader.py`): **2885 passed**, **6 failed** (unchanged pre-existing), 102 skipped.
+- Pre-existing failures (baseline, unchanged across Phase 1):
+  - `tests/test_docs_gen.py::TestHealthReport::test_includes_confidence`
+  - `tests/test_docs_gen.py::TestHealthReport::test_includes_components`
+  - `tests/test_manifest.py::TestFunctionalBlocks::test_has_f1_through_f6`
+  - `tests/test_manifest.py::TestGenerateManifest::test_has_functional_blocks`
+  - `tests/test_multi_scanner.py::TestScanAllLanguages::test_real_logs_db`
+  - `tests/test_pipeline_decompose.py::TestStageMetadata::test_name_version_requires`
+- New passing tests added across Phase 1 tasks (additive): net **+491** over the pre-Phase-1 baseline of 2394.
+
+### Exit-criteria checklist (from plan lines 620–628)
+
+- ✅ Full suite: 2885 passed (well above the 2394+ threshold), same 6 pre-existing failures, no new failures.
+- ✅ Every new lifecycle/AI module imports cleanly (`SchemaVersions`, `atomic_store`, `journal`, `package`, `package_index`, `pairing`, `ownership`, `publication`, `migrations`, `diff`, `stale`, `gates`, `model_slice`, `model_slice_materializer`, `view_spec`, `view_projection`, `artifact_spec`, `renderers`, `artifact_dag`, `ai.work_order`, `ai.proposals`, `ai.jobs`, `ai.validators`).
+- ✅ This "Phase 1 completion report" is appended to `docs/plans/2026-09-03-mcp-architecture-lifecycle-phase1.md`.
+- ✅ `opencode-arch` untouched — Phase 2 remains a separate plan.
+- ✅ No changes to `core/parser.py`, `core/validator.py`, `manifest/generator.py`, `pipeline/emit.py` public signatures.
+- ✅ All new persisted artifacts (`ArchitecturePackage`, `ModelSlice`, `ViewSpec`, `ArtifactSpec`, `WorkOrder`, `Proposal`) carry `contract_version` and expose deterministic `digest()`.
+- ✅ `journal.jsonl` is populated by publication tests (see `tests/lifecycle/test_publication.py` and downstream tasks that exercise atomic package writes).
+
+Phase 1 is complete. Ready for Phase 2 (MCP endpoints, CLI wiring, cryptographic signing).
