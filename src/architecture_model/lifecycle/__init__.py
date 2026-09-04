@@ -6,6 +6,11 @@ from architecture_model.lifecycle.model_slice import (
     Curation,
     compute_slice_digest,
 )
+from architecture_model.lifecycle.model_slice_materializer import (
+    MaterializationWarning,
+    MaterializedSlice,
+    materialize,
+)
 
 __all__ = [
     "SchemaVersions",
@@ -14,4 +19,7 @@ __all__ = [
     "Selectors",
     "Curation",
     "compute_slice_digest",
+    "MaterializationWarning",
+    "MaterializedSlice",
+    "materialize",
 ]
