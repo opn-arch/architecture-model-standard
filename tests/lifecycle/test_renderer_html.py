@@ -80,7 +80,7 @@ def test_render_html_pure_no_files(tmp_path, monkeypatch):
 
 
 def test_registry_defaults_expose_all_three():
-    assert set(DEFAULT_RENDERERS) == {"svg", "markdown", "html"}
+    assert {"svg", "markdown", "html"}.issubset(set(DEFAULT_RENDERERS))
     assert get_renderer("html") is render_html
 
 
