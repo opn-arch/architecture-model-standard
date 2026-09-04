@@ -148,21 +148,19 @@ def materialize(
     ``resolve_ref`` is accepted for API stability but ignored in this
     commit; it will be honoured when federated scope lands in commit 2.
     """
-    if slice.scope == "federated":
-        raise NotImplementedError(
-            "federated scope: implemented in T14 commit 2"
-        )
-    if slice.shared_refs in ("explicit", "transitive"):
-        raise NotImplementedError(
-            f"shared_refs={slice.shared_refs!r} implemented in T14 commit 2"
-        )
+    if slice.scope == "federated" and resolve_ref is None:
+        raise ValueError("federated scope requires resolve_ref callable")
 
     # -- 1. Load model(s) ---------------------------------------------------
     base_model = _load_pkg_model(pkg)
     merged = _clone_model(base_model)
+    local_ids: set[str] = set(_all_ids(merged.entities))
     source_pkg_by_id: dict[str, str] = {
-        eid: pkg.architecture_id for eid in _all_ids(merged.entities)
+        eid: pkg.architecture_id for eid in local_ids
     }
+
+    warnings: list[MaterializationWarning] = []
+    federated_sources: dict[str, str] = {}  # ref_id -> source_model_digest
 
     if slice.scope == "descendants":
         for child in iter_descendants(pkg, include_self=False):
@@ -172,9 +170,94 @@ def materialize(
                 continue
             _merge_into(merged, child_model, source_pkg_by_id, child.architecture_id)
 
-    source_digest = _digest(_model_to_hashable(merged))
+    # -- 1b. shared_refs: descendants filter --------------------------------
+    if slice.scope == "descendants" and slice.shared_refs in ("explicit", "transitive"):
+        child_origin = {
+            eid for eid, src in source_pkg_by_id.items()
+            if src != pkg.architecture_id
+        }
+        if slice.shared_refs == "explicit":
+            allow = set(slice.selectors.entity_ids or [])
+        else:  # transitive: 1-hop reachable from local via any rel
+            allow = set()
+            for rel in merged.relationships:
+                if rel.from_id in local_ids and rel.to_id in child_origin:
+                    allow.add(rel.to_id)
+                if rel.to_id in local_ids and rel.from_id in child_origin:
+                    allow.add(rel.from_id)
+        drop = child_origin - allow
+        if drop:
+            for f in _ENTITY_FIELDS:
+                lst = getattr(merged.entities, f)
+                lst[:] = [e for e in lst if e.id not in drop]
+            merged.relationships = [
+                r for r in merged.relationships
+                if r.from_id not in drop and r.to_id not in drop
+            ]
+            for eid in drop:
+                source_pkg_by_id.pop(eid, None)
 
-    warnings: list[MaterializationWarning] = []
+    # -- 1c. shared_refs: federated resolution ------------------------------
+    if slice.scope == "federated" and slice.shared_refs in ("explicit", "transitive"):
+        to_resolve: list[str] = []
+        seen: set[str] = set()
+        # Explicit: pull ids from selectors.entity_ids not in local.
+        if slice.selectors.entity_ids:
+            for eid in slice.selectors.entity_ids:
+                if eid not in local_ids and eid not in seen:
+                    to_resolve.append(eid)
+                    seen.add(eid)
+        # Transitive: also follow 1 hop from local via local rels endpoints.
+        if slice.shared_refs == "transitive":
+            extra: set[str] = set()
+            for rel in base_model.relationships:
+                for endpoint in (rel.from_id, rel.to_id):
+                    if endpoint not in local_ids and endpoint not in seen:
+                        extra.add(endpoint)
+            for eid in sorted(extra):
+                to_resolve.append(eid)
+                seen.add(eid)
+        for eid in sorted(to_resolve):
+            try:
+                ext_model = resolve_ref(eid)  # type: ignore[misc]
+            except KeyError as exc:
+                warnings.append(
+                    MaterializationWarning(
+                        code="SLICE.UNRESOLVED_REF",
+                        message=f"resolve_ref({eid!r}) raised KeyError: {exc!s}",
+                        entity_id=eid,
+                    )
+                )
+                continue
+            if ext_model is None:
+                warnings.append(
+                    MaterializationWarning(
+                        code="SLICE.UNRESOLVED_REF",
+                        message=f"resolve_ref({eid!r}) returned None",
+                        entity_id=eid,
+                    )
+                )
+                continue
+            found = _find_entity(ext_model, eid)
+            if found is None:
+                warnings.append(
+                    MaterializationWarning(
+                        code="SLICE.UNRESOLVED_REF",
+                        message=(
+                            f"resolve_ref({eid!r}) returned model without id {eid!r}"
+                        ),
+                        entity_id=eid,
+                    )
+                )
+                continue
+            field_name, ent = found
+            dst_list = getattr(merged.entities, field_name)
+            if not any(e.id == eid for e in dst_list):
+                dst_list.append(copy.deepcopy(ent))
+            source_pkg_by_id.setdefault(eid, f"ref:{eid}")
+            federated_sources[eid] = _digest(_model_to_hashable(ext_model))
+
+    source_digest = _digest(_model_to_hashable(merged))
 
     # -- 2. Select --------------------------------------------------------
     selected_ids, selector_warnings = _apply_selectors(merged, slice)
@@ -281,6 +364,10 @@ def materialize(
         "source_pkg_id": pkg.architecture_id,
         "produced_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "materializer_version": MATERIALIZER_VERSION,
+        "federated_sources": [
+            {"ref_id": rid, "source_model_digest": federated_sources[rid]}
+            for rid in sorted(federated_sources)
+        ],
     }
 
     warnings_tuple = tuple(sorted(warnings, key=lambda w: (w.code, w.entity_id, w.message)))

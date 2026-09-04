@@ -349,22 +349,266 @@ def test_scope_descendants_merges_child_entities(pkg):
     assert "COMP-CHILD" in _ids(mat.model_fragment.entities)
 
 
-def test_scope_federated_not_implemented(pkg):
+# --- T14 commit 2: federated scope + shared_refs -------------------------
+
+
+from architecture_model.core.parser import _parse_raw
+
+
+def _external_model(entity_id: str, kind: str = "components") -> "Any":
+    return _parse_raw(
+        {
+            "meta": {"schema_version": "2.1.0", "project": "ext"},
+            "entities": {
+                kind: [{"id": entity_id, "name": entity_id, "status": "ACTIVE"}]
+            },
+            "relationships": [],
+        }
+    )
+
+
+def test_federated_without_resolve_ref_raises(pkg):
     s = _make_slice(scope="federated", selectors={"entity_ids": ["COMP-A"]})
-    with pytest.raises(NotImplementedError, match="federated"):
+    with pytest.raises(ValueError, match="resolve_ref"):
         materialize(s, pkg)
 
 
-def test_shared_refs_explicit_not_implemented(pkg):
-    s = _make_slice(shared_refs="explicit")
-    with pytest.raises(NotImplementedError, match="shared_refs"):
-        materialize(s, pkg)
+def test_federated_pulls_external_entity_ids(pkg):
+    def resolver(eid):
+        return _external_model(eid)
+
+    s = _make_slice(
+        scope="federated",
+        shared_refs="explicit",
+        selectors={"entity_ids": ["COMP-A", "EXT-1"]},
+        closure="boundary-stubs",
+    )
+    mat = materialize(s, pkg, resolve_ref=resolver)
+    assert "EXT-1" in _ids(mat.model_fragment.entities)
 
 
-def test_shared_refs_transitive_not_implemented(pkg):
-    s = _make_slice(shared_refs="transitive")
-    with pytest.raises(NotImplementedError, match="shared_refs"):
-        materialize(s, pkg)
+def test_federated_resolve_ref_returns_none_emits_warning(pkg):
+    def resolver(eid):
+        return None
+
+    s = _make_slice(
+        scope="federated",
+        shared_refs="explicit",
+        selectors={"entity_ids": ["COMP-A", "MISSING-EXT"]},
+    )
+    mat = materialize(s, pkg, resolve_ref=resolver)
+    codes = [w.code for w in mat.warnings]
+    assert "SLICE.UNRESOLVED_REF" in codes
+    assert "MISSING-EXT" not in _ids(mat.model_fragment.entities)
+
+
+def test_federated_resolve_ref_raises_keyerror_emits_warning(pkg):
+    def resolver(eid):
+        raise KeyError(eid)
+
+    s = _make_slice(
+        scope="federated",
+        shared_refs="explicit",
+        selectors={"entity_ids": ["COMP-A", "EXT-KE"]},
+    )
+    mat = materialize(s, pkg, resolve_ref=resolver)
+    codes = [w.code for w in mat.warnings]
+    assert "SLICE.UNRESOLVED_REF" in codes
+
+
+def test_federated_sources_sorted_in_provenance(pkg):
+    def resolver(eid):
+        return _external_model(eid)
+
+    s = _make_slice(
+        scope="federated",
+        shared_refs="explicit",
+        selectors={"entity_ids": ["COMP-A", "EXT-B", "EXT-A"]},
+        closure="boundary-stubs",
+    )
+    mat = materialize(s, pkg, resolve_ref=resolver)
+    fed = mat.provenance.get("federated_sources")
+    assert isinstance(fed, list)
+    ref_ids = [rec["ref_id"] for rec in fed]
+    assert ref_ids == sorted(ref_ids)
+    assert set(ref_ids) == {"EXT-A", "EXT-B"}
+    for rec in fed:
+        assert rec["source_model_digest"]
+
+
+def test_shared_refs_explicit_descendants_filters_child_entities(pkg):
+    # COMP-CHILD is only merged if it's in entity_ids.
+    s = _make_slice(
+        scope="descendants",
+        shared_refs="explicit",
+        selectors={"entity_kinds": ["components"], "entity_ids": ["COMP-A", "COMP-CHILD"]},
+    )
+    # Selectors intersect: entity_kinds AND entity_ids
+    mat = materialize(s, pkg)
+    ids = _ids(mat.model_fragment.entities)
+    assert "COMP-CHILD" in ids
+
+    # Without COMP-CHILD in entity_ids, it must be filtered.
+    s2 = _make_slice(
+        scope="descendants",
+        shared_refs="explicit",
+        selectors={"entity_kinds": ["components"], "entity_ids": ["COMP-A"]},
+    )
+    mat2 = materialize(s2, pkg)
+    assert "COMP-CHILD" not in _ids(mat2.model_fragment.entities)
+
+
+def test_shared_refs_explicit_local_scope_is_noop(pkg):
+    # No resolve_ref, no children — behaves like shared_refs=none.
+    s = _make_slice(
+        scope="local",
+        shared_refs="explicit",
+        selectors={"entity_ids": ["COMP-A"]},
+    )
+    mat = materialize(s, pkg)
+    assert _ids(mat.model_fragment.entities) == {"COMP-A"}
+
+
+def test_shared_refs_transitive_descendants_one_hop(tmp_path: Path):
+    # Build a package where root has a rel from COMP-A to COMP-CHILD.
+    root_model = dedent(
+        """\
+        meta:
+          schema_version: '2.1.0'
+          project: root
+        entities:
+          components:
+            - id: COMP-A
+              name: A
+              status: ACTIVE
+            - id: COMP-D
+              name: D
+              status: ACTIVE
+        relationships:
+          - from: COMP-A
+            to: COMP-CHILD
+            type: depends-on
+        """
+    )
+    child_model = dedent(
+        """\
+        meta:
+          schema_version: '2.1.0'
+          project: child
+        entities:
+          components:
+            - id: COMP-CHILD
+              name: Child
+              status: ACTIVE
+            - id: COMP-CHILD2
+              name: Child2
+              status: ACTIVE
+        relationships: []
+        """
+    )
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "package.yaml").write_text(ROOT_PKG_YAML)
+    (root / ".architecture-model.yaml").write_text(root_model)
+    (root / "manifest.json").write_text("{}")
+    child = root / "children" / "child"
+    child.mkdir(parents=True)
+    (child / "package.yaml").write_text(CHILD_PKG_YAML)
+    (child / ".architecture-model.yaml").write_text(child_model)
+    (child / "manifest.json").write_text("{}")
+    pkg2 = load_package(root)
+
+    s = _make_slice(
+        scope="descendants",
+        shared_refs="transitive",
+        selectors={"entity_kinds": ["components"]},
+        closure="boundary-stubs",
+    )
+    mat = materialize(s, pkg2)
+    ids = _ids(mat.model_fragment.entities)
+    # 1-hop: COMP-CHILD is reachable from local COMP-A (via depends-on rel).
+    # COMP-CHILD2 is NOT reachable (no rel) → excluded.
+    assert "COMP-CHILD" in ids
+    assert "COMP-CHILD2" not in ids
+
+
+def test_shared_refs_transitive_hard_capped_at_depth_1(tmp_path: Path):
+    # Chain: COMP-A (local) -> COMP-CHILD -> COMP-CHILD2 (both in child).
+    # transitive shared_refs must ONLY pull COMP-CHILD (1 hop), not COMP-CHILD2.
+    root_model = dedent(
+        """\
+        meta:
+          schema_version: '2.1.0'
+          project: root
+        entities:
+          components:
+            - id: COMP-A
+              name: A
+              status: ACTIVE
+        relationships:
+          - from: COMP-A
+            to: COMP-CHILD
+            type: depends-on
+        """
+    )
+    child_model = dedent(
+        """\
+        meta:
+          schema_version: '2.1.0'
+          project: child
+        entities:
+          components:
+            - id: COMP-CHILD
+              name: Child
+              status: ACTIVE
+            - id: COMP-CHILD2
+              name: Child2
+              status: ACTIVE
+        relationships:
+          - from: COMP-CHILD
+            to: COMP-CHILD2
+            type: depends-on
+        """
+    )
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "package.yaml").write_text(ROOT_PKG_YAML)
+    (root / ".architecture-model.yaml").write_text(root_model)
+    (root / "manifest.json").write_text("{}")
+    child = root / "children" / "child"
+    child.mkdir(parents=True)
+    (child / "package.yaml").write_text(CHILD_PKG_YAML)
+    (child / ".architecture-model.yaml").write_text(child_model)
+    (child / "manifest.json").write_text("{}")
+    pkg2 = load_package(root)
+
+    s = _make_slice(
+        scope="descendants",
+        shared_refs="transitive",
+        selectors={"entity_kinds": ["components"]},
+        closure="boundary-stubs",
+    )
+    mat = materialize(s, pkg2)
+    ids = _ids(mat.model_fragment.entities)
+    assert "COMP-CHILD" in ids
+    assert "COMP-CHILD2" not in ids  # depth capped at 1
+
+
+def test_federated_determinism(pkg):
+    def resolver(eid):
+        return _external_model(eid)
+
+    s = _make_slice(
+        scope="federated",
+        shared_refs="explicit",
+        selectors={"entity_ids": ["COMP-A", "EXT-Z", "EXT-A"]},
+        closure="boundary-stubs",
+    )
+    m1 = materialize(s, pkg, resolve_ref=resolver)
+    m2 = materialize(s, pkg, resolve_ref=resolver)
+    assert _ids(m1.model_fragment.entities) == _ids(m2.model_fragment.entities)
+    assert m1.warnings == m2.warnings
+    assert m1.provenance["federated_sources"] == m2.provenance["federated_sources"]
 
 
 # --- Provenance / Idempotency -------------------------------------------
