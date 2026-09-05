@@ -163,7 +163,7 @@ def _parse_meta(d: dict) -> ModelMeta:
         schema_version=d.get("schema_version", "1.1"),
         project=d.get("project", ""),
         system=d.get("system", ""),
-        generated_at=d.get("generated_at", datetime.now(timezone.utc).isoformat()),
+        generated_at=d.get("generated_at", ""),
         source_artifacts=d.get("source_artifacts", []),
         manifest_hash=d.get("manifest_hash", ""),
         source_language=d.get("source_language", ""),

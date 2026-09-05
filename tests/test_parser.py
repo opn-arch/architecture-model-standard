@@ -166,3 +166,9 @@ class TestValidateModelData:
         # Minimal structure may or may not be valid depending on schema strictness
         # This test just ensures no crash
         assert isinstance(real_errors, list)
+
+
+def test_parse_meta_leaves_generated_at_empty_when_absent():
+    from architecture_model.core.parser import _parse_meta
+    meta = _parse_meta({"project": "p", "schema_version": "1.3"})
+    assert meta.generated_at == ""
