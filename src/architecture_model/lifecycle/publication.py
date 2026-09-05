@@ -53,6 +53,7 @@ Non-goals (Phase 1)
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -156,6 +157,22 @@ def read_current_generation(pkg: ArchitecturePackage) -> int | None:
     if not _GEN_RE.match(name):
         return None
     return int(name)
+
+
+def current_root_digest(pkg: ArchitecturePackage) -> str | None:
+    """Return the ``root_digest`` of the current generation, or None.
+
+    Reads ``<generation_dir>/digest.json`` for the generation pointed at by
+    ``CURRENT``. Returns None if there are no publications or the
+    ``digest.json`` file is missing.
+    """
+    n = read_current_generation(pkg)
+    if n is None:
+        return None
+    dj = generation_dir(pkg, n) / "digest.json"
+    if not dj.is_file():
+        return None
+    return json.loads(dj.read_text(encoding="utf-8"))["root_digest"]
 
 
 def publish(
