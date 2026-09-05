@@ -131,6 +131,25 @@ class MaterializedSlice:
     provenance: dict[str, Any] = field(default_factory=dict)
     warnings: tuple[MaterializationWarning, ...] = ()
 
+    def to_dict(self) -> dict:
+        """Serialize to the shape expected by ai.validators (fragment key).
+
+        Enables straight-line materialize → validate flows: validators look up
+        ``sl["fragment"]["entities"]``, so ``model_fragment`` is serialized
+        under the ``fragment`` key rather than at the top level.
+        """
+        from dataclasses import asdict
+
+        return {
+            "slice_id": self.slice_id,
+            "architecture_id": self.architecture_id,
+            "model_revision": self.model_revision,
+            "fragment": self.model_fragment.to_dict(),
+            "stub_entity_ids": list(self.stub_entity_ids),
+            "provenance": dict(self.provenance),
+            "warnings": [asdict(w) for w in self.warnings],
+        }
+
 
 # ---------------------------------------------------------------------------
 # Public API

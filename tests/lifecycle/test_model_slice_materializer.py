@@ -650,3 +650,43 @@ def test_idempotency(pkg):
     assert m1.warnings == m2.warnings
     # Digest of source model is stable
     assert m1.provenance["source_model_digest"] == m2.provenance["source_model_digest"]
+
+
+# ---------------------------------------------------------------------------
+# N105: MaterializedSlice.to_dict() emits `fragment` key for ai.validators
+# ---------------------------------------------------------------------------
+
+
+def test_materialized_slice_to_dict_has_fragment_key(pkg):
+    sl = _make_slice(selectors={"entity_ids": ["COMP-A"]})
+    mslice = materialize(sl, pkg)
+    d = mslice.to_dict()
+    assert "fragment" in d
+    assert "entities" in d["fragment"]
+
+
+def test_materialized_slice_to_dict_round_trip_through_validators(pkg):
+    from architecture_model.ai.validators import _collect_slice_entity_ids
+
+    sl = _make_slice(selectors={"entity_ids": ["COMP-A"]})
+    mslice = materialize(sl, pkg)
+    slice_dict = mslice.to_dict()
+    ids = _collect_slice_entity_ids({slice_dict["slice_id"]: slice_dict})
+    assert ids, "validators found no entities in fragment"
+    assert "COMP-A" in ids
+
+
+def test_materialized_slice_to_dict_preserves_all_fields(pkg):
+    sl = _make_slice(selectors={"entity_ids": ["COMP-A"]})
+    mslice = materialize(sl, pkg)
+    d = mslice.to_dict()
+    for key in (
+        "slice_id",
+        "architecture_id",
+        "model_revision",
+        "fragment",
+        "stub_entity_ids",
+        "provenance",
+        "warnings",
+    ):
+        assert key in d, f"missing key: {key}"
