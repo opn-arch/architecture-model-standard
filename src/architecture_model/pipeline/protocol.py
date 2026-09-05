@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 if TYPE_CHECKING:
+    from ..llm import LLMProvider
     from .global_learning import GlobalLearningStore
     from .learning import LearningStore
 
@@ -207,6 +208,7 @@ class PipelineContext:
     # Signature: async (stage: str, prompt: str, context: dict) -> str
     # If None, stages use heuristic fallbacks (deterministic mode).
     llm_callback: Any = field(default=None, repr=False)
+    llm_provider: "LLMProvider | None" = field(default=None, repr=False)
 
     def has(self, stage_name: str) -> bool:
         return stage_name in self.cache
