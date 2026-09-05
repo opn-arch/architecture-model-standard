@@ -433,22 +433,34 @@ The `learning_curve` table in telemetry tracks improvement over successive repos
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 
-**Model:** 9 components | 70 relationships
-**Score:** 69.4% (FC=38% RA=89% BC=50% BV=100%)
-**Codebase:** 88 modules | 208 import edges
+**Model:** 29 components | 438 relationships
+**Score:** 59.4% (FC=75% RA=46% BC=17% BV=100%)
+**Codebase:** 189 modules | 442 import edges
+**Requirements:** 122 tracked
 
 ## Component Map
 
-## Architecture: 9 components
-- **Core** (COMP-CORE): src/architecture_model/core/coverage.py, src/architecture_model/core/decomposer.py, src/architecture_model/core/differ.py
-- **Manifest** (COMP-MANIFEST): src/architecture_model/manifest/blocks.py, src/architecture_model/manifest/body_hints.py, src/architecture_model/manifest/display.py
-- **Config** (COMP-CONFIG): src/architecture_model/config/loader.py, src/architecture_model/config/schema.py
-- **CLI** (COMP-CLI): src/architecture_model/cli/main.py, src/architecture_model/cli/visualize.py
-- **Orchestration** (COMP-ORCHESTRATION): src/architecture_model/orchestration/decompose.py, src/architecture_model/orchestration/enrich.py
-- **Extract** (COMP-EXTRACT): src/architecture_model/extract/from_code.py
-- **Utils** (COMP-UTILS): src/architecture_model/utils/discovery.py
-- **Profiles** (COMP-PROFILES): src/architecture_model/profiles/schema.py
-- **Spec** (COMP-SPEC): 
+## Architecture: 29 components
+- **Core** (COMP-1): src/architecture_model/core/__init__.py
+- **Type System** (COMP-1.1): src/architecture_model/core/types.py
+- **Validation** (COMP-1.2): src/architecture_model/core/validator.py, src/architecture_model/spec/__init__.py
+- **Parser & Persistence** (COMP-1.3): src/architecture_model/core/parser.py, src/architecture_model/core/compression.py, src/architecture_model/core/merger.py
+- **Model Operations** (COMP-1.4): src/architecture_model/core/slicer.py, src/architecture_model/core/differ.py, src/architecture_model/core/coverage.py
+- **Quality Metrics** (COMP-1.5): src/architecture_model/core/confidence.py, src/architecture_model/core/regen_readiness.py, src/architecture_model/core/corrections.py
+- **Pipeline** (COMP-2): src/architecture_model/pipeline/__init__.py
+- **Pipeline Coordination** (COMP-2.1): src/architecture_model/pipeline/coordinator.py, src/architecture_model/pipeline/protocol.py, src/architecture_model/pipeline/cache.py
+- **Observation Stages** (COMP-2.2): src/architecture_model/pipeline/observe.py, src/architecture_model/pipeline/observe_types.py, src/architecture_model/pipeline/infer.py
+- **Allocation & Relation Stages** (COMP-2.3): src/architecture_model/pipeline/allocate.py, src/architecture_model/pipeline/allocate_types.py, src/architecture_model/pipeline/relate.py
+- **Specification & Contract Stages** (COMP-2.4): src/architecture_model/pipeline/specify.py, src/architecture_model/pipeline/specify_types.py, src/architecture_model/pipeline/contract.py
+- **Synthesis & Emit Stages** (COMP-2.5): src/architecture_model/pipeline/decompose.py, src/architecture_model/pipeline/decompose_types.py, src/architecture_model/pipeline/synthesize.py
+- **Manifest** (COMP-3): src/architecture_model/manifest/__init__.py, src/architecture_model/manifest/types.py
+- **Scanners** (COMP-3.1): src/architecture_model/manifest/scanner.py, src/architecture_model/manifest/multi_scanner.py, src/architecture_model/manifest/ts_scanner.py
+- **Graph & Analysis** (COMP-3.2): src/architecture_model/manifest/call_graph.py, src/architecture_model/manifest/interfaces.py, src/architecture_model/manifest/behavior.py
+- **Grouping & Generation** (COMP-3.3): src/architecture_model/manifest/grouping.py, src/architecture_model/manifest/generator.py, src/architecture_model/manifest/recursive.py
+- **Documentation** (COMP-4): src/architecture_model/docs/__init__.py
+- **Core Doc Generators** (COMP-4.1): src/architecture_model/docs/generator.py, src/architecture_model/docs/component_spec.py, src/architecture_model/docs/icd.py
+- **SE Document Suite** (COMP-4.2): src/architecture_model/docs/se/__init__.py, src/architecture_model/docs/se/generator.py, src/architecture_model/docs/se/frontmatter.py
+- **Orchestration** (COMP-5): src/architecture_model/orchestration/__init__.py
 
 ## Development Guidelines
 
@@ -458,3 +470,4 @@ The `learning_curve` table in telemetry tracks improvement over successive repos
 - Use `architect_feedback` to record corrections or rate tool quality
 - Components are auto-grouped by import affinity — respect boundaries
 <!-- opencode-arch:end -->
+
