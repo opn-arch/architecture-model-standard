@@ -229,7 +229,8 @@ def proposal_from_dict(data: dict[str, Any]) -> Proposal:
         kind = ProposalKind(raw_kind)
     except ValueError:
         valid = ", ".join(k.value for k in ProposalKind)
-        raise ValueError(
+        from architecture_model.core.errors import ParseError
+        raise ParseError(
             f"unknown proposal kind {raw_kind!r}; valid kinds: {valid}"
         ) from None
     cls = PROPOSAL_TYPES[kind]

@@ -168,8 +168,9 @@ class _NoDuplicateSafeLoader(yaml.SafeLoader):
 
 def _construct_mapping(loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bool = False):
     if not isinstance(node, yaml.MappingNode):
-        raise yaml.constructor.ConstructorError(
-            None, None, f"expected a mapping node, but found {node.id}", node.start_mark
+        from architecture_model.core.errors import ParseError
+        raise ParseError(
+            f"expected a mapping node, but found {node.id}"
         )
     mapping: dict[Any, Any] = {}
     for key_node, value_node in node.value:
@@ -179,7 +180,8 @@ def _construct_mapping(loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bo
                 f"canonical YAML requires string mapping keys, got {type(key).__name__}"
             )
         if key in mapping:
-            raise ValueError(f"duplicate key {key!r} in YAML mapping")
+            from architecture_model.core.errors import ParseError
+            raise ParseError(f"duplicate key {key!r} in YAML mapping")
         value = loader.construct_object(value_node, deep=deep)
         mapping[key] = value
     return mapping

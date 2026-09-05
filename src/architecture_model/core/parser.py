@@ -99,7 +99,8 @@ def load_model(path: str | Path) -> ArchitectureModel:
         raw = yaml.safe_load(f)
 
     if raw is None:
-        raise ValueError(f"Empty model file: {path}")
+        from architecture_model.core.errors import ParseError
+        raise ParseError(f"Empty model file: {path}")
 
     model = _parse_raw(raw)
     model._source_path = path.resolve()
