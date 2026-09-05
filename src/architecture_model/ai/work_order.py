@@ -15,12 +15,13 @@ validated by ``spec/ai-work-order.schema.json`` (Draft 2020-12).
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from importlib import resources
-from typing import Any
+from typing import Any, Mapping, Sequence
 
 from architecture_model.lifecycle.serialization import digest as _digest
 from architecture_model.lifecycle.versions import SchemaVersions
@@ -189,3 +190,76 @@ class WorkOrder:
     def validate_schema(self) -> list[str]:
         """Validate ``self`` against the JSON Schema. Empty list == valid."""
         return self._validate_dict_against_schema(self.to_dict())
+
+    # ---- convenience factory ---------------------------------------------
+
+    @classmethod
+    def build(
+        cls,
+        *,
+        intent: str,
+        slices: Sequence[Any],
+        accepts: Sequence[Any],
+        requested_by: str,
+        max_tokens: int,
+        max_wall_seconds: int,
+        parameters: Mapping[str, Any] | None = None,
+        id: str | None = None,
+        created_at: str | datetime | None = None,
+    ) -> "WorkOrder":
+        """Build a WorkOrder from natural Python types with auto-derived id/created_at."""
+        normalized_slices: list[SliceRef] = []
+        for item in slices:
+            if isinstance(item, SliceRef):
+                normalized_slices.append(item)
+            elif isinstance(item, tuple):
+                slice_id, revision = item
+                normalized_slices.append(
+                    SliceRef(slice_id=slice_id, model_revision=revision)
+                )
+            elif isinstance(item, Mapping):
+                normalized_slices.append(SliceRef(**dict(item)))
+            else:
+                raise TypeError(f"Unsupported slice entry: {item!r}")
+
+        normalized_accepts: list[ProposalKind] = [
+            k if isinstance(k, ProposalKind) else ProposalKind(k) for k in accepts
+        ]
+
+        budget = Budget(max_tokens=max_tokens, max_wall_seconds=max_wall_seconds)
+
+        if created_at is None:
+            created_at_str = datetime.now(timezone.utc).isoformat()
+        elif isinstance(created_at, datetime):
+            created_at_str = created_at.isoformat()
+        else:
+            created_at_str = created_at
+
+        params = dict(parameters) if parameters else {}
+
+        if id is None:
+            payload = json.dumps(
+                {
+                    "intent": intent,
+                    "slices": [(s.slice_id, s.model_revision) for s in normalized_slices],
+                    "accepts": [k.value for k in normalized_accepts],
+                    "requested_by": requested_by,
+                    "budget": [max_tokens, max_wall_seconds],
+                    "created_at": created_at_str,
+                    "parameters": params,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            id = "sha256-v1:" + hashlib.sha256(payload.encode()).hexdigest()
+
+        return cls(
+            id=id,
+            intent=intent,
+            input_slice_refs=normalized_slices,
+            expected_proposal_kinds=normalized_accepts,
+            budget=budget,
+            requested_by=requested_by,
+            created_at=created_at_str,
+            parameters=params,
+        )
