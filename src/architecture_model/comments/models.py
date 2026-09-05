@@ -6,19 +6,27 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 _REVISION_RE = r"^\d{7}$"
 _MAX_BODY_BYTES = 8192
 
 
 class IssueRef(BaseModel):
+    """Reference to an external issue-tracker record backing this comment."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     system: Literal["logs-db"] = "logs-db"
-    issue_id: Optional[int | str] = None
+    issue_id: int | str | None = None
     synced_at: Optional[datetime] = None
 
 
 class CommentStub(BaseModel):
+    """Local, authoritative record of a user comment on a lifecycle-rendered view."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     comment_id: str = Field(..., min_length=1)
     artifact_id: str = Field(..., min_length=1)
     view_id: str = Field(..., min_length=1)
