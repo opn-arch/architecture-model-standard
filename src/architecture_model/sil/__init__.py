@@ -9,6 +9,7 @@ from architecture_model.sil.record import (
     dump_yaml,
     load_yaml,
 )
+from architecture_model.sil.rollup import rollup_component
 
 __all__ = [
     "Event",
@@ -19,4 +20,5 @@ __all__ = [
     "dump_yaml",
     "instrumented",
     "load_yaml",
+    "rollup_component",
 ]
