@@ -606,3 +606,79 @@ git commit -m "feat(lifecycle): MaterializedSlice.to_dict emits fragment key (N1
 git add docs/plans/2026-09-05-phase1-escalations.md CONTEXT.md
 git commit -m "docs(phase1): completion report for 9 escalations (N50/52/53/64/73/74/81/100/105)"
 ```
+
+---
+
+## Completion report
+
+**Date completed:** 2026-09-05
+**Branch:** `feat/phase1-escalations` (based on `feat/curated-se-views` @ `7f0c7dc`)
+**Worktree:** `.worktrees/phase1-escalations`
+
+### Test suite delta
+
+| Metric | Baseline | Final | Delta |
+|--------|:--------:|:-----:|:-----:|
+| Passed | 2885 | **2918** | **+33** |
+| Pre-existing failures | 6 | 6 | 0 |
+| New failures / regressions | — | **0** | — |
+
+Command: `PYTHONPATH="$PWD/src" /opt/anaconda3/bin/python -m pytest tests/ -q --ignore=tests/test_config_loader.py`
+Result: `6 failed, 2918 passed, 102 skipped` in 68.35s. All 6 failures match the documented baseline (`test_has_f1_through_f6`, `test_has_functional_blocks`, `test_real_logs_db`, `test_name_version_requires`, `test_includes_confidence`, `test_includes_components`).
+
+### Task-by-task result
+
+| # | Nit | Commit | Summary | Reviewer verdict | Tests added |
+|:-:|:---:|:------:|:--------|:-----------------|:-----------:|
+| Plan | — | `918fb15` | Plan committed | — | — |
+| T1 | N73 | `24d6751` | Removed clock injection from `_parse_meta` | APPROVED | +1 |
+| T2 | N81 | `1583efe` | Added `.id` alias on `ArchitecturePackage` | APPROVED | +1 |
+| T3 | N50 | `3feff3b` | Canonical `ParseError` (new `core/errors.py`; 4 raise sites; re-exports) | APPROVED | +7 |
+| T4 | N74 | `787dd20` | Publicized `generation_dir` (kept `_generation_dir` alias) | APPROVED | +3 |
+| T5 | N53 | `78d1f82` | Added `current_root_digest(pkg)` helper + `json` import | APPROVED | +2 |
+| T6 | N64 | `69c2160` | Added `Provenance.proposal_id` (auto-derived SHA-256) | APPROVED | +4 |
+| T7 | N100 | `67f9b72` | Added `WorkOrder.build(...)` factory | APPROVED | +6 |
+| T8 | N52 | `78c743e` | New `ai/patch.py::apply_model_patch` (add/remove/replace; `move` → ParseError) | APPROVED | +6 |
+| T9 | N105 | `915a33a` | Added `MaterializedSlice.to_dict()` emitting `fragment` key | APPROVED | +3 |
+
+**Total new tests:** +33 (matches suite delta).
+
+### Nit-ledger status
+
+All 9 escalations closed:
+
+- **N50** — canonical `ParseError` ✅
+- **N52** — `apply_model_patch` executor ✅
+- **N53** — `current_root_digest()` helper ✅
+- **N64** — `Provenance.proposal_id` auto-derived ✅
+- **N73** — clock injection removed from `_parse_meta` ✅
+- **N74** — `generation_dir` publicized ✅
+- **N81** — `ArchitecturePackage.id` alias ✅
+- **N100** — `WorkOrder.build()` factory ✅
+- **N105** — `MaterializedSlice.to_dict()` fragment shape ✅
+
+### Downstream impact
+
+The `opencode-arch` package (Phase 2 consumer, currently on main `531b845`) can now adopt the new APIs in a **follow-up branch**:
+
+- Import `ParseError` for consistent parse-error handling.
+- Consume `MaterializedSlice.to_dict()` directly instead of hand-rolling the `fragment` shape.
+- Use `WorkOrder.build(...)` factory in tests and MCP handlers.
+- Use `apply_model_patch(...)` for proposal application in `architect_extract`.
+- Use `current_root_digest(pkg)` instead of reading `digest.json` directly.
+- Use `.id` property on `ArchitecturePackage` where downstream code expected it.
+- Rely on `Provenance.proposal_id` auto-derivation.
+- Replace private `_generation_dir` calls with public `generation_dir`.
+
+None of the changes are breaking: all Phase 1 API additions are additive, and the pre-existing symbols (`_generation_dir`, bare `ValueError` raises) are preserved as aliases / subclasses.
+
+### Follow-up nit ledger (deferred; NOT in scope)
+
+Recorded for a future maintenance pass; each is non-blocking:
+
+1. **N73-followup** — `types.py:780` writes `generated_at` unconditionally on emit; add emit-side guard for true byte-identical round-trip.
+2. **N50-ripple** — `ai/proposals.py:30/32/34` `Provenance.__post_init__` raises bare `ValueError`; migrate to `ParseError`. `serialization.py:171` loses yaml `node.start_mark` (line/col) info — restore in a follow-up.
+3. **N53-nit** — malformed `digest.json` still raises raw `json.JSONDecodeError`/`KeyError`; wrap in `ParseError`.
+4. **N64-nit** — `proposal_id` payload uses unescaped `|` delimiter — collision-prone if fields ever accept free-form text.
+5. **N100-nits** — `id` shadows builtin (consider `work_order_id`); slice tuple `(id, rev)` is positional in the hash schema.
+6. **N52-nits** — `move` op deferred as `ParseError` (validators allow it); `_apply_add` depends on private `_parse_raw`; silent no-op on missing `target_id` for `remove`/`replace` (undocumented policy).
