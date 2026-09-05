@@ -121,8 +121,13 @@ def _journal_path(pkg: ArchitecturePackage, override: Path | None) -> Path:
     return pkg.root / ".architecture" / "journal.jsonl"
 
 
-def _generation_dir(pkg: ArchitecturePackage, n: int) -> Path:
+def generation_dir(pkg: ArchitecturePackage, n: int) -> Path:
+    """Return the path to generation ``n`` within ``pkg``'s ``generations/`` directory."""
     return pkg.root / "generations" / f"{n:0{GENERATION_ZERO_PAD}d}"
+
+
+# Deprecated alias — retained for one release cycle. Use ``generation_dir`` instead.
+_generation_dir = generation_dir
 
 
 def list_generations(pkg: ArchitecturePackage) -> list[int]:
@@ -184,7 +189,7 @@ def publish(
 
     try:
         n = max(list_generations(pkg), default=0) + 1
-        gen_dir = _generation_dir(pkg, n)
+        gen_dir = generation_dir(pkg, n)
         if gen_dir.exists():
             raise PublicationInProgress(
                 f"generation dir {gen_dir} already exists"
@@ -315,7 +320,7 @@ def recover(
     current_gen = read_current_generation(pkg)
     for payload in interrupted:
         n = payload["generation"]
-        gen_dir = _generation_dir(pkg, n)
+        gen_dir = generation_dir(pkg, n)
         if gen_dir.exists() and n != current_gen:
             shutil.rmtree(str(gen_dir), ignore_errors=True)
         # Also remove any leftover staging dirs for this N

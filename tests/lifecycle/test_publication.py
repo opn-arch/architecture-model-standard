@@ -300,3 +300,19 @@ def test_publication_result_reports_all_files(tmp_path):
 
 def test_generation_zero_pad_constant():
     assert GENERATION_ZERO_PAD == 7
+
+
+def test_generation_dir_is_public():
+    from architecture_model.lifecycle.publication import generation_dir
+    assert callable(generation_dir)
+
+
+def test_generation_dir_underscore_alias_still_works():
+    from architecture_model.lifecycle.publication import _generation_dir, generation_dir
+    assert _generation_dir is generation_dir
+
+
+def test_generation_dir_in_public_api():
+    from architecture_model.lifecycle import generation_dir as public_gd
+    from architecture_model.lifecycle.publication import generation_dir as impl_gd
+    assert public_gd is impl_gd

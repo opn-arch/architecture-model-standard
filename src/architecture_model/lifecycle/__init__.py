@@ -51,6 +51,7 @@ from architecture_model.lifecycle.renderers import (
     render_markdown,
     render_svg,
 )
+from architecture_model.lifecycle.publication import generation_dir
 
 __all__ = [
     "ArtifactDAG",
@@ -92,4 +93,5 @@ __all__ = [
     "render_html",
     "render_markdown",
     "render_svg",
+    "generation_dir",
 ]
