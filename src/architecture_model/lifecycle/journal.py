@@ -28,6 +28,11 @@ PACKAGE_PUBLISH_ABORT = "package.publish.abort"
 STORE_WRITE_BEGIN = "store.write.begin"
 STORE_WRITE_COMMIT = "store.write.commit"
 INDEX_REBUILD_COMMIT = "index.rebuild.commit"
+COMMENT_CAPTURE = "comment.capture"
+COMMENT_SYNC = "comment.sync"
+ISSUE_PULL = "issue.pull"
+WORKORDER_FROM_ISSUE = "workorder.from_issue"
+ISSUE_CLOSE = "issue.close"
 
 
 class JournalEntry(TypedDict):
