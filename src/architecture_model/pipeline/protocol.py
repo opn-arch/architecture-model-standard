@@ -217,11 +217,34 @@ class PipelineContext:
         return self.cache.get(stage_name)
 
     async def llm_enrich(self, stage: str, prompt: str, context: dict | None = None) -> str | None:
-        """Call LLM enrichment if callback is registered. Returns None if no LLM available."""
-        if self.llm_callback is None:
-            return None
+        """Call LLM enrichment. Prefer llm_provider (Plan B) over llm_callback (legacy)."""
         import time as _time
 
+        # B1.2.7: prefer the new LLMProvider Protocol path.
+        if self.llm_provider is not None:
+            start = _time.time()
+            try:
+                completion = self.llm_provider.complete(prompt, model=None, max_tokens=4096)
+                text = completion["text"]
+                duration_ms = int((_time.time() - start) * 1000)
+                self.llm_calls.append(
+                    LLMCallRecord(
+                        stage=stage,
+                        purpose=prompt[:100],
+                        timestamp=_time.strftime("%Y-%m-%dT%H:%M:%S"),
+                        duration_ms=duration_ms,
+                        confidence=0.7,
+                        items_produced=1,
+                        notes=text[:200] if text else "",
+                    )
+                )
+                return text
+            except Exception:
+                return None
+
+        # Legacy llm_callback path preserved.
+        if self.llm_callback is None:
+            return None
         start = _time.time()
         try:
             result = await self.llm_callback(stage, prompt, context or {})
