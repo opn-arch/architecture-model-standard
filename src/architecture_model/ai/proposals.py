@@ -11,6 +11,7 @@ on that value using :data:`PROPOSAL_TYPES`.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Union
 
@@ -24,6 +25,7 @@ class Provenance:
     work_order_id: str
     model_version: str
     prompt_digest: str
+    proposal_id: str = ""
 
     def __post_init__(self) -> None:
         if not self.prompt_digest:
@@ -32,12 +34,19 @@ class Provenance:
             raise ValueError("provenance.work_order_id must be non-empty")
         if not self.model_version:
             raise ValueError("provenance.model_version must be non-empty")
+        if not self.proposal_id:
+            payload = (
+                f"{self.work_order_id}|{self.model_version}|{self.prompt_digest}"
+            ).encode()
+            digest = hashlib.sha256(payload).hexdigest()
+            object.__setattr__(self, "proposal_id", f"sha256-v1:{digest}")
 
     def to_dict(self) -> dict[str, str]:
         return {
             "work_order_id": self.work_order_id,
             "model_version": self.model_version,
             "prompt_digest": self.prompt_digest,
+            "proposal_id": self.proposal_id,
         }
 
     @classmethod
@@ -46,6 +55,7 @@ class Provenance:
             work_order_id=data["work_order_id"],
             model_version=data["model_version"],
             prompt_digest=data["prompt_digest"],
+            proposal_id=data.get("proposal_id", ""),
         )
 
 

@@ -130,3 +130,37 @@ def test_provenance_round_trip():
     prov = _prov()
     d = prov.to_dict()
     assert Provenance.from_dict(d) == prov
+
+
+def test_provenance_auto_derives_proposal_id_when_omitted():
+    from architecture_model.ai.proposals import Provenance
+    p = Provenance(work_order_id="wo-1", model_version="m-1",
+                   prompt_digest="sha256-v1:abc")
+    assert p.proposal_id.startswith("sha256-v1:")
+    assert len(p.proposal_id) > len("sha256-v1:")
+
+
+def test_provenance_proposal_id_is_deterministic():
+    from architecture_model.ai.proposals import Provenance
+    p1 = Provenance(work_order_id="wo-1", model_version="m-1",
+                    prompt_digest="sha256-v1:abc")
+    p2 = Provenance(work_order_id="wo-1", model_version="m-1",
+                    prompt_digest="sha256-v1:abc")
+    assert p1.proposal_id == p2.proposal_id
+
+
+def test_provenance_proposal_id_differs_for_different_inputs():
+    from architecture_model.ai.proposals import Provenance
+    p1 = Provenance(work_order_id="wo-1", model_version="m-1",
+                    prompt_digest="sha256-v1:abc")
+    p2 = Provenance(work_order_id="wo-2", model_version="m-1",
+                    prompt_digest="sha256-v1:abc")
+    assert p1.proposal_id != p2.proposal_id
+
+
+def test_provenance_accepts_supplied_proposal_id():
+    from architecture_model.ai.proposals import Provenance
+    p = Provenance(work_order_id="wo-1", model_version="m-1",
+                   prompt_digest="sha256-v1:abc",
+                   proposal_id="sha256-v1:deadbeef")
+    assert p.proposal_id == "sha256-v1:deadbeef"
