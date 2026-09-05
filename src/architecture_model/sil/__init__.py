@@ -1,9 +1,6 @@
-"""SI&L (Self-Improvement & Logging) package.
+"""SI&L (Self-Improvement & Logging) package."""
 
-Exports the record schema. The ``instrumented`` decorator will be added
-in task B2.1.2 and re-exported here at that time.
-"""
-
+from architecture_model.sil.decorators import bind_store, instrumented
 from architecture_model.sil.record import (
     Event,
     Metrics,
@@ -18,6 +15,8 @@ __all__ = [
     "Metrics",
     "Rollup",
     "SILRecord",
+    "bind_store",
     "dump_yaml",
+    "instrumented",
     "load_yaml",
 ]
