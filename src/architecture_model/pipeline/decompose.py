@@ -19,6 +19,7 @@ from architecture_model.pipeline.protocol import (
     StageResult,
 )
 from architecture_model.pipeline.relate_types import RelateResult
+from architecture_model.sil.decorators import instrumented
 
 FULL_SYSTEM_FILE_THRESHOLD = 5
 HIERARCHY_FILE_THRESHOLD = 8  # components with >= this many files get sub-components
@@ -168,6 +169,7 @@ class DecomposeStage:
     def output_path(self, ctx: PipelineContext):
         return ctx.output_dir / "decompose.yaml"
 
+    @instrumented("stage:decompose")
     def run(self, ctx: PipelineContext) -> StageResult[DecomposeResult]:
         t0 = time.monotonic()
 

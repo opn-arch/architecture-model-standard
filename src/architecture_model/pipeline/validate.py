@@ -19,6 +19,7 @@ from .protocol import (
 )
 from .relate_types import RelateResult
 from .validate_types import ValidateResult, ValidationIssue
+from architecture_model.sil.decorators import instrumented
 
 
 class ValidateStage:
@@ -27,6 +28,7 @@ class ValidateStage:
     name: str = "validate"
     requires: list[str] = ["infer", "allocate", "relate", "specify", "contract"]
 
+    @instrumented("stage:validate")
     def run(self, ctx: PipelineContext) -> StageResult[ValidateResult]:
         start = time.time()
         diagnostics: list[Diagnostic] = []

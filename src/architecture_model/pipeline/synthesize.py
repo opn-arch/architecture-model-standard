@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from architecture_model.sil.decorators import instrumented
 
 
 def _now_iso() -> str:
@@ -1318,6 +1319,7 @@ class SynthesizeStage:
     def output_path(self, ctx: PipelineContext) -> Path:
         return ctx.output_dir / "synthesize.yaml"
 
+    @instrumented("stage:synthesize")
     def run(self, ctx: PipelineContext) -> StageResult[SynthesizeResult]:
         t0 = time.monotonic()
         diagnostics: list[Diagnostic] = []

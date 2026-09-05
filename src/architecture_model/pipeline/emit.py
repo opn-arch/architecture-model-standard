@@ -26,6 +26,7 @@ from architecture_model.pipeline.synthesize import (
     _requirement_key,
     _system_slugs,
 )
+from architecture_model.sil.decorators import instrumented
 
 
 def _stamp_provider(model_yaml: str, ctx: PipelineContext) -> str:
@@ -147,6 +148,7 @@ class EmitStage:
     def output_path(self, ctx: PipelineContext) -> Path:
         return ctx.repo_path / ".architecture-models"
 
+    @instrumented("stage:emit")
     def run(self, ctx: PipelineContext) -> StageResult[EmitResult]:
         t0 = time.monotonic()
 

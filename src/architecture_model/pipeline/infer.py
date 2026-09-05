@@ -28,6 +28,7 @@ from .protocol import (
     Uncertainty,
 )
 from .corrections import get_corrections_for_stage, get_resolutions_for_stage
+from architecture_model.sil.decorators import instrumented
 
 
 _LARGE_REPO_MODULE_THRESHOLD = 50
@@ -245,6 +246,7 @@ class InferStage:
                     return int(rule.threshold["value"])
         return _LARGE_REPO_MODULE_THRESHOLD
 
+    @instrumented("stage:infer")
     def run(self, ctx: PipelineContext) -> StageResult[InferenceResult]:
         start = time.time()
         diagnostics: list[Diagnostic] = []

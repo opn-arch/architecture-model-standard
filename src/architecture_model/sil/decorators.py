@@ -30,5 +30,7 @@ def instrumented(component_id: str) -> Callable:
                             int((time.perf_counter() - t0) * 1000),
                             ref=type(e).__name__)
                 raise
+        wrapper.__sil_instrumented__ = True
+        wrapper.__sil_component_id__ = component_id
         return wrapper
     return deco
