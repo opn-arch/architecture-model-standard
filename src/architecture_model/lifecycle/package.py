@@ -104,6 +104,11 @@ class ArchitecturePackage(BaseModel):
     # Runtime-only; populated by load_package. Not serialized.
     root: Path | None = Field(default=None, exclude=True, repr=False)
 
+    @property
+    def id(self) -> str:
+        """Alias for architecture_id; consistent with entity ID convention."""
+        return self.architecture_id
+
     @field_validator("contract_version")
     @classmethod
     def _check_version(cls, v: str) -> str:

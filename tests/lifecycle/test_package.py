@@ -25,6 +25,12 @@ FIXTURES = Path(__file__).parent.parent / "fixtures" / "lifecycle"
 SAMPLE = FIXTURES / "sample_package_tree"
 
 
+def test_architecture_package_id_alias():
+    pkg = load_package(SAMPLE)
+    assert pkg.id == "root-pkg"
+    assert pkg.id == pkg.architecture_id
+
+
 def test_load_valid_root_package():
     pkg = load_package(SAMPLE)
     assert pkg.architecture_id == "root-pkg"
