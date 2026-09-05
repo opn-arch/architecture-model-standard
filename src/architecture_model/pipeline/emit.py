@@ -37,11 +37,14 @@ def _stamp_provider(model_yaml: str, ctx: PipelineContext) -> str:
 
         data = _yaml.safe_load(model_yaml) or {}
         meta = data.get("meta") or {}
-        meta["provider"] = {
+        provider_meta: dict[str, str] = {
             "name": getattr(ctx.llm_provider, "name", "unknown"),
             "model": getattr(ctx.llm_provider, "default_model", "unknown"),
-            "policy_ref": getattr(ctx, "policy_ref", None),
         }
+        policy_ref = getattr(ctx, "policy_ref", None)
+        if policy_ref:
+            provider_meta["policy_ref"] = policy_ref
+        meta["provider"] = provider_meta
         data["meta"] = meta
         return _yaml.dump(data, default_flow_style=False, sort_keys=False)
     except Exception:

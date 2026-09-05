@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import os
 import re
 import time
 from copy import deepcopy
@@ -13,6 +14,20 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+def _now_iso() -> str:
+    """Return current UTC time as ISO 8601, or a pinned value for reproducibility.
+
+    When the ``AMS_DETERMINISTIC_NOW`` environment variable is set, its value is
+    returned verbatim so that emitted models are byte-identical across runs. Used
+    by the reproducibility harness (B1.2.8) and any downstream tooling that needs
+    deterministic output.
+    """
+    pinned = os.environ.get("AMS_DETERMINISTIC_NOW")
+    if pinned:
+        return pinned
+    return datetime.now(timezone.utc).isoformat()
 
 from architecture_model.pipeline.cache import PipelineCache
 from architecture_model.pipeline.decompose_types import DecomposeResult, SystemBoundary
@@ -967,7 +982,7 @@ def _build_system_model_yaml(
         "meta": {
             "project": project_name or boundary.name,
             "schema_version": "2.0.0",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": _now_iso(),
             "system": boundary.name,
             "system_id": boundary.system_id,
             "parent_model": "../../.architecture-model.yaml",
@@ -1138,7 +1153,7 @@ def _build_sos_model(
         "meta": {
             "project": project_name or "System-of-Systems",
             "schema_version": "2.0.0",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": _now_iso(),
             "system_of_systems": True,
             "source_artifacts": source_artifacts,
         },
