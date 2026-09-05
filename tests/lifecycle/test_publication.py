@@ -300,3 +300,35 @@ def test_publication_result_reports_all_files(tmp_path):
 
 def test_generation_zero_pad_constant():
     assert GENERATION_ZERO_PAD == 7
+
+
+def test_generation_dir_is_public():
+    from architecture_model.lifecycle.publication import generation_dir
+    assert callable(generation_dir)
+
+
+def test_generation_dir_underscore_alias_still_works():
+    from architecture_model.lifecycle.publication import _generation_dir, generation_dir
+    assert _generation_dir is generation_dir
+
+
+def test_generation_dir_in_public_api():
+    from architecture_model.lifecycle import generation_dir as public_gd
+    from architecture_model.lifecycle.publication import generation_dir as impl_gd
+    assert public_gd is impl_gd
+
+
+def test_current_root_digest_returns_none_when_no_publications(tmp_path):
+    from architecture_model.lifecycle.publication import current_root_digest
+    pkg = _stage_pkg(tmp_path)
+    assert current_root_digest(pkg) is None
+
+
+def test_current_root_digest_matches_publish_result(tmp_path):
+    from architecture_model.lifecycle.publication import current_root_digest
+    pkg = _stage_pkg(tmp_path)
+    result = publish(pkg, _bundle())
+    assert current_root_digest(pkg) == result.root_digest
+    # After another publish, reflects newest generation
+    r2 = publish(pkg, _bundle(model_body=b"v2\n"))
+    assert current_root_digest(pkg) == r2.root_digest

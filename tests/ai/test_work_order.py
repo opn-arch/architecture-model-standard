@@ -141,3 +141,89 @@ def test_from_dict_accepts_string_kind_values():
     assert d["expected_proposal_kinds"] == ["model-patch"]
     wo2 = WorkOrder.from_dict(d)
     assert wo2.expected_proposal_kinds == [ProposalKind.MODEL_PATCH]
+
+
+def test_workorder_build_minimal():
+    wo = WorkOrder.build(
+        intent="patch model",
+        slices=[("slice-a", "rev-1")],
+        accepts=["model-patch"],
+        requested_by="test",
+        max_tokens=1000,
+        max_wall_seconds=30,
+    )
+    assert wo.intent == "patch model"
+    assert wo.id.startswith("sha256-v1:")
+    assert wo.created_at
+    assert wo.input_slice_refs[0].slice_id == "slice-a"
+    assert wo.input_slice_refs[0].model_revision == "rev-1"
+
+
+def test_workorder_build_accepts_datetime_created_at():
+    from datetime import datetime, timezone
+
+    dt = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    wo = WorkOrder.build(
+        intent="x",
+        slices=[("s", "r")],
+        accepts=["model-patch"],
+        requested_by="t",
+        max_tokens=1,
+        max_wall_seconds=1,
+        created_at=dt,
+    )
+    assert wo.created_at == dt.isoformat()
+
+
+def test_workorder_build_deterministic_id():
+    kwargs = dict(
+        intent="x",
+        slices=[("s", "r")],
+        accepts=["model-patch"],
+        requested_by="t",
+        max_tokens=1,
+        max_wall_seconds=1,
+        created_at="2026-01-01T00:00:00+00:00",
+    )
+    w1 = WorkOrder.build(**kwargs)
+    w2 = WorkOrder.build(**kwargs)
+    assert w1.id == w2.id
+
+
+def test_workorder_build_accepts_supplied_id():
+    wo = WorkOrder.build(
+        intent="x",
+        slices=[("s", "r")],
+        accepts=["model-patch"],
+        requested_by="t",
+        max_tokens=1,
+        max_wall_seconds=1,
+        created_at="2026-01-01T00:00:00+00:00",
+        id="WO-custom",
+    )
+    assert wo.id == "WO-custom"
+
+
+def test_workorder_build_normalizes_string_proposal_kinds():
+    wo = WorkOrder.build(
+        intent="x",
+        slices=[("s", "r")],
+        accepts=["model-patch"],
+        requested_by="t",
+        max_tokens=1,
+        max_wall_seconds=1,
+    )
+    assert wo.expected_proposal_kinds[0] == ProposalKind("model-patch")
+
+
+def test_workorder_build_accepts_sliceref_directly():
+    ref = SliceRef(slice_id="s", model_revision="r")
+    wo = WorkOrder.build(
+        intent="x",
+        slices=[ref],
+        accepts=["model-patch"],
+        requested_by="t",
+        max_tokens=1,
+        max_wall_seconds=1,
+    )
+    assert wo.input_slice_refs[0] is ref

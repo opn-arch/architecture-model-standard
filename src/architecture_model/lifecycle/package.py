@@ -22,6 +22,7 @@ from typing import Iterator
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from architecture_model.core.errors import ParseError
 from architecture_model.lifecycle.serialization import canonical_yaml_load
 from architecture_model.lifecycle.versions import SchemaVersions
 
@@ -31,7 +32,7 @@ _UUID_RE = re.compile(
 )
 
 
-class PackageLoadError(ValueError):
+class PackageLoadError(ParseError):
     """Base class for package-loader errors."""
 
 
@@ -103,6 +104,11 @@ class ArchitecturePackage(BaseModel):
 
     # Runtime-only; populated by load_package. Not serialized.
     root: Path | None = Field(default=None, exclude=True, repr=False)
+
+    @property
+    def id(self) -> str:
+        """Alias for architecture_id; consistent with entity ID convention."""
+        return self.architecture_id
 
     @field_validator("contract_version")
     @classmethod

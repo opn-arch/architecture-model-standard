@@ -53,6 +53,7 @@ Non-goals (Phase 1)
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -121,8 +122,13 @@ def _journal_path(pkg: ArchitecturePackage, override: Path | None) -> Path:
     return pkg.root / ".architecture" / "journal.jsonl"
 
 
-def _generation_dir(pkg: ArchitecturePackage, n: int) -> Path:
+def generation_dir(pkg: ArchitecturePackage, n: int) -> Path:
+    """Return the path to generation ``n`` within ``pkg``'s ``generations/`` directory."""
     return pkg.root / "generations" / f"{n:0{GENERATION_ZERO_PAD}d}"
+
+
+# Deprecated alias — retained for one release cycle. Use ``generation_dir`` instead.
+_generation_dir = generation_dir
 
 
 def list_generations(pkg: ArchitecturePackage) -> list[int]:
@@ -151,6 +157,22 @@ def read_current_generation(pkg: ArchitecturePackage) -> int | None:
     if not _GEN_RE.match(name):
         return None
     return int(name)
+
+
+def current_root_digest(pkg: ArchitecturePackage) -> str | None:
+    """Return the ``root_digest`` of the current generation, or None.
+
+    Reads ``<generation_dir>/digest.json`` for the generation pointed at by
+    ``CURRENT``. Returns None if there are no publications or the
+    ``digest.json`` file is missing.
+    """
+    n = read_current_generation(pkg)
+    if n is None:
+        return None
+    dj = generation_dir(pkg, n) / "digest.json"
+    if not dj.is_file():
+        return None
+    return json.loads(dj.read_text(encoding="utf-8"))["root_digest"]
 
 
 def publish(
@@ -184,7 +206,7 @@ def publish(
 
     try:
         n = max(list_generations(pkg), default=0) + 1
-        gen_dir = _generation_dir(pkg, n)
+        gen_dir = generation_dir(pkg, n)
         if gen_dir.exists():
             raise PublicationInProgress(
                 f"generation dir {gen_dir} already exists"
@@ -315,7 +337,7 @@ def recover(
     current_gen = read_current_generation(pkg)
     for payload in interrupted:
         n = payload["generation"]
-        gen_dir = _generation_dir(pkg, n)
+        gen_dir = generation_dir(pkg, n)
         if gen_dir.exists() and n != current_gen:
             shutil.rmtree(str(gen_dir), ignore_errors=True)
         # Also remove any leftover staging dirs for this N

@@ -6,6 +6,7 @@ from architecture_model.ai.work_order import (
     SliceRef,
     WorkOrder,
 )
+from architecture_model.ai.patch import apply_model_patch
 from architecture_model.ai.proposals import (
     ArtifactCandidate,
     DecompositionProposal,
@@ -32,4 +33,5 @@ __all__ = [
     "ImpactAssessment",
     "PROPOSAL_TYPES",
     "proposal_from_dict",
+    "apply_model_patch",
 ]

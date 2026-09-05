@@ -11,6 +11,7 @@ Relationship Types: realizes, contains, depends-on, exposes, consumes, traces-to
 __version__ = "0.4.0"
 
 from architecture_model.core.parser import load_model, load_block_model
+from architecture_model.core.errors import ParseError
 from architecture_model.core.validator import validate_model
 from architecture_model.manifest.generator import generate_manifest
 from architecture_model.core.slicer import slice_by_source_block, slice_by_layer
@@ -45,6 +46,7 @@ __all__ = [
     "__version__",
     "load_model",
     "load_block_model",
+    "ParseError",
     "validate_model",
     "generate_manifest",
     "slice_by_source_block",

@@ -51,6 +51,7 @@ from architecture_model.lifecycle.renderers import (
     render_markdown,
     render_svg,
 )
+from architecture_model.lifecycle.publication import current_root_digest, generation_dir
 
 __all__ = [
     "ArtifactDAG",
@@ -92,4 +93,6 @@ __all__ = [
     "render_html",
     "render_markdown",
     "render_svg",
+    "generation_dir",
+    "current_root_digest",
 ]

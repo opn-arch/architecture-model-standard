@@ -129,8 +129,10 @@ manifest = generate_manifest(project_root: Path) -> Manifest
 ### Model Parsing
 ```python
 from architecture_model.core.parser import load_model, _parse_raw
+from architecture_model.core import ParseError   # canonical parse error (also re-exported at package root)
 model = load_model(path: Path) -> ArchitectureModel  # from file
 model = _parse_raw(raw: dict) -> ArchitectureModel   # from dict (no public string parser)
+# ParseError is the canonical exception raised by parser / serialization / package load paths.
 ```
 
 ### Validation
@@ -154,6 +156,32 @@ context = format_fblock_context(model, f_block="F1", max_tokens=4000) -> str
 from architecture_model.core.slicer import slice_by_fblock, slice_by_layer
 sliced = slice_by_fblock(model, fblock_id="F1") -> ArchitectureModel
 sliced = slice_by_layer(model, layer_id="web") -> ArchitectureModel
+```
+
+### Lifecycle (Phase 1 additions, 2026-09-05)
+```python
+from architecture_model.lifecycle import generation_dir, current_root_digest
+# generation_dir(pkg, generation_id) -> Path            # public replacement for _generation_dir (alias preserved)
+# current_root_digest(pkg) -> str | None                # reads current generation's digest.json.root_digest
+
+from architecture_model.lifecycle.package import ArchitecturePackage
+pkg.id                                                  # property alias exposing package identifier
+
+from architecture_model.lifecycle.model_slice_materializer import MaterializedSlice
+mslice.to_dict()                                        # emits {"fragment": {...}, "slice_id": ..., ...}
+```
+
+### AI / Proposal APIs (Phase 1 additions, 2026-09-05)
+```python
+from architecture_model.ai import apply_model_patch
+patched = apply_model_patch(model, proposal)            # add / remove / replace (move → ParseError)
+
+from architecture_model.ai.work_order import WorkOrder
+wo = WorkOrder.build(intent=..., input_slice_refs=..., expected_proposal_kinds=..., budget=..., requested_by=...)
+
+from architecture_model.ai.proposals import Provenance
+prov = Provenance(...)                                  # proposal_id auto-derived (SHA-256) when omitted
+prov.proposal_id                                        # stable identifier for dedup / traceability
 ```
 
 ## Model YAML Format
@@ -182,7 +210,7 @@ relationships:
 
 - Schema version: 2.0
 - Package version: 0.3.0
-- Test suite: 1171 passed
+- Test suite: 2918 passed (6 pre-existing failures documented)
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
 
