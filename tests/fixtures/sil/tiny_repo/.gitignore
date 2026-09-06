@@ -1,0 +1,3 @@
+# Any pipeline byproducts leaked into the fixture during test runs.
+.architecture/
+.architecture-models/
