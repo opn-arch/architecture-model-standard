@@ -58,6 +58,7 @@ from architecture_model.lifecycle.artifact_spec import (
     compute_artifact_spec_digest,
 )
 from architecture_model.lifecycle.view_projection import ProjectedView
+from architecture_model.sil.decorators import instrumented
 
 _NAME = "zip"
 _ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
@@ -78,6 +79,7 @@ def _rfc3339_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+@instrumented("renderer:zip")
 def render_zip(
     views: list[ProjectedView],
     artifact: ArtifactSpec,
@@ -143,4 +145,6 @@ def render_zip(
     return buf.getvalue()
 
 
-__all__ = ["BundleResolutionError", "render_zip"]
+__all__ = ["BundleResolutionError", "render_zip", "render"]
+
+render = render_zip

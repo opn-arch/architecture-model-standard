@@ -43,6 +43,7 @@ from typing import Any
 from architecture_model.core.diagram_spec import DiagramSpec
 from architecture_model.lifecycle.artifact_spec import ArtifactSpec
 from architecture_model.lifecycle.view_projection import ProjectedView
+from architecture_model.sil.decorators import instrumented
 
 _NAME = "markdown"
 
@@ -76,6 +77,7 @@ def _diagram_body(spec: DiagramSpec) -> tuple[str, str]:
     return "text", "\n".join(lines)
 
 
+@instrumented("renderer:markdown")
 def render_markdown(
     view: ProjectedView | list[ProjectedView], artifact: ArtifactSpec
 ) -> bytes:
@@ -120,4 +122,6 @@ def render_markdown(
     return "\n".join(out).encode("utf-8")
 
 
-__all__ = ["render_markdown"]
+__all__ = ["render_markdown", "render"]
+
+render = render_markdown
