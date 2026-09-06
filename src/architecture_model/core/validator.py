@@ -20,6 +20,7 @@ from enum import Enum
 from typing import Optional
 
 from architecture_model.monitoring import monitored
+from architecture_model.sil.decorators import instrumented
 from .types import ArchitectureModel, RelationType, Status
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,7 @@ class ValidationResult:
 # ---------------------------------------------------------------------------
 
 
+@instrumented("validator:validate")
 @monitored(
     module="core.validator",
     quality=lambda r: {"score": r.score, "issue_count": len(r.issues)},

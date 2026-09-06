@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from architecture_model.core.types import ArchitectureModel, RelationType
 from architecture_model.manifest.types import Manifest
+from architecture_model.sil.decorators import instrumented
 
 
 @dataclass
@@ -20,6 +21,7 @@ class GateResult:
     root_local_file_coverage: float = 0.0
 
 
+@instrumented("validator:gate")
 def check_development_gate(
     model: ArchitectureModel,
     manifest: Manifest,

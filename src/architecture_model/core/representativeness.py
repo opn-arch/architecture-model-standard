@@ -8,6 +8,7 @@ from pathlib import PurePosixPath
 from architecture_model.core.types import ArchitectureModel, Relationship
 from architecture_model.manifest.types import InterfaceEdge, ModuleInfo
 from architecture_model.monitoring import monitored
+from architecture_model.sil.decorators import instrumented
 
 
 @dataclass
@@ -78,6 +79,7 @@ def _rel_type_matches(r: Relationship) -> bool:
     return False
 
 
+@instrumented("validator:check")
 @monitored(module="core.representativeness", quality=lambda r: {"overall": r.overall})
 def compute_representativeness(
     model: ArchitectureModel,
