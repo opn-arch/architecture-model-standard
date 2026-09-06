@@ -1,0 +1,6 @@
+architecture_id: pipeline-dashboard-pkg
+name: Pipeline Dashboard Package
+slug: pipeline-dashboard-pkg
+contract_version: "1.0.0"
+model_ref: .architecture-model.yaml
+manifest_ref: manifest.json
