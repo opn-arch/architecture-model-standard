@@ -41,10 +41,13 @@ DEFAULT_RENDERERS: dict[str, RendererFn] = {
     # symmetry.
     "zip": render_zip,  # type: ignore[dict-item]
     # ``render_pipeline_html`` has a different signature
-    # ``(*, materialized_slice, sil_store=None) -> str`` and is intended
-    # to be dispatched by phase-specific orchestrators (B3.2.x), not the
-    # generic ``(view, artifact) -> bytes`` rebuild path. Registered here
-    # for discovery symmetry only.
+    # ``(*, materialized_slice, sil_store=None) -> str``. The OCA T11 rebuild
+    # executor special-cases ``renderer == "pipeline-html"``: it skips
+    # ``project(view, ms)``, invokes this renderer directly with the
+    # materialized slice and an optional SIL rollup adapter, and mirrors the
+    # asset tree next to the emitted HTML. Registered here for discovery
+    # symmetry — direct dispatch via ``get_renderer("pipeline-html")(pv,
+    # spec)`` will raise ``TypeError``.
     "pipeline-html": render_pipeline_html,  # type: ignore[dict-item]
 }
 
