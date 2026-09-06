@@ -22,6 +22,7 @@ from architecture_model.lifecycle.artifact_spec import ArtifactSpec
 from architecture_model.lifecycle.renderers.ai_context import render_ai_context
 from architecture_model.lifecycle.renderers.html import render_html
 from architecture_model.lifecycle.renderers.markdown import render_markdown
+from architecture_model.lifecycle.renderers.pipeline_html import render_pipeline_html
 from architecture_model.lifecycle.renderers.svg import render_svg
 from architecture_model.lifecycle.renderers.zip import BundleResolutionError, render_zip
 from architecture_model.lifecycle.view_projection import ProjectedView
@@ -39,6 +40,12 @@ DEFAULT_RENDERERS: dict[str, RendererFn] = {
     # invoke ``render_zip`` directly. It is exposed here for discovery
     # symmetry.
     "zip": render_zip,  # type: ignore[dict-item]
+    # ``render_pipeline_html`` has a different signature
+    # ``(*, materialized_slice, sil_store=None) -> str`` and is intended
+    # to be dispatched by phase-specific orchestrators (B3.2.x), not the
+    # generic ``(view, artifact) -> bytes`` rebuild path. Registered here
+    # for discovery symmetry only.
+    "pipeline-html": render_pipeline_html,  # type: ignore[dict-item]
 }
 
 
@@ -55,6 +62,7 @@ __all__ = [
     "render_ai_context",
     "render_html",
     "render_markdown",
+    "render_pipeline_html",
     "render_svg",
     "render_zip",
 ]
