@@ -1,0 +1,48 @@
+kind: model-patch
+provenance:
+  work_order_id: review-plan-a-ams
+  model_version: '2.1'
+  prompt_digest: sha256-v1:review-session-plan-a-ams
+  proposal_id: sha256-v1:review-plan-a-ams
+operations:
+  # ---- Capability ------------------------------------------------------
+  - op: add
+    target_kind: capabilities
+    value:
+      id: CAP-COMMENT-COLLABORATION
+      name: Enable Reviewer-Author Comment Loop
+      status: ACTIVE
+      description: >-
+        Structured comment records attached to review artifacts, persisted in a
+        typed store with a CLI surface. Powers the "comment-view loop"
+        collaboration model between reviewers and authors.
+      intent: >-
+        Give reviewers a machine-readable place to leave persistent commentary
+        on architecture models, views, and artifacts.
+  # ---- Comment System component ---------------------------------------
+  - op: add
+    target_kind: components
+    value:
+      id: COMP-COMMENT-SYS
+      name: Comment System
+      status: ACTIVE
+      description: >-
+        Structured comment collection for review workflows. Provides typed
+        models (Comment, Thread), a persistent store, CLI command, and journal
+        integration so comments survive across sessions.
+      layer: collaboration
+      kind: library
+      files:
+        - src/architecture_model/comments/__init__.py
+        - src/architecture_model/comments/models.py
+        - src/architecture_model/comments/store.py
+        - src/architecture_model/cli/comment.py
+        - src/architecture_model/lifecycle/journal.py
+      contract: >-
+        Persist and retrieve structured comments (author, target_ref, body,
+        thread_id) with CLI-driven read/write. Comments emit journal events
+        for auditability.
+extra_relationships:
+  - from: COMP-COMMENT-SYS
+    to: CAP-COMMENT-COLLABORATION
+    type: realizes

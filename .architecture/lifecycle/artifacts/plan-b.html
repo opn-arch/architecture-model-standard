@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipeline Dashboard</title>
+  <link rel="stylesheet" href="assets/pipeline_dashboard/index.css">
+</head>
+<body>
+  <main id="pipeline-root" data-view="pipeline-html"></main>
+  <aside id="pipeline-drilldown" hidden></aside>
+  <script id="pipeline-state" type="application/json">
+{
+  "badges": {
+    "COMP-DASHBOARD": {
+      "avg_duration_ms": 119.2,
+      "failure_rate_7d": 0.0203,
+      "invocations_7d": 640
+    },
+    "COMP-LLM": {
+      "avg_duration_ms": 876.31,
+      "failure_rate_7d": 0.0619,
+      "invocations_7d": 210
+    },
+    "COMP-SIL": {
+      "avg_duration_ms": 8.0,
+      "failure_rate_7d": 0.0009,
+      "invocations_7d": 3200
+    }
+  },
+  "edges": [
+    {
+      "from": "COMP-DASHBOARD",
+      "to": "CAP-INTERACTIVE-DASHBOARD",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-DASHBOARD",
+      "to": "COMP-SIL",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-LLM",
+      "to": "CAP-LLM-ROUTING",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-SIL",
+      "to": "CAP-SIL-INSTRUMENTATION",
+      "type": "realizes"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "CAP-INTERACTIVE-DASHBOARD",
+      "kind": "capability",
+      "name": "Render Interactive Pipeline Dashboard"
+    },
+    {
+      "id": "CAP-LLM-ROUTING",
+      "kind": "capability",
+      "name": "Route LLM Calls Through Pluggable Providers"
+    },
+    {
+      "id": "CAP-SIL-INSTRUMENTATION",
+      "kind": "capability",
+      "name": "Instrument Architecturally-Significant Call Sites"
+    },
+    {
+      "id": "COMP-DASHBOARD",
+      "kind": "component",
+      "name": "Pipeline HTML Dashboard Renderer"
+    },
+    {
+      "id": "COMP-LLM",
+      "kind": "component",
+      "name": "LLM Provider Protocol"
+    },
+    {
+      "id": "COMP-SIL",
+      "kind": "component",
+      "name": "SI&L Instrumentation"
+    }
+  ]
+}
+  </script>
+  <script src="assets/pipeline_dashboard/badges.js" defer></script>
+  <script src="assets/pipeline_dashboard/drilldown.js" defer></script>
+</body>
+</html>

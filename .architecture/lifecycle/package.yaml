@@ -1,0 +1,6 @@
+architecture_id: ams-root
+contract_version: 1.0.0
+manifest_ref: manifest/manifest.json
+model_ref: model/.architecture-model.yaml
+name: ams-root
+slug: ams-root

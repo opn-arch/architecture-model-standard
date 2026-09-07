@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipeline Dashboard</title>
+  <link rel="stylesheet" href="assets/pipeline_dashboard/index.css">
+</head>
+<body>
+  <main id="pipeline-root" data-view="pipeline-html"></main>
+  <aside id="pipeline-drilldown" hidden></aside>
+  <script id="pipeline-state" type="application/json">
+{
+  "badges": {
+    "COMP-COMMENT-SYS": {
+      "avg_duration_ms": 22.22,
+      "failure_rate_7d": 0.0202,
+      "invocations_7d": 445
+    }
+  },
+  "edges": [
+    {
+      "from": "COMP-COMMENT-SYS",
+      "to": "CAP-COMMENT-COLLABORATION",
+      "type": "realizes"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "CAP-COMMENT-COLLABORATION",
+      "kind": "capability",
+      "name": "Enable Reviewer-Author Comment Loop"
+    },
+    {
+      "id": "COMP-COMMENT-SYS",
+      "kind": "component",
+      "name": "Comment System"
+    }
+  ]
+}
+  </script>
+  <script src="assets/pipeline_dashboard/badges.js" defer></script>
+  <script src="assets/pipeline_dashboard/drilldown.js" defer></script>
+</body>
+</html>

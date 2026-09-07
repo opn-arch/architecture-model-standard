@@ -1,0 +1,3 @@
+{"event":"package.publish.begin","id":"7888641f00f74b01be572306226952e2","payload":{"architecture_id":"ams-root","generation":1,"root_digest":"sha256-v1:348968df02a52825d5247949eb93cf0759730dec933b98b1ab4f3aaa36dfae23"},"ts":"2026-09-07T16:20:33.522526Z"}
+{"event":"package.publish.commit","id":"8a87612d356e4126bebdbde931557293","payload":{"architecture_id":"ams-root","generation":1,"root_digest":"sha256-v1:348968df02a52825d5247949eb93cf0759730dec933b98b1ab4f3aaa36dfae23"},"ts":"2026-09-07T16:20:33.530181Z"}
+{"event":"package.publish","id":"60a05f6a1ecc41889e86c1d6ac472f45","payload":{"actor":"mcp","digest":"sha256-v1:348968df02a52825d5247949eb93cf0759730dec933b98b1ab4f3aaa36dfae23","package_id":"ams-root","revision":"0000001"},"ts":"2026-09-07T16:20:33.530460Z"}

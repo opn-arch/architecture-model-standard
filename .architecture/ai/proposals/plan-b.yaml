@@ -1,0 +1,133 @@
+kind: model-patch
+provenance:
+  work_order_id: review-plan-b-ams
+  model_version: '2.1'
+  prompt_digest: sha256-v1:review-session-plan-b-ams
+  proposal_id: sha256-v1:review-plan-b-ams
+operations:
+  # ---- Capabilities ----------------------------------------------------
+  - op: add
+    target_kind: capabilities
+    value:
+      id: CAP-SIL-INSTRUMENTATION
+      name: Instrument Architecturally-Significant Call Sites
+      status: ACTIVE
+      description: >-
+        Component-scoped SI&L telemetry captures invocations, outcomes, and
+        latency of pipeline stages, renderers, validators, and MCP tool
+        handlers. Backed by a SQLite ring buffer with 7-day rollups.
+      intent: >-
+        Turn the pipeline from an opaque batch process into an observable
+        system where component health can be queried on-demand.
+  - op: add
+    target_kind: capabilities
+    value:
+      id: CAP-LLM-ROUTING
+      name: Route LLM Calls Through Pluggable Providers
+      status: ACTIVE
+      description: >-
+        LLMProvider Protocol abstracts subprocess (MCP), frontier HTTPS, and
+        relay adapters behind a runtime-checkable interface. Emit-time
+        provider stamping guarantees reproducibility.
+      intent: >-
+        Decouple the pipeline from any single LLM backend; support policy-
+        driven routing and provenance capture per generated model.
+  - op: add
+    target_kind: capabilities
+    value:
+      id: CAP-INTERACTIVE-DASHBOARD
+      name: Render Interactive Pipeline Dashboard
+      status: ACTIVE
+      description: >-
+        Single self-contained HTML with embedded pipeline state JSON, colored
+        SI&L badges, and drill-down panels. Deterministic build; assets
+        auto-mirrored alongside output.
+      intent: >-
+        Provide a review-friendly visual for the pipeline architecture that
+        surfaces live health metrics without a running backend.
+  # ---- Components ------------------------------------------------------
+  - op: add
+    target_kind: components
+    value:
+      id: COMP-SIL
+      name: SI&L Instrumentation
+      status: ACTIVE
+      description: >-
+        Component-scoped telemetry layer. `sil_instrument` decorator, SQLite-
+        backed ring-buffer store (50 events per component), 7-day rollup
+        aggregator. Instrumentation currently covers 10 pipeline stages,
+        5 renderers, 3 validators, and 19 MCP tool handlers.
+      layer: observability
+      kind: library
+      files:
+        - src/architecture_model/sil/__init__.py
+        - src/architecture_model/sil/decorators.py
+        - src/architecture_model/sil/record.py
+        - src/architecture_model/sil/rollup.py
+      contract: >-
+        @sil_instrument("component:id") wraps any callable; emits SILRecord
+        on invocation; SILStore.rollup(component_id) returns
+        {invocations_7d, failure_rate_7d, avg_duration_ms}.
+  - op: add
+    target_kind: components
+    value:
+      id: COMP-LLM
+      name: LLM Provider Protocol
+      status: ACTIVE
+      description: >-
+        Runtime-checkable Protocol exposing complete/stream/structured/tokenize.
+        AMS defines the contract; concrete adapters (MCP, Frontier, RelayExt)
+        live in OCA. Emit stage stamps `meta.provider` on every generated
+        model for reproducibility.
+      layer: observability
+      kind: library
+      files:
+        - src/architecture_model/llm/__init__.py
+        - src/architecture_model/llm/provider.py
+        - src/architecture_model/pipeline/emit.py
+      contract: >-
+        LLMProvider Protocol; `_stamp_provider` writes meta.provider = {name,
+        model, policy_ref} at pipeline emit time. `AMS_DETERMINISTIC_NOW`
+        pins timestamps for byte-identical rebuilds.
+  - op: add
+    target_kind: components
+    value:
+      id: COMP-DASHBOARD
+      name: Pipeline HTML Dashboard Renderer
+      status: ACTIVE
+      description: >-
+        `pipeline-html` renderer + `pipeline_html_data` projector. Produces a
+        single-file interactive HTML with embedded JSON state, colored SI&L
+        badges, and vanilla-JS drill-down. Deterministic; assets mirrored
+        under assets/pipeline_dashboard/.
+      layer: presentation
+      kind: library
+      files:
+        - src/architecture_model/lifecycle/renderers/pipeline_html.py
+        - src/architecture_model/lifecycle/renderers/pipeline_html_data.py
+        - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/index.css
+        - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/badges.js
+        - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/drilldown.js
+      contract: >-
+        render_pipeline_html(*, materialized_slice, sil_store=None) -> str.
+        Renderer registered in Renderer Literal and artifact-spec schema
+        enum. Byte-identical output guaranteed under fixed inputs.
+extra_relationships:
+  - from: COMP-SIL
+    to: CAP-SIL-INSTRUMENTATION
+    type: realizes
+  - from: COMP-LLM
+    to: CAP-LLM-ROUTING
+    type: realizes
+  - from: COMP-DASHBOARD
+    to: CAP-INTERACTIVE-DASHBOARD
+    type: realizes
+  - from: COMP-DASHBOARD
+    to: COMP-SIL
+    type: depends-on
+  - from: COMP-2
+    to: COMP-SIL
+    type: depends-on
+  - from: COMP-2
+    to: COMP-LLM
+    type: depends-on
