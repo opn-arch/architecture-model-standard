@@ -18,7 +18,7 @@
     },
     "renderer": {
       "type": "string",
-      "enum": ["svg", "markdown", "html", "ai-context", "zip"]
+      "enum": ["svg", "markdown", "html", "ai-context", "zip", "pipeline-html"]
     },
     "view_ref": {
       "type": ["object", "null"],

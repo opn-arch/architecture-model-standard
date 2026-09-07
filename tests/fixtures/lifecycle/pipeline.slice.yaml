@@ -1,0 +1,12 @@
+id: pipeline-dashboard
+contract_version: "1.0.0"
+architecture_id: pipeline-dashboard-pkg
+model_revision: rev-1
+scope: local
+closure: strict
+shared_refs: none
+selectors:
+  entity_kinds:
+    - capabilities
+    - components
+    - constraints

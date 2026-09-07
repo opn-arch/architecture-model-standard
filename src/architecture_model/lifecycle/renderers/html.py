@@ -43,6 +43,7 @@ from architecture_model.core.diagram_renderer import (
 )
 from architecture_model.lifecycle.artifact_spec import ArtifactSpec
 from architecture_model.lifecycle.view_projection import ProjectedView
+from architecture_model.sil.decorators import instrumented
 
 _NAME = "html"
 
@@ -69,6 +70,7 @@ def _options_from_parameters(params: dict[str, Any]) -> DiagramRenderOptions | N
     return None
 
 
+@instrumented("renderer:html")
 def render_html(
     view: ProjectedView | list[ProjectedView], artifact: ArtifactSpec
 ) -> bytes:
@@ -110,4 +112,6 @@ def render_html(
     return document.encode("utf-8")
 
 
-__all__ = ["render_html"]
+__all__ = ["render_html", "render"]
+
+render = render_html

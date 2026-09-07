@@ -17,6 +17,7 @@ from .protocol import (
     Uncertainty,
 )
 from .specify_types import DerivedRequirement, InterfaceSpec, SpecifyResult
+from architecture_model.sil.decorators import instrumented
 
 
 def _name_library_interface(
@@ -222,6 +223,7 @@ class SpecifyStage:
     name: str = "specify"
     requires: list[str] = ["observe", "allocate"]
 
+    @instrumented("stage:specify")
     def run(self, ctx: PipelineContext) -> StageResult[SpecifyResult]:
         start = time.time()
         diagnostics: list[Diagnostic] = []

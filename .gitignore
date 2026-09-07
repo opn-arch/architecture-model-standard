@@ -12,3 +12,5 @@ venv/
 .worktrees/
 .architecture-archive/
 projects/
+review/
+.DS_Store

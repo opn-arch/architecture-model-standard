@@ -33,6 +33,7 @@ from architecture_model.core.diagram_renderer import (
 )
 from architecture_model.lifecycle.artifact_spec import ArtifactSpec
 from architecture_model.lifecycle.view_projection import ProjectedView
+from architecture_model.sil.decorators import instrumented
 
 _NAME = "svg"
 
@@ -59,6 +60,7 @@ def _options_from_parameters(params: dict[str, Any]) -> DiagramRenderOptions | N
     return None
 
 
+@instrumented("renderer:svg")
 def render_svg(
     view: ProjectedView | list[ProjectedView], artifact: ArtifactSpec
 ) -> bytes:
@@ -70,4 +72,6 @@ def render_svg(
     return svg_text.encode("utf-8")
 
 
-__all__ = ["render_svg"]
+__all__ = ["render_svg", "render"]
+
+render = render_svg
