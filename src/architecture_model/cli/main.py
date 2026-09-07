@@ -168,6 +168,10 @@ def main(argv: list[str] | None = None) -> int:
     p_deepen.add_argument("--repo-path", default=".", help="Repository root (default: cwd)")
     p_deepen.add_argument("--model", help="Path to model YAML (default: <repo-path>/.architecture-model.yaml)")
 
+    # --- comment ---
+    from architecture_model.cli import comment as _comment_cli
+    _comment_cli.add_subparser(subparsers)
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -197,6 +201,7 @@ def main(argv: list[str] | None = None) -> int:
         "viewer": _cmd_viewer,
         "repair": _cmd_repair,
         "deepen": _cmd_deepen,
+        "comment": _cmd_comment,
     }
     return handlers[args.command](args)
 
@@ -1214,6 +1219,11 @@ def _cmd_deepen(args) -> int:
     save_model(updated, model_path)
     print(f"Model updated: {model_path}")
     return 0
+
+
+def _cmd_comment(args) -> int:
+    from architecture_model.cli import comment as _comment_cli
+    return _comment_cli.run(args)
 
 
 if __name__ == "__main__":
