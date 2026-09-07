@@ -1149,6 +1149,17 @@ def _cmd_viewer(args) -> int:
 
     model = load_model(model_path)
 
+    # Alias the loaded model as the canonical repo-root model so curation
+    # selectors resolve under the `root::` namespace even when --model points
+    # at a lifecycle generation file. Without this, ArchitectureViewContext
+    # namespaces the model by its actual on-disk path (e.g.
+    # `lifecycle/generations/0000001/model`) and curation selectors like
+    # `root::CAP-…` (or bare `CAP-…`) silently fail to resolve.
+    try:
+        model._source_path = str(repo_path / ".architecture-model.yaml")
+    except Exception:
+        pass
+
     # Output path
     if args.output:
         output_path = Path(args.output)
@@ -1162,10 +1173,13 @@ def _cmd_viewer(args) -> int:
     curation_path = Path(args.curation) if getattr(args, "curation", None) else None
     if curation_path is not None and not curation_path.is_file():
         print(f"WARNING: Curation file is unreadable; using automatic views: {curation_path}")
+    # Auto-detect SI&L store under repo root; helper returns {} if absent.
+    sil_store_path = repo_path / ".architecture" / "sil.sqlite"
     result_path = generate_html_viewer(
         model, output_path, title=title, repo_path=repo_path, model_path=model_path,
         include_docs=not args.no_docs, include_history=not args.no_docs,
         curation_path=curation_path, use_curation=not getattr(args, "no_curation", False),
+        sil_store_path=sil_store_path if sil_store_path.is_file() else None,
     )
     size_kb = result_path.stat().st_size / 1024
     print(f"Viewer: {result_path} ({size_kb:.0f}KB)")

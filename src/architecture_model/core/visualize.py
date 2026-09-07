@@ -2039,6 +2039,86 @@ def _load_docs(repo_path: Path | None = None) -> dict[str, dict[str, str]]:
     return result
 
 
+def _load_sil_data(sil_db: Path | None) -> dict:
+    """Load per-component SI&L rollups + recent events from a SQLite store.
+
+    Reads the ``sil_events`` table produced by ``opencode_arch.sil.store.SILStore``.
+    Returns ``{component_id: {metrics, trend, recent_events}}`` where
+    ``metrics`` is ``{invocations_7d, failure_rate_7d, avg_duration_ms}`` and
+    ``trend`` is one of ``up`` / ``flat`` / ``down`` computed by comparing the
+    current 7-day window against the prior 7-day window.
+
+    Silently returns ``{}`` if the DB is missing, unreadable, or lacks the
+    expected schema. The viewer is expected to render nothing when the map
+    is empty, so this helper never raises.
+    """
+    if sil_db is None or not sil_db.is_file():
+        return {}
+    import sqlite3
+    from datetime import datetime, timedelta, timezone
+    try:
+        conn = sqlite3.connect(f"file:{sil_db}?mode=ro", uri=True)
+    except sqlite3.DatabaseError:
+        return {}
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='sil_events'"
+        )
+        if cur.fetchone() is None:
+            return {}
+        now = datetime.now(timezone.utc)
+        since = (now - timedelta(days=7)).isoformat()
+        prior_since = (now - timedelta(days=14)).isoformat()
+        cids = [row[0] for row in conn.execute(
+            "SELECT DISTINCT component_id FROM sil_events ORDER BY component_id"
+        ).fetchall()]
+        result: dict[str, dict] = {}
+        for cid in cids:
+            m = conn.execute(
+                "SELECT COUNT(*) AS inv, "
+                "SUM(CASE WHEN outcome='error' THEN 1 ELSE 0 END) AS errs, "
+                "AVG(duration_ms) AS avg_dur "
+                "FROM sil_events WHERE component_id=? AND ts>=?",
+                (cid, since),
+            ).fetchone()
+            inv = int(m["inv"] or 0)
+            errs = int(m["errs"] or 0)
+            avg = float(m["avg_dur"] or 0.0)
+            failure_rate = (errs / inv) if inv > 0 else 0.0
+            prior_inv = int(conn.execute(
+                "SELECT COUNT(*) FROM sil_events "
+                "WHERE component_id=? AND ts>=? AND ts<?",
+                (cid, prior_since, since),
+            ).fetchone()[0] or 0)
+            if prior_inv == 0 and inv == 0:
+                trend = "flat"
+            elif prior_inv == 0:
+                trend = "up"
+            else:
+                delta = (inv - prior_inv) / prior_inv
+                trend = "up" if delta > 0.1 else "down" if delta < -0.1 else "flat"
+            recent = [dict(r) for r in conn.execute(
+                "SELECT ts, kind, outcome, duration_ms, ref "
+                "FROM sil_events WHERE component_id=? ORDER BY id DESC LIMIT 10",
+                (cid,),
+            ).fetchall()]
+            result[cid] = {
+                "metrics": {
+                    "invocations_7d": inv,
+                    "failure_rate_7d": round(failure_rate, 4),
+                    "avg_duration_ms": round(avg, 2),
+                },
+                "trend": trend,
+                "recent_events": recent,
+            }
+        return result
+    except sqlite3.DatabaseError:
+        return {}
+    finally:
+        conn.close()
+
+
 def _load_pipeline_history(repo_path: Path | None = None) -> list[dict] | dict:
     """Load recent structured pipeline history for embedding in the viewer."""
     if repo_path is None:
@@ -2348,6 +2428,7 @@ def generate_html_viewer(
     include_docs: bool = True,
     include_history: bool = True,
     model_path: Path | None = None,
+    sil_store_path: Path | None = None,
 ) -> Path:
     """Generate a self-contained HTML viewer with 7 SE model views and universal click navigation.
 
@@ -2542,6 +2623,14 @@ def generate_html_viewer(
         _load_pipeline_history(trusted_root), system_aliases,
     ) if include_history else {}
 
+    # ── 5g. SI&L run history ──────────────────────────────────────
+    # Auto-detects .architecture/sil.sqlite under repo root when an explicit
+    # path was not supplied. The viewer renders nothing when the map is empty.
+    sil_db_path = Path(sil_store_path) if sil_store_path is not None else (
+        trusted_root / ".architecture" / "sil.sqlite" if trusted_root is not None else None
+    )
+    sil_by_component = _load_sil_data(sil_db_path)
+
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "meta": {"project": model.meta.project},
@@ -2563,6 +2652,7 @@ def generate_html_viewer(
         "docs": docs_data,
         "ops": ops_data,
         "pipeline_history": pipeline_history,
+        "sil_by_component": sil_by_component,
         "subsystem_entities": subsystem_entities,
         "viewer_system_namespaces": {
             system_id: namespace for (_path, system_id), namespace in namespace_map.items()
@@ -2819,6 +2909,30 @@ def generate_html_viewer(
         .comment-section {{ margin-top: 12px; }}
         .comment-label {{ color: #a0a0c0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }}
         .comment-textarea {{ width: 100%; min-height: 60px; background: #0d1117; color: #e0e0e0; border: 1px solid #0f3460; border-radius: 4px; padding: 8px; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box; }}
+        .sil-section {{ margin-top: 12px; padding: 12px; border: 1px solid #0f3460;
+                        border-radius: 6px; background: #11182c; }}
+        .sil-header {{ color: #7ec8e3; font-size: 13px; font-weight: 600; margin-bottom: 8px;
+                       display: flex; align-items: center; gap: 8px; }}
+        .sil-trend {{ font-size: 12px; color: #a0a0c0; }}
+        .sil-trend.up {{ color: #27AE60; }}
+        .sil-trend.down {{ color: #E74C3C; }}
+        .sil-badges {{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }}
+        .sil-badge {{ padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600;
+                      color: #fff; }}
+        .sil-badge.ok {{ background: #27AE60; }}
+        .sil-badge.warn {{ background: #F39C12; }}
+        .sil-badge.err {{ background: #E74C3C; }}
+        .sil-badge.neutral {{ background: #4A90D9; }}
+        .sil-events {{ margin-top: 6px; }}
+        .sil-events-label {{ color: #a0a0c0; font-size: 11px; text-transform: uppercase;
+                             letter-spacing: 0.5px; margin-bottom: 4px; }}
+        .sil-event {{ display: grid; grid-template-columns: 160px 80px 60px 80px 1fr; gap: 8px;
+                      font-size: 11px; padding: 3px 0; border-bottom: 1px solid #0f3460;
+                      color: #c0c0d0; font-family: ui-monospace, monospace; }}
+        .sil-event:last-child {{ border-bottom: 0; }}
+        .sil-event .ok {{ color: #27AE60; }}
+        .sil-event .error {{ color: #E74C3C; }}
+        .sil-event .warn {{ color: #F39C12; }}
         .toolbar-btn {{ background: #1a1a2e; color: #a0a0c0; border: 1px solid #0f3460; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 6px; }}
         .toolbar-btn:hover {{ background: #0f3460; color: #fff; }}
         .math-expression {{ display: inline-block; padding: 4px 7px; border-radius: 4px;
@@ -3111,6 +3225,46 @@ def generate_html_viewer(
                 .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }}
 
+        function silRunHistoryHtml(eid) {{
+            var s = (D.sil_by_component || {{}})[eid];
+            if (!s) return '';
+            var m = s.metrics || {{}};
+            var fr = m.failure_rate_7d || 0;
+            var cls = fr <= 0.02 ? 'ok' : fr <= 0.10 ? 'warn' : 'err';
+            var invStr = (m.invocations_7d || 0).toLocaleString();
+            var frStr = (fr * 100).toFixed(1) + '%';
+            var durStr = (m.avg_duration_ms || 0).toFixed(1) + 'ms';
+            var trend = s.trend || 'flat';
+            var trendGlyph = trend === 'up' ? '\\u25B2' : trend === 'down' ? '\\u25BC' : '\\u25AC';
+            var html = '<div class="sil-section">';
+            html += '<div class="sil-header">Run History (7d) <span class="sil-trend ' + escapeHtml(trend) + '">' + trendGlyph + ' ' + escapeHtml(trend) + '</span></div>';
+            html += '<div class="sil-badges">';
+            html += '<span class="sil-badge neutral">' + invStr + ' invocations</span>';
+            html += '<span class="sil-badge ' + cls + '">' + frStr + ' failure</span>';
+            html += '<span class="sil-badge neutral">' + durStr + ' avg</span>';
+            html += '</div>';
+            var events = s.recent_events || [];
+            if (events.length) {{
+                html += '<div class="sil-events"><div class="sil-events-label">Recent events (' + events.length + ')</div>';
+                for (var i = 0; i < events.length; i++) {{
+                    var e = events[i];
+                    var ts = String(e.ts || '').slice(0, 19).replace('T', ' ');
+                    var oc = String(e.outcome || 'ok');
+                    var ocCls = oc === 'ok' ? 'ok' : oc === 'error' ? 'error' : 'warn';
+                    html += '<div class="sil-event">';
+                    html += '<span>' + escapeHtml(ts) + '</span>';
+                    html += '<span>' + escapeHtml(String(e.kind || '')) + '</span>';
+                    html += '<span class="' + ocCls + '">' + escapeHtml(oc) + '</span>';
+                    html += '<span>' + escapeHtml(String(e.duration_ms || 0)) + 'ms</span>';
+                    html += '<span>' + escapeHtml(String(e.ref || '')) + '</span>';
+                    html += '</div>';
+                }}
+                html += '</div>';
+            }}
+            html += '</div>';
+            return html;
+        }}
+
         function propCardHtml(eid) {{
             var p = D.properties[eid];
             if (!p) return '';
@@ -3190,6 +3344,7 @@ def generate_html_viewer(
                 html += '<div class="deepen-hint">Then regenerate the viewer with: architecture-model viewer .</div>';
                 html += '</div>';
             }}
+            html += silRunHistoryHtml(eid);
             var comment = commentHtml('entity', eid, 'Add notes about this entity...');
             html += comment.html;
             html += '</div>';
