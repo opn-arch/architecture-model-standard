@@ -128,9 +128,16 @@ class ProjectorRegistry:
             raise ProjectorNotFound(name) from exc
 
     def names(self) -> tuple[str, ...]:
+        """Registered projector names, sorted (stable ordering for callers)."""
         return tuple(sorted(self._entries))
 
     def list_names(self) -> list[str]:
+        """Registered projector names in insertion order.
+
+        Preferred for discovery / ``.llm`` variant listings where sibling
+        projectors (``<family>.<name>`` and ``<family>.<name>.llm``) should
+        surface adjacent to each other rather than alphabetized apart.
+        """
         return list(self._entries.keys())
 
     def __contains__(self, name: object) -> bool:
@@ -232,7 +239,11 @@ DEFAULT_REGISTRY: ProjectorRegistry = ProjectorRegistry()
 
 
 def _seed_default_registry() -> None:
-    if "se.conops" in DEFAULT_REGISTRY:
+    # Idempotent: guard against re-entry after all 4 seeds are already
+    # present (single-key check would false-negative if a caller
+    # unregistered exactly one seed between invocations).
+    _seeds = ("se.conops", "se.functional", "se.logical", "se.use_cases")
+    if all(name in DEFAULT_REGISTRY for name in _seeds):
         return
     from architecture_model.core.se_view_projectors import (
         project_conops,
