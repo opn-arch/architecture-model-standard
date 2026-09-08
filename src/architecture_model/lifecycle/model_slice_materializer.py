@@ -171,6 +171,7 @@ class MaterializedSlice:
     provenance: dict[str, Any] = field(default_factory=dict)
     warnings: tuple[MaterializationWarning, ...] = ()
     manifest_fragment: ManifestFragment | None = None
+    supplementary_fragments: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Serialize to the shape expected by ai.validators (fragment key).
@@ -420,6 +421,12 @@ def materialize(
     )
     warnings.extend(manifest_warnings)
 
+    # -- 7c. Supplementary refs: sil / gates / drift / test_results / learning
+    supplementary_fragments, sup_warnings = _build_supplementary_fragments(
+        slice, pkg
+    )
+    warnings.extend(sup_warnings)
+
     # -- 8. Provenance ----------------------------------------------------
     provenance: dict[str, Any] = {
         "selectors_applied": slice.selectors.model_dump(exclude_none=True),
@@ -447,6 +454,7 @@ def materialize(
         provenance=provenance,
         warnings=warnings_tuple,
         manifest_fragment=manifest_fragment,
+        supplementary_fragments=supplementary_fragments,
     )
 
 
@@ -759,6 +767,102 @@ def _build_manifest_fragment(
         ),
         warnings,
     )
+
+
+_SUPPLEMENTARY_LOADERS: dict[str, Any] = {}
+
+
+def _get_supplementary_loaders() -> dict[str, Any]:
+    """Lazy loader-registry lookup (avoids circular import at module load)."""
+    global _SUPPLEMENTARY_LOADERS
+    if _SUPPLEMENTARY_LOADERS:
+        return _SUPPLEMENTARY_LOADERS
+    from architecture_model.lifecycle import supplementary_loaders as sl
+
+    _SUPPLEMENTARY_LOADERS = {
+        "sil": sl.load_sil,
+        "gates": sl.load_gates,
+        "drift": sl.load_drift,
+        "test_results": sl.load_test_results,
+        "learning": sl.load_learning,
+    }
+    return _SUPPLEMENTARY_LOADERS
+
+
+def _build_supplementary_fragments(
+    slice: ModelSlice,
+    pkg: ArchitecturePackage,
+) -> tuple[dict[str, Any], list[MaterializationWarning]]:
+    """Resolve non-manifest supplementary refs to per-kind fragments.
+
+    Returns ``({}, [])`` when the slice carries no such refs. A ref whose
+    loader returns ``None`` (backing store missing or kind not yet wired)
+    emits a ``SLICE.SUPPLEMENTARY_NOT_AVAILABLE`` warning and is omitted
+    from the returned dict.
+    """
+    fragments: dict[str, Any] = {}
+    warnings: list[MaterializationWarning] = []
+
+    refs = [r for r in slice.supplementary_refs if r.kind != "manifest"]
+    if not refs:
+        return fragments, warnings
+
+    if pkg.root is None:
+        for ref in refs:
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=(
+                        f"cannot resolve supplementary {ref.kind!r}: "
+                        "package has no filesystem root"
+                    ),
+                )
+            )
+        return fragments, warnings
+
+    loaders = _get_supplementary_loaders()
+    for ref in refs:
+        loader = loaders.get(ref.kind)
+        if loader is None:
+            # SupplementaryKind literal already restricts this, but guard
+            # anyway so future kinds don't silently no-op.
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=f"unknown supplementary kind {ref.kind!r}",
+                )
+            )
+            continue
+        try:
+            fragment = loader(
+                pkg.root,
+                path=ref.path,
+                filter=ref.filter,
+            )
+        except Exception as exc:  # noqa: BLE001
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=(
+                        f"supplementary {ref.kind!r} loader raised: {exc!s}"
+                    ),
+                )
+            )
+            continue
+        if fragment is None:
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=(
+                        f"supplementary {ref.kind!r} unavailable "
+                        "(no backing store or empty)"
+                    ),
+                )
+            )
+            continue
+        fragments[ref.kind] = fragment
+
+    return fragments, warnings
 
 
 __all__ = [
