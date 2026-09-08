@@ -114,6 +114,8 @@ class ProjectorRegistry:
     def register(self, name: str, fn: ProjectorFn, *, version: str = "1.0.0") -> None:
         if not name:
             raise ValueError("projector name must be non-empty")
+        if name in self._entries:
+            raise ValueError(f"projector {name!r} already registered")
         self._entries[name] = (fn, version)
 
     def unregister(self, name: str) -> None:
@@ -127,6 +129,9 @@ class ProjectorRegistry:
 
     def names(self) -> tuple[str, ...]:
         return tuple(sorted(self._entries))
+
+    def list_names(self) -> list[str]:
+        return list(self._entries.keys())
 
     def __contains__(self, name: object) -> bool:
         return name in self._entries
@@ -227,6 +232,8 @@ DEFAULT_REGISTRY: ProjectorRegistry = ProjectorRegistry()
 
 
 def _seed_default_registry() -> None:
+    if "se.conops" in DEFAULT_REGISTRY:
+        return
     from architecture_model.core.se_view_projectors import (
         project_conops,
         project_functional_architecture,
