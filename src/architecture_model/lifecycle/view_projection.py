@@ -191,6 +191,8 @@ def project(
         "projector_version": version,
         "produced_at": _rfc3339_now(),
         "slice_digest": materialized_slice.model_revision,
+        "freshness": "fresh",
+        "revision": materialized_slice.model_revision,
     }
     warnings = tuple(
         f"{w.code}: {w.message}" for w in materialized_slice.warnings
