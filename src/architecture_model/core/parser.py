@@ -391,6 +391,14 @@ def _parse_interface(d: dict) -> Interface:
         endpoints=d.get("endpoints", []),
         schema=d.get("schema", ""),
         contract=d.get("contract", ""),
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        stakeholders=d.get("stakeholders", []),
+        success_criteria=d.get("success_criteria", []),
+        assumptions=d.get("assumptions", []),
+        open_questions=d.get("open_questions", []),
+        verification=_parse_verification(d.get("verification", [])),
+        slos=_parse_slos(d.get("slos", [])),
+        maturity=_parse_maturity(d.get("maturity")),
     )
 
 

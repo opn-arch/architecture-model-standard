@@ -427,6 +427,14 @@ class Interface(BaseEntity):
     endpoints: list[dict] = field(default_factory=list)
     schema: str = ""
     contract: str = ""
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    slos: list[Any] = field(default_factory=list)  # list[SLO]
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -1077,6 +1085,25 @@ class ArchitectureModel:
             d["schema"] = i.schema
         if i.contract:
             d["contract"] = i.contract
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if i.stakeholders:
+            d["stakeholders"] = i.stakeholders
+        if i.success_criteria:
+            d["success_criteria"] = i.success_criteria
+        if i.assumptions:
+            d["assumptions"] = i.assumptions
+        if i.open_questions:
+            d["open_questions"] = i.open_questions
+        if i.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in i.verification
+            ]
+        if i.slos:
+            d["slos"] = [
+                s.to_dict() if hasattr(s, "to_dict") else s for s in i.slos
+            ]
+        if i.maturity is not None:
+            d["maturity"] = i.maturity.value if hasattr(i.maturity, "value") else i.maturity
         return d
 
     @classmethod
