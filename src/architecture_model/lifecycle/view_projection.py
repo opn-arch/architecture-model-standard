@@ -242,7 +242,7 @@ def _seed_default_registry() -> None:
     # Idempotent: guard against re-entry after all 4 seeds are already
     # present (single-key check would false-negative if a caller
     # unregistered exactly one seed between invocations).
-    _seeds = ("se.conops", "se.functional", "se.logical", "se.use_cases", "family1.conops")
+    _seeds = ("se.conops", "se.functional", "se.logical", "se.use_cases", "family1.conops", "family3.component_diagram")
     if all(name in DEFAULT_REGISTRY for name in _seeds):
         return
     from architecture_model.core.se_view_projectors import (
@@ -265,6 +265,11 @@ def _seed_default_registry() -> None:
 
     from architecture_model.lifecycle.projectors.se_docs import register_all as _register_se_docs
     _register_se_docs(DEFAULT_REGISTRY)
+
+    from architecture_model.lifecycle.projectors.mermaid import register_all as _register_mermaid
+    from architecture_model.lifecycle.projectors.nonse import register_all as _register_nonse
+    _register_mermaid(DEFAULT_REGISTRY)
+    _register_nonse(DEFAULT_REGISTRY)
 
 
 _seed_default_registry()
