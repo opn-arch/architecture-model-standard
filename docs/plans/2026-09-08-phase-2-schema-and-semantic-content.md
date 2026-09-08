@@ -1220,6 +1220,62 @@ Run both repos' full suites; expect baseline preserved plus new tests added by P
 
 ---
 
+## Task 27 — Executor per-subsystem fan-out for `scope='descendants'`
+
+**Origin:** Deferred from Phase 1 Task 13. During Phase 1 execution we discovered that plan Task 13 conflated two distinct features:
+
+- **Merged-fragment** (shipped in Phase 1 via ``materialize()`` at ``model_slice_materializer.py:184``): one artifact per ``ArtifactSpec``, fragment = root ∪ all descendants merged.
+- **Per-subsystem fan-out** (deferred here): N artifacts per ``ArtifactSpec`` with ``scope='descendants'``, one per descendant + root, each with a single-package fragment, output paths namespaced by subsystem slug.
+
+Merged-fragment answers "give me one architectural document that spans the whole tree." Fan-out answers "give me one document per M2 subsystem, addressable by slug (``conops-a.md``, ``conops-b.md``)." Plan Task 13's example (``docs/architecture/conops.md``) and ``>= 2`` built-count assertion imply fan-out. Phase 1 shipping tests (``tests/lifecycle_exec/test_rebuild_descendants.py``) cover merged-fragment; this task adds fan-out on top without removing merged-fragment.
+
+**Files (oca):**
+- Modify: ``src/opencode_arch/lifecycle_exec/rebuild.py`` (executor loop over descendants; ``spec_id`` namespacing)
+- Modify: ``src/architecture_model/lifecycle/model_slice.py`` (optional: add a ``fan_out: bool`` field or a new scope value ``descendants:each`` — decide in design step)
+- Create: ``tests/lifecycle_exec/test_rebuild_fanout.py``
+
+**Step 1: Design decision — signal fan-out vs. merge**
+
+Two options, decide before coding:
+
+1. Add ``ModelSlice.fan_out: bool = False`` (Phase-2 additive schema change). ``scope='descendants' + fan_out=False`` → merged (Phase 1 default). ``fan_out=True`` → one materialize per descendant.
+2. Introduce a new scope literal ``descendants:each`` alongside existing ``descendants``. Same semantics, no new field. Requires touching ``Scope = Literal[...]`` in ``model_slice.py:54``.
+
+**Recommendation:** option 2 — keeps the "scope tells you the fan-out shape" invariant. Option 1 gives scope + fan_out two knobs, which is confusing.
+
+**Step 2: Write failing test**
+
+```python
+def test_fanout_produces_one_artifact_per_descendant(tmp_path):
+    # Publish root with 2 children a, b
+    # Rebuild with scope='descendants:each' (or fan_out=True)
+    # Assert len(report.built) == 3  # root + a + b
+    # Assert each output_path contains the subsystem slug
+    # Assert each fragment contains only that subsystem's entities
+```
+
+**Step 3: Implement executor loop**
+
+In ``rebuild_artifacts``, when the resolved slice has fan-out semantics:
+- Enumerate ``iter_descendants(pkg, include_self=True)``.
+- For each descendant, materialize a slice narrowed to that package's entities only (build a per-descendant ``ModelSlice`` internally, or subset the fragment after materialize).
+- Namespace ``spec_id`` in the output as ``<spec_id>.<slug>`` so ``<lifecycle>/artifacts/<id>.<ext>`` does not collide across descendants.
+- Append one entry per descendant to ``report.built``.
+
+**Step 4: Verify Phase 1 merged-fragment tests still pass**
+
+``tests/lifecycle_exec/test_rebuild_descendants.py`` must remain green — this task adds fan-out, does not modify merge.
+
+**Step 5: Commit**
+
+```bash
+git add src/opencode_arch/lifecycle_exec/rebuild.py tests/lifecycle_exec/test_rebuild_fanout.py
+# (+ src/architecture_model/lifecycle/model_slice.py if schema change)
+git commit -m "feat(lifecycle_exec): per-subsystem fan-out for scope='descendants:each'"
+```
+
+---
+
 ## Rollback Strategy
 
 Each task is a single commit on the feature branch. If a task's design proves flawed under review, revert the commit; no other task depends on internal implementation details (only public contracts, which are covered by tests). Schema bump (Task 4) is the only irreversible task — it's additive and 2.0 remains valid indefinitely.
