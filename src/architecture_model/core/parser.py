@@ -240,7 +240,30 @@ def _parse_entities(d: dict) -> Entities:
     )
 
 
+def _promote_union(raw: list, factory) -> list:
+    """Schema 2.1: entries may be dicts (typed) or strings (legacy).
+
+    Dicts are promoted to typed dataclass instances via ``factory``; strings and
+    other scalars pass through unchanged. Preserves back-compat with 2.0 fixtures.
+    """
+    out = []
+    for item in raw or []:
+        if isinstance(item, dict):
+            try:
+                out.append(factory(item))
+            except Exception:
+                # Malformed typed entry: fall back to preserving the dict so
+                # validation can flag it rather than crashing the parser.
+                out.append(item)
+        else:
+            out.append(item)
+    return out
+
+
 def _parse_base(d: dict) -> dict:
+    from architecture_model.core.semantic_types import (
+        FailureMode, TradeOff, RequirementRef,
+    )
     return {
         "id": d.get("id", ""),
         "name": d.get("name", ""),
@@ -253,12 +276,12 @@ def _parse_base(d: dict) -> dict:
         "confidence": float(d.get("confidence", 0.0)),
         "intent": d.get("intent", ""),
         "goals": d.get("goals", []),
-        "requirements": d.get("requirements", []),
+        "requirements": _promote_union(d.get("requirements", []), RequirementRef.from_dict),
         "rationale": d.get("rationale", ""),
         "moes": d.get("moes", []),
         "value_function": d.get("value_function", ""),
-        "failure_modes": d.get("failure_modes", []),
-        "trade_offs": d.get("trade_offs", []),
+        "failure_modes": _promote_union(d.get("failure_modes", []), FailureMode.from_dict),
+        "trade_offs": _promote_union(d.get("trade_offs", []), TradeOff.from_dict),
         "interface_refs": d.get("interface_refs", []),
         "decisions": [
             DecisionEntry(
@@ -481,7 +504,46 @@ def _parse_component(d: dict) -> Component:
         observability=observability,
         interfaces=interfaces,
         external_dependencies=d.get("external_dependencies", []),
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        stakeholders=d.get("stakeholders", []),
+        success_criteria=d.get("success_criteria", []),
+        assumptions=d.get("assumptions", []),
+        open_questions=d.get("open_questions", []),
+        verification=_parse_verification(d.get("verification", [])),
+        slos=_parse_slos(d.get("slos", [])),
+        owner=d.get("owner"),
+        maturity=_parse_maturity(d.get("maturity")),
+        dependencies_rationale=d.get("dependencies_rationale", {}),
     )
+
+
+def _parse_verification(raw: list) -> list:
+    """Accept dicts (typed VerificationRef) or bare id strings."""
+    from architecture_model.core.semantic_types import VerificationRef
+    out = []
+    for item in raw or []:
+        if isinstance(item, dict):
+            out.append(VerificationRef.from_dict(item))
+        elif isinstance(item, str):
+            out.append(VerificationRef(id=item))
+    return out
+
+
+def _parse_slos(raw: list) -> list:
+    from architecture_model.core.semantic_types import SLO
+    return [SLO.from_dict(s) for s in raw or [] if isinstance(s, dict)]
+
+
+def _parse_maturity(raw):
+    from architecture_model.core.types import Maturity
+    if raw is None or raw == "":
+        return None
+    if isinstance(raw, Maturity):
+        return raw
+    try:
+        return Maturity(str(raw).lower())
+    except ValueError:
+        return None
 
 
 def _parse_system(d: dict) -> System:

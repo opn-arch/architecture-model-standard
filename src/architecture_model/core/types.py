@@ -147,6 +147,16 @@ class Strength(str, Enum):
     WEAK = "weak"
 
 
+class Maturity(str, Enum):
+    """Lifecycle maturity of an architectural entity (Phase 2 / schema 2.1)."""
+
+    PROPOSAL = "proposal"
+    DRAFT = "draft"
+    ACTIVE = "active"
+    STABLE = "stable"
+    DEPRECATED = "deprecated"
+
+
 class ComponentKind(str, Enum):
     SERVICE = "service"
     LIBRARY = "library"
@@ -523,6 +533,20 @@ class Component(BaseEntity):
     external_dependencies: list[dict[str, Any]] = field(default_factory=list)
     parent_id: Optional[str] = None
     children: list[str] = field(default_factory=list)
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    # See docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md Task 2.
+    # Note: intent/goals/requirements/failure_modes/trade_offs are inherited
+    # from BaseEntity and remain list[str]; the parser widens the last three
+    # to accept dict entries (2.1) which are promoted to typed objects.
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    slos: list[Any] = field(default_factory=list)  # list[SLO]
+    owner: Optional[str] = None
+    maturity: Optional[Maturity] = None
+    dependencies_rationale: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -871,7 +895,15 @@ class ArchitectureModel:
         ):
             value = getattr(entity, field_name)
             if value:
-                d[field_name] = value
+                # Schema 2.1: entries may be typed dataclasses (FailureMode,
+                # TradeOff, RequirementRef) alongside legacy strings. Convert
+                # anything with .to_dict() before dumping.
+                if isinstance(value, list) and any(hasattr(v, "to_dict") for v in value):
+                    d[field_name] = [
+                        v.to_dict() if hasattr(v, "to_dict") else v for v in value
+                    ]
+                else:
+                    d[field_name] = value
         if entity.decisions:
             d["decisions"] = [
                 {
@@ -1109,9 +1141,34 @@ class ArchitectureModel:
         if c.trade_offs:
             d["trade_offs"] = c.trade_offs
         if c.failure_modes:
-            d["failure_modes"] = c.failure_modes
+            d["failure_modes"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.failure_modes
+            ]
         if c.monitored:
             d["monitored"] = c.monitored
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if c.stakeholders:
+            d["stakeholders"] = c.stakeholders
+        if c.success_criteria:
+            d["success_criteria"] = c.success_criteria
+        if c.assumptions:
+            d["assumptions"] = c.assumptions
+        if c.open_questions:
+            d["open_questions"] = c.open_questions
+        if c.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.verification
+            ]
+        if c.slos:
+            d["slos"] = [
+                s.to_dict() if hasattr(s, "to_dict") else s for s in c.slos
+            ]
+        if c.owner:
+            d["owner"] = c.owner
+        if c.maturity is not None:
+            d["maturity"] = c.maturity.value if hasattr(c.maturity, "value") else c.maturity
+        if c.dependencies_rationale:
+            d["dependencies_rationale"] = c.dependencies_rationale
         return d
 
     @classmethod
