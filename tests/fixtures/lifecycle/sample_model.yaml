@@ -16,7 +16,13 @@ entities:
       actor: EndUser
       steps: [PrimaryBehavior, SecondaryBehavior]
   components:
-    - {id: COMP-1, name: MainModule, status: ACTIVE, layer: app, files: [src/main.py]}
+    - id: COMP-1
+      name: MainModule
+      status: ACTIVE
+      layer: app
+      files: [src/main.py]
+      interfaces:
+        - {name: publicApi, kind: provides, signature: "publicApi(payload) -> Response"}
     - {id: COMP-2, name: SupportModule, status: ACTIVE, layer: app, files: [src/support.py]}
   interfaces:
     - {id: IF-1, name: PublicAPI, status: ACTIVE}

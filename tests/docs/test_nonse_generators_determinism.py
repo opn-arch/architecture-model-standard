@@ -11,6 +11,7 @@ This test locks each generator's output to byte-identical repeat
 invocations against the committed sample model.
 """
 
+import copy
 from pathlib import Path
 
 import pytest
@@ -61,9 +62,20 @@ def _dispatch(name: str, model):
     if name == "generate_component_spec":
         return generate_component_spec(model.entities.components[0], model)
     if name == "generate_drift_report":
-        return generate_drift_report(model, model)
+        # Force a real diff (not the trivial has_changes=False shortcut)
+        # by mutating a copy of the model on one side of the compare.
+        mutated = copy.deepcopy(model)
+        mutated.entities.components[0].name = "MainModuleV2"
+        return generate_drift_report(model, mutated)
     if name == "generate_index":
-        return generate_index(model, {})
+        # Populate doc_paths so every content section gate opens,
+        # exercising the real rendering paths.
+        doc_paths = {
+            "diagrams": [Path("context.mmd"), Path("components.mmd")],
+            "components": [Path("COMP-1.md"), Path("COMP-2.md")],
+            "behaviors": [Path("BEH-1.md")],
+        }
+        return generate_index(model, doc_paths)
     if name == "generate_behavior_spec":
         behavior = model.entities.behaviors[0]
         flow_trace = FlowTrace(
