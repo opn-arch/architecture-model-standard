@@ -172,6 +172,10 @@ def main(argv: list[str] | None = None) -> int:
     from architecture_model.cli import comment as _comment_cli
     _comment_cli.add_subparser(subparsers)
 
+    # --- migrate ---
+    from architecture_model.cli import migrate as _migrate_cli
+    _migrate_cli.add_subparser(subparsers)
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -202,6 +206,7 @@ def main(argv: list[str] | None = None) -> int:
         "repair": _cmd_repair,
         "deepen": _cmd_deepen,
         "comment": _cmd_comment,
+        "migrate": _cmd_migrate,
     }
     return handlers[args.command](args)
 
@@ -1238,6 +1243,11 @@ def _cmd_deepen(args) -> int:
 def _cmd_comment(args) -> int:
     from architecture_model.cli import comment as _comment_cli
     return _comment_cli.run(args)
+
+
+def _cmd_migrate(args) -> int:
+    from architecture_model.cli import migrate as _migrate_cli
+    return _migrate_cli.run(args)
 
 
 if __name__ == "__main__":
