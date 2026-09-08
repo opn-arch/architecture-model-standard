@@ -4,6 +4,15 @@ Each projector must produce identical ``ProjectedView.diagram_spec`` output
 across two independent invocations against the same MaterializedSlice.
 Guards against accidental non-determinism (dict ordering, timestamps,
 random ids) being introduced by future projector-registry refactors.
+
+We compare ``diagram_spec`` only, not the full ``ProjectedView``:
+``ProjectedView.provenance.produced_at`` is wall-clock and legitimately
+differs across runs.
+
+Note for Task 2-4 authors reusing this fixture: the ``Selectors`` here
+enumerates every entity ID so all projectors have material to render.
+Tasks that need to prove projector scope-filtering behavior must build
+their own narrower ``Selectors`` rather than inherit this one.
 """
 from __future__ import annotations
 
@@ -80,6 +89,15 @@ def test_projector_output_is_byte_identical(
     projected_a = project(view_spec, materialized_sample_slice, registry=DEFAULT_REGISTRY)
     projected_b = project(view_spec, materialized_sample_slice, registry=DEFAULT_REGISTRY)
 
-    ser_a = json.dumps(asdict(projected_a.diagram_spec), sort_keys=True, default=str)
-    ser_b = json.dumps(asdict(projected_b.diagram_spec), sort_keys=True, default=str)
+    # Structural equality catches object-level drift that a stringifying
+    # serializer might paper over.
+    assert projected_a.diagram_spec == projected_b.diagram_spec, (
+        f"{projector_name} diagram_spec objects not equal across runs"
+    )
+
+    # Byte-identity via strict canonical JSON. No ``default=`` fallback:
+    # any non-JSON-serializable field surfacing here means the projector
+    # is emitting non-primitive state and must be fixed at the source.
+    ser_a = json.dumps(asdict(projected_a.diagram_spec), sort_keys=True)
+    ser_b = json.dumps(asdict(projected_b.diagram_spec), sort_keys=True)
     assert ser_a == ser_b, f"{projector_name} not byte-identical across runs"
