@@ -55,6 +55,36 @@ Scope = Literal["local", "descendants", "federated"]
 Closure = Literal["strict", "boundary-stubs", "transitive"]
 SharedRefs = Literal["none", "explicit", "transitive"]
 
+SupplementaryKind = Literal[
+    "manifest",
+    "sil",
+    "gates",
+    "drift",
+    "test_results",
+    "learning",
+]
+
+
+class SupplementaryRef(BaseModel):
+    """Reference to non-model data attached to a slice (Phase 2, schema 2.1).
+
+    ``SupplementaryRef`` names an out-of-model data source that a projector
+    or renderer needs alongside the entity graph — the AST manifest, SI&L
+    events, gate/drift/test-result feedback journals, or the learning
+    store. The materializer resolves each ref to a bounded fragment;
+    empty tuples on ``ModelSlice.supplementary_refs`` mean "model-only".
+
+    ``kind`` is a closed enum; ``path`` optionally overrides the
+    well-known repo-relative location; ``filter`` is a kind-specific
+    scoping dict (e.g. ``{"component_id": "COMP-3"}`` for ``sil``).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: SupplementaryKind
+    path: str | None = None
+    filter: dict[str, Any] | None = None
+
 
 class Selectors(BaseModel):
     """Dimensions along which the slice picks entities."""
@@ -113,6 +143,10 @@ class ModelSlice(BaseModel):
     selectors: Selectors
     curation: Curation = Field(default_factory=Curation)
     parameters: dict[str, Any] = Field(default_factory=dict)
+    # Phase 2 (schema 2.1): supplementary out-of-model data references.
+    # Empty tuple ((), the default) means "model-only" and is excluded
+    # from the slice digest so pre-Phase-2 content-hashes remain stable.
+    supplementary_refs: tuple[SupplementaryRef, ...] = ()
     generated_at: str | None = None
     signatures: list[dict] | None = None
 
@@ -164,6 +198,11 @@ def compute_slice_digest(slice: ModelSlice) -> str:
     so envelope metadata does not perturb identity.
     """
     payload = slice.model_dump(mode="json")
+    # Back-compat: when supplementary_refs is empty (the default, i.e.
+    # the pre-Phase-2 shape), strip it from the hashed payload so
+    # content-addressed lookups of pre-Phase-2 slices remain stable.
+    if not payload.get("supplementary_refs"):
+        payload.pop("supplementary_refs", None)
     return _digest(
         payload,
         exclude_paths=(("generated_at",), ("signatures",)),
@@ -174,6 +213,8 @@ __all__ = [
     "ModelSlice",
     "Selectors",
     "Curation",
+    "SupplementaryRef",
+    "SupplementaryKind",
     "compute_slice_digest",
     "Scope",
     "Closure",
