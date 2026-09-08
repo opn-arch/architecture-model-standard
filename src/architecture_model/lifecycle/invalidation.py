@@ -131,3 +131,38 @@ def stale_view_ids(diff: dict, all_view_ids: list[str]) -> list[str]:
         if head in families:
             result.append(vid)
     return sorted(result)
+
+
+_M1_PROPAGATING_REL_TYPES: frozenset[str] = frozenset({"exposes", "consumes"})
+
+
+def propagates_to_m1(diff: dict) -> bool:
+    """True iff this M2 diff must invalidate M1 as well.
+
+    Propagation rules:
+    - Any relationship added/removed of type "exposes" or "consumes" (public
+      surface change) → propagate.
+    - Any relationship added/removed with cross_subsystem=True → propagate.
+    - Any changed entity with appears_in_m1=True → propagate.
+    - Any component add/remove → propagate (conservative default; upstream
+      may narrow via subsystem markers in future).
+    - Otherwise → local to M2.
+    """
+    rels = diff.get("relationships", {})
+    for op in ("added", "removed"):
+        for r in rels.get(op, []):
+            if r.get("type") in _M1_PROPAGATING_REL_TYPES:
+                return True
+            if r.get("cross_subsystem"):
+                return True
+
+    ents = diff.get("entities", {})
+    for entry in ents.get("changed", []):
+        if entry.get("appears_in_m1"):
+            return True
+    for op in ("added", "removed"):
+        for entry in ents.get(op, []):
+            if entry.get("kind") == "component":
+                return True
+
+    return False
