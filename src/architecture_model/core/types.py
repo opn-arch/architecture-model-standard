@@ -400,6 +400,13 @@ class Behavior(BaseEntity):
     states: list[StateTransition] = field(default_factory=list)
     compensations: list[Compensation] = field(default_factory=list)
     structured_steps: list[Step] = field(default_factory=list)
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -1032,7 +1039,24 @@ class ArchitectureModel:
         if b.moes:
             d["moes"] = b.moes
         if b.failure_modes:
-            d["failure_modes"] = b.failure_modes
+            d["failure_modes"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in b.failure_modes
+            ]
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if b.stakeholders:
+            d["stakeholders"] = b.stakeholders
+        if b.success_criteria:
+            d["success_criteria"] = b.success_criteria
+        if b.assumptions:
+            d["assumptions"] = b.assumptions
+        if b.open_questions:
+            d["open_questions"] = b.open_questions
+        if b.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in b.verification
+            ]
+        if b.maturity is not None:
+            d["maturity"] = b.maturity.value if hasattr(b.maturity, "value") else b.maturity
         return d
 
     @classmethod

@@ -369,6 +369,13 @@ def _parse_behavior(d: dict) -> Behavior:
             )
             for s in d.get("structured_steps", [])
         ],
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        stakeholders=d.get("stakeholders", []),
+        success_criteria=d.get("success_criteria", []),
+        assumptions=d.get("assumptions", []),
+        open_questions=d.get("open_questions", []),
+        verification=_parse_verification(d.get("verification", [])),
+        maturity=_parse_maturity(d.get("maturity")),
     )
 
 
