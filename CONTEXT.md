@@ -214,36 +214,74 @@ relationships:
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
 
+## Phase 1 substrate (model → view mapping)
+
+The Lifecycle spec-driven pipeline
+`ModelSlice → materialize → project → render → rebuild_artifacts`
+is the single substrate for every doc, diagram, and derived artifact.
+Every legacy generator becomes a **registered projector** consumed via
+this pipeline; no direct `format_*` calls survive in the artifact path.
+
+Phase 1 lands the substrate + liveness metadata:
+
+- **Projector registry** — `architecture_model.lifecycle.view_projection.projectors` exposes
+  a stable `register(name, callable)` / `resolve(name)` API. Adapters wrap existing
+  generators (component/use-case/system-boundary diagrams, component spec, ICD,
+  SE docs family) so they emit `DiagramSpec` values.
+- **DiagramSpec content-kind convention** — Mermaid outputs use
+  `id=f"diagram:{name}"`, `facets={"content_kind": "mermaid", "body": body}`;
+  prose outputs use `id=f"prose:{name}"`,
+  `facets={"content_kind": "markdown", "body": body}`. Multi-entity outputs
+  join with `"\n\n---\n\n"`. Phase 2 introduces a proper `ProseSpec` type;
+  the facet overload is intentional for Phase 1.
+- **Freshness stamping** — `project()` stamps `freshness: "fresh"` and
+  `revision: <slice.model_revision>` onto every returned `DiagramSpec`
+  (`view_projection.py:189-194`). Provenance is in-memory only for
+  Phase 1; per-artifact `<id>.provenance.json` sidecars are deferred to
+  Phase 2 Task 28.
+- **Descendants coverage** — `materialize()` merges root ∪ descendants
+  into a single fragment when the slice's scope includes descendants.
+  Per-subsystem **fan-out** (N artifacts, one per descendant with a
+  subsystem-slug output path) is deferred to Phase 2 Task 27.
+
+Design + plan docs:
+
+- `docs/plans/2026-09-08-model-view-mapping-design.md` — full design
+- `docs/plans/2026-09-08-phase-1-substrate-and-liveness.md` — active plan
+- `docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md` — Phase 2 (includes Tasks 27 fan-out + 28 provenance-persistence)
+- `docs/plans/2026-09-08-phase-3-*.md`, `docs/plans/2026-09-08-phase-4-*.md` — deferred
+
 ### Hierarchical Model Architecture
 
 Each system has its own complete, self-contained model. The top-level model references subsystem models — it does not contain slices or reduced views.
 
 ```
-.architecture-model.yaml                    ← top-level system model (98/100)
+.architecture-model.yaml                    ← top-level system model
 .architecture-models/
-├── manifest.json                           ← top-level manifest (37 modules)
-├── core/
-│   ├── .architecture-model.yaml            ← Core system model (enriched)
-│   └── manifest.json                       ← Core manifest (9 modules, 20 functions, 57 classes)
-├── manifest/
-│   ├── .architecture-model.yaml            ← Manifest system model (enriched)
-│   └── manifest.json
-├── config/
+├── manifest.json                           ← top-level manifest
+├── component_test_map.json                 ← test → component allocation
+├── derived_requirements.yaml               ← requirements derived from model
+├── lessons.md                              ← accumulated pipeline lessons
+├── core/                                   ← named subsystem (Core)
 │   ├── .architecture-model.yaml
 │   └── manifest.json
-├── cli/
-│   ├── .architecture-model.yaml
-│   └── manifest.json
-├── orchestration/
-│   ├── .architecture-model.yaml
-│   └── manifest.json
-└── extract/
-    ├── .architecture-model.yaml
-    └── manifest.json
+├── manifest/                               ← named subsystem (Manifest)
+├── configuration/                          ← named subsystem
+├── cli/                                    ← named subsystem
+├── orchestration/                          ← named subsystem
+├── extract/                                ← named subsystem
+├── pipeline/                               ← named subsystem
+├── docs/                                   ← named subsystem
+├── documentation/                          ← named subsystem
+├── authoring/                              ← named subsystem
+├── export/                                 ← named subsystem
+├── S0/                                     ← auto-decomposed system (0..15)
+├── S1/
+├── ...
+└── S15/
 ```
 
-**6 subsystems** (Core, Manifest, Config, CLI, Orchestration, Extract) — each with its own model and manifest.
-**3 inline components** (Utils, Profiles, Spec) — too small for separate systems, modeled in top-level.
+**~27 subsystems total** — 11 named subsystems (Core, Manifest, Configuration, CLI, Orchestration, Extract, Pipeline, Docs, Documentation, Authoring, Export) plus 16 auto-decomposed `S0`..`S15` systems produced by the `decompose` stage when components exceed the ≥5-file threshold.
 
 ### Standard Modeling Process
 
@@ -251,11 +289,12 @@ Each system has its own complete, self-contained model. The top-level model refe
 2. **Model** — Build complete, self-contained model per system (capabilities, behaviors, components, interfaces, constraints, relationships)
 3. **Manifest** — Generate per-system manifest from AST scan
 4. **Enrich** — `architecture-model enrich` copies signatures, constants, test_contracts from manifest onto model components
-5. **Visualize** — `generate_all_diagrams()` produces 4 Mermaid diagrams per model:
-   - `context.mmd` — C4-style: actors → interfaces → system boundary
-   - `components.mmd` — Components grouped by layer, realizes edges to capabilities
-   - `behaviors.mmd` — Behavior flow with triggers/contains relationships
-   - `dependencies.mmd` — Inter-component dependency graph
+5. **Visualize** — `generate_all_diagrams()` (in `architecture_model.docs.diagrams`) produces 3 Markdown diagram files per model:
+   - `component-diagram.md` — components grouped by layer, `realizes` edges to capabilities
+   - `use-case-diagrams.md` — actor → behavior use-case flow
+   - `system-boundary-diagram.md` — C4-style system boundary with external actors and interfaces
+
+   (An older `core/visualize.py:generate_all_diagrams()` producing four `.mmd` files still exists but is not the current entry point.)
 6. **Validate** — `architecture-model validate` checks structural correctness (score 0-100)
 
 **Understanding levels after each step:**

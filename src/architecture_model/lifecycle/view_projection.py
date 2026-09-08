@@ -114,6 +114,8 @@ class ProjectorRegistry:
     def register(self, name: str, fn: ProjectorFn, *, version: str = "1.0.0") -> None:
         if not name:
             raise ValueError("projector name must be non-empty")
+        if name in self._entries:
+            raise ValueError(f"projector {name!r} already registered")
         self._entries[name] = (fn, version)
 
     def unregister(self, name: str) -> None:
@@ -126,7 +128,17 @@ class ProjectorRegistry:
             raise ProjectorNotFound(name) from exc
 
     def names(self) -> tuple[str, ...]:
+        """Registered projector names, sorted (stable ordering for callers)."""
         return tuple(sorted(self._entries))
+
+    def list_names(self) -> list[str]:
+        """Registered projector names in insertion order.
+
+        Preferred for discovery / ``.llm`` variant listings where sibling
+        projectors (``<family>.<name>`` and ``<family>.<name>.llm``) should
+        surface adjacent to each other rather than alphabetized apart.
+        """
+        return list(self._entries.keys())
 
     def __contains__(self, name: object) -> bool:
         return name in self._entries
@@ -179,6 +191,8 @@ def project(
         "projector_version": version,
         "produced_at": _rfc3339_now(),
         "slice_digest": materialized_slice.model_revision,
+        "freshness": "fresh",
+        "revision": materialized_slice.model_revision,
     }
     warnings = tuple(
         f"{w.code}: {w.message}" for w in materialized_slice.warnings
@@ -227,6 +241,12 @@ DEFAULT_REGISTRY: ProjectorRegistry = ProjectorRegistry()
 
 
 def _seed_default_registry() -> None:
+    # Idempotent: guard against re-entry after all 4 seeds are already
+    # present (single-key check would false-negative if a caller
+    # unregistered exactly one seed between invocations).
+    _seeds = ("se.conops", "se.functional", "se.logical", "se.use_cases", "family1.conops", "family3.component_diagram")
+    if all(name in DEFAULT_REGISTRY for name in _seeds):
+        return
     from architecture_model.core.se_view_projectors import (
         project_conops,
         project_functional_architecture,
@@ -244,6 +264,14 @@ def _seed_default_registry() -> None:
     DEFAULT_REGISTRY.register(
         "se.use_cases", _adapt_se(project_use_cases), version="1.0.0"
     )
+
+    from architecture_model.lifecycle.projectors.se_docs import register_all as _register_se_docs
+    _register_se_docs(DEFAULT_REGISTRY)
+
+    from architecture_model.lifecycle.projectors.mermaid import register_all as _register_mermaid
+    from architecture_model.lifecycle.projectors.nonse import register_all as _register_nonse
+    _register_mermaid(DEFAULT_REGISTRY)
+    _register_nonse(DEFAULT_REGISTRY)
 
 
 _seed_default_registry()

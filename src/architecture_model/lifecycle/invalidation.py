@@ -1,0 +1,168 @@
+"""Map a SemanticDiff onto the set of view families to invalidate.
+
+The rule table is data; adding a rule is data-only, not code. Each rule
+declares a trigger (entity kind + operation + optional field set) and
+the set of families it invalidates.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+# Semantic-only fields; touching these invalidates F1/F7 only (surgical).
+_SEMANTIC_FIELDS: frozenset[str] = frozenset({
+    "intent", "goals", "stakeholders", "success_criteria",
+    "failure_modes", "trade_offs", "assumptions", "open_questions",
+    "requirements", "verification", "slos", "owner", "maturity",
+    "dependencies_rationale",
+})
+
+_SEMANTIC_FIELD_FAMILIES: dict[str, set[str]] = {
+    "intent": {"family1"},
+    "goals": {"family1", "family7"},
+    "stakeholders": {"family1"},
+    "success_criteria": {"family1", "family7"},
+    "failure_modes": {"family7"},
+    "trade_offs": {"family1", "family3", "family7"},
+    "assumptions": {"family7"},
+    "open_questions": {"family7", "family8"},
+    "requirements": {"family7"},
+    "verification": {"family7"},
+    "slos": {"family5", "family7", "family8"},
+    "owner": {"family1", "family8"},
+    "maturity": {"family1", "family8"},
+    "dependencies_rationale": {"family3"},
+}
+
+
+@dataclass(frozen=True)
+class Rule:
+    trigger: dict[str, Any]
+    invalidates: frozenset[str]
+
+
+RULES: list[Rule] = [
+    Rule({"kind": "component", "op": "added"},   frozenset({"family3", "family2", "family8"})),
+    Rule({"kind": "component", "op": "removed"}, frozenset({"family3", "family2", "family8"})),
+    Rule({"kind": "capability", "op": "added"},   frozenset({"family1", "family2", "family7"})),
+    Rule({"kind": "capability", "op": "removed"}, frozenset({"family1", "family2", "family7"})),
+    Rule({"kind": "capability", "op": "changed"}, frozenset({"family1", "family2", "family7"})),
+    Rule({"kind": "constraint", "op": "added"},   frozenset({"family7", "family1"})),
+    Rule({"kind": "constraint", "op": "removed"}, frozenset({"family7", "family1"})),
+    Rule({"kind": "interface", "op": "added"},    frozenset({"family6", "family3"})),
+    Rule({"kind": "interface", "op": "removed"},  frozenset({"family6", "family3"})),
+    Rule({"kind": "interface", "op": "changed"},  frozenset({"family6", "family3"})),
+    Rule({"kind": "behavior", "op": "added"},     frozenset({"family4", "family2", "family7"})),
+    Rule({"kind": "behavior", "op": "removed"},   frozenset({"family4", "family2", "family7"})),
+    Rule({"kind": "actor", "op": "added"},        frozenset({"family1", "family4"})),
+    Rule({"kind": "actor", "op": "removed"},      frozenset({"family1", "family4"})),
+    Rule({"kind": "layer", "op": "added"},        frozenset({"family3"})),
+    Rule({"kind": "layer", "op": "removed"},      frozenset({"family3"})),
+    Rule({"rel": True, "op": "added"},   frozenset({"family3", "family8"})),
+    Rule({"rel": True, "op": "removed"}, frozenset({"family3", "family8"})),
+]
+
+
+def _semantic_only(fields: list[str]) -> bool:
+    return bool(fields) and all(f in _SEMANTIC_FIELDS for f in fields)
+
+
+def _families_for_semantic_fields(fields: list[str]) -> set[str]:
+    result: set[str] = set()
+    for f in fields:
+        result |= _SEMANTIC_FIELD_FAMILIES.get(f, set())
+    return result
+
+
+def stale_families(diff: dict) -> set[str]:
+    """Compute the set of view families made stale by a SemanticDiff.
+
+    diff shape (subset used):
+        {"entities": {"added": [{kind, id}], "removed": [...],
+                      "changed": [{kind, id, fields}]},
+         "relationships": {"added": [...], "removed": [...], "changed": [...]}}
+    """
+    stale: set[str] = set()
+
+    ents = diff.get("entities", {})
+    for op in ("added", "removed"):
+        for entry in ents.get(op, []):
+            kind = entry.get("kind")
+            for rule in RULES:
+                t = rule.trigger
+                if t.get("kind") == kind and t.get("op") == op:
+                    stale |= rule.invalidates
+
+    # Changed: union surgical semantic-field families with any kind-level
+    # `changed` rule. Only when the change is NOT semantic-only do we add
+    # the structural {family3, family8} fallback.
+    for entry in ents.get("changed", []):
+        kind = entry.get("kind")
+        fields = entry.get("fields", [])
+        semantic_only = _semantic_only(fields)
+        if semantic_only:
+            stale |= _families_for_semantic_fields(fields)
+        for rule in RULES:
+            t = rule.trigger
+            if t.get("kind") == kind and t.get("op") == "changed":
+                stale |= rule.invalidates
+        if not semantic_only:
+            stale |= {"family3", "family8"}
+
+    rels = diff.get("relationships", {})
+    for op in ("added", "removed"):
+        if rels.get(op):
+            for rule in RULES:
+                t = rule.trigger
+                if t.get("rel") and t.get("op") == op:
+                    stale |= rule.invalidates
+    if rels.get("changed"):
+        stale |= {"family3", "family8"}
+
+    return stale
+
+
+def stale_view_ids(diff: dict, all_view_ids: list[str]) -> list[str]:
+    """Given all registered view IDs (family<N>.<name>[.llm]), return those in stale families."""
+    families = stale_families(diff)
+    result = []
+    for vid in all_view_ids:
+        head = vid.split(".", 1)[0]
+        if head in families:
+            result.append(vid)
+    return sorted(result)
+
+
+_M1_PROPAGATING_REL_TYPES: frozenset[str] = frozenset({"exposes", "consumes"})
+
+
+def propagates_to_m1(diff: dict) -> bool:
+    """True iff this M2 diff must invalidate M1 as well.
+
+    Propagation rules:
+    - Any relationship added/removed of type "exposes" or "consumes" (public
+      surface change) → propagate.
+    - Any relationship added/removed with cross_subsystem=True → propagate.
+    - Any changed entity with appears_in_m1=True → propagate.
+    - Any component add/remove → propagate (conservative default; upstream
+      may narrow via subsystem markers in future).
+    - Otherwise → local to M2.
+    """
+    rels = diff.get("relationships", {})
+    for op in ("added", "removed"):
+        for r in rels.get(op, []):
+            if r.get("type") in _M1_PROPAGATING_REL_TYPES:
+                return True
+            if r.get("cross_subsystem"):
+                return True
+
+    ents = diff.get("entities", {})
+    for entry in ents.get("changed", []):
+        if entry.get("appears_in_m1"):
+            return True
+    for op in ("added", "removed"):
+        for entry in ents.get(op, []):
+            if entry.get("kind") == "component":
+                return True
+
+    return False

@@ -1,0 +1,40 @@
+meta:
+  project: test-sample
+  schema_version: '2.1.0'
+entities:
+  actors:
+    - {id: ACT-1, name: EndUser, status: ACTIVE}
+  capabilities:
+    - {id: CAP-F1, name: CoreCapability, status: ACTIVE, source_block: F1}
+  behaviors:
+    - {id: BEH-1, name: PrimaryBehavior, status: ACTIVE}
+    - {id: BEH-2, name: SecondaryBehavior, status: ACTIVE}
+    - id: UC-1
+      name: PrimaryUseCase
+      status: ACTIVE
+      trigger: user click
+      actor: EndUser
+      steps: [PrimaryBehavior, SecondaryBehavior]
+  components:
+    - id: COMP-1
+      name: MainModule
+      status: ACTIVE
+      layer: app
+      files: [src/main.py]
+      interfaces:
+        - {name: publicApi, kind: provides, signature: "publicApi(payload) -> Response"}
+    - {id: COMP-2, name: SupportModule, status: ACTIVE, layer: app, files: [src/support.py]}
+  interfaces:
+    - {id: IF-1, name: PublicAPI, status: ACTIVE}
+  constraints:
+    - {id: CON-1, name: LatencyBudget, status: ACTIVE}
+  layers:
+    - {id: app, name: Application, status: ACTIVE}
+relationships:
+  - {from: COMP-1, to: CAP-F1, type: realizes}
+  - {from: COMP-1, to: IF-1, type: exposes}
+  - {from: ACT-1, to: IF-1, type: consumes}
+  - {from: CAP-F1, to: BEH-1, type: contains}
+  - {from: COMP-1, to: BEH-1, type: realizes}
+  - {from: COMP-2, to: BEH-2, type: realizes}
+  - {from: COMP-1, to: COMP-2, type: depends-on}
