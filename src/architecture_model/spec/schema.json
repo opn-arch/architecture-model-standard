@@ -263,7 +263,7 @@
           "$ref": "#/$defs/semantic_string_list"
         },
         "requirements": {
-          "$ref": "#/$defs/semantic_string_list",
+          "$ref": "#/$defs/requirement_ref_list",
           "description": "Requirement entity IDs or inline requirement statements"
         },
         "rationale": {
@@ -276,10 +276,10 @@
           "type": "string"
         },
         "failure_modes": {
-          "$ref": "#/$defs/semantic_string_list"
+          "$ref": "#/$defs/failure_mode_list"
         },
         "trade_offs": {
-          "$ref": "#/$defs/semantic_string_list"
+          "$ref": "#/$defs/trade_off_list"
         },
         "interface_refs": {
           "$ref": "#/$defs/semantic_string_list",
@@ -301,6 +301,128 @@
       "items": {
         "type": "string"
       }
+    },
+    "maturity": {
+      "type": "string",
+      "enum": [
+        "proposal",
+        "draft",
+        "active",
+        "stable",
+        "deprecated"
+      ]
+    },
+    "failure_mode_obj": {
+      "type": "object",
+      "required": ["id", "cause", "effect", "likelihood", "severity", "detection", "mitigation"],
+      "properties": {
+        "id": {"type": "string"},
+        "cause": {"type": "string"},
+        "effect": {"type": "string"},
+        "likelihood": {
+          "type": "string",
+          "enum": ["rare", "unlikely", "possible", "likely", "certain"]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["negligible", "minor", "moderate", "major", "catastrophic"]
+        },
+        "detection": {"type": "string"},
+        "mitigation": {"type": "string"},
+        "mitigated_by": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "trade_off_obj": {
+      "type": "object",
+      "required": ["id", "decision", "alternatives", "rationale", "consequences", "revisit_when"],
+      "properties": {
+        "id": {"type": "string"},
+        "decision": {"type": "string"},
+        "alternatives": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "rationale": {"type": "string"},
+        "consequences": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "revisit_when": {"type": "string"},
+        "status": {
+          "type": "string",
+          "enum": ["active", "superseded", "revisited"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "slo_obj": {
+      "type": "object",
+      "required": ["metric", "target", "window"],
+      "properties": {
+        "metric": {"type": "string"},
+        "target": {"type": "string"},
+        "window": {"type": "string"},
+        "current": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "requirement_ref_obj": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string"},
+        "note": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "verification_ref_obj": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {"type": "string"},
+        "method": {"type": "string"},
+        "target": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "failure_mode_list": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"$ref": "#/$defs/failure_mode_obj"}
+        ]
+      }
+    },
+    "trade_off_list": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"$ref": "#/$defs/trade_off_obj"}
+        ]
+      }
+    },
+    "slo_list": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/slo_obj"}
+    },
+    "requirement_ref_list": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"$ref": "#/$defs/requirement_ref_obj"}
+        ]
+      }
+    },
+    "verification_ref_list": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/verification_ref_obj"}
     },
     "actor": {
       "allOf": [
@@ -334,7 +456,9 @@
           "$ref": "#/$defs/extensions"
         },
         "intent": true,
-        "decisions": true
+        "decisions": true,
+        "assumptions": {"$ref": "#/$defs/semantic_string_list"},
+        "open_questions": {"$ref": "#/$defs/semantic_string_list"}
       },
       "unevaluatedProperties": false
     },
@@ -365,10 +489,7 @@
           ]
         },
         "requirements": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/$defs/requirement_ref_list"
         },
         "extensions": {
           "$ref": "#/$defs/extensions"
@@ -386,16 +507,10 @@
           }
         },
         "trade_offs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/$defs/trade_off_list"
         },
         "failure_modes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/$defs/failure_mode_list"
         },
         "monitored": {
           "type": "array",
@@ -404,7 +519,14 @@
           }
         },
         "intent": true,
-        "decisions": true
+        "decisions": true,
+        "stakeholders": {"$ref": "#/$defs/semantic_string_list"},
+        "success_criteria": {"$ref": "#/$defs/semantic_string_list"},
+        "assumptions": {"$ref": "#/$defs/semantic_string_list"},
+        "open_questions": {"$ref": "#/$defs/semantic_string_list"},
+        "verification": {"$ref": "#/$defs/verification_ref_list"},
+        "owner": {"type": "string"},
+        "maturity": {"$ref": "#/$defs/maturity"}
       },
       "unevaluatedProperties": false
     },
@@ -551,13 +673,16 @@
           }
         },
         "failure_modes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/$defs/failure_mode_list"
         },
         "intent": true,
-        "decisions": true
+        "decisions": true,
+        "stakeholders": {"$ref": "#/$defs/semantic_string_list"},
+        "success_criteria": {"$ref": "#/$defs/semantic_string_list"},
+        "assumptions": {"$ref": "#/$defs/semantic_string_list"},
+        "open_questions": {"$ref": "#/$defs/semantic_string_list"},
+        "verification": {"$ref": "#/$defs/verification_ref_list"},
+        "maturity": {"$ref": "#/$defs/maturity"}
       },
       "unevaluatedProperties": false
     },
@@ -632,7 +757,14 @@
           "type": "string"
         },
         "intent": true,
-        "decisions": true
+        "decisions": true,
+        "stakeholders": {"$ref": "#/$defs/semantic_string_list"},
+        "success_criteria": {"$ref": "#/$defs/semantic_string_list"},
+        "assumptions": {"$ref": "#/$defs/semantic_string_list"},
+        "open_questions": {"$ref": "#/$defs/semantic_string_list"},
+        "verification": {"$ref": "#/$defs/verification_ref_list"},
+        "slos": {"$ref": "#/$defs/slo_list"},
+        "maturity": {"$ref": "#/$defs/maturity"}
       },
       "unevaluatedProperties": false
     },
@@ -676,7 +808,12 @@
           "$ref": "#/$defs/extensions"
         },
         "intent": true,
-        "decisions": true
+        "decisions": true,
+        "success_criteria": {"$ref": "#/$defs/semantic_string_list"},
+        "assumptions": {"$ref": "#/$defs/semantic_string_list"},
+        "open_questions": {"$ref": "#/$defs/semantic_string_list"},
+        "verification": {"$ref": "#/$defs/verification_ref_list"},
+        "maturity": {"$ref": "#/$defs/maturity"}
       },
       "unevaluatedProperties": false
     },
@@ -714,7 +851,9 @@
           "$ref": "#/$defs/extensions"
         },
         "intent": true,
-        "decisions": true
+        "decisions": true,
+        "owner": {"type": "string"},
+        "maturity": {"$ref": "#/$defs/maturity"}
       },
       "unevaluatedProperties": false
     },
@@ -1032,16 +1171,10 @@
           }
         },
         "trade_offs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/$defs/trade_off_list"
         },
         "failure_modes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "$ref": "#/$defs/failure_mode_list"
         },
         "monitored": {
           "type": "array",
@@ -1050,7 +1183,19 @@
           }
         },
         "intent": true,
-        "decisions": true
+        "decisions": true,
+        "stakeholders": {"$ref": "#/$defs/semantic_string_list"},
+        "success_criteria": {"$ref": "#/$defs/semantic_string_list"},
+        "assumptions": {"$ref": "#/$defs/semantic_string_list"},
+        "open_questions": {"$ref": "#/$defs/semantic_string_list"},
+        "verification": {"$ref": "#/$defs/verification_ref_list"},
+        "slos": {"$ref": "#/$defs/slo_list"},
+        "owner": {"type": "string"},
+        "maturity": {"$ref": "#/$defs/maturity"},
+        "dependencies_rationale": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        }
       },
       "unevaluatedProperties": false
     },
