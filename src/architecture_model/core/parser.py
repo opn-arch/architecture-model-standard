@@ -302,6 +302,9 @@ def _parse_actor(d: dict) -> Actor:
     return Actor(
         **base,
         type=ActorType.parse(d.get("type", "human")),
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        assumptions=d.get("assumptions", []),
+        open_questions=d.get("open_questions", []),
     )
 
 
@@ -409,6 +412,12 @@ def _parse_constraint(d: dict) -> Constraint:
         type=ConstraintType.parse(d.get("type", "technology")),
         metric=d.get("metric", ""),
         threshold=d.get("threshold", ""),
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        success_criteria=d.get("success_criteria", []),
+        assumptions=d.get("assumptions", []),
+        open_questions=d.get("open_questions", []),
+        verification=_parse_verification(d.get("verification", [])),
+        maturity=_parse_maturity(d.get("maturity")),
     )
 
 
@@ -419,6 +428,9 @@ def _parse_layer(d: dict) -> Layer:
         order=d.get("order", 0),
         technology=d.get("technology", []),
         directories=d.get("directories", []),
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        owner=d.get("owner"),
+        maturity=_parse_maturity(d.get("maturity")),
     )
 
 

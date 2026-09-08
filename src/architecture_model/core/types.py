@@ -340,6 +340,9 @@ class BaseEntity:
 @dataclass
 class Actor(BaseEntity):
     type: ActorType = ActorType.HUMAN
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -442,6 +445,12 @@ class Constraint(BaseEntity):
     type: ConstraintType = ConstraintType.TECHNOLOGY
     metric: str = ""
     threshold: str = ""
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -449,6 +458,9 @@ class Layer(BaseEntity):
     order: int = 0
     technology: list[str] = field(default_factory=list)
     directories: list[str] = field(default_factory=list)
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    owner: Optional[str] = None
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -950,6 +962,11 @@ class ArchitectureModel:
         d["type"] = _enum_value(a.type)
         if a.goals:
             d["goals"] = a.goals
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if a.assumptions:
+            d["assumptions"] = a.assumptions
+        if a.open_questions:
+            d["open_questions"] = a.open_questions
         return d
 
     @classmethod
@@ -1116,6 +1133,19 @@ class ArchitectureModel:
             d["threshold"] = c.threshold
         if c.rationale:
             d["rationale"] = c.rationale
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if c.success_criteria:
+            d["success_criteria"] = c.success_criteria
+        if c.assumptions:
+            d["assumptions"] = c.assumptions
+        if c.open_questions:
+            d["open_questions"] = c.open_questions
+        if c.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.verification
+            ]
+        if c.maturity is not None:
+            d["maturity"] = c.maturity.value if hasattr(c.maturity, "value") else c.maturity
         return d
 
     @classmethod
@@ -1126,6 +1156,11 @@ class ArchitectureModel:
             d["technology"] = l.technology
         if l.directories:
             d["directories"] = l.directories
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if l.owner:
+            d["owner"] = l.owner
+        if l.maturity is not None:
+            d["maturity"] = l.maturity.value if hasattr(l.maturity, "value") else l.maturity
         return d
 
     @classmethod
