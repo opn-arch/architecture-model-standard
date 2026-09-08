@@ -346,6 +346,14 @@ class Actor(BaseEntity):
 class Capability(BaseEntity):
     source_block: str = ""
     priority: Priority = Priority.MEDIUM
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    owner: Optional[str] = None
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -937,17 +945,40 @@ class ArchitectureModel:
         if c.priority != Priority.MEDIUM:
             d["priority"] = c.priority.value
         if c.requirements:
-            d["requirements"] = c.requirements
+            d["requirements"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.requirements
+            ]
         if c.moes:
             d["moes"] = c.moes
         if c.goals:
             d["goals"] = c.goals
         if c.trade_offs:
-            d["trade_offs"] = c.trade_offs
+            d["trade_offs"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.trade_offs
+            ]
         if c.failure_modes:
-            d["failure_modes"] = c.failure_modes
+            d["failure_modes"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.failure_modes
+            ]
         if c.monitored:
             d["monitored"] = c.monitored
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if c.stakeholders:
+            d["stakeholders"] = c.stakeholders
+        if c.success_criteria:
+            d["success_criteria"] = c.success_criteria
+        if c.assumptions:
+            d["assumptions"] = c.assumptions
+        if c.open_questions:
+            d["open_questions"] = c.open_questions
+        if c.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.verification
+            ]
+        if c.owner:
+            d["owner"] = c.owner
+        if c.maturity is not None:
+            d["maturity"] = c.maturity.value if hasattr(c.maturity, "value") else c.maturity
         return d
 
     @classmethod

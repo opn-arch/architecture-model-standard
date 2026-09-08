@@ -311,6 +311,14 @@ def _parse_capability(d: dict) -> Capability:
         **base,
         source_block=d.get("source_block", "") or d.get("f_block", ""),
         priority=_parse_priority(d.get("priority")),
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        stakeholders=d.get("stakeholders", []),
+        success_criteria=d.get("success_criteria", []),
+        assumptions=d.get("assumptions", []),
+        open_questions=d.get("open_questions", []),
+        verification=_parse_verification(d.get("verification", [])),
+        owner=d.get("owner"),
+        maturity=_parse_maturity(d.get("maturity")),
     )
 
 
