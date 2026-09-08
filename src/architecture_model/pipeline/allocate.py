@@ -27,6 +27,7 @@ from .protocol import (
     Uncertainty,
 )
 from .corrections import get_corrections_for_stage, get_resolutions_for_stage
+from architecture_model.sil.decorators import instrumented
 
 
 # Thresholds
@@ -41,6 +42,7 @@ class AllocateStage:
     name: str = "allocate"
     requires: list[str] = ["observe", "infer"]
 
+    @instrumented("stage:allocate")
     def run(self, ctx: PipelineContext) -> StageResult[AllocationResult]:
         start = time.time()
         diagnostics: list[Diagnostic] = []

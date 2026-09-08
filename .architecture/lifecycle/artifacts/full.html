@@ -1,0 +1,1875 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipeline Dashboard</title>
+  <link rel="stylesheet" href="assets/pipeline_dashboard/index.css">
+</head>
+<body>
+  <main id="pipeline-root" data-view="pipeline-html"></main>
+  <aside id="pipeline-drilldown" hidden></aside>
+  <script id="pipeline-state" type="application/json">
+{
+  "badges": {
+    "COMP-2": {
+      "avg_duration_ms": 42.16,
+      "failure_rate_7d": 0.0078,
+      "invocations_7d": 1284
+    },
+    "COMP-4": {
+      "avg_duration_ms": 333.97,
+      "failure_rate_7d": 0.1546,
+      "invocations_7d": 97
+    },
+    "COMP-COMMENT-SYS": {
+      "avg_duration_ms": 22.22,
+      "failure_rate_7d": 0.0202,
+      "invocations_7d": 445
+    },
+    "COMP-DASHBOARD": {
+      "avg_duration_ms": 119.2,
+      "failure_rate_7d": 0.0203,
+      "invocations_7d": 640
+    },
+    "COMP-LLM": {
+      "avg_duration_ms": 876.31,
+      "failure_rate_7d": 0.0619,
+      "invocations_7d": 210
+    },
+    "COMP-SIL": {
+      "avg_duration_ms": 8.0,
+      "failure_rate_7d": 0.0009,
+      "invocations_7d": 3200
+    }
+  },
+  "edges": [
+    {
+      "from": "CAP-0",
+      "to": "CAP-0.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0",
+      "to": "CAP-0.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0",
+      "to": "CAP-0.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0",
+      "to": "CAP-0.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.1",
+      "to": "CAP-2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.1",
+      "to": "CAP-3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.1",
+      "to": "CAP-4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.1",
+      "to": "CAP-7",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.2",
+      "to": "CAP-1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.2",
+      "to": "CAP-11",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.2",
+      "to": "CAP-12",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.3",
+      "to": "CAP-10",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.3",
+      "to": "CAP-15",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.3",
+      "to": "CAP-5",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.3",
+      "to": "CAP-6",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.4",
+      "to": "CAP-13",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.4",
+      "to": "CAP-14",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.4",
+      "to": "CAP-8",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-0.4",
+      "to": "CAP-9",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.5",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.6",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.7",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-1",
+      "to": "CAP-1.8",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-10",
+      "to": "CAP-10.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-10",
+      "to": "CAP-10.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-10",
+      "to": "CAP-10.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-10",
+      "to": "CAP-10.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-11",
+      "to": "CAP-11.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-11",
+      "to": "CAP-11.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-11",
+      "to": "CAP-11.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-12",
+      "to": "CAP-12.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-12",
+      "to": "CAP-12.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-13",
+      "to": "CAP-13.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-13",
+      "to": "CAP-13.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-13",
+      "to": "CAP-13.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-14",
+      "to": "CAP-14.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-14",
+      "to": "CAP-14.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-14",
+      "to": "CAP-14.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-14",
+      "to": "CAP-14.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-14",
+      "to": "CAP-14.5",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-15",
+      "to": "CAP-15.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-15",
+      "to": "CAP-15.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-15",
+      "to": "CAP-15.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-15",
+      "to": "CAP-15.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-2",
+      "to": "CAP-2.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-2",
+      "to": "CAP-2.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-2",
+      "to": "CAP-2.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-2",
+      "to": "CAP-2.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-2",
+      "to": "CAP-2.5",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-2",
+      "to": "CAP-2.6",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.10",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.5",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.6",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.7",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.8",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-3",
+      "to": "CAP-3.9",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-4",
+      "to": "CAP-4.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-4",
+      "to": "CAP-4.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-4",
+      "to": "CAP-4.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-4",
+      "to": "CAP-4.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-4",
+      "to": "CAP-4.5",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-4",
+      "to": "CAP-4.6",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.5",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.6",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.7",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-5",
+      "to": "CAP-5.8",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-6",
+      "to": "CAP-6.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-6",
+      "to": "CAP-6.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-6",
+      "to": "CAP-6.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-7",
+      "to": "CAP-7.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-7",
+      "to": "CAP-7.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-7",
+      "to": "CAP-7.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-7",
+      "to": "CAP-7.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-8",
+      "to": "CAP-8.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-8",
+      "to": "CAP-8.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-8",
+      "to": "CAP-8.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-9",
+      "to": "CAP-9.1",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-9",
+      "to": "CAP-9.2",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-9",
+      "to": "CAP-9.3",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-9",
+      "to": "CAP-9.4",
+      "type": "contains"
+    },
+    {
+      "from": "CAP-9",
+      "to": "CAP-9.5",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-1",
+      "to": "COMP-1.1",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-1",
+      "to": "COMP-1.2",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-1",
+      "to": "COMP-1.3",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-1",
+      "to": "COMP-1.4",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-1",
+      "to": "COMP-1.5",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.6",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.7",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.2",
+      "to": "CAP-1.8",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-13",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-13.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-13.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-13.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-7",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-7.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-7.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-7.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-7.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-8",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-8.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-8.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.4",
+      "to": "CAP-8.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.5",
+      "to": "CAP-11",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.5",
+      "to": "CAP-11.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.5",
+      "to": "CAP-11.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-1.5",
+      "to": "CAP-11.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-10",
+      "to": "CAP-15",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-10",
+      "to": "CAP-15.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-10",
+      "to": "CAP-15.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-10",
+      "to": "CAP-15.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-10",
+      "to": "CAP-15.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-10",
+      "to": "COMP-1.3",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-11",
+      "to": "CAP-14",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-11",
+      "to": "CAP-14.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-11",
+      "to": "CAP-14.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-11",
+      "to": "CAP-14.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-11",
+      "to": "CAP-14.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-11",
+      "to": "CAP-14.5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-11",
+      "to": "COMP-9",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-12",
+      "to": "COMP-9",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-2",
+      "to": "CAP-3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2",
+      "to": "CAP-3.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-11",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-2.1",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-2.2",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-2.3",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-2.4",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-2.5",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-LLM",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-2",
+      "to": "COMP-SIL",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-2.1",
+      "to": "CAP-3.7",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.1",
+      "to": "CAP-3.9",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.1",
+      "to": "COMP-1.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-2.2",
+      "to": "CAP-3.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.2",
+      "to": "COMP-3.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-2.3",
+      "to": "CAP-3.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.3",
+      "to": "CAP-3.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.3",
+      "to": "CAP-3.5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.3",
+      "to": "COMP-1.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-2.4",
+      "to": "CAP-3.6",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.4",
+      "to": "COMP-1.2",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-2.5",
+      "to": "CAP-3.10",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.5",
+      "to": "CAP-3.8",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-2.5",
+      "to": "COMP-1.3",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-3",
+      "to": "CAP-4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-3",
+      "to": "COMP-3.1",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-3",
+      "to": "COMP-3.2",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-3",
+      "to": "COMP-3.3",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-3.1",
+      "to": "CAP-4.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-3.1",
+      "to": "CAP-4.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-3.1",
+      "to": "CAP-4.6",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-3.1",
+      "to": "COMP-9",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-3.2",
+      "to": "CAP-4.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-3.2",
+      "to": "CAP-4.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-3.2",
+      "to": "COMP-3.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-3.3",
+      "to": "CAP-4.5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-3.3",
+      "to": "COMP-3.2",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-4",
+      "to": "COMP-4.1",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-4",
+      "to": "COMP-4.2",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-4.1",
+      "to": "COMP-1.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.6",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.7",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "CAP-5.8",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-4.2",
+      "to": "COMP-4.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-5",
+      "to": "COMP-5.1",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-5",
+      "to": "COMP-5.2",
+      "type": "contains"
+    },
+    {
+      "from": "COMP-5.1",
+      "to": "CAP-10",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.1",
+      "to": "CAP-10.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.1",
+      "to": "CAP-10.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.1",
+      "to": "CAP-10.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.1",
+      "to": "CAP-10.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.1",
+      "to": "COMP-1.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-5.1",
+      "to": "COMP-3",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-5.2",
+      "to": "CAP-9",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.2",
+      "to": "CAP-9.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.2",
+      "to": "CAP-9.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.2",
+      "to": "CAP-9.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.2",
+      "to": "CAP-9.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.2",
+      "to": "CAP-9.5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-5.2",
+      "to": "COMP-1.5",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-6",
+      "to": "CAP-2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-6",
+      "to": "CAP-2.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-6",
+      "to": "CAP-2.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-6",
+      "to": "CAP-2.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-6",
+      "to": "CAP-2.4",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-6",
+      "to": "CAP-2.5",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-6",
+      "to": "CAP-2.6",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-6",
+      "to": "COMP-3.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-6",
+      "to": "COMP-9",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-7",
+      "to": "CAP-12",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-7",
+      "to": "CAP-12.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-7",
+      "to": "CAP-12.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-7",
+      "to": "CAP-6",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-7",
+      "to": "CAP-6.1",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-7",
+      "to": "CAP-6.2",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-7",
+      "to": "CAP-6.3",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-7",
+      "to": "COMP-1.1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-7",
+      "to": "COMP-3",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-8",
+      "to": "COMP-1",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-8",
+      "to": "COMP-2",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-8",
+      "to": "COMP-3",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-8",
+      "to": "COMP-4",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-8",
+      "to": "COMP-5",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-8",
+      "to": "COMP-7",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-COMMENT-SYS",
+      "to": "CAP-COMMENT-COLLABORATION",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-DASHBOARD",
+      "to": "CAP-INTERACTIVE-DASHBOARD",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-DASHBOARD",
+      "to": "COMP-SIL",
+      "type": "depends-on"
+    },
+    {
+      "from": "COMP-LLM",
+      "to": "CAP-LLM-ROUTING",
+      "type": "realizes"
+    },
+    {
+      "from": "COMP-SIL",
+      "to": "CAP-SIL-INSTRUMENTATION",
+      "type": "realizes"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "CAP-0",
+      "kind": "capability",
+      "name": "Provide Architecture-as-Code Standard"
+    },
+    {
+      "id": "CAP-0.1",
+      "kind": "capability",
+      "name": "Understand Software Architecture"
+    },
+    {
+      "id": "CAP-0.2",
+      "kind": "capability",
+      "name": "Validate Architectural Claims"
+    },
+    {
+      "id": "CAP-0.3",
+      "kind": "capability",
+      "name": "Generate Architecture Artifacts"
+    },
+    {
+      "id": "CAP-0.4",
+      "kind": "capability",
+      "name": "Evolve Architecture Over Time"
+    },
+    {
+      "id": "CAP-1",
+      "kind": "capability",
+      "name": "Validate Architecture Models"
+    },
+    {
+      "id": "CAP-1.1",
+      "kind": "capability",
+      "name": "Validate JSON Schema Compliance"
+    },
+    {
+      "id": "CAP-1.2",
+      "kind": "capability",
+      "name": "Enforce Entity ID Uniqueness"
+    },
+    {
+      "id": "CAP-1.3",
+      "kind": "capability",
+      "name": "Check Referential Integrity"
+    },
+    {
+      "id": "CAP-1.4",
+      "kind": "capability",
+      "name": "Detect Orphan Entities"
+    },
+    {
+      "id": "CAP-1.5",
+      "kind": "capability",
+      "name": "Verify Capability Realization"
+    },
+    {
+      "id": "CAP-1.6",
+      "kind": "capability",
+      "name": "Check Hierarchy Consistency"
+    },
+    {
+      "id": "CAP-1.7",
+      "kind": "capability",
+      "name": "Detect Dependency Cycles"
+    },
+    {
+      "id": "CAP-1.8",
+      "kind": "capability",
+      "name": "Validate Domain Profile Rules"
+    },
+    {
+      "id": "CAP-10",
+      "kind": "capability",
+      "name": "Enrich Models with Code Intelligence"
+    },
+    {
+      "id": "CAP-10.1",
+      "kind": "capability",
+      "name": "Extract Function Signatures"
+    },
+    {
+      "id": "CAP-10.2",
+      "kind": "capability",
+      "name": "Extract Module-Level Constants"
+    },
+    {
+      "id": "CAP-10.3",
+      "kind": "capability",
+      "name": "Extract Test Contracts"
+    },
+    {
+      "id": "CAP-10.4",
+      "kind": "capability",
+      "name": "Discover Test Files by Convention"
+    },
+    {
+      "id": "CAP-11",
+      "kind": "capability",
+      "name": "Assess Regen Readiness"
+    },
+    {
+      "id": "CAP-11.1",
+      "kind": "capability",
+      "name": "Compute System Readiness Score"
+    },
+    {
+      "id": "CAP-11.2",
+      "kind": "capability",
+      "name": "Compute Component Readiness"
+    },
+    {
+      "id": "CAP-11.3",
+      "kind": "capability",
+      "name": "Classify Body Hint Quality"
+    },
+    {
+      "id": "CAP-12",
+      "kind": "capability",
+      "name": "Check Development Gate"
+    },
+    {
+      "id": "CAP-12.1",
+      "kind": "capability",
+      "name": "Check Code-Intent Alignment"
+    },
+    {
+      "id": "CAP-12.2",
+      "kind": "capability",
+      "name": "Evaluate Stage Quality Gates"
+    },
+    {
+      "id": "CAP-13",
+      "kind": "capability",
+      "name": "Detect and Fix Model Drift"
+    },
+    {
+      "id": "CAP-13.1",
+      "kind": "capability",
+      "name": "Generate Drift Report"
+    },
+    {
+      "id": "CAP-13.2",
+      "kind": "capability",
+      "name": "Identify Stale Artifacts"
+    },
+    {
+      "id": "CAP-13.3",
+      "kind": "capability",
+      "name": "Compare Model to Code Reality"
+    },
+    {
+      "id": "CAP-14",
+      "kind": "capability",
+      "name": "Manage Global Learnings"
+    },
+    {
+      "id": "CAP-14.1",
+      "kind": "capability",
+      "name": "Store Heuristic Rules"
+    },
+    {
+      "id": "CAP-14.2",
+      "kind": "capability",
+      "name": "Match Archetype Patterns"
+    },
+    {
+      "id": "CAP-14.3",
+      "kind": "capability",
+      "name": "Record User Corrections"
+    },
+    {
+      "id": "CAP-14.4",
+      "kind": "capability",
+      "name": "Track Quality History"
+    },
+    {
+      "id": "CAP-14.5",
+      "kind": "capability",
+      "name": "Generate Lessons from Diagnostics"
+    },
+    {
+      "id": "CAP-15",
+      "kind": "capability",
+      "name": "Export for AI Consumption"
+    },
+    {
+      "id": "CAP-15.1",
+      "kind": "capability",
+      "name": "Build Flat File Export"
+    },
+    {
+      "id": "CAP-15.2",
+      "kind": "capability",
+      "name": "Generate Schema Reference"
+    },
+    {
+      "id": "CAP-15.3",
+      "kind": "capability",
+      "name": "Generate Custom Instructions"
+    },
+    {
+      "id": "CAP-15.4",
+      "kind": "capability",
+      "name": "Concatenate Sub-Model Artifacts"
+    },
+    {
+      "id": "CAP-2",
+      "kind": "capability",
+      "name": "Extract Architecture from Code"
+    },
+    {
+      "id": "CAP-2.1",
+      "kind": "capability",
+      "name": "Derive Capabilities from Config"
+    },
+    {
+      "id": "CAP-2.2",
+      "kind": "capability",
+      "name": "Infer Actors from Routes"
+    },
+    {
+      "id": "CAP-2.3",
+      "kind": "capability",
+      "name": "Derive Components from Manifest"
+    },
+    {
+      "id": "CAP-2.4",
+      "kind": "capability",
+      "name": "Derive Cross-Block Interfaces"
+    },
+    {
+      "id": "CAP-2.5",
+      "kind": "capability",
+      "name": "Detect Code Constraints"
+    },
+    {
+      "id": "CAP-2.6",
+      "kind": "capability",
+      "name": "Derive Entity Relationships"
+    },
+    {
+      "id": "CAP-3",
+      "kind": "capability",
+      "name": "Run Modular Extraction Pipeline"
+    },
+    {
+      "id": "CAP-3.1",
+      "kind": "capability",
+      "name": "AST-Scan Source Files"
+    },
+    {
+      "id": "CAP-3.10",
+      "kind": "capability",
+      "name": "Emit Final Artifacts"
+    },
+    {
+      "id": "CAP-3.2",
+      "kind": "capability",
+      "name": "Infer Capabilities from Code"
+    },
+    {
+      "id": "CAP-3.3",
+      "kind": "capability",
+      "name": "Allocate Files to Components"
+    },
+    {
+      "id": "CAP-3.4",
+      "kind": "capability",
+      "name": "Derive Entity Relationships"
+    },
+    {
+      "id": "CAP-3.5",
+      "kind": "capability",
+      "name": "Derive Interface Specifications"
+    },
+    {
+      "id": "CAP-3.6",
+      "kind": "capability",
+      "name": "Extract Test Contracts"
+    },
+    {
+      "id": "CAP-3.7",
+      "kind": "capability",
+      "name": "Validate Pipeline Output"
+    },
+    {
+      "id": "CAP-3.8",
+      "kind": "capability",
+      "name": "Detect System Boundaries"
+    },
+    {
+      "id": "CAP-3.9",
+      "kind": "capability",
+      "name": "Run Scoped Sub-Pipelines"
+    },
+    {
+      "id": "CAP-4",
+      "kind": "capability",
+      "name": "Generate Reality Manifest"
+    },
+    {
+      "id": "CAP-4.1",
+      "kind": "capability",
+      "name": "Scan Python AST"
+    },
+    {
+      "id": "CAP-4.2",
+      "kind": "capability",
+      "name": "Extract Function Body Hints"
+    },
+    {
+      "id": "CAP-4.3",
+      "kind": "capability",
+      "name": "Build Call Graph"
+    },
+    {
+      "id": "CAP-4.4",
+      "kind": "capability",
+      "name": "Analyze Test Files"
+    },
+    {
+      "id": "CAP-4.5",
+      "kind": "capability",
+      "name": "Group Modules into Components"
+    },
+    {
+      "id": "CAP-4.6",
+      "kind": "capability",
+      "name": "Scan Multi-Language Sources"
+    },
+    {
+      "id": "CAP-5",
+      "kind": "capability",
+      "name": "Generate SE Documentation"
+    },
+    {
+      "id": "CAP-5.1",
+      "kind": "capability",
+      "name": "Generate ConOps Document"
+    },
+    {
+      "id": "CAP-5.2",
+      "kind": "capability",
+      "name": "Generate Functional Analysis"
+    },
+    {
+      "id": "CAP-5.3",
+      "kind": "capability",
+      "name": "Generate Logical Architecture Doc"
+    },
+    {
+      "id": "CAP-5.4",
+      "kind": "capability",
+      "name": "Generate Use Case Document"
+    },
+    {
+      "id": "CAP-5.5",
+      "kind": "capability",
+      "name": "Generate Component Specifications"
+    },
+    {
+      "id": "CAP-5.6",
+      "kind": "capability",
+      "name": "Generate Interface Specification"
+    },
+    {
+      "id": "CAP-5.7",
+      "kind": "capability",
+      "name": "Generate Mermaid Diagrams"
+    },
+    {
+      "id": "CAP-5.8",
+      "kind": "capability",
+      "name": "Generate Health Report"
+    },
+    {
+      "id": "CAP-6",
+      "kind": "capability",
+      "name": "Author Model from Requirements"
+    },
+    {
+      "id": "CAP-6.1",
+      "kind": "capability",
+      "name": "Parse Requirements Markdown"
+    },
+    {
+      "id": "CAP-6.2",
+      "kind": "capability",
+      "name": "Parse Actor Definitions"
+    },
+    {
+      "id": "CAP-6.3",
+      "kind": "capability",
+      "name": "Parse Capability Hierarchy"
+    },
+    {
+      "id": "CAP-7",
+      "kind": "capability",
+      "name": "Slice and Query Models"
+    },
+    {
+      "id": "CAP-7.1",
+      "kind": "capability",
+      "name": "Slice by Source Block"
+    },
+    {
+      "id": "CAP-7.2",
+      "kind": "capability",
+      "name": "Slice by Architecture Layer"
+    },
+    {
+      "id": "CAP-7.3",
+      "kind": "capability",
+      "name": "Slice for Artifact Regeneration"
+    },
+    {
+      "id": "CAP-7.4",
+      "kind": "capability",
+      "name": "Slice for SE Document Views"
+    },
+    {
+      "id": "CAP-8",
+      "kind": "capability",
+      "name": "Diff Model Versions"
+    },
+    {
+      "id": "CAP-8.1",
+      "kind": "capability",
+      "name": "Diff Entity Lists by ID"
+    },
+    {
+      "id": "CAP-8.2",
+      "kind": "capability",
+      "name": "Detect Field-Level Changes"
+    },
+    {
+      "id": "CAP-8.3",
+      "kind": "capability",
+      "name": "Determine Affected Artifacts"
+    },
+    {
+      "id": "CAP-9",
+      "kind": "capability",
+      "name": "Decompose Models Hierarchically"
+    },
+    {
+      "id": "CAP-9.1",
+      "kind": "capability",
+      "name": "Compute Component Complexity"
+    },
+    {
+      "id": "CAP-9.2",
+      "kind": "capability",
+      "name": "Identify System Candidates"
+    },
+    {
+      "id": "CAP-9.3",
+      "kind": "capability",
+      "name": "Detect System Boundaries"
+    },
+    {
+      "id": "CAP-9.4",
+      "kind": "capability",
+      "name": "Trace Connected Entities"
+    },
+    {
+      "id": "CAP-9.5",
+      "kind": "capability",
+      "name": "Write Sub-Models to Disk"
+    },
+    {
+      "id": "CAP-COMMENT-COLLABORATION",
+      "kind": "capability",
+      "name": "Enable Reviewer-Author Comment Loop"
+    },
+    {
+      "id": "CAP-INTERACTIVE-DASHBOARD",
+      "kind": "capability",
+      "name": "Render Interactive Pipeline Dashboard"
+    },
+    {
+      "id": "CAP-LLM-ROUTING",
+      "kind": "capability",
+      "name": "Route LLM Calls Through Pluggable Providers"
+    },
+    {
+      "id": "CAP-SIL-INSTRUMENTATION",
+      "kind": "capability",
+      "name": "Instrument Architecturally-Significant Call Sites"
+    },
+    {
+      "id": "COMP-1",
+      "kind": "component",
+      "name": "Core"
+    },
+    {
+      "id": "COMP-1.1",
+      "kind": "component",
+      "name": "Type System"
+    },
+    {
+      "id": "COMP-1.2",
+      "kind": "component",
+      "name": "Validation"
+    },
+    {
+      "id": "COMP-1.3",
+      "kind": "component",
+      "name": "Parser & Persistence"
+    },
+    {
+      "id": "COMP-1.4",
+      "kind": "component",
+      "name": "Model Operations"
+    },
+    {
+      "id": "COMP-1.5",
+      "kind": "component",
+      "name": "Quality Metrics"
+    },
+    {
+      "id": "COMP-10",
+      "kind": "component",
+      "name": "Export"
+    },
+    {
+      "id": "COMP-11",
+      "kind": "component",
+      "name": "Pipeline Learning"
+    },
+    {
+      "id": "COMP-12",
+      "kind": "component",
+      "name": "Utilities"
+    },
+    {
+      "id": "COMP-2",
+      "kind": "component",
+      "name": "Pipeline"
+    },
+    {
+      "id": "COMP-2.1",
+      "kind": "component",
+      "name": "Pipeline Coordination"
+    },
+    {
+      "id": "COMP-2.2",
+      "kind": "component",
+      "name": "Observation Stages"
+    },
+    {
+      "id": "COMP-2.3",
+      "kind": "component",
+      "name": "Allocation & Relation Stages"
+    },
+    {
+      "id": "COMP-2.4",
+      "kind": "component",
+      "name": "Specification & Contract Stages"
+    },
+    {
+      "id": "COMP-2.5",
+      "kind": "component",
+      "name": "Synthesis & Emit Stages"
+    },
+    {
+      "id": "COMP-3",
+      "kind": "component",
+      "name": "Manifest"
+    },
+    {
+      "id": "COMP-3.1",
+      "kind": "component",
+      "name": "Scanners"
+    },
+    {
+      "id": "COMP-3.2",
+      "kind": "component",
+      "name": "Graph & Analysis"
+    },
+    {
+      "id": "COMP-3.3",
+      "kind": "component",
+      "name": "Grouping & Generation"
+    },
+    {
+      "id": "COMP-4",
+      "kind": "component",
+      "name": "Documentation"
+    },
+    {
+      "id": "COMP-4.1",
+      "kind": "component",
+      "name": "Core Doc Generators"
+    },
+    {
+      "id": "COMP-4.2",
+      "kind": "component",
+      "name": "SE Document Suite"
+    },
+    {
+      "id": "COMP-5",
+      "kind": "component",
+      "name": "Orchestration"
+    },
+    {
+      "id": "COMP-5.1",
+      "kind": "component",
+      "name": "Enrichment"
+    },
+    {
+      "id": "COMP-5.2",
+      "kind": "component",
+      "name": "Decomposition"
+    },
+    {
+      "id": "COMP-6",
+      "kind": "component",
+      "name": "Extract"
+    },
+    {
+      "id": "COMP-7",
+      "kind": "component",
+      "name": "Authoring"
+    },
+    {
+      "id": "COMP-8",
+      "kind": "component",
+      "name": "CLI"
+    },
+    {
+      "id": "COMP-9",
+      "kind": "component",
+      "name": "Configuration"
+    },
+    {
+      "id": "COMP-COMMENT-SYS",
+      "kind": "component",
+      "name": "Comment System"
+    },
+    {
+      "id": "COMP-DASHBOARD",
+      "kind": "component",
+      "name": "Pipeline HTML Dashboard Renderer"
+    },
+    {
+      "id": "COMP-LLM",
+      "kind": "component",
+      "name": "LLM Provider Protocol"
+    },
+    {
+      "id": "COMP-SIL",
+      "kind": "component",
+      "name": "SI&L Instrumentation"
+    }
+  ]
+}
+  </script>
+  <script src="assets/pipeline_dashboard/badges.js" defer></script>
+  <script src="assets/pipeline_dashboard/drilldown.js" defer></script>
+</body>
+</html>

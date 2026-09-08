@@ -430,6 +430,86 @@ The `learning_curve` table in telemetry tracks improvement over successive repos
 | opencode-arch | `../opencode-arch/` | MCP extension (token broker) + CLI + E2E benchmarks | 157 passed |
 | arch-agent | `../arch-agent/` | Training pipeline + surrogate | 574 passed |
 
+## SI&L + LLM Provider Layer + Pipeline Dashboard
+
+Phase B of the SI&L + Provider initiative added three cross-cutting concerns
+that together turn the pipeline from an opaque batch process into an
+observable, provider-agnostic, deterministically-rebuildable system. The
+AMS side owns the schema, storage, and rendering primitives; the OCA side
+owns the runtime adapters and MCP surface.
+
+### SI&L (Structural Interface Layer)
+
+SI&L is a component-scoped telemetry log for architecturally-significant
+call sites. Records live in the consuming repo under
+`.architecture/sil.sqlite` — a SQLite-backed ring buffer that retains the
+50 most recent events per `component_id`. Rollup snapshots are written to
+`.architecture/sil/<component_id>.yaml` and carry pre-aggregated 7-day
+metrics (invocations, failure rate, average duration).
+
+To inspect a single component: the OCA MCP tool
+`architect_component_health COMP-<id>` returns an envelope of shape
+`{ok, record: {component_id, kind, name, metrics, recent_events}, trend}`.
+For a system-wide view, `architect_evaluate` merges an `sil_summary` key
+of shape `{component_id: {invocations_7d, failure_rate_7d, avg_duration_ms}}`
+into its regular report.
+
+Instrumented sites currently cover: 10 pipeline stages (`stage:*`), 5
+lifecycle renderers (`renderer:*`), 3 validators (`validator:*`), and all
+19 MCP `*_tool` handlers (`mcp_tool:*`). Instrumentation is applied via the
+`@sil_instrument` decorator in `architecture_model.sil.decorators`, which
+is a no-op when no `SILStore` is bound to the current context.
+
+### LLM Provider Layer
+
+Providers are abstracted behind a runtime-checkable `LLMProvider` Protocol
+at `architecture_model.llm.provider`, exposing `complete`, `stream`,
+`structured`, and `tokenize`. Three concrete adapters live in OCA:
+`MCPProvider` (subprocess invocation via `OpencodeRunner`),
+`FrontierProvider` (direct Anthropic/OpenAI HTTPS via urllib), and
+`RelayExtProvider` (opencode-relay JSON POST).
+
+Routing is policy-driven. `.architecture/llm/policy.yaml` maps
+`TaskClass` names to `RoutingRule(provider, model, max_cost_usd_per_call,
+fallback)` under a `global_budget_usd`. Callers invoke
+`OpencodeRunner.run_via_policy(prompt, task_class_name=...)` and the
+runner picks the provider/model, enforces per-call cost caps, and falls
+back on error.
+
+Model outputs record their generator via `meta.provider = {name, model,
+policy_ref}` inside `.architecture-model.yaml`. The pipeline stamps this
+at emit time — see `_stamp_provider` in `pipeline/emit.py`. For fully
+reproducible runs, set `AMS_DETERMINISTIC_NOW=<iso8601>` to pin every
+timestamp the pipeline consumes (used by `synthesize._now_iso` and
+`sil.rollup._now_iso`).
+
+### Pipeline Dashboard
+
+The pipeline dashboard is a single, self-contained interactive HTML file
+that visualizes a pipeline architecture slice with live SI&L badges.
+Running `architect_artifact_rebuild <spec>` (OCA MCP) writes the artifact
+to `.architecture/lifecycle/artifacts/pipeline.html` (or wherever the
+rebuild spec targets).
+
+The rebuild is a three-step pipeline. First, a slice YAML (example at
+`tests/fixtures/lifecycle/pipeline.slice.yaml`) selects capabilities,
+components, and constraints from the model. Second, a view YAML with
+projector `pipeline_html_data` runs `build()` to produce a
+`{nodes, edges, badges}` JSON payload. Third, the `pipeline-html`
+renderer embeds that JSON in an HTML shell and links to vanilla-JS
+assets under `assets/pipeline_dashboard/{index.css,badges.js,drilldown.js}`.
+
+Open the file in any browser (`file://.../pipeline.html`). Clicking a node
+opens a drill-down panel showing id, name, kind, and colored badges
+(validation_score, invocations, failure_rate, latency) using green/yellow/
+red thresholds.
+
+The renderer is deterministic: identical inputs produce byte-identical
+HTML output. This is guarded by
+`tests/lifecycle/test_dashboard_rebuild.py`, which round-trips the
+materialize→render path twice and asserts both string equality and
+node/edge ordering stability.
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 

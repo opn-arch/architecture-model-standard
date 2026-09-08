@@ -1,0 +1,49 @@
+meta:
+  schema_version: '2.1.0'
+  project: pipeline-dashboard
+entities:
+  capabilities:
+    - id: CAP-INGEST
+      name: Ingest Sources
+      status: ACTIVE
+      source_block: F1
+    - id: CAP-RENDER
+      name: Render Dashboard
+      status: ACTIVE
+      source_block: F2
+  components:
+    - id: COMP-COLLECTOR
+      name: Collector
+      status: ACTIVE
+      layer: pipeline
+      source_block: F1
+    - id: COMP-BUILDER
+      name: Dashboard Builder
+      status: ACTIVE
+      layer: pipeline
+      source_block: F2
+    - id: COMP-VIEWER
+      name: Dashboard Viewer
+      status: ACTIVE
+      layer: pipeline
+      source_block: F2
+  constraints:
+    - id: CON-LATENCY
+      name: Sub-second Render
+      status: ACTIVE
+relationships:
+  - from: COMP-COLLECTOR
+    to: CAP-INGEST
+    type: realizes
+  - from: COMP-BUILDER
+    to: CAP-RENDER
+    type: realizes
+  - from: COMP-VIEWER
+    to: CAP-RENDER
+    type: allocated-to
+  - from: COMP-BUILDER
+    to: CON-LATENCY
+    type: constrained-by
+  - from: COMP-VIEWER
+    to: CON-LATENCY
+    type: constrained-by

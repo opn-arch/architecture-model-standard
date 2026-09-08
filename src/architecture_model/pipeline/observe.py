@@ -31,6 +31,7 @@ from .protocol import (
     StageResult,
     Uncertainty,
 )
+from architecture_model.sil.decorators import instrumented
 
 
 class ObserveStage:
@@ -39,6 +40,7 @@ class ObserveStage:
     name: str = "observe"
     requires: list[str] = []
 
+    @instrumented("stage:observe")
     def run(self, ctx: PipelineContext) -> StageResult[Inventory]:
         start = time.time()
         diagnostics: list[Diagnostic] = []

@@ -34,6 +34,7 @@ from __future__ import annotations
 
 from architecture_model.lifecycle.artifact_spec import ArtifactSpec
 from architecture_model.lifecycle.view_projection import ProjectedView
+from architecture_model.sil.decorators import instrumented
 
 _NAME = "ai-context"
 
@@ -53,6 +54,7 @@ def _check_renderer(artifact: ArtifactSpec) -> None:
         )
 
 
+@instrumented("renderer:ai-context")
 def render_ai_context(
     view: ProjectedView | list[ProjectedView], artifact: ArtifactSpec
 ) -> bytes:
@@ -107,4 +109,6 @@ def render_ai_context(
     return text.encode("utf-8")
 
 
-__all__ = ["render_ai_context"]
+__all__ = ["render_ai_context", "render"]
+
+render = render_ai_context

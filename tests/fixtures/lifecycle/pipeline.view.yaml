@@ -1,0 +1,7 @@
+id: pipeline-dashboard-view
+contract_version: "1.0.0"
+slice_ref:
+  slice_id: pipeline-dashboard
+  model_revision: rev-1
+projector: pipeline_html_data
+output_content_kind: diagram

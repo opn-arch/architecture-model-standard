@@ -1,0 +1,3567 @@
+meta:
+  schema_version: '2.1'
+  project: architecture-model-standard
+  generated_at: '2026-08-16'
+  domain_profile: library
+entities:
+  actors:
+  - id: ACT-1
+    name: AI Agent (MCP Client)
+    status: ACTIVE
+    description: LLM-based coding agent that invokes architecture tools via MCP protocol
+    intent: Consume compressed architecture context to generate, validate, and update
+      models
+    goals:
+    - Load and query architecture models
+    - Validate model correctness
+    - Propose model updates
+    - Trace change impact
+    type: human
+  - id: ACT-2
+    name: Developer
+    status: ACTIVE
+    description: Human developer using CLI or integrating the library directly
+    intent: Author and maintain architecture models for software projects
+    goals:
+    - Define system architecture
+    - Validate models against code
+    - Generate documentation
+    - Track architectural drift
+    type: human
+  - id: ACT-3
+    name: CI/CD Pipeline
+    status: ACTIVE
+    description: Automated pipeline running validation and doc generation on commits
+    intent: Automate architecture validation and documentation generation in pipelines
+    goals:
+    - Run validation checks on PRs
+    - Generate architecture docs
+    - Detect model drift
+    type: human
+  capabilities:
+  - id: CAP-0
+    name: Provide Architecture-as-Code Standard
+    status: ACTIVE
+    description: Root capability encompassing all system functions
+  - id: CAP-0.1
+    name: Understand Software Architecture
+    status: ACTIVE
+    description: Analyze and represent software architecture from source code
+  - id: CAP-0.2
+    name: Validate Architectural Claims
+    status: ACTIVE
+    description: Verify architectural claims against code reality
+  - id: CAP-0.3
+    name: Generate Architecture Artifacts
+    status: ACTIVE
+    description: Produce documentation, models, and exports from architectural knowledge
+  - id: CAP-0.4
+    name: Evolve Architecture Over Time
+    status: ACTIVE
+    description: Track changes, decompose systems, and maintain model quality
+  - id: CAP-1
+    name: Validate Architecture Models
+    status: ACTIVE
+    description: Check model correctness, completeness, hierarchy consistency, and
+      domain rules
+    intent: Ensure architecture models are structurally sound and internally consistent
+      before downstream consumption
+    moes:
+    - Validation score >= 80 on well-formed models
+    - Zero false-positive errors on valid models
+    - All referential integrity violations detected
+  - id: CAP-2
+    name: Extract Architecture from Code
+    status: ACTIVE
+    description: Scan source code AST and derive components, relationships, behaviors
+      automatically
+    intent: Bootstrap architecture models from existing codebases without manual authoring
+    moes:
+    - Extraction produces valid models scoring >= 90 on arbitrary Python repos
+    - All non-trivial source files represented in the model
+    - Relationship types correctly inferred from import analysis
+  - id: CAP-3
+    name: Run Modular Extraction Pipeline
+    status: ACTIVE
+    description: "Execute 10-stage pipeline (observe\u2192infer\u2192allocate\u2192\
+      relate\u2192specify\u2192contract\u2192validate\u2192decompose\u2192synthesize\u2192\
+      emit)"
+    intent: Provide a repeatable, cacheable, stage-by-stage process for producing
+      architecture models from code
+    moes:
+    - All 10 stages complete without error on repos with >200 files
+    - Each stage independently runnable with cached predecessors
+    - Deterministic output for identical input
+  - id: CAP-4
+    name: Generate Reality Manifest
+    status: ACTIVE
+    description: Scan source files to produce structural facts (functions, imports,
+      classes, routes, tests)
+    intent: Establish ground-truth code inventory so architecture claims can be verified
+      against reality
+    moes:
+    - All non-trivial Python files scanned with function/class extraction
+    - Import edges resolved with >95% accuracy
+    - Manifest generation completes in <10s for repos with 200 files
+  - id: CAP-5
+    name: Generate SE Documentation
+    status: ACTIVE
+    description: Produce functional analysis, logical architecture, use cases, requirements,
+      V&V, operations docs
+    intent: Auto-generate standards-compliant systems engineering documentation from
+      architecture models
+    moes:
+    - Generate at least 15 SE document types from a single model
+    - Core docs (health, functional-analysis) regenerate in <1s without LLM
+    - User-edited sections preserved across regeneration
+  - id: CAP-6
+    name: Author Model from Requirements
+    status: ACTIVE
+    description: Parse requirements document into a concept-phase architecture model
+    intent: Enable forward-engineering by converting stakeholder requirements into
+      architecture before code exists
+    moes:
+    - Parse markdown requirements into valid ArchitectureModel
+    - Actors, capabilities, and constraints correctly extracted
+    - Generated model passes validation with score >= 80
+  - id: CAP-7
+    name: Slice and Query Models
+    status: ACTIVE
+    description: Filter model by block, layer, status, artifact for focused context
+      delivery
+    intent: Deliver only relevant architecture context to token-limited AI agents
+      and focused human queries
+    moes:
+    - Sliced output fits within 4000-token budget
+    - Slice preserves all relationships touching included entities
+    - Query response time <100ms for any slice operation
+  - id: CAP-8
+    name: Diff Model Versions
+    status: ACTIVE
+    description: Compare two model versions showing additions, removals, and changes
+    intent: Track architectural evolution over time and detect unintended structural
+      changes
+    moes:
+    - All added, removed, and changed entities detected
+    - Diff output human-readable and machine-parseable
+    - Diff completes in <1s for models with 100+ entities
+  - id: CAP-9
+    name: Decompose Models Hierarchically
+    status: ACTIVE
+    description: Break coarse models into per-system sub-models with parent/child
+      relationships
+    intent: Enable scalable architecture management by splitting large models into
+      focused, self-contained subsystems
+    moes:
+    - Components with >=5 files produce autonomous sub-models
+    - Each sub-model is independently valid
+    - Parent model correctly references all child systems
+  - id: CAP-10
+    name: Enrich Models with Code Intelligence
+    status: ACTIVE
+    description: Auto-populate signatures, constants, test contracts, behaviors from
+      source
+    intent: Bridge the gap between abstract architecture and concrete code to enable
+      faithful code regeneration
+    moes:
+    - Signatures populated for >90% of public functions
+    - Body hints cover trivial functions (one-liners)
+    - Test contracts extracted for all test files with assertions
+  - id: CAP-11
+    name: Assess Regen Readiness
+    status: ACTIVE
+    description: Score how well a model captures enough detail to regenerate code
+    intent: Quantify whether a model contains sufficient information for an AI agent
+      to regenerate working code
+    moes:
+    - Regen score correlates with actual test pass rate (r > 0.8)
+    - Per-component scores with actionable blocker list
+    - Grade scale (A-F) matches blind regeneration fidelity
+  - id: CAP-12
+    name: Check Development Gate
+    status: ACTIVE
+    description: Verify code reality is tracking toward authored architecture intent
+    intent: Prevent architectural drift by gating development milestones on model-to-code
+      alignment
+    moes:
+    - Gate check reports coverage percentage of authored capabilities
+    - Unimplemented capabilities clearly flagged
+    - Gate result includes pass/fail with actionable gaps
+  - id: CAP-13
+    name: Detect and Fix Model Drift
+    status: ACTIVE
+    description: Compare model against current code, report coverage gaps
+    intent: Keep architecture models synchronized with evolving codebases by detecting
+      and reporting divergence
+    moes:
+    - File coverage reported as percentage of source files modeled
+    - Orphan components (no matching files) detected
+    - Drift report generated in <5s
+  - id: CAP-14
+    name: Manage Global Learnings
+    status: ACTIVE
+    description: Store, retrieve, and apply heuristics/archetypes/workflows across
+      pipeline runs
+    intent: Improve pipeline accuracy over time by accumulating and reusing extraction
+      patterns
+    moes:
+    - Learnings persisted across pipeline runs
+    - Pattern lookup returns relevant heuristics in <100ms
+    - Duplicate learnings deduplicated by content hash
+  - id: CAP-15
+    name: Export for AI Consumption
+    status: ACTIVE
+    description: Produce flat-file exports optimized for token-limited AI environments
+    intent: Make architecture models portable and consumable by AI agents that cannot
+      access the repository directly
+    moes:
+    - Export includes model, sub-models, docs, manifests, and diagrams
+    - Exported package is self-contained (no external dependencies)
+    - Total export size fits within reasonable token budgets for frontier models
+  - id: CAP-1.1
+    name: Validate JSON Schema Compliance
+    status: ACTIVE
+    description: Checks model against JSON Schema definition
+  - id: CAP-1.2
+    name: Enforce Entity ID Uniqueness
+    status: ACTIVE
+    description: Ensures no duplicate entity IDs exist
+  - id: CAP-1.3
+    name: Check Referential Integrity
+    status: ACTIVE
+    description: Validates all relationship from/to IDs exist
+  - id: CAP-1.4
+    name: Detect Orphan Entities
+    status: ACTIVE
+    description: Finds entities with no relationships
+  - id: CAP-1.5
+    name: Verify Capability Realization
+    status: ACTIVE
+    description: Ensures capabilities are realized by components
+  - id: CAP-1.6
+    name: Check Hierarchy Consistency
+    status: ACTIVE
+    description: Validates parent-child containment consistency
+  - id: CAP-1.7
+    name: Detect Dependency Cycles
+    status: ACTIVE
+    description: Finds circular dependency chains
+  - id: CAP-1.8
+    name: Validate Domain Profile Rules
+    status: ACTIVE
+    description: Checks domain-specific validation rules
+  - id: CAP-2.1
+    name: Derive Capabilities from Config
+    status: ACTIVE
+    description: Extracts capabilities from project configuration
+  - id: CAP-2.2
+    name: Infer Actors from Routes
+    status: ACTIVE
+    description: Identifies system actors from HTTP route patterns
+  - id: CAP-2.3
+    name: Derive Components from Manifest
+    status: ACTIVE
+    description: Creates components from AST manifest data
+  - id: CAP-2.4
+    name: Derive Cross-Block Interfaces
+    status: ACTIVE
+    description: Identifies interfaces between functional blocks
+  - id: CAP-2.5
+    name: Detect Code Constraints
+    status: ACTIVE
+    description: Discovers constraints from code analysis
+  - id: CAP-2.6
+    name: Derive Entity Relationships
+    status: ACTIVE
+    description: Builds relationships from import and call analysis
+  - id: CAP-3.1
+    name: AST-Scan Source Files
+    status: ACTIVE
+    description: 'Observe stage: parse source into typed inventory'
+  - id: CAP-3.2
+    name: Infer Capabilities from Code
+    status: ACTIVE
+    description: 'Infer stage: derive capabilities from code patterns'
+  - id: CAP-3.3
+    name: Allocate Files to Components
+    status: ACTIVE
+    description: 'Allocate stage: group files into components'
+  - id: CAP-3.4
+    name: Derive Entity Relationships
+    status: ACTIVE
+    description: 'Relate stage: discover inter-entity relationships'
+  - id: CAP-3.5
+    name: Derive Interface Specifications
+    status: ACTIVE
+    description: 'Specify stage: extract interface contracts'
+  - id: CAP-3.6
+    name: Extract Test Contracts
+    status: ACTIVE
+    description: 'Contract stage: map tests to components'
+  - id: CAP-3.7
+    name: Validate Pipeline Output
+    status: ACTIVE
+    description: 'Validate stage: check model structural correctness'
+  - id: CAP-3.8
+    name: Detect System Boundaries
+    status: ACTIVE
+    description: 'Decompose stage: identify subsystem boundaries'
+  - id: CAP-3.9
+    name: Run Scoped Sub-Pipelines
+    status: ACTIVE
+    description: 'Synthesize stage: run pipeline per subsystem'
+  - id: CAP-3.10
+    name: Emit Final Artifacts
+    status: ACTIVE
+    description: 'Emit stage: write models and manifests to disk'
+  - id: CAP-4.1
+    name: Scan Python AST
+    status: ACTIVE
+    description: Parse Python source files into structured records
+  - id: CAP-4.2
+    name: Extract Function Body Hints
+    status: ACTIVE
+    description: Derive implementation hints from function bodies
+  - id: CAP-4.3
+    name: Build Call Graph
+    status: ACTIVE
+    description: Construct function call graph from AST analysis
+  - id: CAP-4.4
+    name: Analyze Test Files
+    status: ACTIVE
+    description: Extract test structure and coverage mapping
+  - id: CAP-4.5
+    name: Group Modules into Components
+    status: ACTIVE
+    description: Cluster modules by affinity into components
+  - id: CAP-4.6
+    name: Scan Multi-Language Sources
+    status: ACTIVE
+    description: Parse Kotlin, Java, and TypeScript sources
+  - id: CAP-5.1
+    name: Generate ConOps Document
+    status: ACTIVE
+    description: Produce concept of operations document
+  - id: CAP-5.2
+    name: Generate Functional Analysis
+    status: ACTIVE
+    description: Produce functional decomposition analysis
+  - id: CAP-5.3
+    name: Generate Logical Architecture Doc
+    status: ACTIVE
+    description: Produce logical architecture specification
+  - id: CAP-5.4
+    name: Generate Use Case Document
+    status: ACTIVE
+    description: Produce actor-driven use case documentation
+  - id: CAP-5.5
+    name: Generate Component Specifications
+    status: ACTIVE
+    description: Produce per-component technical specs
+  - id: CAP-5.6
+    name: Generate Interface Specification
+    status: ACTIVE
+    description: Produce interface control documentation
+  - id: CAP-5.7
+    name: Generate Mermaid Diagrams
+    status: ACTIVE
+    description: Produce visual architecture diagrams
+  - id: CAP-5.8
+    name: Generate Health Report
+    status: ACTIVE
+    description: Produce model quality and completeness report
+  - id: CAP-6.1
+    name: Parse Requirements Markdown
+    status: ACTIVE
+    description: Extract structured data from requirements docs
+  - id: CAP-6.2
+    name: Parse Actor Definitions
+    status: ACTIVE
+    description: Identify actors from requirements text
+  - id: CAP-6.3
+    name: Parse Capability Hierarchy
+    status: ACTIVE
+    description: Build capability tree from requirements
+  - id: CAP-7.1
+    name: Slice by Source Block
+    status: ACTIVE
+    description: Extract model subset for a functional block
+  - id: CAP-7.2
+    name: Slice by Architecture Layer
+    status: ACTIVE
+    description: Extract model subset for a layer
+  - id: CAP-7.3
+    name: Slice for Artifact Regeneration
+    status: ACTIVE
+    description: Extract minimal model for code regeneration
+  - id: CAP-7.4
+    name: Slice for SE Document Views
+    status: ACTIVE
+    description: Extract model subsets for specific SE documents
+  - id: CAP-8.1
+    name: Diff Entity Lists by ID
+    status: ACTIVE
+    description: Compare entity sets between model versions
+  - id: CAP-8.2
+    name: Detect Field-Level Changes
+    status: ACTIVE
+    description: Identify specific field modifications
+  - id: CAP-8.3
+    name: Determine Affected Artifacts
+    status: ACTIVE
+    description: Trace which artifacts need regeneration
+  - id: CAP-9.1
+    name: Compute Component Complexity
+    status: ACTIVE
+    description: Score component complexity for decomposition
+  - id: CAP-9.2
+    name: Identify System Candidates
+    status: ACTIVE
+    description: Find components large enough to be subsystems
+  - id: CAP-9.3
+    name: Detect System Boundaries
+    status: ACTIVE
+    description: Use multi-signal affinity to define boundaries
+  - id: CAP-9.4
+    name: Trace Connected Entities
+    status: ACTIVE
+    description: Follow relationships to build complete sub-models
+  - id: CAP-9.5
+    name: Write Sub-Models to Disk
+    status: ACTIVE
+    description: Persist decomposed models to filesystem
+  - id: CAP-10.1
+    name: Extract Function Signatures
+    status: ACTIVE
+    description: Copy AST signatures onto model components
+  - id: CAP-10.2
+    name: Extract Module-Level Constants
+    status: ACTIVE
+    description: Capture constants for regeneration
+  - id: CAP-10.3
+    name: Extract Test Contracts
+    status: ACTIVE
+    description: Map test assertions to component contracts
+  - id: CAP-10.4
+    name: Discover Test Files by Convention
+    status: ACTIVE
+    description: Match test files to source by naming
+  - id: CAP-11.1
+    name: Compute System Readiness Score
+    status: ACTIVE
+    description: Overall system regeneration readiness
+  - id: CAP-11.2
+    name: Compute Component Readiness
+    status: ACTIVE
+    description: Per-component readiness assessment
+  - id: CAP-11.3
+    name: Classify Body Hint Quality
+    status: ACTIVE
+    description: Rate body hint usefulness for regeneration
+  - id: CAP-12.1
+    name: Check Code-Intent Alignment
+    status: ACTIVE
+    description: Verify code matches architectural intent
+  - id: CAP-12.2
+    name: Evaluate Stage Quality Gates
+    status: ACTIVE
+    description: Check pipeline stage pass/fail criteria
+  - id: CAP-13.1
+    name: Generate Drift Report
+    status: ACTIVE
+    description: Produce report of model-code divergence
+  - id: CAP-13.2
+    name: Identify Stale Artifacts
+    status: ACTIVE
+    description: Find artifacts that need regeneration
+  - id: CAP-13.3
+    name: Compare Model to Code Reality
+    status: ACTIVE
+    description: Check architectural claims against AST
+  - id: CAP-14.1
+    name: Store Heuristic Rules
+    status: ACTIVE
+    description: Persist extraction heuristics across projects
+  - id: CAP-14.2
+    name: Match Archetype Patterns
+    status: ACTIVE
+    description: Recognize known architectural patterns
+  - id: CAP-14.3
+    name: Record User Corrections
+    status: ACTIVE
+    description: Capture manual model corrections
+  - id: CAP-14.4
+    name: Track Quality History
+    status: ACTIVE
+    description: Monitor extraction quality over time
+  - id: CAP-14.5
+    name: Generate Lessons from Diagnostics
+    status: ACTIVE
+    description: Extract insights from pipeline runs
+  - id: CAP-15.1
+    name: Build Flat File Export
+    status: ACTIVE
+    description: Package model as flat files for token-limited AI
+  - id: CAP-15.2
+    name: Generate Schema Reference
+    status: ACTIVE
+    description: Produce schema documentation
+  - id: CAP-15.3
+    name: Generate Custom Instructions
+    status: ACTIVE
+    description: Create AI agent instructions from model
+  - id: CAP-15.4
+    name: Concatenate Sub-Model Artifacts
+    status: ACTIVE
+    description: Merge subsystem artifacts for export
+  - id: CAP-COMMENT-COLLABORATION
+    name: Enable Reviewer-Author Comment Loop
+    status: ACTIVE
+    description: Structured comment records attached to review artifacts, persisted
+      in a typed store with a CLI surface. Powers the "comment-view loop" collaboration
+      model between reviewers and authors.
+    intent: Give reviewers a machine-readable place to leave persistent commentary
+      on architecture models, views, and artifacts.
+  - id: CAP-SIL-INSTRUMENTATION
+    name: Instrument Architecturally-Significant Call Sites
+    status: ACTIVE
+    description: Component-scoped SI&L telemetry captures invocations, outcomes, and
+      latency of pipeline stages, renderers, validators, and MCP tool handlers. Backed
+      by a SQLite ring buffer with 7-day rollups.
+    intent: Turn the pipeline from an opaque batch process into an observable system
+      where component health can be queried on-demand.
+  - id: CAP-LLM-ROUTING
+    name: Route LLM Calls Through Pluggable Providers
+    status: ACTIVE
+    description: LLMProvider Protocol abstracts subprocess (MCP), frontier HTTPS,
+      and relay adapters behind a runtime-checkable interface. Emit-time provider
+      stamping guarantees reproducibility.
+    intent: Decouple the pipeline from any single LLM backend; support policy- driven
+      routing and provenance capture per generated model.
+  - id: CAP-INTERACTIVE-DASHBOARD
+    name: Render Interactive Pipeline Dashboard
+    status: ACTIVE
+    description: Single self-contained HTML with embedded pipeline state JSON, colored
+      SI&L badges, and drill-down panels. Deterministic build; assets auto-mirrored
+      alongside output.
+    intent: Provide a review-friendly visual for the pipeline architecture that surfaces
+      live health metrics without a running backend.
+  behaviors:
+  - id: BEH-19
+    name: 'CLI: Test Guided Round Trip'
+    status: ACTIVE
+    actor_id: ACT-1
+    steps:
+    - ArgumentParser
+    - add_argument
+    - parse_args
+    - run
+    - run_test_guided
+  - id: BEH-20
+    name: 'CLI: Test Enriched Round Trip'
+    status: ACTIVE
+    actor_id: ACT-1
+    steps:
+    - ArgumentParser
+    - add_argument
+    - parse_args
+    - list
+    - len
+  - id: BEH-21
+    name: 'CLI: Test Multi Repo'
+    status: ACTIVE
+    actor_id: ACT-1
+    steps:
+    - ArgumentParser
+    - add_argument
+    - parse_args
+    - print
+    - mkdir
+  - id: BEH-22
+    name: 'CLI: Test Round Trip'
+    status: ACTIVE
+    actor_id: ACT-1
+    steps:
+    - ArgumentParser
+    - add_argument
+    - parse_args
+    - print
+    - load_training_examples
+  - id: BEH-23
+    name: 'CLI: Test Decomposed Round Trip'
+    status: ACTIVE
+    actor_id: ACT-1
+    steps:
+    - ArgumentParser
+    - add_argument
+    - parse_args
+    - list
+    - len
+  - id: BEH-24
+    name: 'CLI: Main'
+    status: ACTIVE
+    actor_id: ACT-1
+    steps:
+    - ArgumentParser
+    - add_subparsers
+    - add_parser
+    - add_argument
+    - parse_args
+  - id: BEH-25
+    name: 'CLI: Runner'
+    status: ACTIVE
+    actor_id: ACT-1
+    steps:
+    - ArgumentParser
+    - add_argument
+    - parse_args
+    - run_benchmark
+  - id: BEH-P1
+    name: Run Extraction Pipeline
+    status: ACTIVE
+    description: Execute the 10-stage extraction pipeline to produce an architecture
+      model from source code
+    steps:
+    - observe
+    - infer
+    - allocate
+    - relate
+    - specify
+    - contract
+    - validate
+    - decompose
+    - synthesize
+    - emit
+  - id: BEH-P1.1
+    name: Run Observe Stage
+    status: ACTIVE
+    description: AST-scan all source files to produce module inventory
+  - id: BEH-P1.2
+    name: Run Infer Stage
+    status: ACTIVE
+    description: Infer capabilities, actors, and behaviors from inventory
+  - id: BEH-P1.3
+    name: Run Allocate Stage
+    status: ACTIVE
+    description: Allocate modules to components and assign layers
+  - id: BEH-P1.4
+    name: Run Relate Stage
+    status: ACTIVE
+    description: Derive relationships between entities
+  - id: BEH-P1.5
+    name: Run Specify Stage
+    status: ACTIVE
+    description: Specify interfaces from component analysis
+  - id: BEH-P1.6
+    name: Run Contract Stage
+    status: ACTIVE
+    description: Match test contracts to components
+  - id: BEH-P1.7
+    name: Run Validate Stage
+    status: ACTIVE
+    description: Validate model quality and compute confidence scores
+  - id: BEH-P1.8
+    name: Run Decompose Stage
+    status: ACTIVE
+    description: Identify system boundaries for autonomous subsystems
+  - id: BEH-P1.9
+    name: Run Synthesize Stage
+    status: ACTIVE
+    description: Run scoped sub-pipelines for each detected system
+  - id: BEH-P1.10
+    name: Run Emit Stage
+    status: ACTIVE
+    description: Write all artifacts to disk
+  - id: BEH-P1.R
+    name: LLM Refinement
+    status: ACTIVE
+    description: Cross-cutting LLM enrichment between stages
+  - id: BEH-P1.1.1
+    name: Filter Files
+    status: ACTIVE
+  - id: BEH-P1.1.2
+    name: Scan Module
+    status: ACTIVE
+  - id: BEH-P1.1.3
+    name: Extract Functions
+    status: ACTIVE
+  - id: BEH-P1.1.4
+    name: Extract Classes
+    status: ACTIVE
+  - id: BEH-P1.1.5
+    name: Extract Constants
+    status: ACTIVE
+  - id: BEH-P1.1.6
+    name: Extract Imports
+    status: ACTIVE
+  - id: BEH-P1.1.7
+    name: Resolve Import Edges
+    status: ACTIVE
+  - id: BEH-P1.1.8
+    name: Detect Routes
+    status: ACTIVE
+  - id: BEH-P1.1.9
+    name: Detect Constraints
+    status: ACTIVE
+  - id: BEH-P1.1.10
+    name: Find Tests
+    status: ACTIVE
+  - id: BEH-P1.1.11
+    name: Find Docs
+    status: ACTIVE
+  - id: BEH-P1.2.1
+    name: Infer from Routes
+    status: ACTIVE
+  - id: BEH-P1.2.2
+    name: Infer from Triggers
+    status: ACTIVE
+  - id: BEH-P1.2.3
+    name: Infer Domain Modules
+    status: ACTIVE
+  - id: BEH-P1.2.4
+    name: Infer CLI
+    status: ACTIVE
+  - id: BEH-P1.2.5
+    name: Infer Infrastructure
+    status: ACTIVE
+  - id: BEH-P1.2.6
+    name: Infer Package Grouping
+    status: ACTIVE
+  - id: BEH-P1.2.7
+    name: Infer Default Actors
+    status: ACTIVE
+  - id: BEH-P1.2.8
+    name: Infer Behaviors
+    status: ACTIVE
+  - id: BEH-P1.2.9
+    name: Infer Library Behaviors
+    status: ACTIVE
+  - id: BEH-P1.2.10
+    name: Infer Fallback
+    status: ACTIVE
+  - id: BEH-P1.3.1
+    name: Detect Project Type
+    status: ACTIVE
+  - id: BEH-P1.3.2
+    name: Seed from Capabilities
+    status: ACTIVE
+  - id: BEH-P1.3.3
+    name: Import Affinity
+    status: ACTIVE
+  - id: BEH-P1.3.4
+    name: Per-File Allocation
+    status: ACTIVE
+  - id: BEH-P1.3.5
+    name: Split Oversized
+    status: ACTIVE
+  - id: BEH-P1.3.6
+    name: Merge Undersized
+    status: ACTIVE
+  - id: BEH-P1.3.7
+    name: Infer Layer
+    status: ACTIVE
+  - id: BEH-P1.3.8
+    name: Boundary Coherence
+    status: ACTIVE
+  - id: BEH-P1.3.9
+    name: Package Grouping
+    status: ACTIVE
+  - id: BEH-P1.4.1
+    name: Derive Realizes
+    status: ACTIVE
+  - id: BEH-P1.4.2
+    name: Derive Depends-On
+    status: ACTIVE
+  - id: BEH-P1.4.3
+    name: Derive Contains
+    status: ACTIVE
+  - id: BEH-P1.4.4
+    name: Derive Exposes
+    status: ACTIVE
+  - id: BEH-P1.4.5
+    name: Derive Constrained-By
+    status: ACTIVE
+  - id: BEH-P1.4.6
+    name: Build File Map
+    status: ACTIVE
+  - id: BEH-P1.5.1
+    name: Specify REST Interfaces
+    status: ACTIVE
+  - id: BEH-P1.5.2
+    name: Specify CLI Interfaces
+    status: ACTIVE
+  - id: BEH-P1.5.3
+    name: Specify Library API
+    status: ACTIVE
+  - id: BEH-P1.5.4
+    name: Name Library Interface
+    status: ACTIVE
+  - id: BEH-P1.5.5
+    name: Specify Fallback
+    status: ACTIVE
+  - id: BEH-P1.6.1
+    name: Match by Target
+    status: ACTIVE
+  - id: BEH-P1.6.2
+    name: Match by Directory
+    status: ACTIVE
+  - id: BEH-P1.7.1
+    name: Check Capability Realization
+    status: ACTIVE
+  - id: BEH-P1.7.2
+    name: Detect Orphans
+    status: ACTIVE
+  - id: BEH-P1.7.3
+    name: Check File Coverage
+    status: ACTIVE
+  - id: BEH-P1.7.4
+    name: Check Boundary Coherence
+    status: ACTIVE
+  - id: BEH-P1.7.5
+    name: Compute Confidence
+    status: ACTIVE
+  - id: BEH-P1.8.1
+    name: Identify Autonomous Systems
+    status: ACTIVE
+  - id: BEH-P1.8.2
+    name: Decompose Large Components
+    status: ACTIVE
+  - id: BEH-P1.8.3
+    name: Cluster by Directory
+    status: ACTIVE
+  - id: BEH-P1.8.4
+    name: Merge Coupled Components
+    status: ACTIVE
+  - id: BEH-P1.9.1
+    name: Decide Stages
+    status: ACTIVE
+  - id: BEH-P1.9.2
+    name: Run Scoped Sub-Pipeline
+    status: ACTIVE
+  - id: BEH-P1.9.3
+    name: Build Model YAML
+    status: ACTIVE
+  - id: BEH-P1.9.4
+    name: Build Manifest
+    status: ACTIVE
+  - id: BEH-P1.9.5
+    name: Build System-of-Systems
+    status: ACTIVE
+  - id: BEH-P1.9.6
+    name: Collect Lessons
+    status: ACTIVE
+  - id: BEH-P1.10.1
+    name: Write Files
+    status: ACTIVE
+  - id: BEH-P1.10.2
+    name: Build Test Map
+    status: ACTIVE
+  - id: BEH-P1.10.3
+    name: Generate SE Docs
+    status: ACTIVE
+  - id: BEH-P1.10.4
+    name: Enrich Model
+    status: ACTIVE
+  - id: BEH-P1.10.5
+    name: System Interactions
+    status: ACTIVE
+  - id: BEH-P1.10.6
+    name: LLM Reviews
+    status: ACTIVE
+  - id: BEH-P1.10.7
+    name: Inline Reviews
+    status: ACTIVE
+  - id: BEH-P1.R.1
+    name: Build Refinement Prompt
+    status: ACTIVE
+  - id: BEH-P1.R.2
+    name: Normalize LLM Output
+    status: ACTIVE
+  - id: BEH-P1.R.3
+    name: Diff Stage Outputs
+    status: ACTIVE
+  - id: BEH-P1.R.4
+    name: Apply Corrections
+    status: ACTIVE
+  interfaces:
+  - id: IF-1
+    name: main CLI
+    status: ACTIVE
+    type: internal
+  - id: IF-2
+    name: runner CLI
+    status: ACTIVE
+    type: internal
+  - id: IF-3
+    name: COMP-4-7 Library API
+    status: ACTIVE
+    description: 1 public symbols consumed by other components
+    type: internal
+  - id: IF-4
+    name: COMP-3-1 Library API
+    status: ACTIVE
+    description: 5 public symbols exported
+    type: internal
+  - id: IF-5
+    name: COMP-4-1 Library API
+    status: ACTIVE
+    description: 10 public symbols exported
+    type: internal
+  - id: IF-6
+    name: COMP-4-2 Library API
+    status: ACTIVE
+    description: 77 public symbols exported
+    type: internal
+  - id: IF-7
+    name: COMP-4-3 Library API
+    status: ACTIVE
+    description: 121 public symbols exported
+    type: internal
+  - id: IF-8
+    name: COMP-4-4 Library API
+    status: ACTIVE
+    description: 13 public symbols exported
+    type: internal
+  - id: IF-9
+    name: COMP-4-5 Library API
+    status: ACTIVE
+    description: 54 public symbols exported
+    type: internal
+  - id: IF-10
+    name: COMP-4-6 Library API
+    status: ACTIVE
+    description: 4 public symbols exported
+    type: internal
+  - id: IF-11
+    name: COMP-4-8 Library API
+    status: ACTIVE
+    description: 3 public symbols exported
+    type: internal
+  - id: IF-12
+    name: COMP-4-9 Library API
+    status: ACTIVE
+    description: 4 public symbols exported
+    type: internal
+  - id: IF-13
+    name: COMP-4-10 Library API
+    status: ACTIVE
+    description: 35 public symbols exported
+    type: internal
+  - id: IF-14
+    name: COMP-4-11 Library API
+    status: ACTIVE
+    description: 10 public symbols exported
+    type: internal
+  - id: IF-15
+    name: COMP-4-12 Library API
+    status: ACTIVE
+    description: 5 public symbols exported
+    type: internal
+  - id: IF-16
+    name: COMP-4-13 Library API
+    status: ACTIVE
+    description: 16 public symbols exported
+    type: internal
+  - id: IF-auto-COMP-1
+    name: Core API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.1
+    name: Type System API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.2
+    name: Validation API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.3
+    name: Parser & Persistence API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.4
+    name: Model Operations API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-1.5
+    name: Quality Metrics API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2
+    name: Pipeline API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.1
+    name: Pipeline Coordination API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.2
+    name: Observation Stages API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.3
+    name: Allocation & Relation Stages API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.4
+    name: Specification & Contract Stages API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-2.5
+    name: Synthesis & Emit Stages API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-3.1
+    name: Scanners API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-3.2
+    name: Graph & Analysis API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-3.3
+    name: Grouping & Generation API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-4.1
+    name: Core Doc Generators API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-4.2
+    name: SE Document Suite API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-5
+    name: Orchestration API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-5.1
+    name: Enrichment API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-5.2
+    name: Decomposition API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-6
+    name: Extract API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-7
+    name: Authoring API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-8
+    name: CLI API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-9
+    name: Configuration API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-10
+    name: Export API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-11
+    name: Pipeline Learning API
+    status: ACTIVE
+    type: internal
+  - id: IF-auto-COMP-12
+    name: Utilities API
+    status: ACTIVE
+    type: internal
+  constraints:
+  - id: CON-1
+    name: Python >=3.11
+    status: ACTIVE
+    type: technology
+  - id: CON-2
+    name: 'CI/CD: GitHub Actions'
+    status: ACTIVE
+    type: technology
+  layers:
+  - id: LAY-1
+    name: Foundation
+    status: ACTIVE
+    description: Core types, utilities, and shared infrastructure
+    order: 0
+  - id: LAY-2
+    name: Domain
+    status: ACTIVE
+    description: "Domain logic \u2014 manifest generation, extraction, pipeline stages"
+    order: 0
+  - id: LAY-3
+    name: Application
+    status: ACTIVE
+    description: Orchestration, enrichment, quality assessment
+    order: 0
+  - id: LAY-4
+    name: Interface
+    status: ACTIVE
+    description: CLI commands and external-facing APIs
+    order: 0
+  - id: LAY-5
+    name: Infrastructure
+    status: ACTIVE
+    description: Configuration, profiles, JSON schema, file discovery
+    order: 0
+  components:
+  - id: COMP-1
+    name: Core
+    status: ACTIVE
+    description: Foundation types, validation, parsing, and model operations
+    intent: Provide the canonical type system and fundamental operations that all
+      other subsystems depend on
+    goals:
+    - Define a complete, extensible type system for architecture entities
+    - Validate models with scored, actionable feedback
+    - Support lossless YAML round-trip parsing
+    failure_modes:
+    - Type system changes break downstream parsers and MCP tools
+    - Validation false positives block valid models from progressing
+    - Parser loses data on round-trip due to YAML serialization edge cases
+    trade_offs:
+    - Rich type system vs. schema simplicity for external consumers
+    - Strict validation vs. permissive parsing for backward compatibility
+    - Monolithic core vs. fine-grained packages (chose monolithic for import simplicity)
+    layer: foundation
+    files:
+    - src/architecture_model/core/__init__.py
+    kind: library
+  - id: COMP-1.1
+    name: Type System
+    status: ACTIVE
+    description: All dataclasses, enums, and type definitions for the architecture
+      model
+    layer: foundation
+    files:
+    - src/architecture_model/core/types.py
+    kind: library
+    contract: Defines ArchitectureModel, Component, Relationship, Behavior, System,
+      and 17 entity types
+  - id: COMP-1.2
+    name: Validation
+    status: ACTIVE
+    description: "Model validation \u2014 JSON schema, referential integrity, hierarchy,\
+      \ cycles, domain rules"
+    layer: foundation
+    files:
+    - src/architecture_model/core/validator.py
+    - src/architecture_model/spec/__init__.py
+    kind: library
+    contract: "validate_model() \u2192 ValidationResult with scored issues (100 -\
+      \ 10*errors - 2*warnings)"
+  - id: COMP-1.3
+    name: Parser & Persistence
+    status: ACTIVE
+    description: YAML parsing, serialization, round-trip preservation
+    layer: foundation
+    files:
+    - src/architecture_model/core/parser.py
+    - src/architecture_model/core/compression.py
+    - src/architecture_model/core/merger.py
+    - src/architecture_model/persistence/__init__.py
+    - src/architecture_model/persistence/store.py
+    kind: library
+    contract: "load_model(path) \u2192 ArchitectureModel, dump_model(model, path),\
+      \ compact_for_storage()"
+  - id: COMP-1.4
+    name: Model Operations
+    status: ACTIVE
+    description: Slice, diff, coverage, impact analysis, clustering, source block
+      assignment
+    layer: foundation
+    files:
+    - src/architecture_model/core/slicer.py
+    - src/architecture_model/core/differ.py
+    - src/architecture_model/core/coverage.py
+    - src/architecture_model/core/cluster.py
+    - src/architecture_model/core/source_block_assign.py
+    - src/architecture_model/core/source_block_quality.py
+    - src/architecture_model/core/representativeness.py
+    - src/architecture_model/core/test_affinity.py
+    kind: library
+    contract: slice_model(focus), diff_models(a, b), compute_coverage(model, manifest)
+  - id: COMP-1.5
+    name: Quality Metrics
+    status: ACTIVE
+    description: Confidence scoring, regen readiness, corrections tracking
+    layer: foundation
+    files:
+    - src/architecture_model/core/confidence.py
+    - src/architecture_model/core/regen_readiness.py
+    - src/architecture_model/core/corrections.py
+    - src/architecture_model/core/decomposer.py
+    - src/architecture_model/core/visualize.py
+    kind: library
+    contract: compute_model_confidence(), compute_regen_readiness_score()
+  - id: COMP-2
+    name: Pipeline
+    status: ACTIVE
+    description: Modular 10-stage extraction pipeline with coordination and caching
+    intent: Automate the entire code-to-model extraction process as a repeatable,
+      cacheable pipeline
+    goals:
+    - Execute all 10 stages in dependency order with error recovery
+    - Cache intermediate results for incremental re-runs
+    - Surface uncertainties for human or LLM resolution between stages
+    failure_modes:
+    - Cache staleness causes pipeline to emit outdated models
+    - Stage failure cascades prevent partial results from being usable
+    - Uncertainty accumulation across stages produces low-confidence models
+    trade_offs:
+    - Stage granularity (10 stages) vs. simpler monolithic extraction
+    - Cache correctness vs. cache invalidation complexity
+    - Determinism vs. allowing LLM enrichment between stages
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/__init__.py
+  - id: COMP-2.1
+    name: Pipeline Coordination
+    status: ACTIVE
+    description: Stage orchestration, context management, caching, reporting
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/coordinator.py
+    - src/architecture_model/pipeline/protocol.py
+    - src/architecture_model/pipeline/cache.py
+    - src/architecture_model/pipeline/context_gen.py
+    - src/architecture_model/pipeline/report.py
+    - src/architecture_model/pipeline/artifacts.py
+    - src/architecture_model/pipeline/corrections.py
+    contract: PipelineCoordinator.run(repo_path) orchestrates all stages in dependency
+      order
+  - id: COMP-2.2
+    name: Observation Stages
+    status: ACTIVE
+    description: 'observe + infer: scan codebase and infer components/behaviors'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/observe.py
+    - src/architecture_model/pipeline/observe_types.py
+    - src/architecture_model/pipeline/infer.py
+    - src/architecture_model/pipeline/infer_types.py
+    contract: "observe() \u2192 ObserveResult, infer() \u2192 InferResult with components\
+      \ and behaviors"
+  - id: COMP-2.3
+    name: Allocation & Relation Stages
+    status: ACTIVE
+    description: 'allocate + relate: assign modules to blocks, discover relationships'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/allocate.py
+    - src/architecture_model/pipeline/allocate_types.py
+    - src/architecture_model/pipeline/relate.py
+    - src/architecture_model/pipeline/relate_types.py
+    contract: "allocate() \u2192 AllocateResult, relate() \u2192 RelateResult with\
+      \ typed edges"
+  - id: COMP-2.4
+    name: Specification & Contract Stages
+    status: ACTIVE
+    description: 'specify + contract + validate: add interfaces, test contracts, validate'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/specify.py
+    - src/architecture_model/pipeline/specify_types.py
+    - src/architecture_model/pipeline/contract.py
+    - src/architecture_model/pipeline/contract_types.py
+    - src/architecture_model/pipeline/validate.py
+    - src/architecture_model/pipeline/validate_types.py
+    contract: "specify() \u2192 SpecifyResult, contract() \u2192 ContractResult, validate()\
+      \ \u2192 ValidateResult"
+  - id: COMP-2.5
+    name: Synthesis & Emit Stages
+    status: ACTIVE
+    description: 'decompose + synthesize + emit: break down, merge, output final model'
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/decompose.py
+    - src/architecture_model/pipeline/decompose_types.py
+    - src/architecture_model/pipeline/synthesize.py
+    - src/architecture_model/pipeline/synthesize_types.py
+    - src/architecture_model/pipeline/emit.py
+    - src/architecture_model/pipeline/emit_types.py
+    - src/architecture_model/pipeline/regen_score.py
+    contract: "decompose() \u2192 systems, synthesize() \u2192 merged model, emit()\
+      \ \u2192 final YAML"
+  - id: COMP-3
+    name: Manifest
+    status: ACTIVE
+    description: "Source code scanning \u2014 AST analysis, import resolution, grouping"
+    intent: Produce ground-truth code inventories via AST scanning so architecture
+      claims can be verified
+    goals:
+    - Scan all source files and extract functions, classes, imports, and metrics
+    - Resolve import edges to build accurate dependency graphs
+    - Group modules into logical components by affinity signals
+    failure_modes:
+    - Dynamic imports or metaprogramming invisible to AST scanning
+    - Import resolution fails on namespace packages or conditional imports
+    - Grouping algorithm produces incoherent component boundaries
+    trade_offs:
+    - AST-only analysis (fast, deterministic) vs. runtime analysis (more accurate)
+    - Language-specific scanners vs. universal parsing (chose per-language for accuracy)
+    - Scan depth vs. performance on large repos
+    layer: domain
+    files:
+    - src/architecture_model/manifest/__init__.py
+    - src/architecture_model/manifest/types.py
+    kind: library
+  - id: COMP-3.1
+    name: Scanners
+    status: ACTIVE
+    description: Language-specific source file scanners (Python, TypeScript, Kotlin)
+    layer: domain
+    files:
+    - src/architecture_model/manifest/scanner.py
+    - src/architecture_model/manifest/multi_scanner.py
+    - src/architecture_model/manifest/ts_scanner.py
+    - src/architecture_model/manifest/kt_scanner.py
+    - src/architecture_model/manifest/body_hints.py
+    - src/architecture_model/manifest/metrics.py
+    - src/architecture_model/manifest/scan_cache.py
+    - src/architecture_model/manifest/protocol.py
+    kind: library
+    contract: "scan_module(path) \u2192 ModuleInfo with functions, classes, imports,\
+      \ metrics"
+  - id: COMP-3.2
+    name: Graph & Analysis
+    status: ACTIVE
+    description: Import resolution, call graphs, interface extraction, behavior detection
+    layer: domain
+    files:
+    - src/architecture_model/manifest/call_graph.py
+    - src/architecture_model/manifest/interfaces.py
+    - src/architecture_model/manifest/behavior.py
+    - src/architecture_model/manifest/chains.py
+    - src/architecture_model/manifest/test_analyzer.py
+    kind: library
+    contract: "resolve_imports() \u2192 edges, extract_interfaces() \u2192 InterfaceInfo"
+  - id: COMP-3.3
+    name: Grouping & Generation
+    status: ACTIVE
+    description: Component grouping logic, manifest generation, recursive scanning
+    layer: domain
+    files:
+    - src/architecture_model/manifest/grouping.py
+    - src/architecture_model/manifest/generator.py
+    - src/architecture_model/manifest/recursive.py
+    - src/architecture_model/manifest/blocks.py
+    - src/architecture_model/manifest/slicers.py
+    - src/architecture_model/manifest/display.py
+    kind: library
+    contract: "group_modules() \u2192 component assignments, generate_manifest() \u2192\
+      \ full manifest"
+  - id: COMP-4
+    name: Documentation
+    status: ACTIVE
+    description: "Architecture documentation generation \u2014 component specs, SE\
+      \ docs, diagrams"
+    intent: Generate human-readable and AI-consumable architecture documentation from
+      models automatically
+    goals:
+    - Produce component specs, ICDs, and dependency matrices from model data
+    - Generate 15+ SE document types following standards-based templates
+    - Create Mermaid diagrams for visual architecture communication
+    failure_modes:
+    - Generated docs become stale if not regenerated after model changes
+    - User edits lost on regeneration if preservation logic fails
+    - Diagram complexity makes large systems unreadable
+    trade_offs:
+    - Template-based generation (fast, consistent) vs. LLM-generated prose (richer)
+    - Document completeness vs. generation speed
+    - Preserving user edits vs. full regeneration freshness
+    layer: application
+    files:
+    - src/architecture_model/docs/__init__.py
+    kind: library
+  - id: COMP-4.1
+    name: Core Doc Generators
+    status: ACTIVE
+    description: Component spec, ICD, dependency matrix, health report, drift, diagrams
+    layer: application
+    files:
+    - src/architecture_model/docs/generator.py
+    - src/architecture_model/docs/component_spec.py
+    - src/architecture_model/docs/icd.py
+    - src/architecture_model/docs/dependency_matrix.py
+    - src/architecture_model/docs/health.py
+    - src/architecture_model/docs/drift.py
+    - src/architecture_model/docs/diagrams.py
+    - src/architecture_model/docs/index.py
+    - src/architecture_model/docs/behavior_spec.py
+    - src/architecture_model/docs/integration_flows.py
+    - src/architecture_model/docs/system_design.py
+    kind: library
+    contract: "generate_docs(model, formats) \u2192 dict of doc_type \u2192 markdown\
+      \ content"
+  - id: COMP-4.2
+    name: SE Document Suite
+    status: ACTIVE
+    description: Full systems engineering document suite (15 document types)
+    layer: application
+    files:
+    - src/architecture_model/docs/se/__init__.py
+    - src/architecture_model/docs/se/generator.py
+    - src/architecture_model/docs/se/frontmatter.py
+    - src/architecture_model/docs/se/detect.py
+    - src/architecture_model/docs/se/conops.py
+    - src/architecture_model/docs/se/functional_analysis.py
+    - src/architecture_model/docs/se/logical_architecture.py
+    - src/architecture_model/docs/se/requirements_analysis.py
+    - src/architecture_model/docs/se/use_cases.py
+    - src/architecture_model/docs/se/verification_validation.py
+    - src/architecture_model/docs/se/interface_spec.py
+    - src/architecture_model/docs/se/operations_manual.py
+    - src/architecture_model/docs/se/maintenance_manual.py
+    - src/architecture_model/docs/se/risk_assessment.py
+    - src/architecture_model/docs/se/security_analysis.py
+    - src/architecture_model/docs/se/data_model.py
+    - src/architecture_model/docs/se/deployment_guide.py
+    - src/architecture_model/docs/se/api_reference.py
+    - src/architecture_model/docs/se/cli_reference.py
+    - src/architecture_model/docs/se/changelog.py
+    - src/architecture_model/docs/se/plugin_guide.py
+    kind: library
+    contract: "generate_se_docs(model, manifest) \u2192 15 SE document types as markdown"
+  - id: COMP-5
+    name: Orchestration
+    status: ACTIVE
+    description: "High-level workflows \u2014 enrichment, decomposition, behavior\
+      \ analysis"
+    intent: Compose lower-level operations into complete workflows that transform
+      models end-to-end
+    goals:
+    - Enrich models with signatures, constants, and test contracts from manifests
+    - Decompose models into hierarchical per-system sub-models
+    - Detect and wire cross-component behavior flows
+    failure_modes:
+    - Enrichment overwrites manually curated model data
+    - Decomposition creates too many tiny sub-models that fragment context
+    - Behavior inference produces spurious flows from coincidental call patterns
+    trade_offs:
+    - Automated enrichment (convenient) vs. manual curation (precise)
+    - Aggressive decomposition vs. keeping small systems inline
+    - Behavior cap (40 per component) vs. complete behavioral coverage
+    layer: application
+    files:
+    - src/architecture_model/orchestration/__init__.py
+  - id: COMP-5.1
+    name: Enrichment
+    status: ACTIVE
+    description: Auto-enrich models with signatures, constants, test contracts, capabilities
+    layer: application
+    files:
+    - src/architecture_model/orchestration/enrich.py
+    - src/architecture_model/orchestration/auto_enrich.py
+    - src/architecture_model/orchestration/enrichment_context.py
+    - src/architecture_model/orchestration/capability_inference.py
+    - src/architecture_model/orchestration/trigger_detection.py
+    - src/architecture_model/orchestration/use_case_inference.py
+    - src/architecture_model/orchestration/naming_context.py
+    contract: "enrich_model(model, manifest) \u2192 enriched model with populated\
+      \ signatures/contracts"
+  - id: COMP-5.2
+    name: Decomposition
+    status: ACTIVE
+    description: Model decomposition, behavior flows, compaction
+    layer: application
+    files:
+    - src/architecture_model/orchestration/decompose.py
+    - src/architecture_model/orchestration/deep_decompose.py
+    - src/architecture_model/orchestration/behavior_decompose.py
+    - src/architecture_model/orchestration/behavior_flows.py
+    - src/architecture_model/orchestration/compaction.py
+    - src/architecture_model/orchestration/pipeline.py
+    contract: "decompose_model() \u2192 per-system sub-models, compact_for_storage()"
+  - id: COMP-6
+    name: Extract
+    status: ACTIVE
+    description: "Code-to-model extraction \u2014 route detection, constraint detection,\
+      \ artifact parsing"
+    intent: Convert raw code artifacts into structured architecture model entities
+    goals:
+    - Detect web routes, API endpoints, and framework patterns
+    - Extract constraints from configuration and code annotations
+    - Parse existing architecture artifacts (markdown tables, specs) into model entities
+    failure_modes:
+    - Framework-specific extractors miss custom or unconventional patterns
+    - Artifact parser misinterprets markdown table structure
+    - Constraint detection produces false positives from comments or dead code
+    trade_offs:
+    - Framework-specific detection (accurate) vs. generic heuristics (portable)
+    - Extracting from code vs. from documentation (chose both with priority on code)
+    - Precision vs. recall in constraint detection
+    layer: domain
+    files:
+    - src/architecture_model/extract/from_code.py
+    - src/architecture_model/extract/from_artifacts.py
+    - src/architecture_model/extract/route_detector.py
+    - src/architecture_model/extract/constraint_detector.py
+    - src/architecture_model/extract/table_parser.py
+    kind: library
+    contract: "extract_from_code(path) \u2192 partial model, detect_routes() \u2192\
+      \ route info"
+  - id: COMP-7
+    name: Authoring
+    status: ACTIVE
+    description: Forward-author models from requirements, check development gates
+    intent: Enable architecture-first development by creating models before code and
+      gating progress against them
+    goals:
+    - Parse freeform requirements documents into concept-phase models
+    - Gate development milestones on architecture coverage
+    - Bridge the gap between stakeholder intent and technical architecture
+    failure_modes:
+    - Requirements parser misinterprets ambiguous natural language
+    - Gate check produces false failures due to naming mismatches
+    - Authored model diverges from implementation reality over time
+    trade_offs:
+    - Structured parsing (reliable) vs. LLM-based understanding (flexible)
+    - Strict gate enforcement vs. advisory-only feedback
+    - Requirements granularity vs. model abstraction level
+    layer: application
+    files:
+    - src/architecture_model/authoring/__init__.py
+    - src/architecture_model/authoring/parser.py
+    - src/architecture_model/authoring/gate.py
+    kind: library
+    contract: "parse_requirements_doc(text) \u2192 ArchitectureModel, check_development_gate(model,\
+      \ manifest)"
+  - id: COMP-8
+    name: CLI
+    status: ACTIVE
+    description: "Command-line interface \u2014 all user-facing commands"
+    intent: Expose all architecture operations as CLI commands for developers and
+      CI/CD pipelines
+    goals:
+    - Provide commands for validate, slice, diff, manifest, enrich, decompose, and
+      docs
+    - Support both interactive developer use and headless CI/CD execution
+    - Serve as the MCP-wrappable surface for AI agent integration
+    failure_modes:
+    - CLI argument parsing errors give unhelpful messages
+    - Command fails silently instead of returning non-zero exit code
+    - Breaking CLI changes disrupt MCP server wrappers
+    trade_offs:
+    - Single monolithic CLI vs. per-subsystem CLIs (chose monolithic for discoverability)
+    - Rich interactive output vs. machine-parseable output (support both via flags)
+    - Exposing all operations vs. curating a minimal command set
+    layer: interface
+    files:
+    - src/architecture_model/__init__.py
+    - src/architecture_model/__main__.py
+    - src/architecture_model/cli/__init__.py
+    - src/architecture_model/cli/main.py
+    - src/architecture_model/cli/visualize.py
+    contract: 'CLI commands: validate, slice, diff, manifest, enrich, decompose, docs,
+      coverage, etc.'
+  - id: COMP-9
+    name: Configuration
+    status: ACTIVE
+    description: Configuration loading, domain profiles, schema definitions
+    intent: Provide discoverable, zero-config project settings with extensibility
+      via domain profiles
+    goals:
+    - Auto-discover project configuration from directory structure
+    - Support domain profiles (software, controls, mechanical, electrical)
+    - Define schema rules that the validator enforces
+    failure_modes:
+    - Auto-discovery misidentifies project root or source directories
+    - Profile loading fails silently and falls back to wrong defaults
+    - Schema definition conflicts with validator implementation
+    trade_offs:
+    - Convention-over-configuration (easy start) vs. explicit config (predictable)
+    - Built-in profiles vs. user-defined profiles (support both)
+    - Schema strictness vs. forward compatibility with new fields
+    layer: infrastructure
+    files:
+    - src/architecture_model/config/__init__.py
+    - src/architecture_model/config/loader.py
+    - src/architecture_model/config/schema.py
+    - src/architecture_model/profiles/__init__.py
+    - src/architecture_model/profiles/builtins/__init__.py
+    - src/architecture_model/profiles/schema.py
+    kind: library
+    contract: "load_config(repo_path) \u2192 ProjectConfig with profile and domain\
+      \ settings"
+  - id: COMP-10
+    name: Export
+    status: ACTIVE
+    description: Flat-file export for AI consumption, reference doc generation
+    intent: Package architecture models into portable, self-contained bundles for
+      token-limited AI environments
+    goals:
+    - Export model, sub-models, docs, manifests, and diagrams as flat files
+    - Generate reference documentation for offline consumption
+    - Produce exports that are self-contained without repository access
+    failure_modes:
+    - Export produces files too large for target AI context window
+    - Missing sub-models or manifests make export incomplete
+    - File path references in export break when moved to different location
+    trade_offs:
+    - Complete export (large) vs. minimal export (fits token budgets)
+    - Directory-based export vs. single archive (support both)
+    - Including all artifacts vs. selective export based on use case
+    layer: application
+    files:
+    - src/architecture_model/export/__init__.py
+    - src/architecture_model/export/flatfiles.py
+    - src/architecture_model/export/reference.py
+    kind: library
+    contract: "export_flat_files(model, output_dir) \u2192 portable architecture package"
+  - id: COMP-11
+    name: Pipeline Learning
+    status: ACTIVE
+    description: Global learning store, heuristics, lessons extraction
+    layer: domain
+    files:
+    - src/architecture_model/pipeline/global_learning.py
+    - src/architecture_model/pipeline/learning.py
+    - src/architecture_model/pipeline/lessons.py
+    kind: library
+    contract: "GlobalLearningStore \u2014 persist and retrieve heuristics/archetypes/workflows"
+  - id: COMP-12
+    name: Utilities
+    status: ACTIVE
+    description: Shared utilities, monitoring, patterns, data loading
+    intent: Provide cross-cutting utilities that prevent duplication across subsystems
+    goals:
+    - Centralize file discovery and exclusion pattern logic
+    - Provide monitoring and observability hooks for key operations
+    - Share common patterns and data loading utilities
+    failure_modes:
+    - Utility changes silently break multiple dependent subsystems
+    - Monitoring hooks add latency to critical-path operations
+    - Exclusion patterns miss new file types or directory conventions
+    trade_offs:
+    - Shared utilities (DRY) vs. subsystem autonomy (decoupled)
+    - Monitoring overhead vs. operational visibility
+    - General-purpose utilities vs. domain-specific helpers
+    layer: infrastructure
+    files:
+    - src/architecture_model/utils/__init__.py
+    - src/architecture_model/utils/discovery.py
+    - src/architecture_model/monitoring.py
+    - src/architecture_model/monitoring_checks.py
+    - src/architecture_model/patterns.py
+    - src/architecture_model/data/__init__.py
+    kind: library
+    contract: Shared utilities for file discovery, monitoring, common patterns
+  - id: COMP-COMMENT-SYS
+    name: Comment System
+    status: ACTIVE
+    description: Structured comment collection for review workflows. Provides typed
+      models (Comment, Thread), a persistent store, CLI command, and journal integration
+      so comments survive across sessions.
+    layer: collaboration
+    files:
+    - src/architecture_model/comments/__init__.py
+    - src/architecture_model/comments/models.py
+    - src/architecture_model/comments/store.py
+    - src/architecture_model/cli/comment.py
+    - src/architecture_model/lifecycle/journal.py
+    kind: library
+    contract: Persist and retrieve structured comments (author, target_ref, body,
+      thread_id) with CLI-driven read/write. Comments emit journal events for auditability.
+  - id: COMP-SIL
+    name: SI&L Instrumentation
+    status: ACTIVE
+    description: Component-scoped telemetry layer. `sil_instrument` decorator, SQLite-
+      backed ring-buffer store (50 events per component), 7-day rollup aggregator.
+      Instrumentation currently covers 10 pipeline stages, 5 renderers, 3 validators,
+      and 19 MCP tool handlers.
+    layer: observability
+    files:
+    - src/architecture_model/sil/__init__.py
+    - src/architecture_model/sil/decorators.py
+    - src/architecture_model/sil/record.py
+    - src/architecture_model/sil/rollup.py
+    kind: library
+    contract: '@sil_instrument("component:id") wraps any callable; emits SILRecord
+      on invocation; SILStore.rollup(component_id) returns {invocations_7d, failure_rate_7d,
+      avg_duration_ms}.'
+  - id: COMP-LLM
+    name: LLM Provider Protocol
+    status: ACTIVE
+    description: Runtime-checkable Protocol exposing complete/stream/structured/tokenize.
+      AMS defines the contract; concrete adapters (MCP, Frontier, RelayExt) live in
+      OCA. Emit stage stamps `meta.provider` on every generated model for reproducibility.
+    layer: observability
+    files:
+    - src/architecture_model/llm/__init__.py
+    - src/architecture_model/llm/provider.py
+    - src/architecture_model/pipeline/emit.py
+    kind: library
+    contract: LLMProvider Protocol; `_stamp_provider` writes meta.provider = {name,
+      model, policy_ref} at pipeline emit time. `AMS_DETERMINISTIC_NOW` pins timestamps
+      for byte-identical rebuilds.
+  - id: COMP-DASHBOARD
+    name: Pipeline HTML Dashboard Renderer
+    status: ACTIVE
+    description: '`pipeline-html` renderer + `pipeline_html_data` projector. Produces
+      a single-file interactive HTML with embedded JSON state, colored SI&L badges,
+      and vanilla-JS drill-down. Deterministic; assets mirrored under assets/pipeline_dashboard/.'
+    layer: presentation
+    files:
+    - src/architecture_model/lifecycle/renderers/pipeline_html.py
+    - src/architecture_model/lifecycle/renderers/pipeline_html_data.py
+    - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/index.css
+    - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/badges.js
+    - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/drilldown.js
+    kind: library
+    contract: render_pipeline_html(*, materialized_slice, sil_store=None) -> str.
+      Renderer registered in Renderer Literal and artifact-spec schema enum. Byte-identical
+      output guaranteed under fixed inputs.
+  systems:
+  - id: SYS-1
+    name: Model Foundation
+    status: ACTIVE
+    description: "Core types, validation, parsing \u2014 everything depends on this"
+    component_ids:
+    - COMP-1
+    - COMP-1.1
+    - COMP-1.2
+    - COMP-1.3
+    - COMP-1.4
+    - COMP-1.5
+  - id: SYS-2
+    name: Extraction Pipeline
+    status: ACTIVE
+    description: The 10-stage pipeline and its supporting manifest/extract systems
+    component_ids:
+    - COMP-2
+    - COMP-2.1
+    - COMP-2.2
+    - COMP-2.3
+    - COMP-2.4
+    - COMP-2.5
+    - COMP-3
+    - COMP-3.1
+    - COMP-3.2
+    - COMP-3.3
+    - COMP-6
+    - COMP-11
+  - id: SYS-3
+    name: Documentation & Reporting
+    status: ACTIVE
+    description: All documentation generation capabilities
+    component_ids:
+    - COMP-4
+    - COMP-4.1
+    - COMP-4.2
+    - COMP-10
+  - id: SYS-4
+    name: User Interface
+    status: ACTIVE
+    description: CLI commands, orchestration workflows, authoring
+    component_ids:
+    - COMP-5
+    - COMP-5.1
+    - COMP-5.2
+    - COMP-7
+    - COMP-8
+  requirements:
+  - id: REQ-1
+    name: Model validation score threshold
+    status: ACTIVE
+    text: Model must score >= 80 on validation
+    priority: must
+  - id: REQ-2
+    name: Zero errors on valid models
+    status: ACTIVE
+    text: Valid models must produce zero validation errors
+    priority: must
+  - id: REQ-3
+    name: Hierarchy consistency
+    status: ACTIVE
+    text: parent_id/children must be bidirectionally consistent
+    priority: must
+  - id: REQ-4
+    name: Entity type coverage
+    status: ACTIVE
+    text: 'Include entities: capabilities, components with signatures, constants,
+      symbols, and files'
+    priority: must
+  - id: REQ-5
+    name: Relationship population
+    status: ACTIVE
+    text: Include relationships (realizes, depends-on, contains at minimum)
+    priority: must
+  - id: REQ-6
+    name: Deterministic pipeline
+    status: ACTIVE
+    text: Same input must produce same output (no randomness in stage execution)
+    priority: must
+  - id: REQ-7
+    name: Pipeline stage independence
+    status: ACTIVE
+    text: Each pipeline stage must be independently runnable with cached predecessors
+    priority: should
+  - id: REQ-8
+    name: Complete file scanning
+    status: ACTIVE
+    text: Manifest must scan all non-trivial Python files in the repository
+    priority: must
+  - id: REQ-9
+    name: Import edge resolution
+    status: ACTIVE
+    text: All resolvable imports must produce edges in the manifest
+    priority: must
+  - id: REQ-10
+    name: Multi-language scanning
+    status: ACTIVE
+    text: Support Python, TypeScript, and Kotlin source scanning
+    priority: should
+  - id: REQ-11
+    name: Live artifact regeneration
+    status: ACTIVE
+    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs)
+      must regenerate in <1s without LLM
+    priority: must
+  - id: REQ-12
+    name: SE doc completeness
+    status: ACTIVE
+    text: Generate at minimum functional analysis, logical architecture, use cases,
+      and requirements analysis
+    priority: must
+  - id: REQ-13
+    name: User edit preservation
+    status: ACTIVE
+    text: Regeneration must preserve user-edited sections in SE docs
+    priority: should
+  - id: REQ-14
+    name: Requirements-to-model parsing
+    status: ACTIVE
+    text: Parse markdown requirements document into concept-phase ArchitectureModel
+    priority: must
+  - id: REQ-15
+    name: Regen score accuracy
+    status: ACTIVE
+    text: Regen readiness score must correlate with actual regeneration success rate
+    priority: should
+  - id: REQ-16
+    name: Per-component readiness
+    status: ACTIVE
+    text: Provide per-component regen score with actionable blockers
+    priority: must
+  - id: REQ-17
+    name: Test preservation
+    status: ACTIVE
+    text: All existing tests must continue to pass after changes
+    priority: must
+  - id: REQ-18
+    name: Behavior filtering cap
+    status: ACTIVE
+    text: Maximum 40 behaviors per component to prevent orphan explosion
+    priority: must
+  - id: REQ-19
+    name: Boundary coherence
+    status: ACTIVE
+    text: Components should have >70% intra-component imports vs cross-boundary
+    priority: should
+  - id: REQ-20
+    name: Token-efficient output
+    status: ACTIVE
+    text: Model slice output must fit within 4000 tokens for AI consumption
+    priority: must
+  - id: REQ-21
+    name: Self-documenting artifacts
+    status: ACTIVE
+    text: Generated docs must be readable by both humans and AI without additional
+      context
+    priority: must
+  - id: REQ-22
+    name: Hierarchical navigation
+    status: ACTIVE
+    text: Model must support parent/child component navigation for focused exploration
+    priority: must
+  - id: REQ-23
+    name: Graceful degradation
+    status: ACTIVE
+    text: Pipeline must produce partial results on failure, not crash entirely
+    priority: must
+  - id: REQ-24
+    name: Uncertainty surfacing
+    status: ACTIVE
+    text: Ambiguous inferences must be flagged as uncertainties, not silently guessed
+    priority: should
+  - id: REQ-25
+    name: Large repo handling
+    status: ACTIVE
+    text: Repos with >200 files must complete pipeline in <60s without LLM
+    priority: should
+  - id: REQ-26
+    name: MCP tool compatibility
+    status: ACTIVE
+    text: All model operations must be invocable via MCP tools (architect_*)
+    priority: must
+  - id: REQ-27
+    name: YAML round-trip fidelity
+    status: ACTIVE
+    text: Load/dump cycle must not lose any data or change ordering
+    priority: must
+  - id: REQ-28
+    name: Schema backward compatibility
+    status: ACTIVE
+    text: New schema versions must load models from older schema versions
+    priority: should
+  - id: REQ-29
+    name: Flat-file export completeness
+    status: ACTIVE
+    text: Export must include model, sub-models, docs, manifests, and diagrams
+    priority: should
+  - id: REQ-30
+    name: Offline AI usability
+    status: ACTIVE
+    text: Exported package must be self-contained for token-limited AI environments
+    priority: should
+  - id: REQ-E1
+    name: test_pattern_classification.py has 11 error-handling functions
+    status: ACTIVE
+    priority: could
+  - id: REQ-O1
+    name: validate_model requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-Q1
+    name: Component COMP-28 has 82 test file(s) covering its source
+    status: ACTIVE
+    priority: should
+  - id: REQ-T20
+    name: 'Python >=3.11: Project requires Python >=3.11'
+    status: ACTIVE
+    priority: must
+  - id: REQ-O10
+    name: slice_for_artifact requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O11
+    name: generate_recursive_manifests requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O12
+    name: compute_block_dependencies requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O13
+    name: generate_manifest requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O14
+    name: enrich_from_manifest requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O15
+    name: enrich_behaviors_from_manifest requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O16
+    name: enrich_with_block_context requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O17
+    name: create_behaviors_from_manifest requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O18
+    name: decompose_model requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O19
+    name: compact_root_model requires monitored
+    status: ACTIVE
+    priority: should
+  - id: REQ-O2
+    name: compute_model_confidence requires monitored
+    status: ACTIVE
+    priority: should
+relationships:
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1
+  description: Validator implements model validation
+- type: realizes
+  from: COMP-6
+  to: CAP-2
+  description: Extract implements code-to-model extraction
+- type: realizes
+  from: COMP-2
+  to: CAP-3
+  description: Pipeline implements 10-stage extraction
+- type: realizes
+  from: COMP-3
+  to: CAP-4
+  description: Manifest implements reality manifest generation
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5
+  description: SE Document Suite generates full SE docs
+- type: realizes
+  from: COMP-7
+  to: CAP-6
+  description: Authoring implements requirements-to-model
+- type: realizes
+  from: COMP-1.4
+  to: CAP-7
+  description: Model Operations implements slice and query
+- type: realizes
+  from: COMP-1.4
+  to: CAP-8
+  description: Model Operations implements model diff
+- type: realizes
+  from: COMP-5.2
+  to: CAP-9
+  description: Decomposition implements hierarchical breakdown
+- type: realizes
+  from: COMP-5.1
+  to: CAP-10
+  description: Enrichment implements code intelligence
+- type: realizes
+  from: COMP-1.5
+  to: CAP-11
+  description: Quality Metrics implements regen readiness
+- type: realizes
+  from: COMP-7
+  to: CAP-12
+  description: Authoring gate check
+- type: realizes
+  from: COMP-1.4
+  to: CAP-13
+  description: Coverage/representativeness detects drift
+- type: realizes
+  from: COMP-11
+  to: CAP-14
+  description: Pipeline Learning manages global learnings
+- type: realizes
+  from: COMP-10
+  to: CAP-15
+  description: Export produces flat files for AI
+- type: depends-on
+  from: COMP-2.1
+  to: COMP-1.1
+  description: Pipeline coordination uses core types
+- type: depends-on
+  from: COMP-2.2
+  to: COMP-3.1
+  description: Observe stage uses scanners for code facts
+- type: depends-on
+  from: COMP-2.3
+  to: COMP-1.1
+  description: Allocation uses core types and model structure
+- type: depends-on
+  from: COMP-2.4
+  to: COMP-1.2
+  description: Validate stage invokes core validator
+- type: depends-on
+  from: COMP-2.5
+  to: COMP-1.3
+  description: Emit stage uses parser for YAML output
+- type: depends-on
+  from: COMP-3.1
+  to: COMP-9
+  description: Scanners use config for exclusion patterns
+- type: depends-on
+  from: COMP-3.2
+  to: COMP-3.1
+  description: Graph analysis builds on scanner output
+- type: depends-on
+  from: COMP-3.3
+  to: COMP-3.2
+  description: Grouping uses graph edges for affinity
+- type: depends-on
+  from: COMP-4.1
+  to: COMP-1.1
+  description: Doc generators read model types
+- type: depends-on
+  from: COMP-4.2
+  to: COMP-4.1
+  description: SE docs build on core doc generators
+- type: depends-on
+  from: COMP-5.1
+  to: COMP-3
+  description: Enrichment reads manifest data
+- type: depends-on
+  from: COMP-5.1
+  to: COMP-1.1
+  description: Enrichment populates core types
+- type: depends-on
+  from: COMP-5.2
+  to: COMP-1.5
+  description: Decomposition uses quality metrics
+- type: depends-on
+  from: COMP-6
+  to: COMP-3.1
+  description: Extract uses scanners for code analysis
+- type: depends-on
+  from: COMP-6
+  to: COMP-9
+  description: Extract uses config for settings
+- type: depends-on
+  from: COMP-7
+  to: COMP-1.1
+  description: Authoring produces core model types
+- type: depends-on
+  from: COMP-7
+  to: COMP-3
+  description: Gate check reads manifest
+- type: depends-on
+  from: COMP-8
+  to: COMP-1
+  description: CLI imports all core operations
+- type: depends-on
+  from: COMP-8
+  to: COMP-2
+  description: CLI orchestrates pipeline runs
+- type: depends-on
+  from: COMP-8
+  to: COMP-3
+  description: CLI triggers manifest generation
+- type: depends-on
+  from: COMP-8
+  to: COMP-4
+  description: CLI triggers doc generation
+- type: depends-on
+  from: COMP-8
+  to: COMP-5
+  description: CLI triggers enrichment/decomposition
+- type: depends-on
+  from: COMP-8
+  to: COMP-7
+  description: CLI triggers authoring commands
+- type: depends-on
+  from: COMP-10
+  to: COMP-1.3
+  description: Export serializes model data
+- type: depends-on
+  from: COMP-11
+  to: COMP-9
+  description: Learning store uses config for paths
+- type: depends-on
+  from: COMP-12
+  to: COMP-9
+  description: Utilities use config
+- type: contains
+  from: COMP-1
+  to: COMP-1.1
+- type: contains
+  from: COMP-1
+  to: COMP-1.2
+- type: contains
+  from: COMP-1
+  to: COMP-1.3
+- type: contains
+  from: COMP-1
+  to: COMP-1.4
+- type: contains
+  from: COMP-1
+  to: COMP-1.5
+- type: contains
+  from: COMP-2
+  to: COMP-2.1
+- type: contains
+  from: COMP-2
+  to: COMP-2.2
+- type: contains
+  from: COMP-2
+  to: COMP-2.3
+- type: contains
+  from: COMP-2
+  to: COMP-2.4
+- type: contains
+  from: COMP-2
+  to: COMP-2.5
+- type: contains
+  from: COMP-2
+  to: COMP-11
+- type: contains
+  from: COMP-3
+  to: COMP-3.1
+- type: contains
+  from: COMP-3
+  to: COMP-3.2
+- type: contains
+  from: COMP-3
+  to: COMP-3.3
+- type: contains
+  from: COMP-4
+  to: COMP-4.1
+- type: contains
+  from: COMP-4
+  to: COMP-4.2
+- type: contains
+  from: COMP-5
+  to: COMP-5.1
+- type: contains
+  from: COMP-5
+  to: COMP-5.2
+- type: satisfies
+  from: COMP-1.2
+  to: REQ-1
+  description: Validator enforces score >= 80
+- type: satisfies
+  from: COMP-1.2
+  to: REQ-2
+  description: Validator checks produce zero errors on valid models
+- type: satisfies
+  from: COMP-1.2
+  to: REQ-3
+  description: Hierarchy validator checks bidirectional consistency
+- type: satisfies
+  from: COMP-2.2
+  to: REQ-4
+  description: Infer stage produces all entity types
+- type: satisfies
+  from: COMP-2.3
+  to: REQ-5
+  description: Relate stage produces typed relationships
+- type: satisfies
+  from: COMP-2.1
+  to: REQ-6
+  description: Pipeline coordinator runs deterministically
+- type: satisfies
+  from: COMP-2.1
+  to: REQ-7
+  description: Stage caching enables independent runs
+- type: satisfies
+  from: COMP-3.1
+  to: REQ-8
+  description: Scanners cover all Python files
+- type: satisfies
+  from: COMP-3.2
+  to: REQ-9
+  description: Graph analysis resolves imports to edges
+- type: satisfies
+  from: COMP-3.1
+  to: REQ-10
+  description: Multi-scanner supports Python/TS/Kotlin
+- type: satisfies
+  from: COMP-4.1
+  to: REQ-11
+  description: Template-based generators run in <1s
+- type: satisfies
+  from: COMP-4.2
+  to: REQ-12
+  description: SE suite generates all required doc types
+- type: satisfies
+  from: COMP-4.2
+  to: REQ-13
+  description: SE generator preserves user edits on regen
+- type: satisfies
+  from: COMP-7
+  to: REQ-14
+  description: Authoring parser handles markdown requirements
+- type: satisfies
+  from: COMP-1.5
+  to: REQ-15
+  description: Regen readiness scoring
+- type: satisfies
+  from: COMP-1.5
+  to: REQ-16
+  description: Per-component readiness with blockers
+- type: satisfies
+  from: COMP-2.4
+  to: REQ-17
+  description: Validate stage ensures test preservation
+- type: satisfies
+  from: COMP-5.1
+  to: REQ-18
+  description: Enrichment applies behavior cap at 40
+- type: satisfies
+  from: COMP-3.3
+  to: REQ-19
+  description: Grouping optimizes boundary coherence
+- type: satisfies
+  from: COMP-1.4
+  to: REQ-20
+  description: Slicer enforces token budget
+- type: satisfies
+  from: COMP-4
+  to: REQ-21
+  description: All docs are self-documenting markdown
+- type: satisfies
+  from: COMP-1.1
+  to: REQ-22
+  description: Type system supports parent_id/children
+- type: satisfies
+  from: COMP-2.1
+  to: REQ-23
+  description: Coordinator catches stage failures gracefully
+- type: satisfies
+  from: COMP-2.2
+  to: REQ-24
+  description: Infer stage surfaces uncertainties
+- type: satisfies
+  from: COMP-2
+  to: REQ-25
+  description: Pipeline completes large repos without LLM
+- type: satisfies
+  from: COMP-8
+  to: REQ-26
+  description: CLI exposes all operations for MCP wrapping
+- type: satisfies
+  from: COMP-1.3
+  to: REQ-27
+  description: Parser ensures round-trip fidelity
+- type: satisfies
+  from: COMP-1.3
+  to: REQ-28
+  description: Parser handles old schema versions
+- type: satisfies
+  from: COMP-10
+  to: REQ-29
+  description: Export includes all artifact types
+- type: satisfies
+  from: COMP-10
+  to: REQ-30
+  description: Export is self-contained for AI
+- type: satisfies
+  from: COMP-4
+  to: REQ-O1
+- type: satisfies
+  from: COMP-4
+  to: REQ-Q1
+- type: satisfies
+  from: COMP-4
+  to: REQ-O10
+- type: satisfies
+  from: COMP-4
+  to: REQ-O11
+- type: satisfies
+  from: COMP-4
+  to: REQ-O12
+- type: satisfies
+  from: COMP-4
+  to: REQ-O13
+- type: satisfies
+  from: COMP-4
+  to: REQ-O14
+- type: satisfies
+  from: COMP-4
+  to: REQ-O15
+- type: satisfies
+  from: COMP-4
+  to: REQ-O16
+- type: satisfies
+  from: COMP-4
+  to: REQ-O17
+- type: satisfies
+  from: COMP-4
+  to: REQ-O18
+- type: satisfies
+  from: COMP-4
+  to: REQ-O19
+- type: satisfies
+  from: COMP-4
+  to: REQ-O2
+- type: exposes
+  from: COMP-4
+  to: IF-1
+- type: exposes
+  from: COMP-3
+  to: IF-2
+- type: satisfies
+  from: COMP-1
+  to: REQ-O14
+- type: satisfies
+  from: COMP-1
+  to: REQ-O15
+- type: satisfies
+  from: COMP-1
+  to: REQ-O16
+- type: satisfies
+  from: COMP-1
+  to: REQ-O17
+- type: satisfies
+  from: COMP-6
+  to: REQ-O18
+- type: satisfies
+  from: COMP-6
+  to: REQ-O19
+- type: exposes
+  from: COMP-4
+  to: IF-3
+- type: exposes
+  from: COMP-3
+  to: IF-4
+- type: exposes
+  from: COMP-4
+  to: IF-5
+- type: exposes
+  from: COMP-4
+  to: IF-6
+- type: exposes
+  from: COMP-4
+  to: IF-7
+- type: exposes
+  from: COMP-4
+  to: IF-8
+- type: exposes
+  from: COMP-4
+  to: IF-9
+- type: exposes
+  from: COMP-4
+  to: IF-10
+- type: exposes
+  from: COMP-4
+  to: IF-11
+- type: exposes
+  from: COMP-4
+  to: IF-12
+- type: exposes
+  from: COMP-4
+  to: IF-13
+- type: exposes
+  from: COMP-4
+  to: IF-14
+- type: exposes
+  from: COMP-4
+  to: IF-15
+- type: exposes
+  from: COMP-4
+  to: IF-16
+- type: exposes
+  from: COMP-1
+  to: IF-auto-COMP-1
+- type: exposes
+  from: COMP-1.1
+  to: IF-auto-COMP-1.1
+- type: exposes
+  from: COMP-1.2
+  to: IF-auto-COMP-1.2
+- type: exposes
+  from: COMP-1.3
+  to: IF-auto-COMP-1.3
+- type: exposes
+  from: COMP-1.4
+  to: IF-auto-COMP-1.4
+- type: exposes
+  from: COMP-1.5
+  to: IF-auto-COMP-1.5
+- type: exposes
+  from: COMP-2
+  to: IF-auto-COMP-2
+- type: exposes
+  from: COMP-2.1
+  to: IF-auto-COMP-2.1
+- type: exposes
+  from: COMP-2.2
+  to: IF-auto-COMP-2.2
+- type: exposes
+  from: COMP-2.3
+  to: IF-auto-COMP-2.3
+- type: exposes
+  from: COMP-2.4
+  to: IF-auto-COMP-2.4
+- type: exposes
+  from: COMP-2.5
+  to: IF-auto-COMP-2.5
+- type: exposes
+  from: COMP-3.1
+  to: IF-auto-COMP-3.1
+- type: exposes
+  from: COMP-3.2
+  to: IF-auto-COMP-3.2
+- type: exposes
+  from: COMP-3.3
+  to: IF-auto-COMP-3.3
+- type: exposes
+  from: COMP-4.1
+  to: IF-auto-COMP-4.1
+- type: exposes
+  from: COMP-4.2
+  to: IF-auto-COMP-4.2
+- type: exposes
+  from: COMP-5
+  to: IF-auto-COMP-5
+- type: exposes
+  from: COMP-5.1
+  to: IF-auto-COMP-5.1
+- type: exposes
+  from: COMP-5.2
+  to: IF-auto-COMP-5.2
+- type: exposes
+  from: COMP-6
+  to: IF-auto-COMP-6
+- type: exposes
+  from: COMP-7
+  to: IF-auto-COMP-7
+- type: exposes
+  from: COMP-8
+  to: IF-auto-COMP-8
+- type: exposes
+  from: COMP-9
+  to: IF-auto-COMP-9
+- type: exposes
+  from: COMP-10
+  to: IF-auto-COMP-10
+- type: exposes
+  from: COMP-11
+  to: IF-auto-COMP-11
+- type: exposes
+  from: COMP-12
+  to: IF-auto-COMP-12
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.1
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.2
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.3
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.4
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.5
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.6
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.7
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.8
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.9
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.10
+- type: contains
+  from: BEH-P1
+  to: BEH-P1.R
+- type: triggers
+  from: BEH-P1.1
+  to: BEH-P1.2
+- type: triggers
+  from: BEH-P1.2
+  to: BEH-P1.3
+- type: triggers
+  from: BEH-P1.3
+  to: BEH-P1.4
+- type: triggers
+  from: BEH-P1.4
+  to: BEH-P1.5
+- type: triggers
+  from: BEH-P1.5
+  to: BEH-P1.6
+- type: triggers
+  from: BEH-P1.6
+  to: BEH-P1.7
+- type: triggers
+  from: BEH-P1.7
+  to: BEH-P1.8
+- type: triggers
+  from: BEH-P1.8
+  to: BEH-P1.9
+- type: triggers
+  from: BEH-P1.9
+  to: BEH-P1.10
+- type: triggers
+  from: BEH-P1.2
+  to: BEH-P1.R
+- type: triggers
+  from: BEH-P1.3
+  to: BEH-P1.R
+- type: triggers
+  from: BEH-P1.4
+  to: BEH-P1.R
+- type: triggers
+  from: BEH-P1.5
+  to: BEH-P1.R
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.1
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.2
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.3
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.4
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.5
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.6
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.7
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.8
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.9
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.10
+- type: contains
+  from: BEH-P1.1
+  to: BEH-P1.1.11
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.1
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.2
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.3
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.4
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.5
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.6
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.7
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.8
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.9
+- type: contains
+  from: BEH-P1.2
+  to: BEH-P1.2.10
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.1
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.2
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.3
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.4
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.5
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.6
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.7
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.8
+- type: contains
+  from: BEH-P1.3
+  to: BEH-P1.3.9
+- type: contains
+  from: BEH-P1.4
+  to: BEH-P1.4.1
+- type: contains
+  from: BEH-P1.4
+  to: BEH-P1.4.2
+- type: contains
+  from: BEH-P1.4
+  to: BEH-P1.4.3
+- type: contains
+  from: BEH-P1.4
+  to: BEH-P1.4.4
+- type: contains
+  from: BEH-P1.4
+  to: BEH-P1.4.5
+- type: contains
+  from: BEH-P1.4
+  to: BEH-P1.4.6
+- type: contains
+  from: BEH-P1.5
+  to: BEH-P1.5.1
+- type: contains
+  from: BEH-P1.5
+  to: BEH-P1.5.2
+- type: contains
+  from: BEH-P1.5
+  to: BEH-P1.5.3
+- type: contains
+  from: BEH-P1.5
+  to: BEH-P1.5.4
+- type: contains
+  from: BEH-P1.5
+  to: BEH-P1.5.5
+- type: contains
+  from: BEH-P1.6
+  to: BEH-P1.6.1
+- type: contains
+  from: BEH-P1.6
+  to: BEH-P1.6.2
+- type: contains
+  from: BEH-P1.7
+  to: BEH-P1.7.1
+- type: contains
+  from: BEH-P1.7
+  to: BEH-P1.7.2
+- type: contains
+  from: BEH-P1.7
+  to: BEH-P1.7.3
+- type: contains
+  from: BEH-P1.7
+  to: BEH-P1.7.4
+- type: contains
+  from: BEH-P1.7
+  to: BEH-P1.7.5
+- type: contains
+  from: BEH-P1.8
+  to: BEH-P1.8.1
+- type: contains
+  from: BEH-P1.8
+  to: BEH-P1.8.2
+- type: contains
+  from: BEH-P1.8
+  to: BEH-P1.8.3
+- type: contains
+  from: BEH-P1.8
+  to: BEH-P1.8.4
+- type: contains
+  from: BEH-P1.9
+  to: BEH-P1.9.1
+- type: contains
+  from: BEH-P1.9
+  to: BEH-P1.9.2
+- type: contains
+  from: BEH-P1.9
+  to: BEH-P1.9.3
+- type: contains
+  from: BEH-P1.9
+  to: BEH-P1.9.4
+- type: contains
+  from: BEH-P1.9
+  to: BEH-P1.9.5
+- type: contains
+  from: BEH-P1.9
+  to: BEH-P1.9.6
+- type: contains
+  from: BEH-P1.10
+  to: BEH-P1.10.1
+- type: contains
+  from: BEH-P1.10
+  to: BEH-P1.10.2
+- type: contains
+  from: BEH-P1.10
+  to: BEH-P1.10.3
+- type: contains
+  from: BEH-P1.10
+  to: BEH-P1.10.4
+- type: contains
+  from: BEH-P1.10
+  to: BEH-P1.10.5
+- type: contains
+  from: BEH-P1.10
+  to: BEH-P1.10.6
+- type: contains
+  from: BEH-P1.10
+  to: BEH-P1.10.7
+- type: contains
+  from: BEH-P1.R
+  to: BEH-P1.R.1
+- type: contains
+  from: BEH-P1.R
+  to: BEH-P1.R.2
+- type: contains
+  from: BEH-P1.R
+  to: BEH-P1.R.3
+- type: contains
+  from: BEH-P1.R
+  to: BEH-P1.R.4
+- type: traces-to
+  from: COMP-2.1
+  to: BEH-P1
+- type: traces-to
+  from: COMP-2.1
+  to: BEH-P1.R
+- type: traces-to
+  from: COMP-2.2
+  to: BEH-P1.1
+- type: traces-to
+  from: COMP-2.2
+  to: BEH-P1.2
+- type: traces-to
+  from: COMP-2.3
+  to: BEH-P1.3
+- type: traces-to
+  from: COMP-2.3
+  to: BEH-P1.4
+- type: traces-to
+  from: COMP-2.4
+  to: BEH-P1.5
+- type: traces-to
+  from: COMP-2.4
+  to: BEH-P1.6
+- type: traces-to
+  from: COMP-2.4
+  to: BEH-P1.7
+- type: traces-to
+  from: COMP-2.5
+  to: BEH-P1.8
+- type: traces-to
+  from: COMP-2.5
+  to: BEH-P1.9
+- type: traces-to
+  from: COMP-2.5
+  to: BEH-P1.10
+- type: contains
+  from: CAP-0
+  to: CAP-0.1
+  description: Root capability contains CAP-0.1
+- type: contains
+  from: CAP-0
+  to: CAP-0.2
+  description: Root capability contains CAP-0.2
+- type: contains
+  from: CAP-0
+  to: CAP-0.3
+  description: Root capability contains CAP-0.3
+- type: contains
+  from: CAP-0
+  to: CAP-0.4
+  description: Root capability contains CAP-0.4
+- type: contains
+  from: CAP-0.1
+  to: CAP-2
+  description: CAP-0.1 contains CAP-2
+- type: contains
+  from: CAP-0.1
+  to: CAP-3
+  description: CAP-0.1 contains CAP-3
+- type: contains
+  from: CAP-0.1
+  to: CAP-4
+  description: CAP-0.1 contains CAP-4
+- type: contains
+  from: CAP-0.1
+  to: CAP-7
+  description: CAP-0.1 contains CAP-7
+- type: contains
+  from: CAP-0.2
+  to: CAP-1
+  description: CAP-0.2 contains CAP-1
+- type: contains
+  from: CAP-0.2
+  to: CAP-11
+  description: CAP-0.2 contains CAP-11
+- type: contains
+  from: CAP-0.2
+  to: CAP-12
+  description: CAP-0.2 contains CAP-12
+- type: contains
+  from: CAP-0.3
+  to: CAP-5
+  description: CAP-0.3 contains CAP-5
+- type: contains
+  from: CAP-0.3
+  to: CAP-6
+  description: CAP-0.3 contains CAP-6
+- type: contains
+  from: CAP-0.3
+  to: CAP-10
+  description: CAP-0.3 contains CAP-10
+- type: contains
+  from: CAP-0.3
+  to: CAP-15
+  description: CAP-0.3 contains CAP-15
+- type: contains
+  from: CAP-0.4
+  to: CAP-8
+  description: CAP-0.4 contains CAP-8
+- type: contains
+  from: CAP-0.4
+  to: CAP-9
+  description: CAP-0.4 contains CAP-9
+- type: contains
+  from: CAP-0.4
+  to: CAP-13
+  description: CAP-0.4 contains CAP-13
+- type: contains
+  from: CAP-0.4
+  to: CAP-14
+  description: CAP-0.4 contains CAP-14
+- type: contains
+  from: CAP-1
+  to: CAP-1.1
+  description: CAP-1 contains CAP-1.1
+- type: contains
+  from: CAP-1
+  to: CAP-1.2
+  description: CAP-1 contains CAP-1.2
+- type: contains
+  from: CAP-1
+  to: CAP-1.3
+  description: CAP-1 contains CAP-1.3
+- type: contains
+  from: CAP-1
+  to: CAP-1.4
+  description: CAP-1 contains CAP-1.4
+- type: contains
+  from: CAP-1
+  to: CAP-1.5
+  description: CAP-1 contains CAP-1.5
+- type: contains
+  from: CAP-1
+  to: CAP-1.6
+  description: CAP-1 contains CAP-1.6
+- type: contains
+  from: CAP-1
+  to: CAP-1.7
+  description: CAP-1 contains CAP-1.7
+- type: contains
+  from: CAP-1
+  to: CAP-1.8
+  description: CAP-1 contains CAP-1.8
+- type: contains
+  from: CAP-2
+  to: CAP-2.1
+  description: CAP-2 contains CAP-2.1
+- type: contains
+  from: CAP-2
+  to: CAP-2.2
+  description: CAP-2 contains CAP-2.2
+- type: contains
+  from: CAP-2
+  to: CAP-2.3
+  description: CAP-2 contains CAP-2.3
+- type: contains
+  from: CAP-2
+  to: CAP-2.4
+  description: CAP-2 contains CAP-2.4
+- type: contains
+  from: CAP-2
+  to: CAP-2.5
+  description: CAP-2 contains CAP-2.5
+- type: contains
+  from: CAP-2
+  to: CAP-2.6
+  description: CAP-2 contains CAP-2.6
+- type: contains
+  from: CAP-3
+  to: CAP-3.1
+  description: CAP-3 contains CAP-3.1
+- type: contains
+  from: CAP-3
+  to: CAP-3.2
+  description: CAP-3 contains CAP-3.2
+- type: contains
+  from: CAP-3
+  to: CAP-3.3
+  description: CAP-3 contains CAP-3.3
+- type: contains
+  from: CAP-3
+  to: CAP-3.4
+  description: CAP-3 contains CAP-3.4
+- type: contains
+  from: CAP-3
+  to: CAP-3.5
+  description: CAP-3 contains CAP-3.5
+- type: contains
+  from: CAP-3
+  to: CAP-3.6
+  description: CAP-3 contains CAP-3.6
+- type: contains
+  from: CAP-3
+  to: CAP-3.7
+  description: CAP-3 contains CAP-3.7
+- type: contains
+  from: CAP-3
+  to: CAP-3.8
+  description: CAP-3 contains CAP-3.8
+- type: contains
+  from: CAP-3
+  to: CAP-3.9
+  description: CAP-3 contains CAP-3.9
+- type: contains
+  from: CAP-3
+  to: CAP-3.10
+  description: CAP-3 contains CAP-3.10
+- type: contains
+  from: CAP-4
+  to: CAP-4.1
+  description: CAP-4 contains CAP-4.1
+- type: contains
+  from: CAP-4
+  to: CAP-4.2
+  description: CAP-4 contains CAP-4.2
+- type: contains
+  from: CAP-4
+  to: CAP-4.3
+  description: CAP-4 contains CAP-4.3
+- type: contains
+  from: CAP-4
+  to: CAP-4.4
+  description: CAP-4 contains CAP-4.4
+- type: contains
+  from: CAP-4
+  to: CAP-4.5
+  description: CAP-4 contains CAP-4.5
+- type: contains
+  from: CAP-4
+  to: CAP-4.6
+  description: CAP-4 contains CAP-4.6
+- type: contains
+  from: CAP-5
+  to: CAP-5.1
+  description: CAP-5 contains CAP-5.1
+- type: contains
+  from: CAP-5
+  to: CAP-5.2
+  description: CAP-5 contains CAP-5.2
+- type: contains
+  from: CAP-5
+  to: CAP-5.3
+  description: CAP-5 contains CAP-5.3
+- type: contains
+  from: CAP-5
+  to: CAP-5.4
+  description: CAP-5 contains CAP-5.4
+- type: contains
+  from: CAP-5
+  to: CAP-5.5
+  description: CAP-5 contains CAP-5.5
+- type: contains
+  from: CAP-5
+  to: CAP-5.6
+  description: CAP-5 contains CAP-5.6
+- type: contains
+  from: CAP-5
+  to: CAP-5.7
+  description: CAP-5 contains CAP-5.7
+- type: contains
+  from: CAP-5
+  to: CAP-5.8
+  description: CAP-5 contains CAP-5.8
+- type: contains
+  from: CAP-6
+  to: CAP-6.1
+  description: CAP-6 contains CAP-6.1
+- type: contains
+  from: CAP-6
+  to: CAP-6.2
+  description: CAP-6 contains CAP-6.2
+- type: contains
+  from: CAP-6
+  to: CAP-6.3
+  description: CAP-6 contains CAP-6.3
+- type: contains
+  from: CAP-7
+  to: CAP-7.1
+  description: CAP-7 contains CAP-7.1
+- type: contains
+  from: CAP-7
+  to: CAP-7.2
+  description: CAP-7 contains CAP-7.2
+- type: contains
+  from: CAP-7
+  to: CAP-7.3
+  description: CAP-7 contains CAP-7.3
+- type: contains
+  from: CAP-7
+  to: CAP-7.4
+  description: CAP-7 contains CAP-7.4
+- type: contains
+  from: CAP-8
+  to: CAP-8.1
+  description: CAP-8 contains CAP-8.1
+- type: contains
+  from: CAP-8
+  to: CAP-8.2
+  description: CAP-8 contains CAP-8.2
+- type: contains
+  from: CAP-8
+  to: CAP-8.3
+  description: CAP-8 contains CAP-8.3
+- type: contains
+  from: CAP-9
+  to: CAP-9.1
+  description: CAP-9 contains CAP-9.1
+- type: contains
+  from: CAP-9
+  to: CAP-9.2
+  description: CAP-9 contains CAP-9.2
+- type: contains
+  from: CAP-9
+  to: CAP-9.3
+  description: CAP-9 contains CAP-9.3
+- type: contains
+  from: CAP-9
+  to: CAP-9.4
+  description: CAP-9 contains CAP-9.4
+- type: contains
+  from: CAP-9
+  to: CAP-9.5
+  description: CAP-9 contains CAP-9.5
+- type: contains
+  from: CAP-10
+  to: CAP-10.1
+  description: CAP-10 contains CAP-10.1
+- type: contains
+  from: CAP-10
+  to: CAP-10.2
+  description: CAP-10 contains CAP-10.2
+- type: contains
+  from: CAP-10
+  to: CAP-10.3
+  description: CAP-10 contains CAP-10.3
+- type: contains
+  from: CAP-10
+  to: CAP-10.4
+  description: CAP-10 contains CAP-10.4
+- type: contains
+  from: CAP-11
+  to: CAP-11.1
+  description: CAP-11 contains CAP-11.1
+- type: contains
+  from: CAP-11
+  to: CAP-11.2
+  description: CAP-11 contains CAP-11.2
+- type: contains
+  from: CAP-11
+  to: CAP-11.3
+  description: CAP-11 contains CAP-11.3
+- type: contains
+  from: CAP-12
+  to: CAP-12.1
+  description: CAP-12 contains CAP-12.1
+- type: contains
+  from: CAP-12
+  to: CAP-12.2
+  description: CAP-12 contains CAP-12.2
+- type: contains
+  from: CAP-13
+  to: CAP-13.1
+  description: CAP-13 contains CAP-13.1
+- type: contains
+  from: CAP-13
+  to: CAP-13.2
+  description: CAP-13 contains CAP-13.2
+- type: contains
+  from: CAP-13
+  to: CAP-13.3
+  description: CAP-13 contains CAP-13.3
+- type: contains
+  from: CAP-14
+  to: CAP-14.1
+  description: CAP-14 contains CAP-14.1
+- type: contains
+  from: CAP-14
+  to: CAP-14.2
+  description: CAP-14 contains CAP-14.2
+- type: contains
+  from: CAP-14
+  to: CAP-14.3
+  description: CAP-14 contains CAP-14.3
+- type: contains
+  from: CAP-14
+  to: CAP-14.4
+  description: CAP-14 contains CAP-14.4
+- type: contains
+  from: CAP-14
+  to: CAP-14.5
+  description: CAP-14 contains CAP-14.5
+- type: contains
+  from: CAP-15
+  to: CAP-15.1
+  description: CAP-15 contains CAP-15.1
+- type: contains
+  from: CAP-15
+  to: CAP-15.2
+  description: CAP-15 contains CAP-15.2
+- type: contains
+  from: CAP-15
+  to: CAP-15.3
+  description: CAP-15 contains CAP-15.3
+- type: contains
+  from: CAP-15
+  to: CAP-15.4
+  description: CAP-15 contains CAP-15.4
+- type: contains
+  from: LAY-1
+  to: COMP-1
+  description: Foundation layer contains Core
+- type: contains
+  from: LAY-2
+  to: COMP-2
+  description: Domain layer contains Pipeline
+- type: contains
+  from: LAY-2
+  to: COMP-3
+  description: Domain layer contains Manifest
+- type: contains
+  from: LAY-2
+  to: COMP-6
+  description: Domain layer contains Extract
+- type: contains
+  from: LAY-3
+  to: COMP-4
+  description: Application layer contains Documentation
+- type: contains
+  from: LAY-3
+  to: COMP-5
+  description: Application layer contains Orchestration
+- type: contains
+  from: LAY-3
+  to: COMP-7
+  description: Application layer contains Authoring
+- type: contains
+  from: LAY-3
+  to: COMP-10
+  description: Application layer contains Export
+- type: contains
+  from: LAY-4
+  to: COMP-8
+  description: Interface layer contains CLI
+- type: contains
+  from: LAY-5
+  to: COMP-9
+  description: Infrastructure layer contains Configuration
+- type: contains
+  from: LAY-5
+  to: COMP-12
+  description: Infrastructure layer contains Utilities
+- type: depends-on
+  from: LAY-4
+  to: LAY-3
+  description: Interface layer depends on Application layer
+- type: depends-on
+  from: LAY-3
+  to: LAY-2
+  description: Application layer depends on Domain layer
+- type: depends-on
+  from: LAY-2
+  to: LAY-1
+  description: Domain layer depends on Foundation layer
+- type: depends-on
+  from: LAY-5
+  to: LAY-1
+  description: Infrastructure layer depends on Foundation layer
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.1
+  description: Validation implements Validate JSON Schema Compliance
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.2
+  description: Validation implements Enforce Entity ID Uniqueness
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.3
+  description: Validation implements Check Referential Integrity
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.4
+  description: Validation implements Detect Orphan Entities
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.5
+  description: Validation implements Verify Capability Realization
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.6
+  description: Validation implements Check Hierarchy Consistency
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.7
+  description: Validation implements Detect Dependency Cycles
+- type: realizes
+  from: COMP-1.2
+  to: CAP-1.8
+  description: Validation implements Validate Domain Profile Rules
+- type: realizes
+  from: COMP-5.1
+  to: CAP-10.1
+  description: Enrichment implements Extract Function Signatures
+- type: realizes
+  from: COMP-5.1
+  to: CAP-10.2
+  description: Enrichment implements Extract Module-Level Constants
+- type: realizes
+  from: COMP-5.1
+  to: CAP-10.3
+  description: Enrichment implements Extract Test Contracts
+- type: realizes
+  from: COMP-5.1
+  to: CAP-10.4
+  description: Enrichment implements Discover Test Files by Convention
+- type: realizes
+  from: COMP-1.5
+  to: CAP-11.1
+  description: Quality Metrics implements Compute System Readiness Score
+- type: realizes
+  from: COMP-1.5
+  to: CAP-11.2
+  description: Quality Metrics implements Compute Component Readiness
+- type: realizes
+  from: COMP-1.5
+  to: CAP-11.3
+  description: Quality Metrics implements Classify Body Hint Quality
+- type: realizes
+  from: COMP-7
+  to: CAP-12.1
+  description: Authoring implements Check Code-Intent Alignment
+- type: realizes
+  from: COMP-7
+  to: CAP-12.2
+  description: Authoring implements Evaluate Stage Quality Gates
+- type: realizes
+  from: COMP-1.4
+  to: CAP-13.1
+  description: Model Operations implements Generate Drift Report
+- type: realizes
+  from: COMP-1.4
+  to: CAP-13.2
+  description: Model Operations implements Identify Stale Artifacts
+- type: realizes
+  from: COMP-1.4
+  to: CAP-13.3
+  description: Model Operations implements Compare Model to Code Reality
+- type: realizes
+  from: COMP-11
+  to: CAP-14.1
+  description: Pipeline Learning implements Store Heuristic Rules
+- type: realizes
+  from: COMP-11
+  to: CAP-14.2
+  description: Pipeline Learning implements Match Archetype Patterns
+- type: realizes
+  from: COMP-11
+  to: CAP-14.3
+  description: Pipeline Learning implements Record User Corrections
+- type: realizes
+  from: COMP-11
+  to: CAP-14.4
+  description: Pipeline Learning implements Track Quality History
+- type: realizes
+  from: COMP-11
+  to: CAP-14.5
+  description: Pipeline Learning implements Generate Lessons from Diagnostics
+- type: realizes
+  from: COMP-10
+  to: CAP-15.1
+  description: Export implements Build Flat File Export
+- type: realizes
+  from: COMP-10
+  to: CAP-15.2
+  description: Export implements Generate Schema Reference
+- type: realizes
+  from: COMP-10
+  to: CAP-15.3
+  description: Export implements Generate Custom Instructions
+- type: realizes
+  from: COMP-10
+  to: CAP-15.4
+  description: Export implements Concatenate Sub-Model Artifacts
+- type: realizes
+  from: COMP-6
+  to: CAP-2.1
+  description: Extract implements Derive Capabilities from Config
+- type: realizes
+  from: COMP-6
+  to: CAP-2.2
+  description: Extract implements Infer Actors from Routes
+- type: realizes
+  from: COMP-6
+  to: CAP-2.3
+  description: Extract implements Derive Components from Manifest
+- type: realizes
+  from: COMP-6
+  to: CAP-2.4
+  description: Extract implements Derive Cross-Block Interfaces
+- type: realizes
+  from: COMP-6
+  to: CAP-2.5
+  description: Extract implements Detect Code Constraints
+- type: realizes
+  from: COMP-6
+  to: CAP-2.6
+  description: Extract implements Derive Entity Relationships
+- type: realizes
+  from: COMP-2
+  to: CAP-3.1
+  description: Pipeline implements AST-Scan Source Files
+- type: realizes
+  from: COMP-2.5
+  to: CAP-3.10
+  description: Synthesis & Emit Stages implements Emit Final Artifacts
+- type: realizes
+  from: COMP-2.2
+  to: CAP-3.2
+  description: Observation Stages implements Infer Capabilities from Code
+- type: realizes
+  from: COMP-2.3
+  to: CAP-3.3
+  description: Allocation & Relation Stages implements Allocate Files to Components
+- type: realizes
+  from: COMP-2.3
+  to: CAP-3.4
+  description: Allocation & Relation Stages implements Derive Entity Relationships
+- type: realizes
+  from: COMP-2.3
+  to: CAP-3.5
+  description: Allocation & Relation Stages implements Derive Interface Specifications
+- type: realizes
+  from: COMP-2.4
+  to: CAP-3.6
+  description: Specification & Contract Stages implements Extract Test Contracts
+- type: realizes
+  from: COMP-2.1
+  to: CAP-3.7
+  description: Pipeline Coordination implements Validate Pipeline Output
+- type: realizes
+  from: COMP-2.5
+  to: CAP-3.8
+  description: Synthesis & Emit Stages implements Detect System Boundaries
+- type: realizes
+  from: COMP-2.1
+  to: CAP-3.9
+  description: Pipeline Coordination implements Run Scoped Sub-Pipelines
+- type: realizes
+  from: COMP-3.1
+  to: CAP-4.1
+  description: Scanners implements Scan Python AST
+- type: realizes
+  from: COMP-3.1
+  to: CAP-4.2
+  description: Scanners implements Extract Function Body Hints
+- type: realizes
+  from: COMP-3.2
+  to: CAP-4.3
+  description: Graph & Analysis implements Build Call Graph
+- type: realizes
+  from: COMP-3.2
+  to: CAP-4.4
+  description: Graph & Analysis implements Analyze Test Files
+- type: realizes
+  from: COMP-3.3
+  to: CAP-4.5
+  description: Grouping & Generation implements Group Modules into Components
+- type: realizes
+  from: COMP-3.1
+  to: CAP-4.6
+  description: Scanners implements Scan Multi-Language Sources
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.1
+  description: SE Document Suite implements Generate ConOps Document
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.2
+  description: SE Document Suite implements Generate Functional Analysis
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.3
+  description: SE Document Suite implements Generate Logical Architecture Doc
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.4
+  description: SE Document Suite implements Generate Use Case Document
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.5
+  description: SE Document Suite implements Generate Component Specifications
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.6
+  description: SE Document Suite implements Generate Interface Specification
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.7
+  description: SE Document Suite implements Generate Mermaid Diagrams
+- type: realizes
+  from: COMP-4.2
+  to: CAP-5.8
+  description: SE Document Suite implements Generate Health Report
+- type: realizes
+  from: COMP-7
+  to: CAP-6.1
+  description: Authoring implements Parse Requirements Markdown
+- type: realizes
+  from: COMP-7
+  to: CAP-6.2
+  description: Authoring implements Parse Actor Definitions
+- type: realizes
+  from: COMP-7
+  to: CAP-6.3
+  description: Authoring implements Parse Capability Hierarchy
+- type: realizes
+  from: COMP-1.4
+  to: CAP-7.1
+  description: Model Operations implements Slice by Source Block
+- type: realizes
+  from: COMP-1.4
+  to: CAP-7.2
+  description: Model Operations implements Slice by Architecture Layer
+- type: realizes
+  from: COMP-1.4
+  to: CAP-7.3
+  description: Model Operations implements Slice for Artifact Regeneration
+- type: realizes
+  from: COMP-1.4
+  to: CAP-7.4
+  description: Model Operations implements Slice for SE Document Views
+- type: realizes
+  from: COMP-1.4
+  to: CAP-8.1
+  description: Model Operations implements Diff Entity Lists by ID
+- type: realizes
+  from: COMP-1.4
+  to: CAP-8.2
+  description: Model Operations implements Detect Field-Level Changes
+- type: realizes
+  from: COMP-1.4
+  to: CAP-8.3
+  description: Model Operations implements Determine Affected Artifacts
+- type: realizes
+  from: COMP-5.2
+  to: CAP-9.1
+  description: Decomposition implements Compute Component Complexity
+- type: realizes
+  from: COMP-5.2
+  to: CAP-9.2
+  description: Decomposition implements Identify System Candidates
+- type: realizes
+  from: COMP-5.2
+  to: CAP-9.3
+  description: Decomposition implements Detect System Boundaries
+- type: realizes
+  from: COMP-5.2
+  to: CAP-9.4
+  description: Decomposition implements Trace Connected Entities
+- type: realizes
+  from: COMP-5.2
+  to: CAP-9.5
+  description: Decomposition implements Write Sub-Models to Disk
+- type: realizes
+  from: COMP-COMMENT-SYS
+  to: CAP-COMMENT-COLLABORATION
+- type: realizes
+  from: COMP-SIL
+  to: CAP-SIL-INSTRUMENTATION
+- type: realizes
+  from: COMP-LLM
+  to: CAP-LLM-ROUTING
+- type: realizes
+  from: COMP-DASHBOARD
+  to: CAP-INTERACTIVE-DASHBOARD
+- type: depends-on
+  from: COMP-DASHBOARD
+  to: COMP-SIL
+- type: depends-on
+  from: COMP-2
+  to: COMP-SIL
+- type: depends-on
+  from: COMP-2
+  to: COMP-LLM

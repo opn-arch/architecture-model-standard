@@ -14,6 +14,7 @@ from .protocol import (
     StageResult,
     Uncertainty,
 )
+from architecture_model.sil.decorators import instrumented
 
 
 class ContractStage:
@@ -22,6 +23,7 @@ class ContractStage:
     name: str = "contract"
     requires: list[str] = ["observe", "allocate"]
 
+    @instrumented("stage:contract")
     def run(self, ctx: PipelineContext) -> StageResult[ContractResult]:
         start = time.time()
         diagnostics: list[Diagnostic] = []

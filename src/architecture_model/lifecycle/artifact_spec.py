@@ -74,7 +74,7 @@ from architecture_model.lifecycle.versions import SchemaVersions
 
 _ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
-Renderer = Literal["svg", "markdown", "html", "ai-context", "zip"]
+Renderer = Literal["svg", "markdown", "html", "ai-context", "zip", "pipeline-html"]
 
 
 class SignatureSlot(BaseModel):

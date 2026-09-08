@@ -26,6 +26,30 @@ from architecture_model.pipeline.synthesize import (
     _requirement_key,
     _system_slugs,
 )
+from architecture_model.sil.decorators import instrumented
+
+
+def _stamp_provider(model_yaml: str, ctx: PipelineContext) -> str:
+    """B1.2.7: stamp meta.provider onto a serialized model YAML when llm_provider was used."""
+    if ctx.llm_provider is None or not model_yaml:
+        return model_yaml
+    try:
+        import yaml as _yaml
+
+        data = _yaml.safe_load(model_yaml) or {}
+        meta = data.get("meta") or {}
+        provider_meta: dict[str, str] = {
+            "name": getattr(ctx.llm_provider, "name", "unknown"),
+            "model": getattr(ctx.llm_provider, "default_model", "unknown"),
+        }
+        policy_ref = getattr(ctx, "policy_ref", None)
+        if policy_ref:
+            provider_meta["policy_ref"] = policy_ref
+        meta["provider"] = provider_meta
+        data["meta"] = meta
+        return _yaml.dump(data, default_flow_style=False, sort_keys=False)
+    except Exception:
+        return model_yaml
 
 
 def _slugify(name: str) -> str:
@@ -124,6 +148,7 @@ class EmitStage:
     def output_path(self, ctx: PipelineContext) -> Path:
         return ctx.repo_path / ".architecture-models"
 
+    @instrumented("stage:emit")
     def run(self, ctx: PipelineContext) -> StageResult[EmitResult]:
         t0 = time.monotonic()
 
@@ -139,7 +164,7 @@ class EmitStage:
         # 1. Write SoS model
         if synth.sos_model_yaml:
             top_candidate = candidate_dir / ".architecture-model.yaml"
-            _write_candidate(top_candidate, synth.sos_model_yaml, result)
+            _write_candidate(top_candidate, _stamp_provider(synth.sos_model_yaml, ctx), result)
             result.candidate_path = str(top_candidate)
             result.final_model_path = str(ctx.repo_path / ".architecture-model.yaml")
             candidate_paths.append((top_candidate, ctx.repo_path / ".architecture-model.yaml"))
@@ -173,7 +198,7 @@ class EmitStage:
             sys_dir = out_dir / slug
             if sm.model_yaml:
                 candidate = candidate_dir / slug / ".architecture-model.yaml"
-                _write_candidate(candidate, sm.model_yaml, result)
+                _write_candidate(candidate, _stamp_provider(sm.model_yaml, ctx), result)
                 candidate_paths.append((candidate, sys_dir / ".architecture-model.yaml"))
             if sm.manifest_json:
                 _write_file(sys_dir / "manifest.json", sm.manifest_json, result)

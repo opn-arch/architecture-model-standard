@@ -21,6 +21,7 @@ from .protocol import (
     Uncertainty,
 )
 from .relate_types import DerivedRelationship, RelateResult
+from architecture_model.sil.decorators import instrumented
 
 
 UTILITY_PATTERNS = {"utils", "helpers", "common", "shared", "lib", "support", "base"}
@@ -42,6 +43,7 @@ class RelateStage:
     name: str = "relate"
     requires: list[str] = ["observe", "infer", "allocate"]
 
+    @instrumented("stage:relate")
     def run(self, ctx: PipelineContext) -> StageResult[RelateResult]:
         start = time.time()
         diagnostics: list[Diagnostic] = []

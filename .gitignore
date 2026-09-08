@@ -12,3 +12,8 @@ venv/
 .worktrees/
 .architecture-archive/
 projects/
+review/
+.DS_Store
+
+.architecture/sil.sqlite
+.architecture/lifecycle/.locks/

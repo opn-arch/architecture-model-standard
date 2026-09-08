@@ -1,0 +1,58 @@
+version: 1
+# Viewer curation overlay for the review branch.
+#
+# Selectors use qualified `root::` IDs so they resolve against the top-level
+# model (ArchitectureViewContext namespaces entities by their model source
+# path; the viewer CLI aliases the loaded model as `root`). Bare local IDs
+# would fail because context.select() treats bare strings as qualified_id.
+#
+# Curated groupings surface Plan A + Plan B additions in the SE views:
+#   - Functional Architecture — "View-Comment Pipeline (Plan A)" and
+#     "SI&L + LLM Provider + Dashboard (Plan B)".
+#   - Logical Architecture — same two groups aggregated by component.
+views:
+  functional:
+    featured:
+      - root::CAP-COMMENT-COLLABORATION
+      - root::CAP-SIL-INSTRUMENTATION
+      - root::CAP-LLM-ROUTING
+      - root::COMP-COMMENT-SYS
+      - root::COMP-SIL
+      - root::COMP-LLM
+      - root::COMP-DASHBOARD
+    groups:
+      - id: view-comment-pipeline
+        label: "View-Comment Pipeline (Plan A)"
+        members:
+          - root::CAP-COMMENT-COLLABORATION
+          - root::COMP-COMMENT-SYS
+      - id: sil-llm-dashboard
+        label: "SIL + LLM Provider + Dashboard (Plan B)"
+        members:
+          - root::CAP-SIL-INSTRUMENTATION
+          - root::CAP-LLM-ROUTING
+          - root::COMP-SIL
+          - root::COMP-LLM
+          - root::COMP-DASHBOARD
+    drilldowns:
+      view-comment-pipeline: root::CAP-COMMENT-COLLABORATION
+      sil-llm-dashboard: root::CAP-SIL-INSTRUMENTATION
+  logical:
+    featured:
+      - root::COMP-COMMENT-SYS
+      - root::COMP-SIL
+      - root::COMP-LLM
+      - root::COMP-DASHBOARD
+    groups:
+      - id: view-comment-pipeline-logical
+        label: "View-Comment Pipeline (Plan A)"
+        kind: aggregate
+        members:
+          - root::COMP-COMMENT-SYS
+      - id: sil-llm-dashboard-logical
+        label: "SIL + LLM Provider + Dashboard (Plan B)"
+        kind: aggregate
+        members:
+          - root::COMP-SIL
+          - root::COMP-LLM
+          - root::COMP-DASHBOARD

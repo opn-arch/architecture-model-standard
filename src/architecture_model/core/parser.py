@@ -160,6 +160,15 @@ def _parse_raw(raw: dict) -> ArchitectureModel:
 
 
 def _parse_meta(d: dict) -> ModelMeta:
+    from architecture_model.core.types import ProviderMeta
+    prov_raw = d.get("provider")
+    provider = None
+    if isinstance(prov_raw, dict):
+        provider = ProviderMeta(
+            name=prov_raw.get("name", ""),
+            model=prov_raw.get("model", ""),
+            policy_ref=prov_raw.get("policy_ref"),
+        )
     return ModelMeta(
         schema_version=d.get("schema_version", "1.1"),
         project=d.get("project", ""),
@@ -173,6 +182,7 @@ def _parse_meta(d: dict) -> ModelMeta:
         lifecycle_phase=d.get("lifecycle_phase", "production"),
         parent_model=d.get("parent_model"),
         refines_component=d.get("refines_component"),
+        provider=provider,
     )
 
 

@@ -661,6 +661,13 @@ class Relationship:
 
 
 @dataclass
+class ProviderMeta:
+    name: str
+    model: str
+    policy_ref: str | None = None
+
+
+@dataclass
 class ModelMeta:
     schema_version: str
     project: str
@@ -674,6 +681,7 @@ class ModelMeta:
     lifecycle_phase: str = "production"  # "concept" or "production"
     parent_model: str | None = None
     refines_component: str | None = None
+    provider: ProviderMeta | None = None
 
 
 @dataclass

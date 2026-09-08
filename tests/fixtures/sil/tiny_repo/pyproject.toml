@@ -1,0 +1,5 @@
+[project]
+name = "tiny-pkg"
+version = "0.0.1"
+description = "Fixture package for SI&L pipeline verification"
+requires-python = ">=3.10"

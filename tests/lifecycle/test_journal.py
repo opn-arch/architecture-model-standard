@@ -58,3 +58,26 @@ def test_standard_event_kinds_are_strings() -> None:
     assert jmod.STORE_WRITE_BEGIN == "store.write.begin"
     assert jmod.STORE_WRITE_COMMIT == "store.write.commit"
     assert jmod.INDEX_REBUILD_COMMIT == "index.rebuild.commit"
+
+
+def test_comment_and_issue_event_kinds_are_valid(tmp_path):
+    """5 new event kinds (comment.capture, comment.sync, issue.pull,
+    workorder.from_issue, issue.close) are exposed as module constants and
+    round-trip through Journal.record / .replay."""
+    from architecture_model.lifecycle.journal import (
+        COMMENT_CAPTURE, COMMENT_SYNC, ISSUE_PULL, WORKORDER_FROM_ISSUE,
+        ISSUE_CLOSE, Journal,
+    )
+    j = Journal(tmp_path / "journal.jsonl")
+    kinds = [
+        COMMENT_CAPTURE, COMMENT_SYNC, ISSUE_PULL,
+        WORKORDER_FROM_ISSUE, ISSUE_CLOSE,
+    ]
+    assert kinds == [
+        "comment.capture", "comment.sync", "issue.pull",
+        "workorder.from_issue", "issue.close",
+    ]
+    for kind in kinds:
+        j.record(kind, {"note": kind})
+    events = [e["event"] for e in j.replay()]
+    assert events[-5:] == kinds
