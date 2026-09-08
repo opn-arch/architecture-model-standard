@@ -1276,6 +1276,57 @@ git commit -m "feat(lifecycle_exec): per-subsystem fan-out for scope='descendant
 
 ---
 
+## Task 28 — Persist `ProjectedView.provenance` per artifact
+
+**Origin:** Deferred from Phase 1 Task 14. Task 10 stamps `ProjectedView.provenance["freshness"] = "fresh"` and `["revision"]` in-memory at ``src/architecture_model/lifecycle/view_projection.py:189-194``, but the OCA rebuild path (``lifecycle_exec/rebuild.py:575``) writes only raw renderer bytes to ``<lifecycle>/artifacts/<id>.<ext>``. Provenance is discarded after the render step.
+
+**Consequence:** Task 14's ``architect_evaluate.freshness_summary`` cannot classify anything as fresh/stale/pending — every present artifact falls into the ``unknown`` bucket by design (see docstring at ``opencode_arch/mcp/tools/evaluate.py:116``). The shape contract is honored; the semantic contract is not.
+
+**Files (oca):**
+- Modify: ``src/opencode_arch/lifecycle_exec/rebuild.py`` (write provenance sidecar next to each atomic body write)
+- Modify: ``src/opencode_arch/mcp/tools/evaluate.py`` (read sidecar; bucket by ``provenance["freshness"]``)
+- Extend: ``tests/mcp/tools/test_evaluate_freshness.py`` (assert non-zero ``fresh`` after a real rebuild round-trip)
+
+**Step 1: Design decision — sidecar shape**
+
+Two options:
+
+1. **Per-artifact JSON sidecar**: alongside ``<id>.<ext>`` write ``<id>.provenance.json`` containing the ``ProjectedView.provenance`` dict verbatim. Read cost is trivial; per-file operation matches rebuild's atomic-write pattern.
+2. **Single index file**: ``.architecture/lifecycle/artifacts/_index.yaml`` mapping ``spec_id → provenance``. Fewer files but requires read-modify-write on every rebuild (contention risk in Phase 2's parallel rebuild story).
+
+**Recommendation:** option 1 — matches the file-per-artifact model already established by ``rebuild.py``, and evaluate's directory scan naturally skips ``*.provenance.json`` if we exclude the ``.provenance.json`` suffix (or, cleaner, count only files whose basename does NOT end in ``.provenance.json``).
+
+**Step 2: Write failing test**
+
+```python
+def test_evaluate_reports_fresh_after_rebuild(tmp_path):
+    # publish root, register a projector, run rebuild_artifacts
+    # then call evaluate_workspace(force_refresh=True)
+    # assert freshness_summary["fresh"] >= 1
+```
+
+**Step 3: Implement sidecar write in rebuild + reader in evaluate**
+
+Rebuild:
+- After atomic body write at ``rebuild.py:575``, also write ``<id>.provenance.json`` containing ``{"freshness": provenance["freshness"], "revision": provenance["revision"], "produced_at": provenance["produced_at"], "projector": provenance["projector"]}`` (no need to persist the full dict).
+
+Evaluate:
+- In ``_collect_freshness_summary``, for each non-sidecar file, check if ``<name>.provenance.json`` exists; if so read ``freshness`` and increment the matching bucket; otherwise fall back to ``unknown``.
+- Skip ``*.provenance.json`` from the top-level file count.
+
+**Step 4: Update docstring in evaluate.py**
+
+Remove the "Phase 1 pragmatic" note; state that freshness now reflects actual provenance and that missing sidecars are treated as unknown (for artifacts produced before Task 28 shipped).
+
+**Step 5: Commit**
+
+```bash
+git add src/opencode_arch/lifecycle_exec/rebuild.py src/opencode_arch/mcp/tools/evaluate.py tests/mcp/tools/test_evaluate_freshness.py
+git commit -m "feat(lifecycle_exec): persist ProjectedView.provenance per artifact; wire freshness_summary"
+```
+
+---
+
 ## Rollback Strategy
 
 Each task is a single commit on the feature branch. If a task's design proves flawed under review, revert the commit; no other task depends on internal implementation details (only public contracts, which are covered by tests). Schema bump (Task 4) is the only irreversible task — it's additive and 2.0 remains valid indefinitely.
