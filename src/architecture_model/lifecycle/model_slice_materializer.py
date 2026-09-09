@@ -162,6 +162,20 @@ class ManifestFragment:
 
 
 @dataclass(frozen=True)
+class ModelRevisionFragment:
+    """A single revision snapshot within a temporal slice (Phase 2 Task 12).
+
+    ``revision`` is a 7-digit generation id (e.g. ``"0000003"``);
+    ``model_fragment`` is the projected model for that generation,
+    subject to the same selectors + strict-closure rules as the primary
+    fragment. Populated only when the slice carries a ``revision_range``.
+    """
+
+    revision: str
+    model_fragment: ArchitectureModel
+
+
+@dataclass(frozen=True)
 class MaterializedSlice:
     slice_id: str
     architecture_id: str
@@ -172,6 +186,7 @@ class MaterializedSlice:
     warnings: tuple[MaterializationWarning, ...] = ()
     manifest_fragment: ManifestFragment | None = None
     supplementary_fragments: dict[str, Any] = field(default_factory=dict)
+    revision_series: tuple[ModelRevisionFragment, ...] = ()
 
     def to_dict(self) -> dict:
         """Serialize to the shape expected by ai.validators (fragment key).
@@ -427,6 +442,10 @@ def materialize(
     )
     warnings.extend(sup_warnings)
 
+    # -- 7d. Temporal: revision_series ------------------------------------
+    revision_series, rev_warnings = _build_revision_series(slice, pkg)
+    warnings.extend(rev_warnings)
+
     # -- 8. Provenance ----------------------------------------------------
     provenance: dict[str, Any] = {
         "selectors_applied": slice.selectors.model_dump(exclude_none=True),
@@ -455,6 +474,7 @@ def materialize(
         warnings=warnings_tuple,
         manifest_fragment=manifest_fragment,
         supplementary_fragments=supplementary_fragments,
+        revision_series=revision_series,
     )
 
 
@@ -833,11 +853,15 @@ def _build_supplementary_fragments(
                 )
             )
             continue
+        # Merge slice.time_window into the ref's filter for kinds that
+        # support since/until semantics. Explicit ref.filter values win
+        # over the slice-level window.
+        effective_filter = _merge_time_window(ref, slice)
         try:
             fragment = loader(
                 pkg.root,
                 path=ref.path,
-                filter=ref.filter,
+                filter=effective_filter,
             )
         except Exception as exc:  # noqa: BLE001
             warnings.append(
@@ -865,12 +889,141 @@ def _build_supplementary_fragments(
     return fragments, warnings
 
 
+# Kinds that understand ISO-8601 since/until in their filter dict.
+_TIME_WINDOWED_KINDS = frozenset({"sil", "gates", "drift", "test_results", "learning"})
+
+
+def _merge_time_window(ref, slice: ModelSlice) -> dict[str, Any] | None:
+    """Overlay ``slice.time_window`` onto ``ref.filter`` for temporal kinds.
+
+    Explicit ``since`` / ``until`` on the ref filter take precedence over
+    the slice-level window. Returns the ref's filter unchanged when the
+    slice has no ``time_window`` or the kind isn't temporal-aware.
+    """
+    if slice.time_window is None or ref.kind not in _TIME_WINDOWED_KINDS:
+        return ref.filter
+    merged: dict[str, Any] = dict(ref.filter or {})
+    merged.setdefault("since", slice.time_window.from_)
+    merged.setdefault("until", slice.time_window.to)
+    return merged
+
+
+def _build_revision_series(
+    slice: ModelSlice,
+    pkg: ArchitecturePackage,
+) -> tuple[tuple[ModelRevisionFragment, ...], list[MaterializationWarning]]:
+    """Load each generation in ``slice.revision_range`` and project it.
+
+    For each generation N in the inclusive [from, to] range: load the
+    generation's model file, apply the slice's selectors + curation, and
+    close relationships strictly (both endpoints must remain in the
+    fragment). Missing generations emit ``SLICE.REVISION_MISSING``;
+    malformed models emit ``SLICE.REVISION_UNAVAILABLE``.
+    """
+    if slice.revision_range is None:
+        return (), []
+
+    warnings: list[MaterializationWarning] = []
+    if pkg.root is None:
+        warnings.append(
+            MaterializationWarning(
+                code="SLICE.REVISION_UNAVAILABLE",
+                message=(
+                    "cannot resolve revision_range: package has no filesystem root"
+                ),
+            )
+        )
+        return (), warnings
+
+    from architecture_model.lifecycle.publication import generation_dir
+
+    lo = int(slice.revision_range.from_)
+    hi = int(slice.revision_range.to)
+
+    fragments: list[ModelRevisionFragment] = []
+    for n in range(lo, hi + 1):
+        rev_id = f"{n:07d}"
+        gen_dir = generation_dir(pkg, n)
+        model_path = gen_dir / "model" / ".architecture-model.yaml"
+        if not model_path.is_file():
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.REVISION_MISSING",
+                    message=(
+                        f"generation {rev_id!r} not found at {gen_dir!s}"
+                    ),
+                )
+            )
+            continue
+        try:
+            model = load_model(model_path)
+        except Exception as exc:  # noqa: BLE001
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.REVISION_UNAVAILABLE",
+                    message=(
+                        f"generation {rev_id!r} model load failed: {exc!s}"
+                    ),
+                )
+            )
+            continue
+        rev_fragment = _project_revision(model, slice)
+        fragments.append(
+            ModelRevisionFragment(revision=rev_id, model_fragment=rev_fragment)
+        )
+
+    return tuple(fragments), warnings
+
+
+def _project_revision(
+    model: ArchitectureModel, slice: ModelSlice
+) -> ArchitectureModel:
+    """Apply selectors + curation + strict closure to a historical model.
+
+    Deliberately minimal: no supplementary refs, no boundary stubs, no
+    transitive expansion — historical fragments are meant for diffing
+    against the primary fragment, so we want a directly comparable view.
+    ``curation.include`` re-adds; ``curation.exclude`` drops; ``redactions``
+    are applied. Warnings during projection are swallowed (revision
+    quality is reported via SLICE.REVISION_* codes only).
+    """
+    working = _clone_model(model)
+    selected, _ = _apply_selectors(working, slice)
+    if slice.curation.exclude:
+        for eid in slice.curation.exclude:
+            selected.discard(eid)
+    if slice.curation.include:
+        present = _all_ids(working.entities)
+        for eid in slice.curation.include:
+            if eid in present:
+                selected.add(eid)
+    fragment = _project(working, selected)
+    fragment.relationships = [
+        copy.deepcopy(r)
+        for r in working.relationships
+        if r.from_id in selected and r.to_id in selected
+    ]
+    if slice.curation.redactions:
+        redaction_set = set(slice.curation.redactions)
+        for field_name in _ENTITY_FIELDS:
+            for ent in getattr(fragment.entities, field_name, []):
+                if ent.id in redaction_set:
+                    ent.description = ""
+                    if hasattr(ent, "rationale"):
+                        ent.rationale = ""
+                    if hasattr(ent, "intent"):
+                        ent.intent = ""
+    _sort_fragment(fragment)
+    return fragment
+
+
 __all__ = [
     "ManifestClass",
     "ManifestFragment",
     "ManifestFunction",
     "MaterializationWarning",
     "MaterializedSlice",
+    "ModelRevisionFragment",
     "materialize",
     "MATERIALIZER_VERSION",
 ]
