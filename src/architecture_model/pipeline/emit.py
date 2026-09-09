@@ -1165,6 +1165,61 @@ def _enrich_top_model(
                         comp_ids.add(child.get("id", ""))
         if desc_count:
             added["descriptions"] = desc_count
+
+        # Phase 2 Task 21: seed Component.intent from primary-file module
+        # docstring. Deviation from plan: the plan located this in the
+        # ``specify`` stage but specify does not construct component
+        # dicts — components are enriched here in emit alongside
+        # ``description``. Piggy-backing on the existing enrichment loop
+        # is the minimally invasive path.
+        #
+        # Rules (mirror plan §Task-21 behavior):
+        #   * Only fill when ``comp["intent"]`` is empty/missing.
+        #   * Primary file = the component's first .py file with a
+        #     module-level docstring in the observe inventory.
+        #   * Take the first non-empty stripped line; cap at 200 chars.
+        #   * Deterministic given a fixed inventory + allocation.
+        if observe_result and observe_result.output and hasattr(
+            observe_result.output, "modules"
+        ):
+            module_docs: dict[str, str | None] = {}
+            for mod in observe_result.output.modules:
+                mpath = getattr(mod, "path", None)
+                if mpath is None:
+                    continue
+                module_docs[str(mpath)] = getattr(mod, "docstring", None)
+            intent_count = 0
+            for comp in entities.get("components", []):
+                if not isinstance(comp, dict):
+                    continue
+                existing_intent = comp.get("intent")
+                if isinstance(existing_intent, str) and existing_intent.strip():
+                    continue
+                # Find the first primary file with a docstring.
+                cid = comp.get("id", "")
+                alloc_comp = alloc_comp_map.get(cid)
+                files = (
+                    [str(f) for f in alloc_comp.files]
+                    if alloc_comp and getattr(alloc_comp, "files", None)
+                    else list(comp.get("files") or [])
+                )
+                intent_line: str | None = None
+                for f in files:
+                    doc = module_docs.get(f)
+                    if not doc:
+                        continue
+                    for line in doc.splitlines():
+                        line = line.strip()
+                        if line:
+                            intent_line = line
+                            break
+                    if intent_line:
+                        break
+                if intent_line and len(intent_line) <= 200:
+                    comp["intent"] = intent_line
+                    intent_count += 1
+            if intent_count:
+                added["intents"] = intent_count
     else:
         # Collect comp_ids from entities directly
         for comp in entities.get("components", []):
