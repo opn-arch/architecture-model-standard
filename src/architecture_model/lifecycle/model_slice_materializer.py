@@ -600,6 +600,20 @@ def _compute_entity_scope_metadata(
         if scope_entity_kind:
             break
 
+    # Phase 3 Task 8: reverse-lookup inbound ``depends-on`` edges against
+    # the base model. Family-1 entity_page surfaces these as implicit
+    # stakeholders even when depth pruning has removed the source
+    # entities from the fragment.
+    inbound_depends_on: tuple[str, ...] = tuple(
+        sorted(
+            {
+                rel.from_id
+                for rel in model.relationships
+                if rel.type == RelationType.DEPENDS_ON and rel.to_id == entity_id
+            }
+        )
+    )
+
     return {
         "scope_chain": ("ROOT", *chain),
         "parent": parent,
@@ -607,6 +621,7 @@ def _compute_entity_scope_metadata(
         "roll_up": False,
         "scope_entity_id": entity_id,
         "scope_entity_kind": scope_entity_kind,
+        "inbound_depends_on": inbound_depends_on,
     }
 
 

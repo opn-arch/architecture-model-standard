@@ -200,6 +200,9 @@ def project(
         config_copy["__scope_entity_kind"] = scope_meta_pre.get(
             "scope_entity_kind", ""
         )
+        config_copy["__scope_inbound_depends_on"] = tuple(
+            scope_meta_pre.get("inbound_depends_on", ())
+        )
     result = fn(materialized_slice.model_fragment, config_copy)
     if not isinstance(result, DiagramSpec):
         raise TypeError(

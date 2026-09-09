@@ -55,3 +55,123 @@ class EntityPageProjector:
                 f"family{self.family}.entity_page has no rendering for kind={kind!r}"
             )
         return method(model, config)
+
+
+# ---------------------------------------------------------------------------
+# Family 1 — mission / purpose per entity (Phase 3 Task 8)
+# ---------------------------------------------------------------------------
+
+
+_FAMILY1_ENTITY_FIELDS = (
+    "actors",
+    "capabilities",
+    "behaviors",
+    "interfaces",
+    "constraints",
+    "layers",
+    "components",
+)
+
+
+def _find_entity_by_id(model: ArchitectureModel, entity_id: str):
+    """Return the entity object with ``id == entity_id`` from any of the
+    seven family-1 entity kinds, or ``None`` if absent from the fragment.
+    """
+    for field_name in _FAMILY1_ENTITY_FIELDS:
+        for ent in getattr(model.entities, field_name, ()):
+            if getattr(ent, "id", None) == entity_id:
+                return ent
+    return None
+
+
+def _render_family1_body(entity: Any, inbound_depends_on: tuple[str, ...]) -> str:
+    """Render the Markdown body for a family-1 entity page.
+
+    Sections are emitted in canonical order and only when they have
+    content. ``inbound_depends_on`` ids are folded into the Stakeholders
+    section (unioned with the entity's declared stakeholders, sorted for
+    determinism).
+    """
+    parts: list[str] = []
+
+    intent = (getattr(entity, "intent", "") or "").strip()
+    if intent:
+        parts.append("## Intent\n\n" + intent)
+
+    goals = tuple(getattr(entity, "goals", ()) or ())
+    if goals:
+        parts.append("## Goals\n\n" + "\n".join(f"- {g}" for g in goals))
+
+    declared_stakeholders = tuple(getattr(entity, "stakeholders", ()) or ())
+    all_stakeholders = tuple(
+        sorted(set(declared_stakeholders) | set(inbound_depends_on))
+    )
+    if all_stakeholders:
+        parts.append(
+            "## Stakeholders\n\n"
+            + "\n".join(f"- {s}" for s in all_stakeholders)
+        )
+
+    success = tuple(getattr(entity, "success_criteria", ()) or ())
+    if success:
+        parts.append(
+            "## Success Criteria\n\n" + "\n".join(f"- {s}" for s in success)
+        )
+
+    owner = (getattr(entity, "owner", "") or "").strip()
+    if owner:
+        parts.append("## Ownership\n\nOwner: " + owner)
+
+    maturity = getattr(entity, "maturity", None)
+    if maturity is not None:
+        # Enum or string; render the value.
+        mat_str = getattr(maturity, "value", maturity)
+        parts.append(f"## Maturity\n\n{mat_str}")
+
+    return "\n\n".join(parts)
+
+
+class Family1EntityPage(EntityPageProjector):
+    """Family 1: mission / purpose per entity.
+
+    Renders a Markdown ``DiagramSpec`` per Phase-1 prose convention.
+    Supported kinds: component, capability, behavior, interface, actor,
+    constraint, layer.
+    """
+
+    family = 1
+
+    def _build(
+        self,
+        model: ArchitectureModel,
+        config: dict[str, Any],
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        inbound = tuple(config.get("__scope_inbound_depends_on", ()) or ())
+        entity = _find_entity_by_id(model, entity_id)
+        if entity is None:
+            # Degenerate: scope entity not present in fragment. Emit a
+            # minimal well-formed DiagramSpec rather than raise — the
+            # projector contract requires a DiagramSpec return.
+            return DiagramSpec(
+                id=f"prose:family1.entity_page:{entity_id}",
+                title=f"({entity_id})",
+                facets={"content_kind": "markdown", "body": ""},
+            )
+        name = getattr(entity, "name", "") or entity_id
+        body = _render_family1_body(entity, inbound)
+        return DiagramSpec(
+            id=f"prose:family1.entity_page:{entity_id}",
+            title=f"{name} ({entity_id})",
+            facets={"content_kind": "markdown", "body": body},
+        )
+
+    # All seven supported kinds dispatch to the same shared renderer;
+    # semantic fields are uniform across them (Phase 2 schema 2.1).
+    _project_component = _build
+    _project_capability = _build
+    _project_behavior = _build
+    _project_interface = _build
+    _project_actor = _build
+    _project_constraint = _build
+    _project_layer = _build
