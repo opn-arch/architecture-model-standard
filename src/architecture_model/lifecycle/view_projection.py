@@ -203,6 +203,17 @@ def project(
         config_copy["__scope_inbound_depends_on"] = tuple(
             scope_meta_pre.get("inbound_depends_on", ())
         )
+        # Phase 3 Task 9: general relation indices + contains descendants
+        # for family2+ projectors.
+        config_copy["__scope_outbound_by_type"] = dict(
+            scope_meta_pre.get("outbound_by_type", {}) or {}
+        )
+        config_copy["__scope_inbound_by_type"] = dict(
+            scope_meta_pre.get("inbound_by_type", {}) or {}
+        )
+        config_copy["__scope_contains_descendants"] = tuple(
+            scope_meta_pre.get("contains_descendants", ()) or ()
+        )
     result = fn(materialized_slice.model_fragment, config_copy)
     if not isinstance(result, DiagramSpec):
         raise TypeError(

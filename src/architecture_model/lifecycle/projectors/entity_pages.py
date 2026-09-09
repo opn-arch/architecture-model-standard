@@ -175,3 +175,97 @@ class Family1EntityPage(EntityPageProjector):
     _project_actor = _build
     _project_constraint = _build
     _project_layer = _build
+
+
+# ---------------------------------------------------------------------------
+# Family 2 — functional decomposition per entity (Phase 3 Task 9)
+# ---------------------------------------------------------------------------
+
+
+def _family2_spec(
+    entity_id: str,
+    model: ArchitectureModel,
+    body: str,
+) -> DiagramSpec:
+    """Build the common family-2 DiagramSpec envelope."""
+    entity = _find_entity_by_id(model, entity_id)
+    name = getattr(entity, "name", "") if entity is not None else ""
+    display_name = name or entity_id
+    return DiagramSpec(
+        id=f"prose:family2.entity_page:{entity_id}",
+        title=f"{display_name} ({entity_id})",
+        facets={"content_kind": "markdown", "body": body},
+    )
+
+
+class Family2EntityPage(EntityPageProjector):
+    """Family 2: functional decomposition per entity.
+
+    Kinds:
+
+    * **capability**: sub-``contains`` tree, realizing components,
+      outbound ``triggers``.
+    * **component**: capabilities the component ``realizes``.
+    * **behavior**: capability that ``contains`` this behavior.
+
+    Other kinds raise ``NotImplementedError`` per the base contract.
+    """
+
+    family = 2
+
+    def _project_capability(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        descendants = tuple(config.get("__scope_contains_descendants", ()) or ())
+        inbound_by_type = config.get("__scope_inbound_by_type", {}) or {}
+        outbound_by_type = config.get("__scope_outbound_by_type", {}) or {}
+
+        realizing = tuple(inbound_by_type.get("realizes", ()) or ())
+        triggers_out = tuple(outbound_by_type.get("triggers", ()) or ())
+
+        parts: list[str] = []
+        if descendants:
+            parts.append(
+                "## Sub-Decomposition\n\n"
+                + "\n".join(f"- {d}" for d in descendants)
+            )
+        if realizing:
+            parts.append(
+                "## Realizing Components\n\n"
+                + "\n".join(f"- {r}" for r in realizing)
+            )
+        if triggers_out:
+            parts.append(
+                "## Triggers\n\n" + "\n".join(f"- {t}" for t in triggers_out)
+            )
+        return _family2_spec(entity_id, model, "\n\n".join(parts))
+
+    def _project_component(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        outbound_by_type = config.get("__scope_outbound_by_type", {}) or {}
+        realized = tuple(outbound_by_type.get("realizes", ()) or ())
+
+        parts: list[str] = []
+        if realized:
+            parts.append(
+                "## Realizes\n\n" + "\n".join(f"- {r}" for r in realized)
+            )
+        return _family2_spec(entity_id, model, "\n\n".join(parts))
+
+    def _project_behavior(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        inbound_by_type = config.get("__scope_inbound_by_type", {}) or {}
+        # Behavior is contained BY a capability => inbound contains.
+        containers = tuple(inbound_by_type.get("contains", ()) or ())
+
+        parts: list[str] = []
+        if containers:
+            parts.append(
+                "## Belongs To\n\n" + "\n".join(f"- {c}" for c in containers)
+            )
+        return _family2_spec(entity_id, model, "\n\n".join(parts))

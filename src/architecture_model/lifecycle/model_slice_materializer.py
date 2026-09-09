@@ -614,6 +614,42 @@ def _compute_entity_scope_metadata(
         )
     )
 
+    # Phase 3 Task 9: generalized inbound/outbound indices by relation
+    # type (used by family2+ projectors that need to surface realizes /
+    # triggers / contains / etc. even when depth pruning removes the
+    # referenced entities from the fragment).
+    outbound_by_type: dict[str, list[str]] = {}
+    inbound_by_type: dict[str, list[str]] = {}
+    for rel in model.relationships:
+        rtype = rel.type.value if hasattr(rel.type, "value") else str(rel.type)
+        if rel.from_id == entity_id:
+            outbound_by_type.setdefault(rtype, []).append(rel.to_id)
+        if rel.to_id == entity_id:
+            inbound_by_type.setdefault(rtype, []).append(rel.from_id)
+    outbound_sorted: dict[str, tuple[str, ...]] = {
+        k: tuple(sorted(set(v))) for k, v in outbound_by_type.items()
+    }
+    inbound_sorted: dict[str, tuple[str, ...]] = {
+        k: tuple(sorted(set(v))) for k, v in inbound_by_type.items()
+    }
+
+    # Phase 3 Task 9: transitive ``contains`` descendants of the scope
+    # entity (BFS over the base-model contains graph). Used by family2
+    # to render sub-decomposition.
+    contains_descendants: list[str] = []
+    seen_desc: set[str] = {entity_id}
+    frontier = [entity_id]
+    while frontier:
+        next_frontier: list[str] = []
+        for node in frontier:
+            for child in children_of.get(node, []):
+                if child in seen_desc:
+                    continue
+                seen_desc.add(child)
+                contains_descendants.append(child)
+                next_frontier.append(child)
+        frontier = next_frontier
+
     return {
         "scope_chain": ("ROOT", *chain),
         "parent": parent,
@@ -622,6 +658,9 @@ def _compute_entity_scope_metadata(
         "scope_entity_id": entity_id,
         "scope_entity_kind": scope_entity_kind,
         "inbound_depends_on": inbound_depends_on,
+        "outbound_by_type": outbound_sorted,
+        "inbound_by_type": inbound_sorted,
+        "contains_descendants": tuple(sorted(contains_descendants)),
     }
 
 
