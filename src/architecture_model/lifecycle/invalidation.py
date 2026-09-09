@@ -188,6 +188,76 @@ def stale_entity_view_ids(diff: dict, all_view_ids: list[str]) -> list[str]:
 _M1_PROPAGATING_REL_TYPES: frozenset[str] = frozenset({"exposes", "consumes"})
 
 
+# ---------------------------------------------------------------------------
+# Phase 3 Task 18 — entity-scoped view invalidation
+# ---------------------------------------------------------------------------
+
+
+def _find_parent(entity_id: str, model: Any) -> str | None:
+    """Return the entity id that ``contains`` ``entity_id``, or None."""
+    if model is None:
+        return None
+    for rel in getattr(model, "relationships", ()) or ():
+        rtype = getattr(rel, "type", None)
+        rtype_val = getattr(rtype, "value", rtype)
+        if rtype_val == "contains" and getattr(rel, "to_id", None) == entity_id:
+            return getattr(rel, "from_id", None)
+    return None
+
+
+def _find_peers(entity_id: str, model: Any) -> tuple[str, ...]:
+    """Return sibling entity ids sharing a ``contains`` parent with ``entity_id``.
+
+    Sorted for determinism. Self is excluded. Returns empty when the
+    entity has no parent.
+    """
+    parent = _find_parent(entity_id, model)
+    if parent is None:
+        return ()
+    peers: set[str] = set()
+    for rel in getattr(model, "relationships", ()) or ():
+        rtype = getattr(rel, "type", None)
+        rtype_val = getattr(rtype, "value", rtype)
+        if rtype_val != "contains":
+            continue
+        if getattr(rel, "from_id", None) != parent:
+            continue
+        to_id = getattr(rel, "to_id", None)
+        if to_id and to_id != entity_id:
+            peers.add(to_id)
+    return tuple(sorted(peers))
+
+
+def entity_change_stale_set(
+    entity_id: str, family: int, model: Any
+) -> set[str]:
+    """Return view IDs affected by a change to ``entity_id`` at ``family`` scope.
+
+    Contract (from Phase 3 plan Task 18):
+
+    * ``family{N}.entity_page:{entity_id}`` — the changed entity itself.
+    * ``family{N}.entity_page:{parent}`` — its direct ``contains`` parent
+      (roll-up may change).
+    * ``family{N}.entity_page:{peer}`` — each sibling under the same
+      parent (contains / depends-on shifts may cross-affect peers).
+    * ``family{N}.root`` — the family's root view (aggregate listing).
+
+    Returned IDs use the colon form to match the ``DiagramSpec`` id
+    convention (``prose:family1.entity_page:COMP-1``); this differs from
+    the dot form used by :func:`stale_entity_view_ids` for semantic-field
+    diffs. Callers must not mix the two id spaces.
+    """
+    prefix = f"family{family}.entity_page:"
+    stale: set[str] = {prefix + entity_id}
+    parent = _find_parent(entity_id, model)
+    if parent:
+        stale.add(prefix + parent)
+    for peer in _find_peers(entity_id, model):
+        stale.add(prefix + peer)
+    stale.add(f"family{family}.root")
+    return stale
+
+
 def propagates_to_m1(diff: dict) -> bool:
     """True iff this M2 diff must invalidate M1 as well.
 
