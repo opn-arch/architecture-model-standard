@@ -367,3 +367,59 @@ class Family3EntityPage(EntityPageProjector):
         return self._render(
             model, config, include_interfaces=False, include_rationale=False
         )
+
+
+# ---------------------------------------------------------------------------
+# Family 4 — scenarios / interactions per entity (Phase 3 Task 11)
+# ---------------------------------------------------------------------------
+
+
+class Family4EntityPage(EntityPageProjector):
+    """Family 4: scenarios per entity.
+
+    Kinds: behavior, actor. Behavior sections: Triggered By, Triggers,
+    Actors (inbound consumers). Actor sections: Consumes (outbound
+    consumers of interfaces / behaviors).
+    """
+
+    family = 4
+
+    def _project_behavior(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        outbound = config.get("__scope_outbound_by_type", {}) or {}
+        inbound = config.get("__scope_inbound_by_type", {}) or {}
+        triggered_by = tuple(inbound.get("triggers", ()) or ())
+        triggers_out = tuple(outbound.get("triggers", ()) or ())
+        consumers = tuple(inbound.get("consumes", ()) or ())
+
+        parts: list[str] = []
+        if triggered_by:
+            parts.append(
+                "## Triggered By\n\n"
+                + "\n".join(f"- {t}" for t in triggered_by)
+            )
+        if triggers_out:
+            parts.append(
+                "## Triggers\n\n" + "\n".join(f"- {t}" for t in triggers_out)
+            )
+        if consumers:
+            parts.append(
+                "## Actors\n\n" + "\n".join(f"- {c}" for c in consumers)
+            )
+        return _family_spec(4, entity_id, model, "\n\n".join(parts))
+
+    def _project_actor(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        outbound = config.get("__scope_outbound_by_type", {}) or {}
+        consumed = tuple(outbound.get("consumes", ()) or ())
+
+        parts: list[str] = []
+        if consumed:
+            parts.append(
+                "## Consumes\n\n" + "\n".join(f"- {c}" for c in consumed)
+            )
+        return _family_spec(4, entity_id, model, "\n\n".join(parts))
