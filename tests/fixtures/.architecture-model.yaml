@@ -1,0 +1,39 @@
+meta:
+  project: test-fixture
+  schema_version: '1.3'
+
+functional_blocks:
+  F1:
+    name: Ingestion
+    description_source: static
+    dirs: [ingestion]
+    files: []
+  F2:
+    name: Storage
+    description_source: static
+    dirs: [storage]
+    files: []
+  F3:
+    name: Query
+    description_source: static
+    dirs: [query]
+    files: []
+  F4:
+    name: Indexing
+    description_source: static
+    dirs: [indexing]
+    files: []
+  F5:
+    name: Retention
+    description_source: static
+    dirs: [retention]
+    files: []
+  F6:
+    name: Observability
+    description_source: static
+    dirs: [observability]
+    files: []
+
+entities:
+  components: []
+relationships: []

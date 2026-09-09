@@ -328,7 +328,7 @@ for (const route of routes) route();
 if (context.bodyPwned) throw new Error('sanitized Markdown body executed');
 if (!content.html.includes('&lt;img')) throw new Error('hostile values were not rendered as text');
 """
-    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+    result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 
@@ -392,7 +392,7 @@ for (const [name, route] of routes) {{
   if (content.dataset.currentType !== 'view' || content.dataset.currentId !== {json.dumps(view_key)}) throw new Error(name+' did not restore overview: '+JSON.stringify(content.dataset));
 }}
 """
-    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+    result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 

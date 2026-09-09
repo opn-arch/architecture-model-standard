@@ -474,7 +474,7 @@ if (content.innerHTML.includes('<img')) throw new Error('hostile HTML was not es
 if (!content.innerHTML.includes('&lt;/textarea&gt;')) throw new Error('description was not escaped');
 if (textarea.value !== '') throw new Error('unexpected textarea value');
 """
-        result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
         assert result.returncode == 0, result.stderr
 
     def test_comment_import_accepts_known_entities_and_rejects_unknown_ids(self, tmp_path):
@@ -498,7 +498,7 @@ context.window=context; vm.createContext(context); vm.runInContext({json.dumps(s
 context.importComments(element);
 if (writes.length !== 1 || !writes[0][0].endsWith(':COMP-1') || writes[0][1] !== 'safe <b>text</b>') throw new Error(JSON.stringify(writes));
 """
-        result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
         assert result.returncode == 0, result.stderr
 
 
@@ -629,7 +629,7 @@ const context={{console,Blob,URL,alert:()=>{{}},MutationObserver:function(){{thi
  localStorage:{{length:0,setItem:()=>{{}},getItem:()=>null,key:()=>null}},innerWidth:1200,atob,btoa,escape,unescape,encodeURIComponent,decodeURIComponent}};
 context.window=context;vm.createContext(context);vm.runInContext({json.dumps(script)},context);context.importComments(element);
 """
-        result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+        result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
         assert result.returncode == 0, result.stderr
 
 

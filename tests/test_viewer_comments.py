@@ -123,7 +123,7 @@ context.showModule('src/shared.py');
 if(rendered.length!==3 || textarea.value!=='top <b>safe</b> snow') throw new Error(JSON.stringify({{rendered:rendered.length,value:textarea&&textarea.value}}));
 const keys=Object.keys(store); if(keys.length!==2 || keys[0]===keys[1] || !keys.every(k=>k.includes(':module:'))) throw new Error(JSON.stringify(keys));
 """
-    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+    result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 
@@ -148,7 +148,7 @@ context.window=context;vm.createContext(context);vm.runInContext({json.dumps(scr
 if(!exported.includes('"module:src%2Fshared.py":') || !exported.includes('COMP-1:')) throw new Error(exported);
 if(writes.length!==2 || !writes.some(x=>x[0].endsWith(':module:src%2Fshared.py')&&x[1].includes('</textarea>')) || !writes.some(x=>x[0].endsWith(':COMP-1'))) throw new Error(JSON.stringify(writes));
 """
-    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+    result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
 
 
@@ -170,5 +170,5 @@ const content={{...element,dataset:{{}},innerHTML:'',querySelectorAll:()=>[],que
 const context={{console,Blob,URL,alert:()=>{{}},MutationObserver:function(){{this.observe=()=>{{}}}},document:{{getElementById:id=>id==='viewer-data'?{{...element,textContent:{json.dumps(json.dumps(data))}}}:id==='content'?content:element,querySelectorAll:()=>[],querySelector:()=>({{...element,classList:{{remove:()=>{{}},toggle:()=>{{}}}}}}),createElement:()=>element}},localStorage:new Proxy({{}},{{get(){{throw new Error('denied')}}}}),innerWidth:1200,atob,btoa,escape,unescape,encodeURIComponent,decodeURIComponent}};
 context.window=context;vm.createContext(context);vm.runInContext({json.dumps(script)},context);context.showModule('src/hostile.py');if(context.pwned||content.innerHTML.includes('<script>'))throw new Error(content.innerHTML);
 """
-    result = subprocess.run(["node", "-e", harness], capture_output=True, text=True)
+    result = subprocess.run(["node"], input=harness, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr

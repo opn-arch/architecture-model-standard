@@ -83,6 +83,8 @@ class TestScanAllLanguages:
         repo = Path("/Users/baigm2/Documents/Projects/logs_db")
         if not repo.exists():
             pytest.skip("logs_db not available")
+        if not any(repo.rglob("*.kt")):
+            pytest.skip("logs_db has no Kotlin sources in this checkout")
         graph = scan_all_languages(repo)
         languages = {u.language for u in graph.units}
         assert "python" in languages

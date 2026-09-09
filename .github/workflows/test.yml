@@ -16,5 +16,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,jvm]"
+      - run: playwright install --with-deps chromium
       - run: pytest tests/ -v --tb=short --ignore=tests/test_config_loader.py
