@@ -51,9 +51,43 @@ import re
 
 _ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
+# ``Scope`` is a Literal for the pre-Phase-3 forms plus, from Phase 3,
+# an ``entity(<id>)`` string form representing entity-scoped recursion.
+# The Literal alias is kept for back-compat with callers that annotate
+# ``scope: Scope``; the ModelSlice field itself is widened to ``str``
+# with a validator that accepts either a Literal member or a well-formed
+# ``entity(<id>)`` payload (see :func:`parse_entity_scope`).
 Scope = Literal["local", "descendants", "descendants:each", "federated"]
 Closure = Literal["strict", "boundary-stubs", "transitive"]
 SharedRefs = Literal["none", "explicit", "transitive"]
+
+_LEGACY_SCOPES: frozenset[str] = frozenset(
+    {"local", "descendants", "descendants:each", "federated"}
+)
+
+# Entity ID pattern per plan: leading uppercase letter, then uppercase
+# letters / digits / hyphens, optionally followed by ``.<digits>`` groups
+# (matches existing IDs like ``COMP-1.1.1``, ``CAP-F1.2``).
+_ENTITY_ID_RE = re.compile(r"^[A-Z][A-Z0-9-]*(?:\.\d+)*$")
+_ENTITY_SCOPE_RE = re.compile(r"^entity\((?P<id>[^)]*)\)$")
+
+
+def parse_entity_scope(scope: str) -> str | None:
+    """Return the entity ID from an ``entity(<id>)`` scope, else ``None``.
+
+    Returns ``None`` for legacy scope values (``local``, ``descendants``,
+    ...), for malformed entity scopes (missing paren, empty id, id
+    containing whitespace or lowercase letters), and for the empty string.
+    """
+    if not scope:
+        return None
+    m = _ENTITY_SCOPE_RE.match(scope)
+    if m is None:
+        return None
+    ent_id = m.group("id")
+    if not ent_id or not _ENTITY_ID_RE.match(ent_id):
+        return None
+    return ent_id
 
 SupplementaryKind = Literal[
     "manifest",
@@ -208,7 +242,7 @@ class ModelSlice(BaseModel):
     contract_version: str = SchemaVersions.MODEL_SLICE
     architecture_id: str
     model_revision: str
-    scope: Scope
+    scope: str
     closure: Closure
     shared_refs: SharedRefs
     selectors: Selectors
@@ -250,6 +284,20 @@ class ModelSlice(BaseModel):
                 f"SchemaVersions.MODEL_SLICE ({SchemaVersions.MODEL_SLICE!r})"
             )
         return v
+
+    @field_validator("scope")
+    @classmethod
+    def _check_scope(cls, v: str) -> str:
+        """Accept either a legacy Literal value or ``entity(<id>)``."""
+        if v in _LEGACY_SCOPES:
+            return v
+        if parse_entity_scope(v) is not None:
+            return v
+        raise ValueError(
+            f"invalid scope {v!r}: expected one of "
+            f"{sorted(_LEGACY_SCOPES)} or 'entity(<ID>)' "
+            "where <ID> matches [A-Z][A-Z0-9-]*(\\.\\d+)*"
+        )
 
     @model_validator(mode="after")
     def _check_federated(self) -> "ModelSlice":
@@ -299,6 +347,7 @@ __all__ = [
     "RevisionRange",
     "TimeWindow",
     "compute_slice_digest",
+    "parse_entity_scope",
     "Scope",
     "Closure",
     "SharedRefs",
