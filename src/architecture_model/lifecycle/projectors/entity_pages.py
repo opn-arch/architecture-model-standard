@@ -423,3 +423,72 @@ class Family4EntityPage(EntityPageProjector):
                 "## Consumes\n\n" + "\n".join(f"- {c}" for c in consumed)
             )
         return _family_spec(4, entity_id, model, "\n\n".join(parts))
+
+
+# ---------------------------------------------------------------------------
+# Family 6 — interfaces + ICD per entity (Phase 3 Task 12)
+# ---------------------------------------------------------------------------
+
+
+class Family6EntityPage(EntityPageProjector):
+    """Family 6: interface / ICD content per entity.
+
+    Kinds:
+
+    * **interface** (primary): type, protocol, provider, consumer,
+      data_format, schema, contract.
+    * **component**: exposed and consumed interface lists.
+
+    Manifest-fragment-derived signatures / routes are a future extension.
+    """
+
+    family = 6
+
+    def _project_interface(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        entity = _find_entity_by_id(model, entity_id)
+        parts: list[str] = []
+        if entity is not None:
+            # ``type`` is always populated (enum default = INTERNAL); we
+            # still surface it explicitly. Other fields default to empty
+            # strings and are omitted when unset.
+            type_val = getattr(entity, "type", None)
+            if type_val is not None:
+                type_str = getattr(type_val, "value", type_val)
+                if type_str:
+                    parts.append(f"## Type\n\n{type_str}")
+            for section, attr in (
+                ("Protocol", "protocol"),
+                ("Provider", "provider"),
+                ("Consumer", "consumer"),
+                ("Data Format", "data_format"),
+                ("Schema", "schema"),
+                ("Contract", "contract"),
+            ):
+                val = (getattr(entity, attr, "") or "").strip()
+                if val:
+                    parts.append(f"## {section}\n\n{val}")
+        return _family_spec(6, entity_id, model, "\n\n".join(parts))
+
+    def _project_component(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        outbound = config.get("__scope_outbound_by_type", {}) or {}
+        exposed = tuple(outbound.get("exposes", ()) or ())
+        consumed = tuple(outbound.get("consumes", ()) or ())
+
+        parts: list[str] = []
+        if exposed:
+            parts.append(
+                "## Exposed Interfaces\n\n"
+                + "\n".join(f"- {e}" for e in exposed)
+            )
+        if consumed:
+            parts.append(
+                "## Consumed Interfaces\n\n"
+                + "\n".join(f"- {c}" for c in consumed)
+            )
+        return _family_spec(6, entity_id, model, "\n\n".join(parts))
