@@ -51,7 +51,7 @@ import re
 
 _ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
-Scope = Literal["local", "descendants", "federated"]
+Scope = Literal["local", "descendants", "descendants:each", "federated"]
 Closure = Literal["strict", "boundary-stubs", "transitive"]
 SharedRefs = Literal["none", "explicit", "transitive"]
 
