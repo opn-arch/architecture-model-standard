@@ -124,6 +124,16 @@ class ViewSpec(BaseModel):
     curation: ViewCuration = Field(default_factory=ViewCuration)
     parameters: dict[str, Any] = Field(default_factory=dict)
     output_content_kind: OutputContentKind
+    # Phase 3 Task 5: entity-scoped recursion controls.
+    # ``depth`` bounds how many ``contains`` levels are rendered under the
+    # scope root; ``depth == 0`` renders only the root; ``depth < 0`` is
+    # rejected. ``expand_kinds`` limits which entity kinds recurse — empty
+    # tuple means "all kinds recurse" (matches pre-Phase-3 semantics).
+    # Both fields default to their zero values (1 / ()) and are stripped
+    # from the view digest when at those defaults so pre-Phase-3 view
+    # digests stay byte-stable.
+    depth: int = 1
+    expand_kinds: tuple[str, ...] = ()
     generated_at: str | None = None
     signatures: list[dict] | None = None
 
@@ -155,6 +165,25 @@ class ViewSpec(BaseModel):
             )
         return v
 
+    @field_validator("depth")
+    @classmethod
+    def _check_depth(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(
+                f"depth must be >= 0 (got {v}); use 0 to render only the scope root"
+            )
+        return v
+
+    @field_validator("expand_kinds")
+    @classmethod
+    def _check_expand_kinds(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        for kind in v:
+            if not isinstance(kind, str) or not kind:
+                raise ValueError(
+                    f"expand_kinds entries must be non-empty strings; got {kind!r}"
+                )
+        return v
+
 
 def compute_view_spec_digest(view: ViewSpec) -> str:
     """Return the content digest of ``view``.
@@ -168,6 +197,12 @@ def compute_view_spec_digest(view: ViewSpec) -> str:
     curation = payload.get("curation")
     if isinstance(curation, dict) and not curation.get("overlays"):
         curation.pop("overlays", None)
+    # Phase 3 Task 5: strip default depth/expand_kinds so pre-Phase-3
+    # view digests remain byte-stable.
+    if payload.get("depth") == 1:
+        payload.pop("depth", None)
+    if not payload.get("expand_kinds"):
+        payload.pop("expand_kinds", None)
     return _digest(
         payload,
         exclude_paths=(("generated_at",), ("signatures",)),
