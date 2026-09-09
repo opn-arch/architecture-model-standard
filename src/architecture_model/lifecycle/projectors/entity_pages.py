@@ -492,3 +492,108 @@ class Family6EntityPage(EntityPageProjector):
                 + "\n".join(f"- {c}" for c in consumed)
             )
         return _family_spec(6, entity_id, model, "\n\n".join(parts))
+
+
+# ---------------------------------------------------------------------------
+# Family 7 — quality + verification per entity (Phase 3 Task 13)
+# ---------------------------------------------------------------------------
+
+
+def _render_item(item: Any) -> str:
+    """Render one list element (str, dict, or object with to_dict) as a
+    single-line bullet payload.
+
+    VerificationRef / SLO objects declare ``to_dict`` (Phase 2 schema
+    2.1). We surface their ``id`` field when present for a stable
+    single-line rendering; otherwise fall back to a compact repr.
+    """
+    if item is None:
+        return ""
+    if isinstance(item, str):
+        return item
+    if hasattr(item, "to_dict"):
+        d = item.to_dict()
+    elif isinstance(item, dict):
+        d = item
+    else:
+        return str(item)
+    if not isinstance(d, dict):
+        return str(d)
+    if d.get("id"):
+        return d["id"]
+    if d.get("statement"):
+        return d["statement"]
+    # SLO shape: metric / target / window
+    if "metric" in d and "target" in d:
+        window = d.get("window", "")
+        base = f"{d['metric']} {d['target']}"
+        return f"{base} ({window})" if window else base
+    return str(d)
+
+
+def _render_list_section(header: str, items: Any) -> str:
+    """Render a `## Header\\n\\n- item1\\n- item2` block, or '' if empty."""
+    seq = tuple(items or ())
+    if not seq:
+        return ""
+    lines = [f"- {_render_item(i)}" for i in seq]
+    return f"## {header}\n\n" + "\n".join(lines)
+
+
+class Family7EntityPage(EntityPageProjector):
+    """Family 7: quality + verification per entity.
+
+    Kinds: component, capability, behavior, interface, constraint.
+    Sections rendered in canonical order (any empty section omitted):
+    Requirements, Verification, Failure Modes, Assumptions, Open
+    Questions, SLOs (Interface / Component only).
+    """
+
+    family = 7
+
+    def _render(
+        self,
+        model: ArchitectureModel,
+        config: dict[str, Any],
+        *,
+        include_slos: bool,
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        entity = _find_entity_by_id(model, entity_id)
+
+        parts: list[str] = []
+        if entity is not None:
+            for header, attr in (
+                ("Requirements", "requirements"),
+                ("Verification", "verification"),
+                ("Failure Modes", "failure_modes"),
+                ("Assumptions", "assumptions"),
+                ("Open Questions", "open_questions"),
+            ):
+                section = _render_list_section(
+                    header, getattr(entity, attr, ()) or ()
+                )
+                if section:
+                    parts.append(section)
+            if include_slos:
+                section = _render_list_section(
+                    "SLOs", getattr(entity, "slos", ()) or ()
+                )
+                if section:
+                    parts.append(section)
+        return _family_spec(7, entity_id, model, "\n\n".join(parts))
+
+    def _project_component(self, model, config):
+        return self._render(model, config, include_slos=True)
+
+    def _project_capability(self, model, config):
+        return self._render(model, config, include_slos=False)
+
+    def _project_behavior(self, model, config):
+        return self._render(model, config, include_slos=False)
+
+    def _project_interface(self, model, config):
+        return self._render(model, config, include_slos=True)
+
+    def _project_constraint(self, model, config):
+        return self._render(model, config, include_slos=False)
