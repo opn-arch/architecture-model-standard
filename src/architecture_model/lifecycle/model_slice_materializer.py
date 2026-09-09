@@ -219,11 +219,19 @@ def materialize(
     pkg: ArchitecturePackage,
     *,
     resolve_ref: Callable[[str], ArchitectureModel] | None = None,
+    view_spec: Any = None,
 ) -> MaterializedSlice:
     """Materialize ``slice`` against ``pkg``.
 
     ``resolve_ref`` is accepted for API stability but ignored in this
     commit; it will be honoured when federated scope lands in commit 2.
+
+    ``view_spec`` (Phase 3 Task 6) enables recursion controls on
+    entity-scoped slices. When provided together with an ``entity(<id>)``
+    scope, ``view_spec.depth`` prunes ``contains`` descendants of the
+    scope root beyond N hops and ``view_spec.expand_kinds`` restricts
+    which entity kinds are allowed to recurse. Ignored for non-entity
+    scopes and when ``view_spec`` is ``None``.
     """
     if slice.scope == "federated" and resolve_ref is None:
         raise ValueError("federated scope requires resolve_ref callable")
@@ -251,6 +259,19 @@ def materialize(
             base_model, entity_scope_id
         )
         merged = slice_by_entity(merged, entity_scope_id, include_hops=hops)
+
+        # Phase 3 Task 6: enforce view_spec.depth + expand_kinds by
+        # pruning ``contains`` descendants beyond N hops from the scope
+        # root. The child's parent kind gates whether recursion may
+        # continue past that node (empty expand_kinds = all kinds
+        # recurse). Root is always kept.
+        if view_spec is not None:
+            merged = _prune_by_depth(
+                merged,
+                entity_scope_id,
+                depth=int(getattr(view_spec, "depth", 1)),
+                expand_kinds=tuple(getattr(view_spec, "expand_kinds", ()) or ()),
+            )
 
     local_ids: set[str] = set(_all_ids(merged.entities))
     source_pkg_by_id: dict[str, str] = {
@@ -568,6 +589,92 @@ def _compute_entity_scope_metadata(
         "peers": peers,
         "roll_up": False,
     }
+
+
+def _prune_by_depth(
+    model: ArchitectureModel,
+    root_id: str,
+    *,
+    depth: int,
+    expand_kinds: tuple[str, ...],
+) -> ArchitectureModel:
+    """Prune ``contains`` descendants of ``root_id`` beyond ``depth`` hops.
+
+    ``depth=0`` keeps only the root. ``depth=N`` keeps the root plus N
+    levels of ``contains`` children. ``expand_kinds`` gates recursion:
+    when non-empty, a node at level ``d`` only expands its children if
+    its own kind (singular canonical, e.g. ``"component"``) is in
+    ``expand_kinds``. Empty tuple = all kinds recurse.
+
+    Children at any kept level are included regardless of their own
+    kind; ``expand_kinds`` only restricts *further* recursion past that
+    child. Non-``contains`` relationships whose endpoints are both in
+    the kept set are preserved.
+    """
+    # Build id -> plural field (e.g. "components") lookup, then map to
+    # singular canonical kind ("component") for expand_kinds matching.
+    id_to_field: dict[str, str] = {}
+    for f in _ENTITY_FIELDS:
+        for ent in getattr(model.entities, f, []):
+            id_to_field[ent.id] = f
+
+    def _singular(field: str) -> str:
+        if field.endswith("ies"):
+            return field[:-3] + "y"
+        if field.endswith("s") and not field.endswith("ss"):
+            return field[:-1]
+        return field
+
+    id_to_kind: dict[str, str] = {
+        eid: _singular(f) for eid, f in id_to_field.items()
+    }
+
+    # contains children graph.
+    children_of: dict[str, list[str]] = {}
+    for rel in model.relationships:
+        if rel.type != RelationType.CONTAINS:
+            continue
+        children_of.setdefault(rel.from_id, []).append(rel.to_id)
+
+    allow_all = not expand_kinds
+    allowed_kinds = set(expand_kinds)
+
+    kept: set[str] = {root_id}
+    # BFS: (id, level). Root is level 0.
+    frontier: list[tuple[str, int]] = [(root_id, 0)]
+    while frontier:
+        next_frontier: list[tuple[str, int]] = []
+        for node_id, level in frontier:
+            if level >= depth:
+                continue
+            node_kind = id_to_kind.get(node_id, "")
+            if not allow_all and node_kind not in allowed_kinds:
+                continue
+            for child_id in children_of.get(node_id, []):
+                if child_id in kept:
+                    continue
+                kept.add(child_id)
+                next_frontier.append((child_id, level + 1))
+        frontier = next_frontier
+
+    # Filter entity lists.
+    pruned_entities = copy.deepcopy(model.entities)
+    for f in _ENTITY_FIELDS:
+        lst = getattr(pruned_entities, f)
+        lst[:] = [e for e in lst if e.id in kept]
+
+    # Filter relationships to those fully inside the kept set.
+    pruned_rels = [
+        copy.deepcopy(r)
+        for r in model.relationships
+        if r.from_id in kept and r.to_id in kept
+    ]
+
+    return ArchitectureModel(
+        meta=copy.deepcopy(model.meta),
+        entities=pruned_entities,
+        relationships=pruned_rels,
+    )
 
 
 def _clone_model(model: ArchitectureModel) -> ArchitectureModel:
