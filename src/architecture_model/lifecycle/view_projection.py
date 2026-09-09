@@ -100,6 +100,16 @@ class ProjectedView:
     diagram_spec: DiagramSpec
     provenance: dict[str, Any]
     warnings: tuple[str, ...] = ()
+    # -- Phase 3 Task 4: entity-scoped recursion metadata -------------------
+    # Populated by :func:`project` from
+    # ``materialized_slice.provenance['scope_metadata']`` when the slice is
+    # entity-scoped; left at zero-value defaults otherwise. ``scope_chain``
+    # starts with the sentinel ``"ROOT"`` followed by ``contains`` ancestors
+    # from top down and terminates with the scoped entity id itself.
+    scope_chain: tuple[str, ...] = ()
+    parent: str | None = None
+    peers: tuple[str, ...] = ()
+    roll_up: bool = False
 
 
 class ProjectorRegistry:
@@ -197,6 +207,11 @@ def project(
     warnings = tuple(
         f"{w.code}: {w.message}" for w in materialized_slice.warnings
     )
+    # Phase 3 Task 4: propagate entity-scope metadata (scope_chain, parent,
+    # peers, roll_up) computed during materialization. Non-entity slices
+    # never populate this key, so the ProjectedView fields stay at their
+    # zero-value defaults.
+    scope_meta = materialized_slice.provenance.get("scope_metadata") or {}
     return ProjectedView(
         view_id=view.id,
         slice_id=materialized_slice.slice_id,
@@ -204,6 +219,10 @@ def project(
         diagram_spec=result,
         provenance=provenance,
         warnings=warnings,
+        scope_chain=tuple(scope_meta.get("scope_chain", ())),
+        parent=scope_meta.get("parent"),
+        peers=tuple(scope_meta.get("peers", ())),
+        roll_up=bool(scope_meta.get("roll_up", False)),
     )
 
 

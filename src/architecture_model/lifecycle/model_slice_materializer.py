@@ -242,8 +242,14 @@ def materialize(
     # is not present in the base model. Descendants merging and federated
     # resolution are intentionally skipped for entity scope: recursion is
     # expressed by the entity graph itself, not by cross-package walking.
+    entity_scope_metadata: dict[str, Any] | None = None
     if entity_scope_id is not None:
         hops = int(slice.parameters.get("hops", 1))
+        # Compute scope_chain / parent / peers against the ORIGINAL base
+        # model (has ancestors) before reducing to the sub-model.
+        entity_scope_metadata = _compute_entity_scope_metadata(
+            base_model, entity_scope_id
+        )
         merged = slice_by_entity(merged, entity_scope_id, include_hops=hops)
 
     local_ids: set[str] = set(_all_ids(merged.entities))
@@ -483,6 +489,8 @@ def materialize(
             for rid in sorted(federated_sources)
         ],
     }
+    if entity_scope_metadata is not None:
+        provenance["scope_metadata"] = entity_scope_metadata
 
     warnings_tuple = tuple(sorted(warnings, key=lambda w: (w.code, w.entity_id, w.message)))
 
@@ -512,6 +520,54 @@ def _load_pkg_model(pkg: ArchitecturePackage) -> ArchitectureModel:
         )
     model_path = pkg.root / pkg.model_ref
     return load_model(model_path)
+
+
+def _compute_entity_scope_metadata(
+    model: ArchitectureModel, entity_id: str
+) -> dict[str, Any]:
+    """Compute scope_chain / parent / peers for entity-scoped views.
+
+    Uses the full base ``model`` (which contains ancestors) to walk the
+    ``contains`` graph upward from ``entity_id`` to the top of the tree.
+    ``scope_chain`` is ``("ROOT", <topmost ancestor>, ..., <entity_id>)``.
+    ``parent`` is the immediate parent by ``contains``, or ``None`` when
+    ``entity_id`` is a top-level entity. ``peers`` are the other children
+    of ``parent`` (excluding ``entity_id``), sorted ascending for
+    determinism. ``roll_up`` is ``False`` for Phase 3 Task 4; aggregation
+    projectors will flip it later.
+    """
+    parent_of: dict[str, str] = {}
+    children_of: dict[str, list[str]] = {}
+    for rel in model.relationships:
+        if rel.type != RelationType.CONTAINS:
+            continue
+        parent_of[rel.to_id] = rel.from_id
+        children_of.setdefault(rel.from_id, []).append(rel.to_id)
+
+    parent = parent_of.get(entity_id)
+
+    # Walk upward to build ancestor chain (top -> entity).
+    chain: list[str] = [entity_id]
+    seen = {entity_id}
+    cur = parent
+    while cur is not None and cur not in seen:
+        chain.append(cur)
+        seen.add(cur)
+        cur = parent_of.get(cur)
+    chain.reverse()
+
+    peers: tuple[str, ...] = ()
+    if parent is not None:
+        peers = tuple(
+            sorted(cid for cid in children_of.get(parent, []) if cid != entity_id)
+        )
+
+    return {
+        "scope_chain": ("ROOT", *chain),
+        "parent": parent,
+        "peers": peers,
+        "roll_up": False,
+    }
 
 
 def _clone_model(model: ArchitectureModel) -> ArchitectureModel:
