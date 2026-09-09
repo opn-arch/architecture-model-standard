@@ -63,6 +63,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from architecture_model.core.parser import load_model
+from architecture_model.core.slicer import slice_by_entity
 from architecture_model.core.types import (
     ArchitectureModel,
     Entities,
@@ -71,7 +72,7 @@ from architecture_model.core.types import (
     RelationType,
     Status,
 )
-from architecture_model.lifecycle.model_slice import ModelSlice
+from architecture_model.lifecycle.model_slice import ModelSlice, parse_entity_scope
 from architecture_model.lifecycle.package import (
     ArchitecturePackage,
     iter_descendants,
@@ -227,9 +228,24 @@ def materialize(
     if slice.scope == "federated" and resolve_ref is None:
         raise ValueError("federated scope requires resolve_ref callable")
 
+    # Detect entity-scoped slice up front (Phase 3 Task 3). ``entity(<id>)``
+    # is handled by reducing the base model via ``slice_by_entity`` before
+    # the rest of the selection/closure/curation pipeline runs.
+    entity_scope_id: str | None = parse_entity_scope(slice.scope)
+
     # -- 1. Load model(s) ---------------------------------------------------
     base_model = _load_pkg_model(pkg)
     merged = _clone_model(base_model)
+
+    # Entity-scoped slice: reduce ``merged`` to the sub-model rooted at the
+    # named entity BEFORE selectors/closure run. Raises KeyError if the id
+    # is not present in the base model. Descendants merging and federated
+    # resolution are intentionally skipped for entity scope: recursion is
+    # expressed by the entity graph itself, not by cross-package walking.
+    if entity_scope_id is not None:
+        hops = int(slice.parameters.get("hops", 1))
+        merged = slice_by_entity(merged, entity_scope_id, include_hops=hops)
+
     local_ids: set[str] = set(_all_ids(merged.entities))
     source_pkg_by_id: dict[str, str] = {
         eid: pkg.architecture_id for eid in local_ids
@@ -336,7 +352,13 @@ def materialize(
     source_digest = _digest(_model_to_hashable(merged))
 
     # -- 2. Select --------------------------------------------------------
-    selected_ids, selector_warnings = _apply_selectors(merged, slice)
+    if entity_scope_id is not None:
+        # Entity scope IS the selection: pick every entity from the
+        # already-reduced sub-model and skip selector matching entirely.
+        selected_ids = set(_all_ids(merged.entities))
+        selector_warnings: list[MaterializationWarning] = []
+    else:
+        selected_ids, selector_warnings = _apply_selectors(merged, slice)
     warnings.extend(selector_warnings)
 
     # -- 3. Curation.exclude ----------------------------------------------
