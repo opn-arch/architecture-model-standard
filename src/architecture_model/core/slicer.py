@@ -31,6 +31,133 @@ from architecture_model.monitoring import monitored
 # ---------------------------------------------------------------------------
 
 
+# All entity-list attribute names on the Entities dataclass, in a fixed order.
+# Used by slice_by_entity() to index entities by ID and to rebuild the
+# filtered Entities container.
+_ENTITY_KINDS: tuple[str, ...] = (
+    "actors",
+    "capabilities",
+    "behaviors",
+    "interfaces",
+    "constraints",
+    "layers",
+    "components",
+    "systems",
+    "data",
+    "events",
+    "resources",
+    "environments",
+    "quality_attributes",
+    "decisions",
+    "lifecycles",
+    "requirements",
+    "external_systems",
+)
+
+
+# Relation types that carry cross-entity "context" for entity-scoped slices.
+# Traversal via these edges is bounded by ``include_hops``. ``contains`` is
+# handled separately (unbounded transitive expansion).
+_CONTEXT_RELATIONS: frozenset[RelationType] = frozenset(
+    {
+        RelationType.REALIZES,
+        RelationType.EXPOSES,
+        RelationType.CONSUMES,
+        RelationType.DEPENDS_ON,
+    }
+)
+
+
+@monitored(
+    module="core.slicer",
+    outputs=lambda r: {
+        "entities_retained": r.entity_count,
+        "relationships_retained": len(r.relationships),
+    },
+)
+def slice_by_entity(
+    model: ArchitectureModel,
+    entity_id: str,
+    *,
+    include_hops: int = 1,
+) -> ArchitectureModel:
+    """Return the sub-model rooted at ``entity_id``.
+
+    Includes:
+      - The entity itself.
+      - Transitive ``contains`` descendants (unbounded).
+      - Entities reachable via ``realizes`` / ``exposes`` / ``consumes`` /
+        ``depends-on`` up to ``include_hops`` (default 1, bidirectional,
+        deterministic BFS).
+      - All relationships whose both endpoints are included.
+
+    Args:
+        model: Full architecture model.
+        entity_id: ID of the entity to root the slice at.
+        include_hops: Bound on context-relation traversal (default 1).
+
+    Raises:
+        KeyError: If ``entity_id`` does not identify any entity in ``model``.
+    """
+    # Build id -> entity index (any kind).
+    known_ids = model.all_entity_ids
+    if entity_id not in known_ids:
+        raise KeyError(entity_id)
+
+    kept: set[str] = {entity_id}
+
+    def _expand_contains(seed_ids: set[str]) -> None:
+        """Add transitive ``contains`` descendants of ``seed_ids`` to ``kept``."""
+        frontier = set(seed_ids)
+        while frontier:
+            next_frontier: set[str] = set()
+            for rel in model.relationships:
+                if rel.type != RelationType.CONTAINS:
+                    continue
+                if rel.from_id in frontier and rel.to_id in known_ids and rel.to_id not in kept:
+                    next_frontier.add(rel.to_id)
+            kept.update(next_frontier)
+            frontier = next_frontier
+
+    _expand_contains(kept)
+
+    # Bounded, bidirectional hop expansion via context relations.
+    for _ in range(max(0, include_hops)):
+        new_ids: set[str] = set()
+        for rel in model.relationships:
+            if rel.type not in _CONTEXT_RELATIONS:
+                continue
+            if rel.from_id in kept and rel.to_id in known_ids and rel.to_id not in kept:
+                new_ids.add(rel.to_id)
+            elif rel.to_id in kept and rel.from_id in known_ids and rel.from_id not in kept:
+                new_ids.add(rel.from_id)
+        if not new_ids:
+            break
+        kept.update(new_ids)
+        # Newly added nodes bring their own contains-descendants.
+        _expand_contains(new_ids)
+
+    # Rebuild filtered Entities.
+    entity_kwargs: dict[str, list] = {}
+    for kind in _ENTITY_KINDS:
+        entity_kwargs[kind] = [
+            e for e in getattr(model.entities, kind) if e.id in kept
+        ]
+    sub_entities = Entities(**entity_kwargs)
+
+    sub_rels = [
+        deepcopy(r)
+        for r in model.relationships
+        if r.from_id in kept and r.to_id in kept
+    ]
+
+    return ArchitectureModel(
+        meta=deepcopy(model.meta),
+        entities=sub_entities,
+        relationships=sub_rels,
+    )
+
+
 @monitored(module="core.slicer", outputs=lambda r: {"entities_retained": len(r.entities.components), "relationships_retained": len(r.relationships)})
 def slice_by_source_block(
     model: ArchitectureModel,

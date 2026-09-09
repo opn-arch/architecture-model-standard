@@ -396,6 +396,102 @@ Each system has its own complete, self-contained model. The top-level model refe
 Previous (2026-07-07): 94 sigs, 11 constants, 339 contracts, no regen scoring.
 Current (2026-08-10): 274 sigs (+191%), 156 constants, 335 contracts, Pipeline module covered.
 
+## Phase 3 substrate (recursion + entity views)
+
+Phase 3 extends the substrate with **entity-scoped slicing**, **recursion
+controls** on views, **per-entity prose pages** across every doc family,
+**drill-down link plumbing** between root-family and entity views, and
+**parent+peers invalidation** on entity change. Backward-compatible: no
+schema bump (still 2.1); no field changes; existing Phase-2 fixtures parse
+and render byte-identically.
+
+**Entity-scoped slicing.** `architecture_model.core.slicer.slice_by_entity(
+model, entity_id, *, include_hops=1)` returns the sub-model rooted at
+`entity_id`: the entity itself, its transitive `contains` descendants,
+and the 1-hop `realizes`/`exposes`/`consumes`/`depends-on` neighborhood.
+Unknown ids raise `KeyError`. Wire-level slice YAML gains a new scope
+form: `scope: "entity(COMP-3)"` — the materializer parses this via
+`parse_entity_scope()`, reduces the base model via `slice_by_entity`
+before selectors/closure run, and stamps `scope_metadata` onto the
+resulting `MaterializedSlice.provenance`.
+
+**Recursion controls on ViewSpec.** Two new fields:
+- `ViewSpec.depth: int | None` — max `contains` hops from the scope root
+  when the slice is entity-scoped. `None` = unbounded.
+- `ViewSpec.expand_kinds: tuple[str, ...]` — restrict which entity kinds
+  are allowed to recurse. Empty tuple = all kinds allowed.
+
+The materializer's `_prune_by_depth()` walks the `contains` graph BFS
+from the scope root and drops nodes past `depth`; the parent's kind
+must be in `expand_kinds` for recursion to continue past that node.
+Ignored for non-entity scopes.
+
+**scope_metadata on MaterializedSlice.provenance.** Populated only for
+entity-scoped slices. Computed by
+`_compute_entity_scope_metadata(base_model, entity_id)` against the
+ORIGINAL model (has ancestors) before slicing. Fields:
+`scope_chain: tuple[str, ...]` = `("ROOT", <topmost ancestor>, ..., <entity_id>)`;
+`parent: str | None`; `peers: tuple[str, ...]` (sorted);
+`roll_up: bool` (False for Phase 3, aggregation projectors flip later);
+`scope_entity_id: str`; `scope_entity_kind: str` (singular, e.g.
+`"component"`); `inbound_depends_on: tuple[str, ...]`;
+`outbound_by_type` / `inbound_by_type: dict[str, tuple[str, ...]]`;
+`contains_descendants: tuple[str, ...]` (transitive, sorted).
+
+**ProjectedView carries scope metadata.** `project()` propagates
+`scope_chain`, `parent`, `peers`, `roll_up` from the MaterializedSlice
+onto the returned `ProjectedView`. Renderers surface these as
+breadcrumb navigation — the Markdown renderer emits
+`> **Path:** ROOT / A / B / **C**`; the HTML renderer emits
+`<nav class="scope-chain">…</nav>` with parent+ancestor links to
+`family1.entity_page:<id>` and comma-separated peer links.
+
+**EntityPageProjector convention.** A single projector per family
+(`family{1,2,3,4,6,7,8}.entity_page`) dispatches on
+`config["__scope_entity_kind"]` via `_project_<kind>` methods. Each
+`DiagramSpec` uses `id = f"prose:family{N}.entity_page:{entity_id}"`,
+`title = f"{name} ({entity_id})"`, `facets = {"content_kind":
+"markdown", "body": <str>}`. Sections use `## Header\n\n<content>`
+joined by `\n\n`; empty sections are omitted; order is canonical per
+family. `project()` injects `__scope_*` config keys from
+`scope_metadata` (entity_id, kind, inbound_depends_on,
+outbound_by_type, inbound_by_type, contains_descendants) so
+projectors can render roll-ups without re-walking the model.
+Family 5 is deferred to Phase 4 (needs populated deployment metadata).
+
+**Supplementary fragments plumbing.** `project()` unconditionally
+injects `__scope_supplementary_fragments = dict(mat.supplementary_fragments)`
+when non-empty. `family8.entity_page` reads the `"sil"` key to render
+its rollup section; other projectors are unaffected.
+
+**Drill-down metadata on root-family views.** Root-family adapters
+(`family3.component_diagram`, `family6.icd`, ...) attach
+`facets["drill_to"] = {entity_id: "familyN.entity_page:entity_id"}`
+as a sibling of `facets["body"]`. Coverage per family mirrors
+`architecture_model.lifecycle.projectors.drill._FAMILY_KINDS`:
+`family1` = all seven kinds; `family2` = capabilities/components/behaviors;
+`family3` = components/layers; `family4` = behaviors/actors;
+`family6` = interfaces/components;
+`family7` = components/capabilities/behaviors/interfaces/constraints;
+`family8` = components/capabilities/interfaces. Renderers may use
+`drill_to` to emit hyperlinks or hover targets; it has no effect on
+the rendered body itself.
+
+**Invalidation on entity change.**
+`architecture_model.lifecycle.invalidation.entity_change_stale_set(
+entity_id, family, model_context)` returns
+`{f"family{N}.entity_page:{entity_id}"}` plus the entity's direct
+parent, all peers, and `f"family{N}.root"`. Ids use the **colon form**
+(`family{N}.entity_page:{entity_id}`) matching `DiagramSpec.id` —
+DELIBERATELY DIFFERENT from `stale_entity_view_ids`'s dot form. Do
+not mix the two.
+
+Design + plan docs:
+- `docs/plans/2026-09-08-phase-3-recursion-and-entity-views.md` — 24-task plan
+- `docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md` — Phase 2 (merged)
+- `docs/plans/2026-09-08-phase-1-substrate-and-liveness.md` — Phase 1 (merged)
+- `docs/plans/2026-09-08-model-view-mapping-design.md` — overall design
+
 ## E2E Benchmark Results (2026-07-07)
 
 ### Extraction (architecture model from source code)

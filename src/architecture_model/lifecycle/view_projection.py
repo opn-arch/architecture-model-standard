@@ -100,6 +100,16 @@ class ProjectedView:
     diagram_spec: DiagramSpec
     provenance: dict[str, Any]
     warnings: tuple[str, ...] = ()
+    # -- Phase 3 Task 4: entity-scoped recursion metadata -------------------
+    # Populated by :func:`project` from
+    # ``materialized_slice.provenance['scope_metadata']`` when the slice is
+    # entity-scoped; left at zero-value defaults otherwise. ``scope_chain``
+    # starts with the sentinel ``"ROOT"`` followed by ``contains`` ancestors
+    # from top down and terminates with the scoped entity id itself.
+    scope_chain: tuple[str, ...] = ()
+    parent: str | None = None
+    peers: tuple[str, ...] = ()
+    roll_up: bool = False
 
 
 class ProjectorRegistry:
@@ -180,6 +190,38 @@ def project(
         )
     fn, version = reg.get(view.projector)
     config_copy = dict(view.projector_config)
+    # Phase 3 Task 7: inject entity-scope info into projector config so
+    # EntityPageProjector subclasses can dispatch by kind without needing
+    # access to the MaterializedSlice. Non-entity slices leave these
+    # keys absent — projectors that don't expect them are unaffected.
+    scope_meta_pre = materialized_slice.provenance.get("scope_metadata") or {}
+    if scope_meta_pre.get("scope_entity_id"):
+        config_copy["__scope_entity_id"] = scope_meta_pre["scope_entity_id"]
+        config_copy["__scope_entity_kind"] = scope_meta_pre.get(
+            "scope_entity_kind", ""
+        )
+        config_copy["__scope_inbound_depends_on"] = tuple(
+            scope_meta_pre.get("inbound_depends_on", ())
+        )
+        # Phase 3 Task 9: general relation indices + contains descendants
+        # for family2+ projectors.
+        config_copy["__scope_outbound_by_type"] = dict(
+            scope_meta_pre.get("outbound_by_type", {}) or {}
+        )
+        config_copy["__scope_inbound_by_type"] = dict(
+            scope_meta_pre.get("inbound_by_type", {}) or {}
+        )
+        config_copy["__scope_contains_descendants"] = tuple(
+            scope_meta_pre.get("contains_descendants", ()) or ()
+        )
+    # Phase 3 Task 14: expose supplementary fragments (sil / gates / drift
+    # / test_results / learning) to projectors under a single config key.
+    # family8.entity_page reads ``sil`` for its rollup section; other
+    # projectors are unaffected.
+    if materialized_slice.supplementary_fragments:
+        config_copy["__scope_supplementary_fragments"] = dict(
+            materialized_slice.supplementary_fragments
+        )
     result = fn(materialized_slice.model_fragment, config_copy)
     if not isinstance(result, DiagramSpec):
         raise TypeError(
@@ -197,6 +239,11 @@ def project(
     warnings = tuple(
         f"{w.code}: {w.message}" for w in materialized_slice.warnings
     )
+    # Phase 3 Task 4: propagate entity-scope metadata (scope_chain, parent,
+    # peers, roll_up) computed during materialization. Non-entity slices
+    # never populate this key, so the ProjectedView fields stay at their
+    # zero-value defaults.
+    scope_meta = materialized_slice.provenance.get("scope_metadata") or {}
     return ProjectedView(
         view_id=view.id,
         slice_id=materialized_slice.slice_id,
@@ -204,6 +251,10 @@ def project(
         diagram_spec=result,
         provenance=provenance,
         warnings=warnings,
+        scope_chain=tuple(scope_meta.get("scope_chain", ())),
+        parent=scope_meta.get("parent"),
+        peers=tuple(scope_meta.get("peers", ())),
+        roll_up=bool(scope_meta.get("roll_up", False)),
     )
 
 

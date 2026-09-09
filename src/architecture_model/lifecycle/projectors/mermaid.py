@@ -10,10 +10,18 @@ from __future__ import annotations
 from typing import Any, Callable, TYPE_CHECKING
 
 from architecture_model.core.diagram_spec import DiagramSpec
+from architecture_model.lifecycle.projectors.drill import drill_to_map
 
 if TYPE_CHECKING:
     from architecture_model.core.types import ArchitectureModel
     from architecture_model.lifecycle.view_projection import ProjectorFn, ProjectorRegistry
+
+
+def _family_of(projector_name: str) -> int:
+    # 'family3.component_diagram' -> 3
+    prefix = projector_name.split(".", 1)[0]
+    assert prefix.startswith("family")
+    return int(prefix[len("family"):])
 
 
 def _load_generator(fn_name: str) -> Callable[..., str]:
@@ -23,13 +31,19 @@ def _load_generator(fn_name: str) -> Callable[..., str]:
 
 
 def _wrap(projector_name: str, fn_name: str) -> "ProjectorFn":
+    family = _family_of(projector_name)
+
     def adapter(fragment: "ArchitectureModel", config: dict[str, Any]) -> DiagramSpec:
         del config
         body = _load_generator(fn_name)(fragment)
         return DiagramSpec(
             id=f"diagram:{projector_name}",
             title=projector_name,
-            facets={"content_kind": "mermaid", "body": body},
+            facets={
+                "content_kind": "mermaid",
+                "body": body,
+                "drill_to": drill_to_map(fragment, family),
+            },
         )
 
     adapter.__name__ = f"adapter_{projector_name.replace('.', '_')}"

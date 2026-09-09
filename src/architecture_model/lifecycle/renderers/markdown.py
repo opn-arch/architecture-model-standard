@@ -77,6 +77,24 @@ def _diagram_body(spec: DiagramSpec) -> tuple[str, str]:
     return "text", "\n".join(lines)
 
 
+def _breadcrumb(view: ProjectedView) -> str:
+    """Phase 3 Task 17: render a `> **Path:** ROOT / A / B / **C**`
+    breadcrumb for entity-scoped views.
+
+    Returns '' when ``view.scope_chain`` is empty (root view — backward
+    compat with Phase 1). The last element of ``scope_chain`` is treated
+    as the current entity and rendered in bold.
+    """
+    chain = tuple(view.scope_chain or ())
+    if not chain:
+        return ""
+    parts: list[str] = ["ROOT"]
+    for anc in chain[:-1]:
+        parts.append(anc)
+    parts.append(f"**{chain[-1]}**")
+    return "> **Path:** " + " / ".join(parts)
+
+
 @instrumented("renderer:markdown")
 def render_markdown(
     view: ProjectedView | list[ProjectedView], artifact: ArtifactSpec
@@ -96,6 +114,10 @@ def render_markdown(
     out: list[str] = []
     out.append(f"# {title}")
     out.append("")
+    crumb = _breadcrumb(picked)
+    if crumb:
+        out.append(crumb)
+        out.append("")
     out.append("## Metadata")
     out.append("")
     out.append(f"- view_id: `{picked.view_id}`")
