@@ -269,3 +269,101 @@ class Family2EntityPage(EntityPageProjector):
                 "## Belongs To\n\n" + "\n".join(f"- {c}" for c in containers)
             )
         return _family2_spec(entity_id, model, "\n\n".join(parts))
+
+
+# ---------------------------------------------------------------------------
+# Family 3 — structural per entity (Phase 3 Task 10)
+# ---------------------------------------------------------------------------
+
+
+def _family_spec(
+    family: int,
+    entity_id: str,
+    model: ArchitectureModel,
+    body: str,
+) -> DiagramSpec:
+    """Generic family-N DiagramSpec envelope for prose entity pages."""
+    entity = _find_entity_by_id(model, entity_id)
+    name = getattr(entity, "name", "") if entity is not None else ""
+    display_name = name or entity_id
+    return DiagramSpec(
+        id=f"prose:family{family}.entity_page:{entity_id}",
+        title=f"{display_name} ({entity_id})",
+        facets={"content_kind": "markdown", "body": body},
+    )
+
+
+class Family3EntityPage(EntityPageProjector):
+    """Family 3: structural context per entity.
+
+    Kinds: component, layer. Sections: Internal Parts, Depends On,
+    Depended On By, Exposed Interfaces, Consumed Interfaces,
+    Dependencies Rationale.
+    """
+
+    family = 3
+
+    def _render(
+        self,
+        model: ArchitectureModel,
+        config: dict[str, Any],
+        *,
+        include_interfaces: bool,
+        include_rationale: bool,
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        descendants = tuple(config.get("__scope_contains_descendants", ()) or ())
+        outbound = config.get("__scope_outbound_by_type", {}) or {}
+        inbound = config.get("__scope_inbound_by_type", {}) or {}
+
+        parts: list[str] = []
+        if descendants:
+            parts.append(
+                "## Internal Parts\n\n"
+                + "\n".join(f"- {d}" for d in descendants)
+            )
+        depends_out = tuple(outbound.get("depends-on", ()) or ())
+        if depends_out:
+            parts.append(
+                "## Depends On\n\n" + "\n".join(f"- {d}" for d in depends_out)
+            )
+        depends_in = tuple(inbound.get("depends-on", ()) or ())
+        if depends_in:
+            parts.append(
+                "## Depended On By\n\n"
+                + "\n".join(f"- {d}" for d in depends_in)
+            )
+        if include_interfaces:
+            exposed = tuple(outbound.get("exposes", ()) or ())
+            if exposed:
+                parts.append(
+                    "## Exposed Interfaces\n\n"
+                    + "\n".join(f"- {e}" for e in exposed)
+                )
+            consumed = tuple(outbound.get("consumes", ()) or ())
+            if consumed:
+                parts.append(
+                    "## Consumed Interfaces\n\n"
+                    + "\n".join(f"- {c}" for c in consumed)
+                )
+        if include_rationale:
+            entity = _find_entity_by_id(model, entity_id)
+            rationale = getattr(entity, "dependencies_rationale", None) or {}
+            if rationale:
+                lines = [f"- **{k}**: {v}" for k, v in sorted(rationale.items())]
+                parts.append("## Dependencies Rationale\n\n" + "\n".join(lines))
+        return _family_spec(3, entity_id, model, "\n\n".join(parts))
+
+    def _project_component(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        return self._render(
+            model, config, include_interfaces=True, include_rationale=True
+        )
+
+    def _project_layer(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        return self._render(
+            model, config, include_interfaces=False, include_rationale=False
+        )
