@@ -70,6 +70,42 @@ def _options_from_parameters(params: dict[str, Any]) -> DiagramRenderOptions | N
     return None
 
 
+def _breadcrumb_nav(view: ProjectedView) -> str:
+    """Phase 3 Task 17: emit a nav element with drill-up (parent) and
+    peer links for entity-scoped views.
+
+    Returns '' when ``scope_chain`` is empty (root view). The current
+    entity (last element of ``scope_chain``) is rendered as a bold span
+    with no link; ancestors become ``<a>`` links to their family1
+    entity-page ids. Peers are appended as a comma-separated peer list.
+    """
+    chain = tuple(view.scope_chain or ())
+    if not chain:
+        return ""
+    parts: list[str] = ["<a href=\"#\">ROOT</a>"]
+    for anc in chain[:-1]:
+        parts.append(
+            f"<a href=\"family1.entity_page:{escape(anc)}\">{escape(anc)}</a>"
+        )
+    parts.append(f"<strong>{escape(chain[-1])}</strong>")
+    breadcrumb = " / ".join(parts)
+
+    peers = tuple(view.peers or ())
+    peer_html = ""
+    if peers:
+        peer_links = ", ".join(
+            f"<a href=\"family1.entity_page:{escape(p)}\">{escape(p)}</a>"
+            for p in peers
+        )
+        peer_html = f" &middot; peers: {peer_links}"
+    return (
+        "<nav class=\"scope-chain\">"
+        f"<span class=\"path\">{breadcrumb}</span>"
+        f"{peer_html}"
+        "</nav>"
+    )
+
+
 @instrumented("renderer:html")
 def render_html(
     view: ProjectedView | list[ProjectedView], artifact: ArtifactSpec
@@ -96,9 +132,12 @@ def render_html(
         f"<title>{escape(title)}</title>"
         "<style>body{font-family:system-ui,sans-serif;margin:1.5rem;}"
         ".meta{color:#475569;font-size:0.9rem;}"
+        ".scope-chain{color:#334155;font-size:0.9rem;margin-bottom:0.75rem;}"
+        ".scope-chain a{color:#2563eb;text-decoration:none;}"
         ".warnings{margin-top:1rem;}"
         ".diagram{margin:1rem 0;}</style>"
         "</head><body>"
+        f"{_breadcrumb_nav(picked)}"
         f"<h1>{escape(title)}</h1>"
         "<p class=\"meta\">"
         f"view_id: <code>{escape(picked.view_id)}</code> &middot; "
