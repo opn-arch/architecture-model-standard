@@ -214,6 +214,14 @@ def project(
         config_copy["__scope_contains_descendants"] = tuple(
             scope_meta_pre.get("contains_descendants", ()) or ()
         )
+    # Phase 3 Task 14: expose supplementary fragments (sil / gates / drift
+    # / test_results / learning) to projectors under a single config key.
+    # family8.entity_page reads ``sil`` for its rollup section; other
+    # projectors are unaffected.
+    if materialized_slice.supplementary_fragments:
+        config_copy["__scope_supplementary_fragments"] = dict(
+            materialized_slice.supplementary_fragments
+        )
     result = fn(materialized_slice.model_fragment, config_copy)
     if not isinstance(result, DiagramSpec):
         raise TypeError(

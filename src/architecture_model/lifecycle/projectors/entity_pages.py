@@ -597,3 +597,96 @@ class Family7EntityPage(EntityPageProjector):
 
     def _project_constraint(self, model, config):
         return self._render(model, config, include_slos=False)
+
+
+# ---------------------------------------------------------------------------
+# Family 8 — health + evolution per entity (Phase 3 Task 14)
+# ---------------------------------------------------------------------------
+
+
+def _render_sil_section(sil_frag: Any, entity_id: str) -> str:
+    """Render the SI&L Rollup section from a SILFragment.
+
+    Returns '' when the fragment is missing, has no ``summary`` entry
+    for ``entity_id``, or when it's not a SIL-shaped object.
+    """
+    if sil_frag is None:
+        return ""
+    summary = getattr(sil_frag, "summary", None) or {}
+    cell = summary.get(entity_id)
+    if not cell:
+        return ""
+    inv = int(cell.get("invocations", 0))
+    fail = int(cell.get("failures", 0))
+    avg = cell.get("avg_duration_ms", 0.0)
+    lines = [
+        f"- Invocations: {inv}",
+        f"- Failures: {fail}",
+        f"- Avg Duration (ms): {avg}",
+    ]
+    return "## SI&L Rollup\n\n" + "\n".join(lines)
+
+
+def _render_recent_events_section(sil_frag: Any, entity_id: str, limit: int = 10) -> str:
+    """Render at most ``limit`` recent SI&L events for the entity."""
+    if sil_frag is None:
+        return ""
+    events = tuple(getattr(sil_frag, "events", ()) or ())
+    filtered = tuple(e for e in events if getattr(e, "component_id", None) == entity_id)
+    if not filtered:
+        return ""
+    recent = filtered[-limit:]
+    lines = [
+        f"- {e.ts} {e.kind} {e.outcome} {e.duration_ms}ms" for e in recent
+    ]
+    return "## Recent Events\n\n" + "\n".join(lines)
+
+
+def _render_drift_section(drift_frag: Any) -> str:
+    """Render drift flag summary. Drift fragment is a stub (list of dicts)."""
+    if drift_frag is None:
+        return ""
+    events = tuple(getattr(drift_frag, "events", ()) or ())
+    if not events:
+        return ""
+    return "## Drift Flags\n\n" + "\n".join(f"- {e}" for e in events)
+
+
+class Family8EntityPage(EntityPageProjector):
+    """Family 8: health + evolution per entity.
+
+    Kinds: component, capability, interface. Sections rendered in
+    canonical order (empty sections omitted): SI&L Rollup, Recent
+    Events, Drift Flags.
+    """
+
+    family = 8
+
+    def _render(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        fragments = config.get("__scope_supplementary_fragments", {}) or {}
+        sil_frag = fragments.get("sil")
+        drift_frag = fragments.get("drift")
+
+        parts: list[str] = []
+        rollup = _render_sil_section(sil_frag, entity_id)
+        if rollup:
+            parts.append(rollup)
+        recent = _render_recent_events_section(sil_frag, entity_id)
+        if recent:
+            parts.append(recent)
+        drift = _render_drift_section(drift_frag)
+        if drift:
+            parts.append(drift)
+        return _family_spec(8, entity_id, model, "\n\n".join(parts))
+
+    def _project_component(self, model, config):
+        return self._render(model, config)
+
+    def _project_capability(self, model, config):
+        return self._render(model, config)
+
+    def _project_interface(self, model, config):
+        return self._render(model, config)
