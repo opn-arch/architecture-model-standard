@@ -190,6 +190,16 @@ def project(
         )
     fn, version = reg.get(view.projector)
     config_copy = dict(view.projector_config)
+    # Phase 3 Task 7: inject entity-scope info into projector config so
+    # EntityPageProjector subclasses can dispatch by kind without needing
+    # access to the MaterializedSlice. Non-entity slices leave these
+    # keys absent — projectors that don't expect them are unaffected.
+    scope_meta_pre = materialized_slice.provenance.get("scope_metadata") or {}
+    if scope_meta_pre.get("scope_entity_id"):
+        config_copy["__scope_entity_id"] = scope_meta_pre["scope_entity_id"]
+        config_copy["__scope_entity_kind"] = scope_meta_pre.get(
+            "scope_entity_kind", ""
+        )
     result = fn(materialized_slice.model_fragment, config_copy)
     if not isinstance(result, DiagramSpec):
         raise TypeError(

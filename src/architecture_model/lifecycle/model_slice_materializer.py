@@ -583,11 +583,30 @@ def _compute_entity_scope_metadata(
             sorted(cid for cid in children_of.get(parent, []) if cid != entity_id)
         )
 
+    # Locate the scoped entity's kind (singular canonical) for downstream
+    # projector dispatch (Phase 3 Task 7). Absent when the id is not
+    # present in the base model (caller should have failed earlier).
+    scope_entity_kind = ""
+    for f in _ENTITY_FIELDS:
+        for ent in getattr(model.entities, f, []):
+            if ent.id == entity_id:
+                if f.endswith("ies"):
+                    scope_entity_kind = f[:-3] + "y"
+                elif f.endswith("s") and not f.endswith("ss"):
+                    scope_entity_kind = f[:-1]
+                else:
+                    scope_entity_kind = f
+                break
+        if scope_entity_kind:
+            break
+
     return {
         "scope_chain": ("ROOT", *chain),
         "parent": parent,
         "peers": peers,
         "roll_up": False,
+        "scope_entity_id": entity_id,
+        "scope_entity_kind": scope_entity_kind,
     }
 
 
