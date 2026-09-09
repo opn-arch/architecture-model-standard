@@ -340,6 +340,28 @@ git commit -m "feat(schema): add nested semantic types (FailureMode, TradeOff, S
 
 **Rationale:** Component is the most-touched entity type and exercises every semantic field except a couple actor/constraint-only ones. Land Component first, then generalize to the other kinds in Task 3.
 
+> **Deviation from spec (2026-09-08, execution):** `BaseEntity` already carries
+> `intent`, `goals`, `requirements`, `failure_modes`, `trade_offs` as `list[str]`
+> with `""` / `[]` defaults, and ~40 call sites in `pipeline/`, `quality/`,
+> `docs/se/`, `core/se_view_projectors.py` read/mutate these as lists of strings.
+> Replacing them with typed tuples (per plan text) would cascade into a repo-wide
+> refactor and break the Task 5 back-compat gate. Pragmatic interpretation of
+> the "Union types + parser promotion" strategy chosen at execution time:
+>
+> 1. Leave `BaseEntity`'s five legacy fields untouched (`list[str]`, `""` / `[]`).
+> 2. Widen `_parse_base` so entries under `failure_modes` / `trade_offs` /
+>    `requirements` may be dicts (2.1 style); dicts are promoted to
+>    `FailureMode` / `TradeOff` / `RequirementRef` and stored alongside legacy
+>    strings in the same list.
+> 3. `_dump_base` calls `.to_dict()` on typed entries; strings pass through.
+> 4. Add only the **nine new fields** on `Component`:
+>    `stakeholders`, `success_criteria`, `assumptions`, `open_questions`,
+>    `verification`, `slos`, `owner`, `maturity`, `dependencies_rationale`.
+> 5. Test file adapts assertions to `list`/`""` defaults, uses `_parse_component`
+>    instead of the non-existent `Component.to_dict()`/`Component.from_dict()`.
+>
+> Tasks 3–7 apply the same pattern.
+
 **Files:**
 - Modify: `src/architecture_model/core/types.py` (locate `Component` dataclass — currently defines id/name/kind/status/files/…; add semantic fields with defaults)
 - Modify: `src/architecture_model/core/parser.py` (component parser branch — read new fields)

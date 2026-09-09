@@ -147,6 +147,16 @@ class Strength(str, Enum):
     WEAK = "weak"
 
 
+class Maturity(str, Enum):
+    """Lifecycle maturity of an architectural entity (Phase 2 / schema 2.1)."""
+
+    PROPOSAL = "proposal"
+    DRAFT = "draft"
+    ACTIVE = "active"
+    STABLE = "stable"
+    DEPRECATED = "deprecated"
+
+
 class ComponentKind(str, Enum):
     SERVICE = "service"
     LIBRARY = "library"
@@ -330,12 +340,23 @@ class BaseEntity:
 @dataclass
 class Actor(BaseEntity):
     type: ActorType = ActorType.HUMAN
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
 
 
 @dataclass
 class Capability(BaseEntity):
     source_block: str = ""
     priority: Priority = Priority.MEDIUM
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    owner: Optional[str] = None
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -382,6 +403,13 @@ class Behavior(BaseEntity):
     states: list[StateTransition] = field(default_factory=list)
     compensations: list[Compensation] = field(default_factory=list)
     structured_steps: list[Step] = field(default_factory=list)
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -402,6 +430,14 @@ class Interface(BaseEntity):
     endpoints: list[dict] = field(default_factory=list)
     schema: str = ""
     contract: str = ""
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    slos: list[Any] = field(default_factory=list)  # list[SLO]
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -409,6 +445,12 @@ class Constraint(BaseEntity):
     type: ConstraintType = ConstraintType.TECHNOLOGY
     metric: str = ""
     threshold: str = ""
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -416,6 +458,9 @@ class Layer(BaseEntity):
     order: int = 0
     technology: list[str] = field(default_factory=list)
     directories: list[str] = field(default_factory=list)
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    owner: Optional[str] = None
+    maturity: Optional[Maturity] = None
 
 
 @dataclass
@@ -523,6 +568,20 @@ class Component(BaseEntity):
     external_dependencies: list[dict[str, Any]] = field(default_factory=list)
     parent_id: Optional[str] = None
     children: list[str] = field(default_factory=list)
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    # See docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md Task 2.
+    # Note: intent/goals/requirements/failure_modes/trade_offs are inherited
+    # from BaseEntity and remain list[str]; the parser widens the last three
+    # to accept dict entries (2.1) which are promoted to typed objects.
+    stakeholders: list[str] = field(default_factory=list)
+    success_criteria: list[str] = field(default_factory=list)
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
+    verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
+    slos: list[Any] = field(default_factory=list)  # list[SLO]
+    owner: Optional[str] = None
+    maturity: Optional[Maturity] = None
+    dependencies_rationale: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -871,7 +930,15 @@ class ArchitectureModel:
         ):
             value = getattr(entity, field_name)
             if value:
-                d[field_name] = value
+                # Schema 2.1: entries may be typed dataclasses (FailureMode,
+                # TradeOff, RequirementRef) alongside legacy strings. Convert
+                # anything with .to_dict() before dumping.
+                if isinstance(value, list) and any(hasattr(v, "to_dict") for v in value):
+                    d[field_name] = [
+                        v.to_dict() if hasattr(v, "to_dict") else v for v in value
+                    ]
+                else:
+                    d[field_name] = value
         if entity.decisions:
             d["decisions"] = [
                 {
@@ -895,6 +962,11 @@ class ArchitectureModel:
         d["type"] = _enum_value(a.type)
         if a.goals:
             d["goals"] = a.goals
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if a.assumptions:
+            d["assumptions"] = a.assumptions
+        if a.open_questions:
+            d["open_questions"] = a.open_questions
         return d
 
     @classmethod
@@ -905,17 +977,40 @@ class ArchitectureModel:
         if c.priority != Priority.MEDIUM:
             d["priority"] = c.priority.value
         if c.requirements:
-            d["requirements"] = c.requirements
+            d["requirements"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.requirements
+            ]
         if c.moes:
             d["moes"] = c.moes
         if c.goals:
             d["goals"] = c.goals
         if c.trade_offs:
-            d["trade_offs"] = c.trade_offs
+            d["trade_offs"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.trade_offs
+            ]
         if c.failure_modes:
-            d["failure_modes"] = c.failure_modes
+            d["failure_modes"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.failure_modes
+            ]
         if c.monitored:
             d["monitored"] = c.monitored
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if c.stakeholders:
+            d["stakeholders"] = c.stakeholders
+        if c.success_criteria:
+            d["success_criteria"] = c.success_criteria
+        if c.assumptions:
+            d["assumptions"] = c.assumptions
+        if c.open_questions:
+            d["open_questions"] = c.open_questions
+        if c.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.verification
+            ]
+        if c.owner:
+            d["owner"] = c.owner
+        if c.maturity is not None:
+            d["maturity"] = c.maturity.value if hasattr(c.maturity, "value") else c.maturity
         return d
 
     @classmethod
@@ -969,7 +1064,24 @@ class ArchitectureModel:
         if b.moes:
             d["moes"] = b.moes
         if b.failure_modes:
-            d["failure_modes"] = b.failure_modes
+            d["failure_modes"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in b.failure_modes
+            ]
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if b.stakeholders:
+            d["stakeholders"] = b.stakeholders
+        if b.success_criteria:
+            d["success_criteria"] = b.success_criteria
+        if b.assumptions:
+            d["assumptions"] = b.assumptions
+        if b.open_questions:
+            d["open_questions"] = b.open_questions
+        if b.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in b.verification
+            ]
+        if b.maturity is not None:
+            d["maturity"] = b.maturity.value if hasattr(b.maturity, "value") else b.maturity
         return d
 
     @classmethod
@@ -990,6 +1102,25 @@ class ArchitectureModel:
             d["schema"] = i.schema
         if i.contract:
             d["contract"] = i.contract
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if i.stakeholders:
+            d["stakeholders"] = i.stakeholders
+        if i.success_criteria:
+            d["success_criteria"] = i.success_criteria
+        if i.assumptions:
+            d["assumptions"] = i.assumptions
+        if i.open_questions:
+            d["open_questions"] = i.open_questions
+        if i.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in i.verification
+            ]
+        if i.slos:
+            d["slos"] = [
+                s.to_dict() if hasattr(s, "to_dict") else s for s in i.slos
+            ]
+        if i.maturity is not None:
+            d["maturity"] = i.maturity.value if hasattr(i.maturity, "value") else i.maturity
         return d
 
     @classmethod
@@ -1002,6 +1133,19 @@ class ArchitectureModel:
             d["threshold"] = c.threshold
         if c.rationale:
             d["rationale"] = c.rationale
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if c.success_criteria:
+            d["success_criteria"] = c.success_criteria
+        if c.assumptions:
+            d["assumptions"] = c.assumptions
+        if c.open_questions:
+            d["open_questions"] = c.open_questions
+        if c.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.verification
+            ]
+        if c.maturity is not None:
+            d["maturity"] = c.maturity.value if hasattr(c.maturity, "value") else c.maturity
         return d
 
     @classmethod
@@ -1012,6 +1156,11 @@ class ArchitectureModel:
             d["technology"] = l.technology
         if l.directories:
             d["directories"] = l.directories
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if l.owner:
+            d["owner"] = l.owner
+        if l.maturity is not None:
+            d["maturity"] = l.maturity.value if hasattr(l.maturity, "value") else l.maturity
         return d
 
     @classmethod
@@ -1109,9 +1258,34 @@ class ArchitectureModel:
         if c.trade_offs:
             d["trade_offs"] = c.trade_offs
         if c.failure_modes:
-            d["failure_modes"] = c.failure_modes
+            d["failure_modes"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.failure_modes
+            ]
         if c.monitored:
             d["monitored"] = c.monitored
+        # --- Phase 2 (schema 2.1) semantic fields ---
+        if c.stakeholders:
+            d["stakeholders"] = c.stakeholders
+        if c.success_criteria:
+            d["success_criteria"] = c.success_criteria
+        if c.assumptions:
+            d["assumptions"] = c.assumptions
+        if c.open_questions:
+            d["open_questions"] = c.open_questions
+        if c.verification:
+            d["verification"] = [
+                v.to_dict() if hasattr(v, "to_dict") else v for v in c.verification
+            ]
+        if c.slos:
+            d["slos"] = [
+                s.to_dict() if hasattr(s, "to_dict") else s for s in c.slos
+            ]
+        if c.owner:
+            d["owner"] = c.owner
+        if c.maturity is not None:
+            d["maturity"] = c.maturity.value if hasattr(c.maturity, "value") else c.maturity
+        if c.dependencies_rationale:
+            d["dependencies_rationale"] = c.dependencies_rationale
         return d
 
     @classmethod

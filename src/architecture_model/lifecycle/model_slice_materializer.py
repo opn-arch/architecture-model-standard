@@ -77,6 +77,12 @@ from architecture_model.lifecycle.package import (
     iter_descendants,
 )
 from architecture_model.lifecycle.serialization import digest as _digest
+from architecture_model.manifest.types import (
+    ClassInfo,
+    FunctionInfo,
+    InterfaceEdge,
+    ModuleInfo,
+)
 
 MATERIALIZER_VERSION = "1.0.0"
 
@@ -122,6 +128,54 @@ class MaterializationWarning:
 
 
 @dataclass(frozen=True)
+class ManifestFunction:
+    """A manifest function tagged with its source file (Phase 2 Task 9)."""
+
+    file: str
+    info: FunctionInfo
+
+
+@dataclass(frozen=True)
+class ManifestClass:
+    """A manifest class tagged with its source file (Phase 2 Task 9)."""
+
+    file: str
+    info: ClassInfo
+
+
+@dataclass(frozen=True)
+class ManifestFragment:
+    """Bounded projection of a reality manifest (Phase 2 Task 9).
+
+    Populated by :func:`materialize` when the slice carries
+    ``SupplementaryRef(kind="manifest")``. Contains only modules whose
+    ``file`` is listed on a component present in the fragment's scope,
+    plus imports whose endpoints are both in-scope. ``functions`` and
+    ``classes`` are flat views over the retained modules for the benefit
+    of family-6 projectors (CLI reference, API reference, plugin guide).
+    """
+
+    modules: tuple[ModuleInfo, ...] = ()
+    functions: tuple[ManifestFunction, ...] = ()
+    classes: tuple[ManifestClass, ...] = ()
+    imports: tuple[InterfaceEdge, ...] = ()
+
+
+@dataclass(frozen=True)
+class ModelRevisionFragment:
+    """A single revision snapshot within a temporal slice (Phase 2 Task 12).
+
+    ``revision`` is a 7-digit generation id (e.g. ``"0000003"``);
+    ``model_fragment`` is the projected model for that generation,
+    subject to the same selectors + strict-closure rules as the primary
+    fragment. Populated only when the slice carries a ``revision_range``.
+    """
+
+    revision: str
+    model_fragment: ArchitectureModel
+
+
+@dataclass(frozen=True)
 class MaterializedSlice:
     slice_id: str
     architecture_id: str
@@ -130,6 +184,9 @@ class MaterializedSlice:
     stub_entity_ids: tuple[str, ...] = ()
     provenance: dict[str, Any] = field(default_factory=dict)
     warnings: tuple[MaterializationWarning, ...] = ()
+    manifest_fragment: ManifestFragment | None = None
+    supplementary_fragments: dict[str, Any] = field(default_factory=dict)
+    revision_series: tuple[ModelRevisionFragment, ...] = ()
 
     def to_dict(self) -> dict:
         """Serialize to the shape expected by ai.validators (fragment key).
@@ -373,6 +430,22 @@ def materialize(
     # -- 7. Sort for determinism -----------------------------------------
     _sort_fragment(fragment)
 
+    # -- 7b. Supplementary refs: manifest fragment -----------------------
+    manifest_fragment, manifest_warnings = _build_manifest_fragment(
+        slice, pkg, fragment
+    )
+    warnings.extend(manifest_warnings)
+
+    # -- 7c. Supplementary refs: sil / gates / drift / test_results / learning
+    supplementary_fragments, sup_warnings = _build_supplementary_fragments(
+        slice, pkg
+    )
+    warnings.extend(sup_warnings)
+
+    # -- 7d. Temporal: revision_series ------------------------------------
+    revision_series, rev_warnings = _build_revision_series(slice, pkg)
+    warnings.extend(rev_warnings)
+
     # -- 8. Provenance ----------------------------------------------------
     provenance: dict[str, Any] = {
         "selectors_applied": slice.selectors.model_dump(exclude_none=True),
@@ -399,6 +472,9 @@ def materialize(
         stub_entity_ids=stub_ids,
         provenance=provenance,
         warnings=warnings_tuple,
+        manifest_fragment=manifest_fragment,
+        supplementary_fragments=supplementary_fragments,
+        revision_series=revision_series,
     )
 
 
@@ -615,9 +691,339 @@ def _model_to_hashable(model: ArchitectureModel) -> dict:
     }
 
 
+def _build_manifest_fragment(
+    slice: ModelSlice,
+    pkg: ArchitecturePackage,
+    fragment: ArchitectureModel,
+) -> tuple[ManifestFragment | None, list[MaterializationWarning]]:
+    """Resolve ``SupplementaryRef(kind="manifest")`` to a bounded fragment.
+
+    Returns ``(None, [])`` when no manifest ref is present. Emits
+    ``SLICE.MANIFEST_UNAVAILABLE`` when a ref is present but the package
+    exposes no filesystem root or manifest generation fails.
+    """
+
+    manifest_ref = next(
+        (r for r in slice.supplementary_refs if r.kind == "manifest"),
+        None,
+    )
+    if manifest_ref is None:
+        return None, []
+
+    warnings: list[MaterializationWarning] = []
+
+    if pkg.root is None:
+        warnings.append(
+            MaterializationWarning(
+                code="SLICE.MANIFEST_UNAVAILABLE",
+                message="cannot resolve manifest: package has no filesystem root",
+            )
+        )
+        return None, warnings
+
+    # Determine project root: explicit override on the ref, else pkg.root.
+    project_root: Path = pkg.root
+    if manifest_ref.path:
+        project_root = (pkg.root / manifest_ref.path).resolve()
+
+    try:
+        from architecture_model.manifest.generator import generate_manifest
+
+        manifest = generate_manifest(project_root)
+    except Exception as exc:  # noqa: BLE001
+        warnings.append(
+            MaterializationWarning(
+                code="SLICE.MANIFEST_UNAVAILABLE",
+                message=f"generate_manifest({project_root!s}) failed: {exc!s}",
+            )
+        )
+        return None, warnings
+
+    # Collect in-scope files from every component in the fragment.
+    scope_files: set[str] = set()
+    for comp in fragment.entities.components:
+        for fp in getattr(comp, "files", None) or ():
+            scope_files.add(fp)
+
+    if not scope_files:
+        # No component-file allocation to key off of; return empty fragment
+        # so downstream projectors can still distinguish "resolved but empty"
+        # from "not resolved".
+        return ManifestFragment(), warnings
+
+    kept_modules = tuple(
+        sorted(
+            (m for m in manifest.modules if m.file in scope_files),
+            key=lambda m: m.file,
+        )
+    )
+    functions = tuple(
+        ManifestFunction(file=m.file, info=fn)
+        for m in kept_modules
+        for fn in m.functions
+    )
+    classes = tuple(
+        ManifestClass(file=m.file, info=cls)
+        for m in kept_modules
+        for cls in m.classes
+    )
+    kept_files = {m.file for m in kept_modules}
+    imports = tuple(
+        sorted(
+            (
+                e for e in manifest.interfaces
+                if e.source in kept_files and e.target in kept_files
+            ),
+            key=lambda e: (e.source, e.target, e.import_path),
+        )
+    )
+
+    return (
+        ManifestFragment(
+            modules=kept_modules,
+            functions=functions,
+            classes=classes,
+            imports=imports,
+        ),
+        warnings,
+    )
+
+
+_SUPPLEMENTARY_LOADERS: dict[str, Any] = {}
+
+
+def _get_supplementary_loaders() -> dict[str, Any]:
+    """Lazy loader-registry lookup (avoids circular import at module load)."""
+    global _SUPPLEMENTARY_LOADERS
+    if _SUPPLEMENTARY_LOADERS:
+        return _SUPPLEMENTARY_LOADERS
+    from architecture_model.lifecycle import supplementary_loaders as sl
+
+    _SUPPLEMENTARY_LOADERS = {
+        "sil": sl.load_sil,
+        "gates": sl.load_gates,
+        "drift": sl.load_drift,
+        "test_results": sl.load_test_results,
+        "learning": sl.load_learning,
+    }
+    return _SUPPLEMENTARY_LOADERS
+
+
+def _build_supplementary_fragments(
+    slice: ModelSlice,
+    pkg: ArchitecturePackage,
+) -> tuple[dict[str, Any], list[MaterializationWarning]]:
+    """Resolve non-manifest supplementary refs to per-kind fragments.
+
+    Returns ``({}, [])`` when the slice carries no such refs. A ref whose
+    loader returns ``None`` (backing store missing or kind not yet wired)
+    emits a ``SLICE.SUPPLEMENTARY_NOT_AVAILABLE`` warning and is omitted
+    from the returned dict.
+    """
+    fragments: dict[str, Any] = {}
+    warnings: list[MaterializationWarning] = []
+
+    refs = [r for r in slice.supplementary_refs if r.kind != "manifest"]
+    if not refs:
+        return fragments, warnings
+
+    if pkg.root is None:
+        for ref in refs:
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=(
+                        f"cannot resolve supplementary {ref.kind!r}: "
+                        "package has no filesystem root"
+                    ),
+                )
+            )
+        return fragments, warnings
+
+    loaders = _get_supplementary_loaders()
+    for ref in refs:
+        loader = loaders.get(ref.kind)
+        if loader is None:
+            # SupplementaryKind literal already restricts this, but guard
+            # anyway so future kinds don't silently no-op.
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=f"unknown supplementary kind {ref.kind!r}",
+                )
+            )
+            continue
+        # Merge slice.time_window into the ref's filter for kinds that
+        # support since/until semantics. Explicit ref.filter values win
+        # over the slice-level window.
+        effective_filter = _merge_time_window(ref, slice)
+        try:
+            fragment = loader(
+                pkg.root,
+                path=ref.path,
+                filter=effective_filter,
+            )
+        except Exception as exc:  # noqa: BLE001
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=(
+                        f"supplementary {ref.kind!r} loader raised: {exc!s}"
+                    ),
+                )
+            )
+            continue
+        if fragment is None:
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.SUPPLEMENTARY_NOT_AVAILABLE",
+                    message=(
+                        f"supplementary {ref.kind!r} unavailable "
+                        "(no backing store or empty)"
+                    ),
+                )
+            )
+            continue
+        fragments[ref.kind] = fragment
+
+    return fragments, warnings
+
+
+# Kinds that understand ISO-8601 since/until in their filter dict.
+_TIME_WINDOWED_KINDS = frozenset({"sil", "gates", "drift", "test_results", "learning"})
+
+
+def _merge_time_window(ref, slice: ModelSlice) -> dict[str, Any] | None:
+    """Overlay ``slice.time_window`` onto ``ref.filter`` for temporal kinds.
+
+    Explicit ``since`` / ``until`` on the ref filter take precedence over
+    the slice-level window. Returns the ref's filter unchanged when the
+    slice has no ``time_window`` or the kind isn't temporal-aware.
+    """
+    if slice.time_window is None or ref.kind not in _TIME_WINDOWED_KINDS:
+        return ref.filter
+    merged: dict[str, Any] = dict(ref.filter or {})
+    merged.setdefault("since", slice.time_window.from_)
+    merged.setdefault("until", slice.time_window.to)
+    return merged
+
+
+def _build_revision_series(
+    slice: ModelSlice,
+    pkg: ArchitecturePackage,
+) -> tuple[tuple[ModelRevisionFragment, ...], list[MaterializationWarning]]:
+    """Load each generation in ``slice.revision_range`` and project it.
+
+    For each generation N in the inclusive [from, to] range: load the
+    generation's model file, apply the slice's selectors + curation, and
+    close relationships strictly (both endpoints must remain in the
+    fragment). Missing generations emit ``SLICE.REVISION_MISSING``;
+    malformed models emit ``SLICE.REVISION_UNAVAILABLE``.
+    """
+    if slice.revision_range is None:
+        return (), []
+
+    warnings: list[MaterializationWarning] = []
+    if pkg.root is None:
+        warnings.append(
+            MaterializationWarning(
+                code="SLICE.REVISION_UNAVAILABLE",
+                message=(
+                    "cannot resolve revision_range: package has no filesystem root"
+                ),
+            )
+        )
+        return (), warnings
+
+    from architecture_model.lifecycle.publication import generation_dir
+
+    lo = int(slice.revision_range.from_)
+    hi = int(slice.revision_range.to)
+
+    fragments: list[ModelRevisionFragment] = []
+    for n in range(lo, hi + 1):
+        rev_id = f"{n:07d}"
+        gen_dir = generation_dir(pkg, n)
+        model_path = gen_dir / "model" / ".architecture-model.yaml"
+        if not model_path.is_file():
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.REVISION_MISSING",
+                    message=(
+                        f"generation {rev_id!r} not found at {gen_dir!s}"
+                    ),
+                )
+            )
+            continue
+        try:
+            model = load_model(model_path)
+        except Exception as exc:  # noqa: BLE001
+            warnings.append(
+                MaterializationWarning(
+                    code="SLICE.REVISION_UNAVAILABLE",
+                    message=(
+                        f"generation {rev_id!r} model load failed: {exc!s}"
+                    ),
+                )
+            )
+            continue
+        rev_fragment = _project_revision(model, slice)
+        fragments.append(
+            ModelRevisionFragment(revision=rev_id, model_fragment=rev_fragment)
+        )
+
+    return tuple(fragments), warnings
+
+
+def _project_revision(
+    model: ArchitectureModel, slice: ModelSlice
+) -> ArchitectureModel:
+    """Apply selectors + curation + strict closure to a historical model.
+
+    Deliberately minimal: no supplementary refs, no boundary stubs, no
+    transitive expansion — historical fragments are meant for diffing
+    against the primary fragment, so we want a directly comparable view.
+    ``curation.include`` re-adds; ``curation.exclude`` drops; ``redactions``
+    are applied. Warnings during projection are swallowed (revision
+    quality is reported via SLICE.REVISION_* codes only).
+    """
+    working = _clone_model(model)
+    selected, _ = _apply_selectors(working, slice)
+    if slice.curation.exclude:
+        for eid in slice.curation.exclude:
+            selected.discard(eid)
+    if slice.curation.include:
+        present = _all_ids(working.entities)
+        for eid in slice.curation.include:
+            if eid in present:
+                selected.add(eid)
+    fragment = _project(working, selected)
+    fragment.relationships = [
+        copy.deepcopy(r)
+        for r in working.relationships
+        if r.from_id in selected and r.to_id in selected
+    ]
+    if slice.curation.redactions:
+        redaction_set = set(slice.curation.redactions)
+        for field_name in _ENTITY_FIELDS:
+            for ent in getattr(fragment.entities, field_name, []):
+                if ent.id in redaction_set:
+                    ent.description = ""
+                    if hasattr(ent, "rationale"):
+                        ent.rationale = ""
+                    if hasattr(ent, "intent"):
+                        ent.intent = ""
+    _sort_fragment(fragment)
+    return fragment
+
+
 __all__ = [
+    "ManifestClass",
+    "ManifestFragment",
+    "ManifestFunction",
     "MaterializationWarning",
     "MaterializedSlice",
+    "ModelRevisionFragment",
     "materialize",
     "MATERIALIZER_VERSION",
 ]

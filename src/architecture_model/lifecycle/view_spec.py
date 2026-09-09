@@ -92,6 +92,23 @@ class ViewCuration(BaseModel):
     exclude: list[str] | None = None
     redactions: list[str] | None = None
     drill_downs: list[str] | None = None
+    # Phase 2 Task 13: ordered overlay slots. Projectors that understand
+    # an overlay name fold it into the diagram/prose; unknown names are
+    # silently ignored (deterministic — see architecture_model.lifecycle.overlays).
+    # Empty default tuple is excluded from the view digest so pre-Phase-2
+    # view digests remain byte-stable.
+    overlays: tuple[str, ...] = ()
+
+    @field_validator("overlays")
+    @classmethod
+    def _check_overlays(cls, v: tuple[str, ...]) -> tuple[str, ...]:
+        for name in v:
+            if not isinstance(name, str) or not name:
+                raise ValueError(
+                    "overlays must be non-empty strings; got "
+                    f"{name!r}"
+                )
+        return v
 
 
 class ViewSpec(BaseModel):
@@ -146,6 +163,11 @@ def compute_view_spec_digest(view: ViewSpec) -> str:
     so envelope metadata does not perturb identity.
     """
     payload = view.model_dump(mode="json")
+    # Back-compat: strip empty overlay tuple so pre-Phase-2 view digests
+    # remain byte-stable when the field is unset (Phase 2 Task 13).
+    curation = payload.get("curation")
+    if isinstance(curation, dict) and not curation.get("overlays"):
+        curation.pop("overlays", None)
     return _digest(
         payload,
         exclude_paths=(("generated_at",), ("signatures",)),

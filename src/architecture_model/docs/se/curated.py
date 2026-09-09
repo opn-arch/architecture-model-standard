@@ -107,7 +107,14 @@ def render_conops(model: Any, view: dict[str, Any], diagram_reference: str) -> s
         lines.extend([f"### {scenario.label}", "", f"**Goal:** {_text(node.subtitle or scenario.goal)}{' **(Inferred)**' if node.inferred else ''}"])
         lines.append(f"**Member use cases:** {_values(item.name for item in behaviors)}")
         lines.append(f"**Participating systems:** {_values([item.label for item in systems] or [item.name for item in explicit_systems])}")
-        lines.append(f"**Inputs / external sources:** {_values(f'{_node_map(spec).get(edge.source, DiagramNode('', '', '')).label}: {edge.title or edge.label or edge.kind}' for edge in incoming if edge.kind != 'allocation')}")
+        incoming_inputs = []
+        for edge in incoming:
+            if edge.kind == "allocation":
+                continue
+            src_node = _node_map(spec).get(edge.source, DiagramNode("", "", ""))
+            label = edge.title or edge.label or edge.kind
+            incoming_inputs.append(f"{src_node.label}: {label}")
+        lines.append(f"**Inputs / external sources:** {_values(incoming_inputs)}")
         lines.append(f"**Outputs / outcomes:** {_values([*scenario.outcomes, *(edge.title or edge.label for edge in outgoing if edge.kind not in {'allocation'})])}")
         lines.append(f"**Interfaces:** {_values(item.label for item in interfaces)}")
         requirements = sorted({value for item in behaviors for value in item.value.requirements})

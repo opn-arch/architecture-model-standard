@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 from html import escape
 import re
@@ -53,7 +53,9 @@ class DiagramPanelDiagnostic:
     message: str
     view: str = ""
     source: str = ""
-    context: MappingProxyType[str, Any] = MappingProxyType({})
+    context: MappingProxyType[str, Any] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
 
     @classmethod
     def from_diagnostic(cls, value: Diagnostic) -> "DiagramPanelDiagnostic":

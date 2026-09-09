@@ -47,7 +47,7 @@ class TestStageMetadata:
     def test_name_version_requires(self):
         stage = DecomposeStage()
         assert stage.name == "decompose"
-        assert stage.version == "1.0"
+        assert stage.version == "2.0"
         assert stage.requires == ["allocate", "relate", "specify"]
 
     def test_can_run_requires_both(self):

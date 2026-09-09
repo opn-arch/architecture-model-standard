@@ -4,6 +4,106 @@ All notable changes to the Architecture Model Standard package.
 
 ---
 
+## [1.1.0] - 2026-09-09
+
+### Phase 2: Schema 2.1, Semantic Content, and Feedback Journals
+
+**Schema 2.1 (additive, backward-compatible).** `meta.schema_version` accepts
+`'2.0'` and `'2.1'`. Every entity kind gains an optional bag of semantic fields
+— `intent`, `goals`, `stakeholders`, `success_criteria`, `failure_modes`,
+`trade_offs`, `assumptions`, `open_questions`, `requirements`, `verification`,
+`slos`, `owner`, `maturity`, `dependencies_rationale`. Every 2.0 fixture parses
+and validates unchanged; empty/None fields are stripped from digest payloads
+so pre-Phase-2 hashes stay byte-stable.
+
+**Migration.** `architecture-model migrate --to 2.1 <path>` bumps schema
+version in-place; no field-level edits required. `Component.intent` is
+auto-seeded during pipeline emit from module docstrings (first non-empty
+stripped line, capped 200 chars).
+
+**Lifecycle substrate extensions.**
+- `SupplementaryRef(kind, uri, digest)` attaches out-of-model evidence
+  (SI&L, gates, drift, test_results) to a materialized slice.
+- `MaterializedSlice.manifest_fragment` carries a canonicalized copy of
+  referenced manifest slices.
+- `RevisionRange(from_rev, to_rev)` and `TimeWindow(since, until)` filter
+  supplementary evidence temporally through materialize → project.
+- `ViewCuration.overlays: list[str]` names overlay slots applied in list
+  order by `apply_overlays(view, mslice, names)`. Byte-identical output
+  under fixed order.
+- Per-subsystem fan-out executor (`descendants:each` scope) and provenance
+  sidecar emission (`<artifact>.provenance.json`).
+
+**Feedback journals.** Three append-only JSONL streams under
+`.architecture/` in the consuming repo:
+- `gates.jsonl` — auto-appended by `architect_gate` MCP tool
+- `drift.jsonl` — auto-appended after every `architect_pipeline` run
+- `test_results.jsonl` — populated via
+  `architecture_model.feedback.junit_ingest.ingest_junit()` and the
+  `opencode-arch feedback ingest-junit` CLI
+
+**Surgical per-entity invalidation.** Diffs on semantic-only fields
+trigger `stale_entity_view_ids(diff, all_view_ids)` driven by
+`SEMANTIC_FIELD_RULES`, avoiding wholesale view rebuilds.
+
+### Fixes
+
+- `docs/health.py` — drop 80 lines of dead code below early return; fix
+  `ComponentReadiness` field references (`component_id`/`grade` →
+  `id`/`name`); add `Component Confidence` section.
+- Declare `pydantic>=2.0` as runtime dependency (was implicit transitive).
+- Add `jsonschema>=4.0` to `[dev]` extras.
+- Test workflow now installs `.[dev,jvm]` and runs
+  `playwright install --with-deps chromium`.
+- Node subprocess tests switch `node -e <huge harness>` to stdin for
+  Linux ARG_MAX compatibility.
+- Hoist nested f-string in `docs/se/curated.py` for Python 3.11 parser
+  compatibility (PEP 701 landed in 3.12).
+- Fix Python 3.11 dataclass strictness: `MappingProxyType({})` default
+  moved to `field(default_factory=...)` in `core/diagram_renderer.py`.
+- Restore `tests/fixtures/.architecture-model.yaml` with F1..F6 blocks.
+
+### Baseline
+
+Local: 3363 passed / 0 failed / 104 skipped (was 3358/6/103).
+CI: green on Python 3.11 / 3.12 / 3.13.
+
+---
+
+## [1.0.0] - 2026-09-05
+
+### Phase 1: Model→View Mapping Substrate + Liveness
+
+**Projector registry.**
+`architecture_model.lifecycle.view_projection.projectors` exposes stable
+`register(name, callable)` / `resolve(name)`. Adapters wrap component,
+use-case, and system-boundary diagram generators plus component-spec /
+ICD / SE-docs prose so they emit `DiagramSpec` values through the same
+substrate.
+
+**DiagramSpec content-kind convention.** Mermaid outputs use
+`id=f"diagram:{name}"`, `facets={"content_kind": "mermaid", "body": body}`;
+prose outputs use `id=f"prose:{name}"`,
+`facets={"content_kind": "markdown", "body": body}`. Multi-entity outputs
+join with `"\n\n---\n\n"`.
+
+**Freshness stamping.** `project()` stamps `freshness: "fresh"` and
+`revision: <slice.model_revision>` onto every returned `DiagramSpec`.
+
+**Descendants coverage.** `materialize()` merges root ∪ descendants into
+a single fragment when the slice's scope includes descendants.
+
+**AI + Proposal APIs.** `apply_model_patch(model, proposal)` (add /
+remove / replace), `WorkOrder.build(...)`, `Provenance(...)` with
+auto-derived SHA-256 `proposal_id`.
+
+**Public lifecycle helpers.** `generation_dir(pkg, generation_id)` (public
+replacement for `_generation_dir`, alias preserved),
+`current_root_digest(pkg)`, `ArchitecturePackage.id` property,
+`MaterializedSlice.to_dict()`.
+
+---
+
 ## [0.3.0] - 2026-07-06
 
 ### Test-Guided Code Generation

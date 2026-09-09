@@ -103,6 +103,9 @@ def generate_functional_analysis(
     lines.append("")
 
     # --- Design Trade-offs ---
+    # Phase 2 (schema 2.1): trade_offs items may be plain strings (legacy)
+    # or typed TradeOff dataclasses. Render typed entries with structured
+    # decision/rationale so downstream reviewers see the ADR context.
     comps_with_tradeoffs = [(c.id, c.name, c.trade_offs) for c in model.entities.components
                             if getattr(c, 'trade_offs', None)]
     if comps_with_tradeoffs:
@@ -111,8 +114,36 @@ def generate_functional_analysis(
         for cid, cname, toffs in comps_with_tradeoffs:
             lines.append(f"**{cname}** ({cid}):")
             for t in toffs:
-                lines.append(f"- {t}")
+                if isinstance(t, str):
+                    lines.append(f"- {t}")
+                else:
+                    tid = getattr(t, "id", "") or ""
+                    decision = getattr(t, "decision", "") or ""
+                    rationale = getattr(t, "rationale", "") or ""
+                    lines.append(f"- **{tid}** — {decision}")
+                    if rationale:
+                        lines.append(f"  Rationale: {rationale}")
             lines.append("")
+
+    # --- Capability Ownership & Maturity (Phase 2, schema 2.1) ---
+    # Only emit when at least one capability has owner/maturity fields;
+    # a 2.0 model has neither and this section is skipped entirely
+    # (byte-identity guard).
+    caps_with_ownership = []
+    for cap in model.entities.capabilities:
+        owner = getattr(cap, "owner", None)
+        maturity = getattr(cap, "maturity", None)
+        maturity_v = maturity.value if hasattr(maturity, "value") else maturity
+        if owner or maturity_v:
+            caps_with_ownership.append((cap.id, cap.name, owner or "—", maturity_v or "—"))
+    if caps_with_ownership:
+        lines.append("## Capability Ownership")
+        lines.append("")
+        lines.append("| ID | Capability | Owner | Maturity |")
+        lines.append("|----|-----------|-------|----------|")
+        for cid, cname, owner, maturity in caps_with_ownership:
+            lines.append(f"| {cid} | {cname} | {owner} | {maturity} |")
+        lines.append("")
 
     # --- Behavioral Coverage ---
     lines.append("## Behavioral Coverage")

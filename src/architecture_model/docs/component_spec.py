@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from architecture_model.core.types import ArchitectureModel, Component
@@ -18,6 +18,127 @@ def _resolve_name(comp_id: str, model: "ArchitectureModel") -> str:
         if comp.id == comp_id:
             return f"{comp.id} ({comp.name})"
     return comp_id
+
+
+# --- Phase 2 (schema 2.1) semantic-field rendering helpers ---------------
+#
+# Guiding invariant: when a Phase 2 field is empty/absent, EMIT NOTHING.
+# The pre-Phase-2 markdown must remain byte-identical for 2.0 models.
+# See docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md Task 7.
+
+
+def _render_failure_mode(item: Any) -> str:
+    """Render one entry from ``failure_modes`` (str-or-FailureMode)."""
+    if isinstance(item, str):
+        return f"- {item}"
+    # Typed FailureMode dataclass (frozen; has .id/.cause/.effect/etc.)
+    cause = getattr(item, "cause", "") or ""
+    effect = getattr(item, "effect", "") or ""
+    likelihood = getattr(item, "likelihood", None)
+    likelihood_v = likelihood.value if hasattr(likelihood, "value") else (likelihood or "")
+    severity = getattr(item, "severity", None)
+    severity_v = severity.value if hasattr(severity, "value") else (severity or "")
+    mitigation = getattr(item, "mitigation", "") or ""
+    fid = getattr(item, "id", "") or ""
+    parts = [f"- **{fid}** — {cause} → {effect}"]
+    meta = []
+    if likelihood_v:
+        meta.append(f"likelihood: {likelihood_v}")
+    if severity_v:
+        meta.append(f"severity: {severity_v}")
+    if meta:
+        parts.append(f"  ({', '.join(meta)})")
+    if mitigation:
+        parts.append(f"  Mitigation: {mitigation}")
+    return "\n".join(parts)
+
+
+def _render_trade_off(item: Any) -> str:
+    """Render one entry from ``trade_offs`` (str-or-TradeOff)."""
+    if isinstance(item, str):
+        return f"- {item}"
+    tid = getattr(item, "id", "") or ""
+    decision = getattr(item, "decision", "") or ""
+    rationale = getattr(item, "rationale", "") or ""
+    revisit = getattr(item, "revisit_when", "") or ""
+    lines = [f"- **{tid}** — {decision}"]
+    if rationale:
+        lines.append(f"  Rationale: {rationale}")
+    if revisit:
+        lines.append(f"  Revisit when: {revisit}")
+    return "\n".join(lines)
+
+
+def _render_slo(slo: Any) -> str:
+    """Render one SLO (typed)."""
+    metric = getattr(slo, "metric", "") or ""
+    target = getattr(slo, "target", "") or ""
+    window = getattr(slo, "window", "") or ""
+    current = getattr(slo, "current", None)
+    line = f"| `{metric}` | `{target}` | {window} |"
+    if current is not None:
+        line += f" current: {current}"
+    return line
+
+
+def _append_semantic_sections(lines: list[str], comp: "Component") -> None:
+    """Append Phase 2 semantic sections to ``lines`` in stable order.
+
+    Every section is guarded on a truthy field check; nothing is emitted
+    if the component has no Phase 2 fields set (byte-identity vs 2.0).
+    """
+    intent = getattr(comp, "intent", None)
+    if intent:
+        lines.append("## Intent")
+        lines.append("")
+        lines.append(intent)
+        lines.append("")
+
+    failure_modes = getattr(comp, "failure_modes", None) or []
+    if failure_modes:
+        lines.append("## Failure Modes")
+        lines.append("")
+        for fm in failure_modes:
+            lines.append(_render_failure_mode(fm))
+        lines.append("")
+
+    trade_offs = getattr(comp, "trade_offs", None) or []
+    if trade_offs:
+        lines.append("## Trade-Offs")
+        lines.append("")
+        for t in trade_offs:
+            lines.append(_render_trade_off(t))
+        lines.append("")
+
+    slos = getattr(comp, "slos", None) or []
+    if slos:
+        lines.append("## SLOs")
+        lines.append("")
+        lines.append("| Metric | Target | Window |")
+        lines.append("|--------|--------|--------|")
+        for slo in slos:
+            lines.append(_render_slo(slo))
+        lines.append("")
+
+    owner = getattr(comp, "owner", None)
+    maturity = getattr(comp, "maturity", None)
+    maturity_v = maturity.value if hasattr(maturity, "value") else maturity
+    if owner or maturity_v:
+        lines.append("## Ownership")
+        lines.append("")
+        if owner:
+            lines.append(f"**Owner:** {owner}")
+        if maturity_v:
+            lines.append(f"**Maturity:** {maturity_v}")
+        lines.append("")
+
+    deps_rationale = getattr(comp, "dependencies_rationale", None) or {}
+    if deps_rationale:
+        lines.append("## Dependency Rationale")
+        lines.append("")
+        for target, why in deps_rationale.items():
+            lines.append(f"- **{target}** — {why}")
+        lines.append("")
 
 
 def generate_component_spec(comp: "Component", model: "ArchitectureModel") -> str:
@@ -139,6 +260,11 @@ def generate_component_spec(comp: "Component", model: "ArchitectureModel") -> st
     else:
         lines.append("None")
     lines.append("")
+
+    # --- Phase 2 (schema 2.1) semantic sections ---
+    # All sections are conditional; when every field is absent (2.0 model)
+    # nothing is emitted here → byte-identity vs pre-Phase-2 output.
+    _append_semantic_sections(lines, comp)
 
     # Confidence
     confidence = None

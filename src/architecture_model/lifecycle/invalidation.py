@@ -133,6 +133,58 @@ def stale_view_ids(diff: dict, all_view_ids: list[str]) -> list[str]:
     return sorted(result)
 
 
+# Phase 2 Task 22: per-field → per-view (entity-scoped) invalidation.
+# Each rule value is a list of ``family<N>.<view_name>`` prefixes;
+# ``stale_entity_view_ids`` matches ``<prefix>.<entity_id>`` in the
+# registered view-id list. This lets a semantic-field diff invalidate
+# only the affected entity's F1/F7 view instances instead of the whole
+# family (which is what ``stale_view_ids`` returns via ``stale_families``).
+SEMANTIC_FIELD_RULES: dict[str, list[str]] = {
+    "intent":                 ["family1.entity_page", "family1.mission"],
+    "failure_modes":          ["family7.entity_page", "family7.risk"],
+    "trade_offs":             ["family1.entity_page", "family3.entity_page"],
+    "slos":                   ["family5.entity_page", "family7.entity_page", "family8.entity_page"],
+    "owner":                  ["family1.entity_page"],
+    "maturity":               ["family1.entity_page", "family8.health"],
+    "requirements":           ["family7.req_matrix", "family7.entity_page"],
+    "verification":           ["family7.req_matrix", "family7.entity_page"],
+    "dependencies_rationale": ["family3.entity_page", "family3.dependency_matrix"],
+    "assumptions":            ["family7.entity_page"],
+    "open_questions":         ["family7.entity_page", "family8.health"],
+    "goals":                  ["family1.entity_page", "family2.entity_page"],
+    "stakeholders":           ["family1.entity_page"],
+    "success_criteria":       ["family1.entity_page", "family7.entity_page"],
+}
+
+
+def stale_entity_view_ids(diff: dict, all_view_ids: list[str]) -> list[str]:
+    """Return surgical, per-entity view IDs made stale by semantic-field diffs.
+
+    Only ``entities.changed`` entries with a semantic-only field set
+    contribute. For each such entry, every field maps via
+    :data:`SEMANTIC_FIELD_RULES` to a list of view prefixes; each prefix
+    is matched against ``all_view_ids`` in the form
+    ``<prefix>.<entity_id>``. Non-semantic changes fall through to the
+    coarser :func:`stale_view_ids` path and are not returned here.
+
+    Result is sorted and de-duplicated.
+    """
+    result: set[str] = set()
+    ents = diff.get("entities", {})
+    view_id_set = set(all_view_ids)
+    for entry in ents.get("changed", []):
+        fields = entry.get("fields", []) or []
+        entity_id = entry.get("id")
+        if not entity_id or not _semantic_only(fields):
+            continue
+        for field in fields:
+            for prefix in SEMANTIC_FIELD_RULES.get(field, []):
+                candidate = f"{prefix}.{entity_id}"
+                if candidate in view_id_set:
+                    result.add(candidate)
+    return sorted(result)
+
+
 _M1_PROPAGATING_REL_TYPES: frozenset[str] = frozenset({"exposes", "consumes"})
 
 

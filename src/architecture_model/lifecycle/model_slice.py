@@ -51,9 +51,110 @@ import re
 
 _ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
-Scope = Literal["local", "descendants", "federated"]
+Scope = Literal["local", "descendants", "descendants:each", "federated"]
 Closure = Literal["strict", "boundary-stubs", "transitive"]
 SharedRefs = Literal["none", "explicit", "transitive"]
+
+SupplementaryKind = Literal[
+    "manifest",
+    "sil",
+    "gates",
+    "drift",
+    "test_results",
+    "learning",
+]
+
+_GEN_RE = re.compile(r"^\d{7}$")
+# Loose ISO-8601 UTC guard: YYYY-MM-DDTHH:MM:SS(.fff)?Z
+_ISO_UTC_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"
+)
+
+
+class RevisionRange(BaseModel):
+    """Bounded range over published architecture-package generations.
+
+    ``from_`` and ``to`` are 7-digit generation ids (e.g. ``"0000001"``);
+    both endpoints are inclusive. Serialization uses ``from`` (the
+    field name is aliased to avoid the Python keyword).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
+
+    from_: str = Field(alias="from")
+    to: str
+
+    @field_validator("from_", "to")
+    @classmethod
+    def _check_gen_id(cls, v: str) -> str:
+        if not _GEN_RE.match(v):
+            raise ValueError(
+                f"generation id {v!r} must match ^\\d{{7}}$ (e.g. '0000001')"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def _check_order(self) -> "RevisionRange":
+        if self.from_ > self.to:
+            raise ValueError(
+                f"revision range must be ascending: from={self.from_!r} "
+                f"to={self.to!r}"
+            )
+        return self
+
+
+class TimeWindow(BaseModel):
+    """Bounded ISO-8601 UTC window.
+
+    ``from_`` is inclusive; ``to`` is exclusive (half-open interval)
+    matching the SI&L loader's ``since`` / ``until`` semantics.
+    Serialization uses ``from``.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
+
+    from_: str = Field(alias="from")
+    to: str
+
+    @field_validator("from_", "to")
+    @classmethod
+    def _check_iso_utc(cls, v: str) -> str:
+        if not _ISO_UTC_RE.match(v):
+            raise ValueError(
+                f"timestamp {v!r} must be ISO-8601 UTC "
+                "(YYYY-MM-DDTHH:MM:SS[.fff]Z)"
+            )
+        return v
+
+    @model_validator(mode="after")
+    def _check_order(self) -> "TimeWindow":
+        if self.from_ >= self.to:
+            raise ValueError(
+                f"time window must be strictly ascending: from={self.from_!r} "
+                f"to={self.to!r}"
+            )
+        return self
+
+
+class SupplementaryRef(BaseModel):
+    """Reference to non-model data attached to a slice (Phase 2, schema 2.1).
+
+    ``SupplementaryRef`` names an out-of-model data source that a projector
+    or renderer needs alongside the entity graph — the AST manifest, SI&L
+    events, gate/drift/test-result feedback journals, or the learning
+    store. The materializer resolves each ref to a bounded fragment;
+    empty tuples on ``ModelSlice.supplementary_refs`` mean "model-only".
+
+    ``kind`` is a closed enum; ``path`` optionally overrides the
+    well-known repo-relative location; ``filter`` is a kind-specific
+    scoping dict (e.g. ``{"component_id": "COMP-3"}`` for ``sil``).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: SupplementaryKind
+    path: str | None = None
+    filter: dict[str, Any] | None = None
 
 
 class Selectors(BaseModel):
@@ -113,6 +214,14 @@ class ModelSlice(BaseModel):
     selectors: Selectors
     curation: Curation = Field(default_factory=Curation)
     parameters: dict[str, Any] = Field(default_factory=dict)
+    # Phase 2 (schema 2.1): supplementary out-of-model data references.
+    # Empty tuple ((), the default) means "model-only" and is excluded
+    # from the slice digest so pre-Phase-2 content-hashes remain stable.
+    supplementary_refs: tuple[SupplementaryRef, ...] = ()
+    # Phase 2 Task 11: temporal fields. Both None-default and excluded
+    # from the digest when unset so pre-Phase-2 slice digests remain stable.
+    revision_range: RevisionRange | None = None
+    time_window: TimeWindow | None = None
     generated_at: str | None = None
     signatures: list[dict] | None = None
 
@@ -163,7 +272,18 @@ def compute_slice_digest(slice: ModelSlice) -> str:
     Excludes ``generated_at`` and ``signatures`` from the hashed payload
     so envelope metadata does not perturb identity.
     """
-    payload = slice.model_dump(mode="json")
+    payload = slice.model_dump(mode="json", by_alias=True)
+    # Back-compat: when supplementary_refs is empty (the default, i.e.
+    # the pre-Phase-2 shape), strip it from the hashed payload so
+    # content-addressed lookups of pre-Phase-2 slices remain stable.
+    if not payload.get("supplementary_refs"):
+        payload.pop("supplementary_refs", None)
+    # Same rule for temporal fields (Phase 2 Task 11): when unset, they
+    # must not perturb pre-Phase-2 digests.
+    if payload.get("revision_range") is None:
+        payload.pop("revision_range", None)
+    if payload.get("time_window") is None:
+        payload.pop("time_window", None)
     return _digest(
         payload,
         exclude_paths=(("generated_at",), ("signatures",)),
@@ -174,6 +294,10 @@ __all__ = [
     "ModelSlice",
     "Selectors",
     "Curation",
+    "SupplementaryRef",
+    "SupplementaryKind",
+    "RevisionRange",
+    "TimeWindow",
     "compute_slice_digest",
     "Scope",
     "Closure",

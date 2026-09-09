@@ -251,6 +251,75 @@ Design + plan docs:
 - `docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md` — Phase 2 (includes Tasks 27 fan-out + 28 provenance-persistence)
 - `docs/plans/2026-09-08-phase-3-*.md`, `docs/plans/2026-09-08-phase-4-*.md` — deferred
 
+## Phase 2 substrate (schema 2.1 + semantic content + feedback)
+
+Phase 2 extends the substrate with semantic fields, supplementary
+references, temporal slicing, overlays, and feedback journals. All
+additions are **backward-compatible**: every 2.0 fixture continues to
+parse and validate unchanged, and empty/None fields are stripped from
+digest payloads so pre-Phase-2 hashes stay byte-stable.
+
+**Schema 2.1 (additive).** `meta.schema_version` accepts `'2.0'` and
+`'2.1'`. Every entity kind (Component, Capability, Behavior, Interface,
+Actor, Constraint, Layer) gains a common bag of optional semantic
+fields: `intent`, `goals`, `stakeholders`, `success_criteria`,
+`failure_modes`, `trade_offs`, `assumptions`, `open_questions`,
+`requirements`, `verification`, `slos`, `owner`, `maturity`,
+`dependencies_rationale`. JSON Schema fragments live under `$defs` in
+`src/architecture_model/spec/architecture-model.schema.json`.
+
+**Migration CLI.** `architecture-model migrate --to 2.1 <path>` bumps
+`meta.schema_version` in-place; no field-level edits required.
+`Component.intent` is auto-seeded during pipeline emit from module
+docstrings (first non-empty stripped line, capped at 200 chars) when
+synthesize left it empty — capability-derived intents from synthesize
+(`"Handles queue 0"`, etc.) are preserved.
+
+**Semantic-field rendering.** Projectors surface semantic fields in
+component specs, ICDs, and SE docs. Diffs on semantic-only fields
+trigger **surgical per-entity invalidation** via
+`architecture_model.lifecycle.invalidation.stale_entity_view_ids(diff,
+all_view_ids)`, driven by `SEMANTIC_FIELD_RULES` (field name → list of
+view prefixes such as `family1.entity_page`, `family1.mission`).
+Family-scoped views without an entity suffix are never invalidated by
+this path.
+
+**SupplementaryRef + MaterializedSlice.manifest_fragment.**
+`SupplementaryRef(kind, uri, digest)` (`SupplementaryKind` = `sil` |
+`gates` | `drift` | `test_results`) attaches out-of-model evidence to
+a materialized slice. `MaterializedSlice.manifest_fragment` carries a
+canonicalized copy of the referenced manifest slice; loaders in
+`architecture_model.lifecycle.supplementary_loaders` (`sil`, `gates`,
+`drift`, `test_results`) resolve refs at project time.
+
+**Temporal slicing.** `RevisionRange(from_rev, to_rev)` and
+`TimeWindow(since, until)` filter supplementary evidence.
+`revision_series` and `time_window` slice-spec fields flow through
+`materialize()` → `project()` and constrain which journal events end
+up in the projected view.
+
+**Overlays.** `ViewCuration.overlays: list[str]` names overlay slots
+applied in list order by
+`architecture_model.lifecycle.overlays.apply_overlays(view, mslice,
+names) -> ProjectedView`. Recognized names live in
+`RECOGNIZED_OVERLAYS` (`gates`, `drift`, `sil`, ...). Unknown names
+are skipped silently. Output is byte-identical under fixed order
+(guarded by `tests/lifecycle/test_overlay_determinism.py`).
+
+**Feedback journals.** Three append-only JSONL streams live under
+`.architecture/` in the consuming repo:
+
+- `.architecture/gates.jsonl` — `GateEvent(gate_id, outcome, findings,
+  model_revision, ts)`; auto-appended by the OCA `architect_gate` MCP
+  tool (fail-soft).
+- `.architecture/drift.jsonl` — drift snapshots (`broken_ref`,
+  `unrealized_capability`, `orphan`, `missing_impl`); auto-appended
+  after every OCA `architect_pipeline` run (fail-soft).
+- `.architecture/test_results.jsonl` — `TestResult` batches ingested
+  via `architecture_model.feedback.junit_ingest.ingest_junit(path,
+  suite=...)` and appended via `test_results.append(repo, batch)`;
+  fed by the OCA CLI `opencode-arch feedback ingest-junit <xml>`.
+
 ### Hierarchical Model Architecture
 
 Each system has its own complete, self-contained model. The top-level model references subsystem models — it does not contain slices or reduced views.
