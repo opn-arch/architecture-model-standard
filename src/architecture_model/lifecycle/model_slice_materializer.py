@@ -76,8 +76,12 @@ from architecture_model.lifecycle.model_slice import ModelSlice, parse_entity_sc
 from architecture_model.lifecycle.package import (
     ArchitecturePackage,
     iter_descendants,
+    load_package,
 )
-from architecture_model.lifecycle.serialization import digest as _digest
+from architecture_model.lifecycle.serialization import (
+    canonical_yaml_load,
+    digest as _digest,
+)
 from architecture_model.manifest.types import (
     ClassInfo,
     FunctionInfo,
@@ -86,6 +90,60 @@ from architecture_model.manifest.types import (
 )
 
 MATERIALIZER_VERSION = "1.0.0"
+
+
+def resolve_ref(
+    ref: str,
+    *,
+    repo_registry: Path | str | None = None,
+) -> ArchitecturePackage:
+    """Resolve a federated child ref to an :class:`ArchitecturePackage`.
+
+    Supported forms:
+
+    * ``file://<absolute-path>`` — path may point at the child's
+      ``package.yaml`` file or the directory that contains it.
+    * ``repo://<name>`` — ``name`` is looked up in a project-declared
+      registry YAML (``repos.yaml``) mapping ``name`` → filesystem path.
+      When ``repo_registry`` is omitted the caller's current working
+      directory is searched for ``.architecture/repos.yaml``.
+
+    Raises ``ValueError`` for empty or unknown-scheme refs,
+    ``FileNotFoundError`` for missing registries, and ``KeyError`` when a
+    ``repo://`` name is not present in the registry.
+    """
+    if not ref:
+        raise ValueError("resolve_ref: ref must be non-empty")
+    if ref.startswith("file://"):
+        raw_path = ref[len("file://"):]
+        if not raw_path:
+            raise ValueError(f"resolve_ref: empty file:// path in {ref!r}")
+        return load_package(Path(raw_path))
+    if ref.startswith("repo://"):
+        name = ref[len("repo://"):]
+        if not name:
+            raise ValueError(f"resolve_ref: empty repo:// name in {ref!r}")
+        if repo_registry is None:
+            registry_path = Path.cwd() / ".architecture" / "repos.yaml"
+        else:
+            registry_path = Path(repo_registry)
+        if not registry_path.exists():
+            raise FileNotFoundError(
+                f"resolve_ref: repos registry not found at {registry_path}"
+            )
+        data = canonical_yaml_load(registry_path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or name not in data:
+            raise KeyError(
+                f"resolve_ref: unknown repo name {name!r} in {registry_path}"
+            )
+        target = data[name]
+        if not isinstance(target, str):
+            raise ValueError(
+                f"resolve_ref: registry entry for {name!r} must be a string, "
+                f"got {type(target).__name__}"
+            )
+        return load_package(Path(target))
+    raise ValueError(f"resolve_ref: unknown ref scheme in {ref!r}")
 
 # Ordered so we always iterate entity kinds deterministically.
 _ENTITY_FIELDS: tuple[str, ...] = (
