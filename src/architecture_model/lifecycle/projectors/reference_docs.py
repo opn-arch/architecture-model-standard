@@ -23,6 +23,7 @@ from architecture_model.core.diagram_spec import DiagramSpec
 
 __all__ = [
     "family6_cli_reference",
+    "family6_api_reference",
     "register_all",
 ]
 
@@ -96,3 +97,86 @@ def family6_cli_reference(fragment, config):
 def register_all(registry) -> None:
     if "family6.cli_reference" not in registry:
         registry.register("family6.cli_reference", family6_cli_reference, version="1.0.0")
+    if "family6.api_reference" not in registry:
+        registry.register("family6.api_reference", family6_api_reference, version="1.0.0")
+
+
+# ---------------------------------------------------------------------------
+# family6.api_reference — HTTP routes
+# ---------------------------------------------------------------------------
+
+
+def _http_interfaces(fragment) -> list[Any]:
+    return [i for i in fragment.entities.interfaces if getattr(i, "subkind", "") == "http_route"]
+
+
+def _http_method_of(iface) -> str:
+    meta = getattr(iface, "metadata", {}) or {}
+    method = meta.get("http_method")
+    return str(method).upper() if isinstance(method, str) and method else "GET"
+
+
+def _http_path_of(iface) -> str:
+    meta = getattr(iface, "metadata", {}) or {}
+    path = meta.get("path")
+    return str(path) if isinstance(path, str) and path else ""
+
+
+def _render_route(iface) -> list[str]:
+    path = _http_path_of(iface)
+    intent = getattr(iface, "intent", "") or ""
+    row = f"| `{path}` | `{iface.name}` | {intent or '—'} |"
+    lines = [row]
+    meta = getattr(iface, "metadata", {}) or {}
+    args = meta.get("args") or []
+    if args:
+        lines.append("")
+        lines.append("**Parameters**")
+        lines.append("")
+        lines.append("| Argument | Type | Required | Default |")
+        lines.append("|---|---|---|---|")
+        for arg in args:
+            if isinstance(arg, dict):
+                lines.append(_render_arg_row(arg))
+    return lines
+
+
+def family6_api_reference(fragment, config):
+    """Render HTTP routes as a Markdown reference grouped by method."""
+    del config
+    interfaces = _http_interfaces(fragment)
+    if not interfaces:
+        body = "# API Reference\n\nNo HTTP routes defined."
+        return DiagramSpec(
+            id="prose:family6.api_reference",
+            title="family6.api_reference",
+            facets={"content_kind": "markdown", "body": body},
+        )
+    groups: dict[str, list] = {}
+    for iface in interfaces:
+        groups.setdefault(_http_method_of(iface), []).append(iface)
+    sections: list[str] = ["# API Reference"]
+    for method in sorted(groups):
+        sections.append("")
+        sections.append(f"## {method}")
+        sections.append("")
+        sections.append("| Path | Handler | Description |")
+        sections.append("|---|---|---|")
+        routes = sorted(groups[method], key=lambda i: (_http_path_of(i), i.id))
+        # Emit each route row; append parameter blocks (which are not
+        # table rows) after so tables stay well-formed per group.
+        param_blocks: list[list[str]] = []
+        for iface in routes:
+            rendered = _render_route(iface)
+            sections.append(rendered[0])
+            if len(rendered) > 1:
+                param_blocks.append([f"### `{_http_method_of(iface)} {_http_path_of(iface)}`", *rendered[1:]])
+        for block in param_blocks:
+            sections.append("")
+            sections.extend(block)
+    body = "\n".join(sections)
+    return DiagramSpec(
+        id="prose:family6.api_reference",
+        title="family6.api_reference",
+        facets={"content_kind": "markdown", "body": body},
+    )
