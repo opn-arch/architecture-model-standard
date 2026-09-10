@@ -106,9 +106,9 @@ def test_family1_mission_llm_emits_intent_and_goals_operations(fragment, registr
     assert len(ops) == 4
     intent_ops = [o for o in ops if o["field"] == "intent"]
     goals_ops = [o for o in ops if o["field"] == "goals"]
-    assert {o["target"] for o in intent_ops} == {"CAP-F1", "ACT-1"}
-    assert {o["target"] for o in goals_ops} == {"CAP-F1", "ACT-1"}
-    cap_goals = next(o for o in goals_ops if o["target"] == "CAP-F1")
+    assert {o["target_id"] for o in intent_ops} == {"CAP-F1", "ACT-1"}
+    assert {o["target_id"] for o in goals_ops} == {"CAP-F1", "ACT-1"}
+    cap_goals = next(o for o in goals_ops if o["target_id"] == "CAP-F1")
     assert cap_goals["value"] == ["<= 100ms latency", "99.9% availability"]
 
 
@@ -126,7 +126,7 @@ def test_family1_mission_llm_skips_unknown_entity_ids(fragment, registry):
     )
     result = projector(fragment, {})
     ops = result.facets["proposal"]["operations"]
-    targets = {o["target"] for o in ops}
+    targets = {o["target_id"] for o in ops}
     assert "GHOST-9" not in targets
     assert "CAP-F1" in targets
 

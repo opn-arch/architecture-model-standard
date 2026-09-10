@@ -109,9 +109,9 @@ def test_family7_risk_llm_emits_failure_modes_and_assumptions(fragment, registry
     assert len(ops) == 6
     fm_ops = [o for o in ops if o["field"] == "failure_modes"]
     as_ops = [o for o in ops if o["field"] == "assumptions"]
-    assert {o["target"] for o in fm_ops} == {"COMP-1", "BEH-1", "IF-1"}
-    assert {o["target"] for o in as_ops} == {"COMP-1", "BEH-1", "IF-1"}
-    comp_fm = next(o for o in fm_ops if o["target"] == "COMP-1")
+    assert {o["target_id"] for o in fm_ops} == {"COMP-1", "BEH-1", "IF-1"}
+    assert {o["target_id"] for o in as_ops} == {"COMP-1", "BEH-1", "IF-1"}
+    comp_fm = next(o for o in fm_ops if o["target_id"] == "COMP-1")
     assert comp_fm["value"] == ["DB unreachable", "OOM"]
 
 
@@ -149,7 +149,7 @@ def test_family7_risk_llm_skips_non_target_kinds(fragment, registry):
     )
     result = projector(fragment, {})
     ops = result.facets["proposal"]["operations"]
-    assert {o["target"] for o in ops} == {"COMP-1"}
+    assert {o["target_id"] for o in ops} == {"COMP-1"}
 
 
 def test_family7_risk_llm_schema_shape():

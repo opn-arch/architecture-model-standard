@@ -113,7 +113,7 @@ class Family1MissionLLM(WriteBackProjector):
                 operations.append(
                     {
                         "op": "replace",
-                        "target": entity_id,
+                        "target_id": entity_id,
                         "field": "intent",
                         "value": intent,
                     }
@@ -123,7 +123,7 @@ class Family1MissionLLM(WriteBackProjector):
                 operations.append(
                     {
                         "op": "replace",
-                        "target": entity_id,
+                        "target_id": entity_id,
                         "field": "goals",
                         "value": list(goals),
                     }
@@ -201,7 +201,7 @@ class Family3ComponentSpecLLM(WriteBackProjector):
                 operations.append(
                     {
                         "op": "replace",
-                        "target": entity_id,
+                        "target_id": entity_id,
                         "field": "dependencies_rationale",
                         "value": rationale,
                     }
@@ -211,7 +211,7 @@ class Family3ComponentSpecLLM(WriteBackProjector):
                 operations.append(
                     {
                         "op": "replace",
-                        "target": entity_id,
+                        "target_id": entity_id,
                         "field": "trade_offs",
                         "value": list(trade_offs),
                     }
@@ -295,7 +295,7 @@ class Family7RiskLLM(WriteBackProjector):
                 operations.append(
                     {
                         "op": "replace",
-                        "target": entity_id,
+                        "target_id": entity_id,
                         "field": "failure_modes",
                         "value": list(failure_modes),
                     }
@@ -305,7 +305,7 @@ class Family7RiskLLM(WriteBackProjector):
                 operations.append(
                     {
                         "op": "replace",
-                        "target": entity_id,
+                        "target_id": entity_id,
                         "field": "assumptions",
                         "value": list(assumptions),
                     }

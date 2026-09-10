@@ -106,9 +106,9 @@ def test_family3_component_spec_llm_emits_rationale_and_trade_offs(fragment, reg
     assert len(ops) == 4
     rationale_ops = [o for o in ops if o["field"] == "dependencies_rationale"]
     trade_ops = [o for o in ops if o["field"] == "trade_offs"]
-    assert {o["target"] for o in rationale_ops} == {"COMP-1", "COMP-2"}
-    assert {o["target"] for o in trade_ops} == {"COMP-1", "COMP-2"}
-    comp1_trade = next(o for o in trade_ops if o["target"] == "COMP-1")
+    assert {o["target_id"] for o in rationale_ops} == {"COMP-1", "COMP-2"}
+    assert {o["target_id"] for o in trade_ops} == {"COMP-1", "COMP-2"}
+    comp1_trade = next(o for o in trade_ops if o["target_id"] == "COMP-1")
     assert comp1_trade["value"] == ["Simplicity over speed", "Vendor-neutral"]
 
 
@@ -141,7 +141,7 @@ def test_family3_component_spec_llm_skips_unknown_and_non_component(fragment, re
     )
     result = projector(fragment, {})
     ops = result.facets["proposal"]["operations"]
-    targets = {o["target"] for o in ops}
+    targets = {o["target_id"] for o in ops}
     assert targets == {"COMP-1"}
 
 
