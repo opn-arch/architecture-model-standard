@@ -89,11 +89,25 @@ class ChildrenDiff(_Strict):
     revision_changed: list[dict[str, str]] = Field(default_factory=list)
 
 
+class ChildDiffEntry(_Strict):
+    """Flat federated-child delta record (Phase 4 spec).
+
+    ``kind`` is one of ``"added"``, ``"removed"``, or ``"revised"``.
+    ``from_rev`` is present on ``removed`` and ``revised`` entries;
+    ``to_rev`` is present on ``added`` and ``revised`` entries.
+    """
+
+    kind: str
+    child_arch_id: str
+    from_rev: Optional[str] = None
+    to_rev: Optional[str] = None
+
+
 class SemanticDiff(_Strict):
     entities: dict[str, EntityKindDiff]
     relationships: RelationshipDiff
     manifest: ManifestDiff
-    children: ChildrenDiff
+    children: list[ChildDiffEntry]
     git: dict[str, Optional[str]]
 
 
@@ -258,20 +272,37 @@ def _diff_manifest(a: Any, b: Any) -> ManifestDiff:
 
 def _diff_children(
     a: Optional[dict[str, str]], b: Optional[dict[str, str]]
-) -> ChildrenDiff:
+) -> list[ChildDiffEntry]:
+    """Return a flat, deterministic list of federated-child deltas.
+
+    Ordering: entries are sorted by ``(kind, child_arch_id)`` where ``kind``
+    is one of ``added``, ``removed``, ``revised`` (which sort alphabetically
+    in that order).
+    """
     if a is None or b is None:
-        return ChildrenDiff()
+        return []
     ka, kb = set(a), set(b)
-    revision_changed = [
-        {"architecture_id": aid, "from": a[aid], "to": b[aid]}
-        for aid in sorted(ka & kb)
-        if a[aid] != b[aid]
-    ]
-    return ChildrenDiff(
-        added=sorted(kb - ka),
-        removed=sorted(ka - kb),
-        revision_changed=revision_changed,
-    )
+    entries: list[ChildDiffEntry] = []
+    for aid in sorted(kb - ka):
+        entries.append(
+            ChildDiffEntry(kind="added", child_arch_id=aid, to_rev=b[aid])
+        )
+    for aid in sorted(ka - kb):
+        entries.append(
+            ChildDiffEntry(kind="removed", child_arch_id=aid, from_rev=a[aid])
+        )
+    for aid in sorted(ka & kb):
+        if a[aid] != b[aid]:
+            entries.append(
+                ChildDiffEntry(
+                    kind="revised",
+                    child_arch_id=aid,
+                    from_rev=a[aid],
+                    to_rev=b[aid],
+                )
+            )
+    entries.sort(key=lambda e: (e.kind, e.child_arch_id))
+    return entries
 
 
 def _git_commit(model: ArchitectureModel) -> Optional[str]:
@@ -329,6 +360,7 @@ def semantic_diff(
 
 
 __all__ = [
+    "ChildDiffEntry",
     "ChildrenDiff",
     "EntityKindDiff",
     "ManifestDiff",
