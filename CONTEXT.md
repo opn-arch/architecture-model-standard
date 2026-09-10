@@ -492,6 +492,77 @@ Design + plan docs:
 - `docs/plans/2026-09-08-phase-1-substrate-and-liveness.md` — Phase 1 (merged)
 - `docs/plans/2026-09-08-model-view-mapping-design.md` — overall design
 
+## Phase 4 substrate (write-back + endpoints + federated M3)
+
+Phase 4 extends the substrate along three orthogonal axes:
+LLM-authored write-back projectors, endpoint-aware Interface subkinds,
+and federated (multi-package) slice materialization. All additions are
+**backward-compatible**: no schema bump (still 2.1), all existing
+fixtures parse/render byte-identically, and the deterministic base
+projectors remain the default path.
+
+**Write-back projectors (`.llm` naming enforcement).** A new base class
+`architecture_model.lifecycle.projectors.write_back.WriteBackProjector`
+wraps a deterministic base projector with an
+`architecture_model.llm.LLMProvider`. Concrete variants live in
+`architecture_model.lifecycle.projectors.write_back_variants` — one
+per family: `Family1MissionLLM`, `Family2FunctionalAnalysisLLM`,
+`Family3ComponentSpecLLM`, `Family4UseCasesLLM`, `Family6ICDLLM`,
+`Family7RequirementsAnalysisLLM`, `Family8HealthLLM`. Each variant sets
+`projector_name = "<base>.llm"` and returns a proposal-shaped `dict`
+via `pack_proposal(diagram_spec, config)`. The suffix `.llm` is
+**contractual**: the OCA `architect_propose` MCP tool rejects any
+projector name without it as `INVALID_ARGUMENT`. Variant classes are
+NOT auto-registered in `DEFAULT_REGISTRY` — callers instantiate them
+with a provider and dispatch via the tool.
+
+**Endpoint extractors + Interface subkinds.**
+`architecture_model.manifest.endpoint_extractor` provides pure-AST
+extractors that discover architecturally-significant endpoints in
+source: HTTP handlers (Flask/FastAPI/Django), CLI commands (Click,
+argparse), message consumers (Celery, Kafka), and RPC entry points.
+Output is deterministic (sorted by `(file, lineno, name)`). The
+Interface schema gains a `subkind` field via the software domain
+profile — recognized values: `http`, `cli`, `message`, `rpc`,
+`library`. `Interface.subkind` is **software-profile-scoped** — other
+profiles (controls, mechanical, electrical) leave it unset. Endpoint
+promotion generates deterministic Interface ids of the form
+`IF-{subkind-dashed}-{sha1("subkind|file|name|lineno")[:8]}`.
+
+**Federated (M3) materialization.**
+`ModelSlice.child_refs: list[ChildRef]` where
+`ChildRef(child_arch_id, revision, ref)` names a child package's
+published generation via one of two URI schemes:
+* `file://<abs-path>/<child_arch_id>@<revision>`
+* `repo://<child_arch_id>@<revision>`
+The materializer's new `resolve_ref(ref, root_dir)` helper resolves
+both schemes to a `PackageBundle`. Federated slices walk the resulting
+child graph, merging descendants into the projected fragment.
+`SemanticDiff.children: list[ChildDiffEntry]` (flat list, sort key
+`(kind, child_arch_id)`) reports added/removed/revised child packages.
+`architecture_model.lifecycle.invalidation.stale_from_federated_children(
+children_diff, all_view_ids)` marks M1 roots (`family1.mission`,
+`family3.component_diagram`) stale in the parent when a referenced
+child publishes a new generation.
+
+**Cross-repo triggers.** Two production-ready templates enable
+federated workflows without shared orchestration:
+* `docs/templates/child-publish-watcher.sh` — POSIX shell watcher
+  using `fswatch` (macOS) / `inotifywait` (Linux) for monorepos.
+* `docs/templates/child-publish-webhook.yml` — GitHub Actions workflow
+  firing `repository_dispatch` on the parent for multi-repo setups.
+
+**Reference-doc projectors default-on.** The three reference-doc
+formats (`cli_reference`, `api_reference`, `plugin_guide`) are wired
+into OCA's `architect_docs` `formats='all'` expansion via
+`family6.cli_reference`, `family6.api_reference`,
+`family6.plugin_guide`. No opt-in flag required.
+
+Design + plan docs:
+- `docs/plans/2026-09-08-phase-4-writeback-endpoints-federated.md` — 28-task plan
+- `docs/plans/2026-09-08-phase-3-recursion-and-entity-views.md` — Phase 3 (merged)
+- `docs/plans/2026-09-08-model-view-mapping-design.md` — overall design
+
 ## E2E Benchmark Results (2026-07-07)
 
 ### Extraction (architecture model from source code)
