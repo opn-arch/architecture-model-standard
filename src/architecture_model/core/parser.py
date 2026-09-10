@@ -394,6 +394,9 @@ def _parse_interface(d: dict) -> Interface:
         endpoints=d.get("endpoints", []),
         schema=d.get("schema", ""),
         contract=d.get("contract", ""),
+        # --- Phase 4-A (Task 11) endpoint-promotion fields ---
+        subkind=d.get("subkind", ""),
+        metadata=d.get("metadata", {}) or {},
         # --- Phase 2 (schema 2.1) semantic fields ---
         stakeholders=d.get("stakeholders", []),
         success_criteria=d.get("success_criteria", []),

@@ -60,9 +60,7 @@ def test_empty_vs_empty_produces_empty_diff() -> None:
     assert d.manifest.symbols_added == []
     assert d.manifest.symbols_removed == []
     assert d.manifest.symbols_signature_changed == []
-    assert d.children.added == []
-    assert d.children.removed == []
-    assert d.children.revision_changed == []
+    assert d.children == []
     assert d.git == {"commit_a": None, "commit_b": None}
 
 
@@ -280,10 +278,11 @@ def test_children_add_remove_revision_change() -> None:
     ra = {"arch-1": "rev-a1", "arch-2": "rev-a2"}
     rb = {"arch-2": "rev-b2", "arch-3": "rev-b3"}
     d = semantic_diff(a, b, child_revisions_a=ra, child_revisions_b=rb)
-    assert d.children.added == ["arch-3"]
-    assert d.children.removed == ["arch-1"]
-    assert d.children.revision_changed == [
-        {"architecture_id": "arch-2", "from": "rev-a2", "to": "rev-b2"}
+    kinds = [(c.kind, c.child_arch_id, c.from_rev, c.to_rev) for c in d.children]
+    assert kinds == [
+        ("added", "arch-3", None, "rev-b3"),
+        ("removed", "arch-1", "rev-a1", None),
+        ("revised", "arch-2", "rev-a2", "rev-b2"),
     ]
 
 
@@ -291,9 +290,7 @@ def test_children_none_yields_empty() -> None:
     a = _empty_model()
     b = _empty_model()
     d = semantic_diff(a, b, child_revisions_a={"x": "y"}, child_revisions_b=None)
-    assert d.children.added == []
-    assert d.children.removed == []
-    assert d.children.revision_changed == []
+    assert d.children == []
 
 
 # --- Git provenance ---
@@ -335,7 +332,7 @@ def test_repeated_diff_is_byte_identical() -> None:
 def test_semantic_diff_forbids_extra_fields() -> None:
     with pytest.raises(Exception):
         SemanticDiff(entities={}, relationships=RelationshipDiff(), manifest=ManifestDiff(),
-                     children=ChildrenDiff(), git={"commit_a": None, "commit_b": None},
+                     children=[], git={"commit_a": None, "commit_b": None},
                      unexpected="x")  # type: ignore[call-arg]
 
 

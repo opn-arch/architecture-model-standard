@@ -76,8 +76,12 @@ from architecture_model.lifecycle.model_slice import ModelSlice, parse_entity_sc
 from architecture_model.lifecycle.package import (
     ArchitecturePackage,
     iter_descendants,
+    load_package,
 )
-from architecture_model.lifecycle.serialization import digest as _digest
+from architecture_model.lifecycle.serialization import (
+    canonical_yaml_load,
+    digest as _digest,
+)
 from architecture_model.manifest.types import (
     ClassInfo,
     FunctionInfo,
@@ -86,6 +90,65 @@ from architecture_model.manifest.types import (
 )
 
 MATERIALIZER_VERSION = "1.0.0"
+
+
+def resolve_ref(
+    ref: str,
+    *,
+    repo_registry: Path | str | None = None,
+) -> ArchitecturePackage:
+    """Resolve a federated child ref to an :class:`ArchitecturePackage`.
+
+    Supported forms:
+
+    * ``file://<absolute-path>`` — path may point at the child's
+      ``package.yaml`` file or the directory that contains it.
+    * ``repo://<name>`` — ``name`` is looked up in a project-declared
+      registry YAML (``repos.yaml``) mapping ``name`` → filesystem path.
+      When ``repo_registry`` is omitted the caller's current working
+      directory is searched for ``.architecture/repos.yaml``.
+
+    Raises ``ValueError`` for empty or unknown-scheme refs,
+    ``FileNotFoundError`` for missing registries, and ``KeyError`` when a
+    ``repo://`` name is not present in the registry.
+    """
+    if not ref:
+        raise ValueError("resolve_ref: ref must be non-empty")
+    if ref.startswith("file://"):
+        raw_path = ref[len("file://"):]
+        if not raw_path:
+            raise ValueError(f"resolve_ref: empty file:// path in {ref!r}")
+        return load_package(Path(raw_path))
+    if ref.startswith("repo://"):
+        name = ref[len("repo://"):]
+        if not name:
+            raise ValueError(f"resolve_ref: empty repo:// name in {ref!r}")
+        if repo_registry is None:
+            registry_path = Path.cwd() / ".architecture" / "repos.yaml"
+        else:
+            registry_path = Path(repo_registry)
+        if not registry_path.exists():
+            raise FileNotFoundError(
+                f"resolve_ref: repos registry not found at {registry_path}"
+            )
+        data = canonical_yaml_load(registry_path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or name not in data:
+            raise KeyError(
+                f"resolve_ref: unknown repo name {name!r} in {registry_path}"
+            )
+        target = data[name]
+        if not isinstance(target, str):
+            raise ValueError(
+                f"resolve_ref: registry entry for {name!r} must be a string, "
+                f"got {type(target).__name__}"
+            )
+        return load_package(Path(target))
+    raise ValueError(f"resolve_ref: unknown ref scheme in {ref!r}")
+
+
+# Module-level alias so ``materialize()`` (whose parameter shadows
+# ``resolve_ref``) can still reach the built-in file://+repo:// resolver.
+resolve_ref_module_level = resolve_ref
 
 # Ordered so we always iterate entity kinds deterministically.
 _ENTITY_FIELDS: tuple[str, ...] = (
@@ -188,6 +251,7 @@ class MaterializedSlice:
     manifest_fragment: ManifestFragment | None = None
     supplementary_fragments: dict[str, Any] = field(default_factory=dict)
     revision_series: tuple[ModelRevisionFragment, ...] = ()
+    federated_children: tuple[str, ...] = ()
 
     def to_dict(self) -> dict:
         """Serialize to the shape expected by ai.validators (fragment key).
@@ -233,8 +297,13 @@ def materialize(
     which entity kinds are allowed to recurse. Ignored for non-entity
     scopes and when ``view_spec`` is ``None``.
     """
-    if slice.scope == "federated" and resolve_ref is None:
-        raise ValueError("federated scope requires resolve_ref callable")
+    if slice.scope == "federated" and resolve_ref is None and slice.shared_refs in ("explicit", "transitive"):
+        # Only the entity-ID resolution path (shared_refs) truly requires
+        # a caller-provided resolve_ref callable — the child-walking path
+        # (Phase 4-C Task 17) uses the module-level file:// resolver.
+        raise ValueError(
+            "federated scope with shared_refs != 'none' requires resolve_ref callable"
+        )
 
     # Detect entity-scoped slice up front (Phase 3 Task 3). ``entity(<id>)``
     # is handled by reducing the base model via ``slice_by_entity`` before
@@ -280,6 +349,39 @@ def materialize(
 
     warnings: list[MaterializationWarning] = []
     federated_sources: dict[str, str] = {}  # ref_id -> source_model_digest
+    federated_children_arch_ids: list[str] = []
+
+    if slice.scope == "federated" and pkg.children and pkg.root is not None and slice.shared_refs == "none":
+        # Phase 4-C Task 17: walk pkg.children (relative paths), resolve
+        # each via file:// resolve_ref, load the child model, prefix its
+        # entity ids with "<arch_id>:", then merge. Deterministic order:
+        # sort child arch_ids so the resulting fragment is stable.
+        loaded_children: list[tuple[str, ArchitectureModel]] = []
+        for child_ref in pkg.children:
+            child_path = (pkg.root / child_ref).resolve()
+            try:
+                child_pkg = resolve_ref_module_level(f"file://{child_path}")
+            except (FileNotFoundError, ValueError, KeyError) as exc:
+                warnings.append(
+                    MaterializationWarning(
+                        code="SLICE.UNRESOLVED_REF",
+                        message=(
+                            f"federated child ref {child_ref!r} failed: {exc!s}"
+                        ),
+                        entity_id="",
+                    )
+                )
+                continue
+            try:
+                child_model = _load_pkg_model(child_pkg)
+            except FileNotFoundError:
+                continue
+            loaded_children.append((child_pkg.architecture_id, child_model))
+        for arch_id, child_model in sorted(loaded_children, key=lambda t: t[0]):
+            namespaced = _namespace_model(child_model, arch_id)
+            _merge_into(merged, namespaced, source_pkg_by_id, arch_id)
+            federated_children_arch_ids.append(arch_id)
+            federated_sources[arch_id] = _digest(_model_to_hashable(child_model))
 
     if slice.scope == "descendants":
         for child in iter_descendants(pkg, include_self=False):
@@ -526,6 +628,7 @@ def materialize(
         manifest_fragment=manifest_fragment,
         supplementary_fragments=supplementary_fragments,
         revision_series=revision_series,
+        federated_children=tuple(federated_children_arch_ids),
     )
 
 
@@ -541,6 +644,25 @@ def _load_pkg_model(pkg: ArchitecturePackage) -> ArchitectureModel:
         )
     model_path = pkg.root / pkg.model_ref
     return load_model(model_path)
+
+
+def _namespace_model(model: ArchitectureModel, prefix: str) -> ArchitectureModel:
+    """Return a deep copy of ``model`` with all entity ids prefixed.
+
+    Phase 4-C Task 17. Prefix is ``<prefix>:``; also applied to
+    ``from_id``/``to_id`` on every relationship so the graph stays
+    internally consistent.
+    """
+    copied = _clone_model(model)
+    def _rename(old: str) -> str:
+        return f"{prefix}:{old}"
+    for f in _ENTITY_FIELDS:
+        for ent in getattr(copied.entities, f, []):
+            ent.id = _rename(ent.id)
+    for rel in copied.relationships:
+        rel.from_id = _rename(rel.from_id)
+        rel.to_id = _rename(rel.to_id)
+    return copied
 
 
 def _compute_entity_scope_metadata(

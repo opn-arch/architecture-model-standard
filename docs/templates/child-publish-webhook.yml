@@ -1,0 +1,68 @@
+# child-publish-webhook.yml — federated architecture cross-repo trigger (multi-repo case).
+#
+# GitHub Actions workflow that runs in a CHILD architecture repo on push to
+# main. When the child repo publishes a new generation, this workflow fires a
+# ``repository_dispatch`` event on the PARENT repo so the parent's federated
+# invalidation runs and stale artifacts are rebuilt.
+#
+# ----------------------------------------------------------------------------
+# Setup — REPLACE these placeholders before use.
+# ----------------------------------------------------------------------------
+# 1. Copy this file to ``.github/workflows/child-publish-webhook.yml`` in the
+#    CHILD repo.
+# 2. Replace PARENT_OWNER + PARENT_REPO with the parent architecture repo's
+#    "owner/name" values.
+# 3. Replace CHILD_ARCH_ID with this child's ``architecture_id`` (matches the
+#    ``repo://<id>@...`` prefix used by parent slice specs).
+# 4. In the CHILD repo settings, add a secret named ``PARENT_DISPATCH_TOKEN``
+#    containing a fine-grained PAT with ``contents:write`` on the PARENT repo.
+# ----------------------------------------------------------------------------
+
+name: notify-parent-on-publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.architecture/lifecycle/CURRENT'
+      - '.architecture/lifecycle/generations/**'
+
+jobs:
+  dispatch-to-parent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout child repo
+        uses: actions/checkout@v4
+
+      - name: Read current generation revision
+        id: rev
+        run: |
+          revision=$(cat .architecture/lifecycle/CURRENT | tr -d '[:space:]')
+          echo "revision=${revision}" >> "${GITHUB_OUTPUT}"
+
+      - name: Fire repository_dispatch on parent
+        env:
+          PARENT_OWNER: replace-me-parent-owner
+          PARENT_REPO: replace-me-parent-repo
+          CHILD_ARCH_ID: replace-me-child-arch-id
+          TOKEN: ${{ secrets.PARENT_DISPATCH_TOKEN }}
+          REVISION: ${{ steps.rev.outputs.revision }}
+          SHA: ${{ github.sha }}
+        run: |
+          curl -fsSL \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${PARENT_OWNER}/${PARENT_REPO}/dispatches" \
+            -d "$(cat <<JSON
+          {
+            "event_type": "child-architecture-published",
+            "client_payload": {
+              "child_arch_id": "${CHILD_ARCH_ID}",
+              "revision": "${REVISION}",
+              "sha": "${SHA}"
+            }
+          }
+          JSON
+          )"

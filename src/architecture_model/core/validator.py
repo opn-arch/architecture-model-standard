@@ -137,6 +137,7 @@ def validate_model(
     _check_operational_fields(model, result)
     _check_hierarchy_consistency(model, result)
     _check_semantic_completeness(model, result)
+    _check_interface_subkinds(model, result)
 
     # Lifecycle-gated: skip verification checks in concept phase
     lifecycle_phase = getattr(model.meta, "lifecycle_phase", "production")
@@ -961,5 +962,32 @@ def _check_semantic_completeness(model: ArchitectureModel, result: ValidationRes
                     code="SEMANTIC_MISSING_MOES",
                     message=f"Capability '{cap.name}' has no measures of effectiveness",
                     entity_id=cap.id,
+                )
+            )
+
+
+def _check_interface_subkinds(model: ArchitectureModel, result: ValidationResult) -> None:
+    """Phase 4-A Task 11: warn when cli_command Interface lacks metadata.args.
+
+    The endpoint extractor always populates ``metadata["args"]`` (even
+    empty list) for CLI commands. An Interface with ``subkind ==
+    "cli_command"`` and no such key is likely a hand-written stub that
+    was never enriched by the extractor — surface it so the pipeline can
+    re-run endpoint extraction over the owning file.
+    """
+    for iface in model.entities.interfaces:
+        if getattr(iface, "subkind", "") != "cli_command":
+            continue
+        metadata = getattr(iface, "metadata", {}) or {}
+        if not metadata.get("args"):
+            result.issues.append(
+                ValidationIssue(
+                    severity=Severity.WARNING,
+                    code="INTERFACE_CLI_COMMAND_MISSING_ARGS",
+                    message=(
+                        f"Interface '{iface.name}' has subkind cli_command "
+                        f"but metadata.args is missing or empty"
+                    ),
+                    entity_id=iface.id,
                 )
             )

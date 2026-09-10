@@ -368,7 +368,14 @@ def _external_model(entity_id: str, kind: str = "components") -> "Any":
 
 
 def test_federated_without_resolve_ref_raises(pkg):
-    s = _make_slice(scope="federated", selectors={"entity_ids": ["COMP-A"]})
+    # Phase 4-C Task 17 relaxed federated + shared_refs="none": child
+    # walking uses the built-in file:// resolver. resolve_ref is only
+    # required when shared_refs demands external entity-id resolution.
+    s = _make_slice(
+        scope="federated",
+        shared_refs="explicit",
+        selectors={"entity_ids": ["COMP-A"]},
+    )
     with pytest.raises(ValueError, match="resolve_ref"):
         materialize(s, pkg)
 
