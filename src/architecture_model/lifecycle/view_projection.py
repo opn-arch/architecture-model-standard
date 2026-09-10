@@ -82,6 +82,16 @@ from architecture_model.lifecycle.view_spec import ViewSpec
 ProjectorFn = Callable[[ArchitectureModel, dict[str, Any]], DiagramSpec]
 
 
+def is_llm_projector(name: str) -> bool:
+    """Return True if ``name`` designates an LLM write-back variant.
+
+    LLM variants use the ``.llm`` suffix (e.g. ``family1.mission.llm``)
+    and must have a deterministic sibling registered under the base name
+    (``family1.mission``) before they can be added to a registry.
+    """
+    return bool(name) and name.endswith(".llm")
+
+
 class ProjectorNotFound(KeyError):
     """Raised when a projector name is not registered."""
 
@@ -126,6 +136,13 @@ class ProjectorRegistry:
             raise ValueError("projector name must be non-empty")
         if name in self._entries:
             raise ValueError(f"projector {name!r} already registered")
+        if is_llm_projector(name):
+            sibling = name[: -len(".llm")]
+            if sibling not in self._entries:
+                raise ValueError(
+                    f"projector {name!r} requires deterministic sibling "
+                    f"{sibling!r} to be registered first"
+                )
         self._entries[name] = (fn, version)
 
     def unregister(self, name: str) -> None:
@@ -141,14 +158,36 @@ class ProjectorRegistry:
         """Registered projector names, sorted (stable ordering for callers)."""
         return tuple(sorted(self._entries))
 
-    def list_names(self) -> list[str]:
+    def list_names(
+        self,
+        *,
+        family: int | None = None,
+        llm: bool | None = None,
+    ) -> list[str]:
         """Registered projector names in insertion order.
 
         Preferred for discovery / ``.llm`` variant listings where sibling
         projectors (``<family>.<name>`` and ``<family>.<name>.llm``) should
         surface adjacent to each other rather than alphabetized apart.
+
+        Parameters
+        ----------
+        family:
+            When set, restrict to names starting with ``f"family{family}."``.
+        llm:
+            When ``True``, only ``.llm`` variants; when ``False``, only
+            deterministic base projectors; when ``None`` (default),
+            include both.
         """
-        return list(self._entries.keys())
+        names = list(self._entries.keys())
+        if family is not None:
+            prefix = f"family{family}."
+            names = [n for n in names if n.startswith(prefix)]
+        if llm is True:
+            names = [n for n in names if is_llm_projector(n)]
+        elif llm is False:
+            names = [n for n in names if not is_llm_projector(n)]
+        return names
 
     def __contains__(self, name: object) -> bool:
         return name in self._entries
