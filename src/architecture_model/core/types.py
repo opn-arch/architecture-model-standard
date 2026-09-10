@@ -430,6 +430,13 @@ class Interface(BaseEntity):
     endpoints: list[dict] = field(default_factory=list)
     schema: str = ""
     contract: str = ""
+    # --- Phase 4-A (Task 11) endpoint-promotion fields ---
+    # ``subkind`` softly enumerates the interface flavor (api, cli_command,
+    # http_route, plugin_hook, event, data, message). ``metadata`` holds
+    # extractor-populated details (args, http_method, path, entry_point_group).
+    # Freeform dict so future extractors can add keys without a schema bump.
+    subkind: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
     # --- Phase 2 (schema 2.1) semantic fields ---
     stakeholders: list[str] = field(default_factory=list)
     success_criteria: list[str] = field(default_factory=list)

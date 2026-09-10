@@ -750,6 +750,14 @@
         "schema": {
           "type": "string"
         },
+        "subkind": {
+          "type": "string",
+          "description": "Interface flavor: api, cli_command, http_route, plugin_hook, event, data, message. Not strictly enum-enforced so extractors may add framework-specific subkinds."
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Freeform extractor metadata (args, http_method, path, entry_point_group, framework, target)."
+        },
         "extensions": {
           "$ref": "#/$defs/extensions"
         },
