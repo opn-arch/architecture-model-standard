@@ -24,7 +24,7 @@ from typing import Iterable
 
 from architecture_model.pipeline.endpoint_types import Endpoint, EndpointArg
 
-__all__ = ["extract_cli_endpoints"]
+__all__ = ["extract_cli_endpoints", "extract_http_endpoints"]
 
 
 # ---------------------------------------------------------------------------
@@ -225,5 +225,182 @@ def extract_cli_endpoints(source_files: Iterable[Path]) -> list[Endpoint]:
                 ep = _extract_argparse_from_call(node, file)
                 if ep is not None:
                     endpoints.append(ep)
+    endpoints.sort(key=lambda e: (e.file, e.lineno, e.name))
+    return endpoints
+
+
+# ---------------------------------------------------------------------------
+# HTTP route extraction (Task 9)
+# ---------------------------------------------------------------------------
+
+
+_HTTP_METHOD_DECORATORS = {"get", "post", "put", "delete", "patch", "options", "head"}
+
+
+def _path_param_names(path: str) -> list[str]:
+    """Extract path-parameter names from ``"/items/{item_id}"``-style paths."""
+    names: list[str] = []
+    depth = 0
+    current: list[str] = []
+    for ch in path:
+        if ch == "{":
+            depth += 1
+            current = []
+        elif ch == "}":
+            if depth > 0:
+                names.append("".join(current).split(":", 1)[0])
+                depth -= 1
+        elif depth > 0:
+            current.append(ch)
+    return names
+
+
+def _path_args_from_signature(
+    fn: ast.FunctionDef | ast.AsyncFunctionDef, path: str
+) -> tuple[EndpointArg, ...]:
+    """Match path params to function signature args to produce EndpointArgs."""
+    param_names = _path_param_names(path)
+    if not param_names:
+        return ()
+    sig_args: dict[str, ast.arg] = {a.arg: a for a in fn.args.args}
+    out: list[EndpointArg] = []
+    for name in param_names:
+        arg = sig_args.get(name)
+        type_str = ""
+        if arg is not None and arg.annotation is not None:
+            chain = _decorator_attr_chain(arg.annotation)
+            if chain:
+                type_str = chain[-1]
+        out.append(EndpointArg(name=name, type=type_str, required=True))
+    return tuple(out)
+
+
+def _http_route_from_function(
+    fn: ast.FunctionDef | ast.AsyncFunctionDef, file: str
+) -> list[Endpoint]:
+    """Return zero-or-more HTTP-route endpoints for a decorated function.
+
+    Supports FastAPI-style method decorators (``@app.get("/")``, ...) and
+    Flask's ``@app.route("/", methods=[...])`` which may expand to
+    multiple endpoints.
+    """
+    out: list[Endpoint] = []
+    for dec in fn.decorator_list:
+        call = _decorator_call(dec)
+        if call is None:
+            continue
+        chain = _decorator_attr_chain(dec)
+        if len(chain) < 2:
+            continue
+        method_attr = chain[-1].lower()
+        # First positional string is the path.
+        path: str | None = None
+        for arg in call.args:
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                path = arg.value
+                break
+        if path is None:
+            continue
+        if method_attr in _HTTP_METHOD_DECORATORS:
+            # FastAPI / APIRouter — single HTTP method per decorator.
+            args = _path_args_from_signature(fn, path)
+            out.append(
+                Endpoint(
+                    kind="http_route",
+                    name=fn.name,
+                    file=file,
+                    lineno=dec.lineno,
+                    args=args,
+                    metadata={
+                        "framework": "fastapi",
+                        "http_method": method_attr.upper(),
+                        "path": path,
+                    },
+                )
+            )
+        elif method_attr == "route":
+            # Flask-style: methods=[...] kwarg lists HTTP methods.
+            methods: list[str] = []
+            for kw in call.keywords:
+                if kw.arg == "methods":
+                    value = _literal_or_none(kw.value)
+                    if isinstance(value, (list, tuple)):
+                        methods = [str(m).upper() for m in value]
+            if not methods:
+                methods = ["GET"]
+            args = _path_args_from_signature(fn, path)
+            for method in methods:
+                out.append(
+                    Endpoint(
+                        kind="http_route",
+                        name=fn.name,
+                        file=file,
+                        lineno=dec.lineno,
+                        args=args,
+                        metadata={
+                            "framework": "flask",
+                            "http_method": method,
+                            "path": path,
+                        },
+                    )
+                )
+    return out
+
+
+def _starlette_route_from_call(call: ast.Call, file: str) -> list[Endpoint]:
+    """Return endpoints for a ``Route("/path", ..., methods=[...])`` call."""
+    if not isinstance(call.func, ast.Name) or call.func.id != "Route":
+        return []
+    if not call.args:
+        return []
+    first = call.args[0]
+    if not (isinstance(first, ast.Constant) and isinstance(first.value, str)):
+        return []
+    path = first.value
+    methods: list[str] = []
+    for kw in call.keywords:
+        if kw.arg == "methods":
+            value = _literal_or_none(kw.value)
+            if isinstance(value, (list, tuple)):
+                methods = [str(m).upper() for m in value]
+    if not methods:
+        methods = ["GET"]
+    param_names = _path_param_names(path)
+    args = tuple(EndpointArg(name=n, required=True) for n in param_names)
+    return [
+        Endpoint(
+            kind="http_route",
+            name=path,
+            file=file,
+            lineno=call.lineno,
+            args=args,
+            metadata={
+                "framework": "starlette",
+                "http_method": m,
+                "path": path,
+            },
+        )
+        for m in methods
+    ]
+
+
+def extract_http_endpoints(source_files: Iterable[Path]) -> list[Endpoint]:
+    """AST-scan the given Python files for HTTP route declarations.
+
+    Handles FastAPI / APIRouter method decorators, Flask
+    ``@app.route(..., methods=[...])``, and starlette ``Route(...)``
+    call sites. Output is sorted by ``(file, lineno, name)``.
+    """
+    endpoints: list[Endpoint] = []
+    for path in source_files:
+        tree = _parse_source(path)
+        if tree is None:
+            continue
+        file = str(path)
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                endpoints.extend(_http_route_from_function(node, file))
+            elif isinstance(node, ast.Call):
+                endpoints.extend(_starlette_route_from_call(node, file))
     endpoints.sort(key=lambda e: (e.file, e.lineno, e.name))
     return endpoints
