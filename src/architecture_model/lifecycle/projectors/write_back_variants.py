@@ -321,8 +321,93 @@ class Family7RiskLLM(WriteBackProjector):
         )
 
 
+class Family4UseCasesLLM(WriteBackProjector):
+    """Authors NEW ``Behavior`` entities (use-case flows).
+
+    Base projector: ``family4.use_cases``. Unlike the replace-style
+    variants, emits ``{"op": "add", "target_kind": "behaviors", ...}``
+    operations. Ids that already exist in the fragment are skipped so
+    re-runs are idempotent.
+    """
+
+    base_projector_name: ClassVar[str] = "family4.use_cases"
+    projector_name: ClassVar[str] = "family4.use_cases.llm"
+
+    def build_prompt(self, base_view, fragment, config):
+        body = base_view.facets.get("body", "")
+        return (
+            "Given this deterministic use-case base view (Markdown below), "
+            "author additional Behavior entities capturing scenarios not "
+            "yet modeled. Each behavior needs a stable id, a short name, "
+            "a narrative (one paragraph), and optional actor_ids linking "
+            "to existing Actors.\n\n"
+            "Return JSON of shape:\n"
+            '  {"authored": [{"id": "BEH-...", "name": "...", '
+            '"narrative": "...", "actor_ids": ["ACT-...", ...]}, ...]}\n\n'
+            f"Base view:\n{body}\n"
+        )
+
+    def expected_proposal_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "authored": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["id", "name"],
+                        "properties": {
+                            "id": {"type": "string"},
+                            "name": {"type": "string"},
+                            "narrative": {"type": "string"},
+                            "actor_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                }
+            },
+        }
+
+    def pack_proposal(self, raw, fragment, config):
+        existing = _all_entity_ids(fragment)
+        operations: list[dict[str, Any]] = []
+        for item in raw.get("authored", []) or []:
+            entity_id = item.get("id")
+            name = item.get("name")
+            if not entity_id or not name:
+                continue
+            if entity_id in existing:
+                continue  # collision — skip for idempotency
+            value: dict[str, Any] = {"id": entity_id, "name": name}
+            narrative = item.get("narrative")
+            if narrative:
+                value["narrative"] = narrative
+            actor_ids = item.get("actor_ids")
+            if isinstance(actor_ids, list):
+                value["actor_ids"] = list(actor_ids)
+            operations.append(
+                {
+                    "op": "add",
+                    "target_kind": "behaviors",
+                    "value": value,
+                }
+            )
+        prompt_proxy = json.dumps(
+            {"projector": self.projector_name, "raw": raw}, sort_keys=True
+        )
+        return pack_proposal(
+            work_order_id=config.get("__work_order_id", "wo-inline"),
+            model_version=config.get("__model_revision", "rev-inline"),
+            prompt=prompt_proxy,
+            operations=operations,
+        )
+
+
 __all__ = [
     "Family1MissionLLM",
     "Family3ComponentSpecLLM",
+    "Family4UseCasesLLM",
     "Family7RiskLLM",
 ]
