@@ -803,6 +803,8 @@ def _infer_behaviors(
     CLI_DECORATORS = {"command", "click"}
 
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         has_cli_import = any(cli_imp in imp for imp in mod.imports for cli_imp in CLI_IMPORTS)
         if not has_cli_import:
             continue
@@ -830,6 +832,8 @@ def _infer_behaviors(
     HANDLER_BASES = {"view", "handler", "command"}
 
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         for cls in mod.classes:
             if cls.name.startswith("_") or cls.name.lower().startswith("test"):
                 continue
@@ -871,6 +875,8 @@ def _infer_behaviors(
     }
 
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         for cls in mod.classes:
             if cls.name.startswith("_") or cls.name.lower().startswith("test"):
                 continue
@@ -898,8 +904,10 @@ def _infer_behaviors(
     # --- Uncertainty: Complex classes (≥15 public methods) ---
     COMPLEX_METHOD_THRESHOLD = 15
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         for cls in mod.classes:
-            if cls.name.startswith("_") or "Test" in cls.name:
+            if cls.name.startswith("_") or cls.name.lower().startswith("test"):
                 continue
             public_methods = [m for m in cls.methods if not m.startswith("_")]
             if len(public_methods) >= COMPLEX_METHOD_THRESHOLD:

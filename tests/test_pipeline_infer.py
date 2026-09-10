@@ -64,6 +64,58 @@ def get_items():
         assert len(result.output.actors) >= 1
         assert result.output.actors[0].name == "API Consumer"
 
+    def test_infer_behaviors_skips_cli_in_test_modules(self, tmp_path):
+        """CLI use-case inference must not fire on tests/test_*.py modules.
+
+        Regression: FIX-A4.1 — infer._infer_behaviors iterated
+        inventory.modules unfiltered, so a click-importing test_cli_*.py
+        would emit spurious ``CLI: Test Cli Foo`` behaviors.
+        """
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_cli_foo.py").write_text('''
+import click
+
+@click.command()
+def main():
+    """CLI entry (should not become a use case — this is a test file)."""
+    pass
+''')
+        # Add a real source module so the pipeline has something to infer
+        (tmp_path / "app.py").write_text("def helper(): pass\n")
+
+        result = _run_observe_then_infer(tmp_path)
+
+        spurious = [b for b in result.output.behaviors if "Test Cli Foo" in b.name]
+        assert not spurious, f"Test-file CLI leaked into behaviors: {[b.name for b in spurious]}"
+
+    def test_infer_behaviors_skips_handler_classes_in_test_modules(self, tmp_path):
+        """Handler/view class inference must not fire on tests/test_*.py modules.
+
+        Regression: FIX-A4.1 — same root cause as CLI case; handler class
+        loop also iterated inventory.modules without a non-source guard.
+        """
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_handlers.py").write_text('''
+class FakeHandler:
+    """Base for test doubles."""
+    pass
+
+class MyTestHandler(FakeHandler):
+    def dispatch(self):
+        pass
+
+    def render(self):
+        pass
+''')
+        (tmp_path / "app.py").write_text("def helper(): pass\n")
+
+        result = _run_observe_then_infer(tmp_path)
+
+        spurious = [b for b in result.output.behaviors if b.name == "MyTestHandler"]
+        assert not spurious, f"Test-file handler class leaked into behaviors: {[b.name for b in spurious]}"
+
     def test_infer_behaviors_from_routes(self, tmp_path):
         (tmp_path / "api.py").write_text('''
 from fastapi import APIRouter
