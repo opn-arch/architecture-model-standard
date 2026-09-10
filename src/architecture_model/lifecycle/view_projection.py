@@ -360,8 +360,10 @@ def _seed_default_registry() -> None:
 
     from architecture_model.lifecycle.projectors.mermaid import register_all as _register_mermaid
     from architecture_model.lifecycle.projectors.nonse import register_all as _register_nonse
+    from architecture_model.lifecycle.projectors.reference_docs import register_all as _register_reference_docs
     _register_mermaid(DEFAULT_REGISTRY)
     _register_nonse(DEFAULT_REGISTRY)
+    _register_reference_docs(DEFAULT_REGISTRY)
 
 
 _seed_default_registry()
