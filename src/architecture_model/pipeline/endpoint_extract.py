@@ -24,7 +24,11 @@ from typing import Iterable
 
 from architecture_model.pipeline.endpoint_types import Endpoint, EndpointArg
 
-__all__ = ["extract_cli_endpoints", "extract_http_endpoints"]
+__all__ = [
+    "extract_cli_endpoints",
+    "extract_http_endpoints",
+    "extract_plugin_hook_endpoints",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -403,4 +407,145 @@ def extract_http_endpoints(source_files: Iterable[Path]) -> list[Endpoint]:
             elif isinstance(node, ast.Call):
                 endpoints.extend(_starlette_route_from_call(node, file))
     endpoints.sort(key=lambda e: (e.file, e.lineno, e.name))
+    return endpoints
+
+
+# ---------------------------------------------------------------------------
+# Plugin hook extraction (Task 10)
+# ---------------------------------------------------------------------------
+
+
+def _extract_from_pyproject(path: Path) -> list[Endpoint]:
+    """Read ``pyproject.toml`` entry_points + scripts tables."""
+    try:
+        import tomllib  # Python 3.11+
+    except ModuleNotFoundError:  # pragma: no cover - py<3.11 fallback
+        import tomli as tomllib  # type: ignore[no-redef]
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+        return []
+    project = data.get("project") or {}
+    out: list[Endpoint] = []
+    file = str(path)
+    # [project.entry-points."<group>"]
+    entry_points = project.get("entry-points") or {}
+    if isinstance(entry_points, dict):
+        for group_name in sorted(entry_points):
+            group = entry_points[group_name]
+            if not isinstance(group, dict):
+                continue
+            for name in sorted(group):
+                target = group[name]
+                if not isinstance(target, str):
+                    continue
+                out.append(
+                    Endpoint(
+                        kind="plugin_hook",
+                        name=name,
+                        file=file,
+                        lineno=1,
+                        metadata={
+                            "entry_point_group": group_name,
+                            "target": target,
+                            "source": "pyproject",
+                        },
+                    )
+                )
+    # [project.scripts] — console-script style, surface as plugin_hooks
+    # under the ``console_scripts`` group for consistency with setup.py.
+    scripts = project.get("scripts") or {}
+    if isinstance(scripts, dict):
+        for name in sorted(scripts):
+            target = scripts[name]
+            if not isinstance(target, str):
+                continue
+            out.append(
+                Endpoint(
+                    kind="plugin_hook",
+                    name=name,
+                    file=file,
+                    lineno=1,
+                    metadata={
+                        "entry_point_group": "console_scripts",
+                        "target": target,
+                        "source": "pyproject",
+                    },
+                )
+            )
+    return out
+
+
+def _extract_from_setup_py(path: Path) -> list[Endpoint]:
+    """AST-parse ``setup.py`` for ``entry_points={...}`` kwarg to setup()."""
+    tree = _parse_source(path)
+    if tree is None:
+        return []
+    file = str(path)
+    out: list[Endpoint] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func_chain = _decorator_attr_chain(node.func)
+        if not func_chain or func_chain[-1] != "setup":
+            continue
+        for kw in node.keywords:
+            if kw.arg != "entry_points":
+                continue
+            value = _literal_or_none(kw.value)
+            if not isinstance(value, dict):
+                continue
+            for group_name in sorted(value):
+                entries = value[group_name]
+                if not isinstance(entries, (list, tuple)):
+                    continue
+                for entry in entries:
+                    if not isinstance(entry, str):
+                        continue
+                    # Format: "name = target[:extras]"
+                    if "=" not in entry:
+                        continue
+                    name_part, target_part = entry.split("=", 1)
+                    name = name_part.strip()
+                    target = target_part.strip()
+                    if not name or not target:
+                        continue
+                    out.append(
+                        Endpoint(
+                            kind="plugin_hook",
+                            name=name,
+                            file=file,
+                            lineno=node.lineno,
+                            metadata={
+                                "entry_point_group": group_name,
+                                "target": target,
+                                "source": "setup.py",
+                            },
+                        )
+                    )
+    return out
+
+
+def extract_plugin_hook_endpoints(repo_root: Path) -> list[Endpoint]:
+    """Scan ``repo_root`` for plugin-hook declarations.
+
+    Reads ``pyproject.toml`` (``[project.entry-points]`` and
+    ``[project.scripts]``) and ``setup.py`` (``entry_points={...}``
+    kwarg to ``setup()``). Output is sorted by
+    ``(entry_point_group, name)`` for stable downstream use.
+    """
+    endpoints: list[Endpoint] = []
+    pyproject = repo_root / "pyproject.toml"
+    if pyproject.is_file():
+        endpoints.extend(_extract_from_pyproject(pyproject))
+    setup_py = repo_root / "setup.py"
+    if setup_py.is_file():
+        endpoints.extend(_extract_from_setup_py(setup_py))
+    endpoints.sort(
+        key=lambda e: (
+            e.metadata.get("entry_point_group", ""),
+            e.name,
+            e.file,
+        )
+    )
     return endpoints
