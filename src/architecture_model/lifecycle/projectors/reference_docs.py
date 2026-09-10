@@ -24,6 +24,7 @@ from architecture_model.core.diagram_spec import DiagramSpec
 __all__ = [
     "family6_cli_reference",
     "family6_api_reference",
+    "family6_plugin_guide",
     "register_all",
 ]
 
@@ -99,6 +100,8 @@ def register_all(registry) -> None:
         registry.register("family6.cli_reference", family6_cli_reference, version="1.0.0")
     if "family6.api_reference" not in registry:
         registry.register("family6.api_reference", family6_api_reference, version="1.0.0")
+    if "family6.plugin_guide" not in registry:
+        registry.register("family6.plugin_guide", family6_plugin_guide, version="1.0.0")
 
 
 # ---------------------------------------------------------------------------
@@ -178,5 +181,68 @@ def family6_api_reference(fragment, config):
     return DiagramSpec(
         id="prose:family6.api_reference",
         title="family6.api_reference",
+        facets={"content_kind": "markdown", "body": body},
+    )
+
+
+# ---------------------------------------------------------------------------
+# family6.plugin_guide — entry-point plugin hooks
+# ---------------------------------------------------------------------------
+
+
+def _plugin_interfaces(fragment) -> list[Any]:
+    return [i for i in fragment.entities.interfaces if getattr(i, "subkind", "") == "plugin_hook"]
+
+
+def _entry_point_group_of(iface) -> str:
+    meta = getattr(iface, "metadata", {}) or {}
+    grp = meta.get("entry_point_group")
+    return str(grp) if isinstance(grp, str) and grp else "unknown"
+
+
+def _plugin_target_of(iface) -> str:
+    meta = getattr(iface, "metadata", {}) or {}
+    target = meta.get("target")
+    return str(target) if isinstance(target, str) and target else ""
+
+
+def _render_plugin_hook(iface) -> str:
+    lines: list[str] = [f"### {iface.name}"]
+    intent = getattr(iface, "intent", "") or ""
+    if intent:
+        lines.append("")
+        lines.append(intent)
+    target = _plugin_target_of(iface)
+    if target:
+        lines.append("")
+        lines.append(f"**Target:** `{target}`")
+    return "\n".join(lines)
+
+
+def family6_plugin_guide(fragment, config):
+    """Render plugin-hook interfaces grouped by entry-point group."""
+    del config
+    interfaces = _plugin_interfaces(fragment)
+    if not interfaces:
+        body = "# Plugin Guide\n\nNo plugin hooks defined."
+        return DiagramSpec(
+            id="prose:family6.plugin_guide",
+            title="family6.plugin_guide",
+            facets={"content_kind": "markdown", "body": body},
+        )
+    groups: dict[str, list] = {}
+    for iface in interfaces:
+        groups.setdefault(_entry_point_group_of(iface), []).append(iface)
+    sections: list[str] = ["# Plugin Guide"]
+    for group_name in sorted(groups):
+        sections.append("")
+        sections.append(f"## {group_name}")
+        for iface in sorted(groups[group_name], key=lambda i: (i.name, i.id)):
+            sections.append("")
+            sections.append(_render_plugin_hook(iface))
+    body = "\n".join(sections)
+    return DiagramSpec(
+        id="prose:family6.plugin_guide",
+        title="family6.plugin_guide",
         facets={"content_kind": "markdown", "body": body},
     )
