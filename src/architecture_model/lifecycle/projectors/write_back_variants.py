@@ -142,4 +142,89 @@ class Family1MissionLLM(WriteBackProjector):
         )
 
 
-__all__ = ["Family1MissionLLM"]
+class Family3ComponentSpecLLM(WriteBackProjector):
+    """Authors ``dependencies_rationale`` + ``trade_offs`` on Components.
+
+    Base projector: ``family3.component_spec``. LLM contract:
+    ``{"authored": [{entity_id, dependencies_rationale, trade_offs}, ...]}``.
+    ``trade_offs`` may be a list of strings (each a rationale bullet).
+    """
+
+    base_projector_name: ClassVar[str] = "family3.component_spec"
+    projector_name: ClassVar[str] = "family3.component_spec.llm"
+
+    def build_prompt(self, base_view, fragment, config):
+        body = base_view.facets.get("body", "")
+        return (
+            "Given this deterministic component spec (Markdown below), "
+            "propose for each Component: `dependencies_rationale` (why "
+            "each declared dependency exists) and `trade_offs` (design "
+            "trade-offs, list of bullet strings).\n\n"
+            "Return JSON of shape:\n"
+            '  {"authored": [{"entity_id": "COMP-...", '
+            '"dependencies_rationale": "...", '
+            '"trade_offs": ["...", ...]}, ...]}\n\n'
+            f"Base view:\n{body}\n"
+        )
+
+    def expected_proposal_schema(self):
+        return {
+            "type": "object",
+            "properties": {
+                "authored": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["entity_id"],
+                        "properties": {
+                            "entity_id": {"type": "string"},
+                            "dependencies_rationale": {"type": "string"},
+                            "trade_offs": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                }
+            },
+        }
+
+    def pack_proposal(self, raw, fragment, config):
+        component_ids = {c.id for c in fragment.entities.components}
+        operations: list[dict[str, Any]] = []
+        for item in raw.get("authored", []) or []:
+            entity_id = item.get("entity_id")
+            if entity_id not in component_ids:
+                continue
+            rationale = item.get("dependencies_rationale")
+            if rationale:
+                operations.append(
+                    {
+                        "op": "replace",
+                        "target": entity_id,
+                        "field": "dependencies_rationale",
+                        "value": rationale,
+                    }
+                )
+            trade_offs = item.get("trade_offs")
+            if isinstance(trade_offs, list):
+                operations.append(
+                    {
+                        "op": "replace",
+                        "target": entity_id,
+                        "field": "trade_offs",
+                        "value": list(trade_offs),
+                    }
+                )
+        prompt_proxy = json.dumps(
+            {"projector": self.projector_name, "raw": raw}, sort_keys=True
+        )
+        return pack_proposal(
+            work_order_id=config.get("__work_order_id", "wo-inline"),
+            model_version=config.get("__model_revision", "rev-inline"),
+            prompt=prompt_proxy,
+            operations=operations,
+        )
+
+
+__all__ = ["Family1MissionLLM", "Family3ComponentSpecLLM"]
