@@ -189,6 +189,79 @@ _M1_PROPAGATING_REL_TYPES: frozenset[str] = frozenset({"exposes", "consumes"})
 
 
 # ---------------------------------------------------------------------------
+# Phase 4 Task 19 — federated child-package invalidation
+# ---------------------------------------------------------------------------
+
+# M1 root parent views invalidated whenever the federated child set changes.
+_FEDERATED_M1_ROOTS: tuple[str, ...] = (
+    "family1.mission",
+    "family3.component_diagram",
+)
+
+
+def _child_entry_get(entry: Any, key: str) -> Any:
+    """Read ``key`` from a ChildDiffEntry or a plain dict."""
+    if isinstance(entry, dict):
+        return entry.get(key)
+    return getattr(entry, key, None)
+
+
+def stale_from_federated_children(
+    children_diff: Any,
+    all_view_ids: Any,
+) -> list[str]:
+    """Map federated child-package deltas onto the stale parent view id set.
+
+    Parameters
+    ----------
+    children_diff
+        Iterable of ``ChildDiffEntry`` (from
+        :mod:`architecture_model.lifecycle.diff`) or equivalent plain
+        ``{"kind", "child_arch_id", "from_rev", "to_rev"}`` dicts.
+    all_view_ids
+        Iterable of all registered view ids (e.g.
+        ``"family3.entity_page:childA:COMP-2"``).
+
+    Rules
+    -----
+    * ``kind == "added"``     → invalidate M1 root views only
+      (``family1.mission``, ``family3.component_diagram``).
+    * ``kind == "removed"``   → invalidate any view id whose entity-id
+      segment is namespaced under the child (``":<child_arch_id>:"``
+      appears in the view id), PLUS the M1 roots.
+    * ``kind == "revised"``   → same as ``removed``.
+
+    Returned ids are sorted, de-duplicated, and filtered against
+    ``all_view_ids`` so only registered views appear. The M1 roots are
+    only surfaced when they exist in ``all_view_ids``.
+    """
+    registered = set(all_view_ids)
+    stale: set[str] = set()
+
+    for entry in children_diff or ():
+        kind = _child_entry_get(entry, "kind")
+        arch_id = _child_entry_get(entry, "child_arch_id")
+        if kind not in {"added", "removed", "revised"} or not arch_id:
+            continue
+
+        # M1 roots always invalidate on any federated child delta.
+        for root in _FEDERATED_M1_ROOTS:
+            if root in registered:
+                stale.add(root)
+
+        # For removed/revised, invalidate every registered view id whose
+        # entity id is namespaced under this child (e.g.
+        # ``family3.entity_page:childA:COMP-2``).
+        if kind in {"removed", "revised"}:
+            needle = f":{arch_id}:"
+            for vid in registered:
+                if needle in vid:
+                    stale.add(vid)
+
+    return sorted(stale)
+
+
+# ---------------------------------------------------------------------------
 # Phase 3 Task 18 — entity-scoped view invalidation
 # ---------------------------------------------------------------------------
 
