@@ -1952,6 +1952,52 @@ entities:
     - 'concat_submodels: def concat_submodels(repo_path: Path) -> str | None'
     - 'derive_prefix: def derive_prefix(repo_name: str) -> str'
     description: 16 public symbols exported
+  - id: IF-17
+    name: SI&L Store API
+    interface_type: library
+    component_id: COMP-13
+    description: |
+      Public API for reading and writing structural-interface-layer events:
+      SILStore.record(event), SILStore.query(component_id), rollup helpers.
+  - id: IF-18
+    name: LLM Provider Protocol
+    interface_type: library
+    component_id: COMP-14
+    description: |
+      Runtime-checkable Protocol exposing complete(prompt), stream(prompt),
+      structured(prompt, schema), tokenize(text). Adapters implement provider-
+      specific dispatch; policy layer resolves TaskClass -> provider+model.
+  - id: IF-19
+    name: Pipeline Dashboard Data
+    interface_type: library
+    component_id: COMP-15
+    description: |
+      JSON payload {nodes, edges, badges} produced by the pipeline_html_data
+      projector and embedded verbatim in the pipeline.html shell. Deterministic
+      ordering: byte-identical output for byte-identical inputs.
+  - id: IF-20
+    name: Comment Store API
+    interface_type: library
+    component_id: COMP-16
+    description: |
+      CommentStore.append(artifact_digest, comment), CommentStore.list(
+      artifact_digest). Records persist as YAML under .architecture/comments/.
+  - id: IF-21
+    name: Gate Event Journal
+    interface_type: data
+    component_id: COMP-17
+    description: |
+      Append-only JSONL at .architecture/gates.jsonl. Each line is a
+      GateEvent(gate_id, outcome, findings, model_revision, ts). Written by
+      the OCA architect_gate MCP tool (fail-soft).
+  - id: IF-22
+    name: Drift Snapshot Journal
+    interface_type: data
+    component_id: COMP-17
+    description: |
+      Append-only JSONL at .architecture/drift.jsonl. Each line is a drift
+      snapshot record (broken_ref, unrealized_capability, orphan, missing_impl).
+      Written after every OCA architect_pipeline run (fail-soft).
   - id: IF-auto-COMP-1
     name: Core API
     interface_type: library
