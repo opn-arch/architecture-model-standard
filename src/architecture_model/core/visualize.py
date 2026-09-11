@@ -2744,6 +2744,9 @@ def generate_html_viewer(
     )
     sil_by_component = _load_sil_data(sil_db_path)
 
+    # ── 5h. Linked requirements from derived_requirements.yaml ────
+    requirements_by_entity = _load_requirements(trusted_root)
+
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "meta": {"project": model.meta.project},
@@ -2766,6 +2769,7 @@ def generate_html_viewer(
         "ops": ops_data,
         "pipeline_history": pipeline_history,
         "sil_by_component": sil_by_component,
+        "requirements_by_entity": requirements_by_entity,
         "subsystem_entities": subsystem_entities,
         "viewer_system_namespaces": {
             system_id: namespace for (_path, system_id), namespace in namespace_map.items()
@@ -2923,6 +2927,8 @@ def generate_html_viewer(
         .rel-section {{ grid-column: 1 / -1; margin-top: 8px; padding-top: 8px; border-top: 1px solid #0f3460; }}
         .rel-header {{ color: #7ec8e3; font-size: 13px; font-weight: 600; margin-bottom: 6px; }}
         .rel-item {{ font-size: 12px; color: #c0c0d0; margin-bottom: 3px; }}
+        .rel-group {{ margin-top: 8px; }}
+        .rel-group-header {{ font-weight: 600; color: #a0c0e0; margin: 4px 0 2px 0; font-size: 0.9em; }}
         .rel-type {{ background: #1a1a3e; color: #7ec8e3; padding: 1px 5px; border-radius: 3px; font-size: 10px; }}
         .rel-link {{ color: #7ec8e3; text-decoration: none; }}
         .rel-link:hover {{ text-decoration: underline; }}
@@ -3430,23 +3436,66 @@ def generate_html_viewer(
                 html += '<div id="' + uid + '" style="display:none;margin-top:8px"><div class="mermaid-target" data-mermaid="' + btoa(diagramCode) + '" data-svg="' + btoa(unescape(encodeURIComponent(p.properties.behavior_svg || ''))) + '"></div></div>';
                 html += '</div>';
             }}
+            var linkedReqs = (D.requirements_by_entity && D.requirements_by_entity[eid]) || [];
+            if (linkedReqs.length > 0) {{
+                html += '<div class="req-section"><div class="req-header">Linked Requirements (' + linkedReqs.length + ')</div>';
+                for (var qi = 0; qi < linkedReqs.length; qi++) {{
+                    var req = linkedReqs[qi];
+                    var reqText = req.name || req.text || req.description || req.id || '';
+                    html += '<div class="req-item">';
+                    html += '<span class="req-id">' + escapeHtml(req.id || '') + '</span> ';
+                    html += '<span class="req-text">' + escapeHtml(reqText) + '</span>';
+                    html += '</div>';
+                }}
+                html += '</div>';
+            }}
             if (p.relationships) {{
                 var ro = p.relationships.outgoing || [];
                 var ri = p.relationships.incoming || [];
                 if (ro.length + ri.length > 0) {{
-                    html += '<div class="rel-section"><div class="rel-header">Relationships (' + (ro.length + ri.length) + ')</div>';
+                    var OUT_LABEL = {{
+                        "realizes": "Realizes", "contains": "Contains", "depends-on": "Depends On",
+                        "exposes": "Exposes", "consumes": "Consumes", "traces-to": "Traces To",
+                        "constrained-by": "Constrained By", "allocated-to": "Allocated To",
+                        "triggers": "Triggers", "produces": "Produces", "subscribes-to": "Subscribes To",
+                        "transforms": "Transforms", "supersedes": "Supersedes", "migrates-to": "Migrates To",
+                        "mounted-on": "Mounted On", "connected-at": "Connected At", "routed-through": "Routed Through"
+                    }};
+                    var IN_LABEL = {{
+                        "realizes": "Realized By", "contains": "Contained In", "depends-on": "Depended On By",
+                        "exposes": "Exposed By", "consumes": "Consumed By", "traces-to": "Traced From",
+                        "constrained-by": "Constrains", "allocated-to": "Allocation Target Of",
+                        "triggers": "Triggered By", "produces": "Produced By", "subscribes-to": "Subscription Target Of",
+                        "transforms": "Transformed From", "supersedes": "Superseded By", "migrates-to": "Migrated From",
+                        "mounted-on": "Mount Target Of", "connected-at": "Connection Target Of", "routed-through": "Routing Target Of"
+                    }};
+                    var groups = {{}};
+                    function pushGroup(header, itemHtml) {{
+                        if (!groups[header]) groups[header] = [];
+                        groups[header].push(itemHtml);
+                    }}
                     for (var oi = 0; oi < ro.length; oi++) {{
                         var r = ro[oi];
-                        html += '<div class="rel-item"><span class="rel-type">' + escapeHtml(r.type) + '</span> \\u2192 <a href="#" data-entity-id="' + escapeHtml(r.target) + '" class="rel-link">' + escapeHtml(r.target + (r.target_name ? ': ' + r.target_name : '')) + '</a>';
-                        if (r.description) html += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
-                        html += '</div>';
+                        var header = OUT_LABEL[r.type] || "Other (Outgoing)";
+                        var item = '<div class="rel-item">\\u2192 <a href="#" data-entity-id="' + escapeHtml(r.target) + '" class="rel-link">' + escapeHtml(r.target + (r.target_name ? ': ' + r.target_name : '')) + '</a>';
+                        if (r.description) item += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
+                        item += '</div>';
+                        pushGroup(header, item);
                     }}
                     for (var ii = 0; ii < ri.length; ii++) {{
                         var r = ri[ii];
-                        html += '<div class="rel-item"><a href="#" data-entity-id="' + escapeHtml(r.source) + '" class="rel-link">' + escapeHtml(r.source + (r.source_name ? ': ' + r.source_name : '')) + '</a> <span class="rel-type">' + escapeHtml(r.type) + '</span> \\u2192 this';
-                        if (r.description) html += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
-                        html += '</div>';
+                        var header = IN_LABEL[r.type] || "Other (Incoming)";
+                        var item = '<div class="rel-item"><a href="#" data-entity-id="' + escapeHtml(r.source) + '" class="rel-link">' + escapeHtml(r.source + (r.source_name ? ': ' + r.source_name : '')) + '</a> \\u2190';
+                        if (r.description) item += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
+                        item += '</div>';
+                        pushGroup(header, item);
                     }}
+                    html += '<div class="rel-section"><div class="rel-header">Relationships (' + (ro.length + ri.length) + ')</div>';
+                    Object.keys(groups).sort().forEach(function(header) {{
+                        html += '<div class="rel-group"><div class="rel-group-header">' + escapeHtml(header) + '</div>';
+                        html += groups[header].join('');
+                        html += '</div>';
+                    }});
                     html += '</div>';
                 }}
             }}
