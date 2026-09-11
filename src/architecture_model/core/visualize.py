@@ -2381,6 +2381,56 @@ def _load_submodel_view_data(
     return properties, comp_files, systems, modules, comp_modules
 
 
+def _load_requirements(repo_root: Path | None) -> dict[str, list[dict]]:
+    """Load .architecture/derived_requirements.yaml into entity_id -> requirements.
+
+    Returns an empty dict on missing file, malformed YAML, or unknown
+    structure. Logs INFO on absence, WARNING on parse error. Never raises.
+
+    Schema (as observed in this repo):
+        top-level key ``derived_requirements`` (list); each entry links
+        to a component via ``component_id``. For robustness, ``requirements``
+        is also accepted as a top-level key, and ``entity_id`` / ``traces_to``
+        are honored as alternate link fields.
+    """
+    if repo_root is None:
+        return {}
+    path = Path(repo_root) / ".architecture" / "derived_requirements.yaml"
+    if not path.exists():
+        _log.info("visualize: no derived_requirements.yaml at %s", path)
+        return {}
+    try:
+        import yaml as _yaml
+        raw = _yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001 — loader must be total
+        _log.warning("visualize: failed to parse %s: %r", path, exc)
+        return {}
+
+    if not isinstance(raw, dict):
+        return {}
+    reqs = raw.get("derived_requirements")
+    if reqs is None:
+        reqs = raw.get("requirements") or []
+    if not isinstance(reqs, list):
+        return {}
+
+    index: dict[str, list[dict]] = {}
+    for req in reqs:
+        if not isinstance(req, dict):
+            continue
+        targets: list[str] = []
+        for field in ("component_id", "entity_id"):
+            val = req.get(field)
+            if isinstance(val, str) and val:
+                targets.append(val)
+        traces = req.get("traces_to") or []
+        if isinstance(traces, list):
+            targets.extend(str(t) for t in traces if isinstance(t, str) and t)
+        for t in targets:
+            index.setdefault(t, []).append(req)
+    return index
+
+
 def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
     """Load operational artifacts for embedding.
 
