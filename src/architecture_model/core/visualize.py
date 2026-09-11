@@ -15,6 +15,7 @@ Produces 10 standard views:
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import defaultdict
 from html import escape
@@ -23,8 +24,38 @@ from typing import TYPE_CHECKING
 
 from .curated_views import build_curated_views
 
+_log = logging.getLogger(__name__)
+
 # Track 4 Pass 1 Task 5: views whose panel model is swapped for the anchored sub-model.
 _APPLY_ANCHOR = frozenset({"functional"})
+
+# ── Mermaid shape mapping (Track 4 Pass 2 Task 1) ─────────────────────
+# Maps entity kind (lowercase singular) to a (left_bracket, right_bracket)
+# pair used to wrap the node label in Mermaid flowchart syntax.
+# Layer is subgraph-based and not included here.
+_MERMAID_SHAPE: dict[str, tuple[str, str]] = {
+    "component":  ("[",   "]"),
+    "capability": ("{{",  "}}"),
+    "actor":      ("((",  "))"),
+    "behavior":   ("([",  "])"),
+    "interface":  ("[/",  "/]"),
+    "constraint": ("{",   "}"),
+    "layer":      ("[",   "]"),  # fallback; layers normally emitted as subgraphs
+}
+
+
+def _shape(kind: str, sid: str, label: str) -> str:
+    """Return a Mermaid node declaration with kind-appropriate brackets.
+
+    Unknown kinds fall back to rectangle brackets and emit a DEBUG log.
+    Label is always quoted to survive special characters.
+    """
+    brackets = _MERMAID_SHAPE.get(kind.lower())
+    if brackets is None:
+        _log.debug("visualize._shape: unknown kind %r; falling back to rect", kind)
+        brackets = ("[", "]")
+    left, right = brackets
+    return f'{sid}{left}"{label}"{right}'
 
 
 def _panel_model(view: str, full: "ArchitectureModel", anchors) -> "ArchitectureModel":
