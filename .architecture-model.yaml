@@ -1018,6 +1018,82 @@ entities:
     - src/architecture_model/patterns.py
     - src/architecture_model/data/__init__.py
     contract: Shared utilities for file discovery, monitoring, common patterns
+  - id: COMP-13
+    name: SI&L Instrumentation
+    status: ACTIVE
+    description: |
+      Structural Interface Layer: SQLite-backed ring buffer at
+      .architecture/sil.sqlite retaining the 50 most recent events per
+      component_id, plus YAML rollup snapshots under .architecture/sil/. The
+      @sil_instrument decorator is applied to 10 pipeline stages, 5 lifecycle
+      renderers, 3 validators, and all 19 MCP *_tool handlers.
+    layer: observability
+    kind: library
+    files:
+    - src/architecture_model/sil/__init__.py
+    - src/architecture_model/sil/decorators.py
+    - src/architecture_model/sil/record.py
+    - src/architecture_model/sil/rollup.py
+    contract: SILStore — append events, roll up per-component metrics for dashboards and evaluate
+  - id: COMP-14
+    name: LLM Provider Layer
+    status: ACTIVE
+    description: |
+      Runtime-checkable LLMProvider Protocol exposing complete/stream/structured/
+      tokenize. Concrete adapters (MCPProvider, FrontierProvider, RelayExtProvider)
+      live in opencode-arch. Routing policy at .architecture/llm/policy.yaml maps
+      TaskClass names to (provider, model, max_cost_usd_per_call, fallback).
+    layer: ai-integration
+    kind: library
+    files:
+    - src/architecture_model/llm/__init__.py
+    - src/architecture_model/llm/provider.py
+    contract: LLMProvider Protocol + policy-driven routing with per-call cost caps
+  - id: COMP-15
+    name: Pipeline Dashboard
+    status: ACTIVE
+    description: |
+      Self-contained interactive HTML dashboard visualizing a pipeline
+      architecture slice with live SI&L badges. Rebuild pipeline: slice YAML
+      selects nodes -> pipeline_html_data projector builds {nodes,edges,badges}
+      -> pipeline-html renderer embeds JSON with vanilla-JS assets.
+    layer: interface
+    kind: library
+    files:
+    - src/architecture_model/lifecycle/renderers/pipeline_html.py
+    - src/architecture_model/lifecycle/renderers/pipeline_html_data.py
+    - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/index.css
+    contract: Deterministic HTML build; identical inputs produce byte-identical output
+  - id: COMP-16
+    name: Comment System
+    status: ACTIVE
+    description: |
+      User comment capture and storage against rendered lifecycle artifacts.
+      Comments persist as YAML records referencing artifact digest + timestamp;
+      downstream workflows can promote comments to logs-db issues.
+    layer: application
+    kind: library
+    files:
+    - src/architecture_model/comments/__init__.py
+    - src/architecture_model/comments/models.py
+    - src/architecture_model/comments/store.py
+    contract: CommentStore — append/list comments keyed by artifact digest
+  - id: COMP-17
+    name: Feedback Journals
+    status: ACTIVE
+    description: |
+      Three append-only JSONL streams under .architecture/: gates.jsonl (gate
+      outcomes), drift.jsonl (structural drift snapshots), test_results.jsonl
+      (junit ingest batches). Fed by OCA MCP tools and CLI ingest commands.
+    layer: observability
+    kind: library
+    files:
+    - src/architecture_model/feedback/__init__.py
+    - src/architecture_model/feedback/drift.py
+    - src/architecture_model/feedback/gates.py
+    - src/architecture_model/feedback/junit_ingest.py
+    - src/architecture_model/feedback/test_results.py
+    contract: Append-only JSONL journals feeding lifecycle overlays and viewer badges
   actors:
   - id: ACT-1
     name: AI Agent (MCP Client)
