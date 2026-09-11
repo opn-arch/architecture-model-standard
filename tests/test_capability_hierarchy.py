@@ -17,6 +17,11 @@ def _load_model():
         return yaml.safe_load(f)
 
 
+def _rel_pair(r):
+    """Normalize relationship endpoints (schema accepts from/to or from_id/to_id)."""
+    return (r.get("from_id") or r.get("from"), r.get("to_id") or r.get("to"))
+
+
 # --- Model YAML hierarchy tests ---
 
 class TestModelCapabilityHierarchy:
@@ -48,8 +53,8 @@ class TestModelCapabilityHierarchy:
     def test_hierarchy_contains_relationships(self):
         """Every sub-capability should have a contains relationship from its parent."""
         model = _load_model()
-        contains_rels = {(r["from_id"], r["to_id"]) for r in model["relationships"]
-                         if r["type"] == "contains"}
+        contains_rels = {_rel_pair(r) for r in model["relationships"]
+                         if r.get("type") == "contains"}
         caps = model["entities"]["capabilities"]
         for cap in caps:
             cid = cap["id"]
@@ -60,8 +65,9 @@ class TestModelCapabilityHierarchy:
     def test_all_existing_caps_have_parent(self):
         """CAP-1 through CAP-15 should be contained by a CAP-0.x parent."""
         model = _load_model()
-        contains_rels = {r["to_id"] for r in model["relationships"]
-                         if r["type"] == "contains" and r["from_id"].startswith("CAP-0.")}
+        contains_rels = {_rel_pair(r)[1] for r in model["relationships"]
+                         if r.get("type") == "contains"
+                         and (_rel_pair(r)[0] or "").startswith("CAP-0.")}
         for i in range(1, 16):
             assert f"CAP-{i}" in contains_rels, f"CAP-{i} not contained by any L1 group"
 
