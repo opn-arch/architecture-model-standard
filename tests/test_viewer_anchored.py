@@ -174,3 +174,255 @@ def test_generate_html_viewer_routes_functional_panel_through_anchor_model(tmp_p
     # Sanity: exclusive entity IS present without the anchor, proving the
     # discriminator above is meaningful (fixture not trivially broken).
     assert full_count > 0
+
+
+# --- Track 4 Pass 2 Task T7a: anchor routing extended to `logical` panel ---
+
+def _full_model_with_exclusive_comp(path: Path) -> Path:
+    """Full model: two components, COMP-KEEP-LOG and COMP-EXCL-LOG."""
+    path.write_text("""
+meta:
+  project: t
+  schema_version: '2.1'
+entities:
+  components:
+    - id: COMP-KEEP-LOG
+      name: KeepMeCompLog
+      source_files: [src/a.py]
+    - id: COMP-EXCL-LOG
+      name: ExcludedCompLogXYZZY
+      source_files: [src/b.py]
+""".lstrip())
+    return path
+
+
+def _subset_model_yaml_logical(path: Path) -> Path:
+    """Anchored subset: excludes COMP-EXCL-LOG."""
+    path.write_text("""
+meta:
+  project: t
+  schema_version: '2.1'
+entities:
+  components:
+    - id: COMP-KEEP-LOG
+      name: KeepMeCompLog
+      source_files: [src/a.py]
+""".lstrip())
+    return path
+
+
+def test_generate_html_viewer_routes_logical_panel_through_anchor_model(tmp_path):
+    """End-to-end regression: the excluded component MUST NOT appear (or
+    must appear strictly fewer times) in the generated HTML when a
+    SliceAnchor whose .model excludes it is passed for the 'logical' view.
+    """
+    from architecture_model.core.slice_anchor import SliceAnchor
+
+    full_path = _full_model_with_exclusive_comp(tmp_path / ".architecture-model.yaml")
+    subset_path = _subset_model_yaml_logical(tmp_path / "subset_logical.yaml")
+    full_model = load_model(full_path)
+    subset_model = load_model(subset_path)
+
+    anchor = SliceAnchor(
+        view_name="logical",
+        artifact_name="logical-architecture",
+        model=subset_model,
+        files=(),
+        artifacts=(),
+    )
+
+    out_anchored = tmp_path / "viewer_anchored_logical.html"
+    generate_html_viewer(
+        full_model, out_anchored, repo_path=tmp_path,
+        anchors={"logical": anchor},
+    )
+    html_anchored = out_anchored.read_text(encoding="utf-8")
+
+    out_full = tmp_path / "viewer_full_logical.html"
+    generate_html_viewer(full_model, out_full, repo_path=tmp_path, anchors=None)
+    html_full = out_full.read_text(encoding="utf-8")
+
+    anchored_count = html_anchored.count("COMP-EXCL-LOG")
+    full_count = html_full.count("COMP-EXCL-LOG")
+    assert anchored_count < full_count, (
+        f"Logical panel is not routed through anchor.model: "
+        f"COMP-EXCL-LOG occurrences anchored={anchored_count} vs "
+        f"full={full_count} (expected strictly less when routing is active)."
+    )
+    assert "KeepMeCompLog" in html_anchored
+    assert full_count > 0
+
+
+# --- Track 4 Pass 2 Task T7b: conops panel routed through anchor.model ---
+
+def _full_model_with_exclusive_conops_cap(path: Path) -> Path:
+    """Full model: CAP-0 -> CAP-KEEP-CON and CAP-0 -> CAP-EXCL-CON via
+    'contains'. CAP-EXCL-CON renders into the conops capability groups.
+    """
+    path.write_text("""
+meta:
+  project: t
+  schema_version: '2.1'
+entities:
+  capabilities:
+    - id: CAP-0
+      name: Root
+    - id: CAP-KEEP-CON
+      name: KeepMeCapCon
+    - id: CAP-EXCL-CON
+      name: ExcludedCapConXYZZY
+relationships:
+  - from: CAP-0
+    to: CAP-KEEP-CON
+    type: contains
+  - from: CAP-0
+    to: CAP-EXCL-CON
+    type: contains
+""".lstrip())
+    return path
+
+
+def _subset_model_yaml_conops(path: Path) -> Path:
+    """Anchored subset: excludes CAP-EXCL-CON and its contains edge."""
+    path.write_text("""
+meta:
+  project: t
+  schema_version: '2.1'
+entities:
+  capabilities:
+    - id: CAP-0
+      name: Root
+    - id: CAP-KEEP-CON
+      name: KeepMeCapCon
+relationships:
+  - from: CAP-0
+    to: CAP-KEEP-CON
+    type: contains
+""".lstrip())
+    return path
+
+
+def test_generate_html_viewer_routes_conops_panel_through_anchor_model(tmp_path):
+    """End-to-end regression: the excluded capability MUST appear strictly
+    fewer times in the generated HTML when a SliceAnchor whose .model
+    excludes it is passed for the 'conops' view.
+    """
+    from architecture_model.core.slice_anchor import SliceAnchor
+
+    full_path = _full_model_with_exclusive_conops_cap(tmp_path / ".architecture-model.yaml")
+    subset_path = _subset_model_yaml_conops(tmp_path / "subset_conops.yaml")
+    full_model = load_model(full_path)
+    subset_model = load_model(subset_path)
+
+    anchor = SliceAnchor(
+        view_name="conops",
+        artifact_name="conops",
+        model=subset_model,
+        files=(),
+        artifacts=(),
+    )
+
+    out_anchored = tmp_path / "viewer_anchored_conops.html"
+    generate_html_viewer(
+        full_model, out_anchored, repo_path=tmp_path,
+        anchors={"conops": anchor},
+    )
+    html_anchored = out_anchored.read_text(encoding="utf-8")
+
+    out_full = tmp_path / "viewer_full_conops.html"
+    generate_html_viewer(full_model, out_full, repo_path=tmp_path, anchors=None)
+    html_full = out_full.read_text(encoding="utf-8")
+
+    anchored_count = html_anchored.count("CAP-EXCL-CON")
+    full_count = html_full.count("CAP-EXCL-CON")
+    assert anchored_count < full_count, (
+        f"ConOps panel is not routed through anchor.model: "
+        f"CAP-EXCL-CON occurrences anchored={anchored_count} vs "
+        f"full={full_count} (expected strictly less when routing is active)."
+    )
+    assert "KeepMeCapCon" in html_anchored
+    assert full_count > 0
+
+
+# --- Track 4 Pass 2 Task T7c: use_cases panel routed through anchor.model ---
+
+def _full_model_with_exclusive_behavior(path: Path) -> Path:
+    """Full model has two behaviors both attributed to the same actor;
+    both render into the use_cases panel."""
+    path.write_text("""
+meta:
+  project: t
+  schema_version: '2.1'
+entities:
+  actors:
+    - id: ACT-1
+      name: Operator
+  behaviors:
+    - id: BEH-IN-UC
+      name: KeepMeUseCase
+      actor: Operator
+    - id: BEH-EXCL-UC
+      name: ExcludedUseCaseXYZZY
+      actor: Operator
+""".lstrip())
+    return path
+
+
+def _subset_model_no_exclusive_behavior(path: Path) -> Path:
+    """Anchored subset excludes BEH-EXCL-UC."""
+    path.write_text("""
+meta:
+  project: t
+  schema_version: '2.1'
+entities:
+  actors:
+    - id: ACT-1
+      name: Operator
+  behaviors:
+    - id: BEH-IN-UC
+      name: KeepMeUseCase
+      actor: Operator
+""".lstrip())
+    return path
+
+
+def test_generate_html_viewer_routes_use_cases_panel_through_anchor_model(tmp_path):
+    """End-to-end regression: the excluded behavior MUST appear strictly
+    fewer times in the generated HTML when a SliceAnchor whose .model
+    excludes it is passed for the 'use_cases' view.
+    """
+    from architecture_model.core.slice_anchor import SliceAnchor
+
+    full_path = _full_model_with_exclusive_behavior(tmp_path / ".architecture-model.yaml")
+    subset_path = _subset_model_no_exclusive_behavior(tmp_path / "subset_uc.yaml")
+    full_model = load_model(full_path)
+    subset_model = load_model(subset_path)
+
+    anchor = SliceAnchor(
+        view_name="use_cases",
+        artifact_name="use-cases",
+        model=subset_model,
+        files=(),
+        artifacts=(),
+    )
+
+    out_anchored = tmp_path / "viewer_anchored_uc.html"
+    generate_html_viewer(
+        full_model, out_anchored, repo_path=tmp_path,
+        anchors={"use_cases": anchor},
+    )
+    html_anchored = out_anchored.read_text(encoding="utf-8")
+
+    out_full = tmp_path / "viewer_full_uc.html"
+    generate_html_viewer(full_model, out_full, repo_path=tmp_path, anchors=None)
+    html_full = out_full.read_text(encoding="utf-8")
+
+    anchored_count = html_anchored.count("BEH-EXCL-UC")
+    full_count = html_full.count("BEH-EXCL-UC")
+    assert anchored_count < full_count, (
+        f"Use-cases panel is not routed through anchor.model: "
+        f"BEH-EXCL-UC occurrences anchored={anchored_count} vs "
+        f"full={full_count} (expected strictly less when routing is active)."
+    )
+    assert "KeepMeUseCase" in html_anchored
+    assert full_count > 0

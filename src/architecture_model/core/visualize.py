@@ -27,7 +27,7 @@ from .curated_views import build_curated_views
 _log = logging.getLogger(__name__)
 
 # Track 4 Pass 1 Task 5: views whose panel model is swapped for the anchored sub-model.
-_APPLY_ANCHOR = frozenset({"functional"})
+_APPLY_ANCHOR = frozenset({"functional", "logical", "conops", "use_cases"})
 
 # ── Mermaid shape mapping (Track 4 Pass 2 Task 1) ─────────────────────
 # Maps entity kind (lowercase singular) to a (left_bracket, right_bracket)
