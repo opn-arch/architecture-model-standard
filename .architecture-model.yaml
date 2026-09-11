@@ -1478,6 +1478,61 @@ entities:
     - parse_args
     - run_benchmark
     actor_id: ACT-1
+  - id: BEH-26
+    name: Slice-Scoped Context
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-1
+    description: |
+      AI agent loads a focused architectural context (single F-block, layer,
+      or entity) within its token budget via architect_slice, then produces
+      informed edits without loading the full model.
+    goal: Compressed architecture context under agent token budget
+    trigger: AI agent invokes architect_slice with a focus target
+    preconditions: A published architecture model exists at .architecture-model.yaml
+    postconditions: Agent receives compressed context under budget
+    success_outcome: Agent produces informed edits without loading full model
+  - id: BEH-27
+    name: Learning Loop
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-2
+    description: |
+      Pipeline accumulates lessons from prior runs (heuristics, archetypes,
+      workflows) and applies them to subsequent extractions, monotonically
+      improving quality across runs.
+    goal: Monotonic quality improvement across successive pipeline runs
+    trigger: Developer runs `architecture-model pipeline .`
+    preconditions: .architecture/learning/history.json is readable
+    postconditions: New lessons appended; drift flags updated
+    success_outcome: Successive runs show reduced novel-pattern rate
+  - id: BEH-28
+    name: Development Loop
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-2
+    description: |
+      Developer edits code, regenerates architecture artifacts, reviews the
+      viewer, captures a comment, and files an issue — all without leaving
+      the tool suite.
+    goal: Close code-review feedback loop within one session
+    trigger: Developer modifies source files
+    preconditions: Architecture model exists; MCP tools available
+    postconditions: Comment persisted; issue optionally filed via logs-db
+    success_outcome: Feedback loop closes within one review session
+  - id: BEH-29
+    name: Comment-Driven Collaboration
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-2
+    description: |
+      Users leave free-text feedback on any rendered artifact and downstream
+      workflows (logs-db issue triage) consume the comments as issue seeds.
+    goal: Trace decisions back to specific artifact versions
+    trigger: User invokes `architecture-model comment <artifact>`
+    preconditions: The artifact exists under .architecture/lifecycle/artifacts/
+    postconditions: Comment record persisted with artifact digest reference
+    success_outcome: Reviewers can trace decisions back to artifact versions
   - id: BEH-P1
     name: Run Extraction Pipeline
     status: ACTIVE
