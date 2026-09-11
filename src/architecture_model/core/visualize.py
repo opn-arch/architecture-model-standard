@@ -855,7 +855,7 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
     if model.entities.actors:
         lines.append('    subgraph ext["External Actors"]')
         for actor in model.entities.actors:
-            lines.append(f"        {shape('actor', actor.id, actor.name)}")
+            lines.append(f"        {_shape('actor', _sid(actor.id), _label(actor.name))}")
             class_assignments.append(_apply_class(actor.id, "actor"))
         lines.append("    end")
 
@@ -863,7 +863,7 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
     if model.entities.systems:
         lines.append('    subgraph systems["Systems"]')
         for sys in model.entities.systems:
-            lines.append(f"        {shape('system', sys.id, sys.name)}")
+            lines.append(f"        {_shape('system', _sid(sys.id), _label(sys.name))}")
             class_assignments.append(_apply_class(sys.id, "system"))
         lines.append("    end")
 
@@ -884,12 +884,12 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
             for child_id in contains.get(g_id, []):
                 child = cap_map.get(child_id)
                 if child:
-                    lines.append(f"            {shape('capability', child.id, child.name)}")
+                    lines.append(f"            {_shape('capability', _sid(child.id), _label(child.name))}")
                     class_assignments.append(_apply_class(child.id, "capability"))
             lines.append("        end")
     else:
         for cap in model.entities.capabilities:
-            lines.append(f"        {shape('capability', cap.id, cap.name)}")
+            lines.append(f"        {_shape('capability', _sid(cap.id), _label(cap.name))}")
             class_assignments.append(_apply_class(cap.id, "capability"))
 
     lines.append("    end")
@@ -950,7 +950,7 @@ def generate_functional_architecture_diagram(model: "ArchitectureModel") -> str:
     root_id = "CAP-0"
     root = cap_map.get(root_id)
     if root:
-        lines.append(f"    {shape('capability', root.id, root.name)}")
+        lines.append(f"    {_shape('capability', _sid(root.id), _label(root.name))}")
         class_assignments.append(_apply_class(root.id, "capability"))
 
     # L1 groups (children of root)
@@ -967,14 +967,14 @@ def generate_functional_architecture_diagram(model: "ArchitectureModel") -> str:
             child = cap_map.get(child_id)
             if not child:
                 continue
-            lines.append(f"        {shape('capability', child.id, child.name)}")
+            lines.append(f"        {_shape('capability', _sid(child.id), _label(child.name))}")
             class_assignments.append(_apply_class(child.id, "capability"))
 
             # L2 sub-capabilities
             for sub_id in contains.get(child_id, []):
                 sub = cap_map.get(sub_id)
                 if sub:
-                    lines.append(f"        {shape('capability', sub.id, sub.name)}")
+                    lines.append(f"        {_shape('capability', _sid(sub.id), _label(sub.name))}")
                     class_assignments.append(_apply_class(sub.id, "capability"))
                     lines.append(f"        {_sid(child_id)} -.-> {_sid(sub_id)}")
 
@@ -993,7 +993,7 @@ def generate_functional_architecture_diagram(model: "ArchitectureModel") -> str:
     if not l1_ids:
         for cap in model.entities.capabilities:
             if cap.id != root_id:
-                lines.append(f"    {shape('capability', cap.id, cap.name)}")
+                lines.append(f"    {_shape('capability', _sid(cap.id), _label(cap.name))}")
                 class_assignments.append(_apply_class(cap.id, "capability"))
 
     lines.extend(css_classes())
@@ -1032,7 +1032,7 @@ def generate_logical_architecture_diagram(model: "ArchitectureModel") -> str:
             for cid in resolved:
                 comp = comp_map.get(cid)
                 if comp:
-                    lines.append(f"        {shape('component', comp.id, comp.name)}")
+                    lines.append(f"        {_shape('component', _sid(comp.id), _label(comp.name))}")
                     class_assignments.append(_apply_class(comp.id, "component"))
                     comp_in_system.add(cid)
             lines.append("    end")
@@ -1042,7 +1042,7 @@ def generate_logical_architecture_diagram(model: "ArchitectureModel") -> str:
     if unassigned:
         lines.append('    subgraph other["Other"]')
         for comp in unassigned:
-            lines.append(f"        {shape('component', comp.id, comp.name)}")
+            lines.append(f"        {_shape('component', _sid(comp.id), _label(comp.name))}")
             class_assignments.append(_apply_class(comp.id, "component"))
         lines.append("    end")
 
@@ -1259,7 +1259,7 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     class_assignments: list[str] = []
 
     # Central behavior node
-    lines.append(f"    {shape('behavior', beh.id, beh.name)}")
+    lines.append(f"    {_shape('behavior', _sid(beh.id), _label(beh.name))}")
     class_assignments.append(_apply_class(beh.id, "behavior"))
 
     # Build entity maps
@@ -1269,7 +1269,7 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     # Implementing components (reverse traces-to)
     for rel in model.relationships:
         if _rel_type(rel) == "traces-to" and rel.to_id == behavior_id and rel.from_id in comp_map:
-            lines.append(f"    {shape('component', rel.from_id, comp_map[rel.from_id])}")
+            lines.append(f"    {_shape('component', _sid(rel.from_id), _label(comp_map[rel.from_id]))}")
             class_assignments.append(_apply_class(rel.from_id, "component"))
             lines.append(f"    {_sid(rel.from_id)} {edge_style('traces-to')} {_sid(beh.id)}")
             lines.append(f"    click {_sid(rel.from_id)} \"component-{rel.from_id}.mmd\"")
@@ -1280,7 +1280,7 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     if sub_behs:
         lines.append(f"    subgraph sub[Sub-behaviors]")
         for sid, sname in sub_behs:
-            lines.append(f"        {shape('behavior', sid, sname)}")
+            lines.append(f"        {_shape('behavior', _sid(sid), _label(sname))}")
             class_assignments.append(_apply_class(sid, "behavior"))
         lines.append(f"    end")
         for sid, sname in sub_behs:
@@ -1290,20 +1290,30 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     # Triggered-by (other behaviors that trigger this one)
     for rel in model.relationships:
         if _rel_type(rel) == "triggers" and rel.to_id == behavior_id and rel.from_id in beh_map:
-            lines.append(f"    {shape('behavior', rel.from_id, beh_map[rel.from_id])}")
+            lines.append(f"    {_shape('behavior', _sid(rel.from_id), _label(beh_map[rel.from_id]))}")
             class_assignments.append(_apply_class(rel.from_id, "behavior"))
             lines.append(f"    {_sid(rel.from_id)} {edge_style('triggers')} {_sid(beh.id)}")
 
     # Triggers (behaviors this one triggers)
     for rel in model.relationships:
         if _rel_type(rel) == "triggers" and rel.from_id == behavior_id and rel.to_id in beh_map:
-            lines.append(f"    {shape('behavior', rel.to_id, beh_map[rel.to_id])}")
+            lines.append(f"    {_shape('behavior', _sid(rel.to_id), _label(beh_map[rel.to_id]))}")
             class_assignments.append(_apply_class(rel.to_id, "behavior"))
             lines.append(f"    {_sid(beh.id)} {edge_style('triggers')} {_sid(rel.to_id)}")
 
     lines.extend(css_classes())
     lines.extend(a for a in class_assignments if a)
     return "\n".join(lines)
+
+
+def generate_use_case_diagrams(model: "ArchitectureModel") -> dict[str, str]:
+    """Generate use-case diagrams for every behavior in the model.
+
+    Returns a mapping of ``behavior_id -> mermaid_source``. Thin wrapper over
+    :func:`generate_use_case_diagram`; exposed so callers can render the full
+    use-case panel without walking the model themselves.
+    """
+    return {beh.id: generate_use_case_diagram(model, beh.id) for beh in model.entities.behaviors}
 
 
 def _convert_clicks_to_anchors(mermaid_content: str) -> str:
