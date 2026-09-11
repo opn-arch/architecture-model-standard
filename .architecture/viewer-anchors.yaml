@@ -1,0 +1,44 @@
+version: 1
+# Documentation-only per-panel anchor rationale for the HTML viewer.
+#
+# The viewer's actual anchor computation is deterministic and lives in
+# `src/architecture_model/core/slice_anchor.py` (`build_slice_anchor`).
+# This file captures the *intent* behind each panel's focus so future
+# reviewers understand WHY a given view emphasizes a given entity —
+# and so curation edits (viewer-curation.yaml) stay aligned with intent.
+#
+# `focus` uses qualified IDs (root::...) or the bare `root` scope.
+# `rationale` is free text. Nothing in this file is parsed by the viewer.
+anchors:
+  functional:
+    focus: root::CAP-16
+    rationale: >
+      Plan A/B featured capabilities (CAP-16 Comment-Driven Collaboration,
+      CAP-17 SI&L Instrumentation, CAP-18 LLM Provider Routing) are the
+      current active development frontier. CAP-16 is picked as the primary
+      anchor because it exercises the full view -> comment -> issue loop
+      and touches every layer.
+  logical:
+    focus: root
+    rationale: >
+      Bug 3 fix restored root-scoped layer iteration; all 7 layers
+      (LAY-1..LAY-7) must render. Anchoring at root keeps the tier lane
+      view honest — no single layer dominates. Curated tier grouping in
+      viewer-curation.yaml collapses layers into three review-friendly
+      bands (Platform / Core / Surface).
+  conops:
+    focus: root::CAP-0
+    rationale: >
+      Concept of Operations answers "what does this system DO for its
+      actors?" — anchoring at the top-level capability root (CAP-0) keeps
+      the scope broad enough to admit all four narrative use cases
+      (BEH-26..29) plus the pipeline aggregator (BEH-P1). Scenarios in
+      viewer-curation.yaml provide the actor->outcome linkage.
+  use_cases:
+    focus: root::CAP-0
+    rationale: >
+      Use Case view targets the four operational, actor-visible workflows
+      (BEH-26 Slice-Scoped Context, BEH-27 Learning Loop, BEH-28
+      Development Loop, BEH-29 Comment-Driven Collaboration). Bug 2 filter
+      excludes scraped/sub-step behaviors including BEH-P1.*, so no
+      explicit hide list is needed here.
