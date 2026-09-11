@@ -2930,6 +2930,11 @@ def generate_html_viewer(
         .rel-group {{ margin-top: 8px; }}
         .rel-group-header {{ font-weight: 600; color: #a0c0e0; margin: 4px 0 2px 0; font-size: 0.9em; }}
         .rel-type {{ background: #1a1a3e; color: #7ec8e3; padding: 1px 5px; border-radius: 3px; font-size: 10px; }}
+        .req-section {{ grid-column: 1 / -1; margin-top: 12px; padding: 8px; background: rgba(80, 100, 140, 0.1); border-radius: 4px; }}
+        .req-header {{ font-weight: 600; color: #b0d0f0; margin-bottom: 6px; }}
+        .req-item {{ padding: 3px 0; font-size: 0.9em; }}
+        .req-id {{ color: #ffcc70; font-family: monospace; }}
+        .req-text {{ color: #d0d0e0; }}
         .rel-link {{ color: #7ec8e3; text-decoration: none; }}
         .rel-link:hover {{ text-decoration: underline; }}
         .rel-desc {{ color: #808090; font-size: 11px; }}
