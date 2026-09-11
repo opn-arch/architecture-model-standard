@@ -457,6 +457,30 @@ entities:
     name: Concatenate Sub-Model Artifacts
     status: ACTIVE
     description: Merge subsystem artifacts for export
+  - id: CAP-16
+    name: Comment-Driven Collaboration
+    status: ACTIVE
+    description: |
+      Users capture free-text comments on any rendered lifecycle artifact via
+      `architecture-model comment`. Comments persist in .architecture/comments/
+      as YAML records referencing artifact digest + timestamp; downstream
+      workflows can promote comments to logs-db issues.
+  - id: CAP-17
+    name: SI&L Instrumentation
+    status: ACTIVE
+    description: |
+      Every architecturally significant call site emits a telemetry event to
+      the SI&L SQLite store, giving component-scoped invocation counts,
+      failure rates, and latency for live badge overlays and the pipeline
+      dashboard.
+  - id: CAP-18
+    name: LLM Provider Routing
+    status: ACTIVE
+    description: |
+      Task-class-keyed routing policy (.architecture/llm/policy.yaml) picks a
+      provider + model per call, enforces per-call cost caps, and falls back
+      on error. Model outputs record their generator via meta.provider so
+      reproducibility can be audited.
   components:
   - id: COMP-1
     name: Core
