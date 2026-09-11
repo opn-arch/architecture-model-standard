@@ -1507,7 +1507,9 @@ def project_logical_architecture(
     if curation.tiers:
         for curated in sorted(curation.tiers, key=lambda item: (item.order, item.id)):
             if visible(curated.id):
-                lanes.append(DiagramGroup(curated.id, curated.label, "tier", curated.parent, curated.order))
+                # Allow curation.labels to override the tier's own label by tier id.
+                lane_label = curation.labels.get(curated.id, curated.label)
+                lanes.append(DiagramGroup(curated.id, lane_label, "tier", curated.parent, curated.order))
                 membership.update({member: curated.id for member in curated.members if visible(member)})
     elif model_layers:
         # Prefer explicit model-declared layers over the canonical tier
@@ -1520,7 +1522,10 @@ def project_logical_architecture(
         for index, layer in enumerate(sorted(model_layers, key=_layer_order)):
             lane_id = f"logical-tier:{layer.key}"
             if visible(lane_id):
-                lanes.append(DiagramGroup(lane_id, layer.name, "tier", order=index))
+                # curation.labels keyed by the layer's fully-qualified entity
+                # key (e.g. ``root::LAY-1``) overrides the model layer name.
+                lane_label = curation.labels.get(layer.key, layer.name)
+                lanes.append(DiagramGroup(lane_id, lane_label, "tier", order=index))
                 layer_lane_by_key[layer.key] = lane_id
     else:
         lanes = [
