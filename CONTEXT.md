@@ -457,7 +457,7 @@ family. `project()` injects `__scope_*` config keys from
 `scope_metadata` (entity_id, kind, inbound_depends_on,
 outbound_by_type, inbound_by_type, contains_descendants) so
 projectors can render roll-ups without re-walking the model.
-Family 5 is deferred to Phase 4 (needs populated deployment metadata).
+Family 5 landed in Phase 5 (deployment topology for environments, resources, components).
 
 **Supplementary fragments plumbing.** `project()` unconditionally
 injects `__scope_supplementary_fragments = dict(mat.supplementary_fragments)`
@@ -562,6 +562,67 @@ Design + plan docs:
 - `docs/plans/2026-09-08-phase-4-writeback-endpoints-federated.md` — 28-task plan
 - `docs/plans/2026-09-08-phase-3-recursion-and-entity-views.md` — Phase 3 (merged)
 - `docs/plans/2026-09-08-model-view-mapping-design.md` — overall design
+
+## Phase 5 substrate (deferred completion — deployment views, fan-out, provenance)
+
+Phase 5 closes three deferred sub-tasks from Phases 2 and 3 without
+changing any wire-level contracts. Fully backward-compatible: no schema
+bump (still 2.1), no digest perturbation, no new required fields.
+
+**Family 5 entity page.** ``Family5EntityPage`` in
+``architecture_model.lifecycle.projectors.entity_pages`` renders
+deployment topology per entity. Supported kinds:
+
+* ``environment``: kind, region, infrastructure list, constraints list,
+  and Deployed Components (inbound ``allocated-to``).
+* ``resource``: kind, provider, location, SLA, and Consumed By (inbound
+  ``consumes`` ∪ ``depends-on``, deduplicated, sorted).
+* ``component``: Deployed To (outbound ``allocated-to``).
+
+The enum-backed ``kind`` field is always emitted (it carries a default);
+all other sections are omitted when empty. Closes the latent gap
+referenced by ``invalidation.py:146`` which already routes SLO field
+edits to ``family5.entity_page``. A private
+``_find_deployment_entity`` helper walks ``components``,
+``environments``, and ``resources`` — distinct from
+``_find_entity_by_id`` which only covers the seven family-1 kinds.
+
+**Drill-down coverage extended.**
+``architecture_model.lifecycle.projectors.drill._FAMILY_KINDS`` now
+includes ``5: ("components", "environments", "resources")``. Renderers
+that read ``facets["drill_to"]`` can emit hyperlinks from root-family
+deployment views into family5 entity pages.
+
+**Per-subsystem fan-out (Phase 2 Task 27, shipped in OCA).** The
+``Scope`` literal ``"descendants:each"`` (already accepted by
+``ModelSlice`` since Phase 3) is honored by
+``opencode_arch.lifecycle_exec.rebuild.rebuild_artifacts``. When a
+slice carries this scope, the executor enumerates
+``iter_descendants(pkg, include_self=True)`` and materializes a
+per-descendant local slice, namespacing each artifact's ``spec_id``
+as ``<spec_id>.<subsystem_slug>`` so outputs like
+``conops.core.md`` / ``conops.manifest.md`` never collide. The merged-
+fragment ``"descendants"`` scope from Phase 1 is unchanged.
+
+**Provenance persistence (Phase 2 Task 28, shipped in OCA).** After
+every successful atomic body write, ``rebuild_artifacts`` also writes
+``<id>.<ext>.provenance.json`` next to the rendered artifact containing
+``{freshness, revision, produced_at, projector}`` sourced from
+``ProjectedView.provenance``. The ``pipeline-html`` renderer bypasses
+``project()``; those artifacts receive a synthesized provenance stub
+(``freshness="fresh"``, ``revision`` from the materialized slice) so
+they participate in the same freshness summary. Sidecar writes are
+best-effort — a failure never fails the artifact itself.
+``opencode_arch.mcp.tools.evaluate._collect_freshness_summary`` reads
+the sidecars to bucket artifacts as ``fresh``/``stale``/``pending``,
+falling back to ``unknown`` when the sidecar is absent (pre-Phase-5
+artifacts). Sidecar files are excluded from the artifact total count.
+
+Design + plan docs:
+- `docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md` — Tasks 27, 28
+- `docs/plans/2026-09-08-phase-3-recursion-and-entity-views.md` — Family 5 note
+- `docs/plans/2026-09-08-model-view-mapping-design.md` — overall design
+
 
 ## E2E Benchmark Results (2026-07-07)
 

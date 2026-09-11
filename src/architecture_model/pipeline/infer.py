@@ -803,6 +803,8 @@ def _infer_behaviors(
     CLI_DECORATORS = {"command", "click"}
 
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         has_cli_import = any(cli_imp in imp for imp in mod.imports for cli_imp in CLI_IMPORTS)
         if not has_cli_import:
             continue
@@ -830,6 +832,8 @@ def _infer_behaviors(
     HANDLER_BASES = {"view", "handler", "command"}
 
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         for cls in mod.classes:
             if cls.name.startswith("_") or cls.name.lower().startswith("test"):
                 continue
@@ -871,6 +875,8 @@ def _infer_behaviors(
     }
 
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         for cls in mod.classes:
             if cls.name.startswith("_") or cls.name.lower().startswith("test"):
                 continue
@@ -898,8 +904,10 @@ def _infer_behaviors(
     # --- Uncertainty: Complex classes (≥15 public methods) ---
     COMPLEX_METHOD_THRESHOLD = 15
     for mod in inventory.modules:
+        if _is_non_source_module(mod):
+            continue
         for cls in mod.classes:
-            if cls.name.startswith("_") or "Test" in cls.name:
+            if cls.name.startswith("_") or cls.name.lower().startswith("test"):
                 continue
             public_methods = [m for m in cls.methods if not m.startswith("_")]
             if len(public_methods) >= COMPLEX_METHOD_THRESHOLD:
@@ -1098,6 +1106,7 @@ def _infer_library_behaviors(
         stem = mod.path.stem
         mod_label = stem.replace("_", " ").title()
         cap_id = cap_by_mod.get(stem, "")
+        source_file = str(mod.path)
 
         public_funcs = [f for f in mod.functions if not f.name.startswith("_")]
         func_names = {f.name for f in public_funcs}
@@ -1114,6 +1123,7 @@ def _infer_library_behaviors(
                     capability_id=cap_id,
                     steps=[func.name],
                     behavior_type="library_api",
+                    source_file=source_file,
                 ))
 
         # 2. Context managers
@@ -1129,6 +1139,7 @@ def _infer_library_behaviors(
                     capability_id=cap_id,
                     steps=["__enter__", "__exit__"],
                     behavior_type="use_case",
+                    source_file=source_file,
                 ))
 
         # 3. Lifecycle pairs
@@ -1145,6 +1156,7 @@ def _infer_library_behaviors(
                         capability_id=cap_id,
                         steps=[a, b],
                         behavior_type="workflow",
+                        source_file=source_file,
                     ))
                     break  # one lifecycle behavior per class
 
@@ -1160,6 +1172,7 @@ def _infer_library_behaviors(
                         capability_id=cap_id,
                         steps=matched,
                         behavior_type="workflow",
+                        source_file=source_file,
                     ))
                     break  # one chain per module
 
@@ -1174,6 +1187,7 @@ def _infer_library_behaviors(
                     capability_id=cap_id,
                     steps=[func.name],
                     behavior_type="use_case",
+                    source_file=source_file,
                 ))
 
         for cls in mod.classes:
@@ -1190,6 +1204,7 @@ def _infer_library_behaviors(
                     capability_id=cap_id,
                     steps=[m for m in cls.methods if not m.startswith("_")][:5],
                     behavior_type="use_case",
+                    source_file=source_file,
                 ))
 
     return behaviors

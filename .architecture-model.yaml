@@ -457,6 +457,30 @@ entities:
     name: Concatenate Sub-Model Artifacts
     status: ACTIVE
     description: Merge subsystem artifacts for export
+  - id: CAP-16
+    name: Comment-Driven Collaboration
+    status: ACTIVE
+    description: |
+      Users capture free-text comments on any rendered lifecycle artifact via
+      `architecture-model comment`. Comments persist in .architecture/comments/
+      as YAML records referencing artifact digest + timestamp; downstream
+      workflows can promote comments to logs-db issues.
+  - id: CAP-17
+    name: SI&L Instrumentation
+    status: ACTIVE
+    description: |
+      Every architecturally significant call site emits a telemetry event to
+      the SI&L SQLite store, giving component-scoped invocation counts,
+      failure rates, and latency for live badge overlays and the pipeline
+      dashboard.
+  - id: CAP-18
+    name: LLM Provider Routing
+    status: ACTIVE
+    description: |
+      Task-class-keyed routing policy (.architecture/llm/policy.yaml) picks a
+      provider + model per call, enforces per-call cost caps, and falls back
+      on error. Model outputs record their generator via meta.provider so
+      reproducibility can be audited.
   components:
   - id: COMP-1
     name: Core
@@ -1018,6 +1042,82 @@ entities:
     - src/architecture_model/patterns.py
     - src/architecture_model/data/__init__.py
     contract: Shared utilities for file discovery, monitoring, common patterns
+  - id: COMP-13
+    name: SI&L Instrumentation
+    status: ACTIVE
+    description: |
+      Structural Interface Layer: SQLite-backed ring buffer at
+      .architecture/sil.sqlite retaining the 50 most recent events per
+      component_id, plus YAML rollup snapshots under .architecture/sil/. The
+      @sil_instrument decorator is applied to 10 pipeline stages, 5 lifecycle
+      renderers, 3 validators, and all 19 MCP *_tool handlers.
+    layer: observability
+    kind: library
+    files:
+    - src/architecture_model/sil/__init__.py
+    - src/architecture_model/sil/decorators.py
+    - src/architecture_model/sil/record.py
+    - src/architecture_model/sil/rollup.py
+    contract: SILStore — append events, roll up per-component metrics for dashboards and evaluate
+  - id: COMP-14
+    name: LLM Provider Layer
+    status: ACTIVE
+    description: |
+      Runtime-checkable LLMProvider Protocol exposing complete/stream/structured/
+      tokenize. Concrete adapters (MCPProvider, FrontierProvider, RelayExtProvider)
+      live in opencode-arch. Routing policy at .architecture/llm/policy.yaml maps
+      TaskClass names to (provider, model, max_cost_usd_per_call, fallback).
+    layer: ai-integration
+    kind: library
+    files:
+    - src/architecture_model/llm/__init__.py
+    - src/architecture_model/llm/provider.py
+    contract: LLMProvider Protocol + policy-driven routing with per-call cost caps
+  - id: COMP-15
+    name: Pipeline Dashboard
+    status: ACTIVE
+    description: |
+      Self-contained interactive HTML dashboard visualizing a pipeline
+      architecture slice with live SI&L badges. Rebuild pipeline: slice YAML
+      selects nodes -> pipeline_html_data projector builds {nodes,edges,badges}
+      -> pipeline-html renderer embeds JSON with vanilla-JS assets.
+    layer: interface
+    kind: library
+    files:
+    - src/architecture_model/lifecycle/renderers/pipeline_html.py
+    - src/architecture_model/lifecycle/renderers/pipeline_html_data.py
+    - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/index.css
+    contract: Deterministic HTML build; identical inputs produce byte-identical output
+  - id: COMP-16
+    name: Comment System
+    status: ACTIVE
+    description: |
+      User comment capture and storage against rendered lifecycle artifacts.
+      Comments persist as YAML records referencing artifact digest + timestamp;
+      downstream workflows can promote comments to logs-db issues.
+    layer: application
+    kind: library
+    files:
+    - src/architecture_model/comments/__init__.py
+    - src/architecture_model/comments/models.py
+    - src/architecture_model/comments/store.py
+    contract: CommentStore — append/list comments keyed by artifact digest
+  - id: COMP-17
+    name: Feedback Journals
+    status: ACTIVE
+    description: |
+      Three append-only JSONL streams under .architecture/: gates.jsonl (gate
+      outcomes), drift.jsonl (structural drift snapshots), test_results.jsonl
+      (junit ingest batches). Fed by OCA MCP tools and CLI ingest commands.
+    layer: observability
+    kind: library
+    files:
+    - src/architecture_model/feedback/__init__.py
+    - src/architecture_model/feedback/drift.py
+    - src/architecture_model/feedback/gates.py
+    - src/architecture_model/feedback/junit_ingest.py
+    - src/architecture_model/feedback/test_results.py
+    contract: Append-only JSONL journals feeding lifecycle overlays and viewer badges
   actors:
   - id: ACT-1
     name: AI Agent (MCP Client)
@@ -1378,6 +1478,61 @@ entities:
     - parse_args
     - run_benchmark
     actor_id: ACT-1
+  - id: BEH-26
+    name: Slice-Scoped Context
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-1
+    description: |
+      AI agent loads a focused architectural context (single F-block, layer,
+      or entity) within its token budget via architect_slice, then produces
+      informed edits without loading the full model.
+    goal: Compressed architecture context under agent token budget
+    trigger: AI agent invokes architect_slice with a focus target
+    preconditions: A published architecture model exists at .architecture-model.yaml
+    postconditions: Agent receives compressed context under budget
+    success_outcome: Agent produces informed edits without loading full model
+  - id: BEH-27
+    name: Learning Loop
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-2
+    description: |
+      Pipeline accumulates lessons from prior runs (heuristics, archetypes,
+      workflows) and applies them to subsequent extractions, monotonically
+      improving quality across runs.
+    goal: Monotonic quality improvement across successive pipeline runs
+    trigger: Developer runs `architecture-model pipeline .`
+    preconditions: .architecture/learning/history.json is readable
+    postconditions: New lessons appended; drift flags updated
+    success_outcome: Successive runs show reduced novel-pattern rate
+  - id: BEH-28
+    name: Development Loop
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-2
+    description: |
+      Developer edits code, regenerates architecture artifacts, reviews the
+      viewer, captures a comment, and files an issue — all without leaving
+      the tool suite.
+    goal: Close code-review feedback loop within one session
+    trigger: Developer modifies source files
+    preconditions: Architecture model exists; MCP tools available
+    postconditions: Comment persisted; issue optionally filed via logs-db
+    success_outcome: Feedback loop closes within one review session
+  - id: BEH-29
+    name: Comment-Driven Collaboration
+    status: ACTIVE
+    behavior_type: use_case
+    actor_id: ACT-2
+    description: |
+      Users leave free-text feedback on any rendered artifact and downstream
+      workflows (logs-db issue triage) consume the comments as issue seeds.
+    goal: Trace decisions back to specific artifact versions
+    trigger: User invokes `architecture-model comment <artifact>`
+    preconditions: The artifact exists under .architecture/lifecycle/artifacts/
+    postconditions: Comment record persisted with artifact digest reference
+    success_outcome: Reviewers can trace decisions back to artifact versions
   - id: BEH-P1
     name: Run Extraction Pipeline
     status: ACTIVE
@@ -1852,6 +2007,52 @@ entities:
     - 'concat_submodels: def concat_submodels(repo_path: Path) -> str | None'
     - 'derive_prefix: def derive_prefix(repo_name: str) -> str'
     description: 16 public symbols exported
+  - id: IF-17
+    name: SI&L Store API
+    interface_type: library
+    component_id: COMP-13
+    description: |
+      Public API for reading and writing structural-interface-layer events:
+      SILStore.record(event), SILStore.query(component_id), rollup helpers.
+  - id: IF-18
+    name: LLM Provider Protocol
+    interface_type: library
+    component_id: COMP-14
+    description: |
+      Runtime-checkable Protocol exposing complete(prompt), stream(prompt),
+      structured(prompt, schema), tokenize(text). Adapters implement provider-
+      specific dispatch; policy layer resolves TaskClass -> provider+model.
+  - id: IF-19
+    name: Pipeline Dashboard Data
+    interface_type: library
+    component_id: COMP-15
+    description: |
+      JSON payload {nodes, edges, badges} produced by the pipeline_html_data
+      projector and embedded verbatim in the pipeline.html shell. Deterministic
+      ordering: byte-identical output for byte-identical inputs.
+  - id: IF-20
+    name: Comment Store API
+    interface_type: library
+    component_id: COMP-16
+    description: |
+      CommentStore.append(artifact_digest, comment), CommentStore.list(
+      artifact_digest). Records persist as YAML under .architecture/comments/.
+  - id: IF-21
+    name: Gate Event Journal
+    interface_type: data
+    component_id: COMP-17
+    description: |
+      Append-only JSONL at .architecture/gates.jsonl. Each line is a
+      GateEvent(gate_id, outcome, findings, model_revision, ts). Written by
+      the OCA architect_gate MCP tool (fail-soft).
+  - id: IF-22
+    name: Drift Snapshot Journal
+    interface_type: data
+    component_id: COMP-17
+    description: |
+      Append-only JSONL at .architecture/drift.jsonl. Each line is a drift
+      snapshot record (broken_ref, unrealized_capability, orphan, missing_impl).
+      Written after every OCA architect_pipeline run (fail-soft).
   - id: IF-auto-COMP-1
     name: Core API
     interface_type: library
@@ -2042,6 +2243,22 @@ entities:
     name: Infrastructure
     status: ACTIVE
     description: Configuration, profiles, JSON schema, file discovery
+  - id: LAY-6
+    name: Observability
+    status: ACTIVE
+    description: |
+      Cross-cutting instrumentation and evidence journals: SI&L telemetry
+      records for every architecturally significant call site, plus append-only
+      journals (gates.jsonl, drift.jsonl, test_results.jsonl) that back
+      lifecycle overlays and viewer badges.
+  - id: LAY-7
+    name: AI Integration
+    status: ACTIVE
+    description: |
+      LLM provider abstraction and routing policy. Sits above orchestration
+      so any component can request a completion by task-class, and the layer
+      resolves the concrete provider (MCP subprocess, direct HTTPS, or relay)
+      with per-call cost caps.
 relationships:
 - type: realizes
   from_id: COMP-1.2
@@ -3614,3 +3831,30 @@ relationships:
   from_id: COMP-5.2
   to_id: CAP-9.5
   description: "Decomposition implements Write Sub-Models to Disk"
+# Track 3 wiring: containment
+- {from: LAY-6, to: COMP-13, type: contains}
+- {from: LAY-6, to: COMP-17, type: contains}
+- {from: LAY-7, to: COMP-14, type: contains}
+- {from: LAY-4, to: COMP-15, type: contains}
+- {from: LAY-3, to: COMP-16, type: contains}
+# Track 3 wiring: realization
+- {from: COMP-16, to: CAP-16, type: realizes}
+- {from: COMP-13, to: CAP-17, type: realizes}
+- {from: COMP-14, to: CAP-18, type: realizes}
+# Track 3 wiring: interface exposure
+- {from: COMP-13, to: IF-17, type: exposes}
+- {from: COMP-14, to: IF-18, type: exposes}
+- {from: COMP-15, to: IF-19, type: exposes}
+- {from: COMP-16, to: IF-20, type: exposes}
+- {from: COMP-17, to: IF-21, type: exposes}
+- {from: COMP-17, to: IF-22, type: exposes}
+# Track 3 wiring: capability trace (BEH -> CAP)
+- {from: BEH-26, to: CAP-7, type: traces-to}
+- {from: BEH-27, to: CAP-14, type: traces-to}
+- {from: BEH-28, to: CAP-16, type: traces-to}
+- {from: BEH-29, to: CAP-16, type: traces-to}
+# Track 3 wiring: allocation to code (BEH -> COMP)
+- {from: BEH-26, to: COMP-1, type: allocated-to}
+- {from: BEH-27, to: COMP-2, type: allocated-to}
+- {from: BEH-28, to: COMP-8, type: allocated-to}
+- {from: BEH-29, to: COMP-16, type: allocated-to}

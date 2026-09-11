@@ -53,6 +53,14 @@ _YAML = dedent(
         - id: COMP-1
           name: Engine
           status: ACTIVE
+      environments:
+        - id: ENV-1
+          name: Prod
+          status: ACTIVE
+      resources:
+        - id: RES-1
+          name: DB
+          status: ACTIVE
     relationships: []
     """
 )
@@ -88,6 +96,15 @@ def test_drill_to_map_family1_includes_all_kinds(model):
     dt = drill_to_map(model, 1)
     for eid in ("ACT-1", "CAP-F1", "BEH-1", "IF-1", "CON-1", "LAY-1", "COMP-1"):
         assert dt[eid] == f"family1.entity_page:{eid}"
+
+
+def test_drill_to_map_family5_includes_components_environments_resources(model):
+    dt = drill_to_map(model, 5)
+    assert dt["COMP-1"] == "family5.entity_page:COMP-1"
+    assert dt["ENV-1"] == "family5.entity_page:ENV-1"
+    assert dt["RES-1"] == "family5.entity_page:RES-1"
+    assert "CAP-F1" not in dt
+    assert "ACT-1" not in dt
 
 
 def test_drill_to_map_unknown_family_returns_empty(model):

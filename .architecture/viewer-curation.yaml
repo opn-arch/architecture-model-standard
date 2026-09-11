@@ -13,46 +13,46 @@ version: 1
 views:
   functional:
     featured:
-      - root::CAP-COMMENT-COLLABORATION
-      - root::CAP-SIL-INSTRUMENTATION
-      - root::CAP-LLM-ROUTING
-      - root::COMP-COMMENT-SYS
-      - root::COMP-SIL
-      - root::COMP-LLM
-      - root::COMP-DASHBOARD
+      - root::CAP-16
+      - root::CAP-17
+      - root::CAP-18
+      - root::COMP-16
+      - root::COMP-13
+      - root::COMP-14
+      - root::COMP-15
     groups:
       - id: view-comment-pipeline
         label: "View-Comment Pipeline (Plan A)"
         members:
-          - root::CAP-COMMENT-COLLABORATION
-          - root::COMP-COMMENT-SYS
+          - root::CAP-16
+          - root::COMP-16
       - id: sil-llm-dashboard
         label: "SIL + LLM Provider + Dashboard (Plan B)"
         members:
-          - root::CAP-SIL-INSTRUMENTATION
-          - root::CAP-LLM-ROUTING
-          - root::COMP-SIL
-          - root::COMP-LLM
-          - root::COMP-DASHBOARD
+          - root::CAP-17
+          - root::CAP-18
+          - root::COMP-13
+          - root::COMP-14
+          - root::COMP-15
     drilldowns:
-      view-comment-pipeline: root::CAP-COMMENT-COLLABORATION
-      sil-llm-dashboard: root::CAP-SIL-INSTRUMENTATION
+      view-comment-pipeline: root::CAP-16
+      sil-llm-dashboard: root::CAP-17
   logical:
     featured:
-      - root::COMP-COMMENT-SYS
-      - root::COMP-SIL
-      - root::COMP-LLM
-      - root::COMP-DASHBOARD
+      - root::COMP-16
+      - root::COMP-13
+      - root::COMP-14
+      - root::COMP-15
     groups:
       - id: view-comment-pipeline-logical
         label: "View-Comment Pipeline (Plan A)"
         kind: aggregate
         members:
-          - root::COMP-COMMENT-SYS
+          - root::COMP-16
       - id: sil-llm-dashboard-logical
         label: "SIL + LLM Provider + Dashboard (Plan B)"
         kind: aggregate
         members:
-          - root::COMP-SIL
-          - root::COMP-LLM
-          - root::COMP-DASHBOARD
+          - root::COMP-13
+          - root::COMP-14
+          - root::COMP-15
