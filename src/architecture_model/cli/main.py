@@ -1143,6 +1143,7 @@ def _cmd_viewer(args) -> int:
     import zipfile as _zipfile
 
     from ..core.parser import load_model
+    from ..core.slice_anchor import VIEW_TO_ARTIFACT, build_slice_anchor
     from ..core.visualize import generate_html_viewer
 
     repo_path = Path(args.path).resolve()
@@ -1180,11 +1181,13 @@ def _cmd_viewer(args) -> int:
         print(f"WARNING: Curation file is unreadable; using automatic views: {curation_path}")
     # Auto-detect SI&L store under repo root; helper returns {} if absent.
     sil_store_path = repo_path / ".architecture" / "sil.sqlite"
+    anchors = {v: build_slice_anchor(model, v, repo_path) for v in VIEW_TO_ARTIFACT}
     result_path = generate_html_viewer(
         model, output_path, title=title, repo_path=repo_path, model_path=model_path,
         include_docs=not args.no_docs, include_history=not args.no_docs,
         curation_path=curation_path, use_curation=not getattr(args, "no_curation", False),
         sil_store_path=sil_store_path if sil_store_path.is_file() else None,
+        anchors=anchors,
     )
     size_kb = result_path.stat().st_size / 1024
     print(f"Viewer: {result_path} ({size_kb:.0f}KB)")
