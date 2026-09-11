@@ -4,10 +4,14 @@ See docs/plans/2026-09-10-track4-slice-anchor-design.md for full design.
 """
 from __future__ import annotations
 
+import logging
 from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 
 from architecture_model.core.types import ArchitectureModel, RelationType
+
+_log = logging.getLogger(__name__)
 
 
 VIEW_TO_ARTIFACT: dict[str, str] = {
@@ -87,3 +91,78 @@ def apply_one_hop_closure(full: ArchitectureModel, sliced: ArchitectureModel) ->
     for rel in rels_to_add:
         result.relationships.append(deepcopy(rel))
     return result
+
+
+def _derive_files(model: ArchitectureModel) -> tuple[str, ...]:
+    seen: set[str] = set()
+    for comp in model.entities.components or []:
+        for sf in (getattr(comp, "files", None) or []):
+            seen.add(sf)
+    return tuple(sorted(seen))
+
+
+def _derive_artifacts(artifact_name: str, repo_path: Path) -> tuple[str, ...]:
+    if not artifact_name:
+        return ()
+    found: set[str] = set()
+    primary = ARTIFACT_TO_DOC.get(artifact_name)
+    if primary and (repo_path / primary).is_file():
+        found.add(primary)
+    se_dir = repo_path / ".architecture-models" / "docs" / "se"
+    if se_dir.is_dir():
+        try:
+            import yaml  # type: ignore
+        except ImportError:
+            yaml = None  # type: ignore
+        if yaml is not None:
+            for md in sorted(se_dir.glob("*.md")):
+                try:
+                    text = md.read_text(encoding="utf-8")
+                    if text.startswith("---\n"):
+                        end = text.find("\n---", 4)
+                        if end != -1:
+                            fm = yaml.safe_load(text[4:end]) or {}
+                            if isinstance(fm, dict) and fm.get("artifact") == artifact_name:
+                                rel = md.relative_to(repo_path).as_posix()
+                                found.add(rel)
+                except Exception:
+                    continue
+    return tuple(sorted(found))
+
+
+def build_slice_anchor(
+    model: ArchitectureModel,
+    view_name: str,
+    repo_path: Path,
+) -> SliceAnchor:
+    """Compute the deterministic SliceAnchor for a viewer panel view name."""
+    from architecture_model.core.slicer import slice_for_artifact
+
+    artifact_name = VIEW_TO_ARTIFACT.get(view_name, "")
+    if not artifact_name:
+        _log.warning("viewer: no slicer mapping for view=%s; falling back to full model", view_name)
+        return SliceAnchor(
+            view_name=view_name,
+            artifact_name="",
+            model=deepcopy(model),
+            files=(),
+            artifacts=(),
+        )
+    sliced = slice_for_artifact(model, artifact_name)
+    anchored = apply_one_hop_closure(model, sliced)
+    files = _derive_files(anchored)
+    artifacts = _derive_artifacts(artifact_name, Path(repo_path))
+    _log.info(
+        "viewer: anchor computed view=%s entities=%d files=%d artifacts=%d",
+        view_name,
+        sum(1 for _ in _all_entities(anchored)),
+        len(files),
+        len(artifacts),
+    )
+    return SliceAnchor(
+        view_name=view_name,
+        artifact_name=artifact_name,
+        model=anchored,
+        files=files,
+        artifacts=artifacts,
+    )
