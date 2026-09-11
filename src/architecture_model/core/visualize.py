@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from .curated_views import build_curated_views
 
 if TYPE_CHECKING:
+    from .slice_anchor import SliceAnchor
     from .types import ArchitectureModel
 
 
@@ -2429,6 +2430,7 @@ def generate_html_viewer(
     include_history: bool = True,
     model_path: Path | None = None,
     sil_store_path: Path | None = None,
+    anchors: "dict[str, SliceAnchor] | None" = None,
 ) -> Path:
     """Generate a self-contained HTML viewer with 7 SE model views and universal click navigation.
 
