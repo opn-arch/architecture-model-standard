@@ -92,13 +92,13 @@ Write a plan document listing:
 - `CAP-17` "SI&L Instrumentation" — realized by `COMP-13` — every architecturally significant call site emits telemetry
 - `CAP-18` "LLM Provider Routing" — realized by `COMP-14` — policy-driven provider selection with cost caps and fallback
 
-**Interfaces (6 new: IF-44..IF-49):**
-- `IF-44` "SI&L Store API" — exposed by `COMP-13`, consumed by pipeline stages + MCP tools
-- `IF-45` "LLM Provider Protocol" — exposed by `COMP-14`, consumed by orchestration
-- `IF-46` "Pipeline Dashboard Data" — exposed by `COMP-15`, consumed by viewer.html
-- `IF-47` "Comment Store API" — exposed by `COMP-16`, consumed by CLI + MCP tools
-- `IF-48` "Gate Event Journal" — exposed by `COMP-17`, consumed by `architect_gate` MCP tool
-- `IF-49` "Drift Snapshot Journal" — exposed by `COMP-17`, consumed by pipeline observe stage
+**Interfaces (6 new: IF-17..IF-22):**
+- `IF-17` "SI&L Store API" — exposed by `COMP-13`, consumed by pipeline stages + MCP tools
+- `IF-18` "LLM Provider Protocol" — exposed by `COMP-14`, consumed by orchestration
+- `IF-19` "Pipeline Dashboard Data" — exposed by `COMP-15`, consumed by viewer.html
+- `IF-20` "Comment Store API" — exposed by `COMP-16`, consumed by CLI + MCP tools
+- `IF-21` "Gate Event Journal" — exposed by `COMP-17`, consumed by `architect_gate` MCP tool
+- `IF-22` "Drift Snapshot Journal" — exposed by `COMP-17`, consumed by pipeline observe stage
 
 **Behaviors (4 new user-facing UCs: BEH-26..BEH-29):**
 - `BEH-26` "Slice-Scoped Context" — actor `ACT-1` (AI Agent) invokes `architect_slice` to load a focused view; realizes `CAP-3.2` (Model Operations)
@@ -109,7 +109,7 @@ Write a plan document listing:
 **Relationships to add (partial list — see Task 8):**
 - `contains`: LAY-6 → COMP-13, LAY-6 → COMP-17, LAY-7 → COMP-14, LAY-4 → COMP-15, LAY-3 → COMP-16
 - `realizes`: COMP-16 → CAP-16, COMP-13 → CAP-17, COMP-14 → CAP-18
-- `exposes`: COMP-13 → IF-44, COMP-14 → IF-45, COMP-15 → IF-46, COMP-16 → IF-47, COMP-17 → IF-48, COMP-17 → IF-49
+- `exposes`: COMP-13 → IF-17, COMP-14 → IF-18, COMP-15 → IF-19, COMP-16 → IF-20, COMP-17 → IF-21, COMP-17 → IF-22
 - `traces-to`: BEH-26..BEH-29 → their respective capabilities
 - `allocated-to`: BEH-26 → COMP-1 (Core; slicer.py lives there)
 - ...
@@ -175,7 +175,7 @@ def test_track3_capabilities_present() -> None:
 
 def test_track3_interfaces_present() -> None:
     ids = _ids(_load(), "interfaces")
-    assert {f"IF-{n}" for n in range(44, 50)}.issubset(ids), sorted(ids)
+    assert {f"IF-{n}" for n in range(17, 23)}.issubset(ids), sorted(ids)
 
 
 def test_track3_user_facing_behaviors_present() -> None:
@@ -440,7 +440,7 @@ git commit -m "feat(model): add CAP-16 (Comments), CAP-17 (SI&L), CAP-18 (LLM Ro
 
 ---
 
-## Task 6: Add IF-44..IF-49 interfaces
+## Task 6: Add IF-17..IF-22 interfaces
 
 **Files:**
 - Modify: `.architecture-model.yaml` (entities.interfaces section)
@@ -450,7 +450,7 @@ git commit -m "feat(model): add CAP-16 (Comments), CAP-17 (SI&L), CAP-18 (LLM Ro
 For each, use fields matching existing interfaces (check with `grep -A5 "IF-1:" .architecture-model.yaml`). Typical shape:
 
 ```yaml
-  - id: IF-44
+  - id: IF-17
     name: SI&L Store API
     kind: LIBRARY
     status: ACTIVE
@@ -459,7 +459,7 @@ For each, use fields matching existing interfaces (check with `grep -A5 "IF-1:" 
       SILStore.record(event), SILStore.query(component_id), rollup helpers.
 ```
 
-Then IF-45 (LLM Provider Protocol — `kind: LIBRARY`), IF-46 (Pipeline Dashboard Data — `kind: LIBRARY`), IF-47 (Comment Store API — `kind: LIBRARY`), IF-48 (Gate Event Journal — `kind: DATA`), IF-49 (Drift Snapshot Journal — `kind: DATA`).
+Then IF-18 (LLM Provider Protocol — `kind: LIBRARY`), IF-19 (Pipeline Dashboard Data — `kind: LIBRARY`), IF-20 (Comment Store API — `kind: LIBRARY`), IF-21 (Gate Event Journal — `kind: DATA`), IF-22 (Drift Snapshot Journal — `kind: DATA`).
 
 If the schema doesn't accept a `kind` value, `grep -B1 -A5 "kind:" .architecture-model.yaml | head -30` reveals accepted values.
 
@@ -475,7 +475,7 @@ Expected: PASS.
 
 ```
 git add .architecture-model.yaml
-git commit -m "feat(model): add IF-44..IF-49 for Track 3 component interfaces"
+git commit -m "feat(model): add IF-17..IF-22 for Track 3 component interfaces"
 ```
 
 ---
@@ -573,12 +573,12 @@ The relationships list is at the top level of the YAML document, after `entities
 - {from: COMP-13, to: CAP-17, type: realizes}
 - {from: COMP-14, to: CAP-18, type: realizes}
 # Track 3 wiring: interface exposure
-- {from: COMP-13, to: IF-44, type: exposes}
-- {from: COMP-14, to: IF-45, type: exposes}
-- {from: COMP-15, to: IF-46, type: exposes}
-- {from: COMP-16, to: IF-47, type: exposes}
-- {from: COMP-17, to: IF-48, type: exposes}
-- {from: COMP-17, to: IF-49, type: exposes}
+- {from: COMP-13, to: IF-17, type: exposes}
+- {from: COMP-14, to: IF-18, type: exposes}
+- {from: COMP-15, to: IF-19, type: exposes}
+- {from: COMP-16, to: IF-20, type: exposes}
+- {from: COMP-17, to: IF-21, type: exposes}
+- {from: COMP-17, to: IF-22, type: exposes}
 # Track 3 wiring: capability trace
 - {from: BEH-26, to: CAP-3, type: traces-to}   # Model Ops capability
 - {from: BEH-27, to: CAP-4, type: traces-to}   # Adjust to actual "Scripts"/"Learning" cap id
