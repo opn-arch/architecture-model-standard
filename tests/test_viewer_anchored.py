@@ -256,54 +256,64 @@ def test_generate_html_viewer_routes_logical_panel_through_anchor_model(tmp_path
 # --- Track 4 Pass 2 Task T7b: conops panel routed through anchor.model ---
 
 def _full_model_with_exclusive_conops_cap(path: Path) -> Path:
-    """Full model: CAP-0 -> CAP-KEEP-CON and CAP-0 -> CAP-EXCL-CON via
-    'contains'. CAP-EXCL-CON renders into the conops capability groups.
+    """Full model: actor + two behaviors. Behaviors render as scenario
+    nodes in the conops panel body, so BEH-EXCL-CON's id appears in the
+    Mermaid body when the full model is rendered.
+
+    (Capabilities do not surface in the curated ConOps projector body,
+    so anchor-driven capability exclusion would be invisible in the
+    generated HTML — behaviors are the right entity kind to exclude.)
     """
     path.write_text("""
 meta:
   project: t
   schema_version: '2.1'
 entities:
-  capabilities:
-    - id: CAP-0
-      name: Root
-    - id: CAP-KEEP-CON
-      name: KeepMeCapCon
-    - id: CAP-EXCL-CON
-      name: ExcludedCapConXYZZY
+  actors:
+    - id: ACT-1
+      name: Operator
+  behaviors:
+    - id: BEH-KEEP-CON
+      name: KeepMeBehCon
+      actor_id: ACT-1
+    - id: BEH-EXCL-CON
+      name: ExcludedBehConXYZZY
+      actor_id: ACT-1
 relationships:
-  - from: CAP-0
-    to: CAP-KEEP-CON
-    type: contains
-  - from: CAP-0
-    to: CAP-EXCL-CON
-    type: contains
+  - from: ACT-1
+    to: BEH-KEEP-CON
+    type: triggers
+  - from: ACT-1
+    to: BEH-EXCL-CON
+    type: triggers
 """.lstrip())
     return path
 
 
 def _subset_model_yaml_conops(path: Path) -> Path:
-    """Anchored subset: excludes CAP-EXCL-CON and its contains edge."""
+    """Anchored subset: excludes BEH-EXCL-CON and its triggers edge."""
     path.write_text("""
 meta:
   project: t
   schema_version: '2.1'
 entities:
-  capabilities:
-    - id: CAP-0
-      name: Root
-    - id: CAP-KEEP-CON
-      name: KeepMeCapCon
+  actors:
+    - id: ACT-1
+      name: Operator
+  behaviors:
+    - id: BEH-KEEP-CON
+      name: KeepMeBehCon
+      actor_id: ACT-1
 relationships:
-  - from: CAP-0
-    to: CAP-KEEP-CON
-    type: contains
+  - from: ACT-1
+    to: BEH-KEEP-CON
+    type: triggers
 """.lstrip())
     return path
 
 
 def test_generate_html_viewer_routes_conops_panel_through_anchor_model(tmp_path):
-    """End-to-end regression: the excluded capability MUST appear strictly
+    """End-to-end regression: the excluded behavior MUST appear strictly
     fewer times in the generated HTML when a SliceAnchor whose .model
     excludes it is passed for the 'conops' view.
     """
@@ -333,14 +343,14 @@ def test_generate_html_viewer_routes_conops_panel_through_anchor_model(tmp_path)
     generate_html_viewer(full_model, out_full, repo_path=tmp_path, anchors=None)
     html_full = out_full.read_text(encoding="utf-8")
 
-    anchored_count = html_anchored.count("CAP-EXCL-CON")
-    full_count = html_full.count("CAP-EXCL-CON")
+    anchored_count = html_anchored.count("BEH-EXCL-CON")
+    full_count = html_full.count("BEH-EXCL-CON")
     assert anchored_count < full_count, (
         f"ConOps panel is not routed through anchor.model: "
-        f"CAP-EXCL-CON occurrences anchored={anchored_count} vs "
+        f"BEH-EXCL-CON occurrences anchored={anchored_count} vs "
         f"full={full_count} (expected strictly less when routing is active)."
     )
-    assert "KeepMeCapCon" in html_anchored
+    assert "KeepMeBehCon" in html_anchored
     assert full_count > 0
 
 
