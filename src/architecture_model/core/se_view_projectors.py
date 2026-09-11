@@ -1497,6 +1497,11 @@ def project_logical_architecture(
     order = {key: index for index, key in enumerate(curation.order)}
     systems, model_owner = _system_models(context)
     tier_defs = {tier: (label, index) for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)}
+    model_layers = [
+        item for item in context.entities("layer")
+        if visible(item) and item.model == "root"
+    ]
+    layer_lane_by_key: dict[str, str] = {}
     lanes = []
     membership: dict[str, str] = {}
     if curation.tiers:
@@ -1504,6 +1509,19 @@ def project_logical_architecture(
             if visible(curated.id):
                 lanes.append(DiagramGroup(curated.id, curated.label, "tier", curated.parent, curated.order))
                 membership.update({member: curated.id for member in curated.members if visible(member)})
+    elif model_layers:
+        # Prefer explicit model-declared layers over the canonical tier
+        # taxonomy. Order by ``layer.order`` if set (0 defaults sort
+        # first, which mirrors YAML declaration order); tie-break on id.
+        def _layer_order(item: IndexedEntity) -> tuple[int, str]:
+            raw = getattr(item.value, "order", 0) or 0
+            return (int(raw), item.key)
+
+        for index, layer in enumerate(sorted(model_layers, key=_layer_order)):
+            lane_id = f"logical-tier:{layer.key}"
+            if visible(lane_id):
+                lanes.append(DiagramGroup(lane_id, layer.name, "tier", order=index))
+                layer_lane_by_key[layer.key] = lane_id
     else:
         lanes = [
             DiagramGroup(f"logical-tier:{tier}", label, "tier", order=index)
@@ -1514,6 +1532,11 @@ def project_logical_architecture(
         assigned = membership.get(entity.key, "")
         if assigned:
             return assigned
+        # Model-layer path: if the entity declares a layer that matches a
+        # model-declared Layer entity, route it to that lane directly.
+        entity_layer = getattr(entity.value, "layer", "")
+        if entity_layer and entity_layer in layer_lane_by_key:
+            return layer_lane_by_key[entity_layer]
         tier = _logical_tier(entity)
         automatic = f"logical-tier:{tier}"
         if any(item.id == automatic for item in lanes):
