@@ -1680,6 +1680,15 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             ("interface_refs", "Interfaces"),
             ("decisions", "Decisions"),
             ("monitored", "Monitored"),
+            ("stakeholders", "Stakeholders"),
+            ("success_criteria", "Success Criteria"),
+            ("assumptions", "Assumptions"),
+            ("open_questions", "Open Questions"),
+            ("verification", "Verification"),
+            ("slos", "SLOs"),
+            ("owner", "Owner"),
+            ("maturity", "Maturity"),
+            ("dependencies_rationale", "Dependencies Rationale"),
         ):
             value = getattr(entity, field_name, None)
             if value not in (None, "", []):
