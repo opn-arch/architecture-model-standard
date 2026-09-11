@@ -2042,6 +2042,22 @@ entities:
     name: Infrastructure
     status: ACTIVE
     description: Configuration, profiles, JSON schema, file discovery
+  - id: LAY-6
+    name: Observability
+    status: ACTIVE
+    description: |
+      Cross-cutting instrumentation and evidence journals: SI&L telemetry
+      records for every architecturally significant call site, plus append-only
+      journals (gates.jsonl, drift.jsonl, test_results.jsonl) that back
+      lifecycle overlays and viewer badges.
+  - id: LAY-7
+    name: AI Integration
+    status: ACTIVE
+    description: |
+      LLM provider abstraction and routing policy. Sits above orchestration
+      so any component can request a completion by task-class, and the layer
+      resolves the concrete provider (MCP subprocess, direct HTTPS, or relay)
+      with per-call cost caps.
 relationships:
 - type: realizes
   from_id: COMP-1.2
