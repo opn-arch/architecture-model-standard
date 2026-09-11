@@ -2599,16 +2599,21 @@ def generate_html_viewer(
         use_curation=use_curation and (trusted_root is not None or curation_path is not None), theme="dark",
     )
     # Track 4 Pass 1 Task 5: swap the functional panel's model with the anchored slice.
+    # Anchor view names use underscores (per VIEW_TO_ARTIFACT); native_views keys
+    # follow NATIVE_VIEW_DEFINITIONS (hyphenated for multi-word ids). Bridge with
+    # a small alias map so hyphenated native keys still resolve.
+    _ANCHOR_TO_NATIVE_KEY = {"use_cases": "use-cases"}
     for _anchored_view in _APPLY_ANCHOR:
         _anchored_model = _panel_model(_anchored_view, model, anchors)
-        if _anchored_model is model or _anchored_view not in native_views:
+        _native_key = _ANCHOR_TO_NATIVE_KEY.get(_anchored_view, _anchored_view)
+        if _anchored_model is model or _native_key not in native_views:
             continue
         _anchored_views = build_curated_views(
             _anchored_model, project_root, curation_path=curation_path,
             use_curation=use_curation and (trusted_root is not None or curation_path is not None), theme="dark",
         )
-        if _anchored_view in _anchored_views:
-            native_views[_anchored_view] = _anchored_views[_anchored_view]
+        if _native_key in _anchored_views:
+            native_views[_native_key] = _anchored_views[_native_key]
     se_views: dict[str, dict] = {}
     panels: dict[str, dict] = {}
     def store_panel(view_key: str, panel_ref: str, panel_data: dict) -> None:
