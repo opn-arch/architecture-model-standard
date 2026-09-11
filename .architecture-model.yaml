@@ -3831,3 +3831,30 @@ relationships:
   from_id: COMP-5.2
   to_id: CAP-9.5
   description: "Decomposition implements Write Sub-Models to Disk"
+# Track 3 wiring: containment
+- {from: LAY-6, to: COMP-13, type: contains}
+- {from: LAY-6, to: COMP-17, type: contains}
+- {from: LAY-7, to: COMP-14, type: contains}
+- {from: LAY-4, to: COMP-15, type: contains}
+- {from: LAY-3, to: COMP-16, type: contains}
+# Track 3 wiring: realization
+- {from: COMP-16, to: CAP-16, type: realizes}
+- {from: COMP-13, to: CAP-17, type: realizes}
+- {from: COMP-14, to: CAP-18, type: realizes}
+# Track 3 wiring: interface exposure
+- {from: COMP-13, to: IF-17, type: exposes}
+- {from: COMP-14, to: IF-18, type: exposes}
+- {from: COMP-15, to: IF-19, type: exposes}
+- {from: COMP-16, to: IF-20, type: exposes}
+- {from: COMP-17, to: IF-21, type: exposes}
+- {from: COMP-17, to: IF-22, type: exposes}
+# Track 3 wiring: capability trace (BEH -> CAP)
+- {from: BEH-26, to: CAP-7, type: traces-to}
+- {from: BEH-27, to: CAP-14, type: traces-to}
+- {from: BEH-28, to: CAP-16, type: traces-to}
+- {from: BEH-29, to: CAP-16, type: traces-to}
+# Track 3 wiring: allocation to code (BEH -> COMP)
+- {from: BEH-26, to: COMP-1, type: allocated-to}
+- {from: BEH-27, to: COMP-2, type: allocated-to}
+- {from: BEH-28, to: COMP-8, type: allocated-to}
+- {from: BEH-29, to: COMP-16, type: allocated-to}
