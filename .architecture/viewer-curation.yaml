@@ -61,23 +61,12 @@ views:
       root::LAY-5: "Infrastructure (persistence, export)"
       root::LAY-6: "Observability (SI&L, monitoring)"
       root::LAY-7: "AI Integration (LLM providers, proposals)"
-    tiers:
-      - id: tier-platform
-        label: "Cross-cutting Platform"
-        members:
-          - root::LAY-1
-          - root::LAY-5
-          - root::LAY-6
-      - id: tier-core
-        label: "Core Modeling"
-        members:
-          - root::LAY-2
-          - root::LAY-3
-      - id: tier-surface
-        label: "User & Agent Surface"
-        members:
-          - root::LAY-4
-          - root::LAY-7
+    # NOTE: `tiers` intentionally omitted. When `tiers` is present the
+    # projector's `if curation.tiers:` branch wins and model layers stop
+    # rendering as lanes (they become membership targets instead), so
+    # per-layer `labels` overrides have nothing to attach to. Dropping
+    # `tiers` lets the `elif model_layers:` branch render all 7 layers
+    # as lanes with the friendly captions above.
     groups:
       - id: view-comment-pipeline-logical
         label: "View-Comment Pipeline (Plan A)"
