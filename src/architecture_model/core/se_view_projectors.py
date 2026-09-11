@@ -50,6 +50,85 @@ def _first_str(value: object) -> str:
     return ""
 
 
+def _operational_use_case_keys(
+    context: ArchitectureViewContext,
+    curation: "ViewCuration | None" = None,
+) -> frozenset[str]:
+    """Return the set of behavior keys that qualify as top-level use cases.
+
+    A behavior qualifies iff it EITHER:
+
+    a. Has **narrative content** — a non-empty ``trigger``, or a
+       non-empty first ``goals`` / ``postconditions`` value. Real user
+       stories have story-shape fields regardless of whether they're
+       structural roots (a fixture may legitimately model use-case
+       decomposition via ``contains`` where both parent and child
+       carry narrative); OR
+
+    b. Is an **aggregation root** — the source of at least one
+       ``contains`` edge to another behavior (e.g. ``BEH-P1`` which
+       aggregates its pipeline stages but has sparse narrative fields
+       itself); OR
+
+    c. Is **explicitly named by curation** — an operator listing a
+       behavior in ``featured`` / ``order`` / ``annotations`` /
+       ``scenarios[].members`` declares operational intent, and that
+       authority overrides field-shape heuristics. Behaviors scraped
+       into fixtures without narrative are still surfaced when the
+       operator chose them.
+
+    This deliberately excludes:
+
+    - Pipeline sub-behaviors (e.g. ``BEH-P1.1..P1.N``) that carry no
+       narrative, no children, and no explicit curation.
+    - Auto-derived CLI-argparse / CLI-test roots not chosen by
+       curation.
+    """
+    behavior_entities = list(context.entities("behavior"))
+    behavior_keys = {item.key for item in behavior_entities}
+    aggregators: set[str] = set()
+    contains_children: set[str] = set()
+    for item in behavior_entities:
+        for edge in context.outgoing(item.key, "contains"):
+            if edge.target in behavior_keys:
+                aggregators.add(item.key)
+                contains_children.add(edge.target)
+    curated_ids: set[str] = set()
+    if curation is not None:
+        for selector in curation.featured:
+            if selector.resolved_id:
+                curated_ids.add(selector.resolved_id)
+        for key in curation.order:
+            curated_ids.add(key)
+        for annotation in curation.annotations:
+            curated_ids.add(annotation.use_case)
+        for scenario in curation.scenarios:
+            for member in scenario.members:
+                curated_ids.add(member)
+    qualifying: set[str] = set()
+    for item in behavior_entities:
+        has_narrative = bool(
+            item.value.trigger
+            or _first_str(item.value.goals)
+            or _first_str(item.value.postconditions)
+        )
+        if item.key in curated_ids or item.key in aggregators or has_narrative:
+            qualifying.add(item.key)
+            continue
+        # No positive signal. Exclude only when a source-scraped fingerprint
+        # is present (steps but no narrative — CLI-argparse / test-runner
+        # scrapes) or when the entity is a ``contains`` child of another
+        # behavior (auto-derived sub-step, e.g. ``BEH-P1.*``). Submodel
+        # behaviors with sparse fields (no steps, no children, no
+        # narrative) remain visible so root-scope conops can summarize
+        # them.
+        has_only_steps = bool(item.value.steps) and not has_narrative
+        if item.key in contains_children or has_only_steps:
+            continue
+        qualifying.add(item.key)
+    return frozenset(qualifying)
+
+
 def _visibility(curation: ViewCuration) -> Callable[[str | IndexedEntity], bool]:
     hidden = frozenset(
         item.resolved_id or item.qualified_id
@@ -670,7 +749,10 @@ def project_conops(
             "warning", "CONOPS_DEGRADED_INTERFACE", f"Unresolved interface endpoint: {interface.name}", view="conops",
         ))
 
-    behaviors = [item for item in context.entities("behavior") if item.key not in hidden]
+    behaviors = [
+        item for item in context.entities("behavior")
+        if item.key not in hidden and item.key in _operational_use_case_keys(context, curation)
+    ]
     behaviors.sort(key=lambda item: (item.key not in featured, order.get(item.key, len(order)), item.key))
     omitted = 0
     for behavior in behaviors:
@@ -1984,7 +2066,10 @@ def project_use_cases(
     featured = {item.resolved_id for item in curation.featured if item.resolved_id}
     annotations = {item.use_case: item for item in curation.annotations if visible(item.use_case)}
     order = {key: index for index, key in enumerate(curation.order)}
-    behaviors = [item for item in context.entities("behavior") if visible(item)]
+    behaviors = [
+        item for item in context.entities("behavior")
+        if visible(item) and item.key in _operational_use_case_keys(context, curation)
+    ]
     by_actor: dict[str, list[IndexedEntity]] = defaultdict(list)
     for behavior in behaviors:
         actor = _behavior_actor(context, behavior)
