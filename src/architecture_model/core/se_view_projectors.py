@@ -30,6 +30,26 @@ from architecture_model.core.view_curation import (
 DEFAULT_MAX_OVERVIEW_NODES = 15
 
 
+def _first_str(value: object) -> str:
+    """Return the first meaningful string from a value that may be str or sequence.
+
+    Behavior semantic fields (``goals``, ``postconditions``, ``preconditions``)
+    are typed as ``list[str]`` but real-world YAML often declares them as
+    scalar strings (see BEH-26/27/28 in this repo's own model). The parser
+    stores those scalars verbatim, so ``next(iter(field), "")`` iterates the
+    string character-by-character and yields the first char — producing
+    labels like ``"A"``, ``"C"`` instead of the full sentence.
+
+    This helper normalizes both shapes: str -> the string itself,
+    list/tuple -> its first element (as str), anything else -> ``""``.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        return str(value[0]) if value else ""
+    return ""
+
+
 def _visibility(curation: ViewCuration) -> Callable[[str | IndexedEntity], bool]:
     hidden = frozenset(
         item.resolved_id or item.qualified_id
@@ -666,14 +686,14 @@ def project_conops(
             ]
         interface = interfaces[0] if interfaces else None
         system = _interface_system(context, interface) if interface else _owning_system(context, behavior.model)
-        outcome = next(iter(behavior.value.postconditions or behavior.value.goals), "")
+        outcome = _first_str(behavior.value.postconditions) or _first_str(behavior.value.goals)
         path_nodes = []
         if actor:
             path_nodes.append(DiagramNode(_node_id(actor.key), _label(actor, curation), "actor", lane="actors", entity_ref=actor.key, evidence=[_provenance(actor)]))
         drilldown_id = _drilldown_id(curation, behavior.key)
         path_nodes.append(
             DiagramNode(_node_id(behavior.key), _label(behavior, curation), "scenario", lane="scenarios", group=membership.get(behavior.key, ""),
-                        subtitle=" | ".join(value for value in (behavior.value.trigger, next(iter(behavior.value.goals), "")) if value),
+                        subtitle=" | ".join(value for value in (behavior.value.trigger, _first_str(behavior.value.goals)) if value),
                         entity_ref=behavior.key, drilldown_ref=drilldown_id, badges=_badges(behavior), evidence=[_provenance(behavior)])
         )
         if interface and system:
@@ -1738,7 +1758,7 @@ def _use_case_drilldown(
     context: ArchitectureViewContext, behavior: IndexedEntity, curation: ViewCuration,
     visible: Callable[[str | IndexedEntity], bool], annotation: CuratedUseCaseAnnotation | None = None,
 ) -> DiagramSpec:
-    goal = next(iter(behavior.value.goals), "") or (annotation.goal if annotation else "")
+    goal = _first_str(behavior.value.goals) or (annotation.goal if annotation else "")
     trigger = behavior.value.trigger or (annotation.trigger if annotation else "")
     uses_annotation = bool(annotation and (
         (not behavior.value.trigger and annotation.trigger)
@@ -2003,10 +2023,10 @@ def project_use_cases(
         systems = _behavior_systems(context, behavior, visible)
         annotation = annotations.get(behavior.key)
         drilldown_id = _drilldown_id(curation, behavior.key)
-        goal = next(iter(behavior.value.goals), "") or (annotation.goal if annotation else "")
+        goal = _first_str(behavior.value.goals) or (annotation.goal if annotation else "")
         trigger = behavior.value.trigger or (annotation.trigger if annotation else "")
-        outcome = next(iter(behavior.value.postconditions or behavior.value.goals), "") or (
-            annotation.success_outcome or next(iter(annotation.postconditions), "") if annotation else ""
+        outcome = _first_str(behavior.value.postconditions) or _first_str(behavior.value.goals) or (
+            annotation.success_outcome or _first_str(annotation.postconditions) if annotation else ""
         )
         uses_annotation = bool(annotation and (
             (not behavior.value.trigger and annotation.trigger)
