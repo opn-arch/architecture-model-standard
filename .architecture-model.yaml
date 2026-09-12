@@ -1264,9 +1264,9 @@ entities:
         source: component_test_map.json
   actors:
   - id: ACT-1
-    name: AI Agent (MCP Client)
+    name: LLM Agent (generic frontier model)
     status: ACTIVE
-    description: LLM-based coding agent that invokes architecture tools via MCP protocol
+    description: Any frontier LLM (Anthropic/OpenAI/local) invoked via MCP; provider-specific detail lives in COMP-14 LLM Provider layer.
     intent: Consume compressed architecture context to generate, validate, and update models
     goals:
     - Load and query architecture models
@@ -1292,6 +1292,11 @@ entities:
     - Run validation checks on PRs
     - Generate architecture docs
     - Detect model drift
+  - id: ACT-4
+    name: Architect
+    status: ACTIVE
+    type: human
+    description: System/software architect responsible for extracting, validating, and evolving the architecture model; primary curator of use-cases and target reader of SE docs.
   requirements:
   - id: REQ-1
     name: Model validation score threshold
@@ -1346,8 +1351,7 @@ entities:
   - id: REQ-11
     name: Live artifact regeneration
     status: ACTIVE
-    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs) must regenerate in <1s without
-      LLM
+    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs) must regenerate in <1s without LLM
     priority: must
   - id: REQ-12
     name: SE doc completeness
@@ -1639,6 +1643,12 @@ entities:
     preconditions: A published architecture model exists at .architecture-model.yaml
     postconditions: Agent receives compressed context under budget
     success_outcome: Agent produces informed edits without loading full model
+    goals:
+    - Deliver focused architecture context within an LLM token budget
+    success_criteria:
+    - fragment digest stable across identical inputs
+    - no dangling refs after closure
+    - renderer emits deterministic bytes
   - id: BEH-27
     name: Learning Loop
     status: ACTIVE
@@ -1656,6 +1666,12 @@ entities:
     preconditions: .architecture/learning/history.json is readable
     postconditions: New lessons appended; drift flags updated
     success_outcome: Successive runs show reduced novel-pattern rate
+    goals:
+    - Reduce repeat mistakes and encode institutional knowledge across pipeline runs
+    success_criteria:
+    - pattern hit-rate rising across runs
+    - regen readiness grade improving
+    - no oscillation in learning curve
   - id: BEH-28
     name: Development Loop
     status: ACTIVE
@@ -1673,6 +1689,12 @@ entities:
     preconditions: Architecture model exists; MCP tools available
     postconditions: Comment persisted; issue optionally filed via logs-db
     success_outcome: Feedback loop closes within one review session
+    goals:
+    - Close the loop from issue -> proposal -> validated model change
+    success_criteria:
+    - proposal applied without drift
+    - gate passes post-apply
+    - SI&L failure_rate not regressing
   - id: BEH-29
     name: Comment-Driven Collaboration
     status: ACTIVE
@@ -1691,8 +1713,7 @@ entities:
   - id: BEH-P1
     name: Run Extraction Pipeline
     status: ACTIVE
-    description: Orchestrates the 10-stage extraction pipeline (observe->infer->allocate->relate->specify->contract->validate->decompose->synthesize->emit)
-      producing .architecture-model.yaml.
+    description: Orchestrates the 10-stage extraction pipeline (observe->infer->allocate->relate->specify->contract->validate->decompose->synthesize->emit) producing .architecture-model.yaml.
     steps:
     - observe
     - infer
@@ -1704,6 +1725,19 @@ entities:
     - decompose
     - synthesize
     - emit
+    trigger: Operator invokes architect_pipeline MCP tool or architecture-model pipeline CLI on a repository
+    goals:
+    - Extract auditable architecture model from source code with zero manual configuration
+    success_criteria:
+    - validator score >= 80/100
+    - component coverage >= 90%
+    - 0 broken references
+    - all 10 stages complete
+    postconditions:
+    - .architecture-model.yaml written
+    - Reality manifest generated at .architecture-models/manifest.json
+    - All 10 stages recorded in pipeline-report.md
+    - Validator score >= configured threshold
   - id: BEH-P1.1
     name: Run Observe Stage
     status: ACTIVE
@@ -2056,16 +2090,14 @@ entities:
     name: Classify Issue
     status: ACTIVE
     behavior_type: workflow_step
-    description: Pattern classifier (7 pattern types) categorizes the comment (CROSS_DEP, MISSING_IMPL, WRONG_CONSTANT, API_MISMATCH,
-      COMPLEX_BEHAVIOR, TEST_INFRA, UNKNOWN).
+    description: Pattern classifier (7 pattern types) categorizes the comment (CROSS_DEP, MISSING_IMPL, WRONG_CONSTANT, API_MISMATCH, COMPLEX_BEHAVIOR, TEST_INFRA, UNKNOWN).
     preconditions: Comment exists
     postconditions: Comment tagged with pattern_type
   - id: BEH-28.6
     name: Optimize Prompt
     status: ACTIVE
     behavior_type: workflow_step
-    description: Adaptive prompt optimizer applies heuristic rules (dep count, contract count, body_hint coverage) to build
-      improved regen prompt.
+    description: Adaptive prompt optimizer applies heuristic rules (dep count, contract count, body_hint coverage) to build improved regen prompt.
     preconditions: Classified issue is present
     postconditions: Optimized prompt ready for regen loop
   - id: BEH-28.7
@@ -2247,10 +2279,17 @@ entities:
     name: LLM Provider Routing
     status: ACTIVE
     behavior_type: orchestrator
-    description: Route LLM calls through a task-class-keyed policy that picks provider + model, enforces cost caps, and falls
-      back on error.
+    description: Route LLM calls through a task-class-keyed policy that picks provider + model, enforces cost caps, and falls back on error.
     preconditions: LLM policy file exists at .architecture/llm/policy.yaml
     postconditions: Call routed to concrete provider or fallback fired
+    trigger: Any component requesting text completion, structured output, streaming, or tokenization via LLMProvider Protocol
+    goals:
+    - Route model calls to the right provider under a global cost budget
+    - Record provenance so outputs are reproducible
+    success_criteria:
+    - policy respected on every call
+    - per-call cost cap enforced
+    - meta.provider stamped on generated artifacts
   - id: BEH-LLM.1
     name: Load Policy
     status: ACTIVE
@@ -2311,10 +2350,16 @@ entities:
     name: SI&L Telemetry Recording
     status: ACTIVE
     behavior_type: orchestrator
-    description: Instrumented call sites emit telemetry events into .architecture/sil.sqlite (ring buffer, 50 events per component),
-      rolled up per-component to yaml snapshots.
+    description: Instrumented call sites emit telemetry events into .architecture/sil.sqlite (ring buffer, 50 events per component), rolled up per-component to yaml snapshots.
     preconditions: sil.sqlite is writable
     postconditions: Event appended and rollup snapshot refreshed
+    trigger: Any instrumented pipeline stage, renderer, validator, or MCP tool invocation
+    goals:
+    - Give operators a live, component-scoped view of system health
+    success_criteria:
+    - ring buffer retains 50 most recent per component
+    - rollup snapshots refreshed within SLA
+    - architect_evaluate sil_summary non-empty
   - id: BEH-SIL.1
     name: Bind Store to Context
     status: ACTIVE
@@ -2375,10 +2420,16 @@ entities:
     name: Feedback Journal Append
     status: ACTIVE
     behavior_type: orchestrator
-    description: Append-only journals (gates.jsonl, drift.jsonl, test_results.jsonl) under .architecture/ record outcomes
-      for surgical view invalidation.
+    description: Append-only journals (gates.jsonl, drift.jsonl, test_results.jsonl) under .architecture/ record outcomes for surgical view invalidation.
     preconditions: Feedback event ready
     postconditions: Event durably appended with content_kind
+    trigger: Gate execution, drift detection, or JUnit test batch ingest
+    goals:
+    - Persist verification evidence outside the model for temporal slicing
+    success_criteria:
+    - append-only JSONL never rewritten
+    - materialize picks up refs deterministically
+    - counts flow into architect_evaluate
   - id: BEH-FBK.1
     name: Append Gate Event
     status: ACTIVE
@@ -2390,8 +2441,7 @@ entities:
     name: Append Drift Snapshot
     status: ACTIVE
     behavior_type: workflow_step
-    description: Write drift snapshot (broken_ref, unrealized_capability, orphan, missing_impl) to drift.jsonl after every
-      pipeline run.
+    description: Write drift snapshot (broken_ref, unrealized_capability, orphan, missing_impl) to drift.jsonl after every pipeline run.
     preconditions: Pipeline stage completed
     postconditions: Snapshot appended to .architecture/drift.jsonl
   - id: BEH-FBK.3
@@ -2408,6 +2458,145 @@ entities:
     description: When new events land, mark dependent projected views stale via lifecycle.invalidation.stale_entity_view_ids.
     preconditions: New feedback event appended
     postconditions: Affected view ids added to stale set
+  - id: BEH-UC-ENRICH
+    name: Enrich Model with Manifest Data
+    status: ACTIVE
+    type: use_case
+    description: Copy AST-derived signatures, constants, and test contracts from the Reality Manifest onto model components to raise regen readiness.
+    trigger: Architect invokes architecture-model enrich <path> after a pipeline run
+    preconditions:
+    - model exists at path
+    - manifest.json is present or generatable
+    postconditions:
+    - components carry signatures[]
+    - components carry test_contracts[]
+    - regen_readiness score improves
+    goals:
+    - Bridge the abstract architecture model to code-level reality for downstream regen
+    success_criteria:
+    - signature coverage >= 60%
+    - test_contract count grows
+  - id: BEH-UC-VALIDATE
+    name: Validate Architecture Model
+    status: ACTIVE
+    type: use_case
+    description: Run structural validation over an architecture model and report a 0-100 score with categorized issues.
+    trigger: Architect or CI invokes architecture-model validate <path>
+    preconditions:
+    - model file parses as YAML
+    - schema_version present
+    postconditions:
+    - score reported
+    - issues categorized by severity
+    - exit code reflects validity
+    goals:
+    - Ensure model integrity before downstream doc generation or publication
+    success_criteria:
+    - score >= threshold configured by caller
+    - 0 ERROR-severity issues
+  - id: BEH-UC-DOCS
+    name: Generate SE Documentation
+    status: ACTIVE
+    type: use_case
+    description: Emit the 11-doc Systems Engineering suite (ConOps, Functional Analysis, Requirements, V&V, Ops Manual, etc.) from the architecture model.
+    trigger: Architect invokes architecture-model docs <path> --formats se_all
+    preconditions:
+    - valid model
+    - manifest available for enrichment
+    postconditions:
+    - .architecture-models/docs/se/ populated with 11 markdown files
+    goals:
+    - Produce auditable SE deliverables that trace to model entities
+    success_criteria:
+    - all requested formats emitted
+    - no broken cross-refs between docs
+  - id: BEH-UC-VIEWER
+    name: Generate Interactive HTML Viewer
+    status: ACTIVE
+    type: use_case
+    description: Produce a self-contained HTML viewer embedding all entities, relationships, evidence, and SE docs for offline review.
+    trigger: Architect invokes architecture-model viewer <path>
+    preconditions:
+    - valid model
+    - optionally SE docs generated
+    postconditions:
+    - .architecture/diagrams/viewer.html written
+    - single file opens in any browser
+    goals:
+    - Give reviewers a one-file, no-server way to explore the architecture
+    success_criteria:
+    - file opens < 5MB by default
+    - all entity pages navigable
+  - id: BEH-UC-AUDIT
+    name: Audit Six Operational Pipelines
+    status: ACTIVE
+    type: use_case
+    description: Report per-pipeline gaps (missing descriptions, missing traces-to, isolated sub-behaviors, containment holes) across EXTRACT/SLICE/SELF-IMPROVEMENT/DEV-LOOP/LLM-PROVIDER/LOGGING pipelines.
+    trigger: Architect or CI invokes architecture-model audit [--pipeline ID] [--strict]
+    preconditions:
+    - valid model
+    postconditions:
+    - markdown gap report written to stdout
+    - strict mode sets exit code on any gap
+    goals:
+    - Enforce completeness of operational pipelines as a first-class quality gate
+    success_criteria:
+    - zero gaps on curated pipelines under strict mode
+  - id: BEH-UC-PUBLISH
+    name: Publish Architecture Package Generation
+    status: ACTIVE
+    type: use_case
+    description: Commit a new generation of the root architecture package to the lifecycle store with a stable digest and revision id.
+    trigger: Architect (or automation) invokes package_publish on a validated model
+    preconditions:
+    - model parses and validates
+    - package directory writable
+    postconditions:
+    - new .architecture/lifecycle/<pkg>/<rev>/ generation written
+    - CURRENT pointer advanced
+    - digest.json emitted
+    goals:
+    - Preserve reproducible, digest-addressable snapshots of every model iteration
+    success_criteria:
+    - identical inputs yield identical digests
+    - CURRENT always points to a valid generation
+  - id: BEH-UC-MATERIALIZE
+    name: Materialize Slice and Project View
+    status: ACTIVE
+    type: use_case
+    description: Reduce the root package to a scoped ModelSlice, then run a registered projector to yield a DiagramSpec ready for rendering.
+    trigger: LLM agent or renderer requests a scoped fragment via slice_materialize + view_project
+    preconditions:
+    - published package generation exists
+    - slice + view specs valid
+    postconditions:
+    - MaterializedSlice with digest returned
+    - ProjectedView carries freshness stamp
+    goals:
+    - Substrate every doc, diagram, and derived artifact through a single deterministic pipeline
+    success_criteria:
+    - byte-identical outputs for identical inputs
+    - no dangling refs post-closure
+  - id: BEH-UC-APPLY
+    name: Apply Validated AI Proposal
+    status: ACTIVE
+    type: use_case
+    description: Apply a completed, validated LLM-authored proposal to the lifecycle store, publishing a new generation with an ai.proposal.apply journal event.
+    trigger: LLM agent completes a job and requests proposal_apply against a submitted work-order
+    preconditions:
+    - WorkOrder persisted
+    - Job in state completed with matching result_ref
+    - proposal identity matches work-order
+    postconditions:
+    - new generation published
+    - journal event recorded
+    - digest advances
+    goals:
+    - Close the LLM-driven authoring loop with cryptographic identity + drift protection
+    success_criteria:
+    - identity match enforced
+    - drift check passes
+    - journal event exactly-once
   interfaces:
   - id: IF-1
     name: main CLI
@@ -2453,16 +2642,14 @@ entities:
     - 'ConsistencyResult: class ConsistencyResult'
     - 'FunctionMetrics: class FunctionMetrics'
     - 'MetricsCollector: class MetricsCollector'
-    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges: list[tuple[str, str]], perturbations:
-      int=5) -> ConsistencyResult'
-    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id: str, block_name: str, runs: int=3)
-      -> ConsistencyResult'
+    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges: list[tuple[str, str]], perturbations: int=5) -> ConsistencyResult'
+    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id: str, block_name: str, runs: int=3) -> ConsistencyResult'
     - 'check_pattern_indicators: def check_pattern_indicators(pattern_name: str, file_contents: dict[str, str]) -> ConsistencyResult'
     - 'get_collector: def get_collector() -> MetricsCollector'
     - 'get_pattern: def get_pattern(name: str) -> dict[str, Any] | None'
     - 'load_patterns: def load_patterns() -> dict[str, Any]'
-    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str, Any]] | None=None, inputs: Callable[[tuple,
-      dict], dict[str, Any]] | None=None, outputs: Callable[[Any], dict[str, Any]] | None=None) -> Callable'
+    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str, Any]] | None=None, inputs: Callable[[tuple, dict], dict[str, Any]] | None=None, outputs: Callable[[Any], dict[str, Any]]
+      | None=None) -> Callable'
     description: 10 public symbols exported
     subkind: library
     kind: INTERFACE
@@ -2496,8 +2683,7 @@ entities:
     - 'ValidationIssue: class ValidationIssue'
     - 'ValidationResult: class ValidationResult'
     - 'compute_component_readiness: def compute_component_readiness(component: Component) -> ComponentReadiness'
-    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature, test_contracts: list[TestContract])
-      -> FunctionReadiness'
+    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature, test_contracts: list[TestContract]) -> FunctionReadiness'
     - 'compute_regen_readiness: def compute_regen_readiness(model: ArchitectureModel) -> RegenReadiness'
     - 'validate_model: def validate_model(model: ArchitectureModel, strict: bool=False, raw_dict: dict | None=None) -> ValidationResult'
     description: 121 public symbols exported
@@ -2527,10 +2713,8 @@ entities:
     component_id: COMP-4
     methods:
     - 'EventChain: class EventChain'
-    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups: list[''ModuleGroup''], block_id: str)
-      -> list[EventChain]'
-    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests: dict[str, ''RecursiveManifest''], block_groups:
-      dict[str, list[''ModuleGroup'']]) -> list[EventChain]'
+    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups: list[''ModuleGroup''], block_id: str) -> list[EventChain]'
+    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests: dict[str, ''RecursiveManifest''], block_groups: dict[str, list[''ModuleGroup'']]) -> list[EventChain]'
     - 'compute_metrics: def compute_metrics(root: Path, config: Optional[Any]=None) -> MetricsResult'
     - 'derive_interfaces: def derive_interfaces(modules: list[ModuleInfo], root: Path) -> list[InterfaceEdge]'
     - 'extract_call_order: def extract_call_order(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> list[str]'
@@ -2559,8 +2743,7 @@ entities:
     component_id: COMP-4
     methods:
     - 'GateResult: class GateResult'
-    - 'check_development_gate: def check_development_gate(model: ArchitectureModel, manifest: Manifest, phase: str | None=None)
-      -> GateResult'
+    - 'check_development_gate: def check_development_gate(model: ArchitectureModel, manifest: Manifest, phase: str | None=None) -> GateResult'
     - 'parse_requirements_doc: def parse_requirements_doc(text: str) -> ArchitectureModel'
     description: 3 public symbols exported
     subkind: library
@@ -2572,10 +2755,8 @@ entities:
     methods:
     - 'ProjectSnapshot: class ProjectSnapshot'
     - 'load_project: def load_project(root: Path) -> ProjectSnapshot'
-    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest: Any, representativeness: Any | None=None)
-      -> Path'
-    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness: Any | None=None, telemetry:
-      dict | None=None) -> Path'
+    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest: Any, representativeness: Any | None=None) -> Path'
+    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness: Any | None=None, telemetry: dict | None=None) -> Path'
     description: 4 public symbols exported
     subkind: library
     kind: INTERFACE
@@ -2585,8 +2766,7 @@ entities:
     component_id: COMP-4
     methods:
     - 'compact_root_model: def compact_root_model(model, *, block_ids: list[str]) -> None'
-    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any, manifest: Manifest) -> tuple[list[Behavior],
-      list[Relationship]]'
+    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any, manifest: Manifest) -> tuple[list[Behavior], list[Relationship]]'
     - 'decompose_model: def decompose_model(project_root, *, model_path=None)'
     - 'enrich_behaviors_from_manifest: def enrich_behaviors_from_manifest(model: Any, manifest: Manifest) -> None'
     - 'enrich_from_manifest: def enrich_from_manifest(model: Any, manifest: Manifest) -> None'
@@ -2606,10 +2786,8 @@ entities:
     - 'RouteInfo: class RouteInfo'
     - 'detect_constraints: def detect_constraints(project_root: Path) -> list[Constraint]'
     - 'detect_routes: def detect_routes(project_root: Path, web_layer_dirs: list[str] | None=None) -> list[RouteInfo]'
-    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path, project: str='''', system: str='''') ->
-      ArchitectureModel'
-    - 'extract_from_code: def extract_from_code(project_root: str | Path, config: ProjectConfig | None=None, manifest: dict
-      | None=None) -> ArchitectureModel'
+    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path, project: str='''', system: str='''') -> ArchitectureModel'
+    - 'extract_from_code: def extract_from_code(project_root: str | Path, config: ProjectConfig | None=None, manifest: dict | None=None) -> ArchitectureModel'
     - 'extract_list_items: def extract_list_items(text: str) -> list[str]'
     - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str, str]'
     - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern: str) -> list[dict[str, str]]'
@@ -2636,8 +2814,7 @@ entities:
     interface_type: library
     component_id: COMP-4
     methods:
-    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None, include_manifests: bool=True, include_module_specs:
-      bool=True) -> ExportResult'
+    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None, include_manifests: bool=True, include_module_specs: bool=True) -> ExportResult'
     - 'concat_behavior_specs: def concat_behavior_specs(repo_path: Path) -> str | None'
     - 'concat_behavior_submodels: def concat_behavior_submodels(repo_path: Path) -> str | None'
     - 'concat_component_models: def concat_component_models(repo_path: Path) -> str | None'
@@ -6149,3 +6326,99 @@ relationships:
   from_id: COMP-2
   to_id: COMP-9
   description: Pipeline depends on Configuration for profile and stage-config loading
+- type: uses
+  from_id: ACT-1
+  to_id: BEH-26
+  description: ACT-1 uses BEH-26 as a curated operational use-case
+- type: uses
+  from_id: ACT-1
+  to_id: BEH-27
+  description: ACT-1 uses BEH-27 as a curated operational use-case
+- type: uses
+  from_id: ACT-1
+  to_id: BEH-LLM
+  description: ACT-1 uses BEH-LLM as a curated operational use-case
+- type: uses
+  from_id: ACT-1
+  to_id: BEH-28
+  description: ACT-1 uses BEH-28 as a curated operational use-case
+- type: uses
+  from_id: ACT-1
+  to_id: BEH-UC-MATERIALIZE
+  description: ACT-1 uses BEH-UC-MATERIALIZE as a curated operational use-case
+- type: uses
+  from_id: ACT-1
+  to_id: BEH-UC-APPLY
+  description: ACT-1 uses BEH-UC-APPLY as a curated operational use-case
+- type: uses
+  from_id: ACT-2
+  to_id: BEH-P1
+  description: ACT-2 uses BEH-P1 as a curated operational use-case
+- type: uses
+  from_id: ACT-2
+  to_id: BEH-28
+  description: ACT-2 uses BEH-28 as a curated operational use-case
+- type: uses
+  from_id: ACT-2
+  to_id: BEH-UC-VALIDATE
+  description: ACT-2 uses BEH-UC-VALIDATE as a curated operational use-case
+- type: uses
+  from_id: ACT-2
+  to_id: BEH-UC-VIEWER
+  description: ACT-2 uses BEH-UC-VIEWER as a curated operational use-case
+- type: uses
+  from_id: ACT-3
+  to_id: BEH-P1
+  description: ACT-3 uses BEH-P1 as a curated operational use-case
+- type: uses
+  from_id: ACT-3
+  to_id: BEH-SIL
+  description: ACT-3 uses BEH-SIL as a curated operational use-case
+- type: uses
+  from_id: ACT-3
+  to_id: BEH-FBK
+  description: ACT-3 uses BEH-FBK as a curated operational use-case
+- type: uses
+  from_id: ACT-3
+  to_id: BEH-UC-VALIDATE
+  description: ACT-3 uses BEH-UC-VALIDATE as a curated operational use-case
+- type: uses
+  from_id: ACT-3
+  to_id: BEH-UC-AUDIT
+  description: ACT-3 uses BEH-UC-AUDIT as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-P1
+  description: ACT-4 uses BEH-P1 as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-26
+  description: ACT-4 uses BEH-26 as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-27
+  description: ACT-4 uses BEH-27 as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-UC-ENRICH
+  description: ACT-4 uses BEH-UC-ENRICH as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-UC-DOCS
+  description: ACT-4 uses BEH-UC-DOCS as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-UC-VIEWER
+  description: ACT-4 uses BEH-UC-VIEWER as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-UC-AUDIT
+  description: ACT-4 uses BEH-UC-AUDIT as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-UC-PUBLISH
+  description: ACT-4 uses BEH-UC-PUBLISH as a curated operational use-case
+- type: uses
+  from_id: ACT-4
+  to_id: BEH-UC-VALIDATE
+  description: ACT-4 uses BEH-UC-VALIDATE as a curated operational use-case

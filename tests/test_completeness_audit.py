@@ -56,6 +56,23 @@ def test_pipeline_root_has_traces_to_component(model, anchor, label):
 
 
 @pytest.mark.parametrize("anchor,label", list(PIPELINES.items()))
+def test_pipeline_has_use_case_narrative(model, anchor, label):
+    """Every pipeline root must carry trigger + goals + success_criteria + postconditions."""
+    root = next((b for b in model.entities.behaviors if b.id == anchor), None)
+    assert root is not None, f"{label} root {anchor} missing"
+    missing = []
+    if not (getattr(root, "trigger", None) or "").strip():
+        missing.append("trigger")
+    if not (getattr(root, "goals", None) or []):
+        missing.append("goals")
+    if not (getattr(root, "success_criteria", None) or []):
+        missing.append("success_criteria")
+    if not (getattr(root, "postconditions", None) or []):
+        missing.append("postconditions")
+    assert not missing, f"{label} root {anchor} missing narrative: {missing}"
+
+
+@pytest.mark.parametrize("anchor,label", list(PIPELINES.items()))
 def test_pipeline_stages_are_triggered(model, anchor, label):
     subs = [b for b in model.entities.behaviors
             if b.id.startswith(anchor + ".")]
