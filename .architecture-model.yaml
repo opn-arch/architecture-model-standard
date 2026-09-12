@@ -10,9 +10,24 @@ meta:
       total_issues: 2
       source_file: .architecture/validation.json
     sil:
-      total_events: 5876
       components_covered: 6
+      total_components: 34
+      total_invocations: 5876
       source_file: .architecture/sil.sqlite
+    test_coverage:
+      components_covered: 17
+      total_components: 34
+      total_tests: 424
+      source_file: .architecture/component_test_map.json
+    model_totals:
+      components: 34
+      capabilities: 97
+      behaviors: 154
+      interfaces: 77
+      actors: 4
+      constraints: 2
+      layers: 7
+      relationships: 787
 entities:
   capabilities:
   - id: CAP-0
@@ -38,8 +53,10 @@ entities:
   - id: CAP-1
     name: Validate Architecture Models
     status: ACTIVE
-    description: Check model correctness, completeness, hierarchy consistency, and domain rules
-    intent: Ensure architecture models are structurally sound and internally consistent before downstream consumption
+    description: Check model correctness, completeness, hierarchy consistency, and
+      domain rules
+    intent: Ensure architecture models are structurally sound and internally consistent
+      before downstream consumption
     moes:
     - Validation score >= 80 on well-formed models
     - Zero false-positive errors on valid models
@@ -47,7 +64,8 @@ entities:
   - id: CAP-2
     name: Extract Architecture from Code
     status: ACTIVE
-    description: Scan source code AST and derive components, relationships, behaviors automatically
+    description: Scan source code AST and derive components, relationships, behaviors
+      automatically
     intent: Bootstrap architecture models from existing codebases without manual authoring
     moes:
     - Extraction produces valid models scoring >= 90 on arbitrary Python repos
@@ -57,7 +75,8 @@ entities:
     name: Run Modular Extraction Pipeline
     status: ACTIVE
     description: Execute 10-stage pipeline (observe→infer→allocate→relate→specify→contract→validate→decompose→synthesize→emit)
-    intent: Provide a repeatable, cacheable, stage-by-stage process for producing architecture models from code
+    intent: Provide a repeatable, cacheable, stage-by-stage process for producing
+      architecture models from code
     moes:
     - All 10 stages complete without error on repos with >200 files
     - Each stage independently runnable with cached predecessors
@@ -65,8 +84,10 @@ entities:
   - id: CAP-4
     name: Generate Reality Manifest
     status: ACTIVE
-    description: Scan source files to produce structural facts (functions, imports, classes, routes, tests)
-    intent: Establish ground-truth code inventory so architecture claims can be verified against reality
+    description: Scan source files to produce structural facts (functions, imports,
+      classes, routes, tests)
+    intent: Establish ground-truth code inventory so architecture claims can be verified
+      against reality
     moes:
     - All non-trivial Python files scanned with function/class extraction
     - Import edges resolved with >95% accuracy
@@ -74,8 +95,10 @@ entities:
   - id: CAP-5
     name: Generate SE Documentation
     status: ACTIVE
-    description: Produce functional analysis, logical architecture, use cases, requirements, V&V, operations docs
-    intent: Auto-generate standards-compliant systems engineering documentation from architecture models
+    description: Produce functional analysis, logical architecture, use cases, requirements,
+      V&V, operations docs
+    intent: Auto-generate standards-compliant systems engineering documentation from
+      architecture models
     moes:
     - Generate at least 15 SE document types from a single model
     - Core docs (health, functional-analysis) regenerate in <1s without LLM
@@ -84,7 +107,8 @@ entities:
     name: Author Model from Requirements
     status: ACTIVE
     description: Parse requirements document into a concept-phase architecture model
-    intent: Enable forward-engineering by converting stakeholder requirements into architecture before code exists
+    intent: Enable forward-engineering by converting stakeholder requirements into
+      architecture before code exists
     moes:
     - Parse markdown requirements into valid ArchitectureModel
     - Actors, capabilities, and constraints correctly extracted
@@ -92,8 +116,10 @@ entities:
   - id: CAP-7
     name: Slice and Query Models
     status: ACTIVE
-    description: Filter model by block, layer, status, artifact for focused context delivery
-    intent: Deliver only relevant architecture context to token-limited AI agents and focused human queries
+    description: Filter model by block, layer, status, artifact for focused context
+      delivery
+    intent: Deliver only relevant architecture context to token-limited AI agents
+      and focused human queries
     moes:
     - Sliced output fits within 4000-token budget
     - Slice preserves all relationships touching included entities
@@ -102,7 +128,8 @@ entities:
     name: Diff Model Versions
     status: ACTIVE
     description: Compare two model versions showing additions, removals, and changes
-    intent: Track architectural evolution over time and detect unintended structural changes
+    intent: Track architectural evolution over time and detect unintended structural
+      changes
     moes:
     - All added, removed, and changed entities detected
     - Diff output human-readable and machine-parseable
@@ -110,8 +137,10 @@ entities:
   - id: CAP-9
     name: Decompose Models Hierarchically
     status: ACTIVE
-    description: Break coarse models into per-system sub-models with parent/child relationships
-    intent: Enable scalable architecture management by splitting large models into focused, self-contained subsystems
+    description: Break coarse models into per-system sub-models with parent/child
+      relationships
+    intent: Enable scalable architecture management by splitting large models into
+      focused, self-contained subsystems
     moes:
     - Components with >=5 files produce autonomous sub-models
     - Each sub-model is independently valid
@@ -119,8 +148,10 @@ entities:
   - id: CAP-10
     name: Enrich Models with Code Intelligence
     status: ACTIVE
-    description: Auto-populate signatures, constants, test contracts, behaviors from source
-    intent: Bridge the gap between abstract architecture and concrete code to enable faithful code regeneration
+    description: Auto-populate signatures, constants, test contracts, behaviors from
+      source
+    intent: Bridge the gap between abstract architecture and concrete code to enable
+      faithful code regeneration
     moes:
     - Signatures populated for >90% of public functions
     - Body hints cover trivial functions (one-liners)
@@ -129,7 +160,8 @@ entities:
     name: Assess Regen Readiness
     status: ACTIVE
     description: Score how well a model captures enough detail to regenerate code
-    intent: Quantify whether a model contains sufficient information for an AI agent to regenerate working code
+    intent: Quantify whether a model contains sufficient information for an AI agent
+      to regenerate working code
     moes:
     - Regen score correlates with actual test pass rate (r > 0.8)
     - Per-component scores with actionable blocker list
@@ -138,7 +170,8 @@ entities:
     name: Check Development Gate
     status: ACTIVE
     description: Verify code reality is tracking toward authored architecture intent
-    intent: Prevent architectural drift by gating development milestones on model-to-code alignment
+    intent: Prevent architectural drift by gating development milestones on model-to-code
+      alignment
     moes:
     - Gate check reports coverage percentage of authored capabilities
     - Unimplemented capabilities clearly flagged
@@ -147,7 +180,8 @@ entities:
     name: Detect and Fix Model Drift
     status: ACTIVE
     description: Compare model against current code, report coverage gaps
-    intent: Keep architecture models synchronized with evolving codebases by detecting and reporting divergence
+    intent: Keep architecture models synchronized with evolving codebases by detecting
+      and reporting divergence
     moes:
     - File coverage reported as percentage of source files modeled
     - Orphan components (no matching files) detected
@@ -155,8 +189,10 @@ entities:
   - id: CAP-14
     name: Manage Global Learnings
     status: ACTIVE
-    description: Store, retrieve, and apply heuristics/archetypes/workflows across pipeline runs
-    intent: Improve pipeline accuracy over time by accumulating and reusing extraction patterns
+    description: Store, retrieve, and apply heuristics/archetypes/workflows across
+      pipeline runs
+    intent: Improve pipeline accuracy over time by accumulating and reusing extraction
+      patterns
     moes:
     - Learnings persisted across pipeline runs
     - Pattern lookup returns relevant heuristics in <100ms
@@ -165,7 +201,8 @@ entities:
     name: Export for AI Consumption
     status: ACTIVE
     description: Produce flat-file exports optimized for token-limited AI environments
-    intent: Make architecture models portable and consumable by AI agents that cannot access the repository directly
+    intent: Make architecture models portable and consumable by AI agents that cannot
+      access the repository directly
     moes:
     - Export includes model, sub-models, docs, manifests, and diagrams
     - Exported package is self-contained (no external dependencies)
@@ -469,7 +506,8 @@ entities:
   - id: CAP-16
     name: Comment-Driven Collaboration
     status: ACTIVE
-    description: 'Users capture free-text comments on any rendered lifecycle artifact via
+    description: 'Users capture free-text comments on any rendered lifecycle artifact
+      via
 
       `architecture-model comment`. Comments persist in .architecture/comments/
 
@@ -481,7 +519,8 @@ entities:
   - id: CAP-17
     name: SI&L Instrumentation
     status: ACTIVE
-    description: 'Every architecturally significant call site emits a telemetry event to
+    description: 'Every architecturally significant call site emits a telemetry event
+      to
 
       the SI&L SQLite store, giving component-scoped invocation counts,
 
@@ -493,7 +532,8 @@ entities:
   - id: CAP-18
     name: LLM Provider Routing
     status: ACTIVE
-    description: 'Task-class-keyed routing policy (.architecture/llm/policy.yaml) picks a
+    description: 'Task-class-keyed routing policy (.architecture/llm/policy.yaml)
+      picks a
 
       provider + model per call, enforces per-call cost caps, and falls back
 
@@ -507,7 +547,8 @@ entities:
     name: Core
     status: ACTIVE
     description: Foundation types, validation, parsing, and model operations
-    intent: Provide the canonical type system and fundamental operations that all other subsystems depend on
+    intent: Provide the canonical type system and fundamental operations that all
+      other subsystems depend on
     goals:
     - Define a complete, extensible type system for architecture entities
     - Validate models with scored, actionable feedback
@@ -537,24 +578,28 @@ entities:
   - id: COMP-1.1
     name: Type System
     status: ACTIVE
-    description: All dataclasses, enums, and type definitions for the architecture model
+    description: All dataclasses, enums, and type definitions for the architecture
+      model
     layer: foundation
     kind: library
     parent_id: COMP-1
     files:
     - src/architecture_model/core/types.py
-    contract: Defines ArchitectureModel, Component, Relationship, Behavior, System, and 17 entity types
+    contract: Defines ArchitectureModel, Component, Relationship, Behavior, System,
+      and 17 entity types
   - id: COMP-1.2
     name: Validation
     status: ACTIVE
-    description: Model validation — JSON schema, referential integrity, hierarchy, cycles, domain rules
+    description: Model validation — JSON schema, referential integrity, hierarchy,
+      cycles, domain rules
     layer: foundation
     kind: library
     parent_id: COMP-1
     files:
     - src/architecture_model/core/validator.py
     - src/architecture_model/spec/__init__.py
-    contract: validate_model() → ValidationResult with scored issues (100 - 10*errors - 2*warnings)
+    contract: validate_model() → ValidationResult with scored issues (100 - 10*errors
+      - 2*warnings)
   - id: COMP-1.3
     name: Parser & Persistence
     status: ACTIVE
@@ -572,7 +617,8 @@ entities:
   - id: COMP-1.4
     name: Model Operations
     status: ACTIVE
-    description: Slice, diff, coverage, impact analysis, clustering, source block assignment
+    description: Slice, diff, coverage, impact analysis, clustering, source block
+      assignment
     layer: foundation
     kind: library
     parent_id: COMP-1
@@ -604,7 +650,8 @@ entities:
     name: Pipeline
     status: ACTIVE
     description: Modular 10-stage extraction pipeline with coordination and caching
-    intent: Automate the entire code-to-model extraction process as a repeatable, cacheable pipeline
+    intent: Automate the entire code-to-model extraction process as a repeatable,
+      cacheable pipeline
     goals:
     - Execute all 10 stages in dependency order with error recovery
     - Cache intermediate results for incremental re-runs
@@ -652,7 +699,8 @@ entities:
     - src/architecture_model/pipeline/report.py
     - src/architecture_model/pipeline/artifacts.py
     - src/architecture_model/pipeline/corrections.py
-    contract: PipelineCoordinator.run(repo_path) orchestrates all stages in dependency order
+    contract: PipelineCoordinator.run(repo_path) orchestrates all stages in dependency
+      order
   - id: COMP-2.2
     name: Observation Stages
     status: ACTIVE
@@ -665,7 +713,8 @@ entities:
     - src/architecture_model/pipeline/observe_types.py
     - src/architecture_model/pipeline/infer.py
     - src/architecture_model/pipeline/infer_types.py
-    contract: observe() → ObserveResult, infer() → InferResult with components and behaviors
+    contract: observe() → ObserveResult, infer() → InferResult with components and
+      behaviors
   - id: COMP-2.3
     name: Allocation & Relation Stages
     status: ACTIVE
@@ -693,7 +742,8 @@ entities:
     - src/architecture_model/pipeline/contract_types.py
     - src/architecture_model/pipeline/validate.py
     - src/architecture_model/pipeline/validate_types.py
-    contract: specify() → SpecifyResult, contract() → ContractResult, validate() → ValidateResult
+    contract: specify() → SpecifyResult, contract() → ContractResult, validate() →
+      ValidateResult
   - id: COMP-2.5
     name: Synthesis & Emit Stages
     status: ACTIVE
@@ -714,7 +764,8 @@ entities:
     name: Manifest
     status: ACTIVE
     description: Source code scanning — AST analysis, import resolution, grouping
-    intent: Produce ground-truth code inventories via AST scanning so architecture claims can be verified
+    intent: Produce ground-truth code inventories via AST scanning so architecture
+      claims can be verified
     goals:
     - Scan all source files and extract functions, classes, imports, and metrics
     - Resolve import edges to build accurate dependency graphs
@@ -785,12 +836,15 @@ entities:
     - src/architecture_model/manifest/blocks.py
     - src/architecture_model/manifest/slicers.py
     - src/architecture_model/manifest/display.py
-    contract: group_modules() → component assignments, generate_manifest() → full manifest
+    contract: group_modules() → component assignments, generate_manifest() → full
+      manifest
   - id: COMP-4
     name: Documentation
     status: ACTIVE
-    description: Architecture documentation generation — component specs, SE docs, diagrams
-    intent: Generate human-readable and AI-consumable architecture documentation from models automatically
+    description: Architecture documentation generation — component specs, SE docs,
+      diagrams
+    intent: Generate human-readable and AI-consumable architecture documentation from
+      models automatically
     goals:
     - Produce component specs, ICDs, and dependency matrices from model data
     - Generate 15+ SE document types following standards-based templates
@@ -874,7 +928,8 @@ entities:
     name: Orchestration
     status: ACTIVE
     description: High-level workflows — enrichment, decomposition, behavior analysis
-    intent: Compose lower-level operations into complete workflows that transform models end-to-end
+    intent: Compose lower-level operations into complete workflows that transform
+      models end-to-end
     goals:
     - Enrich models with signatures, constants, and test contracts from manifests
     - Decompose models into hierarchical per-system sub-models
@@ -932,7 +987,8 @@ entities:
   - id: COMP-6
     name: Extract
     status: ACTIVE
-    description: Code-to-model extraction — route detection, constraint detection, artifact parsing
+    description: Code-to-model extraction — route detection, constraint detection,
+      artifact parsing
     intent: Convert raw code artifacts into structured architecture model entities
     goals:
     - Detect web routes, API endpoints, and framework patterns
@@ -963,7 +1019,8 @@ entities:
     name: Authoring
     status: ACTIVE
     description: Forward-author models from requirements, check development gates
-    intent: Enable architecture-first development by creating models before code and gating progress against them
+    intent: Enable architecture-first development by creating models before code and
+      gating progress against them
     goals:
     - Parse freeform requirements documents into concept-phase models
     - Gate development milestones on architecture coverage
@@ -982,7 +1039,8 @@ entities:
     - src/architecture_model/authoring/__init__.py
     - src/architecture_model/authoring/parser.py
     - src/architecture_model/authoring/gate.py
-    contract: parse_requirements_doc(text) → ArchitectureModel, check_development_gate(model, manifest)
+    contract: parse_requirements_doc(text) → ArchitectureModel, check_development_gate(model,
+      manifest)
     evidence:
       test_coverage:
         test_count: 10
@@ -991,9 +1049,11 @@ entities:
     name: CLI
     status: ACTIVE
     description: Command-line interface — all user-facing commands
-    intent: Expose all architecture operations as CLI commands for developers and CI/CD pipelines
+    intent: Expose all architecture operations as CLI commands for developers and
+      CI/CD pipelines
     goals:
-    - Provide commands for validate, slice, diff, manifest, enrich, decompose, and docs
+    - Provide commands for validate, slice, diff, manifest, enrich, decompose, and
+      docs
     - Support both interactive developer use and headless CI/CD execution
     - Serve as the MCP-wrappable surface for AI agent integration
     trade_offs:
@@ -1012,7 +1072,8 @@ entities:
     - src/architecture_model/cli/__init__.py
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
-    contract: 'CLI commands: validate, slice, diff, manifest, enrich, decompose, docs, coverage, etc.'
+    contract: 'CLI commands: validate, slice, diff, manifest, enrich, decompose, docs,
+      coverage, etc.'
     evidence:
       test_coverage:
         test_count: 16
@@ -1021,7 +1082,8 @@ entities:
     name: Configuration
     status: ACTIVE
     description: Configuration loading, domain profiles, schema definitions
-    intent: Provide discoverable, zero-config project settings with extensibility via domain profiles
+    intent: Provide discoverable, zero-config project settings with extensibility
+      via domain profiles
     goals:
     - Auto-discover project configuration from directory structure
     - Support domain profiles (software, controls, mechanical, electrical)
@@ -1052,7 +1114,8 @@ entities:
     name: Export
     status: ACTIVE
     description: Flat-file export for AI consumption, reference doc generation
-    intent: Package architecture models into portable, self-contained bundles for token-limited AI environments
+    intent: Package architecture models into portable, self-contained bundles for
+      token-limited AI environments
     goals:
     - Export model, sub-models, docs, manifests, and diagrams as flat files
     - Generate reference documentation for offline consumption
@@ -1144,7 +1207,8 @@ entities:
     - src/architecture_model/sil/decorators.py
     - src/architecture_model/sil/record.py
     - src/architecture_model/sil/rollup.py
-    contract: SILStore — append events, roll up per-component metrics for dashboards and evaluate
+    contract: SILStore — append events, roll up per-component metrics for dashboards
+      and evaluate
     evidence:
       sil:
         invocations: 3200
@@ -1242,7 +1306,8 @@ entities:
   - id: COMP-17
     name: Feedback Journals
     status: ACTIVE
-    description: 'Three append-only JSONL streams under .architecture/: gates.jsonl (gate
+    description: 'Three append-only JSONL streams under .architecture/: gates.jsonl
+      (gate
 
       outcomes), drift.jsonl (structural drift snapshots), test_results.jsonl
 
@@ -1266,8 +1331,10 @@ entities:
   - id: ACT-1
     name: LLM Agent (generic frontier model)
     status: ACTIVE
-    description: Any frontier LLM (Anthropic/OpenAI/local) invoked via MCP; provider-specific detail lives in COMP-14 LLM Provider layer.
-    intent: Consume compressed architecture context to generate, validate, and update models
+    description: Any frontier LLM (Anthropic/OpenAI/local) invoked via MCP; provider-specific
+      detail lives in COMP-14 LLM Provider layer.
+    intent: Consume compressed architecture context to generate, validate, and update
+      models
     goals:
     - Load and query architecture models
     - Validate model correctness
@@ -1296,7 +1363,9 @@ entities:
     name: Architect
     status: ACTIVE
     type: human
-    description: System/software architect responsible for extracting, validating, and evolving the architecture model; primary curator of use-cases and target reader of SE docs.
+    description: System/software architect responsible for extracting, validating,
+      and evolving the architecture model; primary curator of use-cases and target
+      reader of SE docs.
   requirements:
   - id: REQ-1
     name: Model validation score threshold
@@ -1316,7 +1385,8 @@ entities:
   - id: REQ-4
     name: Entity type coverage
     status: ACTIVE
-    text: 'Include entities: capabilities, components with signatures, constants, symbols, and files'
+    text: 'Include entities: capabilities, components with signatures, constants,
+      symbols, and files'
     priority: must
   - id: REQ-5
     name: Relationship population
@@ -1351,12 +1421,14 @@ entities:
   - id: REQ-11
     name: Live artifact regeneration
     status: ACTIVE
-    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs) must regenerate in <1s without LLM
+    text: Core artifacts (health, functional-analysis, logical-architecture, component-specs)
+      must regenerate in <1s without LLM
     priority: must
   - id: REQ-12
     name: SE doc completeness
     status: ACTIVE
-    text: Generate at minimum functional analysis, logical architecture, use cases, and requirements analysis
+    text: Generate at minimum functional analysis, logical architecture, use cases,
+      and requirements analysis
     priority: must
   - id: REQ-13
     name: User edit preservation
@@ -1401,7 +1473,8 @@ entities:
   - id: REQ-21
     name: Self-documenting artifacts
     status: ACTIVE
-    text: Generated docs must be readable by both humans and AI without additional context
+    text: Generated docs must be readable by both humans and AI without additional
+      context
     priority: must
   - id: REQ-22
     name: Hierarchical navigation
@@ -1631,7 +1704,8 @@ entities:
     status: ACTIVE
     behavior_type: use_case
     actor_id: ACT-1
-    description: 'AI agent loads a focused architectural context (single F-block, layer,
+    description: 'AI agent loads a focused architectural context (single F-block,
+      layer,
 
       or entity) within its token budget via architect_slice, then produces
 
@@ -1677,7 +1751,8 @@ entities:
     status: ACTIVE
     behavior_type: use_case
     actor_id: ACT-2
-    description: 'Developer edits code, regenerates architecture artifacts, reviews the
+    description: 'Developer edits code, regenerates architecture artifacts, reviews
+      the
 
       viewer, captures a comment, and files an issue — all without leaving
 
@@ -1713,7 +1788,8 @@ entities:
   - id: BEH-P1
     name: Run Extraction Pipeline
     status: ACTIVE
-    description: Orchestrates the 10-stage extraction pipeline (observe->infer->allocate->relate->specify->contract->validate->decompose->synthesize->emit) producing .architecture-model.yaml.
+    description: Orchestrates the 10-stage extraction pipeline (observe->infer->allocate->relate->specify->contract->validate->decompose->synthesize->emit)
+      producing .architecture-model.yaml.
     steps:
     - observe
     - infer
@@ -1725,7 +1801,8 @@ entities:
     - decompose
     - synthesize
     - emit
-    trigger: Operator invokes architect_pipeline MCP tool or architecture-model pipeline CLI on a repository
+    trigger: Operator invokes architect_pipeline MCP tool or architecture-model pipeline
+      CLI on a repository
     goals:
     - Extract auditable architecture model from source code with zero manual configuration
     success_criteria:
@@ -1741,51 +1818,63 @@ entities:
   - id: BEH-P1.1
     name: Run Observe Stage
     status: ACTIVE
-    description: AST-scan all source files to produce module inventory, function/class signatures, imports, routes, and constraints.
+    description: AST-scan all source files to produce module inventory, function/class
+      signatures, imports, routes, and constraints.
   - id: BEH-P1.2
     name: Run Infer Stage
     status: ACTIVE
-    description: Infer semantic entities (actors, capabilities, behaviors) from raw observations using pattern rules.
+    description: Infer semantic entities (actors, capabilities, behaviors) from raw
+      observations using pattern rules.
   - id: BEH-P1.3
     name: Run Allocate Stage
     status: ACTIVE
-    description: Allocate observed files/modules to components using multi-signal affinity (imports, name-prefix, directory).
+    description: Allocate observed files/modules to components using multi-signal
+      affinity (imports, name-prefix, directory).
   - id: BEH-P1.4
     name: Run Relate Stage
     status: ACTIVE
-    description: Derive typed relationships (realizes, depends-on, contains, exposes, constrained-by) between entities.
+    description: Derive typed relationships (realizes, depends-on, contains, exposes,
+      constrained-by) between entities.
   - id: BEH-P1.5
     name: Run Specify Stage
     status: ACTIVE
-    description: Specify interface contracts (routes -> REST spec, argparse -> CLI spec, public API -> library spec).
+    description: Specify interface contracts (routes -> REST spec, argparse -> CLI
+      spec, public API -> library spec).
   - id: BEH-P1.6
     name: Run Contract Stage
     status: ACTIVE
-    description: Bind test contracts to components by mapping test files to their targets.
+    description: Bind test contracts to components by mapping test files to their
+      targets.
   - id: BEH-P1.7
     name: Run Validate Stage
     status: ACTIVE
-    description: Validate the assembled model against structural rules; compute quality score.
+    description: Validate the assembled model against structural rules; compute quality
+      score.
   - id: BEH-P1.8
     name: Run Decompose Stage
     status: ACTIVE
-    description: Decompose oversized components into autonomous subsystems when they exceed thresholds.
+    description: Decompose oversized components into autonomous subsystems when they
+      exceed thresholds.
   - id: BEH-P1.9
     name: Run Synthesize Stage
     status: ACTIVE
-    description: For each detected subsystem, run a scoped sub-pipeline (observe->validate) producing a subsystem model.
+    description: For each detected subsystem, run a scoped sub-pipeline (observe->validate)
+      producing a subsystem model.
   - id: BEH-P1.10
     name: Run Emit Stage
     status: ACTIVE
-    description: 'Emit final artifacts: .architecture-model.yaml, manifests, diagrams, SE docs, lessons.'
+    description: 'Emit final artifacts: .architecture-model.yaml, manifests, diagrams,
+      SE docs, lessons.'
   - id: BEH-P1.R
     name: LLM Refinement
     status: ACTIVE
-    description: Optional LLM refinement pass over intermediate stage outputs (proposal-based, not auto-applied).
+    description: Optional LLM refinement pass over intermediate stage outputs (proposal-based,
+      not auto-applied).
   - id: BEH-P1.1.1
     name: Filter Files
     status: ACTIVE
-    description: Filter source files by extension and exclusion patterns (venv, tests when configured, build artifacts).
+    description: Filter source files by extension and exclusion patterns (venv, tests
+      when configured, build artifacts).
   - id: BEH-P1.1.2
     name: Scan Module
     status: ACTIVE
@@ -1793,35 +1882,43 @@ entities:
   - id: BEH-P1.1.3
     name: Extract Functions
     status: ACTIVE
-    description: Extract top-level and nested function definitions with signatures, decorators, and docstrings.
+    description: Extract top-level and nested function definitions with signatures,
+      decorators, and docstrings.
   - id: BEH-P1.1.4
     name: Extract Classes
     status: ACTIVE
-    description: Extract class definitions with base classes, methods, class-level constants, and docstrings.
+    description: Extract class definitions with base classes, methods, class-level
+      constants, and docstrings.
   - id: BEH-P1.1.5
     name: Extract Constants
     status: ACTIVE
-    description: Extract module-level constants (UPPER_CASE assignments) with their values.
+    description: Extract module-level constants (UPPER_CASE assignments) with their
+      values.
   - id: BEH-P1.1.6
     name: Extract Imports
     status: ACTIVE
-    description: Extract import statements (both `import x` and `from x import y` forms).
+    description: Extract import statements (both `import x` and `from x import y`
+      forms).
   - id: BEH-P1.1.7
     name: Resolve Import Edges
     status: ACTIVE
-    description: Resolve import edges into module->module dependency graph, handling relative imports.
+    description: Resolve import edges into module->module dependency graph, handling
+      relative imports.
   - id: BEH-P1.1.8
     name: Detect Routes
     status: ACTIVE
-    description: Detect HTTP/CLI/message routes via framework signatures (Flask, FastAPI, Click, argparse, Celery).
+    description: Detect HTTP/CLI/message routes via framework signatures (Flask, FastAPI,
+      Click, argparse, Celery).
   - id: BEH-P1.1.9
     name: Detect Constraints
     status: ACTIVE
-    description: Detect constraints via marker patterns (e.g., version pins, threading primitives, security decorators).
+    description: Detect constraints via marker patterns (e.g., version pins, threading
+      primitives, security decorators).
   - id: BEH-P1.1.10
     name: Find Tests
     status: ACTIVE
-    description: Locate test files via naming conventions (test_*.py, *_test.py, tests/ directories).
+    description: Locate test files via naming conventions (test_*.py, *_test.py, tests/
+      directories).
   - id: BEH-P1.1.11
     name: Find Docs
     status: ACTIVE
@@ -1829,7 +1926,8 @@ entities:
   - id: BEH-P1.2.1
     name: Infer from Routes
     status: ACTIVE
-    description: Infer capabilities from detected HTTP/API routes (route groups -> capability).
+    description: Infer capabilities from detected HTTP/API routes (route groups ->
+      capability).
   - id: BEH-P1.2.2
     name: Infer from Triggers
     status: ACTIVE
@@ -1837,7 +1935,8 @@ entities:
   - id: BEH-P1.2.3
     name: Infer Domain Modules
     status: ACTIVE
-    description: Infer domain modules from directory structure signals (domain/, models/, entities/).
+    description: Infer domain modules from directory structure signals (domain/, models/,
+      entities/).
   - id: BEH-P1.2.4
     name: Infer CLI
     status: ACTIVE
@@ -1845,7 +1944,8 @@ entities:
   - id: BEH-P1.2.5
     name: Infer Infrastructure
     status: ACTIVE
-    description: Infer infrastructure modules (config/, db/, cache/, adapters/) as separate concerns.
+    description: Infer infrastructure modules (config/, db/, cache/, adapters/) as
+      separate concerns.
   - id: BEH-P1.2.6
     name: Infer Package Grouping
     status: ACTIVE
@@ -1853,7 +1953,8 @@ entities:
   - id: BEH-P1.2.7
     name: Infer Default Actors
     status: ACTIVE
-    description: Infer default actors (User, System, Scheduler) when no explicit actor signals present.
+    description: Infer default actors (User, System, Scheduler) when no explicit actor
+      signals present.
   - id: BEH-P1.2.8
     name: Infer Behaviors
     status: ACTIVE
@@ -1861,7 +1962,8 @@ entities:
   - id: BEH-P1.2.9
     name: Infer Library Behaviors
     status: ACTIVE
-    description: Infer library API behaviors from public function signatures when no CLI/HTTP present.
+    description: Infer library API behaviors from public function signatures when
+      no CLI/HTTP present.
   - id: BEH-P1.2.10
     name: Infer Fallback
     status: ACTIVE
@@ -1913,7 +2015,8 @@ entities:
   - id: BEH-P1.4.3
     name: Derive Contains
     status: ACTIVE
-    description: Emit `contains` edges (layer -> component, capability -> capability, component -> component).
+    description: Emit `contains` edges (layer -> component, capability -> capability,
+      component -> component).
   - id: BEH-P1.4.4
     name: Derive Exposes
     status: ACTIVE
@@ -1925,15 +2028,18 @@ entities:
   - id: BEH-P1.4.6
     name: Build File Map
     status: ACTIVE
-    description: Build the file->component reverse map for downstream stages (validation, coverage).
+    description: Build the file->component reverse map for downstream stages (validation,
+      coverage).
   - id: BEH-P1.5.1
     name: Specify REST Interfaces
     status: ACTIVE
-    description: Emit REST interface specs from detected HTTP routes with methods, paths, request/response types.
+    description: Emit REST interface specs from detected HTTP routes with methods,
+      paths, request/response types.
   - id: BEH-P1.5.2
     name: Specify CLI Interfaces
     status: ACTIVE
-    description: Emit CLI interface specs from argparse/Click subcommands with arguments and options.
+    description: Emit CLI interface specs from argparse/Click subcommands with arguments
+      and options.
   - id: BEH-P1.5.3
     name: Specify Library API
     status: ACTIVE
@@ -1941,7 +2047,8 @@ entities:
   - id: BEH-P1.5.4
     name: Name Library Interface
     status: ACTIVE
-    description: Name library interfaces canonically based on module or component name.
+    description: Name library interfaces canonically based on module or component
+      name.
   - id: BEH-P1.5.5
     name: Specify Fallback
     status: ACTIVE
@@ -1949,7 +2056,8 @@ entities:
   - id: BEH-P1.6.1
     name: Match by Target
     status: ACTIVE
-    description: Match tests to components by explicit target (imports of production modules).
+    description: Match tests to components by explicit target (imports of production
+      modules).
   - id: BEH-P1.6.2
     name: Match by Directory
     status: ACTIVE
@@ -1973,11 +2081,13 @@ entities:
   - id: BEH-P1.7.5
     name: Compute Confidence
     status: ACTIVE
-    description: Compute overall confidence score combining coverage, coherence, and validation checks.
+    description: Compute overall confidence score combining coverage, coherence, and
+      validation checks.
   - id: BEH-P1.8.1
     name: Identify Autonomous Systems
     status: ACTIVE
-    description: Identify autonomous systems (>=5 files, high internal cohesion, low external coupling).
+    description: Identify autonomous systems (>=5 files, high internal cohesion, low
+      external coupling).
   - id: BEH-P1.8.2
     name: Decompose Large Components
     status: ACTIVE
@@ -2001,7 +2111,8 @@ entities:
   - id: BEH-P1.9.3
     name: Build Model YAML
     status: ACTIVE
-    description: Serialize each subsystem into its own .architecture-model.yaml under .architecture-models/<slug>/.
+    description: Serialize each subsystem into its own .architecture-model.yaml under
+      .architecture-models/<slug>/.
   - id: BEH-P1.9.4
     name: Build Manifest
     status: ACTIVE
@@ -2025,15 +2136,18 @@ entities:
   - id: BEH-P1.10.3
     name: Generate SE Docs
     status: ACTIVE
-    description: Generate the SE document family (ConOps, Functional, Logical, ICD, etc.).
+    description: Generate the SE document family (ConOps, Functional, Logical, ICD,
+      etc.).
   - id: BEH-P1.10.4
     name: Enrich Model
     status: ACTIVE
-    description: Enrich model components with signatures, constants, test contracts from manifest.
+    description: Enrich model components with signatures, constants, test contracts
+      from manifest.
   - id: BEH-P1.10.5
     name: System Interactions
     status: ACTIVE
-    description: Build the system_interactions.md doc showing cross-component call flows.
+    description: Build the system_interactions.md doc showing cross-component call
+      flows.
   - id: BEH-P1.10.6
     name: LLM Reviews
     status: ACTIVE
@@ -2069,63 +2183,73 @@ entities:
     name: Regenerate Artifacts
     status: ACTIVE
     behavior_type: workflow_step
-    description: Run pipeline to refresh .architecture-model.yaml + subsystem models + docs.
+    description: Run pipeline to refresh .architecture-model.yaml + subsystem models
+      + docs.
     preconditions: Source files have changed since last extraction
-    postconditions: .architecture-model.yaml and .architecture-models/** are up to date
+    postconditions: .architecture-model.yaml and .architecture-models/** are up to
+      date
   - id: BEH-28.3
     name: Review Viewer
     status: ACTIVE
     behavior_type: workflow_step
-    description: Open the pipeline dashboard / SE docs in a browser to inspect the refreshed architecture.
+    description: Open the pipeline dashboard / SE docs in a browser to inspect the
+      refreshed architecture.
     preconditions: Artifacts have been regenerated
     postconditions: Developer has visually verified the changes
   - id: BEH-28.4
     name: Capture Comment
     status: ACTIVE
     behavior_type: workflow_step
-    description: Developer files an inline architectural comment via the comment CLI (COMP-16).
+    description: Developer files an inline architectural comment via the comment CLI
+      (COMP-16).
     preconditions: Developer has feedback on an entity, relationship, or diagram
     postconditions: Comment persisted under .architecture/reviews/
   - id: BEH-28.5
     name: Classify Issue
     status: ACTIVE
     behavior_type: workflow_step
-    description: Pattern classifier (7 pattern types) categorizes the comment (CROSS_DEP, MISSING_IMPL, WRONG_CONSTANT, API_MISMATCH, COMPLEX_BEHAVIOR, TEST_INFRA, UNKNOWN).
+    description: Pattern classifier (7 pattern types) categorizes the comment (CROSS_DEP,
+      MISSING_IMPL, WRONG_CONSTANT, API_MISMATCH, COMPLEX_BEHAVIOR, TEST_INFRA, UNKNOWN).
     preconditions: Comment exists
     postconditions: Comment tagged with pattern_type
   - id: BEH-28.6
     name: Optimize Prompt
     status: ACTIVE
     behavior_type: workflow_step
-    description: Adaptive prompt optimizer applies heuristic rules (dep count, contract count, body_hint coverage) to build improved regen prompt.
+    description: Adaptive prompt optimizer applies heuristic rules (dep count, contract
+      count, body_hint coverage) to build improved regen prompt.
     preconditions: Classified issue is present
     postconditions: Optimized prompt ready for regen loop
   - id: BEH-28.7
     name: Run Regen Loop
     status: ACTIVE
     behavior_type: workflow_step
-    description: Regenerate scoped subsystem code and run tests until convergence or iteration cap.
+    description: Regenerate scoped subsystem code and run tests until convergence
+      or iteration cap.
     preconditions: Optimized prompt available; test files exist
     postconditions: Fidelity report + iteration count logged
   - id: BEH-28.8
     name: File Issue
     status: ACTIVE
     behavior_type: workflow_step
-    description: Optionally push the comment upstream via logs-db (external issue tracker).
+    description: Optionally push the comment upstream via logs-db (external issue
+      tracker).
     preconditions: Developer has flagged comment as issue-worthy
     postconditions: External issue ID recorded in comment sidecar
   - id: BEH-28.9
     name: Update Report Card
     status: ACTIVE
     behavior_type: workflow_step
-    description: Generate/update the run report card (A-F grade, fidelity, compression, trend).
+    description: Generate/update the run report card (A-F grade, fidelity, compression,
+      trend).
     preconditions: Regen loop complete
     postconditions: Report card written to .architecture/learning/
   - id: BEH-26.1
     name: Parse Slice Spec
     status: ACTIVE
     behavior_type: workflow_step
-    description: Parse the ModelSlice payload (scope, closure, selectors, temporal filters, child_refs).
+    description: Parse the ModelSlice payload (scope, closure, selectors, temporal
+      filters, child_refs).
     preconditions: Slice spec YAML is well-formed
     postconditions: ModelSlice dataclass instance in memory
   - id: BEH-26.2
@@ -2139,7 +2263,8 @@ entities:
     name: Apply Entity Slice
     status: ACTIVE
     behavior_type: workflow_step
-    description: For entity() scopes, invoke slice_by_entity(model, id, include_hops=1) to root at that entity.
+    description: For entity() scopes, invoke slice_by_entity(model, id, include_hops=1)
+      to root at that entity.
     preconditions: Scope is entity-form
     postconditions: Sub-model rooted at entity_id with 1-hop neighborhood
   - id: BEH-26.4
@@ -2160,21 +2285,24 @@ entities:
     name: Prune by Depth
     status: ACTIVE
     behavior_type: workflow_step
-    description: Walk contains graph BFS from scope root and drop nodes past depth; honor expand_kinds.
+    description: Walk contains graph BFS from scope root and drop nodes past depth;
+      honor expand_kinds.
     preconditions: ViewSpec.depth is set on entity-scoped slice
     postconditions: Depth-bounded sub-model
   - id: BEH-26.7
     name: Merge Descendants
     status: ACTIVE
     behavior_type: workflow_step
-    description: For descendants-scopes, merge root + all transitive contained entities into a single fragment.
+    description: For descendants-scopes, merge root + all transitive contained entities
+      into a single fragment.
     preconditions: Scope is descendants or descendants:each
     postconditions: Merged fragment
   - id: BEH-26.8
     name: Resolve Federated Refs
     status: ACTIVE
     behavior_type: workflow_step
-    description: For federated slices, resolve child_refs (file:// or repo://) to PackageBundle and merge.
+    description: For federated slices, resolve child_refs (file:// or repo://) to
+      PackageBundle and merge.
     preconditions: child_refs is non-empty
     postconditions: External child fragments materialized and merged
   - id: BEH-26.9
@@ -2188,7 +2316,8 @@ entities:
     name: Compute Scope Metadata
     status: ACTIVE
     behavior_type: workflow_step
-    description: For entity-scoped slices, compute parent, peers, scope_chain, inbound/outbound edges, contains_descendants.
+    description: For entity-scoped slices, compute parent, peers, scope_chain, inbound/outbound
+      edges, contains_descendants.
     preconditions: Slice is entity-scoped
     postconditions: MaterializedSlice.provenance.scope_metadata populated
   - id: BEH-26.11
@@ -2202,49 +2331,56 @@ entities:
     name: Load Lesson History
     status: ACTIVE
     behavior_type: workflow_step
-    description: Read .architecture/learning/history.json — accumulated lessons from prior pipeline runs.
+    description: Read .architecture/learning/history.json — accumulated lessons from
+      prior pipeline runs.
     preconditions: history.json is readable
     postconditions: In-memory lesson index with content-hashed IDs
   - id: BEH-27.2
     name: Apply Learned Heuristics
     status: ACTIVE
     behavior_type: workflow_step
-    description: Consult stored heuristics (contract count thresholds, signature correlations) during current run.
+    description: Consult stored heuristics (contract count thresholds, signature correlations)
+      during current run.
     preconditions: Lesson history loaded
     postconditions: Pipeline stages have access to learned rules
   - id: BEH-27.3
     name: Detect Novel Patterns
     status: ACTIVE
     behavior_type: workflow_step
-    description: Compare current-run observations against known patterns; flag anything outside known archetypes.
+    description: Compare current-run observations against known patterns; flag anything
+      outside known archetypes.
     preconditions: Extraction complete
     postconditions: Novel-pattern list with per-pattern evidence
   - id: BEH-27.4
     name: Extract Lessons
     status: ACTIVE
     behavior_type: workflow_step
-    description: Distill new lessons from novel patterns + successful heuristics; dedupe by content hash.
+    description: Distill new lessons from novel patterns + successful heuristics;
+      dedupe by content hash.
     preconditions: Novel patterns identified
     postconditions: New lesson candidates ready for persistence
   - id: BEH-27.5
     name: Detect Dominant Patterns
     status: ACTIVE
     behavior_type: workflow_step
-    description: Identify pattern that dominates the current run (e.g., systemic constant-value issue).
+    description: Identify pattern that dominates the current run (e.g., systemic constant-value
+      issue).
     preconditions: Report card + pattern log available
     postconditions: Dominant pattern flagged with confidence score
   - id: BEH-27.6
     name: Flag Systemic Issues
     status: ACTIVE
     behavior_type: workflow_step
-    description: Escalate dominant patterns that cross severity threshold to the drift-report list.
+    description: Escalate dominant patterns that cross severity threshold to the drift-report
+      list.
     preconditions: Dominant pattern crosses threshold
     postconditions: Drift flag written to .architecture/
   - id: BEH-27.7
     name: Check Doc Drift
     status: ACTIVE
     behavior_type: workflow_step
-    description: Run 4 doc-drift checks (test count, version sync, schema version, Python version) against CONTEXT.md.
+    description: Run 4 doc-drift checks (test count, version sync, schema version,
+      Python version) against CONTEXT.md.
     preconditions: Docs and model both exist
     postconditions: Drift issues logged; simple cases auto-fixed
   - id: BEH-27.8
@@ -2258,31 +2394,36 @@ entities:
     name: Generate Report Card
     status: ACTIVE
     behavior_type: workflow_step
-    description: Score run (A-F grade) on fidelity, compression, novel-pattern rate; compare to trend.
+    description: Score run (A-F grade) on fidelity, compression, novel-pattern rate;
+      compare to trend.
     preconditions: Regen/extract run complete
     postconditions: Report card persisted; trend delta computed
   - id: BEH-27.10
     name: Append to Learning Curve
     status: ACTIVE
     behavior_type: workflow_step
-    description: Append current run metrics to learning_curve table for cross-run trend analysis.
+    description: Append current run metrics to learning_curve table for cross-run
+      trend analysis.
     preconditions: Report card generated
     postconditions: learning_curve row appended
   - id: BEH-27.11
     name: Persist Lessons
     status: ACTIVE
     behavior_type: workflow_step
-    description: Write new lessons back to history.json with atomic write + content-hash dedupe.
+    description: Write new lessons back to history.json with atomic write + content-hash
+      dedupe.
     preconditions: Lesson candidates ready
     postconditions: history.json updated
   - id: BEH-LLM
     name: LLM Provider Routing
     status: ACTIVE
     behavior_type: orchestrator
-    description: Route LLM calls through a task-class-keyed policy that picks provider + model, enforces cost caps, and falls back on error.
+    description: Route LLM calls through a task-class-keyed policy that picks provider
+      + model, enforces cost caps, and falls back on error.
     preconditions: LLM policy file exists at .architecture/llm/policy.yaml
     postconditions: Call routed to concrete provider or fallback fired
-    trigger: Any component requesting text completion, structured output, streaming, or tokenization via LLMProvider Protocol
+    trigger: Any component requesting text completion, structured output, streaming,
+      or tokenization via LLMProvider Protocol
     goals:
     - Route model calls to the right provider under a global cost budget
     - Record provenance so outputs are reproducible
@@ -2294,7 +2435,8 @@ entities:
     name: Load Policy
     status: ACTIVE
     behavior_type: workflow_step
-    description: Read .architecture/llm/policy.yaml; parse RoutingRule per TaskClass with max_cost_usd_per_call + fallback.
+    description: Read .architecture/llm/policy.yaml; parse RoutingRule per TaskClass
+      with max_cost_usd_per_call + fallback.
     preconditions: policy.yaml exists and is well-formed
     postconditions: Policy in memory keyed by TaskClass
   - id: BEH-LLM.2
@@ -2308,14 +2450,16 @@ entities:
     name: Select Provider
     status: ACTIVE
     behavior_type: workflow_step
-    description: Instantiate the provider adapter (MCPProvider|FrontierProvider|RelayExtProvider) per the rule.
+    description: Instantiate the provider adapter (MCPProvider|FrontierProvider|RelayExtProvider)
+      per the rule.
     preconditions: RoutingRule identifies provider name
     postconditions: Concrete LLMProvider instance ready
   - id: BEH-LLM.4
     name: Enforce Cost Cap
     status: ACTIVE
     behavior_type: workflow_step
-    description: Check per-call cost estimate against max_cost_usd_per_call before dispatch.
+    description: Check per-call cost estimate against max_cost_usd_per_call before
+      dispatch.
     preconditions: Provider tokenize() gives token estimate
     postconditions: Call proceeds or is denied with CostCapExceededError
   - id: BEH-LLM.5
@@ -2336,7 +2480,8 @@ entities:
     name: Stamp Provenance
     status: ACTIVE
     behavior_type: workflow_step
-    description: Record meta.provider = {name, model, policy_ref} on any model output generated by this call.
+    description: Record meta.provider = {name, model, policy_ref} on any model output
+      generated by this call.
     preconditions: Successful response
     postconditions: Output artifact stamped with provider provenance
   - id: BEH-LLM.8
@@ -2350,7 +2495,8 @@ entities:
     name: SI&L Telemetry Recording
     status: ACTIVE
     behavior_type: orchestrator
-    description: Instrumented call sites emit telemetry events into .architecture/sil.sqlite (ring buffer, 50 events per component), rolled up per-component to yaml snapshots.
+    description: Instrumented call sites emit telemetry events into .architecture/sil.sqlite
+      (ring buffer, 50 events per component), rolled up per-component to yaml snapshots.
     preconditions: sil.sqlite is writable
     postconditions: Event appended and rollup snapshot refreshed
     trigger: Any instrumented pipeline stage, renderer, validator, or MCP tool invocation
@@ -2364,21 +2510,24 @@ entities:
     name: Bind Store to Context
     status: ACTIVE
     behavior_type: workflow_step
-    description: Bind SILStore to current call context; without a bound store the @sil_instrument decorator is a no-op.
+    description: Bind SILStore to current call context; without a bound store the
+      @sil_instrument decorator is a no-op.
     preconditions: SILStore instance available
     postconditions: Context carries active store
   - id: BEH-SIL.2
     name: Instrument Call Site
     status: ACTIVE
     behavior_type: workflow_step
-    description: Decorate the target function with @sil_instrument specifying component_id + kind (stage:|renderer:|validator:|mcp_tool:).
+    description: Decorate the target function with @sil_instrument specifying component_id
+      + kind (stage:|renderer:|validator:|mcp_tool:).
     preconditions: Function is architecturally significant
     postconditions: Function wrapped with SI&L capture
   - id: BEH-SIL.3
     name: Capture Invocation
     status: ACTIVE
     behavior_type: workflow_step
-    description: 'On call entry: record start_ts, args-fingerprint, component_id, kind.'
+    description: 'On call entry: record start_ts, args-fingerprint, component_id,
+      kind.'
     preconditions: Instrumented function invoked
     postconditions: Start event buffered
   - id: BEH-SIL.4
@@ -2399,28 +2548,32 @@ entities:
     name: Roll Up Metrics
     status: ACTIVE
     behavior_type: workflow_step
-    description: Aggregate last-N events per component into invocations_7d, failure_rate_7d, avg_duration_ms.
+    description: Aggregate last-N events per component into invocations_7d, failure_rate_7d,
+      avg_duration_ms.
     preconditions: Events persisted
     postconditions: Rollup snapshot written to .architecture/sil/<component_id>.yaml
   - id: BEH-SIL.7
     name: Serve Health Query
     status: ACTIVE
     behavior_type: workflow_step
-    description: Respond to architect_component_health MCP call with {record, trend} envelope.
+    description: Respond to architect_component_health MCP call with {record, trend}
+      envelope.
     preconditions: Rollup snapshot exists
     postconditions: JSON envelope returned to caller
   - id: BEH-SIL.8
     name: Merge Evaluate Summary
     status: ACTIVE
     behavior_type: workflow_step
-    description: When architect_evaluate runs, inject sil_summary key with per-component metrics into its report.
+    description: When architect_evaluate runs, inject sil_summary key with per-component
+      metrics into its report.
     preconditions: evaluate tool invoked
     postconditions: sil_summary present in evaluate response
   - id: BEH-FBK
     name: Feedback Journal Append
     status: ACTIVE
     behavior_type: orchestrator
-    description: Append-only journals (gates.jsonl, drift.jsonl, test_results.jsonl) under .architecture/ record outcomes for surgical view invalidation.
+    description: Append-only journals (gates.jsonl, drift.jsonl, test_results.jsonl)
+      under .architecture/ record outcomes for surgical view invalidation.
     preconditions: Feedback event ready
     postconditions: Event durably appended with content_kind
     trigger: Gate execution, drift detection, or JUnit test batch ingest
@@ -2434,21 +2587,24 @@ entities:
     name: Append Gate Event
     status: ACTIVE
     behavior_type: workflow_step
-    description: Write GateEvent(gate_id, outcome, findings, model_revision, ts) to gates.jsonl (fail-soft on write error).
+    description: Write GateEvent(gate_id, outcome, findings, model_revision, ts) to
+      gates.jsonl (fail-soft on write error).
     preconditions: Gate tool ran
     postconditions: Event appended to .architecture/gates.jsonl
   - id: BEH-FBK.2
     name: Append Drift Snapshot
     status: ACTIVE
     behavior_type: workflow_step
-    description: Write drift snapshot (broken_ref, unrealized_capability, orphan, missing_impl) to drift.jsonl after every pipeline run.
+    description: Write drift snapshot (broken_ref, unrealized_capability, orphan,
+      missing_impl) to drift.jsonl after every pipeline run.
     preconditions: Pipeline stage completed
     postconditions: Snapshot appended to .architecture/drift.jsonl
   - id: BEH-FBK.3
     name: Ingest JUnit Batch
     status: ACTIVE
     behavior_type: workflow_step
-    description: Parse pytest/JUnit XML into TestResult batch and append to test_results.jsonl via feedback.junit_ingest.ingest_junit.
+    description: Parse pytest/JUnit XML into TestResult batch and append to test_results.jsonl
+      via feedback.junit_ingest.ingest_junit.
     preconditions: JUnit XML file exists
     postconditions: Batch appended to .architecture/test_results.jsonl
   - id: BEH-FBK.4
@@ -2462,7 +2618,8 @@ entities:
     name: Enrich Model with Manifest Data
     status: ACTIVE
     type: use_case
-    description: Copy AST-derived signatures, constants, and test contracts from the Reality Manifest onto model components to raise regen readiness.
+    description: Copy AST-derived signatures, constants, and test contracts from the
+      Reality Manifest onto model components to raise regen readiness.
     trigger: Architect invokes architecture-model enrich <path> after a pipeline run
     preconditions:
     - model exists at path
@@ -2472,7 +2629,8 @@ entities:
     - components carry test_contracts[]
     - regen_readiness score improves
     goals:
-    - Bridge the abstract architecture model to code-level reality for downstream regen
+    - Bridge the abstract architecture model to code-level reality for downstream
+      regen
     success_criteria:
     - signature coverage >= 60%
     - test_contract count grows
@@ -2480,7 +2638,8 @@ entities:
     name: Validate Architecture Model
     status: ACTIVE
     type: use_case
-    description: Run structural validation over an architecture model and report a 0-100 score with categorized issues.
+    description: Run structural validation over an architecture model and report a
+      0-100 score with categorized issues.
     trigger: Architect or CI invokes architecture-model validate <path>
     preconditions:
     - model file parses as YAML
@@ -2498,7 +2657,8 @@ entities:
     name: Generate SE Documentation
     status: ACTIVE
     type: use_case
-    description: Emit the 11-doc Systems Engineering suite (ConOps, Functional Analysis, Requirements, V&V, Ops Manual, etc.) from the architecture model.
+    description: Emit the 11-doc Systems Engineering suite (ConOps, Functional Analysis,
+      Requirements, V&V, Ops Manual, etc.) from the architecture model.
     trigger: Architect invokes architecture-model docs <path> --formats se_all
     preconditions:
     - valid model
@@ -2514,7 +2674,8 @@ entities:
     name: Generate Interactive HTML Viewer
     status: ACTIVE
     type: use_case
-    description: Produce a self-contained HTML viewer embedding all entities, relationships, evidence, and SE docs for offline review.
+    description: Produce a self-contained HTML viewer embedding all entities, relationships,
+      evidence, and SE docs for offline review.
     trigger: Architect invokes architecture-model viewer <path>
     preconditions:
     - valid model
@@ -2531,7 +2692,9 @@ entities:
     name: Audit Six Operational Pipelines
     status: ACTIVE
     type: use_case
-    description: Report per-pipeline gaps (missing descriptions, missing traces-to, isolated sub-behaviors, containment holes) across EXTRACT/SLICE/SELF-IMPROVEMENT/DEV-LOOP/LLM-PROVIDER/LOGGING pipelines.
+    description: Report per-pipeline gaps (missing descriptions, missing traces-to,
+      isolated sub-behaviors, containment holes) across EXTRACT/SLICE/SELF-IMPROVEMENT/DEV-LOOP/LLM-PROVIDER/LOGGING
+      pipelines.
     trigger: Architect or CI invokes architecture-model audit [--pipeline ID] [--strict]
     preconditions:
     - valid model
@@ -2546,7 +2709,8 @@ entities:
     name: Publish Architecture Package Generation
     status: ACTIVE
     type: use_case
-    description: Commit a new generation of the root architecture package to the lifecycle store with a stable digest and revision id.
+    description: Commit a new generation of the root architecture package to the lifecycle
+      store with a stable digest and revision id.
     trigger: Architect (or automation) invokes package_publish on a validated model
     preconditions:
     - model parses and validates
@@ -2564,8 +2728,10 @@ entities:
     name: Materialize Slice and Project View
     status: ACTIVE
     type: use_case
-    description: Reduce the root package to a scoped ModelSlice, then run a registered projector to yield a DiagramSpec ready for rendering.
-    trigger: LLM agent or renderer requests a scoped fragment via slice_materialize + view_project
+    description: Reduce the root package to a scoped ModelSlice, then run a registered
+      projector to yield a DiagramSpec ready for rendering.
+    trigger: LLM agent or renderer requests a scoped fragment via slice_materialize
+      + view_project
     preconditions:
     - published package generation exists
     - slice + view specs valid
@@ -2573,7 +2739,8 @@ entities:
     - MaterializedSlice with digest returned
     - ProjectedView carries freshness stamp
     goals:
-    - Substrate every doc, diagram, and derived artifact through a single deterministic pipeline
+    - Substrate every doc, diagram, and derived artifact through a single deterministic
+      pipeline
     success_criteria:
     - byte-identical outputs for identical inputs
     - no dangling refs post-closure
@@ -2581,8 +2748,10 @@ entities:
     name: Apply Validated AI Proposal
     status: ACTIVE
     type: use_case
-    description: Apply a completed, validated LLM-authored proposal to the lifecycle store, publishing a new generation with an ai.proposal.apply journal event.
-    trigger: LLM agent completes a job and requests proposal_apply against a submitted work-order
+    description: Apply a completed, validated LLM-authored proposal to the lifecycle
+      store, publishing a new generation with an ai.proposal.apply journal event.
+    trigger: LLM agent completes a job and requests proposal_apply against a submitted
+      work-order
     preconditions:
     - WorkOrder persisted
     - Job in state completed with matching result_ref
@@ -2626,7 +2795,8 @@ entities:
     interface_type: library
     component_id: COMP-3
     methods:
-    - 'extract_behavior_detail: def extract_behavior_detail(source_file: str, function_name: str) -> dict'
+    - 'extract_behavior_detail: def extract_behavior_detail(source_file: str, function_name:
+      str) -> dict'
     - 'find_caller: def find_caller(tree, function_name: str) -> str'
     - 'find_function: def find_function(tree, function_name: str)'
     - 'main: def main()'
@@ -2642,14 +2812,18 @@ entities:
     - 'ConsistencyResult: class ConsistencyResult'
     - 'FunctionMetrics: class FunctionMetrics'
     - 'MetricsCollector: class MetricsCollector'
-    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges: list[tuple[str, str]], perturbations: int=5) -> ConsistencyResult'
-    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id: str, block_name: str, runs: int=3) -> ConsistencyResult'
-    - 'check_pattern_indicators: def check_pattern_indicators(pattern_name: str, file_contents: dict[str, str]) -> ConsistencyResult'
+    - 'check_cluster_stability: def check_cluster_stability(modules: list[str], edges:
+      list[tuple[str, str]], perturbations: int=5) -> ConsistencyResult'
+    - 'check_decompose_idempotency: def check_decompose_idempotency(manifest, *, block_id:
+      str, block_name: str, runs: int=3) -> ConsistencyResult'
+    - 'check_pattern_indicators: def check_pattern_indicators(pattern_name: str, file_contents:
+      dict[str, str]) -> ConsistencyResult'
     - 'get_collector: def get_collector() -> MetricsCollector'
     - 'get_pattern: def get_pattern(name: str) -> dict[str, Any] | None'
     - 'load_patterns: def load_patterns() -> dict[str, Any]'
-    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str, Any]] | None=None, inputs: Callable[[tuple, dict], dict[str, Any]] | None=None, outputs: Callable[[Any], dict[str, Any]]
-      | None=None) -> Callable'
+    - 'monitored: def monitored(module: str, *, quality: Callable[[Any], dict[str,
+      Any]] | None=None, inputs: Callable[[tuple, dict], dict[str, Any]] | None=None,
+      outputs: Callable[[Any], dict[str, Any]] | None=None) -> Callable'
     description: 10 public symbols exported
     subkind: library
     kind: INTERFACE
@@ -2682,10 +2856,14 @@ entities:
     - 'Severity: class Severity'
     - 'ValidationIssue: class ValidationIssue'
     - 'ValidationResult: class ValidationResult'
-    - 'compute_component_readiness: def compute_component_readiness(component: Component) -> ComponentReadiness'
-    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature, test_contracts: list[TestContract]) -> FunctionReadiness'
-    - 'compute_regen_readiness: def compute_regen_readiness(model: ArchitectureModel) -> RegenReadiness'
-    - 'validate_model: def validate_model(model: ArchitectureModel, strict: bool=False, raw_dict: dict | None=None) -> ValidationResult'
+    - 'compute_component_readiness: def compute_component_readiness(component: Component)
+      -> ComponentReadiness'
+    - 'compute_function_readiness: def compute_function_readiness(sig: FunctionSignature,
+      test_contracts: list[TestContract]) -> FunctionReadiness'
+    - 'compute_regen_readiness: def compute_regen_readiness(model: ArchitectureModel)
+      -> RegenReadiness'
+    - 'validate_model: def validate_model(model: ArchitectureModel, strict: bool=False,
+      raw_dict: dict | None=None) -> ValidationResult'
     description: 121 public symbols exported
     subkind: library
     kind: INTERFACE
@@ -2703,7 +2881,8 @@ entities:
     - 'discover_config: def discover_config(root: Path) -> tuple[ProjectConfig, DiscoveryReport]'
     - 'get_config: def get_config(root: Path) -> ProjectConfig'
     - 'load_config: def load_config(root: Path) -> ProjectConfig'
-    - 'write_config: def write_config(config: ProjectConfig, root: Path | None=None) -> Path'
+    - 'write_config: def write_config(config: ProjectConfig, root: Path | None=None)
+      -> Path'
     description: 13 public symbols exported
     subkind: library
     kind: INTERFACE
@@ -2713,14 +2892,23 @@ entities:
     component_id: COMP-4
     methods:
     - 'EventChain: class EventChain'
-    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups: list[''ModuleGroup''], block_id: str) -> list[EventChain]'
-    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests: dict[str, ''RecursiveManifest''], block_groups: dict[str, list[''ModuleGroup'']]) -> list[EventChain]'
-    - 'compute_metrics: def compute_metrics(root: Path, config: Optional[Any]=None) -> MetricsResult'
-    - 'derive_interfaces: def derive_interfaces(modules: list[ModuleInfo], root: Path) -> list[InterfaceEdge]'
-    - 'extract_call_order: def extract_call_order(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> list[str]'
-    - 'extract_control_flow: def extract_control_flow(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> list[str]'
-    - 'extract_guards: def extract_guards(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef]) -> list[str]'
-    - 'get_manifest_slice: def get_manifest_slice(manifest: Manifest | dict[str, Any], artifact_name: str) -> str'
+    - 'build_block_chains: def build_block_chains(block_manifest: ''Manifest'', groups:
+      list[''ModuleGroup''], block_id: str) -> list[EventChain]'
+    - 'build_cross_block_chains: def build_cross_block_chains(recursive_manifests:
+      dict[str, ''RecursiveManifest''], block_groups: dict[str, list[''ModuleGroup'']])
+      -> list[EventChain]'
+    - 'compute_metrics: def compute_metrics(root: Path, config: Optional[Any]=None)
+      -> MetricsResult'
+    - 'derive_interfaces: def derive_interfaces(modules: list[ModuleInfo], root: Path)
+      -> list[InterfaceEdge]'
+    - 'extract_call_order: def extract_call_order(func_node: Union[ast.FunctionDef,
+      ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_control_flow: def extract_control_flow(func_node: Union[ast.FunctionDef,
+      ast.AsyncFunctionDef]) -> list[str]'
+    - 'extract_guards: def extract_guards(func_node: Union[ast.FunctionDef, ast.AsyncFunctionDef])
+      -> list[str]'
+    - 'get_manifest_slice: def get_manifest_slice(manifest: Manifest | dict[str, Any],
+      artifact_name: str) -> str'
     - 'scan_file: def scan_file(root: Path, filepath: Path, cache=None) -> ModuleInfo'
     description: 54 public symbols exported
     subkind: library
@@ -2730,7 +2918,8 @@ entities:
     interface_type: library
     component_id: COMP-4
     methods:
-    - 'collect_py_files: def collect_py_files(directory: Path, recursive: bool=True, exclude_init: bool=False) -> list[Path]'
+    - 'collect_py_files: def collect_py_files(directory: Path, recursive: bool=True,
+      exclude_init: bool=False) -> list[Path]'
     - 'discover_source_files: def discover_source_files(project_root: Path) -> list[Path]'
     - 'discover_test_files: def discover_test_files(project_root: Path) -> list[Path]'
     - 'is_excluded_dir: def is_excluded_dir(path: Path) -> bool'
@@ -2743,7 +2932,8 @@ entities:
     component_id: COMP-4
     methods:
     - 'GateResult: class GateResult'
-    - 'check_development_gate: def check_development_gate(model: ArchitectureModel, manifest: Manifest, phase: str | None=None) -> GateResult'
+    - 'check_development_gate: def check_development_gate(model: ArchitectureModel,
+      manifest: Manifest, phase: str | None=None) -> GateResult'
     - 'parse_requirements_doc: def parse_requirements_doc(text: str) -> ArchitectureModel'
     description: 3 public symbols exported
     subkind: library
@@ -2755,8 +2945,10 @@ entities:
     methods:
     - 'ProjectSnapshot: class ProjectSnapshot'
     - 'load_project: def load_project(root: Path) -> ProjectSnapshot'
-    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest: Any, representativeness: Any | None=None) -> Path'
-    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness: Any | None=None, telemetry: dict | None=None) -> Path'
+    - 'save_block: def save_block(root: Path, block_id: str, model: Any, manifest:
+      Any, representativeness: Any | None=None) -> Path'
+    - 'save_project: def save_project(root: Path, model: Any, manifest: Any, representativeness:
+      Any | None=None, telemetry: dict | None=None) -> Path'
     description: 4 public symbols exported
     subkind: library
     kind: INTERFACE
@@ -2765,16 +2957,25 @@ entities:
     interface_type: library
     component_id: COMP-4
     methods:
-    - 'compact_root_model: def compact_root_model(model, *, block_ids: list[str]) -> None'
-    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any, manifest: Manifest) -> tuple[list[Behavior], list[Relationship]]'
+    - 'compact_root_model: def compact_root_model(model, *, block_ids: list[str])
+      -> None'
+    - 'create_behaviors_from_manifest: def create_behaviors_from_manifest(model: Any,
+      manifest: Manifest) -> tuple[list[Behavior], list[Relationship]]'
     - 'decompose_model: def decompose_model(project_root, *, model_path=None)'
-    - 'enrich_behaviors_from_manifest: def enrich_behaviors_from_manifest(model: Any, manifest: Manifest) -> None'
-    - 'enrich_from_manifest: def enrich_from_manifest(model: Any, manifest: Manifest) -> None'
-    - 'enrich_from_source_graph: def enrich_from_source_graph(model: Any, graph: ''SourceGraph'') -> None'
-    - 'enrich_with_block_context: def enrich_with_block_context(model: Any, recursive_manifests: dict) -> None'
-    - 'extract_component_interfaces: def extract_component_interfaces(model: Any, graph: ''SourceGraph'') -> int'
-    - 'infer_composite_behaviors: def infer_composite_behaviors(model: ArchitectureModel) -> ArchitectureModel'
-    - 'manifest_to_source_graph: def manifest_to_source_graph(manifest: Any, model: Any) -> ''SourceGraph'''
+    - 'enrich_behaviors_from_manifest: def enrich_behaviors_from_manifest(model: Any,
+      manifest: Manifest) -> None'
+    - 'enrich_from_manifest: def enrich_from_manifest(model: Any, manifest: Manifest)
+      -> None'
+    - 'enrich_from_source_graph: def enrich_from_source_graph(model: Any, graph: ''SourceGraph'')
+      -> None'
+    - 'enrich_with_block_context: def enrich_with_block_context(model: Any, recursive_manifests:
+      dict) -> None'
+    - 'extract_component_interfaces: def extract_component_interfaces(model: Any,
+      graph: ''SourceGraph'') -> int'
+    - 'infer_composite_behaviors: def infer_composite_behaviors(model: ArchitectureModel)
+      -> ArchitectureModel'
+    - 'manifest_to_source_graph: def manifest_to_source_graph(manifest: Any, model:
+      Any) -> ''SourceGraph'''
     description: 35 public symbols exported
     subkind: library
     kind: INTERFACE
@@ -2785,12 +2986,17 @@ entities:
     methods:
     - 'RouteInfo: class RouteInfo'
     - 'detect_constraints: def detect_constraints(project_root: Path) -> list[Constraint]'
-    - 'detect_routes: def detect_routes(project_root: Path, web_layer_dirs: list[str] | None=None) -> list[RouteInfo]'
-    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path, project: str='''', system: str='''') -> ArchitectureModel'
-    - 'extract_from_code: def extract_from_code(project_root: str | Path, config: ProjectConfig | None=None, manifest: dict | None=None) -> ArchitectureModel'
+    - 'detect_routes: def detect_routes(project_root: Path, web_layer_dirs: list[str]
+      | None=None) -> list[RouteInfo]'
+    - 'extract_from_artifacts: def extract_from_artifacts(artifact_dir: str | Path,
+      project: str='''', system: str='''') -> ArchitectureModel'
+    - 'extract_from_code: def extract_from_code(project_root: str | Path, config:
+      ProjectConfig | None=None, manifest: dict | None=None) -> ArchitectureModel'
     - 'extract_list_items: def extract_list_items(text: str) -> list[str]'
-    - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str, str]'
-    - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern: str) -> list[dict[str, str]]'
+    - 'extract_sections: def extract_sections(markdown: str, level: int=2) -> dict[str,
+      str]'
+    - 'find_table_after_heading: def find_table_after_heading(markdown: str, heading_pattern:
+      str) -> list[dict[str, str]]'
     - 'main: def main()'
     - 'parse_tables: def parse_tables(markdown: str) -> list[list[dict[str, str]]]'
     description: 10 public symbols exported
@@ -2814,10 +3020,14 @@ entities:
     interface_type: library
     component_id: COMP-4
     methods:
-    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None, include_manifests: bool=True, include_module_specs: bool=True) -> ExportResult'
-    - 'concat_behavior_specs: def concat_behavior_specs(repo_path: Path) -> str | None'
-    - 'concat_behavior_submodels: def concat_behavior_submodels(repo_path: Path) -> str | None'
-    - 'concat_component_models: def concat_component_models(repo_path: Path) -> str | None'
+    - 'build_flat_export: def build_flat_export(repo_path: Path, prefix: str | None=None,
+      include_manifests: bool=True, include_module_specs: bool=True) -> ExportResult'
+    - 'concat_behavior_specs: def concat_behavior_specs(repo_path: Path) -> str |
+      None'
+    - 'concat_behavior_submodels: def concat_behavior_submodels(repo_path: Path) ->
+      str | None'
+    - 'concat_component_models: def concat_component_models(repo_path: Path) -> str
+      | None'
     - 'concat_diagrams: def concat_diagrams(repo_path: Path) -> str | None'
     - 'concat_docs: def concat_docs(repo_path: Path) -> str | None'
     - 'concat_module_specs: def concat_module_specs(repo_path: Path) -> str | None'
@@ -6265,7 +6475,8 @@ relationships:
 - type: traces-to
   from_id: COMP-3
   to_id: BEH-P1.1
-  description: COMP-3 (Manifest) provides AST scan services orchestrated by Observe stage
+  description: COMP-3 (Manifest) provides AST scan services orchestrated by Observe
+    stage
 - type: traces-to
   from_id: COMP-12
   to_id: BEH-P1.1.1
@@ -6297,7 +6508,8 @@ relationships:
 - type: traces-to
   from_id: COMP-3.2
   to_id: BEH-P1.1.8
-  description: COMP-3.2 (Graph & Analysis) detects HTTP/CLI/message routes via endpoint extractor
+  description: COMP-3.2 (Graph & Analysis) detects HTTP/CLI/message routes via endpoint
+    extractor
 - type: traces-to
   from_id: COMP-3.2
   to_id: BEH-P1.1.9
@@ -6313,7 +6525,8 @@ relationships:
 - type: traces-to
   from_id: COMP-3.3
   to_id: BEH-P1.8
-  description: COMP-3.3 (Grouping & Generation) produces component grouping consumed by Decompose stage
+  description: COMP-3.3 (Grouping & Generation) produces component grouping consumed
+    by Decompose stage
 - type: depends-on
   from_id: COMP-2.2
   to_id: COMP-3.1
@@ -6321,7 +6534,8 @@ relationships:
 - type: depends-on
   from_id: COMP-2.5
   to_id: COMP-3.3
-  description: Synthesis & Emit Stages depend on Manifest Grouping & Generation for boundary detection
+  description: Synthesis & Emit Stages depend on Manifest Grouping & Generation for
+    boundary detection
 - type: depends-on
   from_id: COMP-2
   to_id: COMP-9
