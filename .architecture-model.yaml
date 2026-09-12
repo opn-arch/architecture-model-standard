@@ -6057,3 +6057,27 @@ relationships:
   from_id: BEH-FBK
   to_id: BEH-FBK.4
   description: BEH-FBK contains logging step BEH-FBK.4
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26
+  description: COMP-1.4 (Model Operations) realizes SLICE pipeline root BEH-26
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27
+  description: COMP-11 realizes SELF-IMPROVEMENT pipeline root BEH-27
+- type: traces-to
+  from_id: COMP-2
+  to_id: BEH-28
+  description: COMP-2 (Pipeline) realizes DEV-LOOP pipeline root BEH-28
+- type: traces-to
+  from_id: COMP-14
+  to_id: BEH-LLM
+  description: COMP-14 realizes LLM-PROVIDER pipeline root BEH-LLM
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL
+  description: COMP-13 realizes SI&L LOGGING pipeline root BEH-SIL
+- type: traces-to
+  from_id: COMP-17
+  to_id: BEH-FBK
+  description: COMP-17 realizes FEEDBACK JOURNALS pipeline root BEH-FBK

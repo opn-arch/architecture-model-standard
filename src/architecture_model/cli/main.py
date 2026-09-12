@@ -176,6 +176,17 @@ def main(argv: list[str] | None = None) -> int:
     from architecture_model.cli import migrate as _migrate_cli
     _migrate_cli.add_subparser(subparsers)
 
+    # --- audit ---
+    p_audit = subparsers.add_parser(
+        "audit",
+        help="Six-pipeline completeness audit (behavior descriptions, "
+             "triggers, evidence, RTM coverage)",
+    )
+    p_audit.add_argument("model", nargs="?", default=".architecture-model.yaml",
+                         help="Path to architecture-model.yaml (default: .architecture-model.yaml)")
+    p_audit.add_argument("--pipeline", help="Restrict audit to a single pipeline (BEH-P1|BEH-26|BEH-27|BEH-28|BEH-LLM|BEH-SIL|BEH-FBK)")
+    p_audit.add_argument("--strict", action="store_true", help="Exit non-zero on any missing description or trigger")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -207,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
         "deepen": _cmd_deepen,
         "comment": _cmd_comment,
         "migrate": _cmd_migrate,
+        "audit": _cmd_audit,
     }
     return handlers[args.command](args)
 
@@ -1251,6 +1263,12 @@ def _cmd_comment(args) -> int:
 def _cmd_migrate(args) -> int:
     from architecture_model.cli import migrate as _migrate_cli
     return _migrate_cli.run(args)
+
+
+def _cmd_audit(args) -> int:
+    """Six-pipeline completeness audit."""
+    from architecture_model.audit import run_audit
+    return run_audit(args.model, pipeline=args.pipeline, strict=args.strict)
 
 
 if __name__ == "__main__":

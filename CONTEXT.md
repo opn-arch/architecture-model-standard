@@ -208,9 +208,11 @@ relationships:
 
 ## Status
 
-- Schema version: 2.0
+- Schema version: 2.2.0 (additive, backward-compatible with 2.0/2.1)
 - Package version: 0.3.0
-- Test suite: 2918 passed (6 pre-existing failures documented)
+- Test suite: 3718 passed, 104 skipped
+- Model stats (self-model): 34 components, 146 behaviors, 77 interfaces, 746 relationships, validator score 84/100
+- Completeness audit CLI: `architecture-model audit [--pipeline <BEH-ID>] [--strict]` — reports per-pipeline missing descriptions, missing traces-to, isolated sub-behaviors, and containment gaps across the six operational pipelines (EXTRACT BEH-P1, SLICE BEH-26, SELF-IMPROVEMENT BEH-27, DEV-LOOP BEH-28, LLM-PROVIDER BEH-LLM, SI&L LOGGING BEH-SIL, FEEDBACK JOURNALS BEH-FBK). Regression-guarded by `tests/test_completeness_audit.py` (28 tests).
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
 
