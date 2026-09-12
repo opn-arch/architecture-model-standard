@@ -33,8 +33,12 @@ _APPLY_ANCHOR = frozenset({"functional", "logical", "conops", "use_cases"})
 # Maps entity kind (lowercase singular) to a (left_bracket, right_bracket)
 # pair used to wrap the node label in Mermaid flowchart syntax.
 # Layer is subgraph-based and not included here.
+# Component uses Mermaid's asymmetric-flag shape (>text]) — a rectangle
+# with a pointy left edge — to visually distinguish structural components
+# from other entity kinds in composite diagrams. See SysML/Arcadia
+# convention where components carry directional markings.
 _MERMAID_SHAPE: dict[str, tuple[str, str]] = {
-    "component":  ("[",   "]"),
+    "component":  (">",   "]"),
     "capability": ("{{",  "}}"),
     "actor":      ("((",  "))"),
     "behavior":   ("([",  "])"),
@@ -90,8 +94,9 @@ def _rel_type(rel) -> str:
 
 
 # ── Standardized Shape Syntax ──────────────────────────────────
+# See `_MERMAID_SHAPE` docstring for the component pointy-flag rationale.
 _SHAPES: dict[str, tuple[str, str]] = {
-    "component":  ("[",   "]"),
+    "component":  (">",   "]"),
     "capability": ("(",   ")"),
     "behavior":   ("{{", "}}"),
     "interface":  ("((",  "))"),
@@ -155,6 +160,177 @@ def shape(entity_type: str, node_id: str, name: str) -> str:
     lbl = _label(name)
     prefix, suffix = _SHAPES.get(entity_type, ("[", "]"))
     return f"{sid}{prefix}{lbl}{suffix}"
+
+
+# ── Pipeline Flow + Operational Intelligence facet helpers ─────────────────────
+#
+# These render two extra behavior-facet and component-facet mini-diagrams
+# that surface the pipeline-shape of a behavior (root + sub-behaviors +
+# implementing components) and the operational-intelligence rollup of a
+# component (Logging / LLM / Learning / Measurement). They are pure
+# functions over the parsed model — no I/O — so they compose safely with
+# the existing per-entity facet builder in ``generate_entity_explorer``.
+
+def _get_component_evidence(model, component_id: str) -> dict:
+    """Return the ``evidence`` dict on the component, or ``{}`` if absent."""
+    for c in getattr(model.entities, "components", []) or []:
+        if c.id == component_id:
+            return dict(getattr(c, "evidence", None) or {})
+    return {}
+
+
+def _get_model_provider(model) -> dict:
+    """Return ``meta.provider`` if present, else ``{}``.
+
+    The 2.1+ schema records the frontier model that produced the artifacts
+    at ``meta.provider = {name, model, policy_ref}``. Used by the LLM block
+    of the Operational Intelligence facet.
+    """
+    meta = getattr(model, "meta", None)
+    if meta is None:
+        return {}
+    prov = getattr(meta, "provider", None)
+    if isinstance(prov, dict):
+        return dict(prov)
+    return {}
+
+
+def _pipeline_flow_facet_lines(
+    model, root_id: str, root_name: str,
+    entity_map: dict[str, tuple[str, str]],
+) -> str | None:
+    """Render 1-hop pipeline flow: root behavior → sub-behaviors → components.
+
+    Returns ``None`` when the behavior has neither sub-behaviors nor
+    implementing components — the facet would add no signal beyond what
+    the entity header already conveys.
+    """
+    # Direct sub-behaviors via `contains`
+    subs: list[tuple[str, str]] = []
+    for rel in model.relationships:
+        if _rel_type(rel) != "contains":
+            continue
+        if getattr(rel, "from_id", None) != root_id:
+            continue
+        tid = getattr(rel, "to_id", None)
+        if tid in entity_map and entity_map[tid][0] == "behavior":
+            subs.append((tid, entity_map[tid][1]))
+
+    # Implementing components (traces-to) for root AND each sub
+    def _impls_for(bid: str) -> list[tuple[str, str]]:
+        out: list[tuple[str, str]] = []
+        for rel in model.relationships:
+            if _rel_type(rel) != "traces-to":
+                continue
+            if getattr(rel, "to_id", None) != bid:
+                continue
+            fid = getattr(rel, "from_id", None)
+            if fid in entity_map and entity_map[fid][0] == "component":
+                out.append((fid, entity_map[fid][1]))
+        return out
+
+    root_impls = _impls_for(root_id)
+    sub_impls = {sid: _impls_for(sid) for sid, _ in subs}
+    total_impls = len(root_impls) + sum(len(v) for v in sub_impls.values())
+
+    if not subs and total_impls == 0:
+        return None
+
+    lines = ["graph LR"]
+    lines.append(f"  {shape('behavior', root_id, root_name)}")
+    seen_nodes: set[str] = {root_id}
+
+    for sid, sname in subs:
+        if sid not in seen_nodes:
+            lines.append(f"  {shape('behavior', sid, sname)}")
+            seen_nodes.add(sid)
+        lines.append(f"  {_sid(root_id)} {edge_style('contains')} {_sid(sid)}")
+
+    def _emit_impls(parent_id: str, impls: list[tuple[str, str]]) -> None:
+        for cid, cname in impls:
+            if cid not in seen_nodes:
+                lines.append(f"  {shape('component', cid, cname)}")
+                seen_nodes.add(cid)
+            lines.append(
+                f"  {_sid(cid)} {edge_style('traces-to')} {_sid(parent_id)}"
+            )
+
+    _emit_impls(root_id, root_impls)
+    for sid, _ in subs:
+        _emit_impls(sid, sub_impls.get(sid, []))
+
+    return "\n".join(lines)
+
+
+def _operational_intelligence_facet_lines(
+    model, component_id: str, component_name: str, evidence: dict,
+) -> str | None:
+    """Render a 4-block operational-intelligence rollup for a component.
+
+    Blocks: Logging (SI&L invocations/failure), LLM (provider stamped on the
+    model), Learning (pipeline-history activity), Measurement (test coverage).
+    Blocks with no evidence render as grey placeholder nodes so the facet is
+    always emitted for structural completeness. Returns ``None`` only when
+    ``component_id`` is unknown (should not happen at this call site).
+    """
+    sil = evidence.get("sil") if isinstance(evidence, dict) else None
+    coverage = evidence.get("test_coverage") if isinstance(evidence, dict) else None
+    provider = _get_model_provider(model)
+
+    def _fmt_sil(d: dict) -> str:
+        inv = d.get("invocations")
+        fr = d.get("failure_rate")
+        dur = d.get("avg_duration_ms")
+        parts = []
+        if inv is not None:
+            parts.append(f"{int(inv)} invocations")
+        if fr is not None:
+            parts.append(f"{float(fr) * 100:.2f}% fail")
+        if dur is not None:
+            parts.append(f"{float(dur):.1f}ms avg")
+        return ", ".join(parts) or "SI&L: no metrics"
+
+    def _fmt_provider(d: dict) -> str:
+        name = d.get("name") or d.get("model") or "provider"
+        model_name = d.get("model")
+        return f"{name}: {model_name}" if model_name else str(name)
+
+    def _fmt_coverage(d: dict) -> str:
+        n = d.get("test_count")
+        return f"{int(n)} tests" if n is not None else "coverage: unknown"
+
+    # (block_id, label_prefix, has_data, body)
+    blocks = [
+        ("OI_LOG", "Logging",
+         sil is not None,
+         _fmt_sil(sil) if sil else "absent"),
+        ("OI_LLM", "LLM",
+         bool(provider),
+         _fmt_provider(provider) if provider else "absent"),
+        ("OI_LRN", "Learning",
+         False,  # per-component learning evidence not yet stamped
+         "absent"),
+        ("OI_MSR", "Measurement",
+         coverage is not None,
+         _fmt_coverage(coverage) if coverage else "absent"),
+    ]
+
+    lines = ["graph LR"]
+    lines.append(f"  {shape('component', component_id, component_name)}")
+    lines.append('  classDef oi_grey fill:#E5E7EB,stroke:#9CA3AF,color:#4B5563;')
+    lines.append('  classDef oi_live fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A;')
+
+    for block_id, label, has_data, body in blocks:
+        node_label = f"{label}: {body}"
+        lines.append(f"  {shape('component', block_id, node_label)}")
+        style_class = "oi_live" if has_data else "oi_grey"
+        lines.append(f"  class {_sid(block_id)} {style_class};")
+        lines.append(
+            f"  {_sid(component_id)} {edge_style('depends-on')} {_sid(block_id)}"
+        )
+
+    return "\n".join(lines)
+
 
 
 def edge_style(rel_type: str) -> str:
@@ -1467,7 +1643,13 @@ def _render_mermaid_svg(code: str) -> str:
     nodes: dict[str, str] = {}
     edges: list[tuple[str, str, str]] = []
     edge_pattern = re.compile(r'\s*(-->|==>|-\.->|-\.-x)(?:\|([^|]*)\|)?\s*')
-    delimiters = sorted(set(_SHAPES.values()), key=lambda pair: len(pair[0]) + len(pair[1]), reverse=True)
+    # Include ("[", "]") as a permanent fallback: it is the generic Mermaid
+    # rectangle shape used by ad-hoc callers (and by pre-C15 output that
+    # predates the component pointy-flag shape). Sorted longest-prefix-first
+    # so ("[(", ")]") for layers wins over ("[", "]") when both apply.
+    _fallback_rect = ("[", "]")
+    _delim_set = set(_SHAPES.values()) | {_fallback_rect}
+    delimiters = sorted(_delim_set, key=lambda pair: len(pair[0]) + len(pair[1]), reverse=True)
 
     def parse_node(text: str) -> tuple[str, str] | None:
         match = re.fullmatch(r'([\w.-]+)\s*(.*)', text.strip())
@@ -4076,6 +4258,19 @@ def generate_entity_explorer(
     facets: dict[str, str] = {}
 
     if entity_type == "component":
+        # Operational Intelligence — four evidence blocks (Logging, LLM, Learning,
+        # Measurement) sourced from Component.evidence + model.meta.provider +
+        # pipeline-history. Absent-evidence blocks render grey to keep the layout
+        # stable and surface the audit gap. Placed first because it answers
+        # "how healthy/observed is this component?" before structural facets.
+        entity = entity_map.get(entity_id)
+        oi_lines = _operational_intelligence_facet_lines(
+            model, entity_id, ename,
+            _get_component_evidence(model, entity_id),
+        )
+        if oi_lines is not None:
+            facets["Operational Intelligence"] = oi_lines
+
         # Capabilities facet
         caps = []
         for rel in model.relationships:
@@ -4177,6 +4372,14 @@ def generate_entity_explorer(
             facets["Behaviors"] = _facet_diagram_reverse("capability", entity_id, ename, behs)
 
     elif entity_type == "behavior":
+        # Pipeline Flow — 1-hop composite: root + direct sub-behaviors + implementing
+        # components (via traces-to). Combines what previously appeared as three
+        # separate facets (Sub-Behaviors, Triggers, Components) into a single
+        # operational picture. Deep drilldown remains available via node clicks.
+        pf_lines = _pipeline_flow_facet_lines(model, entity_id, ename, entity_map)
+        if pf_lines is not None:
+            facets["Pipeline Flow"] = pf_lines
+
         # Sub-Behaviors
         children = []
         for rel in model.relationships:

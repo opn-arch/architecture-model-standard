@@ -47,8 +47,9 @@ def test_functional_diagram_uses_hexagon_for_capability_and_rect_for_component()
     logical = generate_logical_architecture_diagram(model)
     # Capability = hexagon: {{"Name"}}
     assert '{{"RootCap"}}' in functional or '{{"CAP-1"}}' in functional
-    # Component = rect: ["Name"] (asserted against logical panel which emits components)
-    assert '["Widget"]' in logical or '["COMP-1"]' in logical
+    # Component = pointy-flag rectangle: >"Name"] (asserted against logical
+    # panel which emits components). See visualize._MERMAID_SHAPE.
+    assert '>"Widget"]' in logical or '>"COMP-1"]' in logical
 
 
 def test_use_case_diagram_uses_circle_for_actor_and_stadium_for_behavior():

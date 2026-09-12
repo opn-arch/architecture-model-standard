@@ -14,7 +14,7 @@ from architecture_model.core.types import (
 
 class TestShape:
     def test_component(self):
-        assert shape("component", "COMP-1", "Parser") == "COMP_1[Parser]"
+        assert shape("component", "COMP-1", "Parser") == "COMP_1>Parser]"
 
     def test_capability(self):
         assert shape("capability", "CAP-F1", "Validation") == "CAP_F1(Validation)"

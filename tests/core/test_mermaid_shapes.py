@@ -14,7 +14,7 @@ def test_shape_mapping_covers_seven_kinds():
 
 def test_shape_emits_correct_mermaid_syntax_per_kind():
     """_shape returns Mermaid node syntax with the correct bracket pair per kind."""
-    assert _shape("component", "COMP_1", "MyComp") == 'COMP_1["MyComp"]'
+    assert _shape("component", "COMP_1", "MyComp") == 'COMP_1>"MyComp"]'
     assert _shape("capability", "CAP_1", "MyCap") == 'CAP_1{{"MyCap"}}'
     assert _shape("actor", "ACT_1", "MyActor") == 'ACT_1(("MyActor"))'
     assert _shape("behavior", "BEH_1", "MyBeh") == 'BEH_1(["MyBeh"])'
