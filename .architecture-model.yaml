@@ -6081,3 +6081,71 @@ relationships:
   from_id: COMP-17
   to_id: BEH-FBK
   description: COMP-17 realizes FEEDBACK JOURNALS pipeline root BEH-FBK
+- type: traces-to
+  from_id: COMP-9
+  to_id: BEH-P1.1
+  description: COMP-9 (Configuration) loads profile/config consumed by Observe stage
+- type: traces-to
+  from_id: COMP-3
+  to_id: BEH-P1.1
+  description: COMP-3 (Manifest) provides AST scan services orchestrated by Observe stage
+- type: traces-to
+  from_id: COMP-12
+  to_id: BEH-P1.1.1
+  description: COMP-12 (Utilities) provides file discovery/exclusion for Filter Files
+- type: traces-to
+  from_id: COMP-3.1
+  to_id: BEH-P1.1.2
+  description: COMP-3.1 (Scanners) scans a single module — implements Scan Module
+- type: traces-to
+  from_id: COMP-3.1
+  to_id: BEH-P1.1.3
+  description: COMP-3.1 (Scanners) extracts function signatures during scan
+- type: traces-to
+  from_id: COMP-3.1
+  to_id: BEH-P1.1.4
+  description: COMP-3.1 (Scanners) extracts class definitions during scan
+- type: traces-to
+  from_id: COMP-3.1
+  to_id: BEH-P1.1.5
+  description: COMP-3.1 (Scanners) extracts module-level constants during scan
+- type: traces-to
+  from_id: COMP-3.1
+  to_id: BEH-P1.1.6
+  description: COMP-3.1 (Scanners) extracts import statements during scan
+- type: traces-to
+  from_id: COMP-3.2
+  to_id: BEH-P1.1.7
+  description: COMP-3.2 (Graph & Analysis) resolves inter-module import edges
+- type: traces-to
+  from_id: COMP-3.2
+  to_id: BEH-P1.1.8
+  description: COMP-3.2 (Graph & Analysis) detects HTTP/CLI/message routes via endpoint extractor
+- type: traces-to
+  from_id: COMP-3.2
+  to_id: BEH-P1.1.9
+  description: COMP-3.2 (Graph & Analysis) detects constraint annotations in source
+- type: traces-to
+  from_id: COMP-3.1
+  to_id: BEH-P1.1.10
+  description: COMP-3.1 (Scanners) locates test files via discovery utilities
+- type: traces-to
+  from_id: COMP-3.1
+  to_id: BEH-P1.1.11
+  description: COMP-3.1 (Scanners) locates documentation files via discovery utilities
+- type: traces-to
+  from_id: COMP-3.3
+  to_id: BEH-P1.8
+  description: COMP-3.3 (Grouping & Generation) produces component grouping consumed by Decompose stage
+- type: depends-on
+  from_id: COMP-2.2
+  to_id: COMP-3.1
+  description: Observation Stages invoke Manifest Scanners to perform AST extraction
+- type: depends-on
+  from_id: COMP-2.5
+  to_id: COMP-3.3
+  description: Synthesis & Emit Stages depend on Manifest Grouping & Generation for boundary detection
+- type: depends-on
+  from_id: COMP-2
+  to_id: COMP-9
+  description: Pipeline depends on Configuration for profile and stage-config loading
