@@ -1578,7 +1578,8 @@ entities:
   - id: BEH-P1
     name: Run Extraction Pipeline
     status: ACTIVE
-    description: Execute the 10-stage extraction pipeline to produce an architecture model from source code
+    description: Orchestrates the 10-stage extraction pipeline (observe->infer->allocate->relate->specify->contract->validate->decompose->synthesize->emit)
+      producing .architecture-model.yaml.
     steps:
     - observe
     - infer
@@ -1593,254 +1594,323 @@ entities:
   - id: BEH-P1.1
     name: Run Observe Stage
     status: ACTIVE
-    description: AST-scan all source files to produce module inventory
+    description: AST-scan all source files to produce module inventory, function/class signatures, imports, routes, and constraints.
   - id: BEH-P1.2
     name: Run Infer Stage
     status: ACTIVE
-    description: Infer capabilities, actors, and behaviors from inventory
+    description: Infer semantic entities (actors, capabilities, behaviors) from raw observations using pattern rules.
   - id: BEH-P1.3
     name: Run Allocate Stage
     status: ACTIVE
-    description: Allocate modules to components and assign layers
+    description: Allocate observed files/modules to components using multi-signal affinity (imports, name-prefix, directory).
   - id: BEH-P1.4
     name: Run Relate Stage
     status: ACTIVE
-    description: Derive relationships between entities
+    description: Derive typed relationships (realizes, depends-on, contains, exposes, constrained-by) between entities.
   - id: BEH-P1.5
     name: Run Specify Stage
     status: ACTIVE
-    description: Specify interfaces from component analysis
+    description: Specify interface contracts (routes -> REST spec, argparse -> CLI spec, public API -> library spec).
   - id: BEH-P1.6
     name: Run Contract Stage
     status: ACTIVE
-    description: Match test contracts to components
+    description: Bind test contracts to components by mapping test files to their targets.
   - id: BEH-P1.7
     name: Run Validate Stage
     status: ACTIVE
-    description: Validate model quality and compute confidence scores
+    description: Validate the assembled model against structural rules; compute quality score.
   - id: BEH-P1.8
     name: Run Decompose Stage
     status: ACTIVE
-    description: Identify system boundaries for autonomous subsystems
+    description: Decompose oversized components into autonomous subsystems when they exceed thresholds.
   - id: BEH-P1.9
     name: Run Synthesize Stage
     status: ACTIVE
-    description: Run scoped sub-pipelines for each detected system
+    description: For each detected subsystem, run a scoped sub-pipeline (observe->validate) producing a subsystem model.
   - id: BEH-P1.10
     name: Run Emit Stage
     status: ACTIVE
-    description: Write all artifacts to disk
+    description: 'Emit final artifacts: .architecture-model.yaml, manifests, diagrams, SE docs, lessons.'
   - id: BEH-P1.R
     name: LLM Refinement
     status: ACTIVE
-    description: Cross-cutting LLM enrichment between stages
+    description: Optional LLM refinement pass over intermediate stage outputs (proposal-based, not auto-applied).
   - id: BEH-P1.1.1
     name: Filter Files
     status: ACTIVE
+    description: Filter source files by extension and exclusion patterns (venv, tests when configured, build artifacts).
   - id: BEH-P1.1.2
     name: Scan Module
     status: ACTIVE
+    description: AST-parse each module file into a ModuleInfo record with typed fields.
   - id: BEH-P1.1.3
     name: Extract Functions
     status: ACTIVE
+    description: Extract top-level and nested function definitions with signatures, decorators, and docstrings.
   - id: BEH-P1.1.4
     name: Extract Classes
     status: ACTIVE
+    description: Extract class definitions with base classes, methods, class-level constants, and docstrings.
   - id: BEH-P1.1.5
     name: Extract Constants
     status: ACTIVE
+    description: Extract module-level constants (UPPER_CASE assignments) with their values.
   - id: BEH-P1.1.6
     name: Extract Imports
     status: ACTIVE
+    description: Extract import statements (both `import x` and `from x import y` forms).
   - id: BEH-P1.1.7
     name: Resolve Import Edges
     status: ACTIVE
+    description: Resolve import edges into module->module dependency graph, handling relative imports.
   - id: BEH-P1.1.8
     name: Detect Routes
     status: ACTIVE
+    description: Detect HTTP/CLI/message routes via framework signatures (Flask, FastAPI, Click, argparse, Celery).
   - id: BEH-P1.1.9
     name: Detect Constraints
     status: ACTIVE
+    description: Detect constraints via marker patterns (e.g., version pins, threading primitives, security decorators).
   - id: BEH-P1.1.10
     name: Find Tests
     status: ACTIVE
+    description: Locate test files via naming conventions (test_*.py, *_test.py, tests/ directories).
   - id: BEH-P1.1.11
     name: Find Docs
     status: ACTIVE
+    description: Locate documentation files (README, docs/, *.md).
   - id: BEH-P1.2.1
     name: Infer from Routes
     status: ACTIVE
+    description: Infer capabilities from detected HTTP/API routes (route groups -> capability).
   - id: BEH-P1.2.2
     name: Infer from Triggers
     status: ACTIVE
+    description: Infer behaviors from detected message/event triggers (subscribe patterns).
   - id: BEH-P1.2.3
     name: Infer Domain Modules
     status: ACTIVE
+    description: Infer domain modules from directory structure signals (domain/, models/, entities/).
   - id: BEH-P1.2.4
     name: Infer CLI
     status: ACTIVE
+    description: Infer CLI capability when argparse/Click/Typer subcommands are present.
   - id: BEH-P1.2.5
     name: Infer Infrastructure
     status: ACTIVE
+    description: Infer infrastructure modules (config/, db/, cache/, adapters/) as separate concerns.
   - id: BEH-P1.2.6
     name: Infer Package Grouping
     status: ACTIVE
+    description: Infer package-level grouping from top-level package structure.
   - id: BEH-P1.2.7
     name: Infer Default Actors
     status: ACTIVE
+    description: Infer default actors (User, System, Scheduler) when no explicit actor signals present.
   - id: BEH-P1.2.8
     name: Infer Behaviors
     status: ACTIVE
+    description: Infer behaviors from function docstrings and route handler bodies.
   - id: BEH-P1.2.9
     name: Infer Library Behaviors
     status: ACTIVE
+    description: Infer library API behaviors from public function signatures when no CLI/HTTP present.
   - id: BEH-P1.2.10
     name: Infer Fallback
     status: ACTIVE
+    description: Fallback inference for edge cases (empty repos, unknown project types).
   - id: BEH-P1.3.1
     name: Detect Project Type
     status: ACTIVE
+    description: Detect project type (library, service, CLI, mixed) from observations.
   - id: BEH-P1.3.2
     name: Seed from Capabilities
     status: ACTIVE
+    description: Seed initial components from inferred capabilities as anchor points.
   - id: BEH-P1.3.3
     name: Import Affinity
     status: ACTIVE
+    description: Compute import affinity clusters (modules that heavily co-import).
   - id: BEH-P1.3.4
     name: Per-File Allocation
     status: ACTIVE
+    description: Assign each module file to its most-affine component.
   - id: BEH-P1.3.5
     name: Split Oversized
     status: ACTIVE
+    description: Split components exceeding max_files threshold into sub-components.
   - id: BEH-P1.3.6
     name: Merge Undersized
     status: ACTIVE
+    description: Merge components below min_files threshold with their nearest neighbor.
   - id: BEH-P1.3.7
     name: Infer Layer
     status: ACTIVE
+    description: Infer layer assignment (web/services/data/pipeline) per component.
   - id: BEH-P1.3.8
     name: Boundary Coherence
     status: ACTIVE
+    description: Score boundary coherence (cohesion within / coupling across).
   - id: BEH-P1.3.9
     name: Package Grouping
     status: ACTIVE
+    description: Refine component grouping by respecting package boundaries.
   - id: BEH-P1.4.1
     name: Derive Realizes
     status: ACTIVE
+    description: Emit `realizes` edges from components to the capabilities they anchor.
   - id: BEH-P1.4.2
     name: Derive Depends-On
     status: ACTIVE
+    description: Emit `depends-on` edges from component import graph.
   - id: BEH-P1.4.3
     name: Derive Contains
     status: ACTIVE
+    description: Emit `contains` edges (layer -> component, capability -> capability, component -> component).
   - id: BEH-P1.4.4
     name: Derive Exposes
     status: ACTIVE
+    description: Emit `exposes` edges from components to their detected interfaces.
   - id: BEH-P1.4.5
     name: Derive Constrained-By
     status: ACTIVE
+    description: Emit `constrained-by` edges from entities to applicable constraints.
   - id: BEH-P1.4.6
     name: Build File Map
     status: ACTIVE
+    description: Build the file->component reverse map for downstream stages (validation, coverage).
   - id: BEH-P1.5.1
     name: Specify REST Interfaces
     status: ACTIVE
+    description: Emit REST interface specs from detected HTTP routes with methods, paths, request/response types.
   - id: BEH-P1.5.2
     name: Specify CLI Interfaces
     status: ACTIVE
+    description: Emit CLI interface specs from argparse/Click subcommands with arguments and options.
   - id: BEH-P1.5.3
     name: Specify Library API
     status: ACTIVE
+    description: Emit library API specs from public module symbols (non-underscore-prefixed).
   - id: BEH-P1.5.4
     name: Name Library Interface
     status: ACTIVE
+    description: Name library interfaces canonically based on module or component name.
   - id: BEH-P1.5.5
     name: Specify Fallback
     status: ACTIVE
+    description: Fallback specification when no framework signals are present.
   - id: BEH-P1.6.1
     name: Match by Target
     status: ACTIVE
+    description: Match tests to components by explicit target (imports of production modules).
   - id: BEH-P1.6.2
     name: Match by Directory
     status: ACTIVE
+    description: 'Fallback: match tests to components by directory proximity.'
   - id: BEH-P1.7.1
     name: Check Capability Realization
     status: ACTIVE
+    description: Verify every capability is realized by at least one component.
   - id: BEH-P1.7.2
     name: Detect Orphans
     status: ACTIVE
+    description: Detect orphan entities (no incoming/outgoing edges).
   - id: BEH-P1.7.3
     name: Check File Coverage
     status: ACTIVE
+    description: Check file coverage (percentage of source files allocated to a component).
   - id: BEH-P1.7.4
     name: Check Boundary Coherence
     status: ACTIVE
+    description: Score boundary coherence (validate step, distinct from allocate step).
   - id: BEH-P1.7.5
     name: Compute Confidence
     status: ACTIVE
+    description: Compute overall confidence score combining coverage, coherence, and validation checks.
   - id: BEH-P1.8.1
     name: Identify Autonomous Systems
     status: ACTIVE
+    description: Identify autonomous systems (>=5 files, high internal cohesion, low external coupling).
   - id: BEH-P1.8.2
     name: Decompose Large Components
     status: ACTIVE
+    description: Recursively decompose large components into sub-components.
   - id: BEH-P1.8.3
     name: Cluster by Directory
     status: ACTIVE
+    description: Cluster remaining files by directory structure.
   - id: BEH-P1.8.4
     name: Merge Coupled Components
     status: ACTIVE
+    description: Merge components whose imports show they are tightly coupled.
   - id: BEH-P1.9.1
     name: Decide Stages
     status: ACTIVE
+    description: Decide which stages the sub-pipeline needs to run per subsystem.
   - id: BEH-P1.9.2
     name: Run Scoped Sub-Pipeline
     status: ACTIVE
+    description: Execute the scoped sub-pipeline against a subset of files.
   - id: BEH-P1.9.3
     name: Build Model YAML
     status: ACTIVE
+    description: Serialize each subsystem into its own .architecture-model.yaml under .architecture-models/<slug>/.
   - id: BEH-P1.9.4
     name: Build Manifest
     status: ACTIVE
+    description: Serialize each subsystem manifest as manifest.json.
   - id: BEH-P1.9.5
     name: Build System-of-Systems
     status: ACTIVE
+    description: Build system-of-systems index linking root model to subsystem models.
   - id: BEH-P1.9.6
     name: Collect Lessons
     status: ACTIVE
+    description: Collect and dedupe lessons emitted during sub-pipeline runs.
   - id: BEH-P1.10.1
     name: Write Files
     status: ACTIVE
+    description: Write model+manifest files atomically (tmp file, fsync, rename).
   - id: BEH-P1.10.2
     name: Build Test Map
     status: ACTIVE
+    description: Build the component_test_map.json linking test files to components.
   - id: BEH-P1.10.3
     name: Generate SE Docs
     status: ACTIVE
+    description: Generate the SE document family (ConOps, Functional, Logical, ICD, etc.).
   - id: BEH-P1.10.4
     name: Enrich Model
     status: ACTIVE
+    description: Enrich model components with signatures, constants, test contracts from manifest.
   - id: BEH-P1.10.5
     name: System Interactions
     status: ACTIVE
+    description: Build the system_interactions.md doc showing cross-component call flows.
   - id: BEH-P1.10.6
     name: LLM Reviews
     status: ACTIVE
+    description: Invoke LLM to review generated artifacts (write-back projectors).
   - id: BEH-P1.10.7
     name: Inline Reviews
     status: ACTIVE
+    description: Insert inline review annotations back into source-adjacent doc files.
   - id: BEH-P1.R.1
     name: Build Refinement Prompt
     status: ACTIVE
+    description: Build the refinement prompt from stage inputs + expected schema.
   - id: BEH-P1.R.2
     name: Normalize LLM Output
     status: ACTIVE
+    description: Normalize LLM response (JSON extraction, schema-repair heuristics).
   - id: BEH-P1.R.3
     name: Diff Stage Outputs
     status: ACTIVE
+    description: Diff LLM-proposed stage output against deterministic baseline.
   - id: BEH-P1.R.4
     name: Apply Corrections
     status: ACTIVE
+    description: Apply LLM corrections when confidence exceeds threshold; log rejections.
   interfaces:
   - id: IF-1
     name: main CLI
@@ -4554,3 +4624,303 @@ relationships:
   from_id: COMP-13
   to_id: IF-50
   description: COMP-13 exposes SI&L Query Interface
+- type: triggers
+  from_id: BEH-P1
+  to_id: BEH-P1.1
+  description: BEH-P1 triggers BEH-P1.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.7
+  to_id: BEH-P1.R
+  description: BEH-P1.7 triggers BEH-P1.R in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.R
+  to_id: BEH-P1.8
+  description: BEH-P1.R triggers BEH-P1.8 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1
+  to_id: BEH-P1.1.1
+  description: BEH-P1.1 triggers BEH-P1.1.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.1
+  to_id: BEH-P1.1.2
+  description: BEH-P1.1.1 triggers BEH-P1.1.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.2
+  to_id: BEH-P1.1.3
+  description: BEH-P1.1.2 triggers BEH-P1.1.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.3
+  to_id: BEH-P1.1.4
+  description: BEH-P1.1.3 triggers BEH-P1.1.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.4
+  to_id: BEH-P1.1.5
+  description: BEH-P1.1.4 triggers BEH-P1.1.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.5
+  to_id: BEH-P1.1.6
+  description: BEH-P1.1.5 triggers BEH-P1.1.6 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.6
+  to_id: BEH-P1.1.7
+  description: BEH-P1.1.6 triggers BEH-P1.1.7 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.7
+  to_id: BEH-P1.1.8
+  description: BEH-P1.1.7 triggers BEH-P1.1.8 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.8
+  to_id: BEH-P1.1.9
+  description: BEH-P1.1.8 triggers BEH-P1.1.9 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.9
+  to_id: BEH-P1.1.10
+  description: BEH-P1.1.9 triggers BEH-P1.1.10 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.1.10
+  to_id: BEH-P1.1.11
+  description: BEH-P1.1.10 triggers BEH-P1.1.11 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2
+  to_id: BEH-P1.2.1
+  description: BEH-P1.2 triggers BEH-P1.2.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.1
+  to_id: BEH-P1.2.2
+  description: BEH-P1.2.1 triggers BEH-P1.2.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.2
+  to_id: BEH-P1.2.3
+  description: BEH-P1.2.2 triggers BEH-P1.2.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.3
+  to_id: BEH-P1.2.4
+  description: BEH-P1.2.3 triggers BEH-P1.2.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.4
+  to_id: BEH-P1.2.5
+  description: BEH-P1.2.4 triggers BEH-P1.2.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.5
+  to_id: BEH-P1.2.6
+  description: BEH-P1.2.5 triggers BEH-P1.2.6 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.6
+  to_id: BEH-P1.2.7
+  description: BEH-P1.2.6 triggers BEH-P1.2.7 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.7
+  to_id: BEH-P1.2.8
+  description: BEH-P1.2.7 triggers BEH-P1.2.8 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.8
+  to_id: BEH-P1.2.9
+  description: BEH-P1.2.8 triggers BEH-P1.2.9 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.2.9
+  to_id: BEH-P1.2.10
+  description: BEH-P1.2.9 triggers BEH-P1.2.10 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3
+  to_id: BEH-P1.3.1
+  description: BEH-P1.3 triggers BEH-P1.3.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.1
+  to_id: BEH-P1.3.2
+  description: BEH-P1.3.1 triggers BEH-P1.3.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.2
+  to_id: BEH-P1.3.3
+  description: BEH-P1.3.2 triggers BEH-P1.3.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.3
+  to_id: BEH-P1.3.4
+  description: BEH-P1.3.3 triggers BEH-P1.3.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.4
+  to_id: BEH-P1.3.5
+  description: BEH-P1.3.4 triggers BEH-P1.3.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.5
+  to_id: BEH-P1.3.6
+  description: BEH-P1.3.5 triggers BEH-P1.3.6 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.6
+  to_id: BEH-P1.3.7
+  description: BEH-P1.3.6 triggers BEH-P1.3.7 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.7
+  to_id: BEH-P1.3.8
+  description: BEH-P1.3.7 triggers BEH-P1.3.8 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.3.8
+  to_id: BEH-P1.3.9
+  description: BEH-P1.3.8 triggers BEH-P1.3.9 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.4
+  to_id: BEH-P1.4.1
+  description: BEH-P1.4 triggers BEH-P1.4.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.4.1
+  to_id: BEH-P1.4.2
+  description: BEH-P1.4.1 triggers BEH-P1.4.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.4.2
+  to_id: BEH-P1.4.3
+  description: BEH-P1.4.2 triggers BEH-P1.4.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.4.3
+  to_id: BEH-P1.4.4
+  description: BEH-P1.4.3 triggers BEH-P1.4.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.4.4
+  to_id: BEH-P1.4.5
+  description: BEH-P1.4.4 triggers BEH-P1.4.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.4.5
+  to_id: BEH-P1.4.6
+  description: BEH-P1.4.5 triggers BEH-P1.4.6 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.5
+  to_id: BEH-P1.5.1
+  description: BEH-P1.5 triggers BEH-P1.5.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.5.1
+  to_id: BEH-P1.5.2
+  description: BEH-P1.5.1 triggers BEH-P1.5.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.5.2
+  to_id: BEH-P1.5.3
+  description: BEH-P1.5.2 triggers BEH-P1.5.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.5.3
+  to_id: BEH-P1.5.4
+  description: BEH-P1.5.3 triggers BEH-P1.5.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.5.4
+  to_id: BEH-P1.5.5
+  description: BEH-P1.5.4 triggers BEH-P1.5.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.6
+  to_id: BEH-P1.6.1
+  description: BEH-P1.6 triggers BEH-P1.6.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.6.1
+  to_id: BEH-P1.6.2
+  description: BEH-P1.6.1 triggers BEH-P1.6.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.7
+  to_id: BEH-P1.7.1
+  description: BEH-P1.7 triggers BEH-P1.7.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.7.1
+  to_id: BEH-P1.7.2
+  description: BEH-P1.7.1 triggers BEH-P1.7.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.7.2
+  to_id: BEH-P1.7.3
+  description: BEH-P1.7.2 triggers BEH-P1.7.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.7.3
+  to_id: BEH-P1.7.4
+  description: BEH-P1.7.3 triggers BEH-P1.7.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.7.4
+  to_id: BEH-P1.7.5
+  description: BEH-P1.7.4 triggers BEH-P1.7.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.8
+  to_id: BEH-P1.8.1
+  description: BEH-P1.8 triggers BEH-P1.8.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.8.1
+  to_id: BEH-P1.8.2
+  description: BEH-P1.8.1 triggers BEH-P1.8.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.8.2
+  to_id: BEH-P1.8.3
+  description: BEH-P1.8.2 triggers BEH-P1.8.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.8.3
+  to_id: BEH-P1.8.4
+  description: BEH-P1.8.3 triggers BEH-P1.8.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.9
+  to_id: BEH-P1.9.1
+  description: BEH-P1.9 triggers BEH-P1.9.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.9.1
+  to_id: BEH-P1.9.2
+  description: BEH-P1.9.1 triggers BEH-P1.9.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.9.2
+  to_id: BEH-P1.9.3
+  description: BEH-P1.9.2 triggers BEH-P1.9.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.9.3
+  to_id: BEH-P1.9.4
+  description: BEH-P1.9.3 triggers BEH-P1.9.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.9.4
+  to_id: BEH-P1.9.5
+  description: BEH-P1.9.4 triggers BEH-P1.9.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.9.5
+  to_id: BEH-P1.9.6
+  description: BEH-P1.9.5 triggers BEH-P1.9.6 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.10
+  to_id: BEH-P1.10.1
+  description: BEH-P1.10 triggers BEH-P1.10.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.10.1
+  to_id: BEH-P1.10.2
+  description: BEH-P1.10.1 triggers BEH-P1.10.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.10.2
+  to_id: BEH-P1.10.3
+  description: BEH-P1.10.2 triggers BEH-P1.10.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.10.3
+  to_id: BEH-P1.10.4
+  description: BEH-P1.10.3 triggers BEH-P1.10.4 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.10.4
+  to_id: BEH-P1.10.5
+  description: BEH-P1.10.4 triggers BEH-P1.10.5 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.10.5
+  to_id: BEH-P1.10.6
+  description: BEH-P1.10.5 triggers BEH-P1.10.6 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.10.6
+  to_id: BEH-P1.10.7
+  description: BEH-P1.10.6 triggers BEH-P1.10.7 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.R
+  to_id: BEH-P1.R.1
+  description: BEH-P1.R triggers BEH-P1.R.1 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.R.1
+  to_id: BEH-P1.R.2
+  description: BEH-P1.R.1 triggers BEH-P1.R.2 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.R.2
+  to_id: BEH-P1.R.3
+  description: BEH-P1.R.2 triggers BEH-P1.R.3 in extraction pipeline sequence
+- type: triggers
+  from_id: BEH-P1.R.3
+  to_id: BEH-P1.R.4
+  description: BEH-P1.R.3 triggers BEH-P1.R.4 in extraction pipeline sequence
+- type: traces-to
+  from_id: COMP-1.2
+  to_id: BEH-P1.7
+  description: COMP-1.2 implements pipeline stage BEH-P1.7
+- type: traces-to
+  from_id: COMP-14
+  to_id: BEH-P1.R
+  description: COMP-14 implements pipeline stage BEH-P1.R
+- type: traces-to
+  from_id: COMP-2
+  to_id: BEH-P1
+  description: COMP-2 implements pipeline stage BEH-P1
