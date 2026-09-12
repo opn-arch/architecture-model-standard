@@ -402,6 +402,15 @@ def _check_regen_readiness(model: ArchitectureModel, result: ValidationResult) -
     """
     import re
 
+    # Model-wide constant name index — cross-component references (e.g. Status.ACTIVE
+    # defined in COMP-1.1 but referenced in COMP-1.4 tests) count as satisfied.
+    model_wide_constants: set[str] = set()
+    for comp in model.entities.components:
+        for cn in comp.constants:
+            model_wide_constants.add(cn.name)
+            if "." in cn.name:
+                model_wide_constants.add(cn.name.rsplit(".", 1)[1])
+
     for comp in model.entities.components:
         if not comp.test_contracts:
             continue
@@ -421,6 +430,9 @@ def _check_regen_readiness(model: ArchitectureModel, result: ValidationResult) -
                 defined_names.add(c.name)
                 if "." in c.name:
                     defined_names.add(c.name.rsplit(".", 1)[1])
+            # Include model-wide constants — enum values defined in other components
+            # (e.g. Status.ACTIVE in COMP-1.1 referenced by COMP-1.4 tests) satisfy the reference.
+            defined_names |= model_wide_constants
             covered = len(referenced_constants & defined_names)
             coverage = covered / len(referenced_constants)
 

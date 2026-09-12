@@ -564,6 +564,7 @@ def _parse_component(d: dict) -> Component:
         # --- Schema 2.2 : evidence + sub-model linkage ---
         evidence=d.get("evidence", {}) or {},
         sub_model_ref=d.get("sub_model_ref", ""),
+        parent_id=d.get("parent_id"),
     )
 
 
@@ -874,6 +875,21 @@ def _dump_behavior(b: Behavior) -> dict:
     # --- Schema 2.2 : behavior verification outcomes ---
     if b.verification_results:
         d["verification_results"] = b.verification_results
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    if b.stakeholders:
+        d["stakeholders"] = b.stakeholders
+    if b.success_criteria:
+        d["success_criteria"] = b.success_criteria
+    if b.assumptions:
+        d["assumptions"] = b.assumptions
+    if b.open_questions:
+        d["open_questions"] = b.open_questions
+    if b.verification:
+        d["verification"] = [
+            v.to_dict() if hasattr(v, "to_dict") else v for v in b.verification
+        ]
+    if b.maturity is not None:
+        d["maturity"] = _enum_val(b.maturity)
     return d
 
 
@@ -1011,6 +1027,8 @@ def _dump_component(c: Component) -> dict:
         d["evidence"] = c.evidence
     if c.sub_model_ref:
         d["sub_model_ref"] = c.sub_model_ref
+    if c.parent_id:
+        d["parent_id"] = c.parent_id
     return d
 
 
