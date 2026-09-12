@@ -460,27 +460,39 @@ entities:
   - id: CAP-16
     name: Comment-Driven Collaboration
     status: ACTIVE
-    description: |
-      Users capture free-text comments on any rendered lifecycle artifact via
+    description: 'Users capture free-text comments on any rendered lifecycle artifact via
+
       `architecture-model comment`. Comments persist in .architecture/comments/
+
       as YAML records referencing artifact digest + timestamp; downstream
+
       workflows can promote comments to logs-db issues.
+
+      '
   - id: CAP-17
     name: SI&L Instrumentation
     status: ACTIVE
-    description: |
-      Every architecturally significant call site emits a telemetry event to
+    description: 'Every architecturally significant call site emits a telemetry event to
+
       the SI&L SQLite store, giving component-scoped invocation counts,
+
       failure rates, and latency for live badge overlays and the pipeline
+
       dashboard.
+
+      '
   - id: CAP-18
     name: LLM Provider Routing
     status: ACTIVE
-    description: |
-      Task-class-keyed routing policy (.architecture/llm/policy.yaml) picks a
+    description: 'Task-class-keyed routing policy (.architecture/llm/policy.yaml) picks a
+
       provider + model per call, enforces per-call cost caps, and falls back
+
       on error. Model outputs record their generator via meta.provider so
+
       reproducibility can be audited.
+
+      '
   components:
   - id: COMP-1
     name: Core
@@ -1045,12 +1057,17 @@ entities:
   - id: COMP-13
     name: SI&L Instrumentation
     status: ACTIVE
-    description: |
-      Structural Interface Layer: SQLite-backed ring buffer at
+    description: 'Structural Interface Layer: SQLite-backed ring buffer at
+
       .architecture/sil.sqlite retaining the 50 most recent events per
+
       component_id, plus YAML rollup snapshots under .architecture/sil/. The
+
       @sil_instrument decorator is applied to 10 pipeline stages, 5 lifecycle
+
       renderers, 3 validators, and all 19 MCP *_tool handlers.
+
+      '
     layer: observability
     kind: library
     files:
@@ -1062,11 +1079,15 @@ entities:
   - id: COMP-14
     name: LLM Provider Layer
     status: ACTIVE
-    description: |
-      Runtime-checkable LLMProvider Protocol exposing complete/stream/structured/
+    description: 'Runtime-checkable LLMProvider Protocol exposing complete/stream/structured/
+
       tokenize. Concrete adapters (MCPProvider, FrontierProvider, RelayExtProvider)
+
       live in opencode-arch. Routing policy at .architecture/llm/policy.yaml maps
+
       TaskClass names to (provider, model, max_cost_usd_per_call, fallback).
+
+      '
     layer: ai-integration
     kind: library
     files:
@@ -1076,11 +1097,15 @@ entities:
   - id: COMP-15
     name: Pipeline Dashboard
     status: ACTIVE
-    description: |
-      Self-contained interactive HTML dashboard visualizing a pipeline
+    description: 'Self-contained interactive HTML dashboard visualizing a pipeline
+
       architecture slice with live SI&L badges. Rebuild pipeline: slice YAML
+
       selects nodes -> pipeline_html_data projector builds {nodes,edges,badges}
+
       -> pipeline-html renderer embeds JSON with vanilla-JS assets.
+
+      '
     layer: interface
     kind: library
     files:
@@ -1091,10 +1116,13 @@ entities:
   - id: COMP-16
     name: Comment System
     status: ACTIVE
-    description: |
-      User comment capture and storage against rendered lifecycle artifacts.
+    description: 'User comment capture and storage against rendered lifecycle artifacts.
+
       Comments persist as YAML records referencing artifact digest + timestamp;
+
       downstream workflows can promote comments to logs-db issues.
+
+      '
     layer: application
     kind: library
     files:
@@ -1105,10 +1133,13 @@ entities:
   - id: COMP-17
     name: Feedback Journals
     status: ACTIVE
-    description: |
-      Three append-only JSONL streams under .architecture/: gates.jsonl (gate
+    description: 'Three append-only JSONL streams under .architecture/: gates.jsonl (gate
+
       outcomes), drift.jsonl (structural drift snapshots), test_results.jsonl
+
       (junit ingest batches). Fed by OCA MCP tools and CLI ingest commands.
+
+      '
     layer: observability
     kind: library
     files:
@@ -1483,10 +1514,13 @@ entities:
     status: ACTIVE
     behavior_type: use_case
     actor_id: ACT-1
-    description: |
-      AI agent loads a focused architectural context (single F-block, layer,
+    description: 'AI agent loads a focused architectural context (single F-block, layer,
+
       or entity) within its token budget via architect_slice, then produces
+
       informed edits without loading the full model.
+
+      '
     goal: Compressed architecture context under agent token budget
     trigger: AI agent invokes architect_slice with a focus target
     preconditions: A published architecture model exists at .architecture-model.yaml
@@ -1497,10 +1531,13 @@ entities:
     status: ACTIVE
     behavior_type: use_case
     actor_id: ACT-2
-    description: |
-      Pipeline accumulates lessons from prior runs (heuristics, archetypes,
+    description: 'Pipeline accumulates lessons from prior runs (heuristics, archetypes,
+
       workflows) and applies them to subsequent extractions, monotonically
+
       improving quality across runs.
+
+      '
     goal: Monotonic quality improvement across successive pipeline runs
     trigger: Developer runs `architecture-model pipeline .`
     preconditions: .architecture/learning/history.json is readable
@@ -1511,10 +1548,13 @@ entities:
     status: ACTIVE
     behavior_type: use_case
     actor_id: ACT-2
-    description: |
-      Developer edits code, regenerates architecture artifacts, reviews the
+    description: 'Developer edits code, regenerates architecture artifacts, reviews the
+
       viewer, captures a comment, and files an issue — all without leaving
+
       the tool suite.
+
+      '
     goal: Close code-review feedback loop within one session
     trigger: Developer modifies source files
     preconditions: Architecture model exists; MCP tools available
@@ -1525,9 +1565,11 @@ entities:
     status: ACTIVE
     behavior_type: use_case
     actor_id: ACT-2
-    description: |
-      Users leave free-text feedback on any rendered artifact and downstream
+    description: 'Users leave free-text feedback on any rendered artifact and downstream
+
       workflows (logs-db issue triage) consume the comments as issue seeds.
+
+      '
     goal: Trace decisions back to specific artifact versions
     trigger: User invokes `architecture-model comment <artifact>`
     preconditions: The artifact exists under .architecture/lifecycle/artifacts/
@@ -2011,48 +2053,64 @@ entities:
     name: SI&L Store API
     interface_type: library
     component_id: COMP-13
-    description: |
-      Public API for reading and writing structural-interface-layer events:
+    description: 'Public API for reading and writing structural-interface-layer events:
+
       SILStore.record(event), SILStore.query(component_id), rollup helpers.
+
+      '
   - id: IF-18
     name: LLM Provider Protocol
     interface_type: library
     component_id: COMP-14
-    description: |
-      Runtime-checkable Protocol exposing complete(prompt), stream(prompt),
+    description: 'Runtime-checkable Protocol exposing complete(prompt), stream(prompt),
+
       structured(prompt, schema), tokenize(text). Adapters implement provider-
+
       specific dispatch; policy layer resolves TaskClass -> provider+model.
+
+      '
   - id: IF-19
     name: Pipeline Dashboard Data
     interface_type: library
     component_id: COMP-15
-    description: |
-      JSON payload {nodes, edges, badges} produced by the pipeline_html_data
+    description: 'JSON payload {nodes, edges, badges} produced by the pipeline_html_data
+
       projector and embedded verbatim in the pipeline.html shell. Deterministic
+
       ordering: byte-identical output for byte-identical inputs.
+
+      '
   - id: IF-20
     name: Comment Store API
     interface_type: library
     component_id: COMP-16
-    description: |
-      CommentStore.append(artifact_digest, comment), CommentStore.list(
+    description: 'CommentStore.append(artifact_digest, comment), CommentStore.list(
+
       artifact_digest). Records persist as YAML under .architecture/comments/.
+
+      '
   - id: IF-21
     name: Gate Event Journal
     interface_type: data
     component_id: COMP-17
-    description: |
-      Append-only JSONL at .architecture/gates.jsonl. Each line is a
+    description: 'Append-only JSONL at .architecture/gates.jsonl. Each line is a
+
       GateEvent(gate_id, outcome, findings, model_revision, ts). Written by
+
       the OCA architect_gate MCP tool (fail-soft).
+
+      '
   - id: IF-22
     name: Drift Snapshot Journal
     interface_type: data
     component_id: COMP-17
-    description: |
-      Append-only JSONL at .architecture/drift.jsonl. Each line is a drift
+    description: 'Append-only JSONL at .architecture/drift.jsonl. Each line is a drift
+
       snapshot record (broken_ref, unrealized_capability, orphan, missing_impl).
+
       Written after every OCA architect_pipeline run (fail-soft).
+
+      '
   - id: IF-auto-COMP-1
     name: Core API
     interface_type: library
@@ -2246,19 +2304,27 @@ entities:
   - id: LAY-6
     name: Observability
     status: ACTIVE
-    description: |
-      Cross-cutting instrumentation and evidence journals: SI&L telemetry
+    description: 'Cross-cutting instrumentation and evidence journals: SI&L telemetry
+
       records for every architecturally significant call site, plus append-only
+
       journals (gates.jsonl, drift.jsonl, test_results.jsonl) that back
+
       lifecycle overlays and viewer badges.
+
+      '
   - id: LAY-7
     name: AI Integration
     status: ACTIVE
-    description: |
-      LLM provider abstraction and routing policy. Sits above orchestration
+    description: 'LLM provider abstraction and routing policy. Sits above orchestration
+
       so any component can request a completion by task-class, and the layer
+
       resolves the concrete provider (MCP subprocess, direct HTTPS, or relay)
+
       with per-call cost caps.
+
+      '
 relationships:
 - type: realizes
   from_id: COMP-1.2
@@ -3471,7 +3537,6 @@ relationships:
   from_id: CAP-15
   to_id: CAP-15.4
   description: CAP-15 contains CAP-15.4
-# Layer contains component relationships
 - type: contains
   from_id: LAY-1
   to_id: COMP-1
@@ -3516,7 +3581,6 @@ relationships:
   from_id: LAY-5
   to_id: COMP-12
   description: Infrastructure layer contains Utilities
-# Layer dependency relationships
 - type: depends-on
   from_id: LAY-4
   to_id: LAY-3
@@ -3533,328 +3597,425 @@ relationships:
   from_id: LAY-5
   to_id: LAY-1
   description: Infrastructure layer depends on Foundation layer
-
-# L2 capability realizes relationships (auto-inferred)
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.1
-  description: "Validation implements Validate JSON Schema Compliance"
+  description: Validation implements Validate JSON Schema Compliance
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.2
-  description: "Validation implements Enforce Entity ID Uniqueness"
+  description: Validation implements Enforce Entity ID Uniqueness
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.3
-  description: "Validation implements Check Referential Integrity"
+  description: Validation implements Check Referential Integrity
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.4
-  description: "Validation implements Detect Orphan Entities"
+  description: Validation implements Detect Orphan Entities
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.5
-  description: "Validation implements Verify Capability Realization"
+  description: Validation implements Verify Capability Realization
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.6
-  description: "Validation implements Check Hierarchy Consistency"
+  description: Validation implements Check Hierarchy Consistency
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.7
-  description: "Validation implements Detect Dependency Cycles"
+  description: Validation implements Detect Dependency Cycles
 - type: realizes
   from_id: COMP-1.2
   to_id: CAP-1.8
-  description: "Validation implements Validate Domain Profile Rules"
+  description: Validation implements Validate Domain Profile Rules
 - type: realizes
   from_id: COMP-5.1
   to_id: CAP-10.1
-  description: "Enrichment implements Extract Function Signatures"
+  description: Enrichment implements Extract Function Signatures
 - type: realizes
   from_id: COMP-5.1
   to_id: CAP-10.2
-  description: "Enrichment implements Extract Module-Level Constants"
+  description: Enrichment implements Extract Module-Level Constants
 - type: realizes
   from_id: COMP-5.1
   to_id: CAP-10.3
-  description: "Enrichment implements Extract Test Contracts"
+  description: Enrichment implements Extract Test Contracts
 - type: realizes
   from_id: COMP-5.1
   to_id: CAP-10.4
-  description: "Enrichment implements Discover Test Files by Convention"
+  description: Enrichment implements Discover Test Files by Convention
 - type: realizes
   from_id: COMP-1.5
   to_id: CAP-11.1
-  description: "Quality Metrics implements Compute System Readiness Score"
+  description: Quality Metrics implements Compute System Readiness Score
 - type: realizes
   from_id: COMP-1.5
   to_id: CAP-11.2
-  description: "Quality Metrics implements Compute Component Readiness"
+  description: Quality Metrics implements Compute Component Readiness
 - type: realizes
   from_id: COMP-1.5
   to_id: CAP-11.3
-  description: "Quality Metrics implements Classify Body Hint Quality"
+  description: Quality Metrics implements Classify Body Hint Quality
 - type: realizes
   from_id: COMP-7
   to_id: CAP-12.1
-  description: "Authoring implements Check Code-Intent Alignment"
+  description: Authoring implements Check Code-Intent Alignment
 - type: realizes
   from_id: COMP-7
   to_id: CAP-12.2
-  description: "Authoring implements Evaluate Stage Quality Gates"
+  description: Authoring implements Evaluate Stage Quality Gates
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-13.1
-  description: "Model Operations implements Generate Drift Report"
+  description: Model Operations implements Generate Drift Report
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-13.2
-  description: "Model Operations implements Identify Stale Artifacts"
+  description: Model Operations implements Identify Stale Artifacts
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-13.3
-  description: "Model Operations implements Compare Model to Code Reality"
+  description: Model Operations implements Compare Model to Code Reality
 - type: realizes
   from_id: COMP-11
   to_id: CAP-14.1
-  description: "Pipeline Learning implements Store Heuristic Rules"
+  description: Pipeline Learning implements Store Heuristic Rules
 - type: realizes
   from_id: COMP-11
   to_id: CAP-14.2
-  description: "Pipeline Learning implements Match Archetype Patterns"
+  description: Pipeline Learning implements Match Archetype Patterns
 - type: realizes
   from_id: COMP-11
   to_id: CAP-14.3
-  description: "Pipeline Learning implements Record User Corrections"
+  description: Pipeline Learning implements Record User Corrections
 - type: realizes
   from_id: COMP-11
   to_id: CAP-14.4
-  description: "Pipeline Learning implements Track Quality History"
+  description: Pipeline Learning implements Track Quality History
 - type: realizes
   from_id: COMP-11
   to_id: CAP-14.5
-  description: "Pipeline Learning implements Generate Lessons from Diagnostics"
+  description: Pipeline Learning implements Generate Lessons from Diagnostics
 - type: realizes
   from_id: COMP-10
   to_id: CAP-15.1
-  description: "Export implements Build Flat File Export"
+  description: Export implements Build Flat File Export
 - type: realizes
   from_id: COMP-10
   to_id: CAP-15.2
-  description: "Export implements Generate Schema Reference"
+  description: Export implements Generate Schema Reference
 - type: realizes
   from_id: COMP-10
   to_id: CAP-15.3
-  description: "Export implements Generate Custom Instructions"
+  description: Export implements Generate Custom Instructions
 - type: realizes
   from_id: COMP-10
   to_id: CAP-15.4
-  description: "Export implements Concatenate Sub-Model Artifacts"
+  description: Export implements Concatenate Sub-Model Artifacts
 - type: realizes
   from_id: COMP-6
   to_id: CAP-2.1
-  description: "Extract implements Derive Capabilities from Config"
+  description: Extract implements Derive Capabilities from Config
 - type: realizes
   from_id: COMP-6
   to_id: CAP-2.2
-  description: "Extract implements Infer Actors from Routes"
+  description: Extract implements Infer Actors from Routes
 - type: realizes
   from_id: COMP-6
   to_id: CAP-2.3
-  description: "Extract implements Derive Components from Manifest"
+  description: Extract implements Derive Components from Manifest
 - type: realizes
   from_id: COMP-6
   to_id: CAP-2.4
-  description: "Extract implements Derive Cross-Block Interfaces"
+  description: Extract implements Derive Cross-Block Interfaces
 - type: realizes
   from_id: COMP-6
   to_id: CAP-2.5
-  description: "Extract implements Detect Code Constraints"
+  description: Extract implements Detect Code Constraints
 - type: realizes
   from_id: COMP-6
   to_id: CAP-2.6
-  description: "Extract implements Derive Entity Relationships"
+  description: Extract implements Derive Entity Relationships
 - type: realizes
   from_id: COMP-2
   to_id: CAP-3.1
-  description: "Pipeline implements AST-Scan Source Files"
+  description: Pipeline implements AST-Scan Source Files
 - type: realizes
   from_id: COMP-2.5
   to_id: CAP-3.10
-  description: "Synthesis & Emit Stages implements Emit Final Artifacts"
+  description: Synthesis & Emit Stages implements Emit Final Artifacts
 - type: realizes
   from_id: COMP-2.2
   to_id: CAP-3.2
-  description: "Observation Stages implements Infer Capabilities from Code"
+  description: Observation Stages implements Infer Capabilities from Code
 - type: realizes
   from_id: COMP-2.3
   to_id: CAP-3.3
-  description: "Allocation & Relation Stages implements Allocate Files to Components"
+  description: Allocation & Relation Stages implements Allocate Files to Components
 - type: realizes
   from_id: COMP-2.3
   to_id: CAP-3.4
-  description: "Allocation & Relation Stages implements Derive Entity Relationships"
+  description: Allocation & Relation Stages implements Derive Entity Relationships
 - type: realizes
   from_id: COMP-2.3
   to_id: CAP-3.5
-  description: "Allocation & Relation Stages implements Derive Interface Specifications"
+  description: Allocation & Relation Stages implements Derive Interface Specifications
 - type: realizes
   from_id: COMP-2.4
   to_id: CAP-3.6
-  description: "Specification & Contract Stages implements Extract Test Contracts"
+  description: Specification & Contract Stages implements Extract Test Contracts
 - type: realizes
   from_id: COMP-2.1
   to_id: CAP-3.7
-  description: "Pipeline Coordination implements Validate Pipeline Output"
+  description: Pipeline Coordination implements Validate Pipeline Output
 - type: realizes
   from_id: COMP-2.5
   to_id: CAP-3.8
-  description: "Synthesis & Emit Stages implements Detect System Boundaries"
+  description: Synthesis & Emit Stages implements Detect System Boundaries
 - type: realizes
   from_id: COMP-2.1
   to_id: CAP-3.9
-  description: "Pipeline Coordination implements Run Scoped Sub-Pipelines"
+  description: Pipeline Coordination implements Run Scoped Sub-Pipelines
 - type: realizes
   from_id: COMP-3.1
   to_id: CAP-4.1
-  description: "Scanners implements Scan Python AST"
+  description: Scanners implements Scan Python AST
 - type: realizes
   from_id: COMP-3.1
   to_id: CAP-4.2
-  description: "Scanners implements Extract Function Body Hints"
+  description: Scanners implements Extract Function Body Hints
 - type: realizes
   from_id: COMP-3.2
   to_id: CAP-4.3
-  description: "Graph & Analysis implements Build Call Graph"
+  description: Graph & Analysis implements Build Call Graph
 - type: realizes
   from_id: COMP-3.2
   to_id: CAP-4.4
-  description: "Graph & Analysis implements Analyze Test Files"
+  description: Graph & Analysis implements Analyze Test Files
 - type: realizes
   from_id: COMP-3.3
   to_id: CAP-4.5
-  description: "Grouping & Generation implements Group Modules into Components"
+  description: Grouping & Generation implements Group Modules into Components
 - type: realizes
   from_id: COMP-3.1
   to_id: CAP-4.6
-  description: "Scanners implements Scan Multi-Language Sources"
+  description: Scanners implements Scan Multi-Language Sources
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.1
-  description: "SE Document Suite implements Generate ConOps Document"
+  description: SE Document Suite implements Generate ConOps Document
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.2
-  description: "SE Document Suite implements Generate Functional Analysis"
+  description: SE Document Suite implements Generate Functional Analysis
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.3
-  description: "SE Document Suite implements Generate Logical Architecture Doc"
+  description: SE Document Suite implements Generate Logical Architecture Doc
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.4
-  description: "SE Document Suite implements Generate Use Case Document"
+  description: SE Document Suite implements Generate Use Case Document
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.5
-  description: "SE Document Suite implements Generate Component Specifications"
+  description: SE Document Suite implements Generate Component Specifications
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.6
-  description: "SE Document Suite implements Generate Interface Specification"
+  description: SE Document Suite implements Generate Interface Specification
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.7
-  description: "SE Document Suite implements Generate Mermaid Diagrams"
+  description: SE Document Suite implements Generate Mermaid Diagrams
 - type: realizes
   from_id: COMP-4.2
   to_id: CAP-5.8
-  description: "SE Document Suite implements Generate Health Report"
+  description: SE Document Suite implements Generate Health Report
 - type: realizes
   from_id: COMP-7
   to_id: CAP-6.1
-  description: "Authoring implements Parse Requirements Markdown"
+  description: Authoring implements Parse Requirements Markdown
 - type: realizes
   from_id: COMP-7
   to_id: CAP-6.2
-  description: "Authoring implements Parse Actor Definitions"
+  description: Authoring implements Parse Actor Definitions
 - type: realizes
   from_id: COMP-7
   to_id: CAP-6.3
-  description: "Authoring implements Parse Capability Hierarchy"
+  description: Authoring implements Parse Capability Hierarchy
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-7.1
-  description: "Model Operations implements Slice by Source Block"
+  description: Model Operations implements Slice by Source Block
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-7.2
-  description: "Model Operations implements Slice by Architecture Layer"
+  description: Model Operations implements Slice by Architecture Layer
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-7.3
-  description: "Model Operations implements Slice for Artifact Regeneration"
+  description: Model Operations implements Slice for Artifact Regeneration
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-7.4
-  description: "Model Operations implements Slice for SE Document Views"
+  description: Model Operations implements Slice for SE Document Views
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-8.1
-  description: "Model Operations implements Diff Entity Lists by ID"
+  description: Model Operations implements Diff Entity Lists by ID
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-8.2
-  description: "Model Operations implements Detect Field-Level Changes"
+  description: Model Operations implements Detect Field-Level Changes
 - type: realizes
   from_id: COMP-1.4
   to_id: CAP-8.3
-  description: "Model Operations implements Determine Affected Artifacts"
+  description: Model Operations implements Determine Affected Artifacts
 - type: realizes
   from_id: COMP-5.2
   to_id: CAP-9.1
-  description: "Decomposition implements Compute Component Complexity"
+  description: Decomposition implements Compute Component Complexity
 - type: realizes
   from_id: COMP-5.2
   to_id: CAP-9.2
-  description: "Decomposition implements Identify System Candidates"
+  description: Decomposition implements Identify System Candidates
 - type: realizes
   from_id: COMP-5.2
   to_id: CAP-9.3
-  description: "Decomposition implements Detect System Boundaries"
+  description: Decomposition implements Detect System Boundaries
 - type: realizes
   from_id: COMP-5.2
   to_id: CAP-9.4
-  description: "Decomposition implements Trace Connected Entities"
+  description: Decomposition implements Trace Connected Entities
 - type: realizes
   from_id: COMP-5.2
   to_id: CAP-9.5
-  description: "Decomposition implements Write Sub-Models to Disk"
-# Track 3 wiring: containment
-- {from: LAY-6, to: COMP-13, type: contains}
-- {from: LAY-6, to: COMP-17, type: contains}
-- {from: LAY-7, to: COMP-14, type: contains}
-- {from: LAY-4, to: COMP-15, type: contains}
-- {from: LAY-3, to: COMP-16, type: contains}
-# Track 3 wiring: realization
-- {from: COMP-16, to: CAP-16, type: realizes}
-- {from: COMP-13, to: CAP-17, type: realizes}
-- {from: COMP-14, to: CAP-18, type: realizes}
-# Track 3 wiring: interface exposure
-- {from: COMP-13, to: IF-17, type: exposes}
-- {from: COMP-14, to: IF-18, type: exposes}
-- {from: COMP-15, to: IF-19, type: exposes}
-- {from: COMP-16, to: IF-20, type: exposes}
-- {from: COMP-17, to: IF-21, type: exposes}
-- {from: COMP-17, to: IF-22, type: exposes}
-# Track 3 wiring: capability trace (BEH -> CAP)
-- {from: BEH-26, to: CAP-7, type: traces-to}
-- {from: BEH-27, to: CAP-14, type: traces-to}
-- {from: BEH-28, to: CAP-16, type: traces-to}
-- {from: BEH-29, to: CAP-16, type: traces-to}
-# Track 3 wiring: allocation to code (BEH -> COMP)
-- {from: BEH-26, to: COMP-1, type: allocated-to}
-- {from: BEH-27, to: COMP-2, type: allocated-to}
-- {from: BEH-28, to: COMP-8, type: allocated-to}
-- {from: BEH-29, to: COMP-16, type: allocated-to}
+  description: Decomposition implements Write Sub-Models to Disk
+- from: LAY-6
+  to: COMP-13
+  type: contains
+- from: LAY-6
+  to: COMP-17
+  type: contains
+- from: LAY-7
+  to: COMP-14
+  type: contains
+- from: LAY-4
+  to: COMP-15
+  type: contains
+- from: LAY-3
+  to: COMP-16
+  type: contains
+- from: COMP-16
+  to: CAP-16
+  type: realizes
+- from: COMP-13
+  to: CAP-17
+  type: realizes
+- from: COMP-14
+  to: CAP-18
+  type: realizes
+- from: COMP-13
+  to: IF-17
+  type: exposes
+- from: COMP-14
+  to: IF-18
+  type: exposes
+- from: COMP-15
+  to: IF-19
+  type: exposes
+- from: COMP-16
+  to: IF-20
+  type: exposes
+- from: COMP-17
+  to: IF-21
+  type: exposes
+- from: COMP-17
+  to: IF-22
+  type: exposes
+- from: BEH-26
+  to: CAP-7
+  type: traces-to
+- from: BEH-27
+  to: CAP-14
+  type: traces-to
+- from: BEH-28
+  to: CAP-16
+  type: traces-to
+- from: BEH-29
+  to: CAP-16
+  type: traces-to
+- from: BEH-26
+  to: COMP-1
+  type: allocated-to
+- from: BEH-27
+  to: COMP-2
+  type: allocated-to
+- from: BEH-28
+  to: COMP-8
+  type: allocated-to
+- from: BEH-29
+  to: COMP-16
+  type: allocated-to
+- type: satisfies
+  from_id: COMP-11
+  to_id: REQ-E1
+  description: Pipeline Learning subsystem provides error classification
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O1
+  description: SI&L instruments validate_model
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O2
+  description: SI&L instruments compute_model_confidence
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O10
+  description: SI&L instruments slice_for_artifact
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O11
+  description: SI&L instruments generate_recursive_manifests
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O12
+  description: SI&L instruments compute_block_dependencies
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O13
+  description: SI&L instruments generate_manifest
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O14
+  description: SI&L instruments enrich_from_manifest
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O15
+  description: SI&L instruments enrich_behaviors_from_manifest
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O16
+  description: SI&L instruments enrich_with_block_context
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O17
+  description: SI&L instruments create_behaviors_from_manifest
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O18
+  description: SI&L instruments decompose_model
+- type: satisfies
+  from_id: COMP-13
+  to_id: REQ-O19
+  description: SI&L instruments compact_root_model
+- type: satisfies
+  from_id: COMP-1.2
+  to_id: REQ-Q1
+  description: Validation covers Component quality metrics
+- type: satisfies
+  from_id: COMP-9
+  to_id: REQ-T20
+  description: Configuration declares Python >=3.11 constraint
