@@ -4,6 +4,15 @@ meta:
   generated_at: '2026-08-16'
   lifecycle_phase: production
   domain_profile: library
+  evidence_summary:
+    validation:
+      score: 90
+      total_issues: 2
+      source_file: .architecture/validation.json
+    sil:
+      total_events: 5876
+      components_covered: 6
+      source_file: .architecture/sil.sqlite
 entities:
   capabilities:
   - id: CAP-0
@@ -521,6 +530,10 @@ entities:
     - COMP-1.5
     files:
     - src/architecture_model/core/__init__.py
+    evidence:
+      test_coverage:
+        test_count: 19
+        source: component_test_map.json
   - id: COMP-1.1
     name: Type System
     status: ACTIVE
@@ -614,6 +627,16 @@ entities:
     - COMP-2.5
     files:
     - src/architecture_model/pipeline/__init__.py
+    evidence:
+      sil:
+        invocations: 1284
+        failure_rate: 0.0078
+        avg_duration_ms: 42.16
+        last_event_ts: '2026-09-06T16:41:56.534146+00:00'
+        source: sil.sqlite
+      test_coverage:
+        test_count: 25
+        source: component_test_map.json
   - id: COMP-2.1
     name: Pipeline Coordination
     status: ACTIVE
@@ -713,6 +736,10 @@ entities:
     files:
     - src/architecture_model/manifest/__init__.py
     - src/architecture_model/manifest/types.py
+    evidence:
+      test_coverage:
+        test_count: 146
+        source: component_test_map.json
   - id: COMP-3.1
     name: Scanners
     status: ACTIVE
@@ -783,6 +810,16 @@ entities:
     - COMP-4.2
     files:
     - src/architecture_model/docs/__init__.py
+    evidence:
+      sil:
+        invocations: 97
+        failure_rate: 0.1546
+        avg_duration_ms: 333.97
+        last_event_ts: '2026-09-06T16:22:09.534146+00:00'
+        source: sil.sqlite
+      test_coverage:
+        test_count: 15
+        source: component_test_map.json
   - id: COMP-4.1
     name: Core Doc Generators
     status: ACTIVE
@@ -857,6 +894,10 @@ entities:
     - COMP-5.2
     files:
     - src/architecture_model/orchestration/__init__.py
+    evidence:
+      test_coverage:
+        test_count: 10
+        source: component_test_map.json
   - id: COMP-5.1
     name: Enrichment
     status: ACTIVE
@@ -914,6 +955,10 @@ entities:
     - src/architecture_model/extract/constraint_detector.py
     - src/architecture_model/extract/table_parser.py
     contract: extract_from_code(path) → partial model, detect_routes() → route info
+    evidence:
+      test_coverage:
+        test_count: 14
+        source: component_test_map.json
   - id: COMP-7
     name: Authoring
     status: ACTIVE
@@ -938,6 +983,10 @@ entities:
     - src/architecture_model/authoring/parser.py
     - src/architecture_model/authoring/gate.py
     contract: parse_requirements_doc(text) → ArchitectureModel, check_development_gate(model, manifest)
+    evidence:
+      test_coverage:
+        test_count: 10
+        source: component_test_map.json
   - id: COMP-8
     name: CLI
     status: ACTIVE
@@ -964,6 +1013,10 @@ entities:
     - src/architecture_model/cli/main.py
     - src/architecture_model/cli/visualize.py
     contract: 'CLI commands: validate, slice, diff, manifest, enrich, decompose, docs, coverage, etc.'
+    evidence:
+      test_coverage:
+        test_count: 16
+        source: component_test_map.json
   - id: COMP-9
     name: Configuration
     status: ACTIVE
@@ -991,6 +1044,10 @@ entities:
     - src/architecture_model/profiles/builtins/__init__.py
     - src/architecture_model/profiles/schema.py
     contract: load_config(repo_path) → ProjectConfig with profile and domain settings
+    evidence:
+      test_coverage:
+        test_count: 6
+        source: component_test_map.json
   - id: COMP-10
     name: Export
     status: ACTIVE
@@ -1015,6 +1072,10 @@ entities:
     - src/architecture_model/export/flatfiles.py
     - src/architecture_model/export/reference.py
     contract: export_flat_files(model, output_dir) → portable architecture package
+    evidence:
+      test_coverage:
+        test_count: 40
+        source: component_test_map.json
   - id: COMP-11
     name: Pipeline Learning
     status: ACTIVE
@@ -1027,6 +1088,10 @@ entities:
     - src/architecture_model/pipeline/learning.py
     - src/architecture_model/pipeline/lessons.py
     contract: GlobalLearningStore — persist and retrieve heuristics/archetypes/workflows
+    evidence:
+      test_coverage:
+        test_count: 34
+        source: component_test_map.json
   - id: COMP-12
     name: Utilities
     status: ACTIVE
@@ -1054,6 +1119,10 @@ entities:
     - src/architecture_model/patterns.py
     - src/architecture_model/data/__init__.py
     contract: Shared utilities for file discovery, monitoring, common patterns
+    evidence:
+      test_coverage:
+        test_count: 7
+        source: component_test_map.json
   - id: COMP-13
     name: SI&L Instrumentation
     status: ACTIVE
@@ -1076,6 +1145,16 @@ entities:
     - src/architecture_model/sil/record.py
     - src/architecture_model/sil/rollup.py
     contract: SILStore — append events, roll up per-component metrics for dashboards and evaluate
+    evidence:
+      sil:
+        invocations: 3200
+        failure_rate: 0.0009
+        avg_duration_ms: 8.0
+        last_event_ts: '2026-09-06T17:13:52.534146+00:00'
+        source: sil.sqlite
+      test_coverage:
+        test_count: 10
+        source: component_test_map.json
   - id: COMP-14
     name: LLM Provider Layer
     status: ACTIVE
@@ -1094,6 +1173,16 @@ entities:
     - src/architecture_model/llm/__init__.py
     - src/architecture_model/llm/provider.py
     contract: LLMProvider Protocol + policy-driven routing with per-call cost caps
+    evidence:
+      sil:
+        invocations: 210
+        failure_rate: 0.0619
+        avg_duration_ms: 876.31
+        last_event_ts: '2026-09-06T16:24:02.534146+00:00'
+        source: sil.sqlite
+      test_coverage:
+        test_count: 37
+        source: component_test_map.json
   - id: COMP-15
     name: Pipeline Dashboard
     status: ACTIVE
@@ -1113,6 +1202,16 @@ entities:
     - src/architecture_model/lifecycle/renderers/pipeline_html_data.py
     - src/architecture_model/lifecycle/renderers/assets/pipeline_dashboard/index.css
     contract: Deterministic HTML build; identical inputs produce byte-identical output
+    evidence:
+      sil:
+        invocations: 640
+        failure_rate: 0.0203
+        avg_duration_ms: 119.2
+        last_event_ts: '2026-09-06T16:31:12.534146+00:00'
+        source: sil.sqlite
+      test_coverage:
+        test_count: 16
+        source: component_test_map.json
   - id: COMP-16
     name: Comment System
     status: ACTIVE
@@ -1130,6 +1229,16 @@ entities:
     - src/architecture_model/comments/models.py
     - src/architecture_model/comments/store.py
     contract: CommentStore — append/list comments keyed by artifact digest
+    evidence:
+      sil:
+        invocations: 445
+        failure_rate: 0.0202
+        avg_duration_ms: 22.22
+        last_event_ts: '2026-09-06T16:27:57.534146+00:00'
+        source: sil.sqlite
+      test_coverage:
+        test_count: 5
+        source: component_test_map.json
   - id: COMP-17
     name: Feedback Journals
     status: ACTIVE
@@ -1149,6 +1258,10 @@ entities:
     - src/architecture_model/feedback/junit_ingest.py
     - src/architecture_model/feedback/test_results.py
     contract: Append-only JSONL journals feeding lifecycle overlays and viewer badges
+    evidence:
+      test_coverage:
+        test_count: 14
+        source: component_test_map.json
   actors:
   - id: ACT-1
     name: AI Agent (MCP Client)
