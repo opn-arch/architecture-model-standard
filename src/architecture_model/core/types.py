@@ -410,6 +410,10 @@ class Behavior(BaseEntity):
     open_questions: list[str] = field(default_factory=list)
     verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
     maturity: Optional[Maturity] = None
+    # --- Schema 2.2 : behavior verification outcomes ---
+    # Each entry: {test_file, test_method, status, duration_ms, ts,
+    # run_id}. Populated by evidence-binding pass (Commit 10).
+    verification_results: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -445,6 +449,12 @@ class Interface(BaseEntity):
     verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
     slos: list[Any] = field(default_factory=list)  # list[SLO]
     maturity: Optional[Maturity] = None
+    # --- Schema 2.2 : detailed protocol specification ---
+    # Populated by endpoint_extractor for http/cli/message/rpc kinds and
+    # hand-filled for library-kind interfaces. Free-form dict so extractor
+    # additions do not require schema bumps. Typical keys: method, path,
+    # request_schema, response_schema, error_codes, auth, rate_limit.
+    protocol_spec: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -458,6 +468,14 @@ class Constraint(BaseEntity):
     open_questions: list[str] = field(default_factory=list)
     verification: list[Any] = field(default_factory=list)  # list[VerificationRef]
     maturity: Optional[Maturity] = None
+    # --- Schema 2.2 : enforceability + measurability flags ---
+    # ``enforceable`` = automated gate can reject a violation (CI-checkable).
+    # ``measurable`` = has a concrete metric+threshold pair.
+    # ``verification_method`` = 29148-style (inspection|analysis|test|demonstration).
+    enforceable: bool = False
+    measurable: bool = False
+    verification_method: str = ""
+    stakeholders: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -589,6 +607,18 @@ class Component(BaseEntity):
     owner: Optional[str] = None
     maturity: Optional[Maturity] = None
     dependencies_rationale: dict[str, str] = field(default_factory=dict)
+    # --- Schema 2.2 : evidence + sub-model linkage ---
+    # ``evidence`` collects runtime signal per component: keys typically
+    # ``sil`` (invocations/failure_rate/avg_duration_ms), ``gates``
+    # (recent outcomes), ``drift`` (unresolved flags), ``tests``
+    # (pass/fail counts), ``regen`` (regen-readiness score),
+    # ``validate`` (validation score). Absent-source keys are simply
+    # omitted; the value ``{}`` is a valid initial state.
+    evidence: dict[str, Any] = field(default_factory=dict)
+    # ``sub_model_ref`` points at a per-subsystem model YAML under
+    # .architecture-models/<slug>/ so a Component can advertise its
+    # own scoped architecture. Empty string = no sub-model.
+    sub_model_ref: str = ""
 
 
 @dataclass
@@ -693,7 +723,14 @@ class Lifecycle(BaseEntity):
 
 @dataclass
 class Requirement(BaseEntity):
-    """A traceable requirement."""
+    """A traceable requirement.
+
+    Schema 2.2 additions (backward-compatible, additive):
+    ISO/IEC/IEEE 29148 §5.2.5 requirement attributes — verification_method,
+    acceptance_criteria, stakeholder, derived_from, req_status, req_version,
+    risk. Empty values roundtrip as omitted keys so 2.0/2.1 fixtures stay
+    byte-identical.
+    """
 
     text: str = ""
     source_doc: str = ""
@@ -701,6 +738,17 @@ class Requirement(BaseEntity):
     content_hash: str = ""
     priority: str = ""
     moe: str = ""
+    # --- Phase 5 / Schema 2.2 : ISO/IEC/IEEE 29148 attributes ---
+    verification_method: str = ""  # inspection | analysis | demonstration | test
+    acceptance_criteria: list[str] = field(default_factory=list)
+    stakeholder: str = ""  # single primary stakeholder id/name
+    stakeholders: list[str] = field(default_factory=list)  # additional stakeholders
+    derived_from: list[str] = field(default_factory=list)  # parent requirement ids
+    req_status: str = ""  # draft | proposed | approved | implemented | verified | deprecated
+    req_version: str = ""  # requirement-specific version (independent of model schema_version)
+    risk: str = ""  # low | medium | high | critical
+    verification_results: list[dict[str, Any]] = field(default_factory=list)
+    status_history: list[dict[str, Any]] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

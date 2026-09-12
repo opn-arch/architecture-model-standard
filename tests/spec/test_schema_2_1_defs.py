@@ -31,7 +31,7 @@ def schema() -> dict:
 
 
 def test_schema_version_constant() -> None:
-    assert SCHEMA_VERSION == "2.1.0"
+    assert SCHEMA_VERSION == "2.2.0"
 
 
 def test_schema_id_matches_version(schema: dict) -> None:

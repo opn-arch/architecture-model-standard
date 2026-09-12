@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://architecture-model-standard.dev/schema/v2.1.0/model.json",
+  "$id": "https://architecture-model-standard.dev/schema/v2.2.0/model.json",
   "title": "Architecture Model",
   "description": "Universal machine-readable architecture model for LLM-driven system engineering",
   "type": "object",

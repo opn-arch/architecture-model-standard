@@ -61,7 +61,7 @@ class TestSchemaNewFields:
 
     def test_schema_version_bumped(self):
         schema = _load_schema()
-        assert "2.1" in schema["$id"], f"Schema $id should reference v2.1: {schema['$id']}"
+        assert "2.2" in schema["$id"], f"Schema $id should reference v2.2: {schema['$id']}"
 
 
 class TestSchemaValidation:
