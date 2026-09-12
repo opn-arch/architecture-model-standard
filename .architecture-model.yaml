@@ -2194,6 +2194,107 @@ entities:
     description: Deduct call cost from global_budget_usd; log to .architecture/llm/spend.jsonl.
     preconditions: Call successful
     postconditions: Budget counter decremented; spend event journaled
+  - id: BEH-SIL
+    name: SI&L Telemetry Recording
+    status: ACTIVE
+    behavior_type: orchestrator
+    description: Instrumented call sites emit telemetry events into .architecture/sil.sqlite (ring buffer, 50 events per component),
+      rolled up per-component to yaml snapshots.
+    preconditions: sil.sqlite is writable
+    postconditions: Event appended and rollup snapshot refreshed
+  - id: BEH-SIL.1
+    name: Bind Store to Context
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Bind SILStore to current call context; without a bound store the @sil_instrument decorator is a no-op.
+    preconditions: SILStore instance available
+    postconditions: Context carries active store
+  - id: BEH-SIL.2
+    name: Instrument Call Site
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Decorate the target function with @sil_instrument specifying component_id + kind (stage:|renderer:|validator:|mcp_tool:).
+    preconditions: Function is architecturally significant
+    postconditions: Function wrapped with SI&L capture
+  - id: BEH-SIL.3
+    name: Capture Invocation
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: 'On call entry: record start_ts, args-fingerprint, component_id, kind.'
+    preconditions: Instrumented function invoked
+    postconditions: Start event buffered
+  - id: BEH-SIL.4
+    name: Capture Outcome
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: 'On call exit: record duration, success|error, error class if raised.'
+    preconditions: Function exit or raise
+    postconditions: Outcome event buffered
+  - id: BEH-SIL.5
+    name: Persist to SQLite
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Append event to sil.sqlite ring buffer via WAL-safe transaction.
+    preconditions: Outcome event buffered
+    postconditions: Event durable in sil.sqlite
+  - id: BEH-SIL.6
+    name: Roll Up Metrics
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Aggregate last-N events per component into invocations_7d, failure_rate_7d, avg_duration_ms.
+    preconditions: Events persisted
+    postconditions: Rollup snapshot written to .architecture/sil/<component_id>.yaml
+  - id: BEH-SIL.7
+    name: Serve Health Query
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Respond to architect_component_health MCP call with {record, trend} envelope.
+    preconditions: Rollup snapshot exists
+    postconditions: JSON envelope returned to caller
+  - id: BEH-SIL.8
+    name: Merge Evaluate Summary
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: When architect_evaluate runs, inject sil_summary key with per-component metrics into its report.
+    preconditions: evaluate tool invoked
+    postconditions: sil_summary present in evaluate response
+  - id: BEH-FBK
+    name: Feedback Journal Append
+    status: ACTIVE
+    behavior_type: orchestrator
+    description: Append-only journals (gates.jsonl, drift.jsonl, test_results.jsonl) under .architecture/ record outcomes
+      for surgical view invalidation.
+    preconditions: Feedback event ready
+    postconditions: Event durably appended with content_kind
+  - id: BEH-FBK.1
+    name: Append Gate Event
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Write GateEvent(gate_id, outcome, findings, model_revision, ts) to gates.jsonl (fail-soft on write error).
+    preconditions: Gate tool ran
+    postconditions: Event appended to .architecture/gates.jsonl
+  - id: BEH-FBK.2
+    name: Append Drift Snapshot
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Write drift snapshot (broken_ref, unrealized_capability, orphan, missing_impl) to drift.jsonl after every
+      pipeline run.
+    preconditions: Pipeline stage completed
+    postconditions: Snapshot appended to .architecture/drift.jsonl
+  - id: BEH-FBK.3
+    name: Ingest JUnit Batch
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Parse pytest/JUnit XML into TestResult batch and append to test_results.jsonl via feedback.junit_ingest.ingest_junit.
+    preconditions: JUnit XML file exists
+    postconditions: Batch appended to .architecture/test_results.jsonl
+  - id: BEH-FBK.4
+    name: Invalidate Views
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: When new events land, mark dependent projected views stale via lifecycle.invalidation.stale_entity_view_ids.
+    preconditions: New feedback event appended
+    postconditions: Affected view ids added to stale set
   interfaces:
   - id: IF-1
     name: main CLI
@@ -5687,3 +5788,159 @@ relationships:
   from_id: BEH-LLM
   to_id: BEH-LLM.8
   description: BEH-LLM contains routing step BEH-LLM.8
+- type: traces-to
+  from_id: BEH-SIL
+  to_id: CAP-17
+  description: BEH-SIL implements CAP-17 SI&L Instrumentation
+- type: triggers
+  from_id: BEH-SIL
+  to_id: BEH-SIL.1
+  description: BEH-SIL triggers BEH-SIL.1
+- type: triggers
+  from_id: BEH-SIL.1
+  to_id: BEH-SIL.2
+  description: BEH-SIL.1 triggers BEH-SIL.2
+- type: triggers
+  from_id: BEH-SIL.2
+  to_id: BEH-SIL.3
+  description: BEH-SIL.2 triggers BEH-SIL.3
+- type: triggers
+  from_id: BEH-SIL.3
+  to_id: BEH-SIL.4
+  description: BEH-SIL.3 triggers BEH-SIL.4
+- type: triggers
+  from_id: BEH-SIL.4
+  to_id: BEH-SIL.5
+  description: BEH-SIL.4 triggers BEH-SIL.5
+- type: triggers
+  from_id: BEH-SIL.5
+  to_id: BEH-SIL.6
+  description: BEH-SIL.5 triggers BEH-SIL.6
+- type: triggers
+  from_id: BEH-SIL.6
+  to_id: BEH-SIL.7
+  description: BEH-SIL.6 triggers BEH-SIL.7
+- type: triggers
+  from_id: BEH-SIL.6
+  to_id: BEH-SIL.8
+  description: BEH-SIL.6 triggers BEH-SIL.8
+- type: triggers
+  from_id: BEH-FBK
+  to_id: BEH-FBK.1
+  description: BEH-FBK triggers BEH-FBK.1
+- type: triggers
+  from_id: BEH-FBK
+  to_id: BEH-FBK.2
+  description: BEH-FBK triggers BEH-FBK.2
+- type: triggers
+  from_id: BEH-FBK
+  to_id: BEH-FBK.3
+  description: BEH-FBK triggers BEH-FBK.3
+- type: triggers
+  from_id: BEH-FBK.1
+  to_id: BEH-FBK.4
+  description: BEH-FBK.1 triggers BEH-FBK.4
+- type: triggers
+  from_id: BEH-FBK.2
+  to_id: BEH-FBK.4
+  description: BEH-FBK.2 triggers BEH-FBK.4
+- type: triggers
+  from_id: BEH-FBK.3
+  to_id: BEH-FBK.4
+  description: BEH-FBK.3 triggers BEH-FBK.4
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.1
+  description: COMP-13 implements logging step BEH-SIL.1
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.1
+  description: BEH-SIL contains logging step BEH-SIL.1
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.2
+  description: COMP-13 implements logging step BEH-SIL.2
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.2
+  description: BEH-SIL contains logging step BEH-SIL.2
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.3
+  description: COMP-13 implements logging step BEH-SIL.3
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.3
+  description: BEH-SIL contains logging step BEH-SIL.3
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.4
+  description: COMP-13 implements logging step BEH-SIL.4
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.4
+  description: BEH-SIL contains logging step BEH-SIL.4
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.5
+  description: COMP-13 implements logging step BEH-SIL.5
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.5
+  description: BEH-SIL contains logging step BEH-SIL.5
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.6
+  description: COMP-13 implements logging step BEH-SIL.6
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.6
+  description: BEH-SIL contains logging step BEH-SIL.6
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.7
+  description: COMP-13 implements logging step BEH-SIL.7
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.7
+  description: BEH-SIL contains logging step BEH-SIL.7
+- type: traces-to
+  from_id: COMP-13
+  to_id: BEH-SIL.8
+  description: COMP-13 implements logging step BEH-SIL.8
+- type: contains
+  from_id: BEH-SIL
+  to_id: BEH-SIL.8
+  description: BEH-SIL contains logging step BEH-SIL.8
+- type: traces-to
+  from_id: COMP-17
+  to_id: BEH-FBK.1
+  description: COMP-17 implements logging step BEH-FBK.1
+- type: contains
+  from_id: BEH-FBK
+  to_id: BEH-FBK.1
+  description: BEH-FBK contains logging step BEH-FBK.1
+- type: traces-to
+  from_id: COMP-17
+  to_id: BEH-FBK.2
+  description: COMP-17 implements logging step BEH-FBK.2
+- type: contains
+  from_id: BEH-FBK
+  to_id: BEH-FBK.2
+  description: BEH-FBK contains logging step BEH-FBK.2
+- type: traces-to
+  from_id: COMP-17
+  to_id: BEH-FBK.3
+  description: COMP-17 implements logging step BEH-FBK.3
+- type: contains
+  from_id: BEH-FBK
+  to_id: BEH-FBK.3
+  description: BEH-FBK contains logging step BEH-FBK.3
+- type: traces-to
+  from_id: COMP-17
+  to_id: BEH-FBK.4
+  description: COMP-17 implements logging step BEH-FBK.4
+- type: contains
+  from_id: BEH-FBK
+  to_id: BEH-FBK.4
+  description: BEH-FBK contains logging step BEH-FBK.4
