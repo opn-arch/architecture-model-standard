@@ -1976,6 +1976,83 @@ entities:
     description: Generate/update the run report card (A-F grade, fidelity, compression, trend).
     preconditions: Regen loop complete
     postconditions: Report card written to .architecture/learning/
+  - id: BEH-26.1
+    name: Parse Slice Spec
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Parse the ModelSlice payload (scope, closure, selectors, temporal filters, child_refs).
+    preconditions: Slice spec YAML is well-formed
+    postconditions: ModelSlice dataclass instance in memory
+  - id: BEH-26.2
+    name: Resolve Scope
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: 'Interpret scope directive: all|F-block|layer|entity(<id>)|descendants|descendants:each.'
+    preconditions: ModelSlice parsed
+    postconditions: Scope reduction function selected
+  - id: BEH-26.3
+    name: Apply Entity Slice
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: For entity() scopes, invoke slice_by_entity(model, id, include_hops=1) to root at that entity.
+    preconditions: Scope is entity-form
+    postconditions: Sub-model rooted at entity_id with 1-hop neighborhood
+  - id: BEH-26.4
+    name: Apply F-block Slice
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: For F-block scopes, invoke slice_by_fblock(model, fblock_id).
+    preconditions: Scope names an F-block id (F1..Fn)
+    postconditions: Sub-model containing that F-block
+  - id: BEH-26.5
+    name: Apply Layer Slice
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: For layer scopes, invoke slice_by_layer(model, layer_id).
+    preconditions: Scope names a layer id
+    postconditions: Sub-model containing that layer + contained components
+  - id: BEH-26.6
+    name: Prune by Depth
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Walk contains graph BFS from scope root and drop nodes past depth; honor expand_kinds.
+    preconditions: ViewSpec.depth is set on entity-scoped slice
+    postconditions: Depth-bounded sub-model
+  - id: BEH-26.7
+    name: Merge Descendants
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: For descendants-scopes, merge root + all transitive contained entities into a single fragment.
+    preconditions: Scope is descendants or descendants:each
+    postconditions: Merged fragment
+  - id: BEH-26.8
+    name: Resolve Federated Refs
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: For federated slices, resolve child_refs (file:// or repo://) to PackageBundle and merge.
+    preconditions: child_refs is non-empty
+    postconditions: External child fragments materialized and merged
+  - id: BEH-26.9
+    name: Attach Supplementary
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Load supplementary refs (sil, gates, drift, test_results) into MaterializedSlice.supplementary_fragments.
+    preconditions: supplementary_refs is non-empty
+    postconditions: Supplementary fragments loaded
+  - id: BEH-26.10
+    name: Compute Scope Metadata
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: For entity-scoped slices, compute parent, peers, scope_chain, inbound/outbound edges, contains_descendants.
+    preconditions: Slice is entity-scoped
+    postconditions: MaterializedSlice.provenance.scope_metadata populated
+  - id: BEH-26.11
+    name: Emit Materialized Slice
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Serialize MaterializedSlice with digest for downstream projection.
+    preconditions: All scope + closure + supplementary steps complete
+    postconditions: MaterializedSlice with stable digest
   interfaces:
   - id: IF-1
     name: main CLI
@@ -5093,3 +5170,143 @@ relationships:
   from_id: BEH-28
   to_id: BEH-28.9
   description: BEH-28 contains dev-loop step BEH-28.9
+- type: triggers
+  from_id: BEH-26
+  to_id: BEH-26.1
+  description: BEH-26 triggers BEH-26.1 in slice pipeline
+- type: triggers
+  from_id: BEH-26.1
+  to_id: BEH-26.2
+  description: BEH-26.1 triggers BEH-26.2 in slice pipeline
+- type: triggers
+  from_id: BEH-26.2
+  to_id: BEH-26.3
+  description: BEH-26.2 triggers BEH-26.3 in slice pipeline
+- type: triggers
+  from_id: BEH-26.2
+  to_id: BEH-26.4
+  description: BEH-26.2 triggers BEH-26.4 in slice pipeline
+- type: triggers
+  from_id: BEH-26.2
+  to_id: BEH-26.5
+  description: BEH-26.2 triggers BEH-26.5 in slice pipeline
+- type: triggers
+  from_id: BEH-26.3
+  to_id: BEH-26.6
+  description: BEH-26.3 triggers BEH-26.6 in slice pipeline
+- type: triggers
+  from_id: BEH-26.4
+  to_id: BEH-26.7
+  description: BEH-26.4 triggers BEH-26.7 in slice pipeline
+- type: triggers
+  from_id: BEH-26.5
+  to_id: BEH-26.7
+  description: BEH-26.5 triggers BEH-26.7 in slice pipeline
+- type: triggers
+  from_id: BEH-26.6
+  to_id: BEH-26.7
+  description: BEH-26.6 triggers BEH-26.7 in slice pipeline
+- type: triggers
+  from_id: BEH-26.7
+  to_id: BEH-26.8
+  description: BEH-26.7 triggers BEH-26.8 in slice pipeline
+- type: triggers
+  from_id: BEH-26.8
+  to_id: BEH-26.9
+  description: BEH-26.8 triggers BEH-26.9 in slice pipeline
+- type: triggers
+  from_id: BEH-26.9
+  to_id: BEH-26.10
+  description: BEH-26.9 triggers BEH-26.10 in slice pipeline
+- type: triggers
+  from_id: BEH-26.10
+  to_id: BEH-26.11
+  description: BEH-26.10 triggers BEH-26.11 in slice pipeline
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.1
+  description: COMP-1.4 implements slice step BEH-26.1
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.1
+  description: BEH-26 contains slice step BEH-26.1
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.2
+  description: COMP-1.4 implements slice step BEH-26.2
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.2
+  description: BEH-26 contains slice step BEH-26.2
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.3
+  description: COMP-1.4 implements slice step BEH-26.3
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.3
+  description: BEH-26 contains slice step BEH-26.3
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.4
+  description: COMP-1.4 implements slice step BEH-26.4
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.4
+  description: BEH-26 contains slice step BEH-26.4
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.5
+  description: COMP-1.4 implements slice step BEH-26.5
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.5
+  description: BEH-26 contains slice step BEH-26.5
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.6
+  description: COMP-1.4 implements slice step BEH-26.6
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.6
+  description: BEH-26 contains slice step BEH-26.6
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.7
+  description: COMP-1.4 implements slice step BEH-26.7
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.7
+  description: BEH-26 contains slice step BEH-26.7
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.8
+  description: COMP-1.4 implements slice step BEH-26.8
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.8
+  description: BEH-26 contains slice step BEH-26.8
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.9
+  description: COMP-1.4 implements slice step BEH-26.9
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.9
+  description: BEH-26 contains slice step BEH-26.9
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.10
+  description: COMP-1.4 implements slice step BEH-26.10
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.10
+  description: BEH-26 contains slice step BEH-26.10
+- type: traces-to
+  from_id: COMP-1.4
+  to_id: BEH-26.11
+  description: COMP-1.4 implements slice step BEH-26.11
+- type: contains
+  from_id: BEH-26
+  to_id: BEH-26.11
+  description: BEH-26 contains slice step BEH-26.11
