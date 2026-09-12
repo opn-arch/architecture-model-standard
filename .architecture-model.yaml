@@ -1911,6 +1911,71 @@ entities:
     name: Apply Corrections
     status: ACTIVE
     description: Apply LLM corrections when confidence exceeds threshold; log rejections.
+  - id: BEH-28.1
+    name: Edit Source
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Developer modifies source files in the repo.
+    preconditions: Repo is clean or has staged changes
+    postconditions: File system reflects new content
+  - id: BEH-28.2
+    name: Regenerate Artifacts
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Run pipeline to refresh .architecture-model.yaml + subsystem models + docs.
+    preconditions: Source files have changed since last extraction
+    postconditions: .architecture-model.yaml and .architecture-models/** are up to date
+  - id: BEH-28.3
+    name: Review Viewer
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Open the pipeline dashboard / SE docs in a browser to inspect the refreshed architecture.
+    preconditions: Artifacts have been regenerated
+    postconditions: Developer has visually verified the changes
+  - id: BEH-28.4
+    name: Capture Comment
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Developer files an inline architectural comment via the comment CLI (COMP-16).
+    preconditions: Developer has feedback on an entity, relationship, or diagram
+    postconditions: Comment persisted under .architecture/reviews/
+  - id: BEH-28.5
+    name: Classify Issue
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Pattern classifier (7 pattern types) categorizes the comment (CROSS_DEP, MISSING_IMPL, WRONG_CONSTANT, API_MISMATCH,
+      COMPLEX_BEHAVIOR, TEST_INFRA, UNKNOWN).
+    preconditions: Comment exists
+    postconditions: Comment tagged with pattern_type
+  - id: BEH-28.6
+    name: Optimize Prompt
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Adaptive prompt optimizer applies heuristic rules (dep count, contract count, body_hint coverage) to build
+      improved regen prompt.
+    preconditions: Classified issue is present
+    postconditions: Optimized prompt ready for regen loop
+  - id: BEH-28.7
+    name: Run Regen Loop
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Regenerate scoped subsystem code and run tests until convergence or iteration cap.
+    preconditions: Optimized prompt available; test files exist
+    postconditions: Fidelity report + iteration count logged
+  - id: BEH-28.8
+    name: File Issue
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Optionally push the comment upstream via logs-db (external issue tracker).
+    preconditions: Developer has flagged comment as issue-worthy
+    postconditions: External issue ID recorded in comment sidecar
+  - id: BEH-28.9
+    name: Update Report Card
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Generate/update the run report card (A-F grade, fidelity, compression, trend).
+    preconditions: Regen loop complete
+    postconditions: Report card written to .architecture/learning/
   interfaces:
   - id: IF-1
     name: main CLI
@@ -4924,3 +4989,107 @@ relationships:
   from_id: COMP-2
   to_id: BEH-P1
   description: COMP-2 implements pipeline stage BEH-P1
+- type: triggers
+  from_id: BEH-28
+  to_id: BEH-28.1
+  description: BEH-28 triggers BEH-28.1 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.1
+  to_id: BEH-28.2
+  description: BEH-28.1 triggers BEH-28.2 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.2
+  to_id: BEH-28.3
+  description: BEH-28.2 triggers BEH-28.3 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.3
+  to_id: BEH-28.4
+  description: BEH-28.3 triggers BEH-28.4 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.4
+  to_id: BEH-28.5
+  description: BEH-28.4 triggers BEH-28.5 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.5
+  to_id: BEH-28.6
+  description: BEH-28.5 triggers BEH-28.6 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.6
+  to_id: BEH-28.7
+  description: BEH-28.6 triggers BEH-28.7 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.7
+  to_id: BEH-28.9
+  description: BEH-28.7 triggers BEH-28.9 in dev-loop sequence
+- type: triggers
+  from_id: BEH-28.4
+  to_id: BEH-28.8
+  description: BEH-28.4 triggers BEH-28.8 in dev-loop sequence
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.1
+  description: BEH-28 contains dev-loop step BEH-28.1
+- type: traces-to
+  from_id: COMP-2
+  to_id: BEH-28.2
+  description: COMP-2 implements dev-loop step BEH-28.2
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.2
+  description: BEH-28 contains dev-loop step BEH-28.2
+- type: traces-to
+  from_id: COMP-15
+  to_id: BEH-28.3
+  description: COMP-15 implements dev-loop step BEH-28.3
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.3
+  description: BEH-28 contains dev-loop step BEH-28.3
+- type: traces-to
+  from_id: COMP-16
+  to_id: BEH-28.4
+  description: COMP-16 implements dev-loop step BEH-28.4
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.4
+  description: BEH-28 contains dev-loop step BEH-28.4
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-28.5
+  description: COMP-11 implements dev-loop step BEH-28.5
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.5
+  description: BEH-28 contains dev-loop step BEH-28.5
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-28.6
+  description: COMP-11 implements dev-loop step BEH-28.6
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.6
+  description: BEH-28 contains dev-loop step BEH-28.6
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-28.7
+  description: COMP-11 implements dev-loop step BEH-28.7
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.7
+  description: BEH-28 contains dev-loop step BEH-28.7
+- type: traces-to
+  from_id: COMP-16
+  to_id: BEH-28.8
+  description: COMP-16 implements dev-loop step BEH-28.8
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.8
+  description: BEH-28 contains dev-loop step BEH-28.8
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-28.9
+  description: COMP-11 implements dev-loop step BEH-28.9
+- type: contains
+  from_id: BEH-28
+  to_id: BEH-28.9
+  description: BEH-28 contains dev-loop step BEH-28.9
