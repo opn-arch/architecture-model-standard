@@ -2053,6 +2053,83 @@ entities:
     description: Serialize MaterializedSlice with digest for downstream projection.
     preconditions: All scope + closure + supplementary steps complete
     postconditions: MaterializedSlice with stable digest
+  - id: BEH-27.1
+    name: Load Lesson History
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Read .architecture/learning/history.json — accumulated lessons from prior pipeline runs.
+    preconditions: history.json is readable
+    postconditions: In-memory lesson index with content-hashed IDs
+  - id: BEH-27.2
+    name: Apply Learned Heuristics
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Consult stored heuristics (contract count thresholds, signature correlations) during current run.
+    preconditions: Lesson history loaded
+    postconditions: Pipeline stages have access to learned rules
+  - id: BEH-27.3
+    name: Detect Novel Patterns
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Compare current-run observations against known patterns; flag anything outside known archetypes.
+    preconditions: Extraction complete
+    postconditions: Novel-pattern list with per-pattern evidence
+  - id: BEH-27.4
+    name: Extract Lessons
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Distill new lessons from novel patterns + successful heuristics; dedupe by content hash.
+    preconditions: Novel patterns identified
+    postconditions: New lesson candidates ready for persistence
+  - id: BEH-27.5
+    name: Detect Dominant Patterns
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Identify pattern that dominates the current run (e.g., systemic constant-value issue).
+    preconditions: Report card + pattern log available
+    postconditions: Dominant pattern flagged with confidence score
+  - id: BEH-27.6
+    name: Flag Systemic Issues
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Escalate dominant patterns that cross severity threshold to the drift-report list.
+    preconditions: Dominant pattern crosses threshold
+    postconditions: Drift flag written to .architecture/
+  - id: BEH-27.7
+    name: Check Doc Drift
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Run 4 doc-drift checks (test count, version sync, schema version, Python version) against CONTEXT.md.
+    preconditions: Docs and model both exist
+    postconditions: Drift issues logged; simple cases auto-fixed
+  - id: BEH-27.8
+    name: Auto-Fix Simple Drift
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Apply automatic fixes for version-number/test-count drifts.
+    preconditions: Drift issue flagged auto-fixable
+    postconditions: Doc file updated with correction
+  - id: BEH-27.9
+    name: Generate Report Card
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Score run (A-F grade) on fidelity, compression, novel-pattern rate; compare to trend.
+    preconditions: Regen/extract run complete
+    postconditions: Report card persisted; trend delta computed
+  - id: BEH-27.10
+    name: Append to Learning Curve
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Append current run metrics to learning_curve table for cross-run trend analysis.
+    preconditions: Report card generated
+    postconditions: learning_curve row appended
+  - id: BEH-27.11
+    name: Persist Lessons
+    status: ACTIVE
+    behavior_type: workflow_step
+    description: Write new lessons back to history.json with atomic write + content-hash dedupe.
+    preconditions: Lesson candidates ready
+    postconditions: history.json updated
   interfaces:
   - id: IF-1
     name: main CLI
@@ -5310,3 +5387,135 @@ relationships:
   from_id: BEH-26
   to_id: BEH-26.11
   description: BEH-26 contains slice step BEH-26.11
+- type: triggers
+  from_id: BEH-27
+  to_id: BEH-27.1
+  description: BEH-27 triggers BEH-27.1 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.1
+  to_id: BEH-27.2
+  description: BEH-27.1 triggers BEH-27.2 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.2
+  to_id: BEH-27.3
+  description: BEH-27.2 triggers BEH-27.3 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.3
+  to_id: BEH-27.4
+  description: BEH-27.3 triggers BEH-27.4 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.3
+  to_id: BEH-27.5
+  description: BEH-27.3 triggers BEH-27.5 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.5
+  to_id: BEH-27.6
+  description: BEH-27.5 triggers BEH-27.6 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.4
+  to_id: BEH-27.11
+  description: BEH-27.4 triggers BEH-27.11 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.6
+  to_id: BEH-27.7
+  description: BEH-27.6 triggers BEH-27.7 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.7
+  to_id: BEH-27.8
+  description: BEH-27.7 triggers BEH-27.8 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.8
+  to_id: BEH-27.9
+  description: BEH-27.8 triggers BEH-27.9 in self-improvement loop
+- type: triggers
+  from_id: BEH-27.9
+  to_id: BEH-27.10
+  description: BEH-27.9 triggers BEH-27.10 in self-improvement loop
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.1
+  description: COMP-11 implements self-improvement step BEH-27.1
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.1
+  description: BEH-27 contains self-improvement step BEH-27.1
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.2
+  description: COMP-11 implements self-improvement step BEH-27.2
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.2
+  description: BEH-27 contains self-improvement step BEH-27.2
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.3
+  description: COMP-11 implements self-improvement step BEH-27.3
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.3
+  description: BEH-27 contains self-improvement step BEH-27.3
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.4
+  description: COMP-11 implements self-improvement step BEH-27.4
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.4
+  description: BEH-27 contains self-improvement step BEH-27.4
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.5
+  description: COMP-11 implements self-improvement step BEH-27.5
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.5
+  description: BEH-27 contains self-improvement step BEH-27.5
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.6
+  description: COMP-11 implements self-improvement step BEH-27.6
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.6
+  description: BEH-27 contains self-improvement step BEH-27.6
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.7
+  description: COMP-11 implements self-improvement step BEH-27.7
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.7
+  description: BEH-27 contains self-improvement step BEH-27.7
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.8
+  description: COMP-11 implements self-improvement step BEH-27.8
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.8
+  description: BEH-27 contains self-improvement step BEH-27.8
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.9
+  description: COMP-11 implements self-improvement step BEH-27.9
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.9
+  description: BEH-27 contains self-improvement step BEH-27.9
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.10
+  description: COMP-11 implements self-improvement step BEH-27.10
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.10
+  description: BEH-27 contains self-improvement step BEH-27.10
+- type: traces-to
+  from_id: COMP-11
+  to_id: BEH-27.11
+  description: COMP-11 implements self-improvement step BEH-27.11
+- type: contains
+  from_id: BEH-27
+  to_id: BEH-27.11
+  description: BEH-27 contains self-improvement step BEH-27.11
