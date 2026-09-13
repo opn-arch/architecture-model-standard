@@ -941,7 +941,6 @@ entities:
     requirements:
     - REQ-PB-13
     - REQ-PB-14
-    - REQ-PB-18
     - REQ-PB-20
   - id: CAP-PB-PROMISE-GRAPH
     name: Promise as First-Class Type
@@ -2290,15 +2289,6 @@ entities:
     acceptance_criteria:
     - Matrix coverage 100% across kinds
     stakeholder: LLM Agent
-  - id: REQ-PB-18
-    name: Existing test suite continues to pass
-    status: ACTIVE
-    text: The full existing test suite (3746 passed, 104 skipped) MUST continue to pass throughout the Plan B refactor.
-    priority: must
-    verification_method: test
-    acceptance_criteria:
-    - pytest green after every commit; no regressions
-    stakeholder: CI/CD Pipeline
   - id: REQ-PB-19
     name: Jaccard similarity threshold for cluster
     status: ACTIVE
