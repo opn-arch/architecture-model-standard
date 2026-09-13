@@ -2863,6 +2863,39 @@ entities:
       test_method: test_yaml_round_trip
       assertion: original.all_entity_ids == rebuilt.all_entity_ids
       contract_type: value_equality
+    observability:
+    - function: RelationType.parse
+      log_level: INFO
+    - function: ActorType.parse
+      log_level: INFO
+    - function: InterfaceType.parse
+      log_level: INFO
+    - function: ConstraintType.parse
+      log_level: INFO
+    - function: ComponentKind.parse
+      log_level: INFO
+    - function: BehaviorPattern.parse
+      log_level: INFO
+    - function: EventKind.parse
+      log_level: INFO
+    - function: ResourceKind.parse
+      log_level: INFO
+    - function: EnvironmentKind.parse
+      log_level: INFO
+    - function: DecisionStatus.parse
+      log_level: INFO
+    - function: LifecyclePhase.parse
+      log_level: INFO
+    - function: ArchitectureModel.all_entity_ids
+      log_level: INFO
+    - function: ArchitectureModel.entity_count
+      log_level: INFO
+    - function: ArchitectureModel.relationship_count
+      log_level: INFO
+    - function: ArchitectureModel.to_dict
+      log_level: INFO
+    - function: ArchitectureModel.to_yaml
+      log_level: INFO
     parent_id: COMP-1
   - id: COMP-1.2
     name: Validation
@@ -2978,6 +3011,21 @@ entities:
       test_method: test_dormant_component_not_orphan
       assertion: len(orphans) == 0
       contract_type: value_equality
+    observability:
+    - function: ValidationResult.error_count
+      log_level: INFO
+    - function: ValidationResult.warning_count
+      log_level: INFO
+    - function: ValidationResult.info_count
+      log_level: INFO
+    - function: ValidationResult.is_valid
+      log_level: INFO
+    - function: ValidationResult.score
+      log_level: INFO
+    - function: ValidationResult.summary
+      log_level: INFO
+    - function: validate_model
+      log_level: INFO
     parent_id: COMP-1
   - id: COMP-1.3
     name: Parser & Persistence
@@ -3243,6 +3291,43 @@ entities:
       test_method: test_load_empty_dir
       assertion: snapshot.manifest_dict == {}
       contract_type: value_equality
+    observability:
+    - function: load_block_model
+      log_level: INFO
+    - function: load_model
+      log_level: INFO
+    - function: validate_model_data
+      log_level: INFO
+    - function: dump_model
+      log_level: INFO
+    - function: save_model
+      log_level: INFO
+    - function: compute_compression_stats
+      log_level: INFO
+    - function: format_compression_summary
+      log_level: INFO
+    - function: merge_manifest
+      log_level: INFO
+    - function: EnrichmentResult.model
+      log_level: INFO
+    - function: EnrichmentResult.entities
+      log_level: INFO
+    - function: EnrichmentResult.relationships
+      log_level: INFO
+    - function: EnrichmentResult.meta
+      log_level: INFO
+    - function: enrich_from_manifest
+      log_level: INFO
+    - function: compact_for_generation
+      log_level: INFO
+    - function: compose_enriched_model
+      log_level: INFO
+    - function: save_project
+      log_level: INFO
+    - function: save_block
+      log_level: INFO
+    - function: load_project
+      log_level: INFO
     parent_id: COMP-1
   - id: COMP-1.4
     name: Model Operations
@@ -3776,6 +3861,57 @@ entities:
       test_method: test_colorama_subsystem_count
       assertion: len(result) == 5
       contract_type: value_equality
+    observability:
+    - function: slice_by_entity
+      log_level: INFO
+    - function: slice_by_source_block
+      log_level: INFO
+    - function: slice_by_layer
+      log_level: INFO
+    - function: slice_by_status
+      log_level: INFO
+    - function: slice_for_artifact
+      log_level: INFO
+    - function: ModelDiff.has_changes
+      log_level: INFO
+    - function: ModelDiff.added_count
+      log_level: INFO
+    - function: ModelDiff.removed_count
+      log_level: INFO
+    - function: ModelDiff.modified_count
+      log_level: INFO
+    - function: ModelDiff.summary
+      log_level: INFO
+    - function: ModelDiff.format_report
+      log_level: INFO
+    - function: ModelDiff.affected_artifacts
+      log_level: INFO
+    - function: diff_models
+      log_level: INFO
+    - function: cluster_modules
+      log_level: INFO
+    - function: auto_assign_source_blocks
+      log_level: INFO
+    - function: compute_modularity
+      log_level: INFO
+    - function: compute_conductance
+      log_level: INFO
+    - function: compute_agreement_rate
+      log_level: INFO
+    - function: compute_source_block_quality
+      log_level: INFO
+    - function: compute_provenance
+      log_level: INFO
+    - function: RepresentativenessResult.to_dict
+      log_level: INFO
+    - function: compute_representativeness
+      log_level: INFO
+    - function: HierarchicalRepresentativenessResult.to_dict
+      log_level: INFO
+    - function: compute_hierarchical_representativeness
+      log_level: INFO
+    - function: test_affinity_decompose
+      log_level: INFO
     parent_id: COMP-1
   - id: COMP-1.5
     name: Quality Metrics
@@ -4326,6 +4462,83 @@ entities:
       test_method: test_no_systems_returns_unchanged
       assertion: len(result.top_level.entities.systems) == 0
       contract_type: value_equality
+    observability:
+    - function: load_corrections
+      log_level: INFO
+    - function: store_correction
+      log_level: INFO
+    - function: apply_corrections
+      log_level: INFO
+    - function: mark_applied
+      log_level: INFO
+    - function: compute_complexity
+      log_level: INFO
+    - function: identify_systems
+      log_level: INFO
+    - function: decompose_model
+      log_level: INFO
+    - function: detect_systems
+      log_level: INFO
+    - function: shape
+      log_level: INFO
+    - function: edge_style
+      log_level: INFO
+    - function: css_classes
+      log_level: INFO
+    - function: generate_context_diagram
+      log_level: INFO
+    - function: generate_components_diagram
+      log_level: INFO
+    - function: generate_behaviors_diagram
+      log_level: INFO
+    - function: generate_dependencies_diagram
+      log_level: INFO
+    - function: generate_pipeline_flow_diagram
+      log_level: INFO
+    - function: generate_entity_lifecycle_diagram
+      log_level: INFO
+    - function: generate_data_flow_diagram
+      log_level: INFO
+    - function: generate_constraint_map_diagram
+      log_level: INFO
+    - function: generate_traceability_diagram
+      log_level: INFO
+    - function: generate_decomposition_diagram
+      log_level: INFO
+    - function: generate_icd_diagram
+      log_level: INFO
+    - function: generate_requirements_allocation_diagram
+      log_level: INFO
+    - function: generate_system_decomposition_diagram
+      log_level: INFO
+    - function: generate_conops_diagram
+      log_level: INFO
+    - function: generate_functional_architecture_diagram
+      log_level: INFO
+    - function: generate_logical_architecture_diagram
+      log_level: INFO
+    - function: generate_behavior_overview_diagram
+      log_level: INFO
+    - function: generate_component_detail_diagram
+      log_level: INFO
+    - function: generate_use_case_diagram
+      log_level: INFO
+    - function: generate_use_case_diagrams
+      log_level: INFO
+    - function: generate_behavior_sequence_diagram
+      log_level: INFO
+    - function: generate_behavior_flow_diagram
+      log_level: INFO
+    - function: inject_click_handlers
+      log_level: INFO
+    - function: build_entity_properties
+      log_level: INFO
+    - function: generate_html_viewer
+      log_level: INFO
+    - function: generate_entity_explorer
+      log_level: INFO
+    - function: generate_all_diagrams
+      log_level: INFO
     parent_id: COMP-1
   - id: COMP-2
     name: Pipeline
@@ -4715,6 +4928,89 @@ entities:
       test_method: test_unapplied_only
       assertion: updated.entities.components[0].name == 'OldName'
       contract_type: value_equality
+    observability:
+    - function: PipelineCoordinator.__init__
+      log_level: INFO
+    - function: PipelineCoordinator.resolve_order
+      log_level: INFO
+    - function: PipelineCoordinator.run_to
+      log_level: INFO
+    - function: PipelineCoordinator.run_stage
+      log_level: INFO
+    - function: PipelineCoordinator.run_all
+      log_level: INFO
+    - function: PipelineCoordinator.get_prior_evidence
+      log_level: INFO
+    - function: PipelineCoordinator.get_calibration
+      log_level: INFO
+    - function: PipelineCoordinator.enrich_stage_output
+      log_level: INFO
+    - function: PipelineCoordinator.run_recursive
+      log_level: INFO
+    - function: Claim.confidence
+      log_level: INFO
+    - function: QualityMetrics.passes
+      log_level: INFO
+    - function: QualityMetrics.worst_component
+      log_level: INFO
+    - function: QualityGate.evaluate
+      log_level: INFO
+    - function: QualityGateError.__init__
+      log_level: INFO
+    - function: PipelineContext.has
+      log_level: INFO
+    - function: PipelineContext.get
+      log_level: INFO
+    - function: PipelineContext.llm_enrich
+      log_level: INFO
+    - function: Stage.run
+      log_level: INFO
+    - function: Stage.can_run
+      log_level: INFO
+    - function: Stage.output_path
+      log_level: INFO
+    - function: PipelineCache.__init__
+      log_level: INFO
+    - function: PipelineCache.exists
+      log_level: INFO
+    - function: PipelineCache.save_stage
+      log_level: INFO
+    - function: PipelineCache.load_stage
+      log_level: INFO
+    - function: PipelineCache.load_all
+      log_level: INFO
+    - function: PipelineCache.save_llm_calls
+      log_level: INFO
+    - function: PipelineCache.load_llm_calls
+      log_level: INFO
+    - function: PipelineCache.save_enrichment_log
+      log_level: INFO
+    - function: PipelineCache.load_enrichment_log
+      log_level: INFO
+    - function: PipelineCache.save_reviews
+      log_level: INFO
+    - function: PipelineCache.load_reviews
+      log_level: INFO
+    - function: PipelineCache.clear
+      log_level: INFO
+    - function: PipelineCache.invalidate
+      log_level: INFO
+    - function: PipelineCache.hydrate_context
+      log_level: INFO
+    - function: generate_context
+      log_level: INFO
+    - function: write_context
+      log_level: INFO
+    - function: StageReport.to_markdown
+      log_level: INFO
+    - function: generate_pipeline_report
+      log_level: INFO
+    - function: write_artifacts
+      log_level: INFO
+    - function: get_resolutions_for_stage
+      log_level: INFO
+    - function: get_corrections_for_stage
+      log_level: INFO
     parent_id: COMP-2
   - id: COMP-2.2
     name: Observation Stages
@@ -4814,6 +5110,11 @@ entities:
       test_method: test_run_pipeline_config_only
       assertion: len(result.sub_models) == 0
       contract_type: value_equality
+    observability:
+    - function: ObserveStage.run
+      log_level: INFO
+    - function: InferStage.run
+      log_level: INFO
     parent_id: COMP-2
   - id: COMP-2.3
     name: Allocation & Relation Stages
@@ -4893,6 +5194,11 @@ entities:
       test_method: test_run_pipeline_config_only
       assertion: len(result.sub_models) == 0
       contract_type: value_equality
+    observability:
+    - function: AllocateStage.run
+      log_level: INFO
+    - function: RelateStage.run
+      log_level: INFO
     parent_id: COMP-2
   - id: COMP-2.4
     name: Specification & Contract Stages
@@ -4987,6 +5293,13 @@ entities:
       test_method: test_run_pipeline_config_only
       assertion: len(result.sub_models) == 0
       contract_type: value_equality
+    observability:
+    - function: SpecifyStage.run
+      log_level: INFO
+    - function: ContractStage.run
+      log_level: INFO
+    - function: ValidateStage.run
+      log_level: INFO
     parent_id: COMP-2
   - id: COMP-2.5
     name: Synthesis & Emit Stages
@@ -5174,6 +5487,35 @@ entities:
       test_method: test_run_pipeline_config_only
       assertion: len(result.sub_models) == 0
       contract_type: value_equality
+    observability:
+    - function: DecomposeStage.can_run
+      log_level: INFO
+    - function: DecomposeStage.output_path
+      log_level: INFO
+    - function: DecomposeStage.run
+      log_level: INFO
+    - function: _EntityIdAllocator.__init__
+      log_level: DEBUG
+    - function: _EntityIdAllocator.allocate
+      log_level: DEBUG
+    - function: SynthesizeStage.can_run
+      log_level: INFO
+    - function: SynthesizeStage.output_path
+      log_level: INFO
+    - function: SynthesizeStage.run
+      log_level: INFO
+    - function: EmitStage.can_run
+      log_level: INFO
+    - function: EmitStage.output_path
+      log_level: INFO
+    - function: EmitStage.run
+      log_level: INFO
+    - function: RegenScoreStage.run
+      log_level: INFO
+    - function: RegenScoreStage.can_run
+      log_level: INFO
+    - function: RegenScoreStage.output_path
+      log_level: INFO
     parent_id: COMP-2
   - id: COMP-3
     name: Manifest
@@ -5321,6 +5663,25 @@ entities:
       test_method: test_returns_non_empty_markdown
       assertion: result isinstance str
       contract_type: type_check
+    observability:
+    - function: ModuleInfo.to_dict
+      log_level: INFO
+    - function: InterfaceEdge.to_dict
+      log_level: INFO
+    - function: SubFunctionEntry.to_dict
+      log_level: INFO
+    - function: BlockManifest.to_dict
+      log_level: INFO
+    - function: MetricsResult.to_dict
+      log_level: INFO
+    - function: ScanReport.success_rate
+      log_level: INFO
+    - function: ScanReport.log_summary
+      log_level: INFO
+    - function: Manifest.to_dict
+      log_level: INFO
+    - function: RecursiveManifest.to_dict
+      log_level: INFO
     evidence:
       test_coverage:
         test_count: 146
@@ -5721,6 +6082,43 @@ entities:
       test_method: test_converts_modules_and_interfaces
       assertion: len(g.units) == 2
       contract_type: value_equality
+    observability:
+    - function: scan_file
+      log_level: INFO
+    - function: scan_all_languages
+      log_level: INFO
+    - function: scan_typescript_fallback
+      log_level: INFO
+    - function: scan_kotlin
+      log_level: INFO
+    - function: scan_java
+      log_level: INFO
+    - function: classify_function
+      log_level: INFO
+    - function: extract_body_hint
+      log_level: INFO
+    - function: extract_file_hints
+      log_level: INFO
+    - function: compute_metrics
+      log_level: INFO
+    - function: ScanCache.__init__
+      log_level: INFO
+    - function: ScanCache.get
+      log_level: INFO
+    - function: ScanCache.put
+      log_level: INFO
+    - function: ScanCache.hits
+      log_level: INFO
+    - function: ScanCache.misses
+      log_level: INFO
+    - function: SourceUnit.export_names
+      log_level: INFO
+    - function: SourceGraph.from_json
+      log_level: INFO
+    - function: SourceGraph.from_manifest
+      log_level: INFO
+    - function: SourceGraph.to_json
+      log_level: INFO
     parent_id: COMP-3
   - id: COMP-3.2
     name: Graph & Analysis
@@ -5974,6 +6372,29 @@ entities:
       test_method: test_fore_reset_value
       assertion: resets[0].value == '39'
       contract_type: value_equality
+    observability:
+    - function: build_call_graph
+      log_level: INFO
+    - function: trace_flow
+      log_level: INFO
+    - function: map_flow_to_components
+      log_level: INFO
+    - function: derive_interfaces
+      log_level: INFO
+    - function: extract_call_order
+      log_level: INFO
+    - function: extract_control_flow
+      log_level: INFO
+    - function: extract_guards
+      log_level: INFO
+    - function: build_block_chains
+      log_level: INFO
+    - function: build_cross_block_chains
+      log_level: INFO
+    - function: analyze_test_file
+      log_level: INFO
+    - function: extract_constants_from_contracts
+      log_level: INFO
     parent_id: COMP-3
   - id: COMP-3.3
     name: Grouping & Generation
@@ -6248,6 +6669,33 @@ entities:
       test_method: test_sub_function_entry_has_signature_strings
       assertion: f isinstance str
       contract_type: type_check
+    observability:
+    - function: group_modules
+      log_level: INFO
+    - function: create_components_from_manifest
+      log_level: INFO
+    - function: auto_source_blocks
+      log_level: INFO
+    - function: group_source_graph
+      log_level: INFO
+    - function: generate_manifest
+      log_level: INFO
+    - function: load_or_generate_manifest
+      log_level: INFO
+    - function: generate_block_manifest
+      log_level: INFO
+    - function: generate_recursive_manifests
+      log_level: INFO
+    - function: compute_block_dependencies
+      log_level: INFO
+    - function: write_recursive_manifests
+      log_level: INFO
+    - function: process_block
+      log_level: INFO
+    - function: get_manifest_slice
+      log_level: INFO
+    - function: print_summary
+      log_level: INFO
     parent_id: COMP-3
   - id: COMP-4
     name: Documentation
@@ -6485,6 +6933,37 @@ entities:
       test_method: test_load_or_generate_returns_dict
       assertion: result isinstance dict
       contract_type: type_check
+    observability:
+    - function: generate_docs
+      log_level: INFO
+    - function: generate_component_spec
+      log_level: INFO
+    - function: generate_icd
+      log_level: INFO
+    - function: generate_dependency_matrix
+      log_level: INFO
+    - function: generate_health_report
+      log_level: INFO
+    - function: generate_drift_report
+      log_level: INFO
+    - function: generate_component_diagram
+      log_level: INFO
+    - function: generate_use_case_diagram
+      log_level: INFO
+    - function: generate_system_boundary_diagram
+      log_level: INFO
+    - function: generate_all_diagrams
+      log_level: INFO
+    - function: generate_index
+      log_level: INFO
+    - function: generate_behavior_spec
+      log_level: INFO
+    - function: generate_behavior_index
+      log_level: INFO
+    - function: generate_integration_flows
+      log_level: INFO
+    - function: generate_system_design
+      log_level: INFO
     parent_id: COMP-4
   - id: COMP-4.2
     name: SE Document Suite
@@ -6863,6 +7342,61 @@ entities:
       test_method: test_load_or_generate_returns_dict
       assertion: result isinstance dict
       contract_type: type_check
+    observability:
+    - function: generate_se_docs
+      log_level: INFO
+    - function: regenerate_affected
+      log_level: INFO
+    - function: generate_frontmatter
+      log_level: INFO
+    - function: parse_frontmatter
+      log_level: INFO
+    - function: extract_section_hashes
+      log_level: INFO
+    - function: detect_project_docs
+      log_level: INFO
+    - function: generate_conops
+      log_level: INFO
+    - function: generate_functional_analysis
+      log_level: INFO
+    - function: generate_logical_architecture
+      log_level: INFO
+    - function: generate_requirements_analysis
+      log_level: INFO
+    - function: generate_use_cases
+      log_level: INFO
+    - function: generate_verification_validation
+      log_level: INFO
+    - function: generate_interface_spec
+      log_level: INFO
+    - function: generate_operations_manual
+      log_level: INFO
+    - function: generate_maintenance_manual
+      log_level: INFO
+    - function: generate_risk_assessment
+      log_level: INFO
+    - function: generate_security_analysis
+      log_level: INFO
+    - function: generate_data_model
+      log_level: INFO
+    - function: generate_deployment_guide
+      log_level: INFO
+    - function: generate_api_reference
+      log_level: INFO
+    - function: generate_cli_reference
+      log_level: INFO
+    - function: Changelog.__init__
+      log_level: INFO
+    - function: Changelog.load
+      log_level: INFO
+    - function: Changelog.record_generation
+      log_level: INFO
+    - function: Changelog.detect_edits
+      log_level: INFO
+    - function: Changelog.record_regeneration
+      log_level: INFO
+    - function: generate_plugin_guide
+      log_level: INFO
     parent_id: COMP-4
   - id: COMP-5
     name: Orchestration
@@ -7256,6 +7790,45 @@ entities:
       test_method: test_enum_type_triggers_detected
       assertion: len(composites) == 1
       contract_type: value_equality
+    - test_file: test_enrich.py
+      test_method: test_enrich_seeds_observability_when_sigs_and_contracts_present
+      assertion: o.log_level == 'INFO'
+      contract_type: value_equality
+    - test_file: test_enrich.py
+      test_method: test_enrich_observability_preserves_existing
+      assertion: len(c.observability) == 1
+      contract_type: value_equality
+    observability:
+    - function: enrich_model
+      log_level: INFO
+    - function: enrich_from_manifest
+      log_level: INFO
+    - function: enrich_behaviors_from_manifest
+      log_level: INFO
+    - function: enrich_with_block_context
+      log_level: INFO
+    - function: manifest_to_source_graph
+      log_level: INFO
+    - function: extract_component_interfaces
+      log_level: INFO
+    - function: enrich_from_source_graph
+      log_level: INFO
+    - function: create_behaviors_from_manifest
+      log_level: INFO
+    - function: format_enrichment_prompt
+      log_level: INFO
+    - function: infer_capabilities
+      log_level: INFO
+    - function: build_capability_hierarchy
+      log_level: INFO
+    - function: detect_behavior_triggers
+      log_level: INFO
+    - function: build_behavior_entry_map
+      log_level: INFO
+    - function: infer_composite_behaviors
+      log_level: INFO
+    - function: format_naming_context
+      log_level: INFO
     parent_id: COMP-5
   - id: COMP-5.2
     name: Decomposition
@@ -7549,6 +8122,35 @@ entities:
       test_method: test_run_pipeline_config_only
       assertion: len(result.sub_models) == 0
       contract_type: value_equality
+    observability:
+    - function: decompose_model
+      log_level: INFO
+    - function: compact_root_model
+      log_level: INFO
+    - function: write_sub_models
+      log_level: INFO
+    - function: deep_decompose_block
+      log_level: INFO
+    - function: iterative_decompose
+      log_level: INFO
+    - function: decompose_behavior
+      log_level: INFO
+    - function: decompose_all_behaviors
+      log_level: INFO
+    - function: classify_behaviors
+      log_level: INFO
+    - function: summarize_crud_group
+      log_level: INFO
+    - function: build_behavior_manifest
+      log_level: INFO
+    - function: build_behavior_sub_model
+      log_level: INFO
+    - function: build_file_to_comp
+      log_level: INFO
+    - function: compact_for_storage
+      log_level: INFO
+    - function: run_pipeline
+      log_level: INFO
     parent_id: COMP-5
   - id: COMP-6
     name: Extract
@@ -7725,6 +8327,25 @@ entities:
       test_method: test_detect_constraints_empty_dir
       assertion: constraints == []
       contract_type: value_equality
+    observability:
+    - function: extract_from_code
+      log_level: INFO
+    - function: extract_from_artifacts
+      log_level: INFO
+    - function: main
+      log_level: INFO
+    - function: detect_routes
+      log_level: INFO
+    - function: detect_constraints
+      log_level: INFO
+    - function: parse_tables
+      log_level: INFO
+    - function: find_table_after_heading
+      log_level: INFO
+    - function: extract_sections
+      log_level: INFO
+    - function: extract_list_items
+      log_level: INFO
     evidence:
       test_coverage:
         test_count: 14
@@ -7831,6 +8452,11 @@ entities:
       test_method: test_parse_meta_leaves_generated_at_empty_when_absent
       assertion: meta.generated_at == ''
       contract_type: value_equality
+    observability:
+    - function: parse_requirements_doc
+      log_level: INFO
+    - function: check_development_gate
+      log_level: INFO
     evidence:
       test_coverage:
         test_count: 10
@@ -8114,6 +8740,43 @@ entities:
       test_method: test_discover_config_returns_report
       assertion: config.name == tmp_path.name
       contract_type: value_equality
+    observability:
+    - function: load_config
+      log_level: INFO
+    - function: discover_config
+      log_level: INFO
+    - function: get_config
+      log_level: INFO
+    - function: write_config
+      log_level: INFO
+    - function: OutputConfig.resolve
+      log_level: INFO
+    - function: ProjectConfig.layer_dir_map
+      log_level: INFO
+    - function: ProjectConfig.source_block_dir_map
+      log_level: INFO
+    - function: ProjectConfig.source_block_dict
+      log_level: INFO
+    - function: ProjectConfig.metrics_paths
+      log_level: INFO
+    - function: ProjectConfig.resolved_output
+      log_level: INFO
+    - function: ProjectConfig.from_dict
+      log_level: INFO
+    - function: ProjectConfig.to_dict
+      log_level: INFO
+    - function: DiscoveryReport.add_candidate
+      log_level: INFO
+    - function: DiscoveryReport.claim_rate
+      log_level: INFO
+    - function: DiscoveryReport.summary
+      log_level: INFO
+    - function: DomainProfile.from_dict
+      log_level: INFO
+    - function: DomainProfile.get_extended_values
+      log_level: INFO
+    - function: load_profile
+      log_level: INFO
     evidence:
       test_coverage:
         test_count: 6
@@ -8477,6 +9140,37 @@ entities:
       test_method: test_prefix_auto_derived
       assertion: result.prefix == derive_prefix(tmp_path.name)
       contract_type: value_equality
+    observability:
+    - function: derive_prefix
+      log_level: INFO
+    - function: build_flat_export
+      log_level: INFO
+    - function: concat_submodels
+      log_level: INFO
+    - function: concat_behavior_submodels
+      log_level: INFO
+    - function: concat_component_models
+      log_level: INFO
+    - function: concat_behavior_specs
+      log_level: INFO
+    - function: concat_docs
+      log_level: INFO
+    - function: concat_module_specs
+      log_level: INFO
+    - function: concat_diagrams
+      log_level: INFO
+    - function: concat_skills
+      log_level: INFO
+    - function: manifests_to_markdown
+      log_level: INFO
+    - function: generate_readme
+      log_level: INFO
+    - function: generate_schema_reference
+      log_level: INFO
+    - function: generate_api_reference
+      log_level: INFO
+    - function: generate_custom_instructions
+      log_level: INFO
     evidence:
       test_coverage:
         test_count: 40
@@ -8657,6 +9351,55 @@ entities:
       test_method: test_run_pipeline_config_only
       assertion: len(result.sub_models) == 0
       contract_type: value_equality
+    observability:
+    - function: GlobalLearningStore.__init__
+      log_level: INFO
+    - function: GlobalLearningStore.add_heuristic
+      log_level: INFO
+    - function: GlobalLearningStore.get_heuristics
+      log_level: INFO
+    - function: GlobalLearningStore.validate_heuristic
+      log_level: INFO
+    - function: GlobalLearningStore.add_archetype
+      log_level: INFO
+    - function: GlobalLearningStore.get_archetypes
+      log_level: INFO
+    - function: GlobalLearningStore.match_archetypes
+      log_level: INFO
+    - function: GlobalLearningStore.add_workflow
+      log_level: INFO
+    - function: GlobalLearningStore.get_workflows
+      log_level: INFO
+    - function: QualityTrend.direction
+      log_level: INFO
+    - function: LearningStore.__init__
+      log_level: INFO
+    - function: LearningStore.add_correction
+      log_level: INFO
+    - function: LearningStore.get_corrections
+      log_level: INFO
+    - function: LearningStore.corrections_as_evidence
+      log_level: INFO
+    - function: LearningStore.set_calibration
+      log_level: INFO
+    - function: LearningStore.get_calibration
+      log_level: INFO
+    - function: LearningStore.record_run
+      log_level: INFO
+    - function: LearningStore.get_trend
+      log_level: INFO
+    - function: LearningStore.add_resolution
+      log_level: INFO
+    - function: LearningStore.get_resolutions
+      log_level: INFO
+    - function: LessonEntry.from_diagnostics
+      log_level: INFO
+    - function: LessonEntry.from_uncertainties
+      log_level: INFO
+    - function: LessonEntry.from_llm_calls
+      log_level: INFO
+    - function: generate_lessons
+      log_level: INFO
     evidence:
       test_coverage:
         test_count: 34
@@ -8786,6 +9529,19 @@ entities:
       test_method: test_cluster_stability
       assertion: result isinstance ConsistencyResult
       contract_type: type_check
+    observability:
+    - function: is_excluded_dir
+      log_level: INFO
+    - function: collect_py_files
+      log_level: INFO
+    - function: discover_source_files
+      log_level: INFO
+    - function: discover_test_files
+      log_level: INFO
+    - function: load_patterns
+      log_level: INFO
+    - function: get_pattern
+      log_level: INFO
     evidence:
       test_coverage:
         test_count: 7
