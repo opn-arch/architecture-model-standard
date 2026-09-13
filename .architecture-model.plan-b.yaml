@@ -3,19 +3,15 @@ meta:
   project: architecture-model-standard-plan-b
   generated_at: '2026-09-12'
   domain_profile: library
-  description: Architecture model of Plan B refactor (promise-graph schema 3.0 + 7-stage pipeline + legacy-adapter
-    plugin). Modeled in AMS 2.1 before any code change; approval gate at Phase B'-0c unlocks first code
-    commit. See docs/plans/2026-09-12-plan-b-architecture-first-refactor.md.
+  description: Architecture model of Plan B refactor (promise-graph schema 3.0 + 7-stage pipeline + legacy-adapter plugin). Modeled in AMS 2.1 before any code change; approval gate at Phase B'-0c unlocks first code commit. See docs/plans/2026-09-12-plan-b-architecture-first-refactor.md.
 entities:
   actors:
   - id: ACT-PB-1
     name: Human Architect
     status: ACTIVE
     type: human
-    description: Primary curator of Plan B; reviews the architecture model, approves the first coding
-      commit, drives iterative refinement during Phase B'-4.
-    intent: Steer AMS toward a promise-graph schema that models any system's promises with delivery-down/verify-up
-      closure
+    description: Primary curator of Plan B; reviews the architecture model, approves the first coding commit, drives iterative refinement during Phase B'-4.
+    intent: Steer AMS toward a promise-graph schema that models any system's promises with delivery-down/verify-up closure
     goals:
     - Approve Plan B architecture at Phase B'-0c gate
     - Review each code commit's architecture-refs closure
@@ -35,8 +31,7 @@ entities:
     name: LLM Agent (frontier model via MCP)
     status: ACTIVE
     type: human
-    description: Any frontier LLM (Anthropic/OpenAI/local) invoked through OpenCode MCP substrate; consumes
-      compressed context and produces model updates, proposals, prose narratives, and gap classifications.
+    description: Any frontier LLM (Anthropic/OpenAI/local) invoked through OpenCode MCP substrate; consumes compressed context and produces model updates, proposals, prose narratives, and gap classifications.
     intent: Author and refine architecture-model content via write-back projectors and proposal workflow
     goals:
     - Enrich entities with intent/goals/failure-modes from code + docs
@@ -58,8 +53,7 @@ entities:
     name: OCA MCP Consumer
     status: ACTIVE
     type: human
-    description: opencode-arch MCP server wrapping this package's APIs; exposes architect_slice / architect_validate
-      / architect_propose / architect_work_issue to OpenCode sessions.
+    description: opencode-arch MCP server wrapping this package's APIs; exposes architect_slice / architect_validate / architect_propose / architect_work_issue to OpenCode sessions.
     intent: Serve AMS capabilities to OpenCode sessions with schema-3.0 awareness
     goals:
     - Route write-back projector calls through .llm variants
@@ -78,8 +72,7 @@ entities:
     name: arch-agent Trainer
     status: ACTIVE
     type: human
-    description: Training pipeline in ../arch-agent/ that consumes architecture models to train surrogate
-      agents. Depends on 2.1 parse path; will need coordination for 3.0.
+    description: Training pipeline in ../arch-agent/ that consumes architecture models to train surrogate agents. Depends on 2.1 parse path; will need coordination for 3.0.
     intent: Train surrogate agents on architecture-model outputs across the 4 e2e benchmark repos
     goals:
     - Consume both 2.1 and 3.0 models via unified loader
@@ -96,8 +89,7 @@ entities:
     name: CI/CD Pipeline
     status: ACTIVE
     type: human
-    description: Automated pipeline running validation + verify_entity_standalone on every PR; blocks
-      merge on open promises without typed-gap classification.
+    description: Automated pipeline running validation + verify_entity_standalone on every PR; blocks merge on open promises without typed-gap classification.
     intent: Enforce chain-closure discipline at merge time; prevent silent architecture drift
     goals:
     - Run full test suite on every commit
@@ -118,9 +110,7 @@ entities:
     name: 'Use Case: Extract Architecture from Source Code'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: Human architect runs the 7-stage promise-graph pipeline against a target repo; receives
-      an architecture model where every promise is closed or typed-gap; reviews via viewer.html and slice-per-entity
-      drill-down.
+    description: Human architect runs the 7-stage promise-graph pipeline against a target repo; receives an architecture model where every promise is closed or typed-gap; reviews via viewer.html and slice-per-entity drill-down.
     intent: Produce a schema-3.0 architecture model from source code with per-entity chain-closure computed
     goals:
     - Pipeline runs deterministically (fixed AMS_DETERMINISTIC_NOW)
@@ -155,13 +145,29 @@ entities:
     - containerize promise families into capabilities / behaviors / components / interfaces
     - verify chain-closure per entity
     - publish package generation via lifecycle substrate
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - CI/CD Pipeline
+    - arch-agent Trainer (consumes benchmark outputs)
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Chain-closure >=70% on benchmark repos
+    - Pipeline run cost <$5 on 10k-LOC repo
+    - Deterministic output under fixed inputs (byte-stable)
   - id: BEH-PB-UC-2
     name: 'Use Case: Migrate 2.1 Model to 3.0'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: One-way migration reads a 2.1 model, materializes Promise records from semantic fields
-      (intent, goals, requirements, slos, ...), emits 3.0 model. Adapter path preserves 2.1 fallback during
-      migration window.
+    description: One-way migration reads a 2.1 model, materializes Promise records from semantic fields (intent, goals, requirements, slos, ...), emits 3.0 model. Adapter path preserves 2.1 fallback during migration window.
     intent: Convert existing 2.1 models to 3.0 schema without silent loss of semantic content
     goals:
     - Deterministic field-by-field migration for closed-form promises
@@ -186,15 +192,30 @@ entities:
     - LLM-assisted re-derivation for prose fields (digest-locked prompts)
     - validate 3.0 output against schema-3.0.json
     - emit 3.0 model
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - arch-agent Trainer
+    - Downstream domain profiles (controls, mechanical, electrical)
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - Round-trip fidelity 100% on structured fields
+    - Round-trip fidelity >90% on prose fields via LLM re-derivation
+    - Migration idempotency (re-run produces identical output)
   - id: BEH-PB-UC-3
     name: 'Use Case: Verify Entity Standalone'
     status: ACTIVE
     actor_id: ACT-PB-5
-    description: CI + developers invoke verify_entity_standalone(entity_id) on any entity at any decomposition
-      level. Materializes slice, checks every promise is closed or typed-gap, checks every verified_by
-      reference resolves inside slice or declares external boundary.
-    intent: Guarantee every entity stands on its own as a documented and verified unit at any decomposition
-      level
+    description: CI + developers invoke verify_entity_standalone(entity_id) on any entity at any decomposition level. Materializes slice, checks every promise is closed or typed-gap, checks every verified_by reference resolves inside slice or declares external boundary.
+    intent: Guarantee every entity stands on its own as a documented and verified unit at any decomposition level
     goals:
     - Parametrize over all entities in model
     - Fail loudly on open promises
@@ -217,13 +238,28 @@ entities:
     - assert every promise status in {closed, typed-gap}
     - assert every verified_by ref resolves inside slice or is external-boundary
     - render delivery_chain projector without errors
+    stakeholders:
+    - CAP-PB-SLICE
+    - CAP-PB-DEV
+    - CI/CD Pipeline
+    - Human Architect
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
+    moes:
+    - Harness runtime p95 <30s
+    - Merge-block precision >99%
   - id: BEH-PB-UC-4
     name: 'Use Case: Project View Over Slice'
     status: ACTIVE
     actor_id: ACT-PB-2
-    description: Any consumer (LLM, human, CI) requests a projected view over a slice. Projector matrix
-      maps family x kind x (deterministic | llm) to output. LLM variants only invoked when closure_pct
-      < 1.0.
+    description: Any consumer (LLM, human, CI) requests a projected view over a slice. Projector matrix maps family x kind x (deterministic | llm) to output. LLM variants only invoked when closure_pct < 1.0.
     intent: Render any slice through any registered projector with determinism guarantees
     goals:
     - Projector output byte-stable under fixed inputs
@@ -246,13 +282,28 @@ entities:
     - invoke projector (deterministic or LLM variant based on closure state)
     - stamp provenance {freshness, revision, produced_at, projector, prompt_digest}
     - return ProjectedView
+    stakeholders:
+    - CAP-PB-SLICE
+    - LLM Agent
+    - Human Architect
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
+    moes:
+    - Projector matrix coverage 100%
+    - Snapshot stability 100%
+    - LLM cost per rebuild bounded by policy.yaml
   - id: BEH-PB-UC-5
     name: 'Use Case: LLM Proposes Model Change'
     status: ACTIVE
     actor_id: ACT-PB-2
-    description: LLM agent generates a Proposal via write-back projector or dedicated proposer plugin;
-      WorkOrder declares expected_closure_delta; proposal validators run before apply; PROPOSAL_CLOSURE_MISMATCH
-      journal event on estimation error >20%.
+    description: LLM agent generates a Proposal via write-back projector or dedicated proposer plugin; WorkOrder declares expected_closure_delta; proposal validators run before apply; PROPOSAL_CLOSURE_MISMATCH journal event on estimation error >20%.
     intent: Enable LLM-authored model updates with measurable closure-progress enforcement
     goals:
     - Every proposal declares expected closure impact
@@ -277,13 +328,27 @@ entities:
     - validate proposal via proposal_validators
     - apply proposal (or reject) via architect_proposal_apply
     - recompute actual closure; emit PROPOSAL_CLOSURE_MISMATCH if >20% drift
+    stakeholders:
+    - CAP-PB-MODEL
+    - LLM Agent
+    - Human Architect
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - Cache hit rate >90%
+    - Budget breach rate <1% of runs
   - id: BEH-PB-UC-6
     name: 'Use Case: Publish Package Generation'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: Architect publishes new generation of architecture package via existing lifecycle substrate
-      (architect_package_publish); digest-locked; generation number auto-incremented; downstream artifacts
-      rebuild.
+    description: Architect publishes new generation of architecture package via existing lifecycle substrate (architect_package_publish); digest-locked; generation number auto-incremented; downstream artifacts rebuild.
     intent: Version the architecture model as an immutable package generation with digest-anchored provenance
     goals:
     - Generation immutable once published
@@ -308,13 +373,29 @@ entities:
     - write to .architecture/lifecycle/<generation>/
     - update CURRENT pointer
     - record lifecycle.package.publish journal event
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - arch-agent Trainer
+    - Downstream domain profiles (controls, mechanical, electrical)
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - Round-trip fidelity 100% on structured fields
+    - Round-trip fidelity >90% on prose fields via LLM re-derivation
+    - Migration idempotency (re-run produces identical output)
   - id: BEH-PB-UC-7
     name: 'Use Case: Human Reviews Architecture Before Code'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: Approval gate at Phase B'-0c. Human walks through viewer.html of .architecture-model.plan-b.yaml;
-      drills into each of 4 umbrella caps + 7 sub-caps + all behaviors + components; approves or requests
-      iteration.
+    description: Approval gate at Phase B'-0c. Human walks through viewer.html of .architecture-model.plan-b.yaml; drills into each of 4 umbrella caps + 7 sub-caps + all behaviors + components; approves or requests iteration.
     intent: Gate the first Plan B code commit on human review of a verifiable architecture model
     goals:
     - Every umbrella cap slice reviewed
@@ -340,13 +421,31 @@ entities:
     - iterate model if gaps unacceptable
     - publish v1 via architect_package_publish
     - record approval journal event
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - CI/CD Pipeline
+    trade_offs:
+    - Strict CI gate slows individual PRs; accepted for architecture integrity
+    - Continuous modeling adds work per commit; accepted for zero-drift guarantee
+    assumptions:
+    - Developers follow commit-msg convention
+    - CI infra supports fast feedback (<10min)
+    - Journal events reliably persisted (fail-soft acceptable)
+    open_questions:
+    - Should commit-msg convention be enforced via git hook or CI check?
+    - How to weight open-promise vs typed-gap in CI regression threshold?
+    - What's the correct chain-closure threshold to enter/exit override mode?
+    moes:
+    - Time to detect drift <1 commit
+    - CI cycle time <10min
+    - Override rate <5% of PRs
+    - Chain-closure trend monotone non-decreasing per week
   - id: BEH-PB-UC-8
     name: 'Use Case: CI Enforces Standalone Verification Gate'
     status: ACTIVE
     actor_id: ACT-PB-5
-    description: Every PR runs full test suite + verify_entity_standalone + chain-closure diff vs base.
-      Merge blocked on open promises without typed-gap or on chain-closure regression without explicit
-      override flag.
+    description: Every PR runs full test suite + verify_entity_standalone + chain-closure diff vs base. Merge blocked on open promises without typed-gap or on chain-closure regression without explicit override flag.
     intent: Automate the entity-standalone verification discipline as a merge-time gate
     goals:
     - Zero silent architecture drift
@@ -369,6 +468,26 @@ entities:
     - compute chain-closure on head vs base
     - block merge on regression or open promises
     - append to .architecture/chain-closure-history.jsonl
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - CI/CD Pipeline
+    trade_offs:
+    - Strict CI gate slows individual PRs; accepted for architecture integrity
+    - Continuous modeling adds work per commit; accepted for zero-drift guarantee
+    assumptions:
+    - Developers follow commit-msg convention
+    - CI infra supports fast feedback (<10min)
+    - Journal events reliably persisted (fail-soft acceptable)
+    open_questions:
+    - Should commit-msg convention be enforced via git hook or CI check?
+    - How to weight open-promise vs typed-gap in CI regression threshold?
+    - What's the correct chain-closure threshold to enter/exit override mode?
+    moes:
+    - Time to detect drift <1 commit
+    - CI cycle time <10min
+    - Override rate <5% of PRs
+    - Chain-closure trend monotone non-decreasing per week
   - id: BEH-PB-STAGE-1
     name: 'Stage: scan'
     status: ACTIVE
@@ -393,6 +512,22 @@ entities:
     - parse each file via ast module
     - extract modules, functions, classes, imports, routes
     - build CodeInventory
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: BEH-PB-STAGE-2
     name: 'Stage: derive_promises'
     status: ACTIVE
@@ -416,6 +551,22 @@ entities:
     - for each artifact extract structured promises (type hints, test names)
     - LLM-derive prose promises from docstrings (batched, cached)
     - stamp provenance on every Promise
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: BEH-PB-STAGE-3
     name: 'Stage: cluster'
     status: ACTIVE
@@ -441,6 +592,22 @@ entities:
     - run deterministic clustering (fixed random seed if needed)
     - assign family ID to each Promise
     - emit PromiseFamilies dataclass
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: BEH-PB-STAGE-4
     name: 'Stage: link'
     status: ACTIVE
@@ -466,6 +633,22 @@ entities:
     - deterministic link on score >=0.85 or =0.0
     - LLM adjudicate on 0.5<score<0.85 band
     - emit LinkedPromiseGraph
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: BEH-PB-STAGE-5
     name: 'Stage: containerize'
     status: ACTIVE
@@ -491,6 +674,22 @@ entities:
     - apply evidence-type rules
     - LLM fallback on ambiguous families
     - emit ContainedModel
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: BEH-PB-STAGE-6
     name: 'Stage: verify'
     status: ACTIVE
@@ -513,6 +712,22 @@ entities:
     - for each entity call promise_closure
     - aggregate to system score
     - emit ClosureReport
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: BEH-PB-STAGE-7
     name: 'Stage: publish'
     status: ACTIVE
@@ -538,6 +753,22 @@ entities:
     - write to .architecture/lifecycle/<generation>/
     - update CURRENT pointer
     - record lifecycle.package.publish journal event
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   capabilities:
   - id: CAP-PB-SLICE
     name: Slice Any Entity at Any Decomposition Level
@@ -729,6 +960,15 @@ entities:
     moes:
     - PR ID collision rate 0
     - Round-trip fidelity 100%
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
   - id: CAP-PB-PIPELINE
     name: 7-Stage Promise-Graph Pipeline
     status: ACTIVE
@@ -758,6 +998,15 @@ entities:
     moes:
     - Deterministic replay success rate 100%
     - Cache hit rate >80% on incremental runs
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
   - id: CAP-PB-PROJECTORS
     name: Projector Matrix (family x kind x det|llm)
     status: ACTIVE
@@ -788,6 +1037,15 @@ entities:
     - Projector matrix coverage 100%
     - Snapshot stability 100%
     - LLM cost per rebuild bounded by policy.yaml
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
   - id: CAP-PB-LLM
     name: LLM Layer Required at Construction
     status: ACTIVE
@@ -819,6 +1077,15 @@ entities:
     moes:
     - Cache hit rate >90%
     - Budget breach rate <1% of runs
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
   - id: CAP-PB-EVIDENCE
     name: SI&L Records as Promise Evidence
     status: ACTIVE
@@ -845,6 +1112,15 @@ entities:
     moes:
     - Time from telemetry expiry to promise reopen <1 pipeline run
     - False-reopen rate <1%
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
   - id: CAP-PB-ADAPTER
     name: Legacy-Adapter Plugin Surface
     status: ACTIVE
@@ -875,6 +1151,15 @@ entities:
     moes:
     - Test pass rate under adapter 100%
     - Benchmark fidelity 100%
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
   - id: CAP-PB-VERIFY
     name: Universal verify_entity_standalone Harness
     status: ACTIVE
@@ -905,6 +1190,15 @@ entities:
     moes:
     - Harness runtime p95 <30s
     - Merge-block precision >99%
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
   components:
   - id: COMP-PB-PROMISE-TYPE
     name: Promise Dataclass
@@ -915,6 +1209,33 @@ entities:
       semantic field on 2.1 BaseEntity becomes a Promise record.
     intent: Provide first-class Promise dataclass with deterministic PR-<sha1> IDs
     source_paths: [src/architecture_model/core/promise.py]
+    goals:
+    - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
+    - Round-trip parser for Promise records
+    - Deterministic PR-<sha1> ID computation
+    - JSON Schema fragment for Promise
+    stakeholders:
+    - CAP-PB-MODEL
+    - Human Architect
+    - LLM Agent
+    success_criteria:
+    - Promise round-trip lossless via parser
+    - PR ID stable across runs on identical content
+    failure_modes:
+    - PR ID collision on different content
+    - Round-trip loses status or gap_type
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - PR ID collision rate 0
+    - Round-trip fidelity 100%
   - id: COMP-PB-PROMISE-PARSER
     name: Promise Parser
     status: ACTIVE
@@ -923,6 +1244,33 @@ entities:
       Deterministic PR-ID computation via SHA-1 of canonical content form.
     intent: Round-trip Promise records losslessly through YAML/JSON with stable IDs
     source_paths: [src/architecture_model/core/parser.py]
+    goals:
+    - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
+    - Round-trip parser for Promise records
+    - Deterministic PR-<sha1> ID computation
+    - JSON Schema fragment for Promise
+    stakeholders:
+    - CAP-PB-MODEL
+    - Human Architect
+    - LLM Agent
+    success_criteria:
+    - Promise round-trip lossless via parser
+    - PR ID stable across runs on identical content
+    failure_modes:
+    - PR ID collision on different content
+    - Round-trip loses status or gap_type
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - PR ID collision rate 0
+    - Round-trip fidelity 100%
   - id: COMP-PB-MIGRATOR
     name: 2.1 to 3.0 Migrator
     status: ACTIVE
@@ -932,6 +1280,33 @@ entities:
       Round-trip contract on 4 e2e benchmark models.
     intent: One-way migrate 2.1 models to schema 3.0 with digest-locked LLM re-derivation for prose
     source_paths: [src/architecture_model/cli/migrate.py, src/architecture_model/migration/v2_to_v3.py]
+    goals:
+    - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
+    - Round-trip parser for Promise records
+    - Deterministic PR-<sha1> ID computation
+    - JSON Schema fragment for Promise
+    stakeholders:
+    - CAP-PB-MODEL
+    - Human Architect
+    - LLM Agent
+    success_criteria:
+    - Promise round-trip lossless via parser
+    - PR ID stable across runs on identical content
+    failure_modes:
+    - PR ID collision on different content
+    - Round-trip loses status or gap_type
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - PR ID collision rate 0
+    - Round-trip fidelity 100%
   - id: COMP-PB-PIPELINE-ORCHESTRATOR
     name: 7-Stage Pipeline Orchestrator
     status: ACTIVE
@@ -941,6 +1316,35 @@ entities:
       replay under AMS_DETERMINISTIC_NOW.
     intent: Orchestrate 7-stage promise-graph pipeline with per-stage cache and deterministic replay
     source_paths: [src/architecture_model/pipeline_v3/orchestrator.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-STAGE-SCAN
     name: Stage 1 Scan Impl
     status: ACTIVE
@@ -949,6 +1353,35 @@ entities:
       LegacyPipelineAdapter; wraps output as CodeInventory.
     intent: Implement scan stage as adapter over existing observe
     source_paths: [src/architecture_model/pipeline_v3/scan.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-STAGE-DERIVE
     name: Stage 2 Derive-Promises Impl
     status: ACTIVE
@@ -958,6 +1391,35 @@ entities:
       for structured signals.
     intent: Implement derive_promises stage with LLM+deterministic dual paths
     source_paths: [src/architecture_model/pipeline_v3/derive_promises.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-STAGE-CLUSTER
     name: Stage 3 Cluster Impl
     status: ACTIVE
@@ -966,6 +1428,35 @@ entities:
       embedding model; deterministic random seed; stable family IDs across runs.
     intent: Implement cluster stage with deterministic embedding-based grouping
     source_paths: [src/architecture_model/pipeline_v3/cluster.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-STAGE-LINK
     name: Stage 4 Link Impl
     status: ACTIVE
@@ -975,6 +1466,35 @@ entities:
       (0.5<score<0.85).
     intent: Implement link stage with deterministic + LLM-adjudication paths
     source_paths: [src/architecture_model/pipeline_v3/link.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-STAGE-CONTAINERIZE
     name: Stage 5 Containerize Impl
     status: ACTIVE
@@ -984,6 +1504,35 @@ entities:
       entity records.
     intent: Implement containerize stage with rule-based + LLM-fallback kind assignment
     source_paths: [src/architecture_model/pipeline_v3/containerize.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-STAGE-VERIFY
     name: Stage 6 Verify Impl
     status: ACTIVE
@@ -992,6 +1541,35 @@ entities:
       per-entity closure_pct + gap breakdown + system-level score.
     intent: Implement verify stage computing per-entity closure and system score
     source_paths: [src/architecture_model/pipeline_v3/verify.py, src/architecture_model/quality/chain_closure.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-STAGE-PUBLISH
     name: Stage 7 Publish Impl
     status: ACTIVE
@@ -1001,6 +1579,35 @@ entities:
       CURRENT pointer update.
     intent: Implement publish stage over existing lifecycle package substrate
     source_paths: [src/architecture_model/pipeline_v3/publish.py]
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
   - id: COMP-PB-PROJECTOR-MATRIX
     name: Projector Matrix Registry
     status: ACTIVE
@@ -1010,6 +1617,36 @@ entities:
       per combination.
     intent: Provide exhaustive projector coverage over family x kind matrix
     source_paths: [src/architecture_model/lifecycle/projectors/matrix.py, src/architecture_model/lifecycle/view_projection/projectors.py]
+    goals:
+    - Deterministic projector per family x kind
+    - LLM write-back variant per family x kind (guarded by closure_pct)
+    - Auto-generation from schema declaration
+    - Snapshot-locked byte-stable output
+    stakeholders:
+    - CAP-PB-SLICE
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - Every family x kind combination has a registered projector
+    - Snapshot tests pass for every variant
+    - LLM variant skipped when closure_pct >= 1.0
+    failure_modes:
+    - Projector matrix incomplete (missing family x kind entry)
+    - Snapshot drift breaks determinism
+    - LLM variant invoked on clean entity (cost waste)
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
+    moes:
+    - Projector matrix coverage 100%
+    - Snapshot stability 100%
+    - LLM cost per rebuild bounded by policy.yaml
   - id: COMP-PB-LLM-PROVIDER
     name: LLMProvider Runtime
     status: ACTIVE
@@ -1019,6 +1656,36 @@ entities:
       unavailable provider.
     intent: Enforce LLM provider as required dependency with budget cap
     source_paths: [src/architecture_model/llm/provider.py, src/architecture_model/llm/routing.py]
+    goals:
+    - LLMProvider required at Pipeline() construction
+    - Prompt library at .architecture/llm/prompts/*.yaml versioned + digest-locked
+    - Budget cap per pipeline run in policy.yaml
+    - Cache by (prompt_digest, model, temperature=0)
+    stakeholders:
+    - CAP-PB-MODEL
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - Pipeline construction fails without provider
+    - Prompt version stamped in every proposal provenance
+    - Cache hit rate >90% on incremental runs
+    - Budget cap enforced (pipeline aborts on breach)
+    failure_modes:
+    - Provider unavailable at construction
+    - Prompt drift breaks cache
+    - Budget cap set too low blocks legitimate work
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - Cache hit rate >90%
+    - Budget breach rate <1% of runs
   - id: COMP-PB-PROMPT-LIBRARY
     name: Prompt Library
     status: ACTIVE
@@ -1028,6 +1695,36 @@ entities:
       Snapshot-locked at tests/llm/test_prompt_fragments.py.
     intent: Version prompt library as data with digest-locked provenance
     source_paths: [src/architecture_model/llm/prompts.py, .architecture/llm/prompts/]
+    goals:
+    - LLMProvider required at Pipeline() construction
+    - Prompt library at .architecture/llm/prompts/*.yaml versioned + digest-locked
+    - Budget cap per pipeline run in policy.yaml
+    - Cache by (prompt_digest, model, temperature=0)
+    stakeholders:
+    - CAP-PB-MODEL
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - Pipeline construction fails without provider
+    - Prompt version stamped in every proposal provenance
+    - Cache hit rate >90% on incremental runs
+    - Budget cap enforced (pipeline aborts on breach)
+    failure_modes:
+    - Provider unavailable at construction
+    - Prompt drift breaks cache
+    - Budget cap set too low blocks legitimate work
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - Cache hit rate >90%
+    - Budget breach rate <1% of runs
   - id: COMP-PB-BUDGET-ENFORCER
     name: Budget Enforcer
     status: ACTIVE
@@ -1036,6 +1733,36 @@ entities:
       budget-exhausted journal event. Partial-run recovery via checkpoint.
     intent: Enforce LLM budget cap per pipeline run with partial-recovery checkpoint
     source_paths: [src/architecture_model/llm/budget.py]
+    goals:
+    - LLMProvider required at Pipeline() construction
+    - Prompt library at .architecture/llm/prompts/*.yaml versioned + digest-locked
+    - Budget cap per pipeline run in policy.yaml
+    - Cache by (prompt_digest, model, temperature=0)
+    stakeholders:
+    - CAP-PB-MODEL
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - Pipeline construction fails without provider
+    - Prompt version stamped in every proposal provenance
+    - Cache hit rate >90% on incremental runs
+    - Budget cap enforced (pipeline aborts on breach)
+    failure_modes:
+    - Provider unavailable at construction
+    - Prompt drift breaks cache
+    - Budget cap set too low blocks legitimate work
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+    moes:
+    - Cache hit rate >90%
+    - Budget breach rate <1% of runs
   - id: COMP-PB-SIL-EVIDENCE-BINDER
     name: SI&L Evidence Binder
     status: ACTIVE
@@ -1044,6 +1771,32 @@ entities:
       .architecture/sil.sqlite. Stale telemetry (>7d) reopens promise status.
     intent: Bind SI&L records as Promise verify-up evidence with stale-reopen logic
     source_paths: [src/architecture_model/sil/evidence.py]
+    goals:
+    - SIL record -> Promise.verified_by mapping declared per attribute
+    - Stale telemetry (>7d) reopens promise status
+    - Verify-up loop closes without human intervention
+    stakeholders:
+    - CAP-PB-SLICE
+    - CAP-PB-DEV
+    - CI/CD Pipeline
+    success_criteria:
+    - slos.availability = 99.9% promise closed only when 7d SIL confirms
+    - Stale reopen fires within 1 pipeline run of data expiry
+    failure_modes:
+    - SIL store unavailable causes false reopens
+    - Mapping incorrect (wrong evidence bound to wrong promise)
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
+    moes:
+    - Time from telemetry expiry to promise reopen <1 pipeline run
+    - False-reopen rate <1%
   - id: COMP-PB-LEGACY-PROJECTOR-ADAPTER
     name: Legacy Projector Adapter
     status: ACTIVE
@@ -1053,6 +1806,35 @@ entities:
       Preserves all existing tests + benchmarks.
     intent: Preserve core/visualize.py generators behind projector interface
     source_paths: [src/architecture_model/lifecycle/projectors/legacy/visualize_adapter.py, .architecture/adapters/visualize-mapping.yaml]
+    goals:
+    - LegacyProjectorAdapter maps every visualize.py fn to projector call
+    - LegacyPipelineAdapter plugs 10-stage pipeline behind new scan+derive_promises
+    - LegacyDocsAdapter maps docs/generator.py + docs/se/* to projector variants
+    - 3746 tests + 4 e2e benchmarks pass under adapter
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - CAP-PB-DEV
+    - Human Architect
+    - arch-agent Trainer
+    success_criteria:
+    - Full test suite passes under adapter (3746 tests)
+    - 4 e2e benchmarks reproduce prior results
+    - Adapter surface documented as contract
+    failure_modes:
+    - Adapter drift breaks legacy consumers
+    - Migration window too short for downstream repos
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Test pass rate under adapter 100%
+    - Benchmark fidelity 100%
   - id: COMP-PB-LEGACY-PIPELINE-ADAPTER
     name: Legacy Pipeline Adapter
     status: ACTIVE
@@ -1062,6 +1844,35 @@ entities:
       + 4 e2e benchmarks under adapter path.
     intent: Preserve 10-stage pipeline behind new pipeline as a strategy
     source_paths: [src/architecture_model/pipeline_v3/adapters/legacy_pipeline.py]
+    goals:
+    - LegacyProjectorAdapter maps every visualize.py fn to projector call
+    - LegacyPipelineAdapter plugs 10-stage pipeline behind new scan+derive_promises
+    - LegacyDocsAdapter maps docs/generator.py + docs/se/* to projector variants
+    - 3746 tests + 4 e2e benchmarks pass under adapter
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - CAP-PB-DEV
+    - Human Architect
+    - arch-agent Trainer
+    success_criteria:
+    - Full test suite passes under adapter (3746 tests)
+    - 4 e2e benchmarks reproduce prior results
+    - Adapter surface documented as contract
+    failure_modes:
+    - Adapter drift breaks legacy consumers
+    - Migration window too short for downstream repos
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Test pass rate under adapter 100%
+    - Benchmark fidelity 100%
   - id: COMP-PB-LEGACY-DOCS-ADAPTER
     name: Legacy Docs Adapter
     status: ACTIVE
@@ -1071,6 +1882,35 @@ entities:
       shim over new projector matrix.
     intent: Preserve docs/generator.py and docs/se/* behind projector matrix
     source_paths: [src/architecture_model/lifecycle/projectors/legacy/docs_adapter.py]
+    goals:
+    - LegacyProjectorAdapter maps every visualize.py fn to projector call
+    - LegacyPipelineAdapter plugs 10-stage pipeline behind new scan+derive_promises
+    - LegacyDocsAdapter maps docs/generator.py + docs/se/* to projector variants
+    - 3746 tests + 4 e2e benchmarks pass under adapter
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - CAP-PB-DEV
+    - Human Architect
+    - arch-agent Trainer
+    success_criteria:
+    - Full test suite passes under adapter (3746 tests)
+    - 4 e2e benchmarks reproduce prior results
+    - Adapter surface documented as contract
+    failure_modes:
+    - Adapter drift breaks legacy consumers
+    - Migration window too short for downstream repos
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    moes:
+    - Test pass rate under adapter 100%
+    - Benchmark fidelity 100%
   - id: COMP-PB-STANDALONE-HARNESS
     name: Standalone Verification Harness
     status: ACTIVE
@@ -1080,6 +1920,36 @@ entities:
       boundaries. Target runtime <30s over full model.
     intent: Provide parametrized pytest harness for entity-standalone verification
     source_paths: [tests/quality/test_entity_standalone.py, src/architecture_model/quality/standalone.py]
+    goals:
+    - Parametrized pytest fixture over all entities in model
+    - Fast execution (<30s over full model)
+    - Zero false-positives/negatives
+    - CI gate integration with journal event on override
+    stakeholders:
+    - CAP-PB-SLICE
+    - CAP-PB-DEV
+    - CI/CD Pipeline
+    - Human Architect
+    success_criteria:
+    - Harness runs in <30s
+    - Zero false-positives on typed-gap entities
+    - CI blocks merge on regression
+    failure_modes:
+    - Harness too slow blocks CI
+    - Typed-gap syntax ambiguous causes false-positive
+    - Override abused (audit gap)
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
+    moes:
+    - Harness runtime p95 <30s
+    - Merge-block precision >99%
   - id: COMP-PB-CI-GATE
     name: CI Standalone-Verification Gate
     status: ACTIVE
@@ -1089,6 +1959,36 @@ entities:
       typed-gap or on closure regression without override.
     intent: Enforce standalone-verification harness + chain-closure gate at merge time
     source_paths: [.github/workflows/architecture-gate.yml]
+    goals:
+    - Parametrized pytest fixture over all entities in model
+    - Fast execution (<30s over full model)
+    - Zero false-positives/negatives
+    - CI gate integration with journal event on override
+    stakeholders:
+    - CAP-PB-SLICE
+    - CAP-PB-DEV
+    - CI/CD Pipeline
+    - Human Architect
+    success_criteria:
+    - Harness runs in <30s
+    - Zero false-positives on typed-gap entities
+    - CI blocks merge on regression
+    failure_modes:
+    - Harness too slow blocks CI
+    - Typed-gap syntax ambiguous causes false-positive
+    - Override abused (audit gap)
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
+    moes:
+    - Harness runtime p95 <30s
+    - Merge-block precision >99%
   interfaces:
   - id: IF-PB-CODE-INVENTORY
     name: CodeInventory
