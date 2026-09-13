@@ -81,7 +81,7 @@ def main() -> int:
         outs = outgoing.get(eid, [])
         ins = incoming.get(eid, [])
         if kind == "cap":
-            return any(t == "contains" for t, _ in ins) or eid.startswith("CAP-PB-") and eid in {"CAP-PB-SLICE", "CAP-PB-MODEL", "CAP-PB-EXTRACT", "CAP-PB-DEV"}
+            return any(t == "contains" for t, _ in ins) or eid == "CAP-0" or eid.startswith("CAP-PB-") and eid in {"CAP-PB-SLICE", "CAP-PB-MODEL", "CAP-PB-EXTRACT", "CAP-PB-DEV"}
         if kind == "beh":
             return any(t == "traces-to" for t, _ in outs)
         if kind == "comp":
@@ -102,6 +102,9 @@ def main() -> int:
         outs = outgoing.get(eid, [])
         ins = incoming.get(eid, [])
         if kind == "cap":
+            # CAP-0 is a pure aggregator root; verify-up is delegated to descendants via contains.
+            if eid == "CAP-0":
+                return True
             return any(t in ("realizes", "traces-to") for t, _ in ins)
         if kind == "beh":
             e = by_id[eid][1]

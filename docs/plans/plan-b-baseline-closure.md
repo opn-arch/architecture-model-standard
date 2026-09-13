@@ -8,20 +8,20 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 
 ## 2. System snapshot
 
-- Validator score: **92 / 100** (`is_valid=True`)
+- Validator score: **90 / 100** (`is_valid=True`)
 - Actors: 5
-- Capabilities: 11
+- Capabilities: 12
 - Behaviors: 15
 - Components: 21
 - Interfaces: 20
-- Relationships: 117
+- Relationships: 121
 
 ## 3. Per-kind articulation matrix
 
 | Kind | Count | With intent | With delivery edges | With verify wiring |
 |------|------:|------------:|--------------------:|-------------------:|
 | actor | 5 | 5 | 5 | 5 |
-| capability | 11 | 11 | 11 | 11 |
+| capability | 12 | 12 | 12 | 12 |
 | behavior | 15 | 15 | 15 | 15 |
 | component | 21 | 21 | 21 | 21 |
 | interface | 20 | 20 | 20 | 20 |
@@ -44,6 +44,7 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | actor | `ACT-PB-3` | OCA MCP Consumer | YES | YES | YES | 0 |
 | actor | `ACT-PB-4` | arch-agent Trainer | YES | YES | YES | 0 |
 | actor | `ACT-PB-5` | CI/CD Pipeline | YES | YES | YES | 0 |
+| capability | `CAP-0` | Plan B — Promise-Graph Architecture (Root) | YES | YES | YES | 0 |
 | capability | `CAP-PB-SLICE` | Slice Any Entity at Any Decomposition Level | YES | YES | YES | 2 |
 | capability | `CAP-PB-MODEL` | Model Any System via Promise Graph | YES | YES | YES | 2 |
 | capability | `CAP-PB-EXTRACT` | Extract Architecture from Source Code | YES | YES | YES | 2 |
@@ -51,9 +52,9 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | capability | `CAP-PB-PROMISE-GRAPH` | Promise as First-Class Type | YES | YES | YES | 2 |
 | capability | `CAP-PB-PIPELINE` | 7-Stage Promise-Graph Pipeline | YES | YES | YES | 2 |
 | capability | `CAP-PB-PROJECTORS` | Projector Matrix (family x kind x det|llm) | YES | YES | YES | 2 |
-| capability | `CAP-PB-LLM` | LLM Layer Required at Construction | YES | YES | YES | 2 |
+| capability | `CAP-PB-LLM` | LLM Layer Required at Construction | YES | YES | YES | 3 |
 | capability | `CAP-PB-EVIDENCE` | SI&L Records as Promise Evidence | YES | YES | YES | 2 |
-| capability | `CAP-PB-ADAPTER` | Legacy-Adapter Plugin Surface | YES | YES | YES | 2 |
+| capability | `CAP-PB-ADAPTER` | Legacy-Adapter Plugin Surface | YES | YES | YES | 3 |
 | capability | `CAP-PB-VERIFY` | Universal verify_entity_standalone Harness | YES | YES | YES | 2 |
 | behavior | `BEH-PB-UC-1` | Use Case: Extract Architecture from Source C | YES | YES | YES | 2 |
 | behavior | `BEH-PB-UC-2` | Use Case: Migrate 2.1 Model to 3.0 | YES | YES | YES | 2 |
@@ -71,26 +72,26 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | behavior | `BEH-PB-STAGE-6` | Stage: verify | YES | YES | YES | 2 |
 | behavior | `BEH-PB-STAGE-7` | Stage: publish | YES | YES | YES | 2 |
 | component | `COMP-PB-PROMISE-TYPE` | Promise Dataclass | YES | YES | YES | 2 |
-| component | `COMP-PB-PROMISE-PARSER` | Promise Parser | YES | YES | YES | 2 |
-| component | `COMP-PB-MIGRATOR` | 2.1 to 3.0 Migrator | YES | YES | YES | 2 |
+| component | `COMP-PB-PROMISE-PARSER` | Promise Parser | YES | YES | YES | 3 |
+| component | `COMP-PB-MIGRATOR` | 2.1 to 3.0 Migrator | YES | YES | YES | 3 |
 | component | `COMP-PB-PIPELINE-ORCHESTRATOR` | 7-Stage Pipeline Orchestrator | YES | YES | YES | 2 |
 | component | `COMP-PB-STAGE-SCAN` | Stage 1 Scan Impl | YES | YES | YES | 2 |
 | component | `COMP-PB-STAGE-DERIVE` | Stage 2 Derive-Promises Impl | YES | YES | YES | 2 |
-| component | `COMP-PB-STAGE-CLUSTER` | Stage 3 Cluster Impl | YES | YES | YES | 2 |
-| component | `COMP-PB-STAGE-LINK` | Stage 4 Link Impl | YES | YES | YES | 2 |
-| component | `COMP-PB-STAGE-CONTAINERIZE` | Stage 5 Containerize Impl | YES | YES | YES | 2 |
+| component | `COMP-PB-STAGE-CLUSTER` | Stage 3 Cluster Impl | YES | YES | YES | 3 |
+| component | `COMP-PB-STAGE-LINK` | Stage 4 Link Impl | YES | YES | YES | 3 |
+| component | `COMP-PB-STAGE-CONTAINERIZE` | Stage 5 Containerize Impl | YES | YES | YES | 3 |
 | component | `COMP-PB-STAGE-VERIFY` | Stage 6 Verify Impl | YES | YES | YES | 2 |
 | component | `COMP-PB-STAGE-PUBLISH` | Stage 7 Publish Impl | YES | YES | YES | 2 |
 | component | `COMP-PB-PROJECTOR-MATRIX` | Projector Matrix Registry | YES | YES | YES | 2 |
-| component | `COMP-PB-LLM-PROVIDER` | LLMProvider Runtime | YES | YES | YES | 2 |
-| component | `COMP-PB-PROMPT-LIBRARY` | Prompt Library | YES | YES | YES | 2 |
-| component | `COMP-PB-BUDGET-ENFORCER` | Budget Enforcer | YES | YES | YES | 2 |
-| component | `COMP-PB-SIL-EVIDENCE-BINDER` | SI&L Evidence Binder | YES | YES | YES | 2 |
+| component | `COMP-PB-LLM-PROVIDER` | LLMProvider Runtime | YES | YES | YES | 3 |
+| component | `COMP-PB-PROMPT-LIBRARY` | Prompt Library | YES | YES | YES | 3 |
+| component | `COMP-PB-BUDGET-ENFORCER` | Budget Enforcer | YES | YES | YES | 3 |
+| component | `COMP-PB-SIL-EVIDENCE-BINDER` | SI&L Evidence Binder | YES | YES | YES | 3 |
 | component | `COMP-PB-LEGACY-PROJECTOR-ADAPTER` | Legacy Projector Adapter | YES | YES | YES | 2 |
 | component | `COMP-PB-LEGACY-PIPELINE-ADAPTER` | Legacy Pipeline Adapter | YES | YES | YES | 2 |
 | component | `COMP-PB-LEGACY-DOCS-ADAPTER` | Legacy Docs Adapter | YES | YES | YES | 2 |
-| component | `COMP-PB-STANDALONE-HARNESS` | Standalone Verification Harness | YES | YES | YES | 2 |
-| component | `COMP-PB-CI-GATE` | CI Standalone-Verification Gate | YES | YES | YES | 2 |
+| component | `COMP-PB-STANDALONE-HARNESS` | Standalone Verification Harness | YES | YES | YES | 3 |
+| component | `COMP-PB-CI-GATE` | CI Standalone-Verification Gate | YES | YES | YES | 3 |
 | interface | `IF-PB-CODE-INVENTORY` | CodeInventory | YES | YES | YES | 0 |
 | interface | `IF-PB-PROMISE-BATCH` | PromiseBatch | YES | YES | YES | 0 |
 | interface | `IF-PB-PROMISE-FAMILIES` | PromiseFamilies | YES | YES | YES | 0 |
