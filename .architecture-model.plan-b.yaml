@@ -2113,3 +2113,16 @@ relationships:
 - {from: COMP-PB-STANDALONE-HARNESS, to: CAP-PB-VERIFY, type: realizes}
 - {from: COMP-PB-CI-GATE, to: CAP-PB-VERIFY, type: realizes}
 - {from: COMP-PB-CI-GATE, to: CAP-PB-DEV, type: realizes}
+- {from: COMP-PB-STAGE-SCAN, to: IF-PB-CODE-INVENTORY, type: exposes}
+- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-CODE-INVENTORY, type: consumes}
+- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-PROMISE-BATCH, type: exposes}
+- {from: COMP-PB-STAGE-CLUSTER, to: IF-PB-PROMISE-BATCH, type: consumes}
+- {from: COMP-PB-STAGE-CLUSTER, to: IF-PB-PROMISE-FAMILIES, type: exposes}
+- {from: COMP-PB-STAGE-LINK, to: IF-PB-PROMISE-FAMILIES, type: consumes}
+- {from: COMP-PB-STAGE-LINK, to: IF-PB-LINKED-GRAPH, type: exposes}
+- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-LINKED-GRAPH, type: consumes}
+- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-CONTAINED-MODEL, type: exposes}
+- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-CONTAINED-MODEL, type: consumes}
+- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-CLOSURE-REPORT, type: exposes}
+- {from: COMP-PB-STAGE-PUBLISH, to: IF-PB-CLOSURE-REPORT, type: consumes}
+- {from: COMP-PB-STAGE-PUBLISH, to: IF-PB-PUBLISHED-PACKAGE, type: exposes}

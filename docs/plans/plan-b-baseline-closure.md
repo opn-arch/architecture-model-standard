@@ -14,7 +14,7 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 - Behaviors: 15
 - Components: 21
 - Interfaces: 7
-- Relationships: 64
+- Relationships: 77
 
 ## 3. Per-kind articulation matrix
 
@@ -23,7 +23,7 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | actor | 5 | 5 | 5 | 5 |
 | capability | 11 | 11 | 11 | 10 |
 | behavior | 15 | 15 | 15 | 15 |
-| component | 21 | 21 | 21 | 0 |
+| component | 21 | 21 | 21 | 7 |
 | interface | 7 | 7 | 7 | 7 |
 
 ## 4. Typed gap inventory
@@ -32,7 +32,7 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 |----------|---------|------:|----------|
 | G-INTENT | entity has empty `intent` | 0 | - |
 | G-DELIVERY | no incoming `contains`/`realizes`/`traces-to` | 0 | - |
-| G-VERIFY | no `traces-to`/`exposes`/`consumes`/`produces` touching entity | 22 | CAP-PB-SLICE, COMP-PB-PROMISE-TYPE, COMP-PB-PROMISE-PARSER, COMP-PB-MIGRATOR, COMP-PB-PIPELINE-ORCHESTRATOR, COMP-PB-STAGE-SCAN... |
+| G-VERIFY | no `traces-to`/`exposes`/`consumes`/`produces` touching entity | 15 | CAP-PB-SLICE, COMP-PB-PROMISE-TYPE, COMP-PB-PROMISE-PARSER, COMP-PB-MIGRATOR, COMP-PB-PIPELINE-ORCHESTRATOR, COMP-PB-PROJECTOR-MATRIX... |
 | G-OPEN-Q | entity carries non-empty `open_questions` | 47 | CAP-PB-SLICE, CAP-PB-MODEL, CAP-PB-EXTRACT, CAP-PB-DEV, CAP-PB-PROMISE-GRAPH, CAP-PB-PIPELINE... |
 
 ## 5. Per-entity articulation table
@@ -74,13 +74,13 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | component | `COMP-PB-PROMISE-PARSER` | Promise Parser | YES | YES | NO | 2 |
 | component | `COMP-PB-MIGRATOR` | 2.1 to 3.0 Migrator | YES | YES | NO | 2 |
 | component | `COMP-PB-PIPELINE-ORCHESTRATOR` | 7-Stage Pipeline Orchestrator | YES | YES | NO | 2 |
-| component | `COMP-PB-STAGE-SCAN` | Stage 1 Scan Impl | YES | YES | NO | 2 |
-| component | `COMP-PB-STAGE-DERIVE` | Stage 2 Derive-Promises Impl | YES | YES | NO | 2 |
-| component | `COMP-PB-STAGE-CLUSTER` | Stage 3 Cluster Impl | YES | YES | NO | 2 |
-| component | `COMP-PB-STAGE-LINK` | Stage 4 Link Impl | YES | YES | NO | 2 |
-| component | `COMP-PB-STAGE-CONTAINERIZE` | Stage 5 Containerize Impl | YES | YES | NO | 2 |
-| component | `COMP-PB-STAGE-VERIFY` | Stage 6 Verify Impl | YES | YES | NO | 2 |
-| component | `COMP-PB-STAGE-PUBLISH` | Stage 7 Publish Impl | YES | YES | NO | 2 |
+| component | `COMP-PB-STAGE-SCAN` | Stage 1 Scan Impl | YES | YES | YES | 2 |
+| component | `COMP-PB-STAGE-DERIVE` | Stage 2 Derive-Promises Impl | YES | YES | YES | 2 |
+| component | `COMP-PB-STAGE-CLUSTER` | Stage 3 Cluster Impl | YES | YES | YES | 2 |
+| component | `COMP-PB-STAGE-LINK` | Stage 4 Link Impl | YES | YES | YES | 2 |
+| component | `COMP-PB-STAGE-CONTAINERIZE` | Stage 5 Containerize Impl | YES | YES | YES | 2 |
+| component | `COMP-PB-STAGE-VERIFY` | Stage 6 Verify Impl | YES | YES | YES | 2 |
+| component | `COMP-PB-STAGE-PUBLISH` | Stage 7 Publish Impl | YES | YES | YES | 2 |
 | component | `COMP-PB-PROJECTOR-MATRIX` | Projector Matrix Registry | YES | YES | NO | 2 |
 | component | `COMP-PB-LLM-PROVIDER` | LLMProvider Runtime | YES | YES | NO | 2 |
 | component | `COMP-PB-PROMPT-LIBRARY` | Prompt Library | YES | YES | NO | 2 |
