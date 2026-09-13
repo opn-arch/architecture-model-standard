@@ -11,10 +11,10 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 - Validator score: **88 / 100** (`is_valid=True`)
 - Actors: 5
 - Capabilities: 18
-- Behaviors: 32
+- Behaviors: 34
 - Components: 21
 - Interfaces: 20
-- Relationships: 158
+- Relationships: 162
 
 ## 3. Per-kind articulation matrix
 
@@ -22,7 +22,7 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 |------|------:|------------:|--------------------:|-------------------:|
 | actor | 5 | 5 | 5 | 5 |
 | capability | 18 | 18 | 18 | 17 |
-| behavior | 32 | 32 | 25 | 22 |
+| behavior | 34 | 34 | 27 | 22 |
 | component | 21 | 21 | 21 | 21 |
 | interface | 20 | 20 | 20 | 20 |
 
@@ -32,7 +32,7 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 |----------|---------|------:|----------|
 | G-INTENT | entity has empty `intent` | 0 | - |
 | G-DELIVERY | no incoming `contains`/`realizes`/`traces-to` | 7 | BEH-DF-1, BEH-DF-2, BEH-DF-3, BEH-DF-4, BEH-DF-5, BEH-DF-6... |
-| G-VERIFY | no `traces-to`/`exposes`/`consumes`/`produces` touching entity | 11 | CAP-DF, BEH-SIO-1, BEH-SIO-2, BEH-SIO-3, BEH-SIO-4, BEH-SIO-5... |
+| G-VERIFY | no `traces-to`/`exposes`/`consumes`/`produces` touching entity | 13 | CAP-DF, BEH-SIO-1, BEH-SIO-2, BEH-SIO-3, BEH-SIO-4, BEH-SIO-5... |
 | G-OPEN-Q | entity carries non-empty `open_questions` | 50 | CAP-PB-SLICE, CAP-PB-MODEL, CAP-PB-EXTRACT, CAP-PB-DEV, CAP-PB-PROMISE-GRAPH, CAP-PB-PIPELINE... |
 
 ## 5. Per-entity articulation table
@@ -94,6 +94,8 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | behavior | `BEH-SIO-8` | SIO-8: Autonomy vs approval is a confidence  | YES | YES | NO | 0 |
 | behavior | `BEH-SIO-9` | SIO-9: git add -u violates auto-regen guardr | YES | YES | NO | 0 |
 | behavior | `BEH-SIO-10` | SIO-10: SIO type overloads behavior semantic | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-11` | SIO-11: YAML unquoted-colon in list items si | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-12` | SIO-12: Validator penalty for missing verifi | YES | YES | NO | 0 |
 | component | `COMP-PB-PROMISE-TYPE` | Promise Dataclass | YES | YES | YES | 2 |
 | component | `COMP-PB-PROMISE-PARSER` | Promise Parser | YES | YES | YES | 3 |
 | component | `COMP-PB-MIGRATOR` | 2.1 to 3.0 Migrator | YES | YES | YES | 3 |

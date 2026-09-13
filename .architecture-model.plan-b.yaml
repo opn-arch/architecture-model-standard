@@ -1013,6 +1013,24 @@ entities:
     triage_rationale: "Applied: SIOs live as BEH-SIO-N behaviors for Plan B; graduation to first-class type is a separate schema PR outside Plan B scope"
     resulting_entity: ""
     surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-11
+    name: "SIO-11: YAML unquoted-colon in list items silently parses as dict, breaks diagram renderer"
+    status: ACTIVE
+    description: "Observation: During T0.11.6c, two list items containing an unquoted colon ('For each, assess: is it a recurring pattern...' and 'Ask: given these fields alone, could implementation proceed?') were parsed by YAML as single-key dicts instead of strings. The diagram renderer's _lines() at diagram_renderer.py:163 assumed str via value.split(), producing 'AttributeError: dict object has no attribute split'. Baseline generation was unaffected; only the viewer path crashed. Cause is a class of YAML parser silence — a mixed dict+str list is legal YAML but semantically wrong for a steps/AC/preconditions list. Two independent defenses: (a) the parser could reject mixed-type semantic lists, (b) the renderer could coerce label to str defensively before _lines()."
+    intent: "SIO-11 observation about parser+renderer hazard vs YAML edge case"
+    triage: promote-methodology
+    triage_rationale: "Recurring hazard for any model author. Two independent low-cost defenses; both should ship. Preventing this at parse-time protects every downstream consumer, not just the viewer."
+    resulting_entity: "REQ-DF-YAMLLISTGUARD"
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-12
+    name: "SIO-12: Validator penalty for missing verifies edges is invisible to baseline classifier"
+    status: ACTIVE
+    description: "Observation: During T0.11.6d, adding 5 constraints without accompanying verifies-relationships dropped the validator score from 88 to 78 (5 UNVERIFIED_CONSTRAINT warnings, -10 penalty). The baseline classifier (scripts/plan_b_baseline_report.py) did NOT surface these as a G-VERIFY gap despite that being exactly the category name. The gap only became visible via 'architecture-model validate | grep -i warn'. Two systems (validator, baseline classifier) that both know about verification coverage should agree on what counts as a verification gap. Baseline classifier should ingest validator warnings and surface UNVERIFIED_CONSTRAINT as G-VERIFY."
+    intent: "SIO-12 observation about validator/baseline classifier divergence"
+    triage: promote-methodology
+    triage_rationale: "Two-source-of-truth pattern for the same concept (verification coverage). Merging via baseline classifier consuming validator warnings gives single-source-of-truth without changing schema. Modest-cost script change."
+    resulting_entity: "REQ-DF-VERIFYCOVERAGE"
+    surfaced_in: "conversation-2026-09-13"
   capabilities:
   - id: CAP-0
     name: "Plan B \u2014 Promise-Graph Architecture (Root)"
@@ -2853,6 +2871,28 @@ entities:
     - Every T0.* commit staged via explicit path list
     - "Post-commit check confirms no .architecture/** or .architecture-models/** paths appear in the commit diff"
     stakeholder: LLM Agent
+  - id: REQ-DF-YAMLLISTGUARD
+    name: Guard against silent YAML list-item colon parse hazard
+    status: ACTIVE
+    text: "The parser MUST reject semantic lists (steps, acceptance_criteria, preconditions, postconditions, goals, success_criteria) that mix dict and str item types, since this pattern always indicates an unquoted-colon YAML parse bug rather than intentional data. Additionally, the diagram renderer's _lines() helper MUST defensively coerce non-str labels to str with a warning, so a bad model does not crash the viewer path."
+    priority: should
+    verification_method: test
+    acceptance_criteria:
+    - "Parser raises ParseError when a semantic list contains mixed dict+str items, naming the offending entity and field"
+    - "diagram_renderer._lines() accepts non-str input by coercing via str() and emits a one-line warning to stderr identifying the caller"
+    - "Regression test loads a fixture with an unquoted-colon steps item and asserts either parse rejection or renderer coercion (matching whichever defense is in place)"
+    stakeholder: Model Author
+  - id: REQ-DF-VERIFYCOVERAGE
+    name: Baseline classifier surfaces UNVERIFIED_CONSTRAINT as G-VERIFY gap
+    status: ACTIVE
+    text: "scripts/plan_b_baseline_report.py MUST ingest validator warnings of type UNVERIFIED_CONSTRAINT and MISSING_META and surface each as an entry in the G-VERIFY gap tally. This closes the current divergence where the validator penalizes missing verifies edges but the baseline classifier does not report them, forcing manual grep of validator output to notice."
+    priority: should
+    verification_method: test
+    acceptance_criteria:
+    - "AC[0]: Given a model with N UNVERIFIED_CONSTRAINT warnings, scripts/plan_b_baseline_report.py reports G-VERIFY count increased by exactly N vs a baseline with those constraints verified"
+    - "AC[1]: Baseline report includes the constraint ids for each G-VERIFY entry"
+    - "AC[2]: A commit that lowers the validator score without changing G-VERIFY count triggers a warning in the baseline classifier output"
+    stakeholder: Model Author
 relationships:
 - from: BEH-PB-UC-1
   to: CAP-PB-EXTRACT
@@ -3328,3 +3368,15 @@ relationships:
 - from: BEH-DF-7
   to: INV-PB-3
   type: verifies
+- from: BEH-SIO-11
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-12
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-DF-3
+  to: REQ-DF-YAMLLISTGUARD
+  type: realizes
+- from: BEH-DF-3
+  to: REQ-DF-VERIFYCOVERAGE
+  type: realizes
