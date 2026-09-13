@@ -2195,6 +2195,74 @@ entities:
     intent: CI workflow surface enforcing standalone-verification + closure gate
   layers: []
   constraints: []
+  systems:
+  - id: SYS-PB-SLICE
+    name: Slice Substrate
+    status: ACTIVE
+    description: >-
+      Subsystem realizing the SLICE umbrella — projector matrix, SI&L evidence
+      binder, and the universal standalone-verification harness.
+    intent: Materialize entity-as-standalone-unit for every entity
+    component_ids:
+    - COMP-PB-PROJECTOR-MATRIX
+    - COMP-PB-SIL-EVIDENCE-BINDER
+    - COMP-PB-STANDALONE-HARNESS
+    goals:
+    - Every entity yields a self-contained slice
+    - Slice materialization <1s per entity
+  - id: SYS-PB-MODEL
+    name: Model Substrate
+    status: ACTIVE
+    description: >-
+      Subsystem realizing the MODEL umbrella — promise-graph type system,
+      parser/migrator, and LLM provider layer with prompt library and budget
+      enforcement.
+    intent: Represent any system as a promise graph and drive LLM-required stages
+    component_ids:
+    - COMP-PB-PROMISE-TYPE
+    - COMP-PB-PROMISE-PARSER
+    - COMP-PB-MIGRATOR
+    - COMP-PB-LLM-PROVIDER
+    - COMP-PB-PROMPT-LIBRARY
+    - COMP-PB-BUDGET-ENFORCER
+    goals:
+    - Promise-graph schema 3.0 round-trips byte-stable
+    - LLM budget enforced at every stage
+  - id: SYS-PB-EXTRACT
+    name: Extract Pipeline
+    status: ACTIVE
+    description: >-
+      Subsystem realizing the EXTRACT umbrella — 7-stage extraction pipeline
+      (scan → derive → cluster → link → containerize → verify → publish) plus
+      the three legacy adapters wrapping visualize/pipeline/docs generators.
+    intent: Extract a promise-graph model from source code with consolidation-by-construction
+    component_ids:
+    - COMP-PB-PIPELINE-ORCHESTRATOR
+    - COMP-PB-STAGE-SCAN
+    - COMP-PB-STAGE-DERIVE
+    - COMP-PB-STAGE-CLUSTER
+    - COMP-PB-STAGE-LINK
+    - COMP-PB-STAGE-CONTAINERIZE
+    - COMP-PB-STAGE-VERIFY
+    - COMP-PB-STAGE-PUBLISH
+    - COMP-PB-LEGACY-PROJECTOR-ADAPTER
+    - COMP-PB-LEGACY-PIPELINE-ADAPTER
+    - COMP-PB-LEGACY-DOCS-ADAPTER
+    goals:
+    - Deterministic replay success 100%
+    - Cache hit rate >80% on incremental runs
+  - id: SYS-PB-DEV
+    name: Dev-Loop Gate
+    status: ACTIVE
+    description: >-
+      Subsystem realizing the DEV umbrella — CI gate enforcing chain-closure
+      per attribute and standalone-verification on every commit.
+    intent: Fail closed on any attribute chain break or standalone-verification regression
+    component_ids:
+    - COMP-PB-CI-GATE
+    goals:
+    - Zero silent chain breaks reach main branch
+    - Every commit references [refs: CAP-X BEH-Y]
 relationships:
 - {from: BEH-PB-UC-1, to: CAP-PB-EXTRACT, type: traces-to}
 - {from: BEH-PB-UC-2, to: CAP-PB-MODEL, type: traces-to}
