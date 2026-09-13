@@ -8,21 +8,21 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 
 ## 2. System snapshot
 
-- Validator score: **90 / 100** (`is_valid=True`)
+- Validator score: **88 / 100** (`is_valid=True`)
 - Actors: 5
-- Capabilities: 12
-- Behaviors: 15
+- Capabilities: 18
+- Behaviors: 32
 - Components: 21
 - Interfaces: 20
-- Relationships: 121
+- Relationships: 145
 
 ## 3. Per-kind articulation matrix
 
 | Kind | Count | With intent | With delivery edges | With verify wiring |
 |------|------:|------------:|--------------------:|-------------------:|
 | actor | 5 | 5 | 5 | 5 |
-| capability | 12 | 12 | 12 | 12 |
-| behavior | 15 | 15 | 15 | 15 |
+| capability | 18 | 18 | 18 | 17 |
+| behavior | 32 | 32 | 25 | 22 |
 | component | 21 | 21 | 21 | 21 |
 | interface | 20 | 20 | 20 | 20 |
 
@@ -31,9 +31,9 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | Gap type | Meaning | Count | Entities |
 |----------|---------|------:|----------|
 | G-INTENT | entity has empty `intent` | 0 | - |
-| G-DELIVERY | no incoming `contains`/`realizes`/`traces-to` | 0 | - |
-| G-VERIFY | no `traces-to`/`exposes`/`consumes`/`produces` touching entity | 0 | - |
-| G-OPEN-Q | entity carries non-empty `open_questions` | 47 | CAP-PB-SLICE, CAP-PB-MODEL, CAP-PB-EXTRACT, CAP-PB-DEV, CAP-PB-PROMISE-GRAPH, CAP-PB-PIPELINE... |
+| G-DELIVERY | no incoming `contains`/`realizes`/`traces-to` | 7 | BEH-DF-1, BEH-DF-2, BEH-DF-3, BEH-DF-4, BEH-DF-5, BEH-DF-6... |
+| G-VERIFY | no `traces-to`/`exposes`/`consumes`/`produces` touching entity | 11 | CAP-DF, BEH-SIO-1, BEH-SIO-2, BEH-SIO-3, BEH-SIO-4, BEH-SIO-5... |
+| G-OPEN-Q | entity carries non-empty `open_questions` | 50 | CAP-PB-SLICE, CAP-PB-MODEL, CAP-PB-EXTRACT, CAP-PB-DEV, CAP-PB-PROMISE-GRAPH, CAP-PB-PIPELINE... |
 
 ## 5. Per-entity articulation table
 
@@ -56,6 +56,12 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | capability | `CAP-PB-EVIDENCE` | SI&L Records as Promise Evidence | YES | YES | YES | 2 |
 | capability | `CAP-PB-ADAPTER` | Legacy-Adapter Plugin Surface | YES | YES | YES | 3 |
 | capability | `CAP-PB-VERIFY` | Universal verify_entity_standalone Harness | YES | YES | YES | 2 |
+| capability | `CAP-DF` | Model-Driven Dev Flow (Methodology) | YES | YES | NO | 3 |
+| capability | `CAP-DF-INTENT` | Intent Capture | YES | YES | YES | 0 |
+| capability | `CAP-DF-EVOLVE` | Continuous Model Evolution | YES | YES | YES | 0 |
+| capability | `CAP-DF-VERIFY` | Chain-Closure Verification | YES | YES | YES | 0 |
+| capability | `CAP-DF-SELFIMP` | Self-Improvement (SIO Register) | YES | YES | YES | 1 |
+| capability | `CAP-DF-GATING` | Approval and Regenerability-Gated Autonomy | YES | YES | YES | 0 |
 | behavior | `BEH-PB-UC-1` | Use Case: Extract Architecture from Source C | YES | YES | YES | 2 |
 | behavior | `BEH-PB-UC-2` | Use Case: Migrate 2.1 Model to 3.0 | YES | YES | YES | 2 |
 | behavior | `BEH-PB-UC-3` | Use Case: Verify Entity Standalone | YES | YES | YES | 2 |
@@ -71,6 +77,23 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 | behavior | `BEH-PB-STAGE-5` | Stage: containerize | YES | YES | YES | 2 |
 | behavior | `BEH-PB-STAGE-6` | Stage: verify | YES | YES | YES | 2 |
 | behavior | `BEH-PB-STAGE-7` | Stage: publish | YES | YES | YES | 2 |
+| behavior | `BEH-DF-1` | Brainstorm → Plan → Approve → Execute Cycle | YES | NO | YES | 1 |
+| behavior | `BEH-DF-2` | Feedback-Driven Reframing Checkpoint | YES | NO | YES | 0 |
+| behavior | `BEH-DF-3` | Typed-Gap Surfacing | YES | NO | YES | 0 |
+| behavior | `BEH-DF-4` | SIO Capture During Conversation | YES | NO | YES | 0 |
+| behavior | `BEH-DF-5` | SIO Triage (apply-here | promote | discard) | YES | NO | YES | 0 |
+| behavior | `BEH-DF-6` | Regenerability Self-Check Per Entity | YES | NO | YES | 0 |
+| behavior | `BEH-DF-7` | Continuous Attribute Propagation (Fill-If-Em | YES | NO | YES | 0 |
+| behavior | `BEH-SIO-1` | SIO-1: Reframing checkpoint missing from pri | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-2` | SIO-2: Same-model vs new-model framing check | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-3` | SIO-3: Order-of-work is a dev-flow question | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-4` | SIO-4: Name infrastructure cost before locki | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-5` | SIO-5: Typed deferred gaps are more honest t | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-6` | SIO-6: Meta-principles must be captured as f | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-7` | SIO-7: Regen-check must be per-entity and re | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-8` | SIO-8: Autonomy vs approval is a confidence  | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-9` | SIO-9: git add -u violates auto-regen guardr | YES | YES | NO | 0 |
+| behavior | `BEH-SIO-10` | SIO-10: SIO type overloads behavior semantic | YES | YES | NO | 0 |
 | component | `COMP-PB-PROMISE-TYPE` | Promise Dataclass | YES | YES | YES | 2 |
 | component | `COMP-PB-PROMISE-PARSER` | Promise Parser | YES | YES | YES | 3 |
 | component | `COMP-PB-MIGRATOR` | 2.1 to 3.0 Migrator | YES | YES | YES | 3 |

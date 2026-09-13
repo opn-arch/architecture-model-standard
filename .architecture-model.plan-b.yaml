@@ -759,6 +759,233 @@ entities:
     - Cache hit rate >80% on incremental runs
     requirements:
     - REQ-PB-9
+  - id: BEH-DF-1
+    name: "Brainstorm \u2192 Plan \u2192 Approve \u2192 Execute Cycle"
+    status: ACTIVE
+    description: "Canonical model-driven development cycle. User intent enters via brainstorming (superpowers/brainstorming skill). Assistant produces a written plan (superpowers/writing-plans). User approves plan explicitly (superpowers/executing-plans gate). Assistant executes plan with per-step verification (superpowers/verification-before-completion). Every phase has a defined skill in .config/opencode/skills/superpowers/."
+    intent: Ensure no code is written without explicit user-approved plan preceded by user-clarified intent
+    steps:
+    - Detect intent (user message contains goal/need/change)
+    - Invoke brainstorming skill to clarify requirements
+    - Draft plan artifact (docs/plans/YYYY-MM-DD-name.md)
+    - Present plan; request explicit approval
+    - Upon approval, execute plan with atomic commits per step
+    - Verify each commit (suite green + regen-check per entity)
+    preconditions:
+    - User has expressed intent or reframing
+    postconditions:
+    - Plan artifact exists on disk
+    - Execution commits reference plan-doc task ids
+    verification:
+    - id: VER-DF-1
+      method: inspection
+      target: "Every non-trivial change traces to an approved plan artifact"
+    open_questions:
+    - What threshold of 'trivial' skips the plan artifact?
+  - id: BEH-DF-2
+    name: Feedback-Driven Reframing Checkpoint
+    status: ACTIVE
+    description: "When user feedback reframes the current problem (not just refines it), assistant halts execution and returns to brainstorming. Reframing signals: new noun categories in user message, explicit re-prioritization, contradiction with earlier decision. This behavior addresses SIO-1."
+    intent: Prevent execution momentum from carrying past a scope reframe
+    steps:
+    - Parse user message for reframing signals
+    - If reframing detected, pause current execution
+    - Summarize old frame vs new frame
+    - Confirm reframing with user
+    - Return to plan-writing under new frame
+    preconditions:
+    - Execution in progress
+    - New user message received
+    postconditions:
+    - Either execution continues (no reframe) or plan artifact updated (reframe)
+    verification:
+    - id: VER-DF-2
+      method: inspection
+      target: "Every user message during execution is classified as (refine | reframe | approve | reject)"
+  - id: BEH-DF-3
+    name: Typed-Gap Surfacing
+    status: ACTIVE
+    description: "When a field is empty or a relationship is missing, classify the absence into a named gap category (G-DELIVERY, G-VERIFY, G-OPEN-Q, ...). Never leave silent NULLs. Baseline reporter runs after every model mutation."
+    intent: Make model incompleteness addressable rather than invisible
+    steps:
+    - After any model mutation, run scripts/plan_b_baseline_report.py
+    - Compare gap counts to previous baseline
+    - Any new gap category triggers naming discussion
+    - Report gap deltas in commit message
+    verification:
+    - id: VER-DF-3
+      method: test
+      target: "scripts/plan_b_baseline_report.py runs cleanly after every commit"
+    - id: VER-DF-4
+      method: inspection
+      target: "Every commit message reports gap deltas or 'gaps unchanged'"
+  - id: BEH-DF-4
+    name: SIO Capture During Conversation
+    status: ACTIVE
+    description: "When a friction point, missed pattern, or process observation surfaces during conversation, capture it as a Self-Improvement Opportunity (SIO) entity before end of turn. Each SIO is a behavior under CAP-DF-SELFIMP with intent field carrying the observation."
+    intent: Prevent methodology lessons from evaporating between turns
+    steps:
+    - Assistant maintains an in-turn SIO scratchpad
+    - Any observation about the process (as distinct from the artifact) goes on the scratchpad
+    - At end-of-turn (or at natural pause), scratchpad entries land in the model as BEH-SIO-N entities
+    - Each SIO gets triage=pending until BEH-DF-5 processes it
+    preconditions:
+    - Conversation turn active
+    postconditions:
+    - Scratchpad empty at end of turn
+    - New SIO entities have triage=pending
+    verification:
+    - id: VER-DF-5
+      method: inspection
+      target: "Every reframing turn produces at least one BEH-SIO-N entity"
+  - id: BEH-DF-5
+    name: SIO Triage (apply-here | promote | discard)
+    status: ACTIVE
+    description: "Process pending SIOs. Each SIO gets a triage decision: apply-here (address in current context, do not persist as methodology change), promote-methodology (create/update methodology entity), or discard (with rationale). Triage rationale always recorded."
+    intent: Convert observations into either concrete methodology entities or explicit discards
+    steps:
+    - List all triage=pending SIOs
+    - "For each, assess whether it is a recurring pattern (promote), a context-specific fix (apply-here), or a false signal (discard)"
+    - Record triage decision + rationale on the SIO entity
+    - If promote-methodology, create the resulting entity and link via resulting_entity field
+    preconditions:
+    - At least one triage=pending SIO exists
+    postconditions:
+    - No SIO remains triage=pending across turns
+    - Promoted SIOs have resulting_entity populated
+    verification:
+    - id: VER-DF-6
+      method: analysis
+      target: "count of triage=pending SIOs = 0 at end of every T0.* task"
+  - id: BEH-DF-6
+    name: Regenerability Self-Check Per Entity
+    status: ACTIVE
+    description: "For every entity added or materially modified, assistant self-assesses: 'Could a competent developer write viable code implementing this entity's promise using only the model's entity detail, without reading source code?' Score HIGH / MEDIUM / LOW. HIGH -> continue autonomously. MEDIUM/LOW -> stop and consult user."
+    intent: Convert autonomy into a confidence-gated privilege earned per-entity
+    steps:
+    - After adding/modifying an entity, list its populated fields
+    - "Ask whether, given these fields alone, implementation could proceed"
+    - Score HIGH (yes, no gaps) / MEDIUM (yes with plausible defaults) / LOW (no, essential detail missing)
+    - Record score in commit message tally
+    - LOW score triggers immediate stop
+    preconditions:
+    - Entity added or materially modified
+    postconditions:
+    - Regen-check score recorded
+    - If MEDIUM/LOW, execution paused and user consulted
+    verification:
+    - id: VER-DF-7
+      method: inspection
+      target: "Every entity added in a commit appears in that commit's regen tally"
+  - id: BEH-DF-7
+    name: Continuous Attribute Propagation (Fill-If-Empty)
+    status: ACTIVE
+    description: "Parent-to-child attribute propagation: when a child entity lacks an attribute that its parent has, propagate parent value only if child's field is empty. Children with own values are preserved. Propagation is idempotent."
+    intent: Reduce boilerplate by propagating parent context without overwriting child-specific detail
+    steps:
+    - For each entity with parent_id
+    - Iterate over semantic attributes (intent, goals, ...)
+    - If child's attribute is empty AND parent's is non-empty, copy parent value
+    - Never overwrite child's non-empty attribute
+    - Log propagations for auditability
+    preconditions:
+    - Model in valid state
+    postconditions:
+    - Running script twice produces identical output
+    verification:
+    - id: VER-DF-8
+      method: test
+      target: "scripts/plan_b_propagate.py --dry-run yields empty diff on second run"
+  - id: BEH-SIO-1
+    name: "SIO-1: Reframing checkpoint missing from prior workflow"
+    status: ACTIVE
+    description: "Observation: User feedback often reframes the problem entirely (Plan B pivot -> dev-flow-inside-Plan-B). The dev flow must have explicit reframing checkpoints, not just execution checkpoints."
+    intent: "SIO-1 observation seed for BEH-DF-2"
+    triage: promote-methodology
+    triage_rationale: "Promoted to BEH-DF-2 (Feedback-Driven Reframing Checkpoint) in T0.11.6c"
+    resulting_entity: BEH-DF-2
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-2
+    name: "SIO-2: Same-model vs new-model framing check"
+    status: ACTIVE
+    description: "Observation: Assistant proposed to switch to a separate dev-flow model when user only asked to reprioritize dev-flow inside the same model. Rule: check same-model-vs-new-model framing before proposing artifact-level splits."
+    intent: "SIO-2 observation about artifact-level-split reflex"
+    triage: promote-methodology
+    triage_rationale: "Promoted to REQ-DF-SAMEMODEL requirement in T0.11.6c"
+    resulting_entity: REQ-DF-SAMEMODEL
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-3
+    name: "SIO-3: Order-of-work is a dev-flow question"
+    status: ACTIVE
+    description: "Observation: 'What order should we do this in?' is a first-class dev-flow question. Task-sequencing pattern deserves formalization."
+    intent: "SIO-3 observation about implicit task-ordering heuristics"
+    triage: promote-methodology
+    triage_rationale: "Deferred: task-sequencing pattern formalization is Phase 1 methodology work"
+    resulting_entity: ""
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-4
+    name: "SIO-4: Name infrastructure cost before locking design choice"
+    status: ACTIVE
+    description: "Observation: Option gamma requires schema change (parser, validator, tests). When a design choice implies infrastructure change, name that cost explicitly before locking the choice."
+    intent: "SIO-4 observation about hidden infrastructure implications of design choices"
+    triage: promote-methodology
+    triage_rationale: "Promoted to REQ-DF-COSTNAMING requirement in T0.11.6c"
+    resulting_entity: REQ-DF-COSTNAMING
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-5
+    name: "SIO-5: Typed deferred gaps are more honest than skipped invariants"
+    status: ACTIVE
+    description: "Observation: Declaring INV-PB-2 without its enforcement machinery (typed gap) is more honest than skipping the invariant entirely (silent absence). Typed-gap discipline extends to invariants, not just fields."
+    intent: "SIO-5 observation about invariant-declaration decoupled from enforcement"
+    triage: apply-here
+    triage_rationale: "Applied in T0.11.6d planning: INV-PB-1/2/3 declared in prose, enforcement machinery deferred to Phase 1"
+    resulting_entity: ""
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-6
+    name: "SIO-6: Meta-principles must be captured as first-class constraints"
+    status: ACTIVE
+    description: "Observation: Meta-principle 'Plan B is disposable; focus on model-based dev' retroactively re-scoped every subsequent decision. Meta-principles should be captured as top-level constraints on the dev-flow model, not left as inline directives that decay."
+    intent: "SIO-6 observation about meta-principle capture"
+    triage: promote-methodology
+    triage_rationale: "Deferred to T0.11.6d: will land as INV-DF-META top-level constraint"
+    resulting_entity: ""
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-7
+    name: "SIO-7: Regen-check must be per-entity and reported in commits"
+    status: ACTIVE
+    description: "Observation: Regenerability confidence should be per-entity, self-assessed, and reported in commits. Absence of self-assessment protocol has caused prior over-modeling."
+    intent: "SIO-7 observation about need for regen-check protocol"
+    triage: promote-methodology
+    triage_rationale: "Promoted to BEH-DF-6 (Regenerability Self-Check Per Entity) in T0.11.6c"
+    resulting_entity: BEH-DF-6
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-8
+    name: "SIO-8: Autonomy vs approval is a confidence spectrum"
+    status: ACTIVE
+    description: "Observation: Autonomy vs approval is a spectrum controlled by confidence, not a binary. Formalize as INV-DF-REGEN invariant enforcing regen-check-HIGH as the autonomy predicate."
+    intent: "SIO-8 observation about autonomy-as-spectrum"
+    triage: promote-methodology
+    triage_rationale: "Promoted to CAP-DF-GATING and BEH-DF-6 in T0.11.6c; INV-DF-REGEN pending T0.11.6d"
+    resulting_entity: CAP-DF-GATING
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-9
+    name: "SIO-9: git add -u violates auto-regen guardrail"
+    status: ACTIVE
+    description: "Observation: Using 'git add -u' picks up modifications in .architecture/** and .architecture-models/** auto-regen paths, violating the guardrail. Plan B commits must use explicit paths only."
+    intent: "SIO-9 observation caught by post-commit inspection"
+    triage: promote-methodology
+    triage_rationale: "Promoted to REQ-DF-EXPLICITADD requirement in T0.11.6c; violated commit was reset and re-committed correctly"
+    resulting_entity: REQ-DF-EXPLICITADD
+    surfaced_in: "conversation-2026-09-13"
+  - id: BEH-SIO-10
+    name: "SIO-10: SIO type overloads behavior semantics (schema gap)"
+    status: ACTIVE
+    description: "Observation: Modeling SIOs as behaviors under CAP-DF-SELFIMP is a pragmatic concession to avoid schema change. SIOs are semantically observations, not behaviors. First-class SIO entity type deferred to enduring-artifact schema decision (post-Plan-B)."
+    intent: "SIO-10 observation about type-system compromise"
+    triage: apply-here
+    triage_rationale: "Applied: SIOs live as BEH-SIO-N behaviors for Plan B; graduation to first-class type is a separate schema PR outside Plan B scope"
+    resulting_entity: ""
+    surfaced_in: "conversation-2026-09-13"
   capabilities:
   - id: CAP-0
     name: "Plan B \u2014 Promise-Graph Architecture (Root)"
@@ -1207,6 +1434,178 @@ entities:
     requirements:
     - REQ-PB-3
     - REQ-PB-15
+  - id: CAP-DF
+    name: Model-Driven Dev Flow (Methodology)
+    status: ACTIVE
+    description: "Umbrella capability formalizing the model-driven development flow itself: how user intent enters the model, how the model evolves continuously, how self-improvement opportunities (SIOs) captured during conversation are triaged and promoted into the model. The methodology is the enduring product; Plan B is its first test fixture."
+    intent: Make the model-driven-dev methodology first-class inside the model it drives, so the methodology self-improves through use.
+    goals:
+    - Every conversation turn either preserves or improves the methodology model
+    - Every SIO surfaced during work is captured before end of turn
+    - Every SIO is triaged into (apply-here | promote-methodology | discard) with rationale
+    - Regenerability confidence is per-entity, self-assessed, reported per commit
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - User (product owner)
+    success_criteria:
+    - CAP-DF subtree grows monotonically as conversation surfaces new lessons
+    - No lesson is lost between conversation sessions (all SIOs land as entities)
+    - Every T0.* correction pass produces at least one SIO promotion or discard
+    failure_modes:
+    - SIOs captured but never triaged (methodology stagnates)
+    - Methodology entities added without regen-check (over-modeling)
+    - CAP-DF becomes decorative (mirrors intent without changing behavior)
+    trade_offs:
+    - Meta-modeling adds cognitive load; accepted for continuous self-improvement
+    - CAP-DF may outlive Plan B; graduation path to separate model deferred
+    assumptions:
+    - Conversation feedback is the primary signal for methodology gaps
+    - Regen-check confidence is a reliable proxy for entity completeness
+    open_questions:
+    - When should CAP-DF graduate from Plan B model to its own repo?
+    - How to encode 'reframing checkpoint' as an automatable protocol vs. human judgement?
+    - Should regen-check confidence be numeric (0-100) or categorical (HIGH/MED/LOW)?
+    moes:
+    - "SIO capture rate per turn (target: >=1 for reframing turns, >=0 for execution turns)"
+    - "SIO triage latency (target: <=1 turn after capture)"
+    requirements: []
+  - id: CAP-DF-INTENT
+    name: Intent Capture
+    parent_id: CAP-DF
+    status: ACTIVE
+    description: "Convert user goals expressed in natural language into structured model artifacts (requirements, capabilities, behaviors) while preserving the user's framing and MoSCoW priority."
+    intent: Preserve user framing on the path from spoken intent to persisted requirement
+    goals:
+    - Every user goal statement produces at least one requirement or capability entity
+    - MoSCoW priority is captured explicitly, not inferred
+    - Framing shifts (user reprioritizes or reframes) are detected and captured as SIOs
+    stakeholders:
+    - User (product owner)
+    - LLM Agent
+    success_criteria:
+    - Requirement text matches user's original words within reasonable paraphrase distance
+    - No silent priority downgrading (must -> should) without explicit user confirmation
+    failure_modes:
+    - Assistant infers priority from convenience rather than user statement
+    - User framing shift missed because assistant continues previous plan
+    verification:
+    - id: VER-DF-INTENT-1
+      method: inspection
+      target: Every requirement traces to a specific user turn in conversation log
+    responsibilities:
+    - Detect intent statements in user messages
+    - Prompt for MoSCoW priority when ambiguous
+    - Emit typed gap when priority remains unresolved
+  - id: CAP-DF-EVOLVE
+    name: Continuous Model Evolution
+    parent_id: CAP-DF
+    status: ACTIVE
+    description: "Every conversation turn evaluates whether the model needs to grow or refactor. Modeling is continuous, not one-shot: 'you keep finding new attributes ... plus as we go towards coding and testing further modeling gets required'."
+    intent: Prevent model stagnation by evaluating growth need every turn
+    goals:
+    - Model evolves incrementally, atomic per commit
+    - Attribute propagation (parent -> child fill-if-empty) is idempotent
+    - Every added attribute traces back to a specific SIO or user directive
+    stakeholders:
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - No orphaned attributes (attributes without provenance)
+    - No batched growth (each atomic commit adds one coherent unit)
+    failure_modes:
+    - Assistant adds attributes speculatively without provenance link
+    - Growth spurt (many entities in one commit) obscures per-entity regen-check
+    verification:
+    - id: VER-DF-EVOLVE-1
+      method: analysis
+      target: Every entity's provenance field cites a conversation turn or upstream SIO
+    - id: VER-DF-EVOLVE-2
+      method: test
+      target: Attribute propagation is idempotent (running twice yields identical model)
+  - id: CAP-DF-VERIFY
+    name: Chain-Closure Verification
+    parent_id: CAP-DF
+    status: ACTIVE
+    description: "Verify delivery-down and verify-up chain closure at both structural and per-attribute levels. Gaps are typed (named categories), never silent NULLs."
+    intent: Make every gap addressable so the model is always complete-with-typed-holes rather than partially populated
+    goals:
+    - Every entity carries either a delivery record or a typed-gap classification
+    - G-DELIVERY, G-VERIFY, G-OPEN-Q gap categories are exhaustive over structural gaps
+    - Baseline reporter surfaces typed-gap deltas per commit
+    stakeholders:
+    - LLM Agent
+    - CI/CD Pipeline
+    success_criteria:
+    - No entity has silent missing fields (all absences are named)
+    - Baseline gap counts trend monotonically down or stay flat
+    failure_modes:
+    - New gap categories emerge but stay untyped
+    - Fields left empty without being registered as typed gaps
+    verification:
+    - id: VER-DF-VERIFY-1
+      method: analysis
+      target: scripts/plan_b_baseline_report.py classifies every empty field into a G-* category
+    - id: VER-DF-VERIFY-2
+      method: inspection
+      target: Every gap category has a documented remediation path
+  - id: CAP-DF-SELFIMP
+    name: Self-Improvement (SIO Register)
+    parent_id: CAP-DF
+    status: ACTIVE
+    description: "Capture Self-Improvement Opportunities (SIOs) surfaced during conversation. Each SIO records an observation about the process itself, gets triaged into (apply-here | promote-methodology | discard) with rationale, and links to any resulting entity."
+    intent: Turn every friction point in the dev flow into an addressable model artifact
+    goals:
+    - Every conversation turn that surfaces a process observation captures it as an SIO
+    - Every SIO is triaged within N turns of capture (N configurable, default 1)
+    - Every promoted SIO produces at least one new/updated entity in the methodology model
+    stakeholders:
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - SIO capture rate >= 1 per reframing turn
+    - SIO triage completion rate >= 90% within 3 turns
+    - Promoted SIO -> entity trace is queryable
+    failure_modes:
+    - Observation made but SIO not captured (methodology stagnates silently)
+    - SIO captured but never triaged (dead entries accumulate)
+    - Triage decisions unrecorded (rationale lost)
+    verification:
+    - id: VER-DF-SELFIMP-1
+      method: inspection
+      target: Every SIO entity has an explicit triage field with rationale
+    - id: VER-DF-SELFIMP-2
+      method: analysis
+      target: Every SIO with triage=promote-methodology has resulting_entity populated
+    open_questions:
+    - "Should SIOs be first-class YAML top-level (needs schema extension) or behaviors under CAP-DF-SELFIMP (current implementation, overloads behavior semantics)?"
+  - id: CAP-DF-GATING
+    name: Approval and Regenerability-Gated Autonomy
+    parent_id: CAP-DF
+    status: ACTIVE
+    description: "User-only approval at named gates. Between gates, assistant continues autonomously as long as regenerability confidence stays HIGH per added entity. Autonomy retracts to gate-only if any entity scores MEDIUM/LOW."
+    intent: Make autonomy vs approval a confidence-controlled spectrum, not a binary
+    goals:
+    - Every entity added between gates has recorded regen-check score
+    - Any MEDIUM/LOW entity triggers immediate stop and user consultation
+    - Named gates (T0.13, phase boundaries) remain user-only regardless of confidence
+    stakeholders:
+    - User (product owner)
+    - LLM Agent
+    success_criteria:
+    - Every commit message reports regen-check tally per added entity
+    - Zero autonomous commits at MEDIUM/LOW confidence
+    failure_modes:
+    - Assistant self-scores optimistically to avoid stopping
+    - Regen-check becomes rubber stamp rather than genuine assessment
+    - Named gates skipped under time pressure
+    verification:
+    - id: VER-DF-GATING-1
+      method: inspection
+      target: "Every commit message contains 'regen: HIGH|MED|LOW (N entities)' line"
+    - id: VER-DF-GATING-2
+      method: test
+      target: A validator lint rejects Plan B commits missing regen-check tally
   components:
   - id: COMP-PB-PROMISE-TYPE
     name: Promise Dataclass
@@ -2307,6 +2706,36 @@ entities:
     acceptance_criteria:
     - pre-push hook forbids push with red tests
     stakeholder: CI/CD Pipeline
+  - id: REQ-DF-SAMEMODEL
+    name: Same-model vs new-model framing check
+    status: ACTIVE
+    text: "Before proposing artifact-level splits (new file, new repo, new schema), assistant MUST explicitly check whether user asked for a same-model expansion or an actual artifact split. Default is same-model expansion; splitting requires user confirmation."
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - Assistant messages proposing artifact splits contain explicit 'same-model vs new-model' framing question
+    - No new top-level artifact created without user answering the framing question
+    stakeholder: LLM Agent
+  - id: REQ-DF-COSTNAMING
+    name: Name infrastructure cost before locking design choice
+    status: ACTIVE
+    text: "When a proposed design choice implies infrastructure change (schema bump, new tooling, new dependency), assistant MUST explicitly name that cost before the choice is locked, so the user can reject or accept with full information."
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - Design proposals list explicit 'Infrastructure cost' or 'Requires schema change' line when applicable
+    - No schema change lands without prior cost-naming turn
+    stakeholder: LLM Agent
+  - id: REQ-DF-EXPLICITADD
+    name: Explicit paths for Plan B git commits
+    status: ACTIVE
+    text: "Plan B commits MUST use explicit paths in git add (never 'git add -A' or 'git add -u'). This prevents auto-regen contamination from .architecture/** and .architecture-models/** paths."
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - Every T0.* commit staged via explicit path list
+    - "Post-commit check confirms no .architecture/** or .architecture-models/** paths appear in the commit diff"
+    stakeholder: LLM Agent
 relationships:
 - from: BEH-PB-UC-1
   to: CAP-PB-EXTRACT
@@ -2671,3 +3100,75 @@ relationships:
 - from: CAP-0
   to: CAP-PB-DEV
   type: contains
+- from: CAP-0
+  to: CAP-DF
+  type: contains
+- from: CAP-DF
+  to: CAP-DF-INTENT
+  type: contains
+- from: CAP-DF
+  to: CAP-DF-EVOLVE
+  type: contains
+- from: CAP-DF
+  to: CAP-DF-VERIFY
+  type: contains
+- from: CAP-DF
+  to: CAP-DF-SELFIMP
+  type: contains
+- from: CAP-DF
+  to: CAP-DF-GATING
+  type: contains
+- from: BEH-DF-1
+  to: CAP-DF-INTENT
+  type: realizes
+- from: BEH-DF-1
+  to: CAP-DF-GATING
+  type: realizes
+- from: BEH-DF-2
+  to: CAP-DF-INTENT
+  type: realizes
+- from: BEH-DF-3
+  to: CAP-DF-VERIFY
+  type: realizes
+- from: BEH-DF-4
+  to: CAP-DF-SELFIMP
+  type: realizes
+- from: BEH-DF-5
+  to: CAP-DF-SELFIMP
+  type: realizes
+- from: BEH-DF-6
+  to: CAP-DF-GATING
+  type: realizes
+- from: BEH-DF-7
+  to: CAP-DF-EVOLVE
+  type: realizes
+- from: BEH-SIO-1
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-2
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-3
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-4
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-5
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-6
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-7
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-8
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-9
+  to: CAP-DF-SELFIMP
+  type: traces-to
+- from: BEH-SIO-10
+  to: CAP-DF-SELFIMP
+  type: traces-to
