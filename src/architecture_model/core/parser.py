@@ -294,6 +294,7 @@ def _parse_base(d: dict) -> dict:
             for de in d.get("decisions", [])
         ],
         "monitored": d.get("monitored", []),
+        "acceptance_criteria": d.get("acceptance_criteria", []) or [],
     }
 
 
@@ -657,7 +658,7 @@ def _parse_requirement(d: dict) -> Requirement:
         moe=d.get("moe", ""),
         # --- Schema 2.2 : ISO/IEC/IEEE 29148 attributes ---
         verification_method=d.get("verification_method", ""),
-        acceptance_criteria=d.get("acceptance_criteria", []) or [],
+        # acceptance_criteria now sourced from _parse_base (Plan B T0.11.6f)
         stakeholder=d.get("stakeholder", ""),
         stakeholders=d.get("stakeholders", []) or [],
         derived_from=d.get("derived_from", []) or [],
@@ -786,6 +787,7 @@ def _dump_base(entity: Any) -> dict:
     for field_name in (
         "goals", "requirements", "rationale", "moes", "value_function",
         "failure_modes", "trade_offs", "interface_refs", "monitored",
+        "acceptance_criteria",
     ):
         value = getattr(entity, field_name)
         if value:

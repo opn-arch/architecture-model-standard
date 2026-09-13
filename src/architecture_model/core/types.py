@@ -330,6 +330,11 @@ class BaseEntity:
     interface_refs: list[str] = field(default_factory=list)
     decisions: list[DecisionEntry] = field(default_factory=list)
     monitored: list[str] = field(default_factory=list)
+    # Acceptance criteria available on every entity kind (Plan B T0.11.6f).
+    # On Requirement, this shadows the requirement-specific field of the same
+    # name and type — no conflict. On non-Requirement entities, this lets a
+    # component/behavior/capability/interface declare its own AC directly.
+    acceptance_criteria: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
