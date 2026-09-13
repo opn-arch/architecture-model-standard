@@ -138,6 +138,7 @@ def validate_model(
     _check_hierarchy_consistency(model, result)
     _check_semantic_completeness(model, result)
     _check_interface_subkinds(model, result)
+    _check_pipeline_completeness(model, result)
 
     # Lifecycle-gated: skip verification checks in concept phase
     lifecycle_phase = getattr(model.meta, "lifecycle_phase", "production")
@@ -1003,3 +1004,145 @@ def _check_interface_subkinds(model: ArchitectureModel, result: ValidationResult
                     entity_id=iface.id,
                 )
             )
+
+
+# ---------------------------------------------------------------------------
+# Pipeline completeness — first-class audit of the six operational pipelines.
+# Lifts the CLI `architecture-model audit` checks into validate_model so
+# operational-pipeline gaps surface on every validation run.
+# ---------------------------------------------------------------------------
+
+PIPELINE_ANCHORS: dict[str, str] = {
+    "BEH-P1":  "EXTRACT",
+    "BEH-26":  "SLICE",
+    "BEH-27":  "SELF-IMPROVEMENT",
+    "BEH-28":  "DEV-LOOP",
+    "BEH-LLM": "LLM-PROVIDER",
+    "BEH-SIL": "SI&L LOGGING",
+    "BEH-FBK": "FEEDBACK JOURNALS",
+}
+
+
+def _check_pipeline_completeness(
+    model: ArchitectureModel, result: ValidationResult
+) -> None:
+    """Rule 17 — Six operational pipelines each satisfy: every sub-behavior has a
+    description, a `traces-to` allocation, a `contains` edge from the pipeline
+    root, and a `triggers` edge on at least one side (in or out).
+
+    Only fires when a pipeline root behavior actually exists in the model.
+    Missing anchors are silent (a model may cover only a subset of pipelines).
+    """
+    behaviors = list(model.entities.behaviors)
+    if not behaviors:
+        return
+    behs_by_id = {b.id: b for b in behaviors}
+
+    triggers_from: dict[str, set[str]] = {}
+    triggers_to: dict[str, set[str]] = {}
+    # A behavior is considered "traced" if it appears on either side of any
+    # traces-to edge (component→behavior in most models, behavior→component
+    # in some). Track the union of endpoints for both direction conventions.
+    behs_with_trace: set[str] = set()
+    contains_from: dict[str, set[str]] = {}
+    for r in model.relationships:
+        t = r.type.value if hasattr(r.type, "value") else str(r.type)
+        if t == "triggers":
+            triggers_from.setdefault(r.from_id, set()).add(r.to_id)
+            triggers_to.setdefault(r.to_id, set()).add(r.from_id)
+        elif t == "traces-to":
+            if r.from_id in behs_by_id:
+                behs_with_trace.add(r.from_id)
+            if r.to_id in behs_by_id:
+                behs_with_trace.add(r.to_id)
+        elif t == "contains":
+            contains_from.setdefault(r.from_id, set()).add(r.to_id)
+
+    def _descendants(root: str) -> set[str]:
+        """Transitively collect all `contains` descendants of `root`."""
+        seen: set[str] = set()
+        stack = [root]
+        while stack:
+            cur = stack.pop()
+            for child in contains_from.get(cur, ()):
+                if child in seen:
+                    continue
+                seen.add(child)
+                stack.append(child)
+        return seen
+
+    # Reverse containment index (child -> parent) so we can walk upward and
+    # let a behavior inherit its ancestors' traces-to allocation. Deep leaf
+    # behaviors (BEH-P1.2.1, ...) are considered "traced" if any ancestor
+    # inside the same pipeline has a traces-to edge.
+    contains_parent: dict[str, str] = {}
+    for parent, children in contains_from.items():
+        for child in children:
+            contains_parent.setdefault(child, parent)
+
+    def _traced_via_ancestor(bid: str, anchor: str) -> bool:
+        cur = bid
+        seen: set[str] = set()
+        while cur and cur not in seen:
+            seen.add(cur)
+            if cur in behs_with_trace:
+                return True
+            if cur == anchor:
+                return False
+            cur = contains_parent.get(cur, "")
+        return False
+
+    for anchor, label in PIPELINE_ANCHORS.items():
+        if anchor not in behs_by_id:
+            continue  # pipeline not present in this model — skip
+        subs = [
+            b for b in behaviors
+            if b.id != anchor and b.id.startswith(anchor + ".")
+        ]
+        contained = _descendants(anchor)
+
+        for sub in subs:
+            if not (sub.description or "").strip():
+                result.issues.append(ValidationIssue(
+                    severity=Severity.WARNING,
+                    code="PIPELINE_MISSING_DESCRIPTION",
+                    message=(
+                        f"Sub-behavior '{sub.id}' in pipeline {anchor} ({label}) "
+                        f"has no description"
+                    ),
+                    entity_id=sub.id,
+                    context="pipeline_completeness",
+                ))
+            if not _traced_via_ancestor(sub.id, anchor):
+                result.issues.append(ValidationIssue(
+                    severity=Severity.WARNING,
+                    code="PIPELINE_MISSING_TRACE",
+                    message=(
+                        f"Sub-behavior '{sub.id}' in pipeline {anchor} ({label}) "
+                        f"has no traces-to component allocation"
+                    ),
+                    entity_id=sub.id,
+                    context="pipeline_completeness",
+                ))
+            if sub.id not in contained:
+                result.issues.append(ValidationIssue(
+                    severity=Severity.WARNING,
+                    code="PIPELINE_MISSING_CONTAINMENT",
+                    message=(
+                        f"Sub-behavior '{sub.id}' is not contained by pipeline "
+                        f"root {anchor} ({label})"
+                    ),
+                    entity_id=sub.id,
+                    context="pipeline_completeness",
+                ))
+            if sub.id not in triggers_from and sub.id not in triggers_to:
+                result.issues.append(ValidationIssue(
+                    severity=Severity.WARNING,
+                    code="PIPELINE_ISOLATED",
+                    message=(
+                        f"Sub-behavior '{sub.id}' in pipeline {anchor} ({label}) "
+                        f"has no incoming or outgoing triggers edge"
+                    ),
+                    entity_id=sub.id,
+                    context="pipeline_completeness",
+                ))

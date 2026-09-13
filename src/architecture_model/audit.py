@@ -1,91 +1,80 @@
-"""Six-pipeline completeness audit.
+"""Six-pipeline completeness audit (CLI wrapper over the validator rule).
 
-Verifies that every operational pipeline (BEH-P1 EXTRACT, BEH-26 SLICE,
-BEH-27 SELF-IMPROVEMENT, BEH-28 DEV-LOOP, BEH-LLM, BEH-SIL, BEH-FBK) has:
-- Description on every sub-behavior
-- Triggers DAG connecting steps
-- Traces-to component allocation
-- Contains parent relationship
-
-Reports counts + gaps. Exit code non-zero on gaps when --strict.
+Delegates to the first-class `_check_pipeline_completeness` rule in
+`architecture_model.core.validator` so this CLI and every `validate_model`
+run share one source of truth. Reports per-pipeline counts + gaps and
+returns a non-zero exit code on gaps when `--strict`.
 """
 
 from __future__ import annotations
 
-import sys
 from collections import defaultdict
 from pathlib import Path
 
 from architecture_model.core.parser import load_model
-
-
-PIPELINES = {
-    "BEH-P1":  "EXTRACT",
-    "BEH-26":  "SLICE",
-    "BEH-27":  "SELF-IMPROVEMENT",
-    "BEH-28":  "DEV-LOOP",
-    "BEH-LLM": "LLM-PROVIDER",
-    "BEH-SIL": "SI&L LOGGING",
-    "BEH-FBK": "FEEDBACK JOURNALS",
-}
+from architecture_model.core.validator import PIPELINE_ANCHORS, validate_model
 
 
 def run_audit(model_path: str | Path, pipeline: str | None = None, strict: bool = False) -> int:
     model = load_model(Path(model_path))
     behaviors = list(model.entities.behaviors)
-    relationships = list(model.relationships) if hasattr(model, "relationships") else []
+    result = validate_model(model)
 
-    def gf(r):
-        return getattr(r, "from_id", None) or getattr(r, "from_", None)
-    def gt(r):
-        return getattr(r, "to_id", None) or getattr(r, "to_", None)
-    def rtype(r):
-        rt = getattr(r, "type", None) or getattr(r, "relation_type", None)
-        return rt.value if hasattr(rt, "value") else str(rt)
+    # Bucket pipeline-completeness issues by anchor.
+    by_anchor: dict[str, dict[str, list[str]]] = {
+        a: {
+            "PIPELINE_MISSING_DESCRIPTION": [],
+            "PIPELINE_MISSING_TRACE": [],
+            "PIPELINE_ISOLATED": [],
+            "PIPELINE_MISSING_CONTAINMENT": [],
+        }
+        for a in PIPELINE_ANCHORS
+    }
+    for issue in result.issues:
+        code = issue.code or ""
+        if not code.startswith("PIPELINE_"):
+            continue
+        eid = issue.entity_id or ""
+        # Match longest anchor prefix so BEH-P1 wins over BEH- style ties.
+        matched = ""
+        for a in PIPELINE_ANCHORS:
+            if (eid == a or eid.startswith(a + ".")) and len(a) > len(matched):
+                matched = a
+        if matched and code in by_anchor[matched]:
+            by_anchor[matched][code].append(eid)
 
-    triggers = defaultdict(set)
-    traces_to = defaultdict(set)
-    contains = defaultdict(set)
-    for r in relationships:
-        t = rtype(r)
-        f, to = gf(r), gt(r)
-        if t == "triggers":
-            triggers[f].add(to)
-        elif t == "traces-to":
-            traces_to[to].add(f)   # keyed by behavior
-        elif t == "contains":
-            contains[f].add(to)
-
-    behaviors_by_id = {b.id: b for b in behaviors}
-
-    targets = [pipeline] if pipeline else list(PIPELINES.keys())
+    targets = [pipeline] if pipeline else list(PIPELINE_ANCHORS.keys())
     total_gaps = 0
 
     print(f"# Six-Pipeline Completeness Audit\n\nModel: {model_path}\n")
     for anchor in targets:
-        if anchor not in PIPELINES:
+        if anchor not in PIPELINE_ANCHORS:
             print(f"unknown pipeline: {anchor}")
             continue
-        label = PIPELINES[anchor]
+        label = PIPELINE_ANCHORS[anchor]
         subs = [b for b in behaviors if b.id == anchor or b.id.startswith(anchor + ".")]
-        n = len(subs)
-        missing_desc = [b.id for b in subs if not (b.description or "").strip()]
-        missing_trace = [b.id for b in subs if b.id != anchor and not traces_to.get(b.id)]
-        missing_trig_out = [b.id for b in subs if b.id != anchor and b.id not in triggers and not any(b.id in t for t in triggers.values())]
-        missing_contains = [b.id for b in subs if b.id != anchor and b.id not in contains.get(anchor, set())]
+        buckets = by_anchor.get(anchor, defaultdict(list))
+        missing_desc = buckets["PIPELINE_MISSING_DESCRIPTION"]
+        missing_trace = buckets["PIPELINE_MISSING_TRACE"]
+        isolated = buckets["PIPELINE_ISOLATED"]
+        missing_contains = buckets["PIPELINE_MISSING_CONTAINMENT"]
 
         print(f"## {anchor} — {label}")
-        print(f"- Sub-behaviors: {n}")
+        print(f"- Sub-behaviors: {len(subs)}")
         print(f"- Missing description: {len(missing_desc)}")
         print(f"- Missing traces-to (component): {len(missing_trace)}")
-        print(f"- Isolated (no trigger in or out): {len(missing_trig_out)}")
+        print(f"- Isolated (no trigger in or out): {len(isolated)}")
         print(f"- Not contained by parent: {len(missing_contains)}")
         if missing_desc:
             print(f"  desc gaps: {missing_desc[:5]}{'...' if len(missing_desc)>5 else ''}")
         if missing_trace:
             print(f"  trace gaps: {missing_trace[:5]}{'...' if len(missing_trace)>5 else ''}")
+        if isolated:
+            print(f"  isolated: {isolated[:5]}{'...' if len(isolated)>5 else ''}")
+        if missing_contains:
+            print(f"  containment gaps: {missing_contains[:5]}{'...' if len(missing_contains)>5 else ''}")
         print()
-        total_gaps += len(missing_desc) + len(missing_trace) + len(missing_trig_out) + len(missing_contains)
+        total_gaps += len(missing_desc) + len(missing_trace) + len(isolated) + len(missing_contains)
 
     print(f"---\nTotal gaps: {total_gaps}")
     if strict and total_gaps > 0:
