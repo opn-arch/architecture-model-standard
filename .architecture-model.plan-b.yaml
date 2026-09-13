@@ -2531,7 +2531,97 @@ entities:
     description: GitHub Actions workflow (`.github/workflows/architecture-gate.yml`) enforcing standalone-verification harness + chain-closure diff vs base. Blocks merge on open promises without typed-gap or on closure regression without override.
     intent: CI workflow surface enforcing standalone-verification + closure gate
   layers: []
-  constraints: []
+  constraints:
+  - id: INV-PB-1
+    name: Universal Root Capability
+    status: ACTIVE
+    type: operational
+    description: "Every non-methodology capability MUST transitively resolve to CAP-0 via contains-relationships. CAP-DF (methodology) is the sole permitted sibling root and is itself contained by CAP-0. No capability may be orphaned from the root."
+    intent: Guarantee a single-rooted capability hierarchy so every promise is reachable from CAP-0
+    metric: count of capabilities lacking a contains-path to CAP-0
+    threshold: "0"
+    enforceable: true
+    measurable: true
+    verification_method: analysis
+    success_criteria:
+    - "Traversal from CAP-0 via contains-relationships reaches every capability"
+    - "Baseline classifier reports zero orphan capabilities"
+    verification:
+    - id: VER-INV-PB-1
+      method: analysis
+      target: "scripts/plan_b_baseline_report.py reports 0 orphan capabilities"
+  - id: INV-PB-2
+    name: Requirement-Behavior Closure Chain
+    status: ACTIVE
+    type: operational
+    description: "Every requirement MUST be realized by at least one behavior via a realizes or traces-to relationship. Every behavior MUST realize at least one capability. This forms an unbroken REQ -> BEH -> CAP -> CAP-0 chain."
+    intent: Prevent dangling requirements and orphan behaviors by enforcing closure through the promise graph
+    metric: count of (unrealized-requirements + capability-less-behaviors)
+    threshold: "0"
+    enforceable: true
+    measurable: true
+    verification_method: analysis
+    success_criteria:
+    - "Every requirement has at least one inbound realizes/traces-to edge from a behavior"
+    - "Every behavior has at least one outbound realizes edge to a capability"
+    verification:
+    - id: VER-INV-PB-2
+      method: analysis
+      target: "Baseline classifier G-DELIVERY count remains bounded and no new orphans introduced per commit"
+  - id: INV-PB-3
+    name: Per-Attribute Provenance
+    status: ACTIVE
+    type: operational
+    description: "Every semantic attribute value on an entity MUST be attributable to either (a) the entity's own declaration, (b) parent propagation via BEH-DF-7, or (c) an explicit SIO promotion. Untracked attribute origin is a violation."
+    intent: Make every attribute value auditable back to its authoring or propagation event
+    metric: count of attributes whose origin is unattributable
+    threshold: "0"
+    enforceable: false
+    measurable: true
+    verification_method: inspection
+    success_criteria:
+    - "Attribute value present on child either matches parent (propagation) or differs (own declaration)"
+    - "Attributes without either match are flagged for SIO capture"
+    verification:
+    - id: VER-INV-PB-3
+      method: inspection
+      target: "Manual audit of a random 5% attribute sample per T0.* commit finds attributable origin"
+  - id: INV-DF-REGEN
+    name: Regenerability-Gated Autonomy
+    status: ACTIVE
+    type: operational
+    description: "Assistant continues autonomously ONLY while the per-entity regenerability score is HIGH. MEDIUM or LOW score MUST trigger immediate user consultation before proceeding. Regenerability score is defined as whether a competent developer could implement the entity's promise using only the model's entity detail, without reading source code."
+    intent: Convert autonomy from a blanket permission into a per-entity earned privilege gated on model completeness
+    metric: count of MEDIUM/LOW-scored entities added without user consultation
+    threshold: "0"
+    enforceable: true
+    measurable: true
+    verification_method: inspection
+    success_criteria:
+    - "Every commit tally line records regen scores for entities added"
+    - "No MEDIUM/LOW score appears in a commit without an accompanying user consultation entry"
+    verification:
+    - id: VER-INV-DF-REGEN
+      method: inspection
+      target: "Every arch(plan-b) commit message contains a 'regen: HIGH|MEDIUM|LOW (N entities checked)' line"
+  - id: INV-DF-META
+    name: Methodology Is Not Permanent Architecture
+    status: ACTIVE
+    type: operational
+    description: "The dev-flow methodology (CAP-DF subtree) exists to perfect the model-driven development process. It is subject to continuous evolution and eventual replacement as lessons accumulate. Plan B and its methodology are the first test fixture, not the enduring product; the enduring product is the demonstrated ability to model any system faithfully."
+    intent: Prevent ossification of methodology by declaring it explicitly disposable and evolvable
+    metric: presence of CAP-DF review cadence in project cadence
+    threshold: reviewed at every phase-boundary
+    enforceable: false
+    measurable: false
+    verification_method: inspection
+    success_criteria:
+    - "CAP-DF subtree reviewed at each phase boundary for continued relevance"
+    - "Obsolete methodology entities marked DEPRECATED rather than silently retained"
+    verification:
+    - id: VER-INV-DF-META
+      method: inspection
+      target: "Phase-boundary review notes reference CAP-DF status"
   requirements:
   - id: REQ-PB-1
     name: Every entity produces self-contained slice
@@ -3172,3 +3262,42 @@ relationships:
 - from: BEH-SIO-10
   to: CAP-DF-SELFIMP
   type: traces-to
+- from: CAP-0
+  to: INV-PB-1
+  type: constrained-by
+- from: CAP-0
+  to: INV-PB-2
+  type: constrained-by
+- from: CAP-0
+  to: INV-PB-3
+  type: constrained-by
+- from: CAP-DF
+  to: INV-DF-REGEN
+  type: constrained-by
+- from: CAP-DF
+  to: INV-DF-META
+  type: constrained-by
+- from: CAP-DF-GATING
+  to: INV-DF-REGEN
+  type: constrained-by
+- from: CAP-DF-SELFIMP
+  to: INV-DF-META
+  type: constrained-by
+- from: CAP-DF-VERIFY
+  to: INV-PB-2
+  type: constrained-by
+- from: BEH-DF-6
+  to: INV-DF-REGEN
+  type: verifies
+- from: BEH-DF-4
+  to: INV-DF-META
+  type: verifies
+- from: BEH-PB-STAGE-1
+  to: INV-PB-1
+  type: verifies
+- from: BEH-DF-3
+  to: INV-PB-2
+  type: verifies
+- from: BEH-DF-7
+  to: INV-PB-3
+  type: verifies

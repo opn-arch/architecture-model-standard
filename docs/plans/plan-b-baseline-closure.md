@@ -14,7 +14,7 @@ The plan-b model is not a partial snapshot of a future target. It is a **complet
 - Behaviors: 32
 - Components: 21
 - Interfaces: 20
-- Relationships: 145
+- Relationships: 158
 
 ## 3. Per-kind articulation matrix
 
