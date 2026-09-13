@@ -492,10 +492,7 @@ entities:
     name: 'Stage: scan'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: >-
-      AST scan produces raw code inventory (modules, functions, classes,
-      imports, routes, tests, docs). Reuses existing observe stage via
-      LegacyPipelineAdapter.
+    description: AST scan produces raw code inventory (modules, functions, classes, imports, routes, tests, docs). Reuses existing observe stage via LegacyPipelineAdapter.
     intent: Produce raw code inventory from AST scan of target repo
     goals:
     - Deterministic ordering (sort by file path)
@@ -528,13 +525,13 @@ entities:
     moes:
     - Deterministic replay success rate 100%
     - Cache hit rate >80% on incremental runs
+    requirements:
+    - REQ-PB-9
   - id: BEH-PB-STAGE-2
     name: 'Stage: derive_promises'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: >-
-      Extract Promise records from docstrings, type hints, test names, SI&L
-      history, git commit messages. Each promise gets provenance = inferred.
+    description: Extract Promise records from docstrings, type hints, test names, SI&L history, git commit messages. Each promise gets provenance = inferred.
     intent: Extract Promise records from code artifacts with inferred provenance
     goals:
     - LLM-assisted derivation on prose fields
@@ -571,10 +568,7 @@ entities:
     name: 'Stage: cluster'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: >-
-      Group Promise records by semantic similarity (embedding-based) into
-      promise families. Families become candidate capabilities. Consolidation
-      happens by construction here.
+    description: Group Promise records by semantic similarity (embedding-based) into promise families. Families become candidate capabilities. Consolidation happens by construction here.
     intent: Group promises into semantic families via embedding-based clustering
     goals:
     - Deterministic clustering under fixed embedding model
@@ -608,14 +602,14 @@ entities:
     moes:
     - Deterministic replay success rate 100%
     - Cache hit rate >80% on incremental runs
+    requirements:
+    - REQ-PB-10
+    - REQ-PB-19
   - id: BEH-PB-STAGE-4
     name: 'Stage: link'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: >-
-      Build delivered_from and verified_by edges between promises. LLM
-      adjudicates ambiguous middle band; exact and near-exact matches are
-      deterministic.
+    description: Build delivered_from and verified_by edges between promises. LLM adjudicates ambiguous middle band; exact and near-exact matches are deterministic.
     intent: Build delivery-down and verify-up edges between promises across families
     goals:
     - Deterministic linking on exact/near-exact matches
@@ -653,11 +647,7 @@ entities:
     name: 'Stage: containerize'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: >-
-      Decide which entity kind (capability, behavior, component, interface)
-      each promise family belongs to. Rules driven by evidence type (test
-      contracts -> behaviors; module structure -> components; API signatures
-      -> interfaces; abstract goals -> capabilities).
+    description: Decide which entity kind (capability, behavior, component, interface) each promise family belongs to. Rules driven by evidence type (test contracts -> behaviors; module structure -> components; API signatures -> interfaces; abstract goals -> capabilities).
     intent: Assign entity kind to each promise family based on evidence type
     goals:
     - Deterministic kind assignment by evidence rules
@@ -694,9 +684,7 @@ entities:
     name: 'Stage: verify'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: >-
-      Run promise_closure per entity. Emit chain-closure report. Every entity
-      gets closure_pct + list of open/typed-gap promises.
+    description: Run promise_closure per entity. Emit chain-closure report. Every entity gets closure_pct + list of open/typed-gap promises.
     intent: Compute per-entity chain-closure and emit closure report
     goals:
     - Per-entity closure computed in <10ms
@@ -728,13 +716,13 @@ entities:
     moes:
     - Deterministic replay success rate 100%
     - Cache hit rate >80% on incremental runs
+    requirements:
+    - REQ-PB-15
   - id: BEH-PB-STAGE-7
     name: 'Stage: publish'
     status: ACTIVE
     actor_id: ACT-PB-1
-    description: >-
-      Write model + all derived views via lifecycle substrate
-      (architect_package_publish). Auto-increment generation. Digest-locked.
+    description: Write model + all derived views via lifecycle substrate (architect_package_publish). Auto-increment generation. Digest-locked.
     intent: Publish immutable model generation via existing lifecycle substrate
     goals:
     - Idempotent publish (same input -> same digest)
@@ -769,14 +757,13 @@ entities:
     moes:
     - Deterministic replay success rate 100%
     - Cache hit rate >80% on incremental runs
+    requirements:
+    - REQ-PB-9
   capabilities:
   - id: CAP-0
-    name: Plan B — Promise-Graph Architecture (Root)
+    name: "Plan B \u2014 Promise-Graph Architecture (Root)"
     status: ACTIVE
-    description: >-
-      Root capability aggregating the four umbrella capabilities that constitute
-      Plan B: SLICE, MODEL, EXTRACT, DEV. Provides a single traversal root for
-      ConOps and delivery-down decomposition.
+    description: 'Root capability aggregating the four umbrella capabilities that constitute Plan B: SLICE, MODEL, EXTRACT, DEV. Provides a single traversal root for ConOps and delivery-down decomposition.'
     intent: Serve as the single delivery-down root for all Plan B capabilities
     goals:
     - Every umbrella capability reachable from CAP-0 via contains
@@ -794,10 +781,7 @@ entities:
   - id: CAP-PB-SLICE
     name: Slice Any Entity at Any Decomposition Level
     status: ACTIVE
-    description: >-
-      Umbrella capability guaranteeing every entity in the model can be sliced
-      into a self-contained package that documents and verifies its own promises,
-      with external dependencies explicitly typed at slice boundaries.
+    description: Umbrella capability guaranteeing every entity in the model can be sliced into a self-contained package that documents and verifies its own promises, with external dependencies explicitly typed at slice boundaries.
     intent: Guarantee entity-as-standalone-unit at every decomposition level via slice_by_entity primitive
     goals:
     - Every entity produces a self-contained slice
@@ -829,13 +813,14 @@ entities:
     open_questions:
     - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
     - What is the correct external-boundary syntax for cross-repo references?
+    requirements:
+    - REQ-PB-1
+    - REQ-PB-2
+    - REQ-PB-3
   - id: CAP-PB-MODEL
     name: Model Any System via Promise Graph
     status: ACTIVE
-    description: >-
-      Umbrella capability providing the promise-graph schema 3.0 substrate.
-      Promises are first-class; entities are containers; relationships derived
-      from delivery-source and verification-evidence links.
+    description: Umbrella capability providing the promise-graph schema 3.0 substrate. Promises are first-class; entities are containers; relationships derived from delivery-source and verification-evidence links.
     intent: Represent any system as a graph of promises with delivery-down source and verify-up evidence
     goals:
     - Promise type is first-class in schema 3.0
@@ -868,14 +853,14 @@ entities:
     open_questions:
     - Do embedding-based clustering approaches produce stable promise families across runs?
     - How to version prompt library (semver? content-hash?) for provenance
+    requirements:
+    - REQ-PB-4
+    - REQ-PB-5
+    - REQ-PB-6
   - id: CAP-PB-EXTRACT
     name: Extract Architecture from Source Code
     status: ACTIVE
-    description: >-
-      Umbrella capability providing the 7-stage promise-graph pipeline (scan ->
-      derive_promises -> cluster -> link -> containerize -> verify -> publish)
-      that replaces the 10-stage 2.1 pipeline. Duplicates prevented by
-      construction via cluster stage.
+    description: Umbrella capability providing the 7-stage promise-graph pipeline (scan -> derive_promises -> cluster -> link -> containerize -> verify -> publish) that replaces the 10-stage 2.1 pipeline. Duplicates prevented by construction via cluster stage.
     intent: Produce a schema-3.0 architecture model from any codebase with per-entity chain-closure computed
     goals:
     - Pipeline determinism under fixed AMS_DETERMINISTIC_NOW
@@ -909,15 +894,14 @@ entities:
     open_questions:
     - Which embedding model produces most stable clusters?
     - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    requirements:
+    - REQ-PB-9
+    - REQ-PB-10
+    - REQ-PB-11
   - id: CAP-PB-DEV
     name: Dev Loop with Continuous Modeling
     status: ACTIVE
-    description: >-
-      Umbrella capability providing the dev-loop discipline where modeling
-      co-evolves with coding + testing. Every code commit references its
-      architecture entity; every entity's chain-closure recomputed on affected
-      slice; new promises discovered during coding added to model with
-      validators enforcing closure before merge.
+    description: Umbrella capability providing the dev-loop discipline where modeling co-evolves with coding + testing. Every code commit references its architecture entity; every entity's chain-closure recomputed on affected slice; new promises discovered during coding added to model with validators enforcing closure before merge.
     intent: Enforce model-code co-evolution via commit-msg refs + CI gate + continuous chain-closure measurement
     goals:
     - Every code commit references an architecture entity via commit-msg
@@ -954,14 +938,16 @@ entities:
     - Should commit-msg convention be enforced via git hook or CI check?
     - How to weight open-promise vs typed-gap in CI regression threshold?
     - What's the correct chain-closure threshold to enter/exit override mode?
+    requirements:
+    - REQ-PB-13
+    - REQ-PB-14
+    - REQ-PB-18
+    - REQ-PB-20
   - id: CAP-PB-PROMISE-GRAPH
     name: Promise as First-Class Type
     status: ACTIVE
     parent_id: CAP-PB-MODEL
-    description: >-
-      Sub-capability of CAP-PB-MODEL. Provides the Promise dataclass, its
-      YAML/JSON serialization, and the primitives for delivered_from and
-      verified_by traversal.
+    description: Sub-capability of CAP-PB-MODEL. Provides the Promise dataclass, its YAML/JSON serialization, and the primitives for delivered_from and verified_by traversal.
     intent: Provide first-class Promise type with delivered_from/verified_by primitives
     goals:
     - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
@@ -990,14 +976,14 @@ entities:
     open_questions:
     - Do embedding-based clustering approaches produce stable promise families across runs?
     - How to version prompt library (semver? content-hash?) for provenance
+    requirements:
+    - REQ-PB-4
+    - REQ-PB-5
   - id: CAP-PB-PIPELINE
     name: 7-Stage Promise-Graph Pipeline
     status: ACTIVE
     parent_id: CAP-PB-EXTRACT
-    description: >-
-      Sub-capability of CAP-PB-EXTRACT. Provides the 7-stage pipeline
-      (scan -> derive_promises -> cluster -> link -> containerize -> verify ->
-      publish) with per-stage cache + deterministic replay.
+    description: Sub-capability of CAP-PB-EXTRACT. Provides the 7-stage pipeline (scan -> derive_promises -> cluster -> link -> containerize -> verify -> publish) with per-stage cache + deterministic replay.
     intent: Execute 7-stage extraction pipeline with per-stage caching and deterministic replay
     goals:
     - Each stage isolated with typed input/output
@@ -1028,14 +1014,15 @@ entities:
     open_questions:
     - Which embedding model produces most stable clusters?
     - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    requirements:
+    - REQ-PB-9
+    - REQ-PB-10
+    - REQ-PB-19
   - id: CAP-PB-PROJECTORS
     name: Projector Matrix (family x kind x det|llm)
     status: ACTIVE
     parent_id: CAP-PB-SLICE
-    description: >-
-      Sub-capability of CAP-PB-SLICE. Provides the full projector matrix
-      auto-generated from schema declaration. Deterministic base + LLM
-      write-back variant for every family x kind combination.
+    description: Sub-capability of CAP-PB-SLICE. Provides the full projector matrix auto-generated from schema declaration. Deterministic base + LLM write-back variant for every family x kind combination.
     intent: Provide exhaustive projector coverage over family x kind matrix with LLM write-back variants
     goals:
     - Deterministic projector per family x kind
@@ -1067,15 +1054,13 @@ entities:
     open_questions:
     - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
     - What is the correct external-boundary syntax for cross-repo references?
+    requirements:
+    - REQ-PB-17
   - id: CAP-PB-LLM
     name: LLM Layer Required at Construction
     status: ACTIVE
     parent_id: CAP-PB-MODEL
-    description: >-
-      Sub-capability of CAP-PB-MODEL. LLMProvider required at pipeline
-      construction (no fallback to static). Prompt library versioned as data.
-      Budget enforced per pipeline run. Cache by (prompt_digest, model,
-      temperature=0).
+    description: Sub-capability of CAP-PB-MODEL. LLMProvider required at pipeline construction (no fallback to static). Prompt library versioned as data. Budget enforced per pipeline run. Cache by (prompt_digest, model, temperature=0).
     intent: Enforce LLM provider as required dependency with budget cap and digest-locked prompts
     goals:
     - LLMProvider required at Pipeline() construction
@@ -1107,15 +1092,15 @@ entities:
     open_questions:
     - Do embedding-based clustering approaches produce stable promise families across runs?
     - How to version prompt library (semver? content-hash?) for provenance
-    - How does the pipeline recover when the LLM budget cap is breached mid-run — checkpoint-and-resume from last successful stage, or fail-hard and require re-run with higher budget?
+    - "How does the pipeline recover when the LLM budget cap is breached mid-run \u2014 checkpoint-and-resume from last successful stage, or fail-hard and require re-run with higher budget?"
+    requirements:
+    - REQ-PB-7
+    - REQ-PB-8
   - id: CAP-PB-EVIDENCE
     name: SI&L Records as Promise Evidence
     status: ACTIVE
     parent_id: CAP-PB-SLICE
-    description: >-
-      Sub-capability of CAP-PB-SLICE (also delivers to CAP-PB-DEV). SI&L
-      telemetry records become promise evidence. Stale telemetry reopens
-      promises. Verify-up loop closed automatically.
+    description: Sub-capability of CAP-PB-SLICE (also delivers to CAP-PB-DEV). SI&L telemetry records become promise evidence. Stale telemetry reopens promises. Verify-up loop closed automatically.
     intent: Bind SI&L telemetry records as verify-up evidence for entity promises
     goals:
     - SIL record -> Promise.verified_by mapping declared per attribute
@@ -1143,15 +1128,13 @@ entities:
     open_questions:
     - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
     - What is the correct external-boundary syntax for cross-repo references?
+    requirements:
+    - REQ-PB-16
   - id: CAP-PB-ADAPTER
     name: Legacy-Adapter Plugin Surface
     status: ACTIVE
     parent_id: CAP-PB-EXTRACT
-    description: >-
-      Sub-capability of CAP-PB-EXTRACT (also delivers to CAP-PB-DEV).
-      Preserves existing core/visualize.py, docs/generator.py, docs/se/*,
-      and 10-stage pipeline as plugins. 3746 existing tests + 4 e2e
-      benchmarks bind to adapter surface.
+    description: Sub-capability of CAP-PB-EXTRACT (also delivers to CAP-PB-DEV). Preserves existing core/visualize.py, docs/generator.py, docs/se/*, and 10-stage pipeline as plugins. 3746 existing tests + 4 e2e benchmarks bind to adapter surface.
     intent: Preserve existing code as plugin behind adapter interfaces during Plan B migration
     goals:
     - LegacyProjectorAdapter maps every visualize.py fn to projector call
@@ -1183,14 +1166,14 @@ entities:
     - Which embedding model produces most stable clusters?
     - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
     - Are the legacy adapters permanent bridges (indefinite) or phase-out (target removal in a specific schema generation)?
+    requirements:
+    - REQ-PB-11
+    - REQ-PB-12
   - id: CAP-PB-VERIFY
     name: Universal verify_entity_standalone Harness
     status: ACTIVE
     parent_id: CAP-PB-SLICE
-    description: >-
-      Sub-capability of CAP-PB-SLICE (also delivers to CAP-PB-DEV).
-      Parametrized pytest harness runs verify_entity_standalone over every
-      entity. CI gate blocks merge on open promises without typed-gap.
+    description: Sub-capability of CAP-PB-SLICE (also delivers to CAP-PB-DEV). Parametrized pytest harness runs verify_entity_standalone over every entity. CI gate blocks merge on open promises without typed-gap.
     intent: Provide universal verification harness that runs standalone check over every entity
     goals:
     - Parametrized pytest fixture over all entities in model
@@ -1222,16 +1205,17 @@ entities:
     open_questions:
     - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
     - What is the correct external-boundary syntax for cross-repo references?
+    requirements:
+    - REQ-PB-3
+    - REQ-PB-15
   components:
   - id: COMP-PB-PROMISE-TYPE
     name: Promise Dataclass
     status: ACTIVE
-    description: >-
-      Promise(id, attribute, content, owner_entity, delivered_from, verified_by,
-      status, gap_type, provenance). First-class type in schema 3.0; every
-      semantic field on 2.1 BaseEntity becomes a Promise record.
+    description: Promise(id, attribute, content, owner_entity, delivered_from, verified_by, status, gap_type, provenance). First-class type in schema 3.0; every semantic field on 2.1 BaseEntity becomes a Promise record.
     intent: Provide first-class Promise dataclass with deterministic PR-<sha1> IDs
-    source_paths: [src/architecture_model/core/promise.py]
+    source_paths:
+    - src/architecture_model/core/promise.py
     goals:
     - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
     - Round-trip parser for Promise records
@@ -1259,14 +1243,15 @@ entities:
     moes:
     - PR ID collision rate 0
     - Round-trip fidelity 100%
+    requirements:
+    - REQ-PB-5
   - id: COMP-PB-PROMISE-PARSER
     name: Promise Parser
     status: ACTIVE
-    description: >-
-      YAML/JSON round-trip for Promise records; extends existing parser.py.
-      Deterministic PR-ID computation via SHA-1 of canonical content form.
+    description: YAML/JSON round-trip for Promise records; extends existing parser.py. Deterministic PR-ID computation via SHA-1 of canonical content form.
     intent: Round-trip Promise records losslessly through YAML/JSON with stable IDs
-    source_paths: [src/architecture_model/core/parser.py]
+    source_paths:
+    - src/architecture_model/core/parser.py
     goals:
     - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
     - Round-trip parser for Promise records
@@ -1298,12 +1283,11 @@ entities:
   - id: COMP-PB-MIGRATOR
     name: 2.1 to 3.0 Migrator
     status: ACTIVE
-    description: >-
-      migrate --to 3.0 CLI command. Deterministic rules for structured fields;
-      LLM re-derivation for lossy prose fields via digest-locked prompts.
-      Round-trip contract on 4 e2e benchmark models.
+    description: migrate --to 3.0 CLI command. Deterministic rules for structured fields; LLM re-derivation for lossy prose fields via digest-locked prompts. Round-trip contract on 4 e2e benchmark models.
     intent: One-way migrate 2.1 models to schema 3.0 with digest-locked LLM re-derivation for prose
-    source_paths: [src/architecture_model/cli/migrate.py, src/architecture_model/migration/v2_to_v3.py]
+    source_paths:
+    - src/architecture_model/cli/migrate.py
+    - src/architecture_model/migration/v2_to_v3.py
     goals:
     - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
     - Round-trip parser for Promise records
@@ -1332,15 +1316,15 @@ entities:
     moes:
     - PR ID collision rate 0
     - Round-trip fidelity 100%
+    requirements:
+    - REQ-PB-6
   - id: COMP-PB-PIPELINE-ORCHESTRATOR
     name: 7-Stage Pipeline Orchestrator
     status: ACTIVE
-    description: >-
-      Coordinates the 7-stage pipeline (scan -> derive_promises -> cluster ->
-      link -> containerize -> verify -> publish). Per-stage cache; deterministic
-      replay under AMS_DETERMINISTIC_NOW.
+    description: Coordinates the 7-stage pipeline (scan -> derive_promises -> cluster -> link -> containerize -> verify -> publish). Per-stage cache; deterministic replay under AMS_DETERMINISTIC_NOW.
     intent: Orchestrate 7-stage promise-graph pipeline with per-stage cache and deterministic replay
-    source_paths: [src/architecture_model/pipeline_v3/orchestrator.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/orchestrator.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1373,11 +1357,10 @@ entities:
   - id: COMP-PB-STAGE-SCAN
     name: Stage 1 Scan Impl
     status: ACTIVE
-    description: >-
-      Concrete implementation of BEH-PB-STAGE-1. Reuses observe stage via
-      LegacyPipelineAdapter; wraps output as CodeInventory.
+    description: Concrete implementation of BEH-PB-STAGE-1. Reuses observe stage via LegacyPipelineAdapter; wraps output as CodeInventory.
     intent: Implement scan stage as adapter over existing observe
-    source_paths: [src/architecture_model/pipeline_v3/scan.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/scan.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1410,12 +1393,10 @@ entities:
   - id: COMP-PB-STAGE-DERIVE
     name: Stage 2 Derive-Promises Impl
     status: ACTIVE
-    description: >-
-      Extract Promise records from docstrings + type hints + test names +
-      SI&L history + git commit messages. LLM-assisted for prose; deterministic
-      for structured signals.
+    description: Extract Promise records from docstrings + type hints + test names + SI&L history + git commit messages. LLM-assisted for prose; deterministic for structured signals.
     intent: Implement derive_promises stage with LLM+deterministic dual paths
-    source_paths: [src/architecture_model/pipeline_v3/derive_promises.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/derive_promises.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1448,11 +1429,10 @@ entities:
   - id: COMP-PB-STAGE-CLUSTER
     name: Stage 3 Cluster Impl
     status: ACTIVE
-    description: >-
-      Embedding-based clustering of Promise.content into families. Fixed
-      embedding model; deterministic random seed; stable family IDs across runs.
+    description: Embedding-based clustering of Promise.content into families. Fixed embedding model; deterministic random seed; stable family IDs across runs.
     intent: Implement cluster stage with deterministic embedding-based grouping
-    source_paths: [src/architecture_model/pipeline_v3/cluster.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/cluster.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1479,19 +1459,20 @@ entities:
     open_questions:
     - Which embedding model produces most stable clusters?
     - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
-    - Which embedding model backs the cluster stage — local sentence-transformers (deterministic, CPU) or remote OpenAI ada (API-dependent, higher quality)?
+    - "Which embedding model backs the cluster stage \u2014 local sentence-transformers (deterministic, CPU) or remote OpenAI ada (API-dependent, higher quality)?"
     moes:
     - Deterministic replay success rate 100%
     - Cache hit rate >80% on incremental runs
+    requirements:
+    - REQ-PB-10
+    - REQ-PB-19
   - id: COMP-PB-STAGE-LINK
     name: Stage 4 Link Impl
     status: ACTIVE
-    description: >-
-      Build delivered_from + verified_by edges. Deterministic linking on
-      exact/near-exact matches (score>=0.85); LLM adjudication on middle band
-      (0.5<score<0.85).
+    description: Build delivered_from + verified_by edges. Deterministic linking on exact/near-exact matches (score>=0.85); LLM adjudication on middle band (0.5<score<0.85).
     intent: Implement link stage with deterministic + LLM-adjudication paths
-    source_paths: [src/architecture_model/pipeline_v3/link.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/link.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1525,12 +1506,10 @@ entities:
   - id: COMP-PB-STAGE-CONTAINERIZE
     name: Stage 5 Containerize Impl
     status: ACTIVE
-    description: >-
-      Assign entity kind to each promise family via evidence-type rules.
-      LLM fallback for ambiguous families. Emits ContainedModel with typed
-      entity records.
+    description: Assign entity kind to each promise family via evidence-type rules. LLM fallback for ambiguous families. Emits ContainedModel with typed entity records.
     intent: Implement containerize stage with rule-based + LLM-fallback kind assignment
-    source_paths: [src/architecture_model/pipeline_v3/containerize.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/containerize.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1564,11 +1543,11 @@ entities:
   - id: COMP-PB-STAGE-VERIFY
     name: Stage 6 Verify Impl
     status: ACTIVE
-    description: >-
-      Runs promise_closure over every entity. Emits ClosureReport with
-      per-entity closure_pct + gap breakdown + system-level score.
+    description: Runs promise_closure over every entity. Emits ClosureReport with per-entity closure_pct + gap breakdown + system-level score.
     intent: Implement verify stage computing per-entity closure and system score
-    source_paths: [src/architecture_model/pipeline_v3/verify.py, src/architecture_model/quality/chain_closure.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/verify.py
+    - src/architecture_model/quality/chain_closure.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1601,12 +1580,10 @@ entities:
   - id: COMP-PB-STAGE-PUBLISH
     name: Stage 7 Publish Impl
     status: ACTIVE
-    description: >-
-      Wraps existing architect_package_publish. Canonicalizes serialization,
-      computes SHA-256 root digest, allocates generation number, atomic
-      CURRENT pointer update.
+    description: Wraps existing architect_package_publish. Canonicalizes serialization, computes SHA-256 root digest, allocates generation number, atomic CURRENT pointer update.
     intent: Implement publish stage over existing lifecycle package substrate
-    source_paths: [src/architecture_model/pipeline_v3/publish.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/publish.py
     goals:
     - Each stage isolated with typed input/output
     - Cache resumability at any stage boundary
@@ -1639,12 +1616,11 @@ entities:
   - id: COMP-PB-PROJECTOR-MATRIX
     name: Projector Matrix Registry
     status: ACTIVE
-    description: >-
-      Auto-generated projector registry over family x kind x (deterministic |
-      llm). ~200 projector entries. Deterministic base + LLM write-back variant
-      per combination.
+    description: Auto-generated projector registry over family x kind x (deterministic | llm). ~200 projector entries. Deterministic base + LLM write-back variant per combination.
     intent: Provide exhaustive projector coverage over family x kind matrix
-    source_paths: [src/architecture_model/lifecycle/projectors/matrix.py, src/architecture_model/lifecycle/view_projection/projectors.py]
+    source_paths:
+    - src/architecture_model/lifecycle/projectors/matrix.py
+    - src/architecture_model/lifecycle/view_projection/projectors.py
     goals:
     - Deterministic projector per family x kind
     - LLM write-back variant per family x kind (guarded by closure_pct)
@@ -1675,15 +1651,16 @@ entities:
     - Projector matrix coverage 100%
     - Snapshot stability 100%
     - LLM cost per rebuild bounded by policy.yaml
+    requirements:
+    - REQ-PB-17
   - id: COMP-PB-LLM-PROVIDER
     name: LLMProvider Runtime
     status: ACTIVE
-    description: >-
-      Required at Pipeline() construction. Routes via .architecture/llm/policy.yaml.
-      Enforces per-call max_cost + per-pipeline-run budget cap. Fail-fast on
-      unavailable provider.
+    description: Required at Pipeline() construction. Routes via .architecture/llm/policy.yaml. Enforces per-call max_cost + per-pipeline-run budget cap. Fail-fast on unavailable provider.
     intent: Enforce LLM provider as required dependency with budget cap
-    source_paths: [src/architecture_model/llm/provider.py, src/architecture_model/llm/routing.py]
+    source_paths:
+    - src/architecture_model/llm/provider.py
+    - src/architecture_model/llm/routing.py
     goals:
     - LLMProvider required at Pipeline() construction
     - Prompt library at .architecture/llm/prompts/*.yaml versioned + digest-locked
@@ -1715,15 +1692,16 @@ entities:
     moes:
     - Cache hit rate >90%
     - Budget breach rate <1% of runs
+    requirements:
+    - REQ-PB-8
   - id: COMP-PB-PROMPT-LIBRARY
     name: Prompt Library
     status: ACTIVE
-    description: >-
-      Versioned prompt fragments at .architecture/llm/prompts/*.yaml.
-      Content-hashed; every LLM call cites prompt version in provenance.
-      Snapshot-locked at tests/llm/test_prompt_fragments.py.
+    description: Versioned prompt fragments at .architecture/llm/prompts/*.yaml. Content-hashed; every LLM call cites prompt version in provenance. Snapshot-locked at tests/llm/test_prompt_fragments.py.
     intent: Version prompt library as data with digest-locked provenance
-    source_paths: [src/architecture_model/llm/prompts.py, .architecture/llm/prompts/]
+    source_paths:
+    - src/architecture_model/llm/prompts.py
+    - .architecture/llm/prompts/
     goals:
     - LLMProvider required at Pipeline() construction
     - Prompt library at .architecture/llm/prompts/*.yaml versioned + digest-locked
@@ -1758,11 +1736,10 @@ entities:
   - id: COMP-PB-BUDGET-ENFORCER
     name: Budget Enforcer
     status: ACTIVE
-    description: >-
-      Per-pipeline-run budget accounting. Aborts pipeline on breach. Emits
-      budget-exhausted journal event. Partial-run recovery via checkpoint.
+    description: Per-pipeline-run budget accounting. Aborts pipeline on breach. Emits budget-exhausted journal event. Partial-run recovery via checkpoint.
     intent: Enforce LLM budget cap per pipeline run with partial-recovery checkpoint
-    source_paths: [src/architecture_model/llm/budget.py]
+    source_paths:
+    - src/architecture_model/llm/budget.py
     goals:
     - LLMProvider required at Pipeline() construction
     - Prompt library at .architecture/llm/prompts/*.yaml versioned + digest-locked
@@ -1794,14 +1771,15 @@ entities:
     moes:
     - Cache hit rate >90%
     - Budget breach rate <1% of runs
+    requirements:
+    - REQ-PB-7
   - id: COMP-PB-SIL-EVIDENCE-BINDER
     name: SI&L Evidence Binder
     status: ACTIVE
-    description: >-
-      Maps SIL records to Promise.verified_by. Reads
-      .architecture/sil.sqlite. Stale telemetry (>7d) reopens promise status.
+    description: Maps SIL records to Promise.verified_by. Reads .architecture/sil.sqlite. Stale telemetry (>7d) reopens promise status.
     intent: Bind SI&L records as Promise verify-up evidence with stale-reopen logic
-    source_paths: [src/architecture_model/sil/evidence.py]
+    source_paths:
+    - src/architecture_model/sil/evidence.py
     goals:
     - SIL record -> Promise.verified_by mapping declared per attribute
     - Stale telemetry (>7d) reopens promise status
@@ -1829,15 +1807,16 @@ entities:
     moes:
     - Time from telemetry expiry to promise reopen <1 pipeline run
     - False-reopen rate <1%
+    requirements:
+    - REQ-PB-16
   - id: COMP-PB-LEGACY-PROJECTOR-ADAPTER
     name: Legacy Projector Adapter
     status: ACTIVE
-    description: >-
-      Wraps core/visualize.py functions behind projector interface. Mapping
-      table declared at .architecture/adapters/visualize-mapping.yaml.
-      Preserves all existing tests + benchmarks.
+    description: Wraps core/visualize.py functions behind projector interface. Mapping table declared at .architecture/adapters/visualize-mapping.yaml. Preserves all existing tests + benchmarks.
     intent: Preserve core/visualize.py generators behind projector interface
-    source_paths: [src/architecture_model/lifecycle/projectors/legacy/visualize_adapter.py, .architecture/adapters/visualize-mapping.yaml]
+    source_paths:
+    - src/architecture_model/lifecycle/projectors/legacy/visualize_adapter.py
+    - .architecture/adapters/visualize-mapping.yaml
     goals:
     - LegacyProjectorAdapter maps every visualize.py fn to projector call
     - LegacyPipelineAdapter plugs 10-stage pipeline behind new scan+derive_promises
@@ -1867,15 +1846,16 @@ entities:
     moes:
     - Test pass rate under adapter 100%
     - Benchmark fidelity 100%
+    requirements:
+    - REQ-PB-11
+    - REQ-PB-12
   - id: COMP-PB-LEGACY-PIPELINE-ADAPTER
     name: Legacy Pipeline Adapter
     status: ACTIVE
-    description: >-
-      Plugs the existing 10-stage pipeline behind the new scan +
-      derive_promises stages as one strategy among many. Preserves 3746 tests
-      + 4 e2e benchmarks under adapter path.
+    description: Plugs the existing 10-stage pipeline behind the new scan + derive_promises stages as one strategy among many. Preserves 3746 tests + 4 e2e benchmarks under adapter path.
     intent: Preserve 10-stage pipeline behind new pipeline as a strategy
-    source_paths: [src/architecture_model/pipeline_v3/adapters/legacy_pipeline.py]
+    source_paths:
+    - src/architecture_model/pipeline_v3/adapters/legacy_pipeline.py
     goals:
     - LegacyProjectorAdapter maps every visualize.py fn to projector call
     - LegacyPipelineAdapter plugs 10-stage pipeline behind new scan+derive_promises
@@ -1905,15 +1885,16 @@ entities:
     moes:
     - Test pass rate under adapter 100%
     - Benchmark fidelity 100%
+    requirements:
+    - REQ-PB-11
+    - REQ-PB-12
   - id: COMP-PB-LEGACY-DOCS-ADAPTER
     name: Legacy Docs Adapter
     status: ACTIVE
-    description: >-
-      Maps docs/generator.py, docs/component_spec.py, docs/icd.py, docs/se/*
-      to projector variants. Retains existing generator surface as thin
-      shim over new projector matrix.
+    description: Maps docs/generator.py, docs/component_spec.py, docs/icd.py, docs/se/* to projector variants. Retains existing generator surface as thin shim over new projector matrix.
     intent: Preserve docs/generator.py and docs/se/* behind projector matrix
-    source_paths: [src/architecture_model/lifecycle/projectors/legacy/docs_adapter.py]
+    source_paths:
+    - src/architecture_model/lifecycle/projectors/legacy/docs_adapter.py
     goals:
     - LegacyProjectorAdapter maps every visualize.py fn to projector call
     - LegacyPipelineAdapter plugs 10-stage pipeline behind new scan+derive_promises
@@ -1943,15 +1924,17 @@ entities:
     moes:
     - Test pass rate under adapter 100%
     - Benchmark fidelity 100%
+    requirements:
+    - REQ-PB-11
+    - REQ-PB-12
   - id: COMP-PB-STANDALONE-HARNESS
     name: Standalone Verification Harness
     status: ACTIVE
-    description: >-
-      Parametrized pytest harness running verify_entity_standalone(entity_id)
-      over every entity. Materializes slice, checks closure, checks external
-      boundaries. Target runtime <30s over full model.
+    description: Parametrized pytest harness running verify_entity_standalone(entity_id) over every entity. Materializes slice, checks closure, checks external boundaries. Target runtime <30s over full model.
     intent: Provide parametrized pytest harness for entity-standalone verification
-    source_paths: [tests/quality/test_entity_standalone.py, src/architecture_model/quality/standalone.py]
+    source_paths:
+    - tests/quality/test_entity_standalone.py
+    - src/architecture_model/quality/standalone.py
     goals:
     - Parametrized pytest fixture over all entities in model
     - Fast execution (<30s over full model)
@@ -1983,15 +1966,16 @@ entities:
     moes:
     - Harness runtime p95 <30s
     - Merge-block precision >99%
+    requirements:
+    - REQ-PB-1
+    - REQ-PB-15
   - id: COMP-PB-CI-GATE
     name: CI Standalone-Verification Gate
     status: ACTIVE
-    description: >-
-      GitHub Actions workflow enforcing standalone-verification harness +
-      chain-closure diff vs base. Blocks merge on open promises without
-      typed-gap or on closure regression without override.
+    description: GitHub Actions workflow enforcing standalone-verification harness + chain-closure diff vs base. Blocks merge on open promises without typed-gap or on closure regression without override.
     intent: Enforce standalone-verification harness + chain-closure gate at merge time
-    source_paths: [.github/workflows/architecture-gate.yml]
+    source_paths:
+    - .github/workflows/architecture-gate.yml
     goals:
     - Parametrized pytest fixture over all entities in model
     - Fast execution (<30s over full model)
@@ -2019,189 +2003,325 @@ entities:
     open_questions:
     - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
     - What is the correct external-boundary syntax for cross-repo references?
-    - What is the escape hatch when closure legitimately regresses (deliberate scope reduction) — a PR label, a structured override annotation in the PR body, or a required approver override?
+    - "What is the escape hatch when closure legitimately regresses (deliberate scope reduction) \u2014 a PR label, a structured override annotation in the PR body, or a required approver override?"
     moes:
     - Harness runtime p95 <30s
     - Merge-block precision >99%
+    requirements:
+    - REQ-PB-13
+    - REQ-PB-14
+    - REQ-PB-20
   interfaces:
   - id: IF-PB-CODE-INVENTORY
     name: CodeInventory
     status: ACTIVE
     kind: library
-    description: >-
-      Output of scan stage; input to derive_promises. Dataclass with modules,
-      functions, classes, imports, routes, tests, docs; deterministically ordered.
+    description: Output of scan stage; input to derive_promises. Dataclass with modules, functions, classes, imports, routes, tests, docs; deterministically ordered.
     intent: Carry raw AST inventory between scan and derive_promises stages
   - id: IF-PB-PROMISE-BATCH
     name: PromiseBatch
     status: ACTIVE
     kind: library
-    description: >-
-      Output of derive_promises; input to cluster. List of Promise records
-      each carrying inferred provenance stamp.
+    description: Output of derive_promises; input to cluster. List of Promise records each carrying inferred provenance stamp.
     intent: Carry batch of Promise records with provenance between derive and cluster stages
   - id: IF-PB-PROMISE-FAMILIES
     name: PromiseFamilies
     status: ACTIVE
     kind: library
-    description: >-
-      Output of cluster; input to link. Promise records grouped by family
-      via embedding-based clustering.
+    description: Output of cluster; input to link. Promise records grouped by family via embedding-based clustering.
     intent: Carry family-grouped promises between cluster and link stages
   - id: IF-PB-LINKED-GRAPH
     name: LinkedPromiseGraph
     status: ACTIVE
     kind: library
-    description: >-
-      Output of link; input to containerize. Promise families with
-      delivered_from and verified_by edges annotated per promise.
+    description: Output of link; input to containerize. Promise families with delivered_from and verified_by edges annotated per promise.
     intent: Carry linked promise graph between link and containerize stages
   - id: IF-PB-CONTAINED-MODEL
     name: ContainedModel
     status: ACTIVE
     kind: library
-    description: >-
-      Output of containerize; input to verify. Promise families assigned to
-      entity kinds (capabilities/behaviors/components/interfaces).
+    description: Output of containerize; input to verify. Promise families assigned to entity kinds (capabilities/behaviors/components/interfaces).
     intent: Carry entity-typed model between containerize and verify stages
   - id: IF-PB-CLOSURE-REPORT
     name: ClosureReport
     status: ACTIVE
     kind: library
-    description: >-
-      Output of verify; input to publish. Per-entity closure_pct + gap
-      breakdown + system-level score.
+    description: Output of verify; input to publish. Per-entity closure_pct + gap breakdown + system-level score.
     intent: Carry chain-closure measurement between verify and publish stages
   - id: IF-PB-PUBLISHED-PACKAGE
     name: PublishedPackage
     status: ACTIVE
     kind: library
-    description: >-
-      Output of publish stage. ArchitecturePackage generation with
-      generation number, root digest, CURRENT pointer.
+    description: Output of publish stage. ArchitecturePackage generation with generation number, root digest, CURRENT pointer.
     intent: Final output of pipeline; immutable versioned architecture package
   - id: IF-PB-PROMISE-API
     name: PromiseAPI
     status: ACTIVE
     kind: library
-    description: >-
-      Promise dataclass + parser API. Public surface for creating,
-      round-tripping, and computing stable PR-<sha1> ids for Promise
-      records. Basis of schema 3.0.
+    description: Promise dataclass + parser API. Public surface for creating, round-tripping, and computing stable PR-<sha1> ids for Promise records. Basis of schema 3.0.
     intent: Public Promise dataclass + parser surface with deterministic ids
   - id: IF-PB-MIGRATION-CMD
     name: MigrationCommand
     status: ACTIVE
     kind: cli
-    description: >-
-      `architecture-model migrate --to 3.0 <path>` CLI command. Emits
-      migrated model with digest-locked LLM re-derivation for prose
-      fields. Round-trip contract on 4 e2e benchmark models.
+    description: '`architecture-model migrate --to 3.0 <path>` CLI command. Emits migrated model with digest-locked LLM re-derivation for prose fields. Round-trip contract on 4 e2e benchmark models.'
     intent: CLI entry point for 2.1 -> 3.0 migration with digest-locked prose re-derivation
   - id: IF-PB-PIPELINE-API
     name: PipelineAPI
     status: ACTIVE
     kind: library
-    description: >-
-      `Pipeline(llm=..., prompts=..., budget=...).run(repo_path)` public
-      constructor + run surface. LLM provider required at construction
-      time; policy-driven routing.
+    description: '`Pipeline(llm=..., prompts=..., budget=...).run(repo_path)` public constructor + run surface. LLM provider required at construction time; policy-driven routing.'
     intent: Public Pipeline() ctor + run() surface with required LLM provider
   - id: IF-PB-PROJECTOR-REGISTRY
     name: ProjectorRegistryAPI
     status: ACTIVE
     kind: library
-    description: >-
-      `register(name, callable)` / `resolve(name)` projector registry.
-      Auto-generated matrix over family x kind x (deterministic | llm)
-      populates this registry at import time.
+    description: '`register(name, callable)` / `resolve(name)` projector registry. Auto-generated matrix over family x kind x (deterministic | llm) populates this registry at import time.'
     intent: Public register/resolve surface for projector matrix
   - id: IF-PB-LLM-PROVIDER-API
     name: LLMProviderAPI
     status: ACTIVE
     kind: library
-    description: >-
-      `LLMProvider` runtime-checkable Protocol exposing `complete`,
-      `stream`, `structured`, `tokenize`. Provider fan-in for MCP /
-      Frontier / Relay adapters; required at Pipeline construction.
+    description: '`LLMProvider` runtime-checkable Protocol exposing `complete`, `stream`, `structured`, `tokenize`. Provider fan-in for MCP / Frontier / Relay adapters; required at Pipeline construction.'
     intent: Runtime-checkable LLMProvider Protocol surface
   - id: IF-PB-PROMPT-LIBRARY-API
     name: PromptLibraryAPI
     status: ACTIVE
     kind: library
-    description: >-
-      Versioned prompt fragment lookup by content-hash. Every LLM call
-      cites the prompt version in its provenance; snapshot-locked.
+    description: Versioned prompt fragment lookup by content-hash. Every LLM call cites the prompt version in its provenance; snapshot-locked.
     intent: Content-hashed prompt fragment lookup with provenance-cite semantics
   - id: IF-PB-BUDGET-API
     name: BudgetEnforcerAPI
     status: ACTIVE
     kind: library
-    description: >-
-      Per-pipeline-run LLM budget accounting. Emits budget-exhausted
-      journal event on breach; partial-run recovery via checkpoint.
+    description: Per-pipeline-run LLM budget accounting. Emits budget-exhausted journal event on breach; partial-run recovery via checkpoint.
     intent: Public budget-cap + partial-recovery surface for LLM spend
   - id: IF-PB-SIL-EVIDENCE-API
     name: SILEvidenceAPI
     status: ACTIVE
     kind: library
-    description: >-
-      Maps SI&L records (`.architecture/sil.sqlite`) to
-      `Promise.verified_by`. Stale telemetry (>7d) reopens Promise.status.
+    description: Maps SI&L records (`.architecture/sil.sqlite`) to `Promise.verified_by`. Stale telemetry (>7d) reopens Promise.status.
     intent: Bind SI&L telemetry as Promise verify-up evidence with stale-reopen
   - id: IF-PB-LEGACY-VISUALIZE
     name: LegacyVisualizeAdapter
     status: ACTIVE
     kind: library
-    description: >-
-      Adapter surface wrapping `core/visualize.py` generators behind
-      the projector interface. Mapping table at
-      `.architecture/adapters/visualize-mapping.yaml`.
+    description: Adapter surface wrapping `core/visualize.py` generators behind the projector interface. Mapping table at `.architecture/adapters/visualize-mapping.yaml`.
     intent: Adapter-shaped surface preserving core/visualize.py generators
   - id: IF-PB-LEGACY-PIPELINE
     name: LegacyPipelineAdapter
     status: ACTIVE
     kind: library
-    description: >-
-      Adapter surface wrapping the existing 10-stage pipeline behind
-      `scan` + `derive_promises` as one strategy among many.
+    description: Adapter surface wrapping the existing 10-stage pipeline behind `scan` + `derive_promises` as one strategy among many.
     intent: Adapter-shaped surface plugging 10-stage pipeline into new pipeline
   - id: IF-PB-LEGACY-DOCS
     name: LegacyDocsAdapter
     status: ACTIVE
     kind: library
-    description: >-
-      Adapter surface wrapping `docs/generator.py`, `docs/component_spec.py`,
-      `docs/icd.py`, `docs/se/*` behind projector variants.
+    description: Adapter surface wrapping `docs/generator.py`, `docs/component_spec.py`, `docs/icd.py`, `docs/se/*` behind projector variants.
     intent: Adapter-shaped surface preserving docs/generator.py + docs/se/*
   - id: IF-PB-STANDALONE-HARNESS-API
     name: StandaloneHarnessAPI
     status: ACTIVE
     kind: library
-    description: >-
-      `verify_entity_standalone(entity_id)` parametrized pytest harness
-      API. Materializes slice, checks closure, checks external boundaries.
-      Target runtime <30s over full model.
+    description: '`verify_entity_standalone(entity_id)` parametrized pytest harness API. Materializes slice, checks closure, checks external boundaries. Target runtime <30s over full model.'
     intent: Public verify_entity_standalone() harness surface
   - id: IF-PB-CI-GATE-WORKFLOW
     name: CIGateWorkflow
     status: ACTIVE
     kind: cli
-    description: >-
-      GitHub Actions workflow (`.github/workflows/architecture-gate.yml`)
-      enforcing standalone-verification harness + chain-closure diff vs
-      base. Blocks merge on open promises without typed-gap or on
-      closure regression without override.
+    description: GitHub Actions workflow (`.github/workflows/architecture-gate.yml`) enforcing standalone-verification harness + chain-closure diff vs base. Blocks merge on open promises without typed-gap or on closure regression without override.
     intent: CI workflow surface enforcing standalone-verification + closure gate
   layers: []
   constraints: []
+  requirements:
+  - id: REQ-PB-1
+    name: Every entity produces self-contained slice
+    status: ACTIVE
+    text: Every entity in the model MUST be materializable into a self-contained slice package that includes its promises, delivery-down sources, verify-up evidence, and typed external boundaries.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - verify_entity_standalone passes parametrized over every entity
+    - Zero silent external references in any slice
+    stakeholder: Human Architect
+  - id: REQ-PB-2
+    name: Slice materialization latency
+    status: ACTIVE
+    text: Slice materialization MUST complete in <1 second per entity at p95.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - p95 latency <1s across all entities in benchmark suite
+    stakeholder: LLM Agent
+  - id: REQ-PB-3
+    name: Zero dangling promise references
+    status: ACTIVE
+    text: A slice MUST NOT contain any promise reference that cannot be resolved inside the slice or declared as an external boundary.
+    priority: must
+    verification_method: analysis
+    acceptance_criteria:
+    - Static analysis reports 0 dangling refs across all slices
+    stakeholder: CI/CD Pipeline
+  - id: REQ-PB-4
+    name: Delivery-down and verify-up populated
+    status: ACTIVE
+    text: Every entity attribute MUST populate delivered_from (upstream source) and verified_by (downstream evidence) or explicitly declare a typed gap.
+    priority: must
+    verification_method: analysis
+    acceptance_criteria:
+    - Typed-gap inventory covers every unfilled attribute
+    stakeholder: Human Architect
+  - id: REQ-PB-5
+    name: Promise-graph schema round-trip stability
+    status: ACTIVE
+    text: Promise-graph schema 3.0 YAML MUST round-trip byte-stable through parser and dumper.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - 3746+ round-trip tests pass byte-identical
+    stakeholder: LLM Agent
+  - id: REQ-PB-6
+    name: Migration preserves all schema 2.2 content
+    status: ACTIVE
+    text: Migration from schema 2.2 to 3.0 MUST preserve all existing entity content and relationships without loss.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - Migration fixture diff shows 0 semantic loss
+    stakeholder: Human Architect
+  - id: REQ-PB-7
+    name: LLM budget enforced per stage
+    status: ACTIVE
+    text: LLM budget cap MUST be enforced at every pipeline stage; overruns MUST fail closed.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - Budget-cap test forces overrun and observes stage failure
+    stakeholder: CI/CD Pipeline
+  - id: REQ-PB-8
+    name: LLM calls recorded with provider/model/cost
+    status: ACTIVE
+    text: Every LLM call MUST be recorded with provider name, model id, prompt digest, token counts, and cost.
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - meta.provider block and SI&L records populated on every emit
+    stakeholder: Human Architect
+  - id: REQ-PB-9
+    name: Pipeline deterministic replay
+    status: ACTIVE
+    text: The 7-stage extraction pipeline MUST produce byte-identical output on repeat runs with pinned inputs and pinned AMS_DETERMINISTIC_NOW.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - Determinism harness reports 100% byte-identical replay
+    stakeholder: CI/CD Pipeline
+  - id: REQ-PB-10
+    name: Consolidation-by-construction at cluster
+    status: ACTIVE
+    text: Consolidation MUST happen at the cluster stage via embedding-based grouping; no post-hoc A/B merger stage.
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - No post-hoc merge stage exists in pipeline definition
+    stakeholder: Human Architect
+  - id: REQ-PB-11
+    name: Legacy generators preserved via adapters
+    status: ACTIVE
+    text: Existing legacy generators (visualize.py, docs/generator.py, docs/se/*) MUST be preserved and wrapped as legacy adapters, NOT deleted during the Plan B refactor.
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - All three legacy adapter components present; original files intact
+    stakeholder: Human Architect
+  - id: REQ-PB-12
+    name: Three legacy adapters cover all current generation
+    status: ACTIVE
+    text: The three legacy adapters (PROJECTOR, PIPELINE, DOCS) MUST cover 100% of current generation entry points.
+    priority: must
+    verification_method: analysis
+    acceptance_criteria:
+    - Adapter coverage report enumerates all current entry points
+    stakeholder: LLM Agent
+  - id: REQ-PB-13
+    name: CI gate fails closed on chain break
+    status: ACTIVE
+    text: The CI gate workflow MUST fail closed on any attribute chain break or standalone-verification regression.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - Synthetic chain-break commit blocked by CI gate in fixture repo
+    stakeholder: CI/CD Pipeline
+  - id: REQ-PB-14
+    name: Commits reference model entities
+    status: ACTIVE
+    text: 'Every Plan B commit message MUST include a "[refs: CAP-X BEH-Y ...]" trailer naming the entities affected.'
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - Commit-msg hook rejects Plan B commits missing refs trailer
+    stakeholder: Human Architect
+  - id: REQ-PB-15
+    name: Standalone-verification parametrized
+    status: ACTIVE
+    text: verify_entity_standalone MUST be a parametrized pytest fixture running over every entity in the model, not a hand-written per-entity test.
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - Single parametrized test
+    - N entities discovered
+    stakeholder: LLM Agent
+  - id: REQ-PB-16
+    name: SI&L records as promise evidence
+    status: ACTIVE
+    text: SI&L records MUST be usable as verify-up evidence for behavior and component promises.
+    priority: must
+    verification_method: demonstration
+    acceptance_criteria:
+    - Evidence binder resolves SI&L records into ProjectedView slice
+    stakeholder: Human Architect
+  - id: REQ-PB-17
+    name: Projector matrix per-entity slices
+    status: ACTIVE
+    text: The projector matrix MUST produce a per-entity slice package for every entity kind (capability, behavior, component, interface, actor, constraint, requirement, system).
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - Matrix coverage 100% across kinds
+    stakeholder: LLM Agent
+  - id: REQ-PB-18
+    name: Existing test suite continues to pass
+    status: ACTIVE
+    text: The full existing test suite (3746 passed, 104 skipped) MUST continue to pass throughout the Plan B refactor.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - pytest green after every commit; no regressions
+    stakeholder: CI/CD Pipeline
+  - id: REQ-PB-19
+    name: Jaccard similarity threshold for cluster
+    status: ACTIVE
+    text: "The cluster stage MUST use Jaccard similarity \u2265 0.5 for exercised-by inference when grouping candidate promises."
+    priority: must
+    verification_method: inspection
+    acceptance_criteria:
+    - Threshold constant set to 0.5; unit test asserts value
+    stakeholder: Human Architect
+  - id: REQ-PB-20
+    name: Full test suite green per commit
+    status: ACTIVE
+    text: The full test suite MUST be green after every Plan B commit; no batching of failing states is permitted.
+    priority: must
+    verification_method: test
+    acceptance_criteria:
+    - pre-push hook forbids push with red tests
+    stakeholder: CI/CD Pipeline
   systems:
   - id: SYS-PB-SLICE
     name: Slice Substrate
     status: ACTIVE
-    description: >-
-      Subsystem realizing the SLICE umbrella — projector matrix, SI&L evidence
-      binder, and the universal standalone-verification harness.
+    description: "Subsystem realizing the SLICE umbrella \u2014 projector matrix, SI&L evidence binder, and the universal standalone-verification harness."
     intent: Materialize entity-as-standalone-unit for every entity
     component_ids:
     - COMP-PB-PROJECTOR-MATRIX
@@ -2213,10 +2333,7 @@ entities:
   - id: SYS-PB-MODEL
     name: Model Substrate
     status: ACTIVE
-    description: >-
-      Subsystem realizing the MODEL umbrella — promise-graph type system,
-      parser/migrator, and LLM provider layer with prompt library and budget
-      enforcement.
+    description: "Subsystem realizing the MODEL umbrella \u2014 promise-graph type system, parser/migrator, and LLM provider layer with prompt library and budget enforcement."
     intent: Represent any system as a promise graph and drive LLM-required stages
     component_ids:
     - COMP-PB-PROMISE-TYPE
@@ -2231,10 +2348,7 @@ entities:
   - id: SYS-PB-EXTRACT
     name: Extract Pipeline
     status: ACTIVE
-    description: >-
-      Subsystem realizing the EXTRACT umbrella — 7-stage extraction pipeline
-      (scan → derive → cluster → link → containerize → verify → publish) plus
-      the three legacy adapters wrapping visualize/pipeline/docs generators.
+    description: "Subsystem realizing the EXTRACT umbrella \u2014 7-stage extraction pipeline (scan \u2192 derive \u2192 cluster \u2192 link \u2192 containerize \u2192 verify \u2192 publish) plus the three legacy adapters wrapping visualize/pipeline/docs generators."
     intent: Extract a promise-graph model from source code with consolidation-by-construction
     component_ids:
     - COMP-PB-PIPELINE-ORCHESTRATOR
@@ -2254,9 +2368,7 @@ entities:
   - id: SYS-PB-DEV
     name: Dev-Loop Gate
     status: ACTIVE
-    description: >-
-      Subsystem realizing the DEV umbrella — CI gate enforcing chain-closure
-      per attribute and standalone-verification on every commit.
+    description: "Subsystem realizing the DEV umbrella \u2014 CI gate enforcing chain-closure per attribute and standalone-verification on every commit."
     intent: Fail closed on any attribute chain break or standalone-verification regression
     component_ids:
     - COMP-PB-CI-GATE
@@ -2264,124 +2376,366 @@ entities:
     - Zero silent chain breaks reach main branch
     - Every commit references [refs: CAP-X BEH-Y]
 relationships:
-- {from: BEH-PB-UC-1, to: CAP-PB-EXTRACT, type: traces-to}
-- {from: BEH-PB-UC-2, to: CAP-PB-MODEL, type: traces-to}
-- {from: BEH-PB-UC-3, to: CAP-PB-VERIFY, type: traces-to}
-- {from: BEH-PB-UC-4, to: CAP-PB-PROJECTORS, type: traces-to}
-- {from: BEH-PB-UC-5, to: CAP-PB-LLM, type: traces-to}
-- {from: BEH-PB-UC-6, to: CAP-PB-MODEL, type: traces-to}
-- {from: BEH-PB-UC-7, to: CAP-PB-DEV, type: traces-to}
-- {from: BEH-PB-UC-8, to: CAP-PB-DEV, type: traces-to}
-- {from: BEH-PB-STAGE-1, to: CAP-PB-PIPELINE, type: traces-to}
-- {from: BEH-PB-STAGE-2, to: CAP-PB-PIPELINE, type: traces-to}
-- {from: BEH-PB-STAGE-3, to: CAP-PB-PIPELINE, type: traces-to}
-- {from: BEH-PB-STAGE-4, to: CAP-PB-PIPELINE, type: traces-to}
-- {from: BEH-PB-STAGE-5, to: CAP-PB-PIPELINE, type: traces-to}
-- {from: BEH-PB-STAGE-6, to: CAP-PB-PIPELINE, type: traces-to}
-- {from: BEH-PB-STAGE-7, to: CAP-PB-PIPELINE, type: traces-to}
-- {from: CAP-PB-MODEL, to: CAP-PB-PROMISE-GRAPH, type: contains}
-- {from: BEH-PB-STAGE-1, to: BEH-PB-STAGE-2, type: triggers}
-- {from: BEH-PB-STAGE-2, to: BEH-PB-STAGE-3, type: triggers}
-- {from: BEH-PB-STAGE-3, to: BEH-PB-STAGE-4, type: triggers}
-- {from: BEH-PB-STAGE-4, to: BEH-PB-STAGE-5, type: triggers}
-- {from: BEH-PB-STAGE-5, to: BEH-PB-STAGE-6, type: triggers}
-- {from: BEH-PB-STAGE-6, to: BEH-PB-STAGE-7, type: triggers}
-- {from: BEH-PB-STAGE-1, to: IF-PB-CODE-INVENTORY, type: produces}
-- {from: BEH-PB-STAGE-2, to: IF-PB-CODE-INVENTORY, type: consumes}
-- {from: BEH-PB-STAGE-2, to: IF-PB-PROMISE-BATCH, type: produces}
-- {from: BEH-PB-STAGE-3, to: IF-PB-PROMISE-BATCH, type: consumes}
-- {from: BEH-PB-STAGE-3, to: IF-PB-PROMISE-FAMILIES, type: produces}
-- {from: BEH-PB-STAGE-4, to: IF-PB-PROMISE-FAMILIES, type: consumes}
-- {from: BEH-PB-STAGE-4, to: IF-PB-LINKED-GRAPH, type: produces}
-- {from: BEH-PB-STAGE-5, to: IF-PB-LINKED-GRAPH, type: consumes}
-- {from: BEH-PB-STAGE-5, to: IF-PB-CONTAINED-MODEL, type: produces}
-- {from: BEH-PB-STAGE-6, to: IF-PB-CONTAINED-MODEL, type: consumes}
-- {from: BEH-PB-STAGE-6, to: IF-PB-CLOSURE-REPORT, type: produces}
-- {from: BEH-PB-STAGE-7, to: IF-PB-CLOSURE-REPORT, type: consumes}
-- {from: BEH-PB-STAGE-7, to: IF-PB-PUBLISHED-PACKAGE, type: produces}
-- {from: COMP-PB-PROMISE-TYPE, to: CAP-PB-PROMISE-GRAPH, type: realizes}
-- {from: COMP-PB-PROMISE-PARSER, to: CAP-PB-PROMISE-GRAPH, type: realizes}
-- {from: COMP-PB-MIGRATOR, to: CAP-PB-PROMISE-GRAPH, type: realizes}
-- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-STAGE-SCAN, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-STAGE-DERIVE, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-STAGE-CLUSTER, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-STAGE-LINK, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-STAGE-CONTAINERIZE, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-STAGE-VERIFY, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-STAGE-VERIFY, to: CAP-PB-VERIFY, type: realizes}
-- {from: COMP-PB-STAGE-PUBLISH, to: CAP-PB-PIPELINE, type: realizes}
-- {from: COMP-PB-PROJECTOR-MATRIX, to: CAP-PB-PROJECTORS, type: realizes}
-- {from: COMP-PB-LLM-PROVIDER, to: CAP-PB-LLM, type: realizes}
-- {from: COMP-PB-PROMPT-LIBRARY, to: CAP-PB-LLM, type: realizes}
-- {from: COMP-PB-BUDGET-ENFORCER, to: CAP-PB-LLM, type: realizes}
-- {from: COMP-PB-SIL-EVIDENCE-BINDER, to: CAP-PB-EVIDENCE, type: realizes}
-- {from: COMP-PB-LEGACY-PROJECTOR-ADAPTER, to: CAP-PB-ADAPTER, type: realizes}
-- {from: COMP-PB-LEGACY-PIPELINE-ADAPTER, to: CAP-PB-ADAPTER, type: realizes}
-- {from: COMP-PB-LEGACY-DOCS-ADAPTER, to: CAP-PB-ADAPTER, type: realizes}
-- {from: COMP-PB-STANDALONE-HARNESS, to: CAP-PB-VERIFY, type: realizes}
-- {from: COMP-PB-CI-GATE, to: CAP-PB-VERIFY, type: realizes}
-- {from: COMP-PB-CI-GATE, to: CAP-PB-DEV, type: realizes}
-- {from: COMP-PB-STAGE-SCAN, to: IF-PB-CODE-INVENTORY, type: exposes}
-- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-CODE-INVENTORY, type: consumes}
-- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-PROMISE-BATCH, type: exposes}
-- {from: COMP-PB-STAGE-CLUSTER, to: IF-PB-PROMISE-BATCH, type: consumes}
-- {from: COMP-PB-STAGE-CLUSTER, to: IF-PB-PROMISE-FAMILIES, type: exposes}
-- {from: COMP-PB-STAGE-LINK, to: IF-PB-PROMISE-FAMILIES, type: consumes}
-- {from: COMP-PB-STAGE-LINK, to: IF-PB-LINKED-GRAPH, type: exposes}
-- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-LINKED-GRAPH, type: consumes}
-- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-CONTAINED-MODEL, type: exposes}
-- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-CONTAINED-MODEL, type: consumes}
-- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-CLOSURE-REPORT, type: exposes}
-- {from: COMP-PB-STAGE-PUBLISH, to: IF-PB-CLOSURE-REPORT, type: consumes}
-- {from: COMP-PB-STAGE-PUBLISH, to: IF-PB-PUBLISHED-PACKAGE, type: exposes}
-- {from: COMP-PB-PROMISE-TYPE, to: IF-PB-PROMISE-API, type: exposes}
-- {from: COMP-PB-PROMISE-PARSER, to: IF-PB-PROMISE-API, type: exposes}
-- {from: COMP-PB-MIGRATOR, to: IF-PB-MIGRATION-CMD, type: exposes}
-- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-PIPELINE-API, type: exposes}
-- {from: COMP-PB-PROJECTOR-MATRIX, to: IF-PB-PROJECTOR-REGISTRY, type: exposes}
-- {from: COMP-PB-LLM-PROVIDER, to: IF-PB-LLM-PROVIDER-API, type: exposes}
-- {from: COMP-PB-PROMPT-LIBRARY, to: IF-PB-PROMPT-LIBRARY-API, type: exposes}
-- {from: COMP-PB-BUDGET-ENFORCER, to: IF-PB-BUDGET-API, type: exposes}
-- {from: COMP-PB-SIL-EVIDENCE-BINDER, to: IF-PB-SIL-EVIDENCE-API, type: exposes}
-- {from: COMP-PB-LEGACY-PROJECTOR-ADAPTER, to: IF-PB-LEGACY-VISUALIZE, type: exposes}
-- {from: COMP-PB-LEGACY-PIPELINE-ADAPTER, to: IF-PB-LEGACY-PIPELINE, type: exposes}
-- {from: COMP-PB-LEGACY-DOCS-ADAPTER, to: IF-PB-LEGACY-DOCS, type: exposes}
-- {from: COMP-PB-STANDALONE-HARNESS, to: IF-PB-STANDALONE-HARNESS-API, type: exposes}
-- {from: COMP-PB-CI-GATE, to: IF-PB-CI-GATE-WORKFLOW, type: exposes}
-- {from: COMP-PB-MIGRATOR, to: IF-PB-PROMISE-API, type: consumes}
-- {from: COMP-PB-MIGRATOR, to: IF-PB-LLM-PROVIDER-API, type: consumes}
-- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-LLM-PROVIDER-API, type: consumes}
-- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
-- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-BUDGET-API, type: consumes}
-- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-PROMISE-API, type: consumes}
-- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-LLM-PROVIDER-API, type: consumes}
-- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
-- {from: COMP-PB-STAGE-CLUSTER, to: IF-PB-PROMISE-API, type: consumes}
-- {from: COMP-PB-STAGE-LINK, to: IF-PB-LLM-PROVIDER-API, type: consumes}
-- {from: COMP-PB-STAGE-LINK, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
-- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-LLM-PROVIDER-API, type: consumes}
-- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
-- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-STANDALONE-HARNESS-API, type: consumes}
-- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-SIL-EVIDENCE-API, type: consumes}
-- {from: COMP-PB-CI-GATE, to: IF-PB-STANDALONE-HARNESS-API, type: consumes}
-- {from: COMP-PB-CI-GATE, to: IF-PB-CLOSURE-REPORT, type: consumes}
-- {from: COMP-PB-LEGACY-PROJECTOR-ADAPTER, to: IF-PB-PROJECTOR-REGISTRY, type: consumes}
-- {from: COMP-PB-LEGACY-DOCS-ADAPTER, to: IF-PB-PROJECTOR-REGISTRY, type: consumes}
-- {from: BEH-PB-UC-4, to: CAP-PB-SLICE, type: traces-to}
-- {from: ACT-PB-1, to: IF-PB-MIGRATION-CMD, type: consumes}
-- {from: ACT-PB-1, to: IF-PB-PIPELINE-API, type: consumes}
-- {from: ACT-PB-5, to: IF-PB-CI-GATE-WORKFLOW, type: consumes}
-- {from: ACT-PB-3, to: IF-PB-LEGACY-VISUALIZE, type: consumes}
-- {from: ACT-PB-3, to: IF-PB-LEGACY-PIPELINE, type: consumes}
-- {from: ACT-PB-3, to: IF-PB-LEGACY-DOCS, type: consumes}
-- {from: CAP-PB-MODEL, to: CAP-PB-LLM, type: contains}
-- {from: CAP-PB-EXTRACT, to: CAP-PB-PIPELINE, type: contains}
-- {from: CAP-PB-EXTRACT, to: CAP-PB-ADAPTER, type: contains}
-- {from: CAP-PB-SLICE, to: CAP-PB-PROJECTORS, type: contains}
-- {from: CAP-PB-SLICE, to: CAP-PB-EVIDENCE, type: contains}
-- {from: CAP-PB-SLICE, to: CAP-PB-VERIFY, type: contains}
-- {from: CAP-0, to: CAP-PB-SLICE, type: contains}
-- {from: CAP-0, to: CAP-PB-MODEL, type: contains}
-- {from: CAP-0, to: CAP-PB-EXTRACT, type: contains}
-- {from: CAP-0, to: CAP-PB-DEV, type: contains}
+- from: BEH-PB-UC-1
+  to: CAP-PB-EXTRACT
+  type: traces-to
+- from: BEH-PB-UC-2
+  to: CAP-PB-MODEL
+  type: traces-to
+- from: BEH-PB-UC-3
+  to: CAP-PB-VERIFY
+  type: traces-to
+- from: BEH-PB-UC-4
+  to: CAP-PB-PROJECTORS
+  type: traces-to
+- from: BEH-PB-UC-5
+  to: CAP-PB-LLM
+  type: traces-to
+- from: BEH-PB-UC-6
+  to: CAP-PB-MODEL
+  type: traces-to
+- from: BEH-PB-UC-7
+  to: CAP-PB-DEV
+  type: traces-to
+- from: BEH-PB-UC-8
+  to: CAP-PB-DEV
+  type: traces-to
+- from: BEH-PB-STAGE-1
+  to: CAP-PB-PIPELINE
+  type: traces-to
+- from: BEH-PB-STAGE-2
+  to: CAP-PB-PIPELINE
+  type: traces-to
+- from: BEH-PB-STAGE-3
+  to: CAP-PB-PIPELINE
+  type: traces-to
+- from: BEH-PB-STAGE-4
+  to: CAP-PB-PIPELINE
+  type: traces-to
+- from: BEH-PB-STAGE-5
+  to: CAP-PB-PIPELINE
+  type: traces-to
+- from: BEH-PB-STAGE-6
+  to: CAP-PB-PIPELINE
+  type: traces-to
+- from: BEH-PB-STAGE-7
+  to: CAP-PB-PIPELINE
+  type: traces-to
+- from: CAP-PB-MODEL
+  to: CAP-PB-PROMISE-GRAPH
+  type: contains
+- from: BEH-PB-STAGE-1
+  to: BEH-PB-STAGE-2
+  type: triggers
+- from: BEH-PB-STAGE-2
+  to: BEH-PB-STAGE-3
+  type: triggers
+- from: BEH-PB-STAGE-3
+  to: BEH-PB-STAGE-4
+  type: triggers
+- from: BEH-PB-STAGE-4
+  to: BEH-PB-STAGE-5
+  type: triggers
+- from: BEH-PB-STAGE-5
+  to: BEH-PB-STAGE-6
+  type: triggers
+- from: BEH-PB-STAGE-6
+  to: BEH-PB-STAGE-7
+  type: triggers
+- from: BEH-PB-STAGE-1
+  to: IF-PB-CODE-INVENTORY
+  type: produces
+- from: BEH-PB-STAGE-2
+  to: IF-PB-CODE-INVENTORY
+  type: consumes
+- from: BEH-PB-STAGE-2
+  to: IF-PB-PROMISE-BATCH
+  type: produces
+- from: BEH-PB-STAGE-3
+  to: IF-PB-PROMISE-BATCH
+  type: consumes
+- from: BEH-PB-STAGE-3
+  to: IF-PB-PROMISE-FAMILIES
+  type: produces
+- from: BEH-PB-STAGE-4
+  to: IF-PB-PROMISE-FAMILIES
+  type: consumes
+- from: BEH-PB-STAGE-4
+  to: IF-PB-LINKED-GRAPH
+  type: produces
+- from: BEH-PB-STAGE-5
+  to: IF-PB-LINKED-GRAPH
+  type: consumes
+- from: BEH-PB-STAGE-5
+  to: IF-PB-CONTAINED-MODEL
+  type: produces
+- from: BEH-PB-STAGE-6
+  to: IF-PB-CONTAINED-MODEL
+  type: consumes
+- from: BEH-PB-STAGE-6
+  to: IF-PB-CLOSURE-REPORT
+  type: produces
+- from: BEH-PB-STAGE-7
+  to: IF-PB-CLOSURE-REPORT
+  type: consumes
+- from: BEH-PB-STAGE-7
+  to: IF-PB-PUBLISHED-PACKAGE
+  type: produces
+- from: COMP-PB-PROMISE-TYPE
+  to: CAP-PB-PROMISE-GRAPH
+  type: realizes
+- from: COMP-PB-PROMISE-PARSER
+  to: CAP-PB-PROMISE-GRAPH
+  type: realizes
+- from: COMP-PB-MIGRATOR
+  to: CAP-PB-PROMISE-GRAPH
+  type: realizes
+- from: COMP-PB-PIPELINE-ORCHESTRATOR
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-STAGE-SCAN
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-STAGE-DERIVE
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-STAGE-CLUSTER
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-STAGE-LINK
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-STAGE-CONTAINERIZE
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-STAGE-VERIFY
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-STAGE-VERIFY
+  to: CAP-PB-VERIFY
+  type: realizes
+- from: COMP-PB-STAGE-PUBLISH
+  to: CAP-PB-PIPELINE
+  type: realizes
+- from: COMP-PB-PROJECTOR-MATRIX
+  to: CAP-PB-PROJECTORS
+  type: realizes
+- from: COMP-PB-LLM-PROVIDER
+  to: CAP-PB-LLM
+  type: realizes
+- from: COMP-PB-PROMPT-LIBRARY
+  to: CAP-PB-LLM
+  type: realizes
+- from: COMP-PB-BUDGET-ENFORCER
+  to: CAP-PB-LLM
+  type: realizes
+- from: COMP-PB-SIL-EVIDENCE-BINDER
+  to: CAP-PB-EVIDENCE
+  type: realizes
+- from: COMP-PB-LEGACY-PROJECTOR-ADAPTER
+  to: CAP-PB-ADAPTER
+  type: realizes
+- from: COMP-PB-LEGACY-PIPELINE-ADAPTER
+  to: CAP-PB-ADAPTER
+  type: realizes
+- from: COMP-PB-LEGACY-DOCS-ADAPTER
+  to: CAP-PB-ADAPTER
+  type: realizes
+- from: COMP-PB-STANDALONE-HARNESS
+  to: CAP-PB-VERIFY
+  type: realizes
+- from: COMP-PB-CI-GATE
+  to: CAP-PB-VERIFY
+  type: realizes
+- from: COMP-PB-CI-GATE
+  to: CAP-PB-DEV
+  type: realizes
+- from: COMP-PB-STAGE-SCAN
+  to: IF-PB-CODE-INVENTORY
+  type: exposes
+- from: COMP-PB-STAGE-DERIVE
+  to: IF-PB-CODE-INVENTORY
+  type: consumes
+- from: COMP-PB-STAGE-DERIVE
+  to: IF-PB-PROMISE-BATCH
+  type: exposes
+- from: COMP-PB-STAGE-CLUSTER
+  to: IF-PB-PROMISE-BATCH
+  type: consumes
+- from: COMP-PB-STAGE-CLUSTER
+  to: IF-PB-PROMISE-FAMILIES
+  type: exposes
+- from: COMP-PB-STAGE-LINK
+  to: IF-PB-PROMISE-FAMILIES
+  type: consumes
+- from: COMP-PB-STAGE-LINK
+  to: IF-PB-LINKED-GRAPH
+  type: exposes
+- from: COMP-PB-STAGE-CONTAINERIZE
+  to: IF-PB-LINKED-GRAPH
+  type: consumes
+- from: COMP-PB-STAGE-CONTAINERIZE
+  to: IF-PB-CONTAINED-MODEL
+  type: exposes
+- from: COMP-PB-STAGE-VERIFY
+  to: IF-PB-CONTAINED-MODEL
+  type: consumes
+- from: COMP-PB-STAGE-VERIFY
+  to: IF-PB-CLOSURE-REPORT
+  type: exposes
+- from: COMP-PB-STAGE-PUBLISH
+  to: IF-PB-CLOSURE-REPORT
+  type: consumes
+- from: COMP-PB-STAGE-PUBLISH
+  to: IF-PB-PUBLISHED-PACKAGE
+  type: exposes
+- from: COMP-PB-PROMISE-TYPE
+  to: IF-PB-PROMISE-API
+  type: exposes
+- from: COMP-PB-PROMISE-PARSER
+  to: IF-PB-PROMISE-API
+  type: exposes
+- from: COMP-PB-MIGRATOR
+  to: IF-PB-MIGRATION-CMD
+  type: exposes
+- from: COMP-PB-PIPELINE-ORCHESTRATOR
+  to: IF-PB-PIPELINE-API
+  type: exposes
+- from: COMP-PB-PROJECTOR-MATRIX
+  to: IF-PB-PROJECTOR-REGISTRY
+  type: exposes
+- from: COMP-PB-LLM-PROVIDER
+  to: IF-PB-LLM-PROVIDER-API
+  type: exposes
+- from: COMP-PB-PROMPT-LIBRARY
+  to: IF-PB-PROMPT-LIBRARY-API
+  type: exposes
+- from: COMP-PB-BUDGET-ENFORCER
+  to: IF-PB-BUDGET-API
+  type: exposes
+- from: COMP-PB-SIL-EVIDENCE-BINDER
+  to: IF-PB-SIL-EVIDENCE-API
+  type: exposes
+- from: COMP-PB-LEGACY-PROJECTOR-ADAPTER
+  to: IF-PB-LEGACY-VISUALIZE
+  type: exposes
+- from: COMP-PB-LEGACY-PIPELINE-ADAPTER
+  to: IF-PB-LEGACY-PIPELINE
+  type: exposes
+- from: COMP-PB-LEGACY-DOCS-ADAPTER
+  to: IF-PB-LEGACY-DOCS
+  type: exposes
+- from: COMP-PB-STANDALONE-HARNESS
+  to: IF-PB-STANDALONE-HARNESS-API
+  type: exposes
+- from: COMP-PB-CI-GATE
+  to: IF-PB-CI-GATE-WORKFLOW
+  type: exposes
+- from: COMP-PB-MIGRATOR
+  to: IF-PB-PROMISE-API
+  type: consumes
+- from: COMP-PB-MIGRATOR
+  to: IF-PB-LLM-PROVIDER-API
+  type: consumes
+- from: COMP-PB-PIPELINE-ORCHESTRATOR
+  to: IF-PB-LLM-PROVIDER-API
+  type: consumes
+- from: COMP-PB-PIPELINE-ORCHESTRATOR
+  to: IF-PB-PROMPT-LIBRARY-API
+  type: consumes
+- from: COMP-PB-PIPELINE-ORCHESTRATOR
+  to: IF-PB-BUDGET-API
+  type: consumes
+- from: COMP-PB-STAGE-DERIVE
+  to: IF-PB-PROMISE-API
+  type: consumes
+- from: COMP-PB-STAGE-DERIVE
+  to: IF-PB-LLM-PROVIDER-API
+  type: consumes
+- from: COMP-PB-STAGE-DERIVE
+  to: IF-PB-PROMPT-LIBRARY-API
+  type: consumes
+- from: COMP-PB-STAGE-CLUSTER
+  to: IF-PB-PROMISE-API
+  type: consumes
+- from: COMP-PB-STAGE-LINK
+  to: IF-PB-LLM-PROVIDER-API
+  type: consumes
+- from: COMP-PB-STAGE-LINK
+  to: IF-PB-PROMPT-LIBRARY-API
+  type: consumes
+- from: COMP-PB-STAGE-CONTAINERIZE
+  to: IF-PB-LLM-PROVIDER-API
+  type: consumes
+- from: COMP-PB-STAGE-CONTAINERIZE
+  to: IF-PB-PROMPT-LIBRARY-API
+  type: consumes
+- from: COMP-PB-STAGE-VERIFY
+  to: IF-PB-STANDALONE-HARNESS-API
+  type: consumes
+- from: COMP-PB-STAGE-VERIFY
+  to: IF-PB-SIL-EVIDENCE-API
+  type: consumes
+- from: COMP-PB-CI-GATE
+  to: IF-PB-STANDALONE-HARNESS-API
+  type: consumes
+- from: COMP-PB-CI-GATE
+  to: IF-PB-CLOSURE-REPORT
+  type: consumes
+- from: COMP-PB-LEGACY-PROJECTOR-ADAPTER
+  to: IF-PB-PROJECTOR-REGISTRY
+  type: consumes
+- from: COMP-PB-LEGACY-DOCS-ADAPTER
+  to: IF-PB-PROJECTOR-REGISTRY
+  type: consumes
+- from: BEH-PB-UC-4
+  to: CAP-PB-SLICE
+  type: traces-to
+- from: ACT-PB-1
+  to: IF-PB-MIGRATION-CMD
+  type: consumes
+- from: ACT-PB-1
+  to: IF-PB-PIPELINE-API
+  type: consumes
+- from: ACT-PB-5
+  to: IF-PB-CI-GATE-WORKFLOW
+  type: consumes
+- from: ACT-PB-3
+  to: IF-PB-LEGACY-VISUALIZE
+  type: consumes
+- from: ACT-PB-3
+  to: IF-PB-LEGACY-PIPELINE
+  type: consumes
+- from: ACT-PB-3
+  to: IF-PB-LEGACY-DOCS
+  type: consumes
+- from: CAP-PB-MODEL
+  to: CAP-PB-LLM
+  type: contains
+- from: CAP-PB-EXTRACT
+  to: CAP-PB-PIPELINE
+  type: contains
+- from: CAP-PB-EXTRACT
+  to: CAP-PB-ADAPTER
+  type: contains
+- from: CAP-PB-SLICE
+  to: CAP-PB-PROJECTORS
+  type: contains
+- from: CAP-PB-SLICE
+  to: CAP-PB-EVIDENCE
+  type: contains
+- from: CAP-PB-SLICE
+  to: CAP-PB-VERIFY
+  type: contains
+- from: CAP-0
+  to: CAP-PB-SLICE
+  type: contains
+- from: CAP-0
+  to: CAP-PB-MODEL
+  type: contains
+- from: CAP-0
+  to: CAP-PB-EXTRACT
+  type: contains
+- from: CAP-0
+  to: CAP-PB-DEV
+  type: contains
