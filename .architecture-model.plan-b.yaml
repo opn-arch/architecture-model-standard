@@ -770,6 +770,27 @@ entities:
     - Deterministic replay success rate 100%
     - Cache hit rate >80% on incremental runs
   capabilities:
+  - id: CAP-0
+    name: Plan B — Promise-Graph Architecture (Root)
+    status: ACTIVE
+    description: >-
+      Root capability aggregating the four umbrella capabilities that constitute
+      Plan B: SLICE, MODEL, EXTRACT, DEV. Provides a single traversal root for
+      ConOps and delivery-down decomposition.
+    intent: Serve as the single delivery-down root for all Plan B capabilities
+    goals:
+    - Every umbrella capability reachable from CAP-0 via contains
+    - ConOps view renders full L1 capability structure from this root
+    - Delivery-down chain-closure computable from this root
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - CI/CD Pipeline
+    success_criteria:
+    - contains edges from CAP-0 cover all four umbrella caps
+    - ConOps diagram traverses CAP-0 to render L1 groups
+    moes:
+    - 100% umbrella capability reachability from CAP-0
   - id: CAP-PB-SLICE
     name: Slice Any Entity at Any Decomposition Level
     status: ACTIVE
@@ -2191,12 +2212,6 @@ relationships:
 - {from: BEH-PB-STAGE-6, to: CAP-PB-PIPELINE, type: traces-to}
 - {from: BEH-PB-STAGE-7, to: CAP-PB-PIPELINE, type: traces-to}
 - {from: CAP-PB-MODEL, to: CAP-PB-PROMISE-GRAPH, type: contains}
-- {from: CAP-PB-MODEL, to: CAP-PB-LLM, type: contains}
-- {from: CAP-PB-EXTRACT, to: CAP-PB-PIPELINE, type: contains}
-- {from: CAP-PB-EXTRACT, to: CAP-PB-ADAPTER, type: contains}
-- {from: CAP-PB-SLICE, to: CAP-PB-PROJECTORS, type: contains}
-- {from: CAP-PB-SLICE, to: CAP-PB-EVIDENCE, type: contains}
-- {from: CAP-PB-SLICE, to: CAP-PB-VERIFY, type: contains}
 - {from: BEH-PB-STAGE-1, to: BEH-PB-STAGE-2, type: triggers}
 - {from: BEH-PB-STAGE-2, to: BEH-PB-STAGE-3, type: triggers}
 - {from: BEH-PB-STAGE-3, to: BEH-PB-STAGE-4, type: triggers}
@@ -2292,3 +2307,13 @@ relationships:
 - {from: ACT-PB-3, to: IF-PB-LEGACY-VISUALIZE, type: consumes}
 - {from: ACT-PB-3, to: IF-PB-LEGACY-PIPELINE, type: consumes}
 - {from: ACT-PB-3, to: IF-PB-LEGACY-DOCS, type: consumes}
+- {from: CAP-PB-MODEL, to: CAP-PB-LLM, type: contains}
+- {from: CAP-PB-EXTRACT, to: CAP-PB-PIPELINE, type: contains}
+- {from: CAP-PB-EXTRACT, to: CAP-PB-ADAPTER, type: contains}
+- {from: CAP-PB-SLICE, to: CAP-PB-PROJECTORS, type: contains}
+- {from: CAP-PB-SLICE, to: CAP-PB-EVIDENCE, type: contains}
+- {from: CAP-PB-SLICE, to: CAP-PB-VERIFY, type: contains}
+- {from: CAP-0, to: CAP-PB-SLICE, type: contains}
+- {from: CAP-0, to: CAP-PB-MODEL, type: contains}
+- {from: CAP-0, to: CAP-PB-EXTRACT, type: contains}
+- {from: CAP-0, to: CAP-PB-DEV, type: contains}
