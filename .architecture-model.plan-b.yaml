@@ -369,7 +369,170 @@ entities:
     - compute chain-closure on head vs base
     - block merge on regression or open promises
     - append to .architecture/chain-closure-history.jsonl
-  capabilities: []
+  capabilities:
+  - id: CAP-PB-SLICE
+    name: Slice Any Entity at Any Decomposition Level
+    status: ACTIVE
+    description: >-
+      Umbrella capability guaranteeing every entity in the model can be sliced
+      into a self-contained package that documents and verifies its own promises,
+      with external dependencies explicitly typed at slice boundaries.
+    intent: Guarantee entity-as-standalone-unit at every decomposition level via slice_by_entity primitive
+    goals:
+    - Every entity produces a self-contained slice
+    - Every promise reference resolves inside slice or declares external boundary
+    - Slice materialization runs in <1s per entity
+    - Slice output renders through delivery_chain projector without errors
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - CI/CD Pipeline
+    success_criteria:
+    - verify_entity_standalone passes parametrized over all entities
+    - Slice byte-stable under identical inputs
+    - Zero silent external references
+    failure_modes:
+    - Slice materialization too slow (>1s per entity)
+    - External boundary syntax ambiguous
+    - Slice contains dangling refs (broken chain-closure)
+    moes:
+    - Slice materialization latency p95 <1s
+    - Zero dangling references across all slices
+    - 100% of entities have passing verify_entity_standalone
+    assumptions:
+    - Promise-graph schema (3.0) provides delivered_from + verified_by primitives
+    - slice_by_entity from Phase 3 substrate extends cleanly to promise-graph
+    trade_offs:
+    - Rich slice metadata increases storage cost; accepted for verify-up traceability
+    - LLM-required projector variants improve documentation but add cost; guarded by closure_pct threshold
+    open_questions:
+    - How to handle circular delivery dependencies (parent A delivers to child B which delivers to A)?
+    - What is the correct external-boundary syntax for cross-repo references?
+  - id: CAP-PB-MODEL
+    name: Model Any System via Promise Graph
+    status: ACTIVE
+    description: >-
+      Umbrella capability providing the promise-graph schema 3.0 substrate.
+      Promises are first-class; entities are containers; relationships derived
+      from delivery-source and verification-evidence links.
+    intent: Represent any system as a graph of promises with delivery-down source and verify-up evidence
+    goals:
+    - Promise type is first-class in schema 3.0
+    - Every semantic field (intent/goals/slos/...) becomes a Promise record
+    - Entity kinds are structural containers, not attribute owners
+    - Semantic relationships (realizes, traces-to, exercised-by) derived from promise graph
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - arch-agent Trainer
+    - Downstream domain profiles (controls, mechanical, electrical)
+    success_criteria:
+    - 2.1 -> 3.0 migration round-trips for every existing fixture
+    - Promise closure computable per-entity in <10ms
+    - Domain profiles express promise-attribute extensions without base-schema change
+    failure_modes:
+    - Schema 3.0 migration lossy on prose fields
+    - Promise graph too complex for LLM to reason about
+    - Domain profiles pollute base promise vocabulary
+    moes:
+    - Round-trip fidelity 100% on structured fields
+    - Round-trip fidelity >90% on prose fields via LLM re-derivation
+    - Migration idempotency (re-run produces identical output)
+    assumptions:
+    - Existing AMS 2.1 fixtures have parseable semantic content
+    - LLM re-derivation with digest-locked prompts is cost-viable
+    trade_offs:
+    - Schema 3.0 breaks 2.1 wire compat; adapter path preserves fallback
+    - Promise graph adds indirection; accepted for verify-up traceability
+    open_questions:
+    - Do embedding-based clustering approaches produce stable promise families across runs?
+    - How to version prompt library (semver? content-hash?) for provenance
+  - id: CAP-PB-EXTRACT
+    name: Extract Architecture from Source Code
+    status: ACTIVE
+    description: >-
+      Umbrella capability providing the 7-stage promise-graph pipeline (scan ->
+      derive_promises -> cluster -> link -> containerize -> verify -> publish)
+      that replaces the 10-stage 2.1 pipeline. Duplicates prevented by
+      construction via cluster stage.
+    intent: Produce a schema-3.0 architecture model from any codebase with per-entity chain-closure computed
+    goals:
+    - Pipeline determinism under fixed AMS_DETERMINISTIC_NOW
+    - Consolidation-by-construction (no post-hoc duplicate merging)
+    - LLM budget bounded per pipeline run
+    - Chain-closure baseline computed on first pass
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - CI/CD Pipeline
+    - arch-agent Trainer (consumes benchmark outputs)
+    success_criteria:
+    - 4 e2e benchmarks (colorama, structlog, tqdm, click) extract with chain-closure >=70%
+    - Pipeline runs in <5min on 10k-LOC repo
+    - Zero duplicate capabilities in output
+    failure_modes:
+    - Cluster stage over-merges (loss of fidelity)
+    - Cluster stage under-merges (duplicates resurface)
+    - LLM budget exhausted mid-pipeline
+    - Non-deterministic timestamp leaks
+    moes:
+    - Chain-closure >=70% on benchmark repos
+    - Pipeline run cost <$5 on 10k-LOC repo
+    - Deterministic output under fixed inputs (byte-stable)
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+  - id: CAP-PB-DEV
+    name: Dev Loop with Continuous Modeling
+    status: ACTIVE
+    description: >-
+      Umbrella capability providing the dev-loop discipline where modeling
+      co-evolves with coding + testing. Every code commit references its
+      architecture entity; every entity's chain-closure recomputed on affected
+      slice; new promises discovered during coding added to model with
+      validators enforcing closure before merge.
+    intent: Enforce model-code co-evolution via commit-msg refs + CI gate + continuous chain-closure measurement
+    goals:
+    - Every code commit references an architecture entity via commit-msg
+    - CI runs verify_entity_standalone on every PR
+    - Chain-closure history persisted per pipeline run
+    - LLM reviewers audit model-vs-code alignment on every PR
+    stakeholders:
+    - Human Architect
+    - LLM Agent
+    - CI/CD Pipeline
+    success_criteria:
+    - Zero silent drift between model and code
+    - Chain-closure monotonically improves per release
+    - Merge blocked 100% of times on regression
+    - Explicit override audited via journal event
+    failure_modes:
+    - Commit-msg convention not enforced
+    - CI too slow (>15min) causes bypass culture
+    - Override flag abused
+    - Drift discovered only at release time
+    moes:
+    - Time to detect drift <1 commit
+    - CI cycle time <10min
+    - Override rate <5% of PRs
+    - Chain-closure trend monotone non-decreasing per week
+    assumptions:
+    - Developers follow commit-msg convention
+    - CI infra supports fast feedback (<10min)
+    - Journal events reliably persisted (fail-soft acceptable)
+    trade_offs:
+    - Strict CI gate slows individual PRs; accepted for architecture integrity
+    - Continuous modeling adds work per commit; accepted for zero-drift guarantee
+    open_questions:
+    - Should commit-msg convention be enforced via git hook or CI check?
+    - How to weight open-promise vs typed-gap in CI regression threshold?
+    - What's the correct chain-closure threshold to enter/exit override mode?
   components: []
   interfaces: []
   layers: []
