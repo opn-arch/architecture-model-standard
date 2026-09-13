@@ -1,0 +1,377 @@
+meta:
+  schema_version: '2.1'
+  project: architecture-model-standard-plan-b
+  generated_at: '2026-09-12'
+  domain_profile: library
+  description: Architecture model of Plan B refactor (promise-graph schema 3.0 + 7-stage pipeline + legacy-adapter
+    plugin). Modeled in AMS 2.1 before any code change; approval gate at Phase B'-0c unlocks first code
+    commit. See docs/plans/2026-09-12-plan-b-architecture-first-refactor.md.
+entities:
+  actors:
+  - id: ACT-PB-1
+    name: Human Architect
+    status: ACTIVE
+    type: human
+    description: Primary curator of Plan B; reviews the architecture model, approves the first coding
+      commit, drives iterative refinement during Phase B'-4.
+    intent: Steer AMS toward a promise-graph schema that models any system's promises with delivery-down/verify-up
+      closure
+    goals:
+    - Approve Plan B architecture at Phase B'-0c gate
+    - Review each code commit's architecture-refs closure
+    - Iterate model when new promises are discovered
+    - Preserve existing test surface via legacy adapters
+    stakeholders:
+    - Human Architect (self)
+    - Downstream AMS users
+    success_criteria:
+    - Every code commit references a verified architecture entity
+    - Chain-closure on Plan B model reaches >=70% before first code
+    - Legacy tests continue to pass under adapter
+    failure_modes:
+    - Approval given without slice-by-slice verification
+    - Model diverges from code silently
+  - id: ACT-PB-2
+    name: LLM Agent (frontier model via MCP)
+    status: ACTIVE
+    type: human
+    description: Any frontier LLM (Anthropic/OpenAI/local) invoked through OpenCode MCP substrate; consumes
+      compressed context and produces model updates, proposals, prose narratives, and gap classifications.
+    intent: Author and refine architecture-model content via write-back projectors and proposal workflow
+    goals:
+    - Enrich entities with intent/goals/failure-modes from code + docs
+    - Classify open promises as external-dep, genuinely-unclosed, or spurious
+    - Produce delivery-chain narrative for entity pages
+    - Adjudicate fuzzy duplicate-capability pairs
+    stakeholders:
+    - Human Architect
+    - Users of AMS-derived docs
+    success_criteria:
+    - Every LLM proposal validates via proposal_validators
+    - Chain-closure improves monotonically per proposal batch
+    - Prompt digest stable per prompt-library version
+    failure_modes:
+    - Hallucinated entity IDs
+    - Prompt drift breaking provenance chain
+    - Budget overrun during pipeline run
+  - id: ACT-PB-3
+    name: OCA MCP Consumer
+    status: ACTIVE
+    type: human
+    description: opencode-arch MCP server wrapping this package's APIs; exposes architect_slice / architect_validate
+      / architect_propose / architect_work_issue to OpenCode sessions.
+    intent: Serve AMS capabilities to OpenCode sessions with schema-3.0 awareness
+    goals:
+    - Route write-back projector calls through .llm variants
+    - Enforce WorkOrder expected_closure_delta on apply
+    - Bridge SI&L records as promise evidence
+    stakeholders:
+    - OpenCode session users
+    - Human Architect
+    success_criteria:
+    - Schema 2.1 and 3.0 both work through adapter during migration window
+    - MCP tool contracts unchanged (backwards-compatible surface)
+    failure_modes:
+    - Downstream OCA repo unable to consume 3.0 without upgrade
+    - Coordination breakage during release
+  - id: ACT-PB-4
+    name: arch-agent Trainer
+    status: ACTIVE
+    type: human
+    description: Training pipeline in ../arch-agent/ that consumes architecture models to train surrogate
+      agents. Depends on 2.1 parse path; will need coordination for 3.0.
+    intent: Train surrogate agents on architecture-model outputs across the 4 e2e benchmark repos
+    goals:
+    - Consume both 2.1 and 3.0 models via unified loader
+    - Preserve training curves through schema migration
+    stakeholders:
+    - arch-agent maintainers
+    - Human Architect
+    success_criteria:
+    - 4 e2e benchmarks (colorama, structlog, tqdm, click) reproduce prior results under schema 3.0
+    failure_modes:
+    - Training data drift from schema change
+    - Loss of promise-attribute fidelity in 3.0 migration
+  - id: ACT-PB-5
+    name: CI/CD Pipeline
+    status: ACTIVE
+    type: human
+    description: Automated pipeline running validation + verify_entity_standalone on every PR; blocks
+      merge on open promises without typed-gap classification.
+    intent: Enforce chain-closure discipline at merge time; prevent silent architecture drift
+    goals:
+    - Run full test suite on every commit
+    - Run verify_entity_standalone parametrized over all entities
+    - Block merge on chain-closure regression
+    - Emit chain-closure history to .architecture/chain-closure-history.jsonl
+    stakeholders:
+    - Human Architect
+    - Downstream consumers
+    success_criteria:
+    - No merge with open promises (must be closed or typed-gap)
+    - Chain-closure never regresses without explicit override
+    failure_modes:
+    - Gate too strict blocks legitimate WIP
+    - Gate too lax admits silent drift
+  behaviors:
+  - id: BEH-PB-UC-1
+    name: 'Use Case: Extract Architecture from Source Code'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: Human architect runs the 7-stage promise-graph pipeline against a target repo; receives
+      an architecture model where every promise is closed or typed-gap; reviews via viewer.html and slice-per-entity
+      drill-down.
+    intent: Produce a schema-3.0 architecture model from source code with per-entity chain-closure computed
+    goals:
+    - Pipeline runs deterministically (fixed AMS_DETERMINISTIC_NOW)
+    - Every entity's slice stands on its own
+    - LLM enrichment stays under budget
+    success_criteria:
+    - Chain-closure >=70% on first extraction pass
+    - 4 e2e benchmarks match prior extraction shape via adapter
+    - viewer.html renders without errors
+    failure_modes:
+    - Cluster stage over-merges promises (loss of fidelity)
+    - Cluster stage under-merges (duplicate caps resurface)
+    - LLM budget exhausted before publish stage
+    verification:
+    - id: VRF-BEH-PB-UC-1-1
+      method:
+        E2E benchmark: colorama extract + chain-closure >=70%
+    - id: VRF-BEH-PB-UC-1-2
+      method:
+        E2E benchmark: structlog extract + chain-closure >=70%
+    - id: VRF-BEH-PB-UC-1-3
+      method:
+        E2E benchmark: tqdm extract + chain-closure >=70%
+    - id: VRF-BEH-PB-UC-1-4
+      method:
+        E2E benchmark: click extract + chain-closure >=70%
+    steps:
+    - scan repo modules via AST
+    - derive_promises from docstrings + type hints + tests + git history
+    - cluster promises by semantic similarity
+    - link delivered_from / verified_by edges
+    - containerize promise families into capabilities / behaviors / components / interfaces
+    - verify chain-closure per entity
+    - publish package generation via lifecycle substrate
+  - id: BEH-PB-UC-2
+    name: 'Use Case: Migrate 2.1 Model to 3.0'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: One-way migration reads a 2.1 model, materializes Promise records from semantic fields
+      (intent, goals, requirements, slos, ...), emits 3.0 model. Adapter path preserves 2.1 fallback during
+      migration window.
+    intent: Convert existing 2.1 models to 3.0 schema without silent loss of semantic content
+    goals:
+    - Deterministic field-by-field migration for closed-form promises
+    - LLM re-derivation for lossy prose fields with digest-locked prompts
+    - Round-trip contract on 4 e2e benchmark models
+    success_criteria:
+    - Round-trip test passes for every 2.1 fixture in tests/fixtures
+    - Adapter path continues to serve 2.1 consumers unchanged
+    failure_modes:
+    - Prose intent loses subtle semantic content
+    - Migration non-idempotent (re-running produces different output)
+    - LLM re-derivation produces hallucinated promise IDs
+    verification:
+    - id: VRF-BEH-PB-UC-2-1
+      method: Snapshot test on every existing 2.1 fixture
+    - id: VRF-BEH-PB-UC-2-2
+      method: Backwards-compat declaration in spec/migration-2.1-to-3.0.md
+    steps:
+    - load 2.1 model
+    - enumerate semantic fields per entity
+    - materialize Promise records deterministically for structured fields
+    - LLM-assisted re-derivation for prose fields (digest-locked prompts)
+    - validate 3.0 output against schema-3.0.json
+    - emit 3.0 model
+  - id: BEH-PB-UC-3
+    name: 'Use Case: Verify Entity Standalone'
+    status: ACTIVE
+    actor_id: ACT-PB-5
+    description: CI + developers invoke verify_entity_standalone(entity_id) on any entity at any decomposition
+      level. Materializes slice, checks every promise is closed or typed-gap, checks every verified_by
+      reference resolves inside slice or declares external boundary.
+    intent: Guarantee every entity stands on its own as a documented and verified unit at any decomposition
+      level
+    goals:
+    - Parametrize over all entities in model
+    - Fail loudly on open promises
+    - Tolerate typed-gaps with explicit boundary declaration
+    success_criteria:
+    - Test runs in <30s over full model
+    - Zero false-positives (typed-gap correctly recognized)
+    - Zero false-negatives (open promise never masked)
+    failure_modes:
+    - Slice materialization too slow (>1s per entity)
+    - External boundary declaration syntax ambiguous
+    verification:
+    - id: VRF-BEH-PB-UC-3-1
+      method: Parametrized pytest over all entities
+    - id: VRF-BEH-PB-UC-3-2
+      method: CI gate blocks merge on regression
+    steps:
+    - materialize slice via slice_by_entity
+    - enumerate promises per entity in slice
+    - assert every promise status in {closed, typed-gap}
+    - assert every verified_by ref resolves inside slice or is external-boundary
+    - render delivery_chain projector without errors
+  - id: BEH-PB-UC-4
+    name: 'Use Case: Project View Over Slice'
+    status: ACTIVE
+    actor_id: ACT-PB-2
+    description: Any consumer (LLM, human, CI) requests a projected view over a slice. Projector matrix
+      maps family x kind x (deterministic | llm) to output. LLM variants only invoked when closure_pct
+      < 1.0.
+    intent: Render any slice through any registered projector with determinism guarantees
+    goals:
+    - Projector output byte-stable under fixed inputs
+    - LLM variants skipped for clean entities
+    - Every projection cites prompt version + model + policy in provenance
+    success_criteria:
+    - Snapshot tests pass for every projector variant
+    - Rebuild determinism test passes
+    failure_modes:
+    - Prompt drift breaks byte-stability
+    - LLM invoked on clean entity (cost waste)
+    verification:
+    - id: VRF-BEH-PB-UC-4-1
+      method: tests/lifecycle/test_projector_determinism.py
+    - id: VRF-BEH-PB-UC-4-2
+      method: tests/lifecycle/test_dashboard_rebuild.py (existing)
+    steps:
+    - resolve slice via ModelSlice materialize
+    - resolve projector by name from registry
+    - invoke projector (deterministic or LLM variant based on closure state)
+    - stamp provenance {freshness, revision, produced_at, projector, prompt_digest}
+    - return ProjectedView
+  - id: BEH-PB-UC-5
+    name: 'Use Case: LLM Proposes Model Change'
+    status: ACTIVE
+    actor_id: ACT-PB-2
+    description: LLM agent generates a Proposal via write-back projector or dedicated proposer plugin;
+      WorkOrder declares expected_closure_delta; proposal validators run before apply; PROPOSAL_CLOSURE_MISMATCH
+      journal event on estimation error >20%.
+    intent: Enable LLM-authored model updates with measurable closure-progress enforcement
+    goals:
+    - Every proposal declares expected closure impact
+    - Validators reject dangling refs + orphan entity creation
+    - Provenance chain preserved end-to-end
+    success_criteria:
+    - Zero apply operations succeed with unclosed dangling references
+    - Closure estimation error <20% in 80% of proposals (learning target)
+    failure_modes:
+    - LLM overpromises closure delta
+    - Validator too permissive lets bad proposal through
+    - Journal event lost due to fail-soft write
+    verification:
+    - id: VRF-BEH-PB-UC-5-1
+      method: tests/ai/test_workorder_closure_delta.py
+    - id: VRF-BEH-PB-UC-5-2
+      method: tests/ai/test_proposal_validators_closure.py
+    steps:
+    - agent authors Proposal with expected_closure_delta on WorkOrder
+    - submit WorkOrder via architect_workorder_submit
+    - run proposer via architect_job_run
+    - validate proposal via proposal_validators
+    - apply proposal (or reject) via architect_proposal_apply
+    - recompute actual closure; emit PROPOSAL_CLOSURE_MISMATCH if >20% drift
+  - id: BEH-PB-UC-6
+    name: 'Use Case: Publish Package Generation'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: Architect publishes new generation of architecture package via existing lifecycle substrate
+      (architect_package_publish); digest-locked; generation number auto-incremented; downstream artifacts
+      rebuild.
+    intent: Version the architecture model as an immutable package generation with digest-anchored provenance
+    goals:
+    - Generation immutable once published
+    - Digest computation deterministic
+    - Downstream artifacts rebuild deterministically
+    success_criteria:
+    - Two publish calls with identical model produce identical digest
+    - Downstream slices/views bind to generation revision correctly
+    failure_modes:
+    - Non-deterministic timestamp leaks into digest
+    - Concurrent publish creates conflicting generations
+    verification:
+    - id: VRF-BEH-PB-UC-6-1
+      method: tests/lifecycle/test_package_publish.py (existing)
+    - id: VRF-BEH-PB-UC-6-2
+      method: tests/lifecycle/test_generation_diff.py (existing)
+    steps:
+    - validate model via architect_validate
+    - compute canonical serialization
+    - compute root digest via SHA-256
+    - allocate next generation number
+    - write to .architecture/lifecycle/<generation>/
+    - update CURRENT pointer
+    - record lifecycle.package.publish journal event
+  - id: BEH-PB-UC-7
+    name: 'Use Case: Human Reviews Architecture Before Code'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: Approval gate at Phase B'-0c. Human walks through viewer.html of .architecture-model.plan-b.yaml;
+      drills into each of 4 umbrella caps + 7 sub-caps + all behaviors + components; approves or requests
+      iteration.
+    intent: Gate the first Plan B code commit on human review of a verifiable architecture model
+    goals:
+    - Every umbrella cap slice reviewed
+    - Every sub-cap slice reviewed
+    - Chain-closure baseline >=70% at approval time
+    - Approved model published as v1 via architect_package_publish
+    success_criteria:
+    - Approval recorded as journal event architecture.approval
+    - Approved model becomes reference for all subsequent code commits
+    failure_modes:
+    - Approval given without slice-by-slice review
+    - Approved model not published (drift risk)
+    verification:
+    - id: VRF-BEH-PB-UC-7-1
+      method: Manual walkthrough of viewer.html
+    - id: VRF-BEH-PB-UC-7-2
+      method: Approval journal event
+    steps:
+    - render viewer.html from .architecture-model.plan-b.yaml
+    - human reviews each umbrella cap slice
+    - human reviews each sub-cap slice
+    - human runs verify_entity_standalone on sub-caps
+    - iterate model if gaps unacceptable
+    - publish v1 via architect_package_publish
+    - record approval journal event
+  - id: BEH-PB-UC-8
+    name: 'Use Case: CI Enforces Standalone Verification Gate'
+    status: ACTIVE
+    actor_id: ACT-PB-5
+    description: Every PR runs full test suite + verify_entity_standalone + chain-closure diff vs base.
+      Merge blocked on open promises without typed-gap or on chain-closure regression without explicit
+      override flag.
+    intent: Automate the entity-standalone verification discipline as a merge-time gate
+    goals:
+    - Zero silent architecture drift
+    - Fast feedback (<10min CI cycle)
+    - Explicit override path for exceptional cases
+    success_criteria:
+    - Merge blocked on regression in 100% of cases
+    - Override flag audited via journal event
+    failure_modes:
+    - CI too slow (>15min) causes bypass culture
+    - Override flag abused
+    verification:
+    - id: VRF-BEH-PB-UC-8-1
+      method: CI logs
+    - id: VRF-BEH-PB-UC-8-2
+      method: Journal events audit
+    steps:
+    - run pytest tests/ full suite
+    - run verify_entity_standalone parametrized
+    - compute chain-closure on head vs base
+    - block merge on regression or open promises
+    - append to .architecture/chain-closure-history.jsonl
+  capabilities: []
+  components: []
+  interfaces: []
+  layers: []
+  constraints: []
+relationships: []
