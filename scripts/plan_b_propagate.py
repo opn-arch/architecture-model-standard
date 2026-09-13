@@ -85,10 +85,10 @@ def main() -> int:
         src = rel.get("from") or rel.get("from_id")
         dst = rel.get("to") or rel.get("to_id")
         if rtype == "contains" and src in caps and dst in caps:
-            # dumper form: `from: CAP-CHILD, to: CAP-PARENT` (per T0.4 rels)
-            # e.g. {from: CAP-PB-PROMISE-GRAPH, to: CAP-PB-MODEL, type: contains}
-            # so child=src, parent=dst
-            contains_edges.append((dst, src))
+            # Convention: contains points parent -> child.
+            # e.g. {from: CAP-PB-MODEL, to: CAP-PB-PROMISE-GRAPH, type: contains}
+            # parent = src (MODEL), child = dst (PROMISE-GRAPH)
+            contains_edges.append((src, dst))
         elif rtype == "realizes" and src in comps and dst in caps:
             realizes_edges.append((src, dst))
         elif rtype == "traces-to" and src in behs and dst in caps:
