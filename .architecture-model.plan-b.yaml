@@ -369,6 +369,175 @@ entities:
     - compute chain-closure on head vs base
     - block merge on regression or open promises
     - append to .architecture/chain-closure-history.jsonl
+  - id: BEH-PB-STAGE-1
+    name: 'Stage: scan'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: >-
+      AST scan produces raw code inventory (modules, functions, classes,
+      imports, routes, tests, docs). Reuses existing observe stage via
+      LegacyPipelineAdapter.
+    intent: Produce raw code inventory from AST scan of target repo
+    goals:
+    - Deterministic ordering (sort by file path)
+    - Reuse existing observe stage via adapter
+    - Emit CodeInventory dataclass
+    success_criteria:
+    - Ordering byte-stable across runs
+    - CodeInventory schema matches existing observe output shape
+    failure_modes:
+    - Non-deterministic file iteration
+    - AST parse errors silently swallowed
+    steps:
+    - discover source files via utils.discovery.collect_py_files
+    - parse each file via ast module
+    - extract modules, functions, classes, imports, routes
+    - build CodeInventory
+  - id: BEH-PB-STAGE-2
+    name: 'Stage: derive_promises'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: >-
+      Extract Promise records from docstrings, type hints, test names, SI&L
+      history, git commit messages. Each promise gets provenance = inferred.
+    intent: Extract Promise records from code artifacts with inferred provenance
+    goals:
+    - LLM-assisted derivation on prose fields
+    - Deterministic derivation on structured fields (type hints, test names)
+    - Every promise has provenance chain
+    success_criteria:
+    - Every promise references its source artifact
+    - LLM cost bounded by budget cap
+    failure_modes:
+    - LLM hallucinates promises without code backing
+    - Deterministic derivation misses subtle signals
+    steps:
+    - iterate CodeInventory
+    - for each artifact extract structured promises (type hints, test names)
+    - LLM-derive prose promises from docstrings (batched, cached)
+    - stamp provenance on every Promise
+  - id: BEH-PB-STAGE-3
+    name: 'Stage: cluster'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: >-
+      Group Promise records by semantic similarity (embedding-based) into
+      promise families. Families become candidate capabilities. Consolidation
+      happens by construction here.
+    intent: Group promises into semantic families via embedding-based clustering
+    goals:
+    - Deterministic clustering under fixed embedding model
+    - Stable family assignment across runs
+    - Duplicate capabilities structurally prevented
+    success_criteria:
+    - Cluster assignment byte-stable
+    - Zero duplicate families in output
+    failure_modes:
+    - Embedding model non-deterministic
+    - Over-merging loses fidelity
+    - Under-merging leaves duplicates
+    steps:
+    - compute embeddings for every Promise.content
+    - run deterministic clustering (fixed random seed if needed)
+    - assign family ID to each Promise
+    - emit PromiseFamilies dataclass
+  - id: BEH-PB-STAGE-4
+    name: 'Stage: link'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: >-
+      Build delivered_from and verified_by edges between promises. LLM
+      adjudicates ambiguous middle band; exact and near-exact matches are
+      deterministic.
+    intent: Build delivery-down and verify-up edges between promises across families
+    goals:
+    - Deterministic linking on exact/near-exact matches
+    - LLM adjudication on ambiguous middle band only
+    - Provenance stamped on every edge
+    success_criteria:
+    - Edge determinism 100% on exact matches
+    - LLM cost bounded by budget
+    failure_modes:
+    - LLM hallucinates edges
+    - Middle-band threshold set too wide (cost) or narrow (missed edges)
+    steps:
+    - enumerate promise pairs
+    - compute similarity score per pair
+    - deterministic link on score >=0.85 or =0.0
+    - LLM adjudicate on 0.5<score<0.85 band
+    - emit LinkedPromiseGraph
+  - id: BEH-PB-STAGE-5
+    name: 'Stage: containerize'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: >-
+      Decide which entity kind (capability, behavior, component, interface)
+      each promise family belongs to. Rules driven by evidence type (test
+      contracts -> behaviors; module structure -> components; API signatures
+      -> interfaces; abstract goals -> capabilities).
+    intent: Assign entity kind to each promise family based on evidence type
+    goals:
+    - Deterministic kind assignment by evidence rules
+    - LLM fallback only when evidence is ambiguous
+    - Emit fully-typed entity records
+    success_criteria:
+    - Kind assignment byte-stable
+    - Every entity has structural container relationship (contains edges)
+    failure_modes:
+    - Rule set incomplete (kinds unresolved)
+    - LLM fallback rate too high
+    steps:
+    - iterate promise families
+    - apply evidence-type rules
+    - LLM fallback on ambiguous families
+    - emit ContainedModel
+  - id: BEH-PB-STAGE-6
+    name: 'Stage: verify'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: >-
+      Run promise_closure per entity. Emit chain-closure report. Every entity
+      gets closure_pct + list of open/typed-gap promises.
+    intent: Compute per-entity chain-closure and emit closure report
+    goals:
+    - Per-entity closure computed in <10ms
+    - Report includes closure_pct + gap breakdown per entity
+    - System-level score = mean over entities
+    success_criteria:
+    - Report format stable
+    - Closure computation deterministic
+    failure_modes:
+    - Closure algorithm incorrect (miscount)
+    - Report too verbose for LLM to consume
+    steps:
+    - for each entity call promise_closure
+    - aggregate to system score
+    - emit ClosureReport
+  - id: BEH-PB-STAGE-7
+    name: 'Stage: publish'
+    status: ACTIVE
+    actor_id: ACT-PB-1
+    description: >-
+      Write model + all derived views via lifecycle substrate
+      (architect_package_publish). Auto-increment generation. Digest-locked.
+    intent: Publish immutable model generation via existing lifecycle substrate
+    goals:
+    - Idempotent publish (same input -> same digest)
+    - Auto-increment generation number
+    - CURRENT pointer updated atomically
+    success_criteria:
+    - Digest deterministic under fixed inputs
+    - CURRENT pointer never inconsistent
+    failure_modes:
+    - Race on concurrent publish
+    - Digest non-determinism (timestamp leak)
+    steps:
+    - canonicalize model serialization
+    - compute SHA-256 root digest
+    - allocate next generation number
+    - write to .architecture/lifecycle/<generation>/
+    - update CURRENT pointer
+    - record lifecycle.package.publish journal event
   capabilities:
   - id: CAP-PB-SLICE
     name: Slice Any Entity at Any Decomposition Level
@@ -737,7 +906,104 @@ entities:
     - Harness runtime p95 <30s
     - Merge-block precision >99%
   components: []
-  interfaces: []
+  interfaces:
+  - id: IF-PB-CODE-INVENTORY
+    name: CodeInventory
+    status: ACTIVE
+    kind: library
+    description: >-
+      Output of scan stage; input to derive_promises. Dataclass with modules,
+      functions, classes, imports, routes, tests, docs; deterministically ordered.
+    intent: Carry raw AST inventory between scan and derive_promises stages
+  - id: IF-PB-PROMISE-BATCH
+    name: PromiseBatch
+    status: ACTIVE
+    kind: library
+    description: >-
+      Output of derive_promises; input to cluster. List of Promise records
+      each carrying inferred provenance stamp.
+    intent: Carry batch of Promise records with provenance between derive and cluster stages
+  - id: IF-PB-PROMISE-FAMILIES
+    name: PromiseFamilies
+    status: ACTIVE
+    kind: library
+    description: >-
+      Output of cluster; input to link. Promise records grouped by family
+      via embedding-based clustering.
+    intent: Carry family-grouped promises between cluster and link stages
+  - id: IF-PB-LINKED-GRAPH
+    name: LinkedPromiseGraph
+    status: ACTIVE
+    kind: library
+    description: >-
+      Output of link; input to containerize. Promise families with
+      delivered_from and verified_by edges annotated per promise.
+    intent: Carry linked promise graph between link and containerize stages
+  - id: IF-PB-CONTAINED-MODEL
+    name: ContainedModel
+    status: ACTIVE
+    kind: library
+    description: >-
+      Output of containerize; input to verify. Promise families assigned to
+      entity kinds (capabilities/behaviors/components/interfaces).
+    intent: Carry entity-typed model between containerize and verify stages
+  - id: IF-PB-CLOSURE-REPORT
+    name: ClosureReport
+    status: ACTIVE
+    kind: library
+    description: >-
+      Output of verify; input to publish. Per-entity closure_pct + gap
+      breakdown + system-level score.
+    intent: Carry chain-closure measurement between verify and publish stages
+  - id: IF-PB-PUBLISHED-PACKAGE
+    name: PublishedPackage
+    status: ACTIVE
+    kind: library
+    description: >-
+      Output of publish stage. ArchitecturePackage generation with
+      generation number, root digest, CURRENT pointer.
+    intent: Final output of pipeline; immutable versioned architecture package
   layers: []
   constraints: []
-relationships: []
+relationships:
+- {from: BEH-PB-UC-1, to: CAP-PB-EXTRACT, type: traces-to}
+- {from: BEH-PB-UC-2, to: CAP-PB-MODEL, type: traces-to}
+- {from: BEH-PB-UC-3, to: CAP-PB-VERIFY, type: traces-to}
+- {from: BEH-PB-UC-4, to: CAP-PB-PROJECTORS, type: traces-to}
+- {from: BEH-PB-UC-5, to: CAP-PB-LLM, type: traces-to}
+- {from: BEH-PB-UC-6, to: CAP-PB-MODEL, type: traces-to}
+- {from: BEH-PB-UC-7, to: CAP-PB-DEV, type: traces-to}
+- {from: BEH-PB-UC-8, to: CAP-PB-DEV, type: traces-to}
+- {from: BEH-PB-STAGE-1, to: CAP-PB-PIPELINE, type: traces-to}
+- {from: BEH-PB-STAGE-2, to: CAP-PB-PIPELINE, type: traces-to}
+- {from: BEH-PB-STAGE-3, to: CAP-PB-PIPELINE, type: traces-to}
+- {from: BEH-PB-STAGE-4, to: CAP-PB-PIPELINE, type: traces-to}
+- {from: BEH-PB-STAGE-5, to: CAP-PB-PIPELINE, type: traces-to}
+- {from: BEH-PB-STAGE-6, to: CAP-PB-PIPELINE, type: traces-to}
+- {from: BEH-PB-STAGE-7, to: CAP-PB-PIPELINE, type: traces-to}
+- {from: CAP-PB-PROMISE-GRAPH, to: CAP-PB-MODEL, type: contains}
+- {from: CAP-PB-LLM, to: CAP-PB-MODEL, type: contains}
+- {from: CAP-PB-PIPELINE, to: CAP-PB-EXTRACT, type: contains}
+- {from: CAP-PB-ADAPTER, to: CAP-PB-EXTRACT, type: contains}
+- {from: CAP-PB-PROJECTORS, to: CAP-PB-SLICE, type: contains}
+- {from: CAP-PB-EVIDENCE, to: CAP-PB-SLICE, type: contains}
+- {from: CAP-PB-VERIFY, to: CAP-PB-SLICE, type: contains}
+- {from: BEH-PB-STAGE-1, to: BEH-PB-STAGE-2, type: triggers}
+- {from: BEH-PB-STAGE-2, to: BEH-PB-STAGE-3, type: triggers}
+- {from: BEH-PB-STAGE-3, to: BEH-PB-STAGE-4, type: triggers}
+- {from: BEH-PB-STAGE-4, to: BEH-PB-STAGE-5, type: triggers}
+- {from: BEH-PB-STAGE-5, to: BEH-PB-STAGE-6, type: triggers}
+- {from: BEH-PB-STAGE-6, to: BEH-PB-STAGE-7, type: triggers}
+- {from: BEH-PB-STAGE-1, to: IF-PB-CODE-INVENTORY, type: produces}
+- {from: BEH-PB-STAGE-2, to: IF-PB-CODE-INVENTORY, type: consumes}
+- {from: BEH-PB-STAGE-2, to: IF-PB-PROMISE-BATCH, type: produces}
+- {from: BEH-PB-STAGE-3, to: IF-PB-PROMISE-BATCH, type: consumes}
+- {from: BEH-PB-STAGE-3, to: IF-PB-PROMISE-FAMILIES, type: produces}
+- {from: BEH-PB-STAGE-4, to: IF-PB-PROMISE-FAMILIES, type: consumes}
+- {from: BEH-PB-STAGE-4, to: IF-PB-LINKED-GRAPH, type: produces}
+- {from: BEH-PB-STAGE-5, to: IF-PB-LINKED-GRAPH, type: consumes}
+- {from: BEH-PB-STAGE-5, to: IF-PB-CONTAINED-MODEL, type: produces}
+- {from: BEH-PB-STAGE-6, to: IF-PB-CONTAINED-MODEL, type: consumes}
+- {from: BEH-PB-STAGE-6, to: IF-PB-CLOSURE-REPORT, type: produces}
+- {from: BEH-PB-STAGE-7, to: IF-PB-CLOSURE-REPORT, type: consumes}
+- {from: BEH-PB-STAGE-7, to: IF-PB-PUBLISHED-PACKAGE, type: produces}
