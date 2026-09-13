@@ -2046,6 +2046,119 @@ entities:
       Output of publish stage. ArchitecturePackage generation with
       generation number, root digest, CURRENT pointer.
     intent: Final output of pipeline; immutable versioned architecture package
+  - id: IF-PB-PROMISE-API
+    name: PromiseAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      Promise dataclass + parser API. Public surface for creating,
+      round-tripping, and computing stable PR-<sha1> ids for Promise
+      records. Basis of schema 3.0.
+    intent: Public Promise dataclass + parser surface with deterministic ids
+  - id: IF-PB-MIGRATION-CMD
+    name: MigrationCommand
+    status: ACTIVE
+    kind: cli
+    description: >-
+      `architecture-model migrate --to 3.0 <path>` CLI command. Emits
+      migrated model with digest-locked LLM re-derivation for prose
+      fields. Round-trip contract on 4 e2e benchmark models.
+    intent: CLI entry point for 2.1 -> 3.0 migration with digest-locked prose re-derivation
+  - id: IF-PB-PIPELINE-API
+    name: PipelineAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      `Pipeline(llm=..., prompts=..., budget=...).run(repo_path)` public
+      constructor + run surface. LLM provider required at construction
+      time; policy-driven routing.
+    intent: Public Pipeline() ctor + run() surface with required LLM provider
+  - id: IF-PB-PROJECTOR-REGISTRY
+    name: ProjectorRegistryAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      `register(name, callable)` / `resolve(name)` projector registry.
+      Auto-generated matrix over family x kind x (deterministic | llm)
+      populates this registry at import time.
+    intent: Public register/resolve surface for projector matrix
+  - id: IF-PB-LLM-PROVIDER-API
+    name: LLMProviderAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      `LLMProvider` runtime-checkable Protocol exposing `complete`,
+      `stream`, `structured`, `tokenize`. Provider fan-in for MCP /
+      Frontier / Relay adapters; required at Pipeline construction.
+    intent: Runtime-checkable LLMProvider Protocol surface
+  - id: IF-PB-PROMPT-LIBRARY-API
+    name: PromptLibraryAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      Versioned prompt fragment lookup by content-hash. Every LLM call
+      cites the prompt version in its provenance; snapshot-locked.
+    intent: Content-hashed prompt fragment lookup with provenance-cite semantics
+  - id: IF-PB-BUDGET-API
+    name: BudgetEnforcerAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      Per-pipeline-run LLM budget accounting. Emits budget-exhausted
+      journal event on breach; partial-run recovery via checkpoint.
+    intent: Public budget-cap + partial-recovery surface for LLM spend
+  - id: IF-PB-SIL-EVIDENCE-API
+    name: SILEvidenceAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      Maps SI&L records (`.architecture/sil.sqlite`) to
+      `Promise.verified_by`. Stale telemetry (>7d) reopens Promise.status.
+    intent: Bind SI&L telemetry as Promise verify-up evidence with stale-reopen
+  - id: IF-PB-LEGACY-VISUALIZE
+    name: LegacyVisualizeAdapter
+    status: ACTIVE
+    kind: library
+    description: >-
+      Adapter surface wrapping `core/visualize.py` generators behind
+      the projector interface. Mapping table at
+      `.architecture/adapters/visualize-mapping.yaml`.
+    intent: Adapter-shaped surface preserving core/visualize.py generators
+  - id: IF-PB-LEGACY-PIPELINE
+    name: LegacyPipelineAdapter
+    status: ACTIVE
+    kind: library
+    description: >-
+      Adapter surface wrapping the existing 10-stage pipeline behind
+      `scan` + `derive_promises` as one strategy among many.
+    intent: Adapter-shaped surface plugging 10-stage pipeline into new pipeline
+  - id: IF-PB-LEGACY-DOCS
+    name: LegacyDocsAdapter
+    status: ACTIVE
+    kind: library
+    description: >-
+      Adapter surface wrapping `docs/generator.py`, `docs/component_spec.py`,
+      `docs/icd.py`, `docs/se/*` behind projector variants.
+    intent: Adapter-shaped surface preserving docs/generator.py + docs/se/*
+  - id: IF-PB-STANDALONE-HARNESS-API
+    name: StandaloneHarnessAPI
+    status: ACTIVE
+    kind: library
+    description: >-
+      `verify_entity_standalone(entity_id)` parametrized pytest harness
+      API. Materializes slice, checks closure, checks external boundaries.
+      Target runtime <30s over full model.
+    intent: Public verify_entity_standalone() harness surface
+  - id: IF-PB-CI-GATE-WORKFLOW
+    name: CIGateWorkflow
+    status: ACTIVE
+    kind: cli
+    description: >-
+      GitHub Actions workflow (`.github/workflows/architecture-gate.yml`)
+      enforcing standalone-verification harness + chain-closure diff vs
+      base. Blocks merge on open promises without typed-gap or on
+      closure regression without override.
+    intent: CI workflow surface enforcing standalone-verification + closure gate
   layers: []
   constraints: []
 relationships:
@@ -2126,3 +2239,43 @@ relationships:
 - {from: COMP-PB-STAGE-VERIFY, to: IF-PB-CLOSURE-REPORT, type: exposes}
 - {from: COMP-PB-STAGE-PUBLISH, to: IF-PB-CLOSURE-REPORT, type: consumes}
 - {from: COMP-PB-STAGE-PUBLISH, to: IF-PB-PUBLISHED-PACKAGE, type: exposes}
+- {from: COMP-PB-PROMISE-TYPE, to: IF-PB-PROMISE-API, type: exposes}
+- {from: COMP-PB-PROMISE-PARSER, to: IF-PB-PROMISE-API, type: exposes}
+- {from: COMP-PB-MIGRATOR, to: IF-PB-MIGRATION-CMD, type: exposes}
+- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-PIPELINE-API, type: exposes}
+- {from: COMP-PB-PROJECTOR-MATRIX, to: IF-PB-PROJECTOR-REGISTRY, type: exposes}
+- {from: COMP-PB-LLM-PROVIDER, to: IF-PB-LLM-PROVIDER-API, type: exposes}
+- {from: COMP-PB-PROMPT-LIBRARY, to: IF-PB-PROMPT-LIBRARY-API, type: exposes}
+- {from: COMP-PB-BUDGET-ENFORCER, to: IF-PB-BUDGET-API, type: exposes}
+- {from: COMP-PB-SIL-EVIDENCE-BINDER, to: IF-PB-SIL-EVIDENCE-API, type: exposes}
+- {from: COMP-PB-LEGACY-PROJECTOR-ADAPTER, to: IF-PB-LEGACY-VISUALIZE, type: exposes}
+- {from: COMP-PB-LEGACY-PIPELINE-ADAPTER, to: IF-PB-LEGACY-PIPELINE, type: exposes}
+- {from: COMP-PB-LEGACY-DOCS-ADAPTER, to: IF-PB-LEGACY-DOCS, type: exposes}
+- {from: COMP-PB-STANDALONE-HARNESS, to: IF-PB-STANDALONE-HARNESS-API, type: exposes}
+- {from: COMP-PB-CI-GATE, to: IF-PB-CI-GATE-WORKFLOW, type: exposes}
+- {from: COMP-PB-MIGRATOR, to: IF-PB-PROMISE-API, type: consumes}
+- {from: COMP-PB-MIGRATOR, to: IF-PB-LLM-PROVIDER-API, type: consumes}
+- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-LLM-PROVIDER-API, type: consumes}
+- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
+- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: IF-PB-BUDGET-API, type: consumes}
+- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-PROMISE-API, type: consumes}
+- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-LLM-PROVIDER-API, type: consumes}
+- {from: COMP-PB-STAGE-DERIVE, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
+- {from: COMP-PB-STAGE-CLUSTER, to: IF-PB-PROMISE-API, type: consumes}
+- {from: COMP-PB-STAGE-LINK, to: IF-PB-LLM-PROVIDER-API, type: consumes}
+- {from: COMP-PB-STAGE-LINK, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
+- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-LLM-PROVIDER-API, type: consumes}
+- {from: COMP-PB-STAGE-CONTAINERIZE, to: IF-PB-PROMPT-LIBRARY-API, type: consumes}
+- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-STANDALONE-HARNESS-API, type: consumes}
+- {from: COMP-PB-STAGE-VERIFY, to: IF-PB-SIL-EVIDENCE-API, type: consumes}
+- {from: COMP-PB-CI-GATE, to: IF-PB-STANDALONE-HARNESS-API, type: consumes}
+- {from: COMP-PB-CI-GATE, to: IF-PB-CLOSURE-REPORT, type: consumes}
+- {from: COMP-PB-LEGACY-PROJECTOR-ADAPTER, to: IF-PB-PROJECTOR-REGISTRY, type: consumes}
+- {from: COMP-PB-LEGACY-DOCS-ADAPTER, to: IF-PB-PROJECTOR-REGISTRY, type: consumes}
+- {from: BEH-PB-UC-4, to: CAP-PB-SLICE, type: traces-to}
+- {from: ACT-PB-1, to: IF-PB-MIGRATION-CMD, type: consumes}
+- {from: ACT-PB-1, to: IF-PB-PIPELINE-API, type: consumes}
+- {from: ACT-PB-5, to: IF-PB-CI-GATE-WORKFLOW, type: consumes}
+- {from: ACT-PB-3, to: IF-PB-LEGACY-VISUALIZE, type: consumes}
+- {from: ACT-PB-3, to: IF-PB-LEGACY-PIPELINE, type: consumes}
+- {from: ACT-PB-3, to: IF-PB-LEGACY-DOCS, type: consumes}
