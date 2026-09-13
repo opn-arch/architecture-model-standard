@@ -533,6 +533,209 @@ entities:
     - Should commit-msg convention be enforced via git hook or CI check?
     - How to weight open-promise vs typed-gap in CI regression threshold?
     - What's the correct chain-closure threshold to enter/exit override mode?
+  - id: CAP-PB-PROMISE-GRAPH
+    name: Promise as First-Class Type
+    status: ACTIVE
+    parent_id: CAP-PB-MODEL
+    description: >-
+      Sub-capability of CAP-PB-MODEL. Provides the Promise dataclass, its
+      YAML/JSON serialization, and the primitives for delivered_from and
+      verified_by traversal.
+    intent: Provide first-class Promise type with delivered_from/verified_by primitives
+    goals:
+    - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
+    - Round-trip parser for Promise records
+    - Deterministic PR-<sha1> ID computation
+    - JSON Schema fragment for Promise
+    stakeholders:
+    - CAP-PB-MODEL
+    - Human Architect
+    - LLM Agent
+    success_criteria:
+    - Promise round-trip lossless via parser
+    - PR ID stable across runs on identical content
+    failure_modes:
+    - PR ID collision on different content
+    - Round-trip loses status or gap_type
+    moes:
+    - PR ID collision rate 0
+    - Round-trip fidelity 100%
+  - id: CAP-PB-PIPELINE
+    name: 7-Stage Promise-Graph Pipeline
+    status: ACTIVE
+    parent_id: CAP-PB-EXTRACT
+    description: >-
+      Sub-capability of CAP-PB-EXTRACT. Provides the 7-stage pipeline
+      (scan -> derive_promises -> cluster -> link -> containerize -> verify ->
+      publish) with per-stage cache + deterministic replay.
+    intent: Execute 7-stage extraction pipeline with per-stage caching and deterministic replay
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
+  - id: CAP-PB-PROJECTORS
+    name: Projector Matrix (family x kind x det|llm)
+    status: ACTIVE
+    parent_id: CAP-PB-SLICE
+    description: >-
+      Sub-capability of CAP-PB-SLICE. Provides the full projector matrix
+      auto-generated from schema declaration. Deterministic base + LLM
+      write-back variant for every family x kind combination.
+    intent: Provide exhaustive projector coverage over family x kind matrix with LLM write-back variants
+    goals:
+    - Deterministic projector per family x kind
+    - LLM write-back variant per family x kind (guarded by closure_pct)
+    - Auto-generation from schema declaration
+    - Snapshot-locked byte-stable output
+    stakeholders:
+    - CAP-PB-SLICE
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - Every family x kind combination has a registered projector
+    - Snapshot tests pass for every variant
+    - LLM variant skipped when closure_pct >= 1.0
+    failure_modes:
+    - Projector matrix incomplete (missing family x kind entry)
+    - Snapshot drift breaks determinism
+    - LLM variant invoked on clean entity (cost waste)
+    moes:
+    - Projector matrix coverage 100%
+    - Snapshot stability 100%
+    - LLM cost per rebuild bounded by policy.yaml
+  - id: CAP-PB-LLM
+    name: LLM Layer Required at Construction
+    status: ACTIVE
+    parent_id: CAP-PB-MODEL
+    description: >-
+      Sub-capability of CAP-PB-MODEL. LLMProvider required at pipeline
+      construction (no fallback to static). Prompt library versioned as data.
+      Budget enforced per pipeline run. Cache by (prompt_digest, model,
+      temperature=0).
+    intent: Enforce LLM provider as required dependency with budget cap and digest-locked prompts
+    goals:
+    - LLMProvider required at Pipeline() construction
+    - Prompt library at .architecture/llm/prompts/*.yaml versioned + digest-locked
+    - Budget cap per pipeline run in policy.yaml
+    - Cache by (prompt_digest, model, temperature=0)
+    stakeholders:
+    - CAP-PB-MODEL
+    - LLM Agent
+    - Human Architect
+    success_criteria:
+    - Pipeline construction fails without provider
+    - Prompt version stamped in every proposal provenance
+    - Cache hit rate >90% on incremental runs
+    - Budget cap enforced (pipeline aborts on breach)
+    failure_modes:
+    - Provider unavailable at construction
+    - Prompt drift breaks cache
+    - Budget cap set too low blocks legitimate work
+    moes:
+    - Cache hit rate >90%
+    - Budget breach rate <1% of runs
+  - id: CAP-PB-EVIDENCE
+    name: SI&L Records as Promise Evidence
+    status: ACTIVE
+    parent_id: CAP-PB-SLICE
+    description: >-
+      Sub-capability of CAP-PB-SLICE (also delivers to CAP-PB-DEV). SI&L
+      telemetry records become promise evidence. Stale telemetry reopens
+      promises. Verify-up loop closed automatically.
+    intent: Bind SI&L telemetry records as verify-up evidence for entity promises
+    goals:
+    - SIL record -> Promise.verified_by mapping declared per attribute
+    - Stale telemetry (>7d) reopens promise status
+    - Verify-up loop closes without human intervention
+    stakeholders:
+    - CAP-PB-SLICE
+    - CAP-PB-DEV
+    - CI/CD Pipeline
+    success_criteria:
+    - slos.availability = 99.9% promise closed only when 7d SIL confirms
+    - Stale reopen fires within 1 pipeline run of data expiry
+    failure_modes:
+    - SIL store unavailable causes false reopens
+    - Mapping incorrect (wrong evidence bound to wrong promise)
+    moes:
+    - Time from telemetry expiry to promise reopen <1 pipeline run
+    - False-reopen rate <1%
+  - id: CAP-PB-ADAPTER
+    name: Legacy-Adapter Plugin Surface
+    status: ACTIVE
+    parent_id: CAP-PB-EXTRACT
+    description: >-
+      Sub-capability of CAP-PB-EXTRACT (also delivers to CAP-PB-DEV).
+      Preserves existing core/visualize.py, docs/generator.py, docs/se/*,
+      and 10-stage pipeline as plugins. 3746 existing tests + 4 e2e
+      benchmarks bind to adapter surface.
+    intent: Preserve existing code as plugin behind adapter interfaces during Plan B migration
+    goals:
+    - LegacyProjectorAdapter maps every visualize.py fn to projector call
+    - LegacyPipelineAdapter plugs 10-stage pipeline behind new scan+derive_promises
+    - LegacyDocsAdapter maps docs/generator.py + docs/se/* to projector variants
+    - 3746 tests + 4 e2e benchmarks pass under adapter
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - CAP-PB-DEV
+    - Human Architect
+    - arch-agent Trainer
+    success_criteria:
+    - Full test suite passes under adapter (3746 tests)
+    - 4 e2e benchmarks reproduce prior results
+    - Adapter surface documented as contract
+    failure_modes:
+    - Adapter drift breaks legacy consumers
+    - Migration window too short for downstream repos
+    moes:
+    - Test pass rate under adapter 100%
+    - Benchmark fidelity 100%
+  - id: CAP-PB-VERIFY
+    name: Universal verify_entity_standalone Harness
+    status: ACTIVE
+    parent_id: CAP-PB-SLICE
+    description: >-
+      Sub-capability of CAP-PB-SLICE (also delivers to CAP-PB-DEV).
+      Parametrized pytest harness runs verify_entity_standalone over every
+      entity. CI gate blocks merge on open promises without typed-gap.
+    intent: Provide universal verification harness that runs standalone check over every entity
+    goals:
+    - Parametrized pytest fixture over all entities in model
+    - Fast execution (<30s over full model)
+    - Zero false-positives/negatives
+    - CI gate integration with journal event on override
+    stakeholders:
+    - CAP-PB-SLICE
+    - CAP-PB-DEV
+    - CI/CD Pipeline
+    - Human Architect
+    success_criteria:
+    - Harness runs in <30s
+    - Zero false-positives on typed-gap entities
+    - CI blocks merge on regression
+    failure_modes:
+    - Harness too slow blocks CI
+    - Typed-gap syntax ambiguous causes false-positive
+    - Override abused (audit gap)
+    moes:
+    - Harness runtime p95 <30s
+    - Merge-block precision >99%
   components: []
   interfaces: []
   layers: []
