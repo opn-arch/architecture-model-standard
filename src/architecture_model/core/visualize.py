@@ -3630,14 +3630,6 @@ def generate_html_viewer(
             if (p.description) {{
                 html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + escapeHtml(p.description) + '</div></div>';
             }}
-            if (p.properties && p.properties.behavior_diagram) {{
-                var diagramCode = p.properties.behavior_diagram;
-                var uid = 'pipeline_' + eid.replace(/[^a-zA-Z0-9]/g, '_');
-                html += '<div class="pipeline-view">';
-                html += '<div class="rel-header pipeline-toggle" data-target="' + escapeHtml(uid) + '" style="cursor:pointer">\\u25B6 Pipeline View</div>';
-                html += '<div id="' + uid + '" style="display:none;margin-top:8px"><div class="mermaid-target" data-mermaid="' + btoa(diagramCode) + '" data-svg="' + btoa(unescape(encodeURIComponent(p.properties.behavior_svg || ''))) + '"></div></div>';
-                html += '</div>';
-            }}
             var linkedReqs = (D.requirements_by_entity && D.requirements_by_entity[eid]) || [];
             if (linkedReqs.length > 0) {{
                 html += '<div class="req-section"><div class="req-header">Linked Requirements (' + linkedReqs.length + ')</div>';
@@ -3990,6 +3982,8 @@ def generate_html_viewer(
             }}
 
             var facets = D.entities[eid];
+            var _pipelineDiagram = (p.properties && p.properties.behavior_diagram) ? p.properties.behavior_diagram : null;
+            var _pipelineSvg = (p.properties && p.properties.behavior_svg) ? p.properties.behavior_svg : '';
             if (facets && Object.keys(facets).length > 0) {{
                 var i = 0;
                 for (var facetName in facets) {{
@@ -4004,6 +3998,27 @@ def generate_html_viewer(
                         + '</div></div>';
                     i++;
                 }}
+                if (_pipelineDiagram) {{
+                    var pcid = 'f_' + eid.replace(/[^a-zA-Z0-9]/g,'_') + '_pipeline';
+                    html += '<div class="accordion">'
+                        + '<div class="accordion-header" data-target="' + pcid
+                        + '" data-code="' + btoa(unescape(encodeURIComponent(_pipelineDiagram)))
+                        + '" data-svg="' + btoa(unescape(encodeURIComponent(_pipelineSvg)))
+                        + '">Pipeline View</div>'
+                        + '<div class="accordion-body" id="' + pcid + '">'
+                        + '<div class="diagram-box" id="' + pcid + '_dia"></div>'
+                        + '</div></div>';
+                }}
+            }} else if (_pipelineDiagram) {{
+                var pcid = 'f_' + eid.replace(/[^a-zA-Z0-9]/g,'_') + '_pipeline';
+                html += '<div class="accordion">'
+                    + '<div class="accordion-header" data-target="' + pcid
+                    + '" data-code="' + btoa(unescape(encodeURIComponent(_pipelineDiagram)))
+                    + '" data-svg="' + btoa(unescape(encodeURIComponent(_pipelineSvg)))
+                    + '">Pipeline View</div>'
+                    + '<div class="accordion-body" id="' + pcid + '">'
+                    + '<div class="diagram-box" id="' + pcid + '_dia"></div>'
+                    + '</div></div>';
             }} else if (!files || files.length === 0) {{
                 html += '<p style="color:#a0a0c0;margin-top:12px">No relationship diagrams for this entity.</p>';
             }}
@@ -4049,9 +4064,10 @@ def generate_html_viewer(
                 a.addEventListener('click', function(ev) {{ ev.preventDefault(); showEntity(this.dataset.entityId); }});
             }});
             content.querySelectorAll('.pipeline-toggle').forEach(function(toggle) {{
+                // Legacy pipeline-toggle no longer emitted; kept as no-op for backward compat.
                 toggle.addEventListener('click', function() {{
                     var target = document.getElementById(this.dataset.target);
-                    target.style.display = target.style.display === 'none' ? 'block' : 'none';
+                    if (target) {{ target.style.display = target.style.display === 'none' ? 'block' : 'none'; }}
                 }});
             }});
             closeMobileNav();
