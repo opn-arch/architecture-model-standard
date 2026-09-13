@@ -905,7 +905,190 @@ entities:
     moes:
     - Harness runtime p95 <30s
     - Merge-block precision >99%
-  components: []
+  components:
+  - id: COMP-PB-PROMISE-TYPE
+    name: Promise Dataclass
+    status: ACTIVE
+    description: >-
+      Promise(id, attribute, content, owner_entity, delivered_from, verified_by,
+      status, gap_type, provenance). First-class type in schema 3.0; every
+      semantic field on 2.1 BaseEntity becomes a Promise record.
+    intent: Provide first-class Promise dataclass with deterministic PR-<sha1> IDs
+    source_paths: [src/architecture_model/core/promise.py]
+  - id: COMP-PB-PROMISE-PARSER
+    name: Promise Parser
+    status: ACTIVE
+    description: >-
+      YAML/JSON round-trip for Promise records; extends existing parser.py.
+      Deterministic PR-ID computation via SHA-1 of canonical content form.
+    intent: Round-trip Promise records losslessly through YAML/JSON with stable IDs
+    source_paths: [src/architecture_model/core/parser.py]
+  - id: COMP-PB-MIGRATOR
+    name: 2.1 to 3.0 Migrator
+    status: ACTIVE
+    description: >-
+      migrate --to 3.0 CLI command. Deterministic rules for structured fields;
+      LLM re-derivation for lossy prose fields via digest-locked prompts.
+      Round-trip contract on 4 e2e benchmark models.
+    intent: One-way migrate 2.1 models to schema 3.0 with digest-locked LLM re-derivation for prose
+    source_paths: [src/architecture_model/cli/migrate.py, src/architecture_model/migration/v2_to_v3.py]
+  - id: COMP-PB-PIPELINE-ORCHESTRATOR
+    name: 7-Stage Pipeline Orchestrator
+    status: ACTIVE
+    description: >-
+      Coordinates the 7-stage pipeline (scan -> derive_promises -> cluster ->
+      link -> containerize -> verify -> publish). Per-stage cache; deterministic
+      replay under AMS_DETERMINISTIC_NOW.
+    intent: Orchestrate 7-stage promise-graph pipeline with per-stage cache and deterministic replay
+    source_paths: [src/architecture_model/pipeline_v3/orchestrator.py]
+  - id: COMP-PB-STAGE-SCAN
+    name: Stage 1 Scan Impl
+    status: ACTIVE
+    description: >-
+      Concrete implementation of BEH-PB-STAGE-1. Reuses observe stage via
+      LegacyPipelineAdapter; wraps output as CodeInventory.
+    intent: Implement scan stage as adapter over existing observe
+    source_paths: [src/architecture_model/pipeline_v3/scan.py]
+  - id: COMP-PB-STAGE-DERIVE
+    name: Stage 2 Derive-Promises Impl
+    status: ACTIVE
+    description: >-
+      Extract Promise records from docstrings + type hints + test names +
+      SI&L history + git commit messages. LLM-assisted for prose; deterministic
+      for structured signals.
+    intent: Implement derive_promises stage with LLM+deterministic dual paths
+    source_paths: [src/architecture_model/pipeline_v3/derive_promises.py]
+  - id: COMP-PB-STAGE-CLUSTER
+    name: Stage 3 Cluster Impl
+    status: ACTIVE
+    description: >-
+      Embedding-based clustering of Promise.content into families. Fixed
+      embedding model; deterministic random seed; stable family IDs across runs.
+    intent: Implement cluster stage with deterministic embedding-based grouping
+    source_paths: [src/architecture_model/pipeline_v3/cluster.py]
+  - id: COMP-PB-STAGE-LINK
+    name: Stage 4 Link Impl
+    status: ACTIVE
+    description: >-
+      Build delivered_from + verified_by edges. Deterministic linking on
+      exact/near-exact matches (score>=0.85); LLM adjudication on middle band
+      (0.5<score<0.85).
+    intent: Implement link stage with deterministic + LLM-adjudication paths
+    source_paths: [src/architecture_model/pipeline_v3/link.py]
+  - id: COMP-PB-STAGE-CONTAINERIZE
+    name: Stage 5 Containerize Impl
+    status: ACTIVE
+    description: >-
+      Assign entity kind to each promise family via evidence-type rules.
+      LLM fallback for ambiguous families. Emits ContainedModel with typed
+      entity records.
+    intent: Implement containerize stage with rule-based + LLM-fallback kind assignment
+    source_paths: [src/architecture_model/pipeline_v3/containerize.py]
+  - id: COMP-PB-STAGE-VERIFY
+    name: Stage 6 Verify Impl
+    status: ACTIVE
+    description: >-
+      Runs promise_closure over every entity. Emits ClosureReport with
+      per-entity closure_pct + gap breakdown + system-level score.
+    intent: Implement verify stage computing per-entity closure and system score
+    source_paths: [src/architecture_model/pipeline_v3/verify.py, src/architecture_model/quality/chain_closure.py]
+  - id: COMP-PB-STAGE-PUBLISH
+    name: Stage 7 Publish Impl
+    status: ACTIVE
+    description: >-
+      Wraps existing architect_package_publish. Canonicalizes serialization,
+      computes SHA-256 root digest, allocates generation number, atomic
+      CURRENT pointer update.
+    intent: Implement publish stage over existing lifecycle package substrate
+    source_paths: [src/architecture_model/pipeline_v3/publish.py]
+  - id: COMP-PB-PROJECTOR-MATRIX
+    name: Projector Matrix Registry
+    status: ACTIVE
+    description: >-
+      Auto-generated projector registry over family x kind x (deterministic |
+      llm). ~200 projector entries. Deterministic base + LLM write-back variant
+      per combination.
+    intent: Provide exhaustive projector coverage over family x kind matrix
+    source_paths: [src/architecture_model/lifecycle/projectors/matrix.py, src/architecture_model/lifecycle/view_projection/projectors.py]
+  - id: COMP-PB-LLM-PROVIDER
+    name: LLMProvider Runtime
+    status: ACTIVE
+    description: >-
+      Required at Pipeline() construction. Routes via .architecture/llm/policy.yaml.
+      Enforces per-call max_cost + per-pipeline-run budget cap. Fail-fast on
+      unavailable provider.
+    intent: Enforce LLM provider as required dependency with budget cap
+    source_paths: [src/architecture_model/llm/provider.py, src/architecture_model/llm/routing.py]
+  - id: COMP-PB-PROMPT-LIBRARY
+    name: Prompt Library
+    status: ACTIVE
+    description: >-
+      Versioned prompt fragments at .architecture/llm/prompts/*.yaml.
+      Content-hashed; every LLM call cites prompt version in provenance.
+      Snapshot-locked at tests/llm/test_prompt_fragments.py.
+    intent: Version prompt library as data with digest-locked provenance
+    source_paths: [src/architecture_model/llm/prompts.py, .architecture/llm/prompts/]
+  - id: COMP-PB-BUDGET-ENFORCER
+    name: Budget Enforcer
+    status: ACTIVE
+    description: >-
+      Per-pipeline-run budget accounting. Aborts pipeline on breach. Emits
+      budget-exhausted journal event. Partial-run recovery via checkpoint.
+    intent: Enforce LLM budget cap per pipeline run with partial-recovery checkpoint
+    source_paths: [src/architecture_model/llm/budget.py]
+  - id: COMP-PB-SIL-EVIDENCE-BINDER
+    name: SI&L Evidence Binder
+    status: ACTIVE
+    description: >-
+      Maps SIL records to Promise.verified_by. Reads
+      .architecture/sil.sqlite. Stale telemetry (>7d) reopens promise status.
+    intent: Bind SI&L records as Promise verify-up evidence with stale-reopen logic
+    source_paths: [src/architecture_model/sil/evidence.py]
+  - id: COMP-PB-LEGACY-PROJECTOR-ADAPTER
+    name: Legacy Projector Adapter
+    status: ACTIVE
+    description: >-
+      Wraps core/visualize.py functions behind projector interface. Mapping
+      table declared at .architecture/adapters/visualize-mapping.yaml.
+      Preserves all existing tests + benchmarks.
+    intent: Preserve core/visualize.py generators behind projector interface
+    source_paths: [src/architecture_model/lifecycle/projectors/legacy/visualize_adapter.py, .architecture/adapters/visualize-mapping.yaml]
+  - id: COMP-PB-LEGACY-PIPELINE-ADAPTER
+    name: Legacy Pipeline Adapter
+    status: ACTIVE
+    description: >-
+      Plugs the existing 10-stage pipeline behind the new scan +
+      derive_promises stages as one strategy among many. Preserves 3746 tests
+      + 4 e2e benchmarks under adapter path.
+    intent: Preserve 10-stage pipeline behind new pipeline as a strategy
+    source_paths: [src/architecture_model/pipeline_v3/adapters/legacy_pipeline.py]
+  - id: COMP-PB-LEGACY-DOCS-ADAPTER
+    name: Legacy Docs Adapter
+    status: ACTIVE
+    description: >-
+      Maps docs/generator.py, docs/component_spec.py, docs/icd.py, docs/se/*
+      to projector variants. Retains existing generator surface as thin
+      shim over new projector matrix.
+    intent: Preserve docs/generator.py and docs/se/* behind projector matrix
+    source_paths: [src/architecture_model/lifecycle/projectors/legacy/docs_adapter.py]
+  - id: COMP-PB-STANDALONE-HARNESS
+    name: Standalone Verification Harness
+    status: ACTIVE
+    description: >-
+      Parametrized pytest harness running verify_entity_standalone(entity_id)
+      over every entity. Materializes slice, checks closure, checks external
+      boundaries. Target runtime <30s over full model.
+    intent: Provide parametrized pytest harness for entity-standalone verification
+    source_paths: [tests/quality/test_entity_standalone.py, src/architecture_model/quality/standalone.py]
+  - id: COMP-PB-CI-GATE
+    name: CI Standalone-Verification Gate
+    status: ACTIVE
+    description: >-
+      GitHub Actions workflow enforcing standalone-verification harness +
+      chain-closure diff vs base. Blocks merge on open promises without
+      typed-gap or on closure regression without override.
+    intent: Enforce standalone-verification harness + chain-closure gate at merge time
+    source_paths: [.github/workflows/architecture-gate.yml]
   interfaces:
   - id: IF-PB-CODE-INVENTORY
     name: CodeInventory
@@ -1007,3 +1190,26 @@ relationships:
 - {from: BEH-PB-STAGE-6, to: IF-PB-CLOSURE-REPORT, type: produces}
 - {from: BEH-PB-STAGE-7, to: IF-PB-CLOSURE-REPORT, type: consumes}
 - {from: BEH-PB-STAGE-7, to: IF-PB-PUBLISHED-PACKAGE, type: produces}
+- {from: COMP-PB-PROMISE-TYPE, to: CAP-PB-PROMISE-GRAPH, type: realizes}
+- {from: COMP-PB-PROMISE-PARSER, to: CAP-PB-PROMISE-GRAPH, type: realizes}
+- {from: COMP-PB-MIGRATOR, to: CAP-PB-PROMISE-GRAPH, type: realizes}
+- {from: COMP-PB-PIPELINE-ORCHESTRATOR, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-STAGE-SCAN, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-STAGE-DERIVE, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-STAGE-CLUSTER, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-STAGE-LINK, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-STAGE-CONTAINERIZE, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-STAGE-VERIFY, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-STAGE-VERIFY, to: CAP-PB-VERIFY, type: realizes}
+- {from: COMP-PB-STAGE-PUBLISH, to: CAP-PB-PIPELINE, type: realizes}
+- {from: COMP-PB-PROJECTOR-MATRIX, to: CAP-PB-PROJECTORS, type: realizes}
+- {from: COMP-PB-LLM-PROVIDER, to: CAP-PB-LLM, type: realizes}
+- {from: COMP-PB-PROMPT-LIBRARY, to: CAP-PB-LLM, type: realizes}
+- {from: COMP-PB-BUDGET-ENFORCER, to: CAP-PB-LLM, type: realizes}
+- {from: COMP-PB-SIL-EVIDENCE-BINDER, to: CAP-PB-EVIDENCE, type: realizes}
+- {from: COMP-PB-LEGACY-PROJECTOR-ADAPTER, to: CAP-PB-ADAPTER, type: realizes}
+- {from: COMP-PB-LEGACY-PIPELINE-ADAPTER, to: CAP-PB-ADAPTER, type: realizes}
+- {from: COMP-PB-LEGACY-DOCS-ADAPTER, to: CAP-PB-ADAPTER, type: realizes}
+- {from: COMP-PB-STANDALONE-HARNESS, to: CAP-PB-VERIFY, type: realizes}
+- {from: COMP-PB-CI-GATE, to: CAP-PB-VERIFY, type: realizes}
+- {from: COMP-PB-CI-GATE, to: CAP-PB-DEV, type: realizes}
