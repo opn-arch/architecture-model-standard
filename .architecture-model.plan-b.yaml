@@ -771,6 +771,10 @@ entities:
     - Present plan; request explicit approval
     - Upon approval, execute plan with atomic commits per step
     - Verify each commit (suite green + regen-check per entity)
+    acceptance_criteria:
+    - "AC[0]: Every non-trivial change has an approved plan artifact in docs/plans/ authored before code changes"
+    - "AC[1]: Execution commits contain the plan-doc task id in their message"
+    - "AC[2]: Full test suite is green after every commit produced by this cycle"
     preconditions:
     - User has expressed intent or reframing
     postconditions:
@@ -779,7 +783,7 @@ entities:
     verification:
     - id: VER-DF-1
       method: inspection
-      target: "Every non-trivial change traces to an approved plan artifact"
+      target: "self.AC[0] and self.AC[1] hold across all commits produced by this cycle"
     open_questions:
     - What threshold of 'trivial' skips the plan artifact?
   - id: BEH-DF-2
@@ -793,6 +797,9 @@ entities:
     - Summarize old frame vs new frame
     - Confirm reframing with user
     - Return to plan-writing under new frame
+    acceptance_criteria:
+    - "AC[0]: Every user message received during execution is classified as one of {refine, reframe, approve, reject}"
+    - "AC[1]: A reframe classification always halts execution before the next tool call and produces an updated plan artifact"
     preconditions:
     - Execution in progress
     - New user message received
@@ -801,7 +808,7 @@ entities:
     verification:
     - id: VER-DF-2
       method: inspection
-      target: "Every user message during execution is classified as (refine | reframe | approve | reject)"
+      target: "self.AC[0] and self.AC[1] hold for every user message during execution"
   - id: BEH-DF-3
     name: Typed-Gap Surfacing
     status: ACTIVE
@@ -812,13 +819,17 @@ entities:
     - Compare gap counts to previous baseline
     - Any new gap category triggers naming discussion
     - Report gap deltas in commit message
+    acceptance_criteria:
+    - "AC[0]: scripts/plan_b_baseline_report.py exits 0 after every mutation commit"
+    - "AC[1]: Every commit message contains either a gap-delta report or the literal string 'gaps unchanged'"
+    - "AC[2]: No silent NULL (empty field with no gap category) exists on any BEH/CAP/COMP entity added in the commit"
     verification:
     - id: VER-DF-3
       method: test
-      target: "scripts/plan_b_baseline_report.py runs cleanly after every commit"
+      target: "self.AC[0] verified by CI running the baseline script"
     - id: VER-DF-4
       method: inspection
-      target: "Every commit message reports gap deltas or 'gaps unchanged'"
+      target: "self.AC[1] and self.AC[2] verified by commit-message review"
   - id: BEH-DF-4
     name: SIO Capture During Conversation
     status: ACTIVE
@@ -829,6 +840,10 @@ entities:
     - Any observation about the process (as distinct from the artifact) goes on the scratchpad
     - At end-of-turn (or at natural pause), scratchpad entries land in the model as BEH-SIO-N entities
     - Each SIO gets triage=pending until BEH-DF-5 processes it
+    acceptance_criteria:
+    - "AC[0]: SIO scratchpad is empty at end of every turn"
+    - "AC[1]: Every turn containing a reframing signal produces at least one BEH-SIO-N entity"
+    - "AC[2]: Every newly-created BEH-SIO-N entity has triage=pending until BEH-DF-5 processes it"
     preconditions:
     - Conversation turn active
     postconditions:
@@ -837,7 +852,7 @@ entities:
     verification:
     - id: VER-DF-5
       method: inspection
-      target: "Every reframing turn produces at least one BEH-SIO-N entity"
+      target: "self.AC[0], self.AC[1], self.AC[2] hold at end of every conversation turn"
   - id: BEH-DF-5
     name: SIO Triage (apply-here | promote | discard)
     status: ACTIVE
@@ -848,6 +863,10 @@ entities:
     - "For each, assess whether it is a recurring pattern (promote), a context-specific fix (apply-here), or a false signal (discard)"
     - Record triage decision + rationale on the SIO entity
     - If promote-methodology, create the resulting entity and link via resulting_entity field
+    acceptance_criteria:
+    - "AC[0]: count of triage=pending SIOs = 0 at end of every T0.* task commit"
+    - "AC[1]: Every triaged SIO has a non-empty rationale field"
+    - "AC[2]: Every promoted SIO has resulting_entity populated with a valid entity id"
     preconditions:
     - At least one triage=pending SIO exists
     postconditions:
@@ -856,7 +875,7 @@ entities:
     verification:
     - id: VER-DF-6
       method: analysis
-      target: "count of triage=pending SIOs = 0 at end of every T0.* task"
+      target: "self.AC[0], self.AC[1], self.AC[2] verified at end of every T0.* commit"
   - id: BEH-DF-6
     name: Regenerability Self-Check Per Entity
     status: ACTIVE
@@ -868,6 +887,10 @@ entities:
     - Score HIGH (yes, no gaps) / MEDIUM (yes with plausible defaults) / LOW (no, essential detail missing)
     - Record score in commit message tally
     - LOW score triggers immediate stop
+    acceptance_criteria:
+    - "AC[0]: Every entity added or modified in a commit appears in that commit's 'regen: HIGH|MEDIUM|LOW (N entities checked)' tally line"
+    - "AC[1]: No MEDIUM or LOW score appears in a commit tally without a preceding user consultation record"
+    - "AC[2]: The tally line uses the exact format 'regen: <SCORE> (<N> entities checked)' for machine parsing"
     preconditions:
     - Entity added or materially modified
     postconditions:
@@ -876,7 +899,7 @@ entities:
     verification:
     - id: VER-DF-7
       method: inspection
-      target: "Every entity added in a commit appears in that commit's regen tally"
+      target: "self.AC[0], self.AC[1], self.AC[2] hold for every arch(plan-b) commit"
   - id: BEH-DF-7
     name: Continuous Attribute Propagation (Fill-If-Empty)
     status: ACTIVE
@@ -888,6 +911,10 @@ entities:
     - If child's attribute is empty AND parent's is non-empty, copy parent value
     - Never overwrite child's non-empty attribute
     - Log propagations for auditability
+    acceptance_criteria:
+    - "AC[0]: scripts/plan_b_propagate.py --dry-run produces an empty diff on second consecutive run (idempotence)"
+    - "AC[1]: No child field with a pre-existing non-empty value is overwritten by parent propagation"
+    - "AC[2]: Propagation log records source (parent_id, field_name) for every child field filled"
     preconditions:
     - Model in valid state
     postconditions:
@@ -895,7 +922,7 @@ entities:
     verification:
     - id: VER-DF-8
       method: test
-      target: "scripts/plan_b_propagate.py --dry-run yields empty diff on second run"
+      target: "self.AC[0], self.AC[1], self.AC[2] verified by scripts/plan_b_propagate.py test mode"
   - id: BEH-SIO-1
     name: "SIO-1: Reframing checkpoint missing from prior workflow"
     status: ACTIVE
