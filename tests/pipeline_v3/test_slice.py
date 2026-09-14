@@ -89,8 +89,8 @@ def model() -> dict:
             ],
         },
         "relationships": [
-            {"from_cluster": "COMP-a", "to_cluster": "COMP-b", "kind": "depends-on"},
-            {"from_cluster": "COMP-b", "to_cluster": "COMP-c", "kind": "depends-on"},
+            {"from": "COMP-a", "to": "COMP-b", "type": "depends-on"},
+            {"from": "COMP-b", "to": "COMP-c", "type": "depends-on"},
         ],
     }
 
@@ -127,7 +127,7 @@ def test_slice_by_component_stamps_slice_meta(model: dict) -> None:
 def test_slice_by_component_filters_relationships(model: dict) -> None:
     out = slice_by_component(model, "COMP-a")
     # Only a→b kept; b→c dropped because c not in slice
-    kinds = [(r["from_cluster"], r["to_cluster"]) for r in out["relationships"]]
+    kinds = [(r["from"], r["to"]) for r in out["relationships"]]
     assert kinds == [("COMP-a", "COMP-b")]
 
 

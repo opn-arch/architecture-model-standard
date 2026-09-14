@@ -83,7 +83,7 @@ def slice_by_component(
     keep_ids: set[str] = {component_id}
     if include_neighbors:
         for rel in _relationships(model):
-            f, t = rel.get("from_cluster"), rel.get("to_cluster")
+            f, t = rel.get("from"), rel.get("to")
             if f == component_id and t in by_id:
                 keep_ids.add(t)
             if t == component_id and f in by_id:
@@ -93,7 +93,7 @@ def slice_by_component(
     kept_rels = [
         copy.deepcopy(r)
         for r in _relationships(model)
-        if r.get("from_cluster") in keep_ids and r.get("to_cluster") in keep_ids
+        if r.get("from") in keep_ids and r.get("to") in keep_ids
     ]
 
     return {
