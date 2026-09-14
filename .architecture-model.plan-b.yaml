@@ -1738,6 +1738,10 @@ entities:
     intent: Provide first-class Promise dataclass with deterministic PR-<sha1> IDs
     source_paths:
     - src/architecture_model/core/promise.py
+    - src/architecture_model/spec/promise-graph.schema.json
+    test_paths:
+    - tests/core/test_promise.py
+    - tests/core/test_promise_schema.py
     goals:
     - Promise dataclass with attribute/content/owner_entity/status/gap_type fields
     - Round-trip parser for Promise records

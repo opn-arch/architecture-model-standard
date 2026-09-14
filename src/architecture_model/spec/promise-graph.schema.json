@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "architecture-model.promise-graph/1.0.0",
+  "title": "PromiseGraph",
+  "description": "Wire format for Plan B Promise records. A Promise is the unit of a semantic field's delivery — every 2.1 semantic field (intent, goals, verification, ...) on an entity is lifted into one Promise record with deterministic id, delivery lineage, and verification evidence.",
+  "$defs": {
+    "PromiseStatus": {
+      "type": "string",
+      "enum": ["open", "delivered", "verified", "typed-gap"],
+      "description": "Lifecycle state. See src/architecture_model/core/promise.py PromiseStatus."
+    },
+    "PromiseId": {
+      "type": "string",
+      "pattern": "^PR-[0-9a-f]{12}$",
+      "description": "Deterministic id: PR-<sha1(attribute|content|owner_entity)[:12]>."
+    },
+    "PromiseContent": {
+      "description": "The promised value. Strings and lists-of-strings are the two canonical forms; other JSON types are allowed but hash via json.dumps(sort_keys=True) canonicalization.",
+      "oneOf": [
+        {"type": "string"},
+        {"type": "array", "items": {"type": "string"}},
+        {"type": "null"},
+        {"type": "object"},
+        {"type": "number"},
+        {"type": "boolean"}
+      ]
+    },
+    "Promise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "attribute",
+        "content",
+        "owner_entity",
+        "delivered_from",
+        "verified_by",
+        "status",
+        "gap_type",
+        "provenance"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/PromiseId"},
+        "attribute": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the semantic field this Promise realizes (intent, goals, verification, ...)."
+        },
+        "content": {"$ref": "#/$defs/PromiseContent"},
+        "owner_entity": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Entity id (e.g. CAP-DF-INTENT, COMP-1) that owns this Promise."
+        },
+        "delivered_from": {
+          "oneOf": [
+            {"$ref": "#/$defs/PromiseId"},
+            {"type": "null"}
+          ],
+          "description": "Parent Promise id in the delivery chain, or null if this is a root promise."
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": false,
+          "description": "Verification / evidence references (test ids, walk refs, SI&L snapshots, ...). Order preserved."
+        },
+        "status": {"$ref": "#/$defs/PromiseStatus"},
+        "gap_type": {
+          "oneOf": [
+            {"type": "string", "minLength": 1},
+            {"type": "null"}
+          ],
+          "description": "Non-null iff status == 'typed-gap'. Names the gap category (G-DELIVERY, G-VERIFY, ...)."
+        },
+        "provenance": {
+          "type": "string",
+          "description": "Origin of this Promise (turn ref, WALK-YYYY-MM-DD-NNN, plan-doc ref, ...). Empty string allowed."
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "typed-gap"}}},
+          "then": {"properties": {"gap_type": {"type": "string", "minLength": 1}}}
+        },
+        {
+          "if": {
+            "properties": {"status": {"not": {"const": "typed-gap"}}}
+          },
+          "then": {"properties": {"gap_type": {"type": "null"}}}
+        }
+      ]
+    },
+    "PromiseGraph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "promises"],
+      "properties": {
+        "contract_version": {"type": "string", "const": "1.0.0"},
+        "promises": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Promise"}
+        }
+      }
+    }
+  },
+  "$ref": "#/$defs/PromiseGraph"
+}
