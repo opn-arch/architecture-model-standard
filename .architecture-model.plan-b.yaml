@@ -2483,6 +2483,36 @@ entities:
       method: inspection
       target: Every G-* gap category has documented remediation path
     requirements: []
+  - id: COMP-DF-PROPAGATE
+    name: Delivery-Down Attribute Propagator
+    status: ACTIVE
+    intent: Fill empty child attributes from parents idempotently along contains/realizes/traces-to edges, realizing CAP-DF-EVOLVE's fill-if-empty rule
+    description: Wraps scripts/plan_b_propagate.py — walks parent→child edges (contains, realizes inverted, traces-to inverted) and fills empty semantic attributes (intent, goals, stakeholders, success_criteria, failure_modes, verification, requirements, and 8 others) on children from parents. Never overwrites; empty child fields inherit as placeholders awaiting focus. Idempotent — running twice produces byte-identical output.
+    source_paths:
+    - scripts/plan_b_propagate.py
+    goals:
+    - Fill empty child attributes from parents (never overwrite)
+    - Idempotent under repeated invocation
+    - Covers contains, realizes, traces-to edge types
+    stakeholders:
+    - CAP-DF-EVOLVE
+    - Human Architect
+    - LLM Agent
+    success_criteria:
+    - Running twice on same input yields byte-identical output
+    - Every parent-child edge in scope is walked exactly once per run
+    failure_modes:
+    - Overwrites populated child field (violates focus-preservation invariant)
+    - Non-idempotent (subsequent runs mutate output)
+    - Missing edge type causes silent attribute-gap propagation
+    verification:
+    - id: VER-DF-PROPAGATE-1
+      method: test
+      target: Idempotency — second invocation on same input produces identical output
+    - id: VER-DF-PROPAGATE-2
+      method: analysis
+      target: No child field with pre-existing content is overwritten by propagation
+    requirements: []
   interfaces:
   - id: IF-PB-CODE-INVENTORY
     name: CodeInventory
@@ -3411,4 +3441,7 @@ relationships:
   type: realizes
 - from: COMP-DF-BASELINE
   to: CAP-DF-VERIFY
+  type: realizes
+- from: COMP-DF-PROPAGATE
+  to: CAP-DF-EVOLVE
   type: realizes
