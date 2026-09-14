@@ -92,8 +92,27 @@ def load_block_model(
     return load_model(sub_model_path)
 
 
+_V21_DEPRECATION_MSG = (
+    "architecture_model.core.parser (schema 2.x) is deprecated; "
+    "use architecture_model.pipeline_v3 for v3 Promise-graph models. "
+    "The 2.x parser will remain functional through the deprecation window."
+)
+
+
+def _emit_v21_deprecation() -> None:
+    """Emit the schema-2.x parser deprecation warning (Phase 10)."""
+    import warnings as _warnings
+    _warnings.warn(_V21_DEPRECATION_MSG, DeprecationWarning, stacklevel=3)
+
+
 def load_model(path: str | Path) -> ArchitectureModel:
-    """Load and parse an architecture model YAML file."""
+    """Load and parse an architecture model YAML file.
+
+    .. deprecated::
+        Schema 2.x parser is deprecated in favor of
+        :mod:`architecture_model.pipeline_v3`. Still functional.
+    """
+    _emit_v21_deprecation()
     path = Path(path)
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
@@ -102,7 +121,7 @@ def load_model(path: str | Path) -> ArchitectureModel:
         from architecture_model.core.errors import ParseError
         raise ParseError(f"Empty model file: {path}")
 
-    model = _parse_raw(raw)
+    model = _parse_raw_impl(raw)
     model._source_path = path.resolve()
     from architecture_model.core.confidence import compute_model_confidence
     compute_model_confidence(model)
@@ -153,6 +172,17 @@ def _parse_priority(val: str | None) -> Priority:
 
 
 def _parse_raw(raw: dict) -> ArchitectureModel:
+    """Parse a raw dict into an ArchitectureModel.
+
+    .. deprecated::
+        Schema 2.x parser is deprecated in favor of
+        :mod:`architecture_model.pipeline_v3`. Still functional.
+    """
+    _emit_v21_deprecation()
+    return _parse_raw_impl(raw)
+
+
+def _parse_raw_impl(raw: dict) -> ArchitectureModel:
     meta = _parse_meta(raw.get("meta", {}))
     entities = _parse_entities(raw.get("entities", {}))
     relationships = [_parse_relationship(r) for r in raw.get("relationships", [])]
