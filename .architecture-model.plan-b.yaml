@@ -2454,6 +2454,35 @@ entities:
     - REQ-PB-13
     - REQ-PB-14
     - REQ-PB-20
+  - id: COMP-DF-BASELINE
+    name: Baseline Gap Reporter
+    status: ACTIVE
+    intent: Emit typed-gap baseline report per commit, feeding CAP-DF-VERIFY chain-closure
+    description: Wraps scripts/plan_b_baseline_report.py — classifies every empty semantic field on plan-b entities into a G-* gap category, emits per-commit gap-count deltas so CAP-DF-VERIFY has quantitative closure evidence.
+    source_paths:
+    - scripts/plan_b_baseline_report.py
+    goals:
+    - Classify every empty semantic field into a G-* category (no untyped absences)
+    - Report gap-count deltas commit-over-commit
+    - Deterministic output across runs on identical input
+    stakeholders:
+    - CAP-DF-VERIFY
+    - CI/CD Pipeline
+    - Human Architect
+    success_criteria:
+    - Every empty semantic field is classified into a G-* category
+    - Baseline diff is byte-stable across two runs on identical input model
+    failure_modes:
+    - New gap categories emerge but stay unclassified
+    - Baseline is non-deterministic across runs (dict ordering, timestamp leakage)
+    verification:
+    - id: VER-DF-BASELINE-1
+      method: test
+      target: Baseline report is byte-stable across two runs on identical input
+    - id: VER-DF-BASELINE-2
+      method: inspection
+      target: Every G-* gap category has documented remediation path
+    requirements: []
   interfaces:
   - id: IF-PB-CODE-INVENTORY
     name: CodeInventory
@@ -3379,4 +3408,7 @@ relationships:
   type: realizes
 - from: BEH-DF-3
   to: REQ-DF-VERIFYCOVERAGE
+  type: realizes
+- from: COMP-DF-BASELINE
+  to: CAP-DF-VERIFY
   type: realizes
