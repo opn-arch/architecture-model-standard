@@ -848,6 +848,22 @@ HTML output. This is guarded by
 materialize→render path twice and asserts both string equality and
 node/edge ordering stability.
 
+## v3 SE walk + viewers (2026-09-14)
+
+The v3 standard + tooling story is written up at
+`docs/reports/2026-09-14-v3-se-walk.md` — an SE-style top-down walk from
+concept (standard + tooling for modeling any system) through 2
+capabilities (CAP-PB extract, CAP-DF evolve) into pipeline_v3's 8
+composable stages, then outward through Phases 7–11 (self-model, gates,
+slicer, deprecation, adapters). Two lenses ship alongside:
+
+- `.architecture/viewers/v3_viewer.html` — v3-native Promise-graph
+  viewer (self-contained HTML; drill-down by component; status badges;
+  gaps-only filter). Rebuild via `python scripts/build_v3_viewer.py`.
+- `.architecture/viewers/legacy_viewer.html` — Phase 11 adapter piped
+  through the existing 2.x HTML viewer for the classic box-and-arrow
+  lens. Rebuild via `python scripts/render_v3_in_legacy_viewer.py`.
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 
