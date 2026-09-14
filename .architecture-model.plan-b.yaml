@@ -1542,6 +1542,85 @@ entities:
     - Detect intent statements in user messages
     - Prompt for MoSCoW priority when ambiguous
     - Emit typed gap when priority remains unresolved
+  - id: CAP-DF-GENESIS
+    name: Initial Model Synthesis
+    parent_id: CAP-DF
+    status: ACTIVE
+    description: "Synthesize an initial model skeleton from understood intent. Distinct from CAP-DF-INTENT (per-turn goal capture into requirements) and CAP-DF-EVOLVE (grow an existing model). GENESIS is the once-per-system act of producing a walkable v0 from an intake conversation."
+    intent: Bootstrap a new system's model from intent to first walkable v0 skeleton
+    goals:
+    - v0 model has exactly one root system-concept capability with at least one branch
+    - v0 model is walkable — CAP-DF-WALK terminates without traversal errors
+    - v0 provenance cites the intake conversation that produced it
+    stakeholders:
+    - LLM Agent
+    - User (product owner)
+    - Human Architect
+    success_criteria:
+    - v0 passes structural validator with score >= 60/100
+    - CAP-DF-WALK executes against v0 and produces at least one finding
+    - Every v0 top-level entity carries a provenance link to an intake turn
+    failure_modes:
+    - Skeleton is unwalkable (no root, or root has no branches)
+    - Provenance link to intake conversation is lost
+    - v0 committed as many entities in one commit, defeating per-entity regen gate
+    verification:
+    - id: VER-DF-GENESIS-1
+      method: analysis
+      target: v0 has exactly one root system-concept entity (no orphans, no multi-root)
+    - id: VER-DF-GENESIS-2
+      method: test
+      target: CAP-DF-WALK executes to completion on v0 without traversal errors
+    - id: VER-DF-GENESIS-3
+      method: inspection
+      target: Every v0 top-level entity has a provenance field citing an intake turn
+    responsibilities:
+    - Elicit walkable root structure from intake conversation
+    - Emit v0 skeleton as multiple atomic commits (never batched)
+    - Hand off to CAP-DF-WALK for first audit
+  - id: CAP-DF-WALK
+    name: SE Traceability Walk
+    parent_id: CAP-DF
+    status: ACTIVE
+    description: "Recurring SE traceability audit — graph-traversal from root system-concept outward, branches taken in importance order, termination when marginal modeling value drops below threshold. Findings emitted as typed gap records feeding CAP-DF-SELFIMP. This session's intake conversation executed walk-instance #1 (WALK-2026-09-14-001)."
+    intent: Provide the standard method by which model state is audited and gaps surfaced
+    goals:
+    - Walk starts at root system-concept, never at an arbitrary leaf
+    - Each branch termination records a return-on-modeling rationale
+    - Findings emitted as typed gaps (G-DELIVERY / G-VERIFY / G-OPEN-Q / G-WALK-*), never free prose
+    - Walk re-enters when system expectations shift (feeds CAP-DF-EVOLVE)
+    - Every walk-instance persisted for provenance
+    stakeholders:
+    - LLM Agent
+    - Human Architect
+    - CAP-DF-SELFIMP
+    success_criteria:
+    - Every root-child branch touched or explicitly deferred with rationale
+    - Every finding cites the walk-instance that produced it
+    - Walk-instance record is queryable after the fact
+    failure_modes:
+    - Walker starts mid-graph, missing root-state assessment
+    - Terminations lack rationale (cannot distinguish 'nothing to model' from 'gave up')
+    - Findings dropped as prose instead of typed gaps
+    - Walk-instance not persisted (audit trail lost)
+    verification:
+    - id: VER-DF-WALK-1
+      method: inspection
+      target: Every walk-instance records branches-touched + terminations + rationales
+    - id: VER-DF-WALK-2
+      method: analysis
+      target: Every finding traces to exactly one walk-instance
+    - id: VER-DF-WALK-3
+      method: test
+      target: Walk on plan-b root reaches all 5 CAP-PB umbrella caps + CAP-DF branch (min coverage)
+    responsibilities:
+    - Traverse graph from root outward, importance-ordered
+    - Terminate branches with recorded rationale
+    - Emit findings as typed gaps
+    - Persist walk-instance for provenance
+    open_questions:
+    - Should walk-instances be first-class YAML entities or journal entries under .architecture/walk.jsonl?
+    - Should walk-cadence be time-based, expectation-shift-triggered, or CI-triggered?
   - id: CAP-DF-EVOLVE
     name: Continuous Model Evolution
     parent_id: CAP-DF
@@ -3445,3 +3524,15 @@ relationships:
 - from: COMP-DF-PROPAGATE
   to: CAP-DF-EVOLVE
   type: realizes
+- from: CAP-DF
+  to: CAP-DF-GENESIS
+  type: contains
+- from: CAP-DF
+  to: CAP-DF-WALK
+  type: contains
+- from: CAP-DF-WALK
+  to: CAP-DF-SELFIMP
+  type: produces
+- from: CAP-DF-GENESIS
+  to: CAP-DF-INTENT
+  type: depends-on
