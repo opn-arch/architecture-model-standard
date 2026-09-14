@@ -30,7 +30,7 @@ entities:
   - id: ACT-PB-2
     name: LLM Agent (frontier model via MCP)
     status: ACTIVE
-    type: human
+    type: system
     description: Any frontier LLM (Anthropic/OpenAI/local) invoked through OpenCode MCP substrate; consumes compressed context and produces model updates, proposals, prose narratives, and gap classifications.
     intent: Author and refine architecture-model content via write-back projectors and proposal workflow
     goals:
@@ -52,7 +52,7 @@ entities:
   - id: ACT-PB-3
     name: OCA MCP Consumer
     status: ACTIVE
-    type: human
+    type: system
     description: opencode-arch MCP server wrapping this package's APIs; exposes architect_slice / architect_validate / architect_propose / architect_work_issue to OpenCode sessions.
     intent: Serve AMS capabilities to OpenCode sessions with schema-3.0 awareness
     goals:
@@ -71,7 +71,7 @@ entities:
   - id: ACT-PB-4
     name: arch-agent Trainer
     status: ACTIVE
-    type: human
+    type: system
     description: Training pipeline in ../arch-agent/ that consumes architecture models to train surrogate agents. Depends on 2.1 parse path; will need coordination for 3.0.
     intent: Train surrogate agents on architecture-model outputs across the 4 e2e benchmark repos
     goals:
@@ -88,7 +88,7 @@ entities:
   - id: ACT-PB-5
     name: CI/CD Pipeline
     status: ACTIVE
-    type: human
+    type: system
     description: Automated pipeline running validation + verify_entity_standalone on every PR; blocks merge on open promises without typed-gap classification.
     intent: Enforce chain-closure discipline at merge time; prevent silent architecture drift
     goals:
