@@ -6308,6 +6308,839 @@
       "root_prefix": "src.architecture_model.docs"
     }
   ],
+  "gap_type_hist": {
+    "missing-intent": 7,
+    "no-public-classes": 24,
+    "no-public-functions": 23
+  },
+  "gaps": [
+    {
+      "attribute": "intent",
+      "content": "",
+      "gap_type": "missing-intent",
+      "owner": "COMP-1896b055",
+      "owner_name": "core",
+      "promise_id": "PR-948238c2bf41"
+    },
+    {
+      "attribute": "intent",
+      "content": "",
+      "gap_type": "missing-intent",
+      "owner": "COMP-3a28244a",
+      "owner_name": "lifecycle",
+      "promise_id": "PR-e1e68953dd65"
+    },
+    {
+      "attribute": "intent",
+      "content": "",
+      "gap_type": "missing-intent",
+      "owner": "COMP-61323f76",
+      "owner_name": "data",
+      "promise_id": "PR-2e61c86fbda6"
+    },
+    {
+      "attribute": "intent",
+      "content": "",
+      "gap_type": "missing-intent",
+      "owner": "COMP-8a6bd396",
+      "owner_name": "cli",
+      "promise_id": "PR-cda7cc2c1e5b"
+    },
+    {
+      "attribute": "intent",
+      "content": "",
+      "gap_type": "missing-intent",
+      "owner": "COMP-bfb0fcf3",
+      "owner_name": "export",
+      "promise_id": "PR-e3e7c4289fe3"
+    },
+    {
+      "attribute": "intent",
+      "content": "",
+      "gap_type": "missing-intent",
+      "owner": "COMP-eadca4a9",
+      "owner_name": "profiles",
+      "promise_id": "PR-b5202980d02e"
+    },
+    {
+      "attribute": "intent",
+      "content": "",
+      "gap_type": "missing-intent",
+      "owner": "COMP-fa350824",
+      "owner_name": "docs",
+      "promise_id": "PR-a707730ae1fa"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-1896b055",
+      "owner_name": "core",
+      "promise_id": "PR-84414feadaa5"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-3523c3b8",
+      "owner_name": "extract",
+      "promise_id": "PR-e8be762b2ed0"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-37133896",
+      "owner_name": "feedback",
+      "promise_id": "PR-d8676ab87b61"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-3a28244a",
+      "owner_name": "lifecycle",
+      "promise_id": "PR-11a8b79ea843"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-47414902",
+      "owner_name": "pipeline",
+      "promise_id": "PR-b77305b38c6a"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-50cd57f6",
+      "owner_name": "comments",
+      "promise_id": "PR-42526d581162"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-51592584",
+      "owner_name": "spec",
+      "promise_id": "PR-5120369e2961"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-61323f76",
+      "owner_name": "data",
+      "promise_id": "PR-7137b684d650"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-88e48294",
+      "owner_name": "ai",
+      "promise_id": "PR-34abebe42b98"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-8a6bd396",
+      "owner_name": "cli",
+      "promise_id": "PR-22333034bbe9"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-8eb90583",
+      "owner_name": "llm",
+      "promise_id": "PR-6a6a6de9438e"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-8f04b04b",
+      "owner_name": "sil",
+      "promise_id": "PR-446bbc6b488e"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-95656df0",
+      "owner_name": "migration",
+      "promise_id": "PR-fefcd2f36e14"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-ac8e1c19",
+      "owner_name": "utils",
+      "promise_id": "PR-95419c3bfeb8"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-adf886f2",
+      "owner_name": "authoring",
+      "promise_id": "PR-825d5fef18b5"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-bb5e3d5a",
+      "owner_name": "quality",
+      "promise_id": "PR-ab3eeb836b88"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-bfb0fcf3",
+      "owner_name": "export",
+      "promise_id": "PR-f31aa5c3ac0f"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-c58a2a80",
+      "owner_name": "manifest",
+      "promise_id": "PR-48366fafabb1"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-c5a72728",
+      "owner_name": "pipeline_v3",
+      "promise_id": "PR-b259aa3443ad"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-d35b3fbe",
+      "owner_name": "orchestration",
+      "promise_id": "PR-65ea90df20bc"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-e0d6f3c5",
+      "owner_name": "config",
+      "promise_id": "PR-27e8032aebd3"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-eadca4a9",
+      "owner_name": "profiles",
+      "promise_id": "PR-70be449a8db5"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-f7652785",
+      "owner_name": "persistence",
+      "promise_id": "PR-1a9adede3eb3"
+    },
+    {
+      "attribute": "provides",
+      "content": [],
+      "gap_type": "no-public-classes",
+      "owner": "COMP-fa350824",
+      "owner_name": "docs",
+      "promise_id": "PR-46f4112cf96c"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-1896b055",
+      "owner_name": "core",
+      "promise_id": "PR-77e05e163a29"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-37133896",
+      "owner_name": "feedback",
+      "promise_id": "PR-946413a381ca"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-3a28244a",
+      "owner_name": "lifecycle",
+      "promise_id": "PR-a7d36c02eea7"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-47414902",
+      "owner_name": "pipeline",
+      "promise_id": "PR-ea92289c9bb2"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-50cd57f6",
+      "owner_name": "comments",
+      "promise_id": "PR-5dcf9ddbc71b"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-51592584",
+      "owner_name": "spec",
+      "promise_id": "PR-992e63973e59"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-61323f76",
+      "owner_name": "data",
+      "promise_id": "PR-759d0add0b3d"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-88e48294",
+      "owner_name": "ai",
+      "promise_id": "PR-6a4b85668406"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-8a6bd396",
+      "owner_name": "cli",
+      "promise_id": "PR-c8b03c2ae71a"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-8eb90583",
+      "owner_name": "llm",
+      "promise_id": "PR-a53710775ab1"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-8f04b04b",
+      "owner_name": "sil",
+      "promise_id": "PR-ccca12d0c8a0"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-95656df0",
+      "owner_name": "migration",
+      "promise_id": "PR-94d83afc7f34"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-ac8e1c19",
+      "owner_name": "utils",
+      "promise_id": "PR-9aab6cd5f52b"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-adf886f2",
+      "owner_name": "authoring",
+      "promise_id": "PR-305984701822"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-bb5e3d5a",
+      "owner_name": "quality",
+      "promise_id": "PR-bddcbad3f69d"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-bfb0fcf3",
+      "owner_name": "export",
+      "promise_id": "PR-987b1f304c61"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-c58a2a80",
+      "owner_name": "manifest",
+      "promise_id": "PR-20726cd418c7"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-c5a72728",
+      "owner_name": "pipeline_v3",
+      "promise_id": "PR-ea1fa0d96373"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-d35b3fbe",
+      "owner_name": "orchestration",
+      "promise_id": "PR-9a1841bef0e7"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-e0d6f3c5",
+      "owner_name": "config",
+      "promise_id": "PR-32eba8ba07a4"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-eadca4a9",
+      "owner_name": "profiles",
+      "promise_id": "PR-df50798d1bbd"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-f7652785",
+      "owner_name": "persistence",
+      "promise_id": "PR-f9f066a7945c"
+    },
+    {
+      "attribute": "delivers",
+      "content": [],
+      "gap_type": "no-public-functions",
+      "owner": "COMP-fa350824",
+      "owner_name": "docs",
+      "promise_id": "PR-f9ad700fbfc8"
+    }
+  ],
+  "graph": {
+    "edges": [
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-3a28244a"
+      },
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-47414902"
+      },
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-8f04b04b"
+      },
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-ac8e1c19"
+      },
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-bb5e3d5a"
+      },
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-c58a2a80"
+      },
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-e0d6f3c5"
+      },
+      {
+        "from": "COMP-1896b055",
+        "to": "COMP-eadca4a9"
+      },
+      {
+        "from": "COMP-3523c3b8",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-3a28244a",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-3a28244a",
+        "to": "COMP-88e48294"
+      },
+      {
+        "from": "COMP-3a28244a",
+        "to": "COMP-8eb90583"
+      },
+      {
+        "from": "COMP-3a28244a",
+        "to": "COMP-8f04b04b"
+      },
+      {
+        "from": "COMP-3a28244a",
+        "to": "COMP-c58a2a80"
+      },
+      {
+        "from": "COMP-3a28244a",
+        "to": "COMP-fa350824"
+      },
+      {
+        "from": "COMP-47414902",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-47414902",
+        "to": "COMP-3523c3b8"
+      },
+      {
+        "from": "COMP-47414902",
+        "to": "COMP-8f04b04b"
+      },
+      {
+        "from": "COMP-47414902",
+        "to": "COMP-bb5e3d5a"
+      },
+      {
+        "from": "COMP-47414902",
+        "to": "COMP-fa350824"
+      },
+      {
+        "from": "COMP-50cd57f6",
+        "to": "COMP-3a28244a"
+      },
+      {
+        "from": "COMP-88e48294",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-88e48294",
+        "to": "COMP-3a28244a"
+      },
+      {
+        "from": "COMP-8a6bd396",
+        "to": "COMP-3a28244a"
+      },
+      {
+        "from": "COMP-8a6bd396",
+        "to": "COMP-47414902"
+      },
+      {
+        "from": "COMP-8a6bd396",
+        "to": "COMP-50cd57f6"
+      },
+      {
+        "from": "COMP-8f04b04b",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-95656df0",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-adf886f2",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-adf886f2",
+        "to": "COMP-8f04b04b"
+      },
+      {
+        "from": "COMP-adf886f2",
+        "to": "COMP-c58a2a80"
+      },
+      {
+        "from": "COMP-bb5e3d5a",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-bb5e3d5a",
+        "to": "COMP-95656df0"
+      },
+      {
+        "from": "COMP-bb5e3d5a",
+        "to": "COMP-d35b3fbe"
+      },
+      {
+        "from": "COMP-c58a2a80",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-c58a2a80",
+        "to": "COMP-ac8e1c19"
+      },
+      {
+        "from": "COMP-c58a2a80",
+        "to": "COMP-e0d6f3c5"
+      },
+      {
+        "from": "COMP-c5a72728",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-c5a72728",
+        "to": "COMP-bb5e3d5a"
+      },
+      {
+        "from": "COMP-c5a72728",
+        "to": "COMP-c58a2a80"
+      },
+      {
+        "from": "COMP-d35b3fbe",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-d35b3fbe",
+        "to": "COMP-c58a2a80"
+      },
+      {
+        "from": "COMP-d35b3fbe",
+        "to": "COMP-e0d6f3c5"
+      },
+      {
+        "from": "COMP-d35b3fbe",
+        "to": "COMP-f7652785"
+      },
+      {
+        "from": "COMP-d35b3fbe",
+        "to": "COMP-fa350824"
+      },
+      {
+        "from": "COMP-f7652785",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-fa350824",
+        "to": "COMP-1896b055"
+      },
+      {
+        "from": "COMP-fa350824",
+        "to": "COMP-c58a2a80"
+      },
+      {
+        "from": "COMP-fa350824",
+        "to": "COMP-d35b3fbe"
+      }
+    ],
+    "nodes": [
+      {
+        "gap_count": 3,
+        "id": "COMP-1896b055",
+        "name": "core",
+        "promise_count": 88,
+        "x": 400.0,
+        "y": 60.0
+      },
+      {
+        "gap_count": 1,
+        "id": "COMP-3523c3b8",
+        "name": "extract",
+        "promise_count": 12,
+        "x": 477.65,
+        "y": 70.22
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-37133896",
+        "name": "feedback",
+        "promise_count": 10,
+        "x": 550.0,
+        "y": 100.19
+      },
+      {
+        "gap_count": 3,
+        "id": "COMP-3a28244a",
+        "name": "lifecycle",
+        "promise_count": 99,
+        "x": 612.13,
+        "y": 147.87
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-47414902",
+        "name": "pipeline",
+        "promise_count": 113,
+        "x": 659.81,
+        "y": 210.0
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-50cd57f6",
+        "name": "comments",
+        "promise_count": 8,
+        "x": 689.78,
+        "y": 282.35
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-51592584",
+        "name": "spec",
+        "promise_count": 3,
+        "x": 700.0,
+        "y": 360.0
+      },
+      {
+        "gap_count": 3,
+        "id": "COMP-61323f76",
+        "name": "data",
+        "promise_count": 3,
+        "x": 689.78,
+        "y": 437.65
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-88e48294",
+        "name": "ai",
+        "promise_count": 17,
+        "x": 659.81,
+        "y": 510.0
+      },
+      {
+        "gap_count": 3,
+        "id": "COMP-8a6bd396",
+        "name": "cli",
+        "promise_count": 9,
+        "x": 612.13,
+        "y": 572.13
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-8eb90583",
+        "name": "llm",
+        "promise_count": 5,
+        "x": 550.0,
+        "y": 619.81
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-8f04b04b",
+        "name": "sil",
+        "promise_count": 12,
+        "x": 477.65,
+        "y": 649.78
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-95656df0",
+        "name": "migration",
+        "promise_count": 5,
+        "x": 400.0,
+        "y": 660.0
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-ac8e1c19",
+        "name": "utils",
+        "promise_count": 5,
+        "x": 322.35,
+        "y": 649.78
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-adf886f2",
+        "name": "authoring",
+        "promise_count": 8,
+        "x": 250.0,
+        "y": 619.81
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-bb5e3d5a",
+        "name": "quality",
+        "promise_count": 45,
+        "x": 187.87,
+        "y": 572.13
+      },
+      {
+        "gap_count": 3,
+        "id": "COMP-bfb0fcf3",
+        "name": "export",
+        "promise_count": 7,
+        "x": 140.19,
+        "y": 510.0
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-c58a2a80",
+        "name": "manifest",
+        "promise_count": 45,
+        "x": 110.22,
+        "y": 437.65
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-c5a72728",
+        "name": "pipeline_v3",
+        "promise_count": 25,
+        "x": 100.0,
+        "y": 360.0
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-d35b3fbe",
+        "name": "orchestration",
+        "promise_count": 32,
+        "x": 110.22,
+        "y": 282.35
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-e0d6f3c5",
+        "name": "config",
+        "promise_count": 7,
+        "x": 140.19,
+        "y": 210.0
+      },
+      {
+        "gap_count": 3,
+        "id": "COMP-eadca4a9",
+        "name": "profiles",
+        "promise_count": 7,
+        "x": 187.87,
+        "y": 147.87
+      },
+      {
+        "gap_count": 2,
+        "id": "COMP-f7652785",
+        "name": "persistence",
+        "promise_count": 6,
+        "x": 250.0,
+        "y": 100.19
+      },
+      {
+        "gap_count": 3,
+        "id": "COMP-fa350824",
+        "name": "docs",
+        "promise_count": 79,
+        "x": 322.35,
+        "y": 70.22
+      }
+    ]
+  },
   "meta": {
     "generated_at": "2026-09-14T00:00:00Z",
     "generated_by": "pipeline_v3",
@@ -6315,6 +7148,65 @@
     "schema_version": "3.0",
     "source_root": "."
   },
+  "status_hist": {
+    "open": 596,
+    "typed-gap": 54,
+    "verified": 0
+  },
+  "top_by_gaps": [
+    {
+      "gap_count": 3,
+      "id": "COMP-1896b055",
+      "name": "core"
+    },
+    {
+      "gap_count": 3,
+      "id": "COMP-3a28244a",
+      "name": "lifecycle"
+    },
+    {
+      "gap_count": 3,
+      "id": "COMP-61323f76",
+      "name": "data"
+    },
+    {
+      "gap_count": 3,
+      "id": "COMP-8a6bd396",
+      "name": "cli"
+    },
+    {
+      "gap_count": 3,
+      "id": "COMP-bfb0fcf3",
+      "name": "export"
+    }
+  ],
+  "top_by_promises": [
+    {
+      "id": "COMP-47414902",
+      "name": "pipeline",
+      "promise_count": 113
+    },
+    {
+      "id": "COMP-3a28244a",
+      "name": "lifecycle",
+      "promise_count": 99
+    },
+    {
+      "id": "COMP-1896b055",
+      "name": "core",
+      "promise_count": 88
+    },
+    {
+      "id": "COMP-fa350824",
+      "name": "docs",
+      "promise_count": 79
+    },
+    {
+      "id": "COMP-bb5e3d5a",
+      "name": "quality",
+      "promise_count": 45
+    }
+  ],
   "totals": {
     "components": 24,
     "gaps": 54,
