@@ -572,6 +572,17 @@ entities:
       status: verified
       gap_type: null
       provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-run-pipeline-sequence
+      attribute: delivers
+      content:
+      - "Executes stages in strict linear order: scan -> derive-promises -> cluster -> link -> containerize -> verify -> publish. Each stage's output is the next stage's input."
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/orchestrator.py
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB flow triggers
   - id: BEH-scan
     name: scan_python_source_tree
     promises:
@@ -1243,3 +1254,10 @@ relationships:
   to: IF-model
   type: produces
   note: BEH-publish is the stage that materializes IF-model on disk
+# --- 2026-09-16 CAP-PB stage-to-stage flow (Task A) ---
+- {from: BEH-scan,            to: BEH-derive-promises, type: triggers, note: pipeline stage 1->2}
+- {from: BEH-derive-promises, to: BEH-cluster,         type: triggers, note: pipeline stage 2->3}
+- {from: BEH-cluster,         to: BEH-link,            type: triggers, note: pipeline stage 3->4}
+- {from: BEH-link,            to: BEH-containerize,    type: triggers, note: pipeline stage 4->5}
+- {from: BEH-containerize,    to: BEH-verify,          type: triggers, note: pipeline stage 5->6}
+- {from: BEH-verify,          to: BEH-publish,         type: triggers, note: pipeline stage 6->7}

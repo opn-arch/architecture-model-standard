@@ -215,6 +215,15 @@ SE_VIEW_NARRATIVES = {
         "ACT-developer and ACT-se share BEH-view-browse (both open the "
         "viewer to review the model)."
     ),
+    "pipeline": (
+        "CAP-PB extract pipeline \u2014 the 7-stage flow. Actors trigger "
+        "BEH-run-pipeline, which invokes stage 1 (BEH-scan); each stage "
+        "triggers the next until BEH-publish materializes IF-model on "
+        "disk. Nodes are color-coded by kind (actor, orchestrator, "
+        "stage, output interface). Click any node's chip below to open "
+        "its entity page and see verified_by, provides, and failure_modes "
+        "promises."
+    ),
 }
 
 
@@ -451,10 +460,155 @@ def _mermaid_use_cases(
     return "\n".join(lines), sorted(refs)
 
 
+def _mermaid_pipeline(
+    entities_by_kind: dict, relationships: list
+) -> tuple[str, list[str]]:
+    """CAP-PB extract pipeline flow — actors, orchestrator, 7 stages, IF-model.
+
+    Renders a flowchart LR with per-kind color coding (v2 dashboard style):
+    actors (round), orchestrator (rect emphasized), stages (rect grouped in
+    subgraph, ordered via topological sort of ``triggers`` edges), and the
+    output interface (parallelogram). Deterministic: stages sorted by
+    topological order derived from ``triggers``, tied by id.
+    """
+    behs = entities_by_kind["behaviors"]
+    acts = entities_by_kind["actors"]
+    ifs = entities_by_kind["interfaces"]
+    caps = entities_by_kind["capabilities"]
+    refs: set[str] = set()
+
+    # Discover CAP-PB stages via `contains` relationships.
+    cap_id = "CAP-PB"
+    if cap_id not in caps:
+        return "flowchart LR\n  empty([CAP-PB not modeled])", []
+    stage_ids: list[str] = []
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if f == cap_id and rt == "contains" and t in behs:
+            stage_ids.append(t)
+    orchestrator = "BEH-run-pipeline"
+    stages_only = [s for s in stage_ids if s != orchestrator]
+
+    # Topological sort stages by `triggers` edges (deterministic tiebreak by id).
+    trig: dict[str, list[str]] = {s: [] for s in stages_only}
+    indeg: dict[str, int] = {s: 0 for s in stages_only}
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if rt == "triggers" and f in trig and t in indeg:
+            trig[f].append(t)
+            indeg[t] += 1
+    ordered: list[str] = []
+    frontier = sorted([s for s, d in indeg.items() if d == 0])
+    while frontier:
+        n = frontier.pop(0)
+        ordered.append(n)
+        for m in sorted(trig.get(n, [])):
+            indeg[m] -= 1
+            if indeg[m] == 0:
+                frontier.append(m)
+        frontier.sort()
+    # Append any stages left (cyclic / disconnected) to keep output stable.
+    for s in sorted(stages_only):
+        if s not in ordered:
+            ordered.append(s)
+
+    # Actors that trigger the orchestrator.
+    trig_actors = sorted({
+        r["from"] for r in relationships
+        if r.get("type") == "triggers"
+        and r.get("to") == orchestrator
+        and r.get("from") in acts
+    })
+
+    # Output interface produced by BEH-publish.
+    out_ifs = sorted({
+        r["to"] for r in relationships
+        if r.get("type") == "produces"
+        and r.get("from") == "BEH-publish"
+        and r.get("to") in ifs
+    })
+
+    lines = ["flowchart LR"]
+    # Actors subgraph.
+    if trig_actors:
+        lines.append('  subgraph ACTORS["Actors"]')
+        for aid in trig_actors:
+            name = acts[aid].get("name", aid)
+            lines.append(f'    {_mid(aid)}(("{_mesc(aid)}<br/>{_mesc(name)}"))')
+            refs.add(aid)
+        lines.append("  end")
+    # Orchestrator.
+    if orchestrator in behs:
+        oname = behs[orchestrator].get("name", orchestrator)
+        lines.append(
+            f'  {_mid(orchestrator)}[["{_mesc(orchestrator)}<br/>{_mesc(oname)}"]]'
+        )
+        refs.add(orchestrator)
+    # Stage subgraph.
+    if ordered:
+        lines.append('  subgraph STAGES["CAP-PB stages (triggers)"]')
+        lines.append("    direction LR")
+        for sid in ordered:
+            sname = behs[sid].get("name", sid)
+            lines.append(
+                f'    {_mid(sid)}["{_mesc(sid)}<br/>{_mesc(sname)}"]'
+            )
+            refs.add(sid)
+        # Chain triggers within subgraph.
+        for i in range(len(ordered) - 1):
+            a, b = ordered[i], ordered[i + 1]
+            # Only draw edge if it exists in model.
+            if b in trig.get(a, []):
+                lines.append(f"    {_mid(a)} --> {_mid(b)}")
+        lines.append("  end")
+    # Output interface.
+    for iid in out_ifs:
+        iname = ifs[iid].get("name", iid)
+        lines.append(f'  {_mid(iid)}[/"{_mesc(iid)}<br/>{_mesc(iname)}"/]')
+        refs.add(iid)
+    # Cross-subgraph edges.
+    for aid in trig_actors:
+        lines.append(f"  {_mid(aid)} --> {_mid(orchestrator)}")
+    if ordered and orchestrator in behs:
+        lines.append(f"  {_mid(orchestrator)} --> {_mid(ordered[0])}")
+    for iid in out_ifs:
+        lines.append(f"  {_mid('BEH-publish')} --> {_mid(iid)}")
+
+    # Style classes (v2 dashboard palette).
+    lines.append(
+        "  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;"
+    )
+    lines.append(
+        "  classDef orch fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,"
+        "stroke-width:2px;"
+    )
+    lines.append(
+        "  classDef stage fill:#1e293b,stroke:#6639ba,color:#e6edf3;"
+    )
+    lines.append(
+        "  classDef iface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;"
+    )
+    if trig_actors:
+        lines.append(
+            "  class " + ",".join(_mid(a) for a in trig_actors) + " actor;"
+        )
+    if orchestrator in behs:
+        lines.append(f"  class {_mid(orchestrator)} orch;")
+    if ordered:
+        lines.append("  class " + ",".join(_mid(s) for s in ordered) + " stage;")
+    if out_ifs:
+        lines.append(
+            "  class " + ",".join(_mid(i) for i in out_ifs) + " iface;"
+        )
+
+    return "\n".join(lines), sorted(refs)
+
+
 def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
     """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
     views = {
         "conops": ("Concept of Operations", _mermaid_conops),
+        "pipeline": ("CAP-PB Pipeline Flow", _mermaid_pipeline),
         "functional": ("Functional Analysis", _mermaid_functional),
         "logical": ("Logical Architecture", _mermaid_logical),
         "use_cases": ("Use Cases", _mermaid_use_cases),
@@ -741,6 +895,7 @@ h3.gap-header { margin:18px 0 8px; font-size:12px; text-transform:uppercase; let
   <a class="nav-item" data-nav="gaps">Typed Gaps</a>
   <details open><summary style="pointer-events:none">SE Views</summary>
     <a class="entity-link" data-se="conops">Concept of Operations<span class="cid">conops</span></a>
+    <a class="entity-link" data-se="pipeline">CAP-PB Pipeline Flow<span class="cid">pipeline</span></a>
     <a class="entity-link" data-se="functional">Functional Analysis<span class="cid">functional</span></a>
     <a class="entity-link" data-se="logical">Logical Architecture<span class="cid">logical</span></a>
     <a class="entity-link" data-se="use_cases">Use Cases<span class="cid">use_cases</span></a>

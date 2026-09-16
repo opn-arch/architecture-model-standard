@@ -248,12 +248,14 @@
         "gap_count": 0,
         "id": "BEH-cluster",
         "inbound": [
+          "BEH-derive-promises",
           "CAP-PB"
         ],
         "kind": "behavior",
         "module_count": 0,
         "name": "cluster_modules_into_components",
         "outbound": [
+          "BEH-link",
           "COMP-c5a72728"
         ],
         "promise_count": 4,
@@ -299,12 +301,14 @@
         "gap_count": 0,
         "id": "BEH-containerize",
         "inbound": [
+          "BEH-link",
           "CAP-PB"
         ],
         "kind": "behavior",
         "module_count": 0,
         "name": "containerize_components",
         "outbound": [
+          "BEH-verify",
           "COMP-c5a72728"
         ],
         "promise_count": 3,
@@ -350,12 +354,14 @@
         "gap_count": 0,
         "id": "BEH-derive-promises",
         "inbound": [
+          "BEH-scan",
           "CAP-PB"
         ],
         "kind": "behavior",
         "module_count": 0,
         "name": "derive_promises_from_scan",
         "outbound": [
+          "BEH-cluster",
           "COMP-c5a72728"
         ],
         "promise_count": 3,
@@ -414,12 +420,14 @@
         "gap_count": 0,
         "id": "BEH-link",
         "inbound": [
+          "BEH-cluster",
           "CAP-PB"
         ],
         "kind": "behavior",
         "module_count": 0,
         "name": "link_components_via_edges",
         "outbound": [
+          "BEH-containerize",
           "COMP-c5a72728"
         ],
         "promise_count": 4,
@@ -480,6 +488,7 @@
         "gap_count": 0,
         "id": "BEH-publish",
         "inbound": [
+          "BEH-verify",
           "CAP-PB"
         ],
         "kind": "behavior",
@@ -495,6 +504,17 @@
       },
       {
         "by_attr": {
+          "delivers": [
+            {
+              "content": [
+                "Executes stages in strict linear order: scan -> derive-promises -> cluster -> link -> containerize -> verify -> publish. Each stage's output is the next stage's input."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-run-pipeline-sequence",
+              "provenance": "2026-09-16 CAP-PB flow triggers",
+              "status": "verified"
+            }
+          ],
           "intent": [
             {
               "content": [
@@ -543,7 +563,7 @@
           "BEH-scan",
           "COMP-c5a72728"
         ],
-        "promise_count": 3,
+        "promise_count": 4,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
@@ -593,6 +613,7 @@
         "module_count": 0,
         "name": "scan_python_source_tree",
         "outbound": [
+          "BEH-derive-promises",
           "COMP-c5a72728"
         ],
         "promise_count": 3,
@@ -650,12 +671,14 @@
         "gap_count": 0,
         "id": "BEH-verify",
         "inbound": [
+          "BEH-containerize",
           "CAP-PB"
         ],
         "kind": "behavior",
         "module_count": 0,
         "name": "verify_structural_invariants",
         "outbound": [
+          "BEH-publish",
           "COMP-c5a72728"
         ],
         "promise_count": 4,
@@ -9196,6 +9219,24 @@
       "narrative": "Logical architecture \u2014 layer\u2192component allocation and layer\u2192layer dependency graph. Five layers separate concerns: L-standard (schema + core), L-tooling (pipeline_v3), L-view (viewer + build), L-authoring (fragment YAMLs), L-llm (Part 3). Each layer subgraphs its owned components; edges between layers show depends-on / consumes / produces relationships.",
       "title": "Logical Architecture"
     },
+    "pipeline": {
+      "entity_refs": [
+        "ACT-ci",
+        "ACT-developer",
+        "BEH-cluster",
+        "BEH-containerize",
+        "BEH-derive-promises",
+        "BEH-link",
+        "BEH-publish",
+        "BEH-run-pipeline",
+        "BEH-scan",
+        "BEH-verify",
+        "IF-model"
+      ],
+      "mermaid": "flowchart LR\n  subgraph ACTORS[\"Actors\"]\n    nACTci((\"ACT-ci<br/>CI / Gate Enforcer\"))\n    nACTdeveloper((\"ACT-developer<br/>Developer\"))\n  end\n  nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n  subgraph STAGES[\"CAP-PB stages (triggers)\"]\n    direction LR\n    nBEHscan[\"BEH-scan<br/>scan_python_source_tree\"]\n    nBEHderivepromises[\"BEH-derive-promises<br/>derive_promises_from_scan\"]\n    nBEHcluster[\"BEH-cluster<br/>cluster_modules_into_components\"]\n    nBEHlink[\"BEH-link<br/>link_components_via_edges\"]\n    nBEHcontainerize[\"BEH-containerize<br/>containerize_components\"]\n    nBEHverify[\"BEH-verify<br/>verify_structural_invariants\"]\n    nBEHpublish[\"BEH-publish<br/>publish_v3_model_yaml\"]\n    nBEHscan --> nBEHderivepromises\n    nBEHderivepromises --> nBEHcluster\n    nBEHcluster --> nBEHlink\n    nBEHlink --> nBEHcontainerize\n    nBEHcontainerize --> nBEHverify\n    nBEHverify --> nBEHpublish\n  end\n  nIFmodel[/\"IF-model<br/>architecture_model_yaml\"/]\n  nACTci --> nBEHrunpipeline\n  nACTdeveloper --> nBEHrunpipeline\n  nBEHrunpipeline --> nBEHscan\n  nBEHpublish --> nIFmodel\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef orch fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef stage fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef iface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  class nACTci,nACTdeveloper actor;\n  class nBEHrunpipeline orch;\n  class nBEHscan,nBEHderivepromises,nBEHcluster,nBEHlink,nBEHcontainerize,nBEHverify,nBEHpublish stage;\n  class nIFmodel iface;",
+      "narrative": "CAP-PB extract pipeline \u2014 the 7-stage flow. Actors trigger BEH-run-pipeline, which invokes stage 1 (BEH-scan); each stage triggers the next until BEH-publish materializes IF-model on disk. Nodes are color-coded by kind (actor, orchestrator, stage, output interface). Click any node's chip below to open its entity page and see verified_by, provides, and failure_modes promises.",
+      "title": "CAP-PB Pipeline Flow"
+    },
     "use_cases": {
       "entity_refs": [
         "ACT-ci",
@@ -9226,7 +9267,7 @@
   "status_hist": {
     "open": 615,
     "typed-gap": 54,
-    "verified": 103
+    "verified": 104
   },
   "top_by_gaps": [
     {
@@ -9296,7 +9337,7 @@
     "components": 25,
     "entities": 67,
     "gaps": 60,
-    "promises": 772,
-    "relationships": 121
+    "promises": 773,
+    "relationships": 127
   }
 }
