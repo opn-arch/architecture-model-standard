@@ -215,15 +215,6 @@ SE_VIEW_NARRATIVES = {
         "ACT-developer and ACT-se share BEH-view-browse (both open the "
         "viewer to review the model)."
     ),
-    "pipeline": (
-        "CAP-PB extract pipeline \u2014 the 7-stage flow. Actors trigger "
-        "BEH-run-pipeline, which invokes stage 1 (BEH-scan); each stage "
-        "triggers the next until BEH-publish materializes IF-model on "
-        "disk. Nodes are color-coded by kind (actor, orchestrator, "
-        "stage, output interface). Click any node's chip below to open "
-        "its entity page and see verified_by, provides, and failure_modes "
-        "promises."
-    ),
 }
 
 
@@ -461,15 +452,18 @@ def _mermaid_use_cases(
 
 
 def _mermaid_pipeline(
-    entities_by_kind: dict, relationships: list
-) -> tuple[str, list[str]]:
-    """CAP-PB extract pipeline flow — actors, orchestrator, 7 stages, IF-model.
+    entities_by_kind: dict, relationships: list, cap_id: str = "CAP-PB"
+) -> tuple[str, list[str]] | None:
+    """Capability-scoped flow diagram — actors, entry behaviors, stages, outputs.
 
-    Renders a flowchart LR with per-kind color coding (v2 dashboard style):
-    actors (round), orchestrator (rect emphasized), stages (rect grouped in
-    subgraph, ordered via topological sort of ``triggers`` edges), and the
-    output interface (parallelogram). Deterministic: stages sorted by
-    topological order derived from ``triggers``, tied by id.
+    Generalized principle: any capability whose contained behaviors have
+    internal ``triggers`` edges gets an inline Mermaid flow card. Returns
+    ``None`` when the capability has no such edges (no flow to render).
+
+    Layout: flowchart LR with per-kind color coding (v2 dashboard palette).
+    Actors (round) → entry behaviors (rect emphasized, inbound triggers
+    from actors) → stages (rect grouped in subgraph, topologically sorted)
+    → produced interfaces (parallelogram). Deterministic tiebreak by id.
     """
     behs = entities_by_kind["behaviors"]
     acts = entities_by_kind["actors"]
@@ -477,24 +471,43 @@ def _mermaid_pipeline(
     caps = entities_by_kind["capabilities"]
     refs: set[str] = set()
 
-    # Discover CAP-PB stages via `contains` relationships.
-    cap_id = "CAP-PB"
     if cap_id not in caps:
-        return "flowchart LR\n  empty([CAP-PB not modeled])", []
-    stage_ids: list[str] = []
+        return None
+
+    # Contained behaviors of this capability.
+    contained: list[str] = []
     for r in relationships:
         f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
         if f == cap_id and rt == "contains" and t in behs:
-            stage_ids.append(t)
-    orchestrator = "BEH-run-pipeline"
-    stages_only = [s for s in stage_ids if s != orchestrator]
+            contained.append(t)
+    if not contained:
+        return None
+    contained_set = set(contained)
+
+    # Internal triggers edges (both endpoints in contained_set).
+    internal_edges: list[tuple[str, str]] = []
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if rt == "triggers" and f in contained_set and t in contained_set:
+            internal_edges.append((f, t))
+    if not internal_edges:
+        return None
+
+    # Entry behaviors: contained behaviors triggered by any actor.
+    entry_behs = sorted({
+        r["to"] for r in relationships
+        if r.get("type") == "triggers"
+        and r.get("to") in contained_set
+        and r.get("from") in acts
+    })
+    entry_set = set(entry_behs)
+    stages_only = [s for s in contained if s not in entry_set]
 
     # Topological sort stages by `triggers` edges (deterministic tiebreak by id).
     trig: dict[str, list[str]] = {s: [] for s in stages_only}
     indeg: dict[str, int] = {s: 0 for s in stages_only}
-    for r in relationships:
-        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
-        if rt == "triggers" and f in trig and t in indeg:
+    for f, t in internal_edges:
+        if f in trig and t in indeg:
             trig[f].append(t)
             indeg[t] += 1
     ordered: list[str] = []
@@ -512,21 +525,22 @@ def _mermaid_pipeline(
         if s not in ordered:
             ordered.append(s)
 
-    # Actors that trigger the orchestrator.
+    # Actors that trigger any entry behavior.
     trig_actors = sorted({
         r["from"] for r in relationships
         if r.get("type") == "triggers"
-        and r.get("to") == orchestrator
+        and r.get("to") in entry_set
         and r.get("from") in acts
     })
 
-    # Output interface produced by BEH-publish.
-    out_ifs = sorted({
-        r["to"] for r in relationships
+    # Output interfaces produced by any contained behavior.
+    out_ifs_pairs = sorted({
+        (r["from"], r["to"]) for r in relationships
         if r.get("type") == "produces"
-        and r.get("from") == "BEH-publish"
+        and r.get("from") in contained_set
         and r.get("to") in ifs
     })
+    out_ifs = sorted({t for _, t in out_ifs_pairs})
 
     lines = ["flowchart LR"]
     # Actors subgraph.
@@ -537,16 +551,18 @@ def _mermaid_pipeline(
             lines.append(f'    {_mid(aid)}(("{_mesc(aid)}<br/>{_mesc(name)}"))')
             refs.add(aid)
         lines.append("  end")
-    # Orchestrator.
-    if orchestrator in behs:
-        oname = behs[orchestrator].get("name", orchestrator)
+    # Entry behaviors (emphasized).
+    for eid in entry_behs:
+        ename = behs[eid].get("name", eid)
         lines.append(
-            f'  {_mid(orchestrator)}[["{_mesc(orchestrator)}<br/>{_mesc(oname)}"]]'
+            f'  {_mid(eid)}[["{_mesc(eid)}<br/>{_mesc(ename)}"]]'
         )
-        refs.add(orchestrator)
+        refs.add(eid)
     # Stage subgraph.
     if ordered:
-        lines.append('  subgraph STAGES["CAP-PB stages (triggers)"]')
+        lines.append(
+            f'  subgraph STAGES["{_mesc(cap_id)} stages (triggers)"]'
+        )
         lines.append("    direction LR")
         for sid in ordered:
             sname = behs[sid].get("name", sid)
@@ -554,25 +570,34 @@ def _mermaid_pipeline(
                 f'    {_mid(sid)}["{_mesc(sid)}<br/>{_mesc(sname)}"]'
             )
             refs.add(sid)
-        # Chain triggers within subgraph.
+        # Chain triggers within subgraph (stage-to-stage internal edges).
         for i in range(len(ordered) - 1):
             a, b = ordered[i], ordered[i + 1]
-            # Only draw edge if it exists in model.
             if b in trig.get(a, []):
                 lines.append(f"    {_mid(a)} --> {_mid(b)}")
         lines.append("  end")
-    # Output interface.
+    # Output interface nodes.
     for iid in out_ifs:
         iname = ifs[iid].get("name", iid)
         lines.append(f'  {_mid(iid)}[/"{_mesc(iid)}<br/>{_mesc(iname)}"/]')
         refs.add(iid)
-    # Cross-subgraph edges.
+    # Cross-subgraph edges: actor -> each entry.
     for aid in trig_actors:
-        lines.append(f"  {_mid(aid)} --> {_mid(orchestrator)}")
-    if ordered and orchestrator in behs:
-        lines.append(f"  {_mid(orchestrator)} --> {_mid(ordered[0])}")
-    for iid in out_ifs:
-        lines.append(f"  {_mid('BEH-publish')} --> {_mid(iid)}")
+        for eid in entry_behs:
+            # Only emit if the model asserts this triggers edge.
+            if any(
+                r.get("type") == "triggers"
+                and r.get("from") == aid and r.get("to") == eid
+                for r in relationships
+            ):
+                lines.append(f"  {_mid(aid)} --> {_mid(eid)}")
+    # Entry -> first stage triggered by it (per model triggers).
+    for eid in entry_behs:
+        for tgt in sorted(t for f, t in internal_edges if f == eid):
+            lines.append(f"  {_mid(eid)} --> {_mid(tgt)}")
+    # Produced-by edges: each behavior -> its produced interface(s).
+    for f, t in out_ifs_pairs:
+        lines.append(f"  {_mid(f)} --> {_mid(t)}")
 
     # Style classes (v2 dashboard palette).
     lines.append(
@@ -592,8 +617,10 @@ def _mermaid_pipeline(
         lines.append(
             "  class " + ",".join(_mid(a) for a in trig_actors) + " actor;"
         )
-    if orchestrator in behs:
-        lines.append(f"  class {_mid(orchestrator)} orch;")
+    if entry_behs:
+        lines.append(
+            "  class " + ",".join(_mid(e) for e in entry_behs) + " orch;"
+        )
     if ordered:
         lines.append("  class " + ",".join(_mid(s) for s in ordered) + " stage;")
     if out_ifs:
@@ -608,7 +635,6 @@ def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
     """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
     views = {
         "conops": ("Concept of Operations", _mermaid_conops),
-        "pipeline": ("CAP-PB Pipeline Flow", _mermaid_pipeline),
         "functional": ("Functional Analysis", _mermaid_functional),
         "logical": ("Logical Architecture", _mermaid_logical),
         "use_cases": ("Use Cases", _mermaid_use_cases),
@@ -716,21 +742,29 @@ def _build_payload(model_path: Path) -> dict:
                     )
             outs_typed = sorted({t for t, _ in out_edges.get(eid, [])})
             ins_typed = sorted({s for s, _ in in_edges.get(eid, [])})
-            recs.append(
-                {
-                    "id": eid,
-                    "kind": _kind_singular(kind),
-                    "name": ent.get("name", eid),
-                    "root_prefix": ent.get("root_prefix", ""),
-                    "module_count": len(ent.get("module_names", []) or []),
-                    "promise_count": len(promises),
-                    "gap_count": gap_count,
-                    "by_attr": by_attr,
-                    "outbound": outs_typed,
-                    "inbound": ins_typed,
-                    "source": source_by_id.get(eid, ""),
-                }
-            )
+            rec = {
+                "id": eid,
+                "kind": _kind_singular(kind),
+                "name": ent.get("name", eid),
+                "root_prefix": ent.get("root_prefix", ""),
+                "module_count": len(ent.get("module_names", []) or []),
+                "promise_count": len(promises),
+                "gap_count": gap_count,
+                "by_attr": by_attr,
+                "outbound": outs_typed,
+                "inbound": ins_typed,
+                "source": source_by_id.get(eid, ""),
+            }
+            # Capability-scoped flow diagram (design principle: any
+            # capability whose contained behaviors carry triggers edges
+            # gets an inline Mermaid flow card in its entity page).
+            if kind == "capabilities":
+                flow = _mermaid_pipeline(entities_by_kind, relationships, eid)
+                if flow is not None:
+                    mmd, flow_refs = flow
+                    rec["flow_mermaid"] = mmd
+                    rec["flow_refs"] = flow_refs
+            recs.append(rec)
         entity_records[kind] = recs
 
     # Bump gap-type histogram + gap list with unrealized.
@@ -895,7 +929,6 @@ h3.gap-header { margin:18px 0 8px; font-size:12px; text-transform:uppercase; let
   <a class="nav-item" data-nav="gaps">Typed Gaps</a>
   <details open><summary style="pointer-events:none">SE Views</summary>
     <a class="entity-link" data-se="conops">Concept of Operations<span class="cid">conops</span></a>
-    <a class="entity-link" data-se="pipeline">CAP-PB Pipeline Flow<span class="cid">pipeline</span></a>
     <a class="entity-link" data-se="functional">Functional Analysis<span class="cid">functional</span></a>
     <a class="entity-link" data-se="logical">Logical Architecture<span class="cid">logical</span></a>
     <a class="entity-link" data-se="use_cases">Use Cases<span class="cid">use_cases</span></a>
@@ -935,22 +968,29 @@ function renderSidebar() {
     html += `</details>`;
   }
   host.innerHTML = html;
-  host.querySelectorAll('.entity-link').forEach(a => {
-    a.addEventListener('click', (ev) => {
+  // Event delegation: single listener survives re-renders and guarantees
+  // every entity-link responds. Replaces per-element attachment which was
+  // suspected of failing intermittently on component rows.
+  host.addEventListener('click', (ev) => {
+    const a = ev.target.closest('a.entity-link');
+    if (a && host.contains(a)) {
       ev.preventDefault(); ev.stopPropagation();
       if (a.dataset.id) selectEntity(a.dataset.id);
       else if (a.dataset.se) showSEView(a.dataset.se);
-    });
+      return;
+    }
+    const s = ev.target.closest('summary[data-kind]');
+    if (s && host.contains(s)) {
+      // Don't preventDefault — let <details> toggle naturally.
+      showKindList(s.dataset.kind);
+    }
   });
-  // Also wire the SE Views section (rendered before entity-groups).
+  // SE Views section lives OUTSIDE #entity-groups; wire separately.
   document.querySelectorAll('#sidebar .entity-link[data-se]').forEach(a => {
     a.addEventListener('click', (ev) => {
       ev.preventDefault(); ev.stopPropagation();
       showSEView(a.dataset.se);
     });
-  });
-  host.querySelectorAll('summary[data-kind]').forEach(s => {
-    s.addEventListener('click', () => showKindList(s.dataset.kind));
   });
   document.querySelectorAll('.nav-item').forEach(a => {
     a.addEventListener('click', (ev) => {
@@ -1071,80 +1111,119 @@ function badge(status) {
 
 function selectEntity(id) {
   const e = byId[id];
-  if (!e) return;
-  highlightNav(null, id);
-  const attrs = ['intent','delivers','provides'];
-  let html = `<div class="breadcrumb"><a data-nav="overview">Overview</a> / ${e.kind}s / ${e.id}</div>`;
-  html += `<h2 class="content-header">${escapeHtml(e.name)}</h2>`;
-  html += `<div class="subtitle">${e.id} &middot; ${e.kind}${e.root_prefix ? ' &middot; '+escapeHtml(e.root_prefix) : ''}<span class="source-tag">from ${escapeHtml(e.source)}</span></div>`;
-  html += `<div class="card"><h3>Summary</h3><div style="font-size:13px">${e.module_count} modules &middot; ${e.promise_count} promises &middot; ${e.gap_count} typed gaps</div></div>`;
-
-  const seen = new Set();
-  for (const attr of attrs) {
-    const rows = (e.by_attr[attr] || []);
-    seen.add(attr);
-    if (!rows.length) continue;
-    html += `<div class="card"><h3>${attr} (${rows.length})</h3>`;
-    for (const p of rows) {
-      const gap = p.gap_type ? `<span class="badge gap">${p.gap_type}</span>` : '';
-      html += `<div class="prom"><div class="row">${badge(p.status)}${gap}<span class="pid">${escapeHtml(p.id)}</span></div>` +
-              `<div class="content-text">${escapeHtml((p.content || []).join(', ')) || '<span class="empty">(empty)</span>'}</div>` +
-              `<div class="prov">${escapeHtml(p.provenance || '')}</div></div>`;
-    }
-    html += `</div>`;
+  if (!e) {
+    console.warn('selectEntity miss:', id, 'byId size:', Object.keys(byId).length);
+    return;
   }
-  for (const attr of Object.keys(e.by_attr)) {
-    if (seen.has(attr)) continue;
-    const rows = e.by_attr[attr];
-    html += `<div class="card"><h3>${attr} (${rows.length})</h3>`;
-    for (const p of rows) {
-      html += `<div class="prom"><div class="row">${badge(p.status)}<span class="pid">${escapeHtml(p.id)}</span></div>` +
-              `<div class="content-text">${escapeHtml((p.content || []).join(', '))}</div></div>`;
+  try {
+    highlightNav(null, id);
+    const attrs = ['intent','delivers','provides'];
+    let html = `<div class="breadcrumb"><a data-nav="overview">Overview</a> / ${e.kind}s / ${e.id}</div>`;
+    html += `<h2 class="content-header">${escapeHtml(e.name)}</h2>`;
+    html += `<div class="subtitle">${e.id} &middot; ${e.kind}${e.root_prefix ? ' &middot; '+escapeHtml(e.root_prefix) : ''}<span class="source-tag">from ${escapeHtml(e.source)}</span></div>`;
+    html += `<div class="card"><h3>Summary</h3><div style="font-size:13px">${e.module_count} modules &middot; ${e.promise_count} promises &middot; ${e.gap_count} typed gaps</div></div>`;
+
+    // Inline capability-scoped flow diagram (design principle: any
+    // capability whose contained behaviors have triggers edges gets an
+    // inline Mermaid flow card here). Rendered ABOVE promises because
+    // the flow is the primary insight for pipeline-shaped capabilities.
+    let flowDiagramId = null;
+    if (e.kind === 'capability' && e.flow_mermaid) {
+      flowDiagramId = `mmd-flow-${e.id}-${++_seRenderCounter}`;
+      html += `<div class="card"><h3>Flow (contained behaviors)</h3>` +
+              `<div class="mermaid-host" style="background:#0f172a;padding:12px;border-radius:6px;overflow-x:auto">` +
+              `<div id="${flowDiagramId}" class="mermaid">${escapeHtml(e.flow_mermaid)}</div>` +
+              `</div></div>`;
     }
-    html += `</div>`;
+
+    const seen = new Set();
+    for (const attr of attrs) {
+      const rows = (e.by_attr[attr] || []);
+      seen.add(attr);
+      if (!rows.length) continue;
+      html += `<div class="card"><h3>${attr} (${rows.length})</h3>`;
+      for (const p of rows) {
+        const gap = p.gap_type ? `<span class="badge gap">${p.gap_type}</span>` : '';
+        html += `<div class="prom"><div class="row">${badge(p.status)}${gap}<span class="pid">${escapeHtml(p.id)}</span></div>` +
+                `<div class="content-text">${escapeHtml((p.content || []).join(', ')) || '<span class="empty">(empty)</span>'}</div>` +
+                `<div class="prov">${escapeHtml(p.provenance || '')}</div></div>`;
+      }
+      html += `</div>`;
+    }
+    for (const attr of Object.keys(e.by_attr)) {
+      if (seen.has(attr)) continue;
+      const rows = e.by_attr[attr];
+      html += `<div class="card"><h3>${attr} (${rows.length})</h3>`;
+      for (const p of rows) {
+        html += `<div class="prom"><div class="row">${badge(p.status)}<span class="pid">${escapeHtml(p.id)}</span></div>` +
+                `<div class="content-text">${escapeHtml((p.content || []).join(', '))}</div></div>`;
+      }
+      html += `</div>`;
+    }
+
+    html += `<div class="card"><h3>Neighbors</h3>`;
+    html += `<div style="margin-bottom:6px;font-size:11px;color:var(--muted);text-transform:uppercase">Depends on (${e.outbound.length})</div><div class="chips" style="margin-bottom:12px">`;
+    html += e.outbound.length ? e.outbound.map(id => `<span class="chip" data-id="${id}">${id}</span>`).join('') : '<span class="empty">none</span>';
+    html += `</div><div style="margin-bottom:6px;font-size:11px;color:var(--muted);text-transform:uppercase">Depended on by (${e.inbound.length})</div><div class="chips">`;
+    html += e.inbound.length ? e.inbound.map(id => `<span class="chip" data-id="${id}">${id}</span>`).join('') : '<span class="empty">none</span>';
+    html += `</div></div>`;
+
+    const noteVal = notes[e.id] || '';
+    html += `<div class="card"><h3>Notes</h3>` +
+      `<textarea class="notes" id="notes-${e.id}" placeholder="Human notes, questions, TODOs \u2014 persisted to notes.yaml via Save button.">${escapeHtml(noteVal)}</textarea>` +
+      `<button class="save" id="save-btn">Save notes.yaml (download)</button>` +
+      `<div style="margin-top:6px;font-size:11px;color:var(--muted)">Option A: browser downloads full notes.yaml. Place in <code>.architecture/viewers/notes.yaml</code> and rebuild.</div></div>`;
+
+    document.getElementById('content').innerHTML = html;
+    document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => selectEntity(ch.dataset.id)));
+    document.querySelectorAll('.breadcrumb a').forEach(a => a.addEventListener('click', () => {
+      if (a.dataset.nav === 'overview') showOverview();
+    }));
+    const ta = document.getElementById(`notes-${e.id}`);
+    if (ta) {
+      ta.addEventListener('input', () => { notes[e.id] = ta.value; });
+    }
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn && ta) {
+      saveBtn.addEventListener('click', () => {
+        // Snapshot current textarea before download.
+        notes[e.id] = ta.value;
+        // Build YAML manually (deterministic, sorted).
+        const keys = Object.keys(notes).sort();
+        let yaml = "schema_version: '1.0'\\nnotes:\\n";
+        if (!keys.length) yaml += '  {}\\n';
+        for (const k of keys) {
+          const v = notes[k] || '';
+          if (!v.trim()) continue;
+          // Use YAML block scalar for multi-line safety.
+          yaml += `  ${k}: |\\n`;
+          for (const line of v.split('\\n')) yaml += `    ${line}\\n`;
+        }
+        const blob = new Blob([yaml], {type: 'text/yaml'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'notes.yaml';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    // Render inline Mermaid flow (after content injection so element exists).
+    if (flowDiagramId && window.mermaid) {
+      const el = document.getElementById(flowDiagramId);
+      if (el) {
+        mermaid.run({ nodes: [el] }).catch(err => {
+          console.error('flow mermaid render failed for', e.id, err);
+          el.innerHTML = `<pre style="color:var(--muted);font-size:11px">Mermaid error: ${escapeHtml(String(err))}</pre>`;
+        });
+      }
+    }
+  } catch (err) {
+    console.error('selectEntity render failed for', id, err);
+    document.getElementById('content').innerHTML =
+      `<div class="card"><h2>Render error</h2><div class="subtitle">${escapeHtml(id)}</div>` +
+      `<pre style="color:var(--muted);white-space:pre-wrap">${escapeHtml(String(err && err.stack || err))}</pre></div>`;
   }
-
-  html += `<div class="card"><h3>Neighbors</h3>`;
-  html += `<div style="margin-bottom:6px;font-size:11px;color:var(--muted);text-transform:uppercase">Depends on (${e.outbound.length})</div><div class="chips" style="margin-bottom:12px">`;
-  html += e.outbound.length ? e.outbound.map(id => `<span class="chip" data-id="${id}">${id}</span>`).join('') : '<span class="empty">none</span>';
-  html += `</div><div style="margin-bottom:6px;font-size:11px;color:var(--muted);text-transform:uppercase">Depended on by (${e.inbound.length})</div><div class="chips">`;
-  html += e.inbound.length ? e.inbound.map(id => `<span class="chip" data-id="${id}">${id}</span>`).join('') : '<span class="empty">none</span>';
-  html += `</div></div>`;
-
-  const noteVal = notes[e.id] || '';
-  html += `<div class="card"><h3>Notes</h3>` +
-    `<textarea class="notes" id="notes-${e.id}" placeholder="Human notes, questions, TODOs — persisted to notes.yaml via Save button.">${escapeHtml(noteVal)}</textarea>` +
-    `<button class="save" id="save-btn">Save notes.yaml (download)</button>` +
-    `<div style="margin-top:6px;font-size:11px;color:var(--muted)">Option A: browser downloads full notes.yaml. Place in <code>.architecture/viewers/notes.yaml</code> and rebuild.</div></div>`;
-
-  document.getElementById('content').innerHTML = html;
-  document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => selectEntity(ch.dataset.id)));
-  document.querySelectorAll('.breadcrumb a').forEach(a => a.addEventListener('click', () => {
-    if (a.dataset.nav === 'overview') showOverview();
-  }));
-  const ta = document.getElementById(`notes-${e.id}`);
-  ta.addEventListener('input', () => { notes[e.id] = ta.value; });
-  document.getElementById('save-btn').addEventListener('click', () => {
-    // Snapshot current textarea before download.
-    notes[e.id] = ta.value;
-    // Build YAML manually (deterministic, sorted).
-    const keys = Object.keys(notes).sort();
-    let yaml = "schema_version: '1.0'\\nnotes:\\n";
-    if (!keys.length) yaml += '  {}\\n';
-    for (const k of keys) {
-      const v = notes[k] || '';
-      if (!v.trim()) continue;
-      // Use YAML block scalar for multi-line safety.
-      yaml += `  ${k}: |\\n`;
-      for (const line of v.split('\\n')) yaml += `    ${line}\\n`;
-    }
-    const blob = new Blob([yaml], {type: 'text/yaml'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'notes.yaml';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
 }
 
 renderSidebar();
