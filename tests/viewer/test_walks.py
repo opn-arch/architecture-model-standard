@@ -518,6 +518,180 @@ def test_stamp_compliance_gaps_annotates_records(bv):
 
 
 # ---------------------------------------------------------------------------
+# Evidence tiers (L15 refinement).
+# ---------------------------------------------------------------------------
+
+def test_promise_tier_runtime_on_test_path(bv):
+    assert bv._promise_tier({"provenance": "tests/viewer/test_walks.py cites this"}) == "runtime"
+
+
+def test_promise_tier_runtime_on_line_ref(bv):
+    assert bv._promise_tier({"provenance": "cited in publish.py:107"}) == "runtime"
+
+
+def test_promise_tier_runtime_on_pytest(bv):
+    assert bv._promise_tier({"provenance": "pytest harness covers this"}) == "runtime"
+
+
+def test_promise_tier_inherited(bv):
+    assert bv._promise_tier({"provenance": "SLO inherited from realizes-target COMP-x"}) == "inherited"
+
+
+def test_promise_tier_design(bv):
+    assert bv._promise_tier({"provenance": "Design-only (Part 3 deferred) — compatible-by-construction"}) == "design"
+
+
+def test_promise_tier_design_case_insensitive(bv):
+    assert bv._promise_tier({"provenance": "verified BY CONSTRUCTION"}) == "design"
+
+
+def test_promise_tier_asserted_default(bv):
+    assert bv._promise_tier({"provenance": "2026-09-15 SE walk enrichment"}) == "asserted"
+
+
+def test_promise_tier_asserted_when_empty(bv):
+    assert bv._promise_tier({}) == "asserted"
+    assert bv._promise_tier({"provenance": ""}) == "asserted"
+    assert bv._promise_tier({"provenance": None}) == "asserted"
+
+
+def test_promise_tier_runtime_priority_over_design(bv):
+    """Runtime tokens outrank design tokens (test citation with hedge)."""
+    p = {"provenance": "tests/x.py:5 verifies (design-only fallback)"}
+    assert bv._promise_tier(p) == "runtime"
+
+
+# ---------------------------------------------------------------------------
+# _entity_has_compliance_evidence(strong_only=...)
+# ---------------------------------------------------------------------------
+
+def test_has_evidence_weak_mode_accepts_asserted(bv):
+    rec = {"by_attr": {"verification": [
+        {"status": "verified", "provenance": "asserted only"}
+    ]}}
+    assert bv._entity_has_compliance_evidence(rec) is True
+    assert bv._entity_has_compliance_evidence(rec, strong_only=False) is True
+
+
+def test_has_evidence_strong_mode_rejects_asserted(bv):
+    rec = {"by_attr": {"verification": [
+        {"status": "verified", "provenance": "SE walk (no citation)"}
+    ]}}
+    assert bv._entity_has_compliance_evidence(rec, strong_only=True) is False
+
+
+def test_has_evidence_strong_mode_rejects_design(bv):
+    rec = {"by_attr": {"slos": [
+        {"status": "verified", "provenance": "design-only Part 3 deferred"}
+    ]}}
+    assert bv._entity_has_compliance_evidence(rec, strong_only=True) is False
+
+
+def test_has_evidence_strong_mode_accepts_runtime(bv):
+    rec = {"by_attr": {"verification": [
+        {"status": "verified", "provenance": "tests/foo/test_bar.py::test_baz"}
+    ]}}
+    assert bv._entity_has_compliance_evidence(rec, strong_only=True) is True
+
+
+def test_has_evidence_strong_mode_rejects_inherited(bv):
+    """Inherited evidence still delegates — strong mode requires runtime."""
+    rec = {"by_attr": {"slos": [
+        {"status": "verified", "provenance": "inherited from realizes-target"}
+    ]}}
+    assert bv._entity_has_compliance_evidence(rec, strong_only=True) is False
+
+
+# ---------------------------------------------------------------------------
+# _evidence_tier_summary
+# ---------------------------------------------------------------------------
+
+def test_tier_summary_counts_verified_only(bv):
+    records = {
+        "components": [{
+            "id": "COMP-mix", "kind": "component", "name": "Mix",
+            "by_attr": {
+                "verification": [
+                    {"status": "verified", "provenance": "tests/x.py"},
+                    {"status": "verified", "provenance": "design-only"},
+                    {"status": "asserted", "provenance": "tests/y.py"},  # ignored
+                ],
+                "slos": [
+                    {"status": "verified", "provenance": "inherited from CAP-P"},
+                ],
+                "intent": [  # not a compliance attr → ignored
+                    {"status": "verified", "provenance": "tests/z.py"},
+                ],
+            },
+        }],
+    }
+    summary = bv._evidence_tier_summary(records)
+    assert summary == {"COMP-mix": {"design": 1, "inherited": 1, "runtime": 1}}
+
+
+def test_tier_summary_omits_entities_without_evidence(bv):
+    records = {
+        "components": [
+            {"id": "COMP-empty", "kind": "component", "name": "E", "by_attr": {}},
+            {"id": "COMP-full", "kind": "component", "name": "F", "by_attr": {
+                "verification": [{"status": "verified", "provenance": "tests/a.py"}]
+            }},
+        ]
+    }
+    summary = bv._evidence_tier_summary(records)
+    assert "COMP-empty" not in summary
+    assert summary["COMP-full"] == {"runtime": 1}
+
+
+def test_tier_summary_deterministic(bv):
+    _, _, _, _, records = _make_fixture()
+    assert bv._evidence_tier_summary(records) == bv._evidence_tier_summary(records)
+
+
+# ---------------------------------------------------------------------------
+# _constraint_compliance_gaps(strong_only=...)
+# ---------------------------------------------------------------------------
+
+def test_gaps_strong_mode_flags_design_only_evidence(bv):
+    E, R, _, _, records = _make_fixture()
+    # Upgrade COMP-y's evidence to design-only (weak).
+    comp_y = next(r for r in records["components"] if r["id"] == "COMP-y")
+    comp_y["by_attr"]["verification"] = [
+        {"status": "verified", "provenance": "design-only Part 3 deferred"}
+    ]
+    # Weak mode: COMP-y still passes.
+    weak = bv._constraint_compliance_gaps(E, R, records, strong_only=False)
+    assert "COMP-y" not in {g["entity_id"] for g in weak}
+    # Strong mode: COMP-y now flagged.
+    strong = bv._constraint_compliance_gaps(E, R, records, strong_only=True)
+    strong_ids = {g["entity_id"] for g in strong}
+    assert "COMP-y" in strong_ids
+    assert "COMP-x" in strong_ids  # still gap in both modes
+    # Reason string carries the strong-mode hint.
+    strong_y = next(g for g in strong if g["entity_id"] == "COMP-y")
+    assert "runtime-tier" in strong_y["reason"]
+
+
+def test_gaps_strong_mode_accepts_runtime_evidence(bv):
+    E, R, _, _, records = _make_fixture()
+    # Give COMP-x a runtime-tier promise.
+    comp_x = next(r for r in records["components"] if r["id"] == "COMP-x")
+    comp_x["by_attr"]["verification"] = [
+        {"status": "verified", "provenance": "tests/pipeline_v3/test_x.py::test_it"}
+    ]
+    strong = bv._constraint_compliance_gaps(E, R, records, strong_only=True)
+    assert "COMP-x" not in {g["entity_id"] for g in strong}
+
+
+def test_gaps_default_matches_weak_mode(bv):
+    """strong_only default is False → identical to explicit False."""
+    E, R, _, _, records = _make_fixture()
+    a = bv._constraint_compliance_gaps(E, R, records)
+    b = bv._constraint_compliance_gaps(E, R, records, strong_only=False)
+    assert a == b
+
+
+# ---------------------------------------------------------------------------
 # Determinism (byte-equal on repeated invocation).
 # ---------------------------------------------------------------------------
 

@@ -1217,21 +1217,89 @@ _COMPLIANCE_EVIDENCE_ATTRS = frozenset({
 })
 
 
-def _entity_has_compliance_evidence(entity_rec: dict) -> bool:
-    """True when entity has \u22651 verified promise whose attribute is in
-    :data:`_COMPLIANCE_EVIDENCE_ATTRS`. See L12 for rationale."""
+# Evidence tiers (L14 → L15 refinement). Classifier reads a promise's
+# provenance string and returns one of four tiers, in decreasing order of
+# audit strength:
+#   runtime   — cites a test file / :line reference / harness invocation
+#   inherited — evidence is delegated via a realizes-target's promise
+#   design    — "by construction" / "design-only" / "Part 3 deferred"
+#   asserted  — plain claim with no verification signal (default)
+_TIER_RUNTIME_TOKENS = ("tests/", ".py:", "pytest", "harness", "cited in")
+_TIER_INHERITED_TOKENS = ("inherited", "via realizes", "from realizes-target",
+                          "delegated to")
+_TIER_DESIGN_TOKENS = ("design-only", "by construction",
+                       "compatible-by-construction", "part 3 deferred")
+
+
+def _promise_tier(promise: dict) -> str:
+    """Classify a promise into an evidence tier (see L14/L15).
+
+    Reads ``promise['provenance']`` case-insensitively and returns one of
+    ``"runtime"``, ``"inherited"``, ``"design"``, ``"asserted"``. Priority
+    order is runtime > inherited > design > asserted so that a citation
+    with a "by construction" hedge still classifies as runtime.
+    """
+    prov = str(promise.get("provenance") or "").lower()
+    if not prov:
+        return "asserted"
+    if any(tok in prov for tok in _TIER_RUNTIME_TOKENS):
+        return "runtime"
+    if any(tok in prov for tok in _TIER_INHERITED_TOKENS):
+        return "inherited"
+    if any(tok in prov for tok in _TIER_DESIGN_TOKENS):
+        return "design"
+    return "asserted"
+
+
+def _entity_has_compliance_evidence(
+    entity_rec: dict, strong_only: bool = False
+) -> bool:
+    """True when entity has \u22651 verified promise on a compliance-evidence
+    attribute. See L12 (universal-evidence rule) and L15 (tier refinement).
+
+    When ``strong_only=True`` (L15 mode), only runtime-tier promises
+    count \u2014 raises the audit bar so "compatibility by construction"
+    stops looking identical to "test citation".
+    """
     by_attr = entity_rec.get("by_attr", {})
     for attr in _COMPLIANCE_EVIDENCE_ATTRS:
         for p in by_attr.get(attr, []):
-            if p.get("status") == "verified":
-                return True
+            if p.get("status") != "verified":
+                continue
+            if strong_only and _promise_tier(p) != "runtime":
+                continue
+            return True
     return False
+
+
+def _evidence_tier_summary(entity_records: dict) -> dict:
+    """Per-entity tier histogram over verified compliance-attr promises.
+
+    Returns ``{entity_id: {tier: count, ...}}`` for every entity that has
+    at least one verified compliance-evidence promise. Entities with no
+    such promises are omitted (matches the audit surface). Tier keys are
+    always the four canonical tiers when present.
+    """
+    summary: dict[str, dict[str, int]] = {}
+    for kind, recs in entity_records.items():
+        for r in recs:
+            counts: dict[str, int] = {}
+            for attr in _COMPLIANCE_EVIDENCE_ATTRS:
+                for p in r.get("by_attr", {}).get(attr, []):
+                    if p.get("status") != "verified":
+                        continue
+                    tier = _promise_tier(p)
+                    counts[tier] = counts.get(tier, 0) + 1
+            if counts:
+                summary[r["id"]] = dict(sorted(counts.items()))
+    return dict(sorted(summary.items()))
 
 
 def _constraint_compliance_gaps(
     entities_by_kind: dict,
     relationships: list,
     entity_records: dict,
+    strong_only: bool = False,
 ) -> list[dict]:
     """7th walk: for each constraint, walk 2-hop impact (same shape as
     ``_mermaid_constraint_impact``) and report every reachable entity
@@ -1239,6 +1307,11 @@ def _constraint_compliance_gaps(
 
     Uses the pre-built ``entity_records`` (post-``by_attr``) so we can
     check verified-promise coverage per entity without re-parsing.
+
+    When ``strong_only=True`` (L15 mode), only runtime-tier promises
+    count as evidence; ``design``/``inherited``/``asserted``-tier
+    promises become gaps. Default preserves L12 behavior for
+    backward-compat.
 
     Returns a deterministic list of
     ``{constraint_id, constraint_name, entity_id, entity_kind,
@@ -1290,18 +1363,21 @@ def _constraint_compliance_gaps(
             rec = rec_by_id.get(eid)
             if rec is None:
                 continue
-            if _entity_has_compliance_evidence(rec):
+            if _entity_has_compliance_evidence(rec, strong_only=strong_only):
                 continue
+            reason = (
+                f"no verified promise with attribute in "
+                f"{sorted(_COMPLIANCE_EVIDENCE_ATTRS)}"
+            )
+            if strong_only:
+                reason += " (runtime-tier required; design/inherited/asserted do not count)"
             gaps.append({
                 "constraint_id": cid,
                 "constraint_name": cname,
                 "entity_id": eid,
                 "entity_kind": rec.get("kind", "?"),
                 "entity_name": rec.get("name", eid),
-                "reason": (
-                    f"no verified promise with attribute in "
-                    f"{sorted(_COMPLIANCE_EVIDENCE_ATTRS)}"
-                ),
+                "reason": reason,
             })
     return sorted(
         gaps,
