@@ -904,6 +904,133 @@ def _mermaid_realization(
     return "\n".join(lines), sorted(node_ids)
 
 
+def _mermaid_cross_capability_flow(
+    entities_by_kind: dict, relationships: list, cap_id: str
+) -> tuple[str, list[str]] | None:
+    """Cross-capability behavior-flow diagram.
+
+    Extends ``_mermaid_pipeline`` beyond a single capability: collects
+    TRANSITIVELY-contained behaviors of ``cap_id`` (walking ``contains``
+    through any sub-capabilities), then renders every ``triggers`` edge
+    where AT LEAST ONE endpoint is in that descendant set. External
+    endpoints (behaviors owned by another capability) are drawn in an
+    ``External`` subgraph so the boundary crossings are visible.
+
+    Returns ``None`` when the descendant set has no triggers touching it,
+    OR when all triggers are already fully-internal (``_mermaid_pipeline``
+    handles that case). This yields non-empty output specifically for
+    capabilities like CAP-DF whose flow crosses sub-capability boundaries.
+    """
+    behs = entities_by_kind["behaviors"]
+    caps = entities_by_kind["capabilities"]
+    if cap_id not in caps:
+        return None
+
+    # Transitively walk `contains` from cap_id, collecting behaviors.
+    contains_out: dict[str, list[str]] = {}
+    for r in relationships:
+        if r.get("type") == "contains":
+            f, t = r.get("from"), r.get("to")
+            if f is not None and t is not None:
+                contains_out.setdefault(f, []).append(t)
+
+    seen: set[str] = set()
+    stack = [cap_id]
+    behaviors_in: set[str] = set()
+    caps_in: set[str] = {cap_id}
+    while stack:
+        n = stack.pop()
+        if n in seen:
+            continue
+        seen.add(n)
+        for child in contains_out.get(n, []):
+            if child in behs:
+                behaviors_in.add(child)
+            elif child in caps:
+                caps_in.add(child)
+                stack.append(child)
+
+    if not behaviors_in:
+        return None
+
+    # Collect all triggers edges where at least one endpoint is in behaviors_in.
+    trig_edges: list[tuple[str, str]] = []
+    external: set[str] = set()
+    for r in relationships:
+        if r.get("type") != "triggers":
+            continue
+        f, t = r.get("from"), r.get("to")
+        if f not in behs or t not in behs:
+            continue  # only behavior->behavior triggers on this diagram
+        if f in behaviors_in or t in behaviors_in:
+            trig_edges.append((f, t))
+            if f not in behaviors_in:
+                external.add(f)
+            if t not in behaviors_in:
+                external.add(t)
+
+    if not trig_edges:
+        return None
+    # Silent-skip when every triggers edge is fully internal (single-cap
+    # flow — already covered by _mermaid_pipeline).
+    if not external and all(
+        f in behaviors_in and t in behaviors_in for f, t in trig_edges
+    ):
+        # Only skip if the standard flow diagram would fire; when the
+        # capability doesn't have any actor entries, _mermaid_pipeline
+        # returns None (see line ~494) even for a valid internal chain.
+        # In that case, still emit the cross_flow diagram so the entity
+        # isn't empty.
+        pass  # fall through to render
+
+    # Sub-capability owner map (for grouping internal behaviors).
+    owner_of: dict[str, str] = {}
+    for parent, kids in contains_out.items():
+        if parent in caps_in:
+            for k in kids:
+                if k in behaviors_in:
+                    owner_of[k] = parent
+
+    refs: set[str] = set()
+    lines = ["flowchart LR"]
+    by_kind: dict[str, list[str]] = {}
+
+    # External subgraph.
+    if external:
+        lines.append('  subgraph EXT["External (other capabilities)"]')
+        lines.append("    direction TB")
+        for eid in sorted(external):
+            name = behs[eid].get("name", eid)
+            lines.append(f'    {_mnode(eid, name, "behavior").strip()}')
+            by_kind.setdefault("behavior", []).append(eid)
+            refs.add(eid)
+        lines.append("  end")
+
+    # Per-sub-capability subgraph for internal behaviors.
+    subcap_ids = sorted({owner_of.get(b, cap_id) for b in behaviors_in})
+    for sc in subcap_ids:
+        members = sorted(b for b in behaviors_in if owner_of.get(b, cap_id) == sc)
+        if not members:
+            continue
+        sc_name = caps.get(sc, {}).get("name", sc)
+        lines.append(f'  subgraph SC_{_mid(sc)}["{_mesc(sc)}: {_mesc(sc_name)}"]')
+        lines.append("    direction TB")
+        for bid in members:
+            name = behs[bid].get("name", bid)
+            lines.append(f'    {_mnode(bid, name, "behavior").strip()}')
+            by_kind.setdefault("behavior", []).append(bid)
+            refs.add(bid)
+        lines.append("  end")
+
+    # Edges (deterministic order).
+    for f, t in sorted(set(trig_edges)):
+        lines.append(f"  {_mid(f)} --> {_mid(t)}")
+
+    _emit_class_defs(lines)
+    _apply_classes(lines, by_kind, root_id=None)
+    return "\n".join(lines), sorted(refs)
+
+
 def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
     """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
     views = {
@@ -1050,6 +1177,18 @@ def _build_payload(model_path: Path) -> dict:
                     mmd, flow_refs = flow
                     rec["flow_mermaid"] = mmd
                     rec["flow_refs"] = flow_refs
+                # Cross-capability flow (lifts _mermaid_pipeline beyond
+                # a single containing capability). Populates CAP-DF-shaped
+                # capabilities whose flow spans sub-capability boundaries.
+                # Skip when identical to _mermaid_pipeline output.
+                xflow = _mermaid_cross_capability_flow(
+                    entities_by_kind, relationships, eid
+                )
+                if xflow is not None:
+                    xmmd, xrefs = xflow
+                    if rec.get("flow_mermaid") != xmmd:
+                        rec["cross_flow_mermaid"] = xmmd
+                        rec["cross_flow_refs"] = xrefs
             # Graph-walk-as-capability: three additional inline diagrams
             # stamped on every entity kind (silent skip when N/A).
             decomp = _mermaid_decomposition(entities_by_kind, relationships, eid)
@@ -1455,7 +1594,8 @@ function selectEntity(id) {
     }
     const decompCard = _walkCard('Decomposition (contains, ≤2 hops)', e.decomposition_mermaid, e.decomposition_refs, 'decomp');
     const realizCard = _walkCard('Realization chain', e.realization_mermaid, e.realization_refs, 'realiz');
-    html += decompCard.html + realizCard.html;
+    const xflowCard = _walkCard('Cross-capability flow (triggers)', e.cross_flow_mermaid, e.cross_flow_refs, 'xflow');
+    html += xflowCard.html + decompCard.html + realizCard.html;
 
     const seen = new Set();
     for (const attr of attrs) {
@@ -1536,6 +1676,7 @@ function selectEntity(id) {
     if (window.mermaid) {
       const targets = [
         [flowDiagramId, 'flow'],
+        [xflowCard.id, 'cross_flow'],
         [decompCard.id, 'decomposition'],
         [realizCard.id, 'realization'],
         [neighCard.id, 'neighbors'],

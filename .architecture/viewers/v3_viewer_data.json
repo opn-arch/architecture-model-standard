@@ -1144,6 +1144,18 @@
             }
           ]
         },
+        "cross_flow_mermaid": "flowchart LR\n  subgraph EXT[\"External (other capabilities)\"]\n    direction TB\n    nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n  end\n  subgraph SC_nCAPDF1[\"CAP-DF.1: graph_walk_as_capability\"]\n    direction TB\n    nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n    nBEHwalkdescend[[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]]\n    nBEHwalkrealize[[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]]\n  end\n  subgraph SC_nCAPDF2[\"CAP-DF.2: review_in_viewer\"]\n    direction TB\n    nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n    nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n    nBEHviewsave[[\"BEH-view-save<br/>view_save_notes_yaml\"]]\n  end\n  subgraph SC_nCAPDF4[\"CAP-DF.4: llm_gap_remediation_and_entity_kind_promotion\"]\n    direction TB\n    nBEHS1[[\"BEH-S1<br/>llm_entity_kind_promotion\"]]\n    nBEHS2[[\"BEH-S2<br/>llm_gap_remediation\"]]\n  end\n  nBEHrunpipeline --> nBEHviewbrowse\n  nBEHviewnote --> nBEHwalkauthor\n  nBEHwalkauthor --> nBEHrunpipeline\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHrunpipeline,nBEHwalkauthor,nBEHwalkdescend,nBEHwalkrealize,nBEHviewbrowse,nBEHviewnote,nBEHviewsave,nBEHS1,nBEHS2 behavior;",
+        "cross_flow_refs": [
+          "BEH-S1",
+          "BEH-S2",
+          "BEH-run-pipeline",
+          "BEH-view-browse",
+          "BEH-view-note",
+          "BEH-view-save",
+          "BEH-walk-author",
+          "BEH-walk-descend",
+          "BEH-walk-realize"
+        ],
         "decomposition_mermaid": "flowchart TD\n  nBEHS1[[\"BEH-S1<br/>llm_entity_kind_promotion\"]]\n  nBEHS2[[\"BEH-S2<br/>llm_gap_remediation\"]]\n  nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n  nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n  nBEHviewsave[[\"BEH-view-save<br/>view_save_notes_yaml\"]]\n  nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n  nBEHwalkdescend[[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]]\n  nBEHwalkrealize[[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]]\n  nCAPDF(\"CAP-DF<br/>evolve_via_model_based_dev_loop\")\n  nCAPDF1(\"CAP-DF.1<br/>graph_walk_as_capability\")\n  nCAPDF2(\"CAP-DF.2<br/>review_in_viewer\")\n  nCAPDF3(\"CAP-DF.3<br/>validate_declared_vs_extracted\")\n  nCAPDF4(\"CAP-DF.4<br/>llm_gap_remediation_and_entity_kind_promotion\")\n  nCAPDF --> nCAPDF1\n  nCAPDF --> nCAPDF2\n  nCAPDF --> nCAPDF3\n  nCAPDF --> nCAPDF4\n  nCAPDF1 --> nBEHwalkauthor\n  nCAPDF1 --> nBEHwalkdescend\n  nCAPDF1 --> nBEHwalkrealize\n  nCAPDF2 --> nBEHviewbrowse\n  nCAPDF2 --> nBEHviewnote\n  nCAPDF2 --> nBEHviewsave\n  nCAPDF4 --> nBEHS1\n  nCAPDF4 --> nBEHS2\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHS1,nBEHS2,nBEHviewbrowse,nBEHviewnote,nBEHviewsave,nBEHwalkauthor,nBEHwalkdescend,nBEHwalkrealize behavior;\n  class nCAPDF1,nCAPDF2,nCAPDF3,nCAPDF4 capability;\n  class nCAPDF root;",
         "decomposition_refs": [
           "BEH-S1",
@@ -1253,6 +1265,14 @@
             }
           ]
         },
+        "cross_flow_mermaid": "flowchart LR\n  subgraph EXT[\"External (other capabilities)\"]\n    direction TB\n    nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n    nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n  end\n  subgraph SC_nCAPDF1[\"CAP-DF.1: graph_walk_as_capability\"]\n    direction TB\n    nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n    nBEHwalkdescend[[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]]\n    nBEHwalkrealize[[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]]\n  end\n  nBEHviewnote --> nBEHwalkauthor\n  nBEHwalkauthor --> nBEHrunpipeline\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHrunpipeline,nBEHviewnote,nBEHwalkauthor,nBEHwalkdescend,nBEHwalkrealize behavior;",
+        "cross_flow_refs": [
+          "BEH-run-pipeline",
+          "BEH-view-note",
+          "BEH-walk-author",
+          "BEH-walk-descend",
+          "BEH-walk-realize"
+        ],
         "decomposition_mermaid": "flowchart TD\n  nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n  nBEHwalkdescend[[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]]\n  nBEHwalkrealize[[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]]\n  nCAPDF1(\"CAP-DF.1<br/>graph_walk_as_capability\")\n  nCAPDF1 --> nBEHwalkauthor\n  nCAPDF1 --> nBEHwalkdescend\n  nCAPDF1 --> nBEHwalkrealize\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHwalkauthor,nBEHwalkdescend,nBEHwalkrealize behavior;\n  class nCAPDF1 root;",
         "decomposition_refs": [
           "BEH-walk-author",
@@ -1332,6 +1352,14 @@
             }
           ]
         },
+        "cross_flow_mermaid": "flowchart LR\n  subgraph EXT[\"External (other capabilities)\"]\n    direction TB\n    nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n    nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n  end\n  subgraph SC_nCAPDF2[\"CAP-DF.2: review_in_viewer\"]\n    direction TB\n    nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n    nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n    nBEHviewsave[[\"BEH-view-save<br/>view_save_notes_yaml\"]]\n  end\n  nBEHrunpipeline --> nBEHviewbrowse\n  nBEHviewnote --> nBEHwalkauthor\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHrunpipeline,nBEHwalkauthor,nBEHviewbrowse,nBEHviewnote,nBEHviewsave behavior;",
+        "cross_flow_refs": [
+          "BEH-run-pipeline",
+          "BEH-view-browse",
+          "BEH-view-note",
+          "BEH-view-save",
+          "BEH-walk-author"
+        ],
         "decomposition_mermaid": "flowchart TD\n  nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n  nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n  nBEHviewsave[[\"BEH-view-save<br/>view_save_notes_yaml\"]]\n  nCAPDF2(\"CAP-DF.2<br/>review_in_viewer\")\n  nCAPDF2 --> nBEHviewbrowse\n  nCAPDF2 --> nBEHviewnote\n  nCAPDF2 --> nBEHviewsave\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHviewbrowse,nBEHviewnote,nBEHviewsave behavior;\n  class nCAPDF2 root;",
         "decomposition_refs": [
           "BEH-view-browse",
@@ -1671,6 +1699,19 @@
             }
           ]
         },
+        "cross_flow_mermaid": "flowchart LR\n  subgraph EXT[\"External (other capabilities)\"]\n    direction TB\n    nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n    nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n  end\n  subgraph SC_nCAPPB[\"CAP-PB: extract_architecture_from_code\"]\n    direction TB\n    nBEHcluster[[\"BEH-cluster<br/>cluster_modules_into_components\"]]\n    nBEHcontainerize[[\"BEH-containerize<br/>containerize_components\"]]\n    nBEHderivepromises[[\"BEH-derive-promises<br/>derive_promises_from_scan\"]]\n    nBEHlink[[\"BEH-link<br/>link_components_via_edges\"]]\n    nBEHpublish[[\"BEH-publish<br/>publish_v3_model_yaml\"]]\n    nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n    nBEHscan[[\"BEH-scan<br/>scan_python_source_tree\"]]\n    nBEHverify[[\"BEH-verify<br/>verify_structural_invariants\"]]\n  end\n  nBEHcluster --> nBEHlink\n  nBEHcontainerize --> nBEHverify\n  nBEHderivepromises --> nBEHcluster\n  nBEHlink --> nBEHcontainerize\n  nBEHrunpipeline --> nBEHscan\n  nBEHrunpipeline --> nBEHviewbrowse\n  nBEHscan --> nBEHderivepromises\n  nBEHverify --> nBEHpublish\n  nBEHwalkauthor --> nBEHrunpipeline\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHviewbrowse,nBEHwalkauthor,nBEHcluster,nBEHcontainerize,nBEHderivepromises,nBEHlink,nBEHpublish,nBEHrunpipeline,nBEHscan,nBEHverify behavior;",
+        "cross_flow_refs": [
+          "BEH-cluster",
+          "BEH-containerize",
+          "BEH-derive-promises",
+          "BEH-link",
+          "BEH-publish",
+          "BEH-run-pipeline",
+          "BEH-scan",
+          "BEH-verify",
+          "BEH-view-browse",
+          "BEH-walk-author"
+        ],
         "decomposition_mermaid": "flowchart TD\n  nBEHcluster[[\"BEH-cluster<br/>cluster_modules_into_components\"]]\n  nBEHcontainerize[[\"BEH-containerize<br/>containerize_components\"]]\n  nBEHderivepromises[[\"BEH-derive-promises<br/>derive_promises_from_scan\"]]\n  nBEHlink[[\"BEH-link<br/>link_components_via_edges\"]]\n  nBEHpublish[[\"BEH-publish<br/>publish_v3_model_yaml\"]]\n  nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n  nBEHscan[[\"BEH-scan<br/>scan_python_source_tree\"]]\n  nBEHverify[[\"BEH-verify<br/>verify_structural_invariants\"]]\n  nCAPPB(\"CAP-PB<br/>extract_architecture_from_code\")\n  nCAPPB --> nBEHcluster\n  nCAPPB --> nBEHcontainerize\n  nCAPPB --> nBEHderivepromises\n  nCAPPB --> nBEHlink\n  nCAPPB --> nBEHpublish\n  nCAPPB --> nBEHrunpipeline\n  nCAPPB --> nBEHscan\n  nCAPPB --> nBEHverify\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHcluster,nBEHcontainerize,nBEHderivepromises,nBEHlink,nBEHpublish,nBEHrunpipeline,nBEHscan,nBEHverify behavior;\n  class nCAPPB root;",
         "decomposition_refs": [
           "BEH-cluster",
