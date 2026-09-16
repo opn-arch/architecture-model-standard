@@ -1,5 +1,135 @@
 {
   "diagnostics": {
+    "constraint_compliance_gaps": [
+      {
+        "constraint_id": "CONS-determinism",
+        "constraint_name": "Byte-determinism across runs",
+        "entity_id": "BEH-view-browse",
+        "entity_kind": "behavior",
+        "entity_name": "view_browse_merged_model",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-determinism",
+        "constraint_name": "Byte-determinism across runs",
+        "entity_id": "BEH-view-note",
+        "entity_kind": "behavior",
+        "entity_name": "view_capture_human_note",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-determinism",
+        "constraint_name": "Byte-determinism across runs",
+        "entity_id": "BEH-view-save",
+        "entity_kind": "behavior",
+        "entity_name": "view_save_notes_yaml",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-determinism",
+        "constraint_name": "Byte-determinism across runs",
+        "entity_id": "CAP-DF.2",
+        "entity_kind": "capability",
+        "entity_name": "review_in_viewer",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-determinism",
+        "constraint_name": "Byte-determinism across runs",
+        "entity_id": "CAP-SL",
+        "entity_kind": "capability",
+        "entity_name": "slice_focused_subgraph",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-no-runtime-deps",
+        "constraint_name": "Viewer has zero runtime deps",
+        "entity_id": "BEH-view-browse",
+        "entity_kind": "behavior",
+        "entity_name": "view_browse_merged_model",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-no-runtime-deps",
+        "constraint_name": "Viewer has zero runtime deps",
+        "entity_id": "BEH-view-note",
+        "entity_kind": "behavior",
+        "entity_name": "view_capture_human_note",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-no-runtime-deps",
+        "constraint_name": "Viewer has zero runtime deps",
+        "entity_id": "BEH-view-save",
+        "entity_kind": "behavior",
+        "entity_name": "view_save_notes_yaml",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-no-runtime-deps",
+        "constraint_name": "Viewer has zero runtime deps",
+        "entity_id": "CAP-DF.2",
+        "entity_kind": "capability",
+        "entity_name": "review_in_viewer",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-open-schema",
+        "constraint_name": "Promise.attribute is an open string",
+        "entity_id": "BEH-S1",
+        "entity_kind": "behavior",
+        "entity_name": "llm_entity_kind_promotion",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-open-schema",
+        "constraint_name": "Promise.attribute is an open string",
+        "entity_id": "BEH-S2",
+        "entity_kind": "behavior",
+        "entity_name": "llm_gap_remediation",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-open-schema",
+        "constraint_name": "Promise.attribute is an open string",
+        "entity_id": "BEH-walk-author",
+        "entity_kind": "behavior",
+        "entity_name": "walk_author_fragment_yaml",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-open-schema",
+        "constraint_name": "Promise.attribute is an open string",
+        "entity_id": "BEH-walk-descend",
+        "entity_kind": "behavior",
+        "entity_name": "walk_descend_concept_to_components",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-open-schema",
+        "constraint_name": "Promise.attribute is an open string",
+        "entity_id": "BEH-walk-realize",
+        "entity_kind": "behavior",
+        "entity_name": "walk_link_to_extracted_components",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-open-schema",
+        "constraint_name": "Promise.attribute is an open string",
+        "entity_id": "CAP-DF.1",
+        "entity_kind": "capability",
+        "entity_name": "graph_walk_as_capability",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      },
+      {
+        "constraint_id": "CONS-open-schema",
+        "constraint_name": "Promise.attribute is an open string",
+        "entity_id": "CAP-DF.4",
+        "entity_kind": "capability",
+        "entity_name": "llm_gap_remediation_and_entity_kind_promotion",
+        "reason": "no verified promise with attribute in ['slos', 'success_criteria', 'verification', 'verified_by']"
+      }
+    ],
     "direction_warnings": [],
     "realization_skip_reasons": {}
   },
@@ -209,6 +339,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-open-schema"
+        ],
         "gap_count": 0,
         "id": "BEH-S1",
         "inbound": [
@@ -246,6 +379,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-open-schema"
+        ],
         "gap_count": 0,
         "id": "BEH-S2",
         "inbound": [
@@ -838,6 +974,10 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-determinism",
+          "CONS-no-runtime-deps"
+        ],
         "gap_count": 0,
         "id": "BEH-view-browse",
         "inbound": [
@@ -879,6 +1019,10 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-determinism",
+          "CONS-no-runtime-deps"
+        ],
         "gap_count": 0,
         "id": "BEH-view-note",
         "inbound": [
@@ -918,6 +1062,10 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-determinism",
+          "CONS-no-runtime-deps"
+        ],
         "gap_count": 0,
         "id": "BEH-view-save",
         "inbound": [
@@ -955,6 +1103,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-open-schema"
+        ],
         "gap_count": 0,
         "id": "BEH-walk-author",
         "inbound": [
@@ -994,6 +1145,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-open-schema"
+        ],
         "gap_count": 0,
         "id": "BEH-walk-descend",
         "inbound": [
@@ -1028,6 +1182,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-open-schema"
+        ],
         "gap_count": 0,
         "id": "BEH-walk-realize",
         "inbound": [
@@ -1128,7 +1285,9 @@
                 "L8 (2026-09-16 viewer walk): kind-dispatched walks are unavoidable when the semantic shape of the traversal varies across entity kinds. Realization needed 7 distinct walk strategies (capability / component / behavior / interface / layer / actor / constraint) because the meaningful 2-hop chain is different for each \u2014 a single generic template would lose more insight than it saves.",
                 "L9 (2026-09-16 realizes-direction-fix): follow-up notes framed as 'add one edge' can hide systemic direction bugs; investigating the CONSUMER contract (walker semantics) before adding data revealed 3 edges + 5 entities affected, not 1. Always probe the consumer before adding producer data.",
                 "L10 (2026-09-16 realizes-direction-fix): silent-skip (return None when N/A) is a double-edged sword \u2014 correct behavior masking systemic bugs. Mitigation: build-time diagnostic pass (_realization_skip_reasons + _lint_edge_note_directions) that surfaces silently-skipped entities with adjacent-but-wrong-direction edges, plus in-viewer diagnostics banner. Fires zero warnings today (L9 fix cleared all), but present as tripwire for future direction bugs.",
-                "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper \u2014 additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate."
+                "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper \u2014 additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate.",
+                "L12 (2026-09-16 compliance walk): auditability requires a per-entity evidence rule, not per-constraint. Defining compliance evidence as \u22651 verified promise on {verification, verified_by, slos, success_criteria} caught 16 real gaps across 12 entities without any per-constraint mapping. Universal evidence attrs > constraint-specific rules for the initial audit tier \u2014 refinement can layer per-constraint checks on top later.",
+                "L13 (2026-09-16 compliance walk): the audit surfaces 3 legitimate constraint impacts on entities lacking evidence (CAP-DF.2 vs CONS-determinism/no-runtime-deps; CAP-DF.1/.4 vs CONS-open-schema; 6 BEH-* vs the same). These are AUTHORING todos, not walker bugs. The walker's job is to make gaps visible; closing them is model authoring work. Loop pattern: view (banner) \u2192 note (gap list) \u2192 walk/author (fill promises)."
               ],
               "gap_type": null,
               "id": "PR-CAP-DF-lessons_learned",
@@ -1272,6 +1431,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-open-schema"
+        ],
         "cross_flow_mermaid": "flowchart LR\n  subgraph EXT[\"External (other capabilities)\"]\n    direction TB\n    nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n    nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n  end\n  subgraph SC_nCAPDF1[\"CAP-DF.1: graph_walk_as_capability\"]\n    direction TB\n    nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n    nBEHwalkdescend[[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]]\n    nBEHwalkrealize[[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]]\n  end\n  nBEHviewnote --> nBEHwalkauthor\n  nBEHwalkauthor --> nBEHrunpipeline\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHrunpipeline,nBEHviewnote,nBEHwalkauthor,nBEHwalkdescend,nBEHwalkrealize behavior;",
         "cross_flow_refs": [
           "BEH-run-pipeline",
@@ -1359,6 +1521,10 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-determinism",
+          "CONS-no-runtime-deps"
+        ],
         "cross_flow_mermaid": "flowchart LR\n  subgraph EXT[\"External (other capabilities)\"]\n    direction TB\n    nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n    nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n  end\n  subgraph SC_nCAPDF2[\"CAP-DF.2: review_in_viewer\"]\n    direction TB\n    nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n    nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n    nBEHviewsave[[\"BEH-view-save<br/>view_save_notes_yaml\"]]\n  end\n  nBEHrunpipeline --> nBEHviewbrowse\n  nBEHviewnote --> nBEHwalkauthor\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHrunpipeline,nBEHwalkauthor,nBEHviewbrowse,nBEHviewnote,nBEHviewsave behavior;",
         "cross_flow_refs": [
           "BEH-run-pipeline",
@@ -1476,6 +1642,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-open-schema"
+        ],
         "decomposition_mermaid": "flowchart TD\n  nBEHS1[[\"BEH-S1<br/>llm_entity_kind_promotion\"]]\n  nBEHS2[[\"BEH-S2<br/>llm_gap_remediation\"]]\n  nCAPDF4(\"CAP-DF.4<br/>llm_gap_remediation_and_entity_kind_promotion\")\n  nCAPDF4 --> nBEHS1\n  nCAPDF4 --> nBEHS2\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHS1,nBEHS2 behavior;\n  class nCAPDF4 root;",
         "decomposition_refs": [
           "BEH-S1",
@@ -1829,6 +1998,9 @@
             }
           ]
         },
+        "compliance_gaps": [
+          "CONS-determinism"
+        ],
         "gap_count": 0,
         "id": "CAP-SL",
         "inbound": [

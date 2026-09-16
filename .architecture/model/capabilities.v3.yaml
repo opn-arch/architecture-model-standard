@@ -350,6 +350,8 @@ entities:
       - "L9 (2026-09-16 realizes-direction-fix): follow-up notes framed as 'add one edge' can hide systemic direction bugs; investigating the CONSUMER contract (walker semantics) before adding data revealed 3 edges + 5 entities affected, not 1. Always probe the consumer before adding producer data."
       - "L10 (2026-09-16 realizes-direction-fix): silent-skip (return None when N/A) is a double-edged sword — correct behavior masking systemic bugs. Mitigation: build-time diagnostic pass (_realization_skip_reasons + _lint_edge_note_directions) that surfaces silently-skipped entities with adjacent-but-wrong-direction edges, plus in-viewer diagnostics banner. Fires zero warnings today (L9 fix cleared all), but present as tripwire for future direction bugs."
       - "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper — additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate."
+      - "L12 (2026-09-16 compliance walk): auditability requires a per-entity evidence rule, not per-constraint. Defining compliance evidence as ≥1 verified promise on {verification, verified_by, slos, success_criteria} caught 16 real gaps across 12 entities without any per-constraint mapping. Universal evidence attrs > constraint-specific rules for the initial audit tier — refinement can layer per-constraint checks on top later."
+      - "L13 (2026-09-16 compliance walk): the audit surfaces 3 legitimate constraint impacts on entities lacking evidence (CAP-DF.2 vs CONS-determinism/no-runtime-deps; CAP-DF.1/.4 vs CONS-open-schema; 6 BEH-* vs the same). These are AUTHORING todos, not walker bugs. The walker's job is to make gaps visible; closing them is model authoring work. Loop pattern: view (banner) → note (gap list) → walk/author (fill promises)."
       owner_entity: CAP-DF
       delivered_from: null
       verified_by:
@@ -357,7 +359,8 @@ entities:
       - docs/reports/2026-09-16-cap-pb-walk.md documents L1-L3
       - docs/reports/2026-09-16-realizes-direction-fix.md documents L9-L10
       - docs/reports/2026-09-16-constraint-impact-and-diagnostics.md documents L11
-      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10)
+      - docs/reports/2026-09-16-compliance-audit.md documents L12-L13
+      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10), _constraint_compliance_gaps (L12-L13)
       status: verified
       gap_type: null
       provenance: |

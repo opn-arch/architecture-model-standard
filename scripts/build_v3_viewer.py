@@ -1206,6 +1206,125 @@ def _realization_skip_reasons(
     return dict(sorted(reasons.items()))
 
 
+# Attribute names that count as "compliance evidence" for a constraint.
+# Any verified promise carrying one of these attributes is treated as
+# proof that the constraint is being upheld by the owner entity.
+_COMPLIANCE_EVIDENCE_ATTRS = frozenset({
+    "verification",
+    "verified_by",
+    "slos",
+    "success_criteria",
+})
+
+
+def _entity_has_compliance_evidence(entity_rec: dict) -> bool:
+    """True when entity has \u22651 verified promise whose attribute is in
+    :data:`_COMPLIANCE_EVIDENCE_ATTRS`. See L12 for rationale."""
+    by_attr = entity_rec.get("by_attr", {})
+    for attr in _COMPLIANCE_EVIDENCE_ATTRS:
+        for p in by_attr.get(attr, []):
+            if p.get("status") == "verified":
+                return True
+    return False
+
+
+def _constraint_compliance_gaps(
+    entities_by_kind: dict,
+    relationships: list,
+    entity_records: dict,
+) -> list[dict]:
+    """7th walk: for each constraint, walk 2-hop impact (same shape as
+    ``_mermaid_constraint_impact``) and report every reachable entity
+    that lacks compliance evidence.
+
+    Uses the pre-built ``entity_records`` (post-``by_attr``) so we can
+    check verified-promise coverage per entity without re-parsing.
+
+    Returns a deterministic list of
+    ``{constraint_id, constraint_name, entity_id, entity_kind,
+    entity_name, reason}`` dicts.
+    """
+    # Flatten records by id for fast lookup.
+    rec_by_id: dict[str, dict] = {}
+    for kind, recs in entity_records.items():
+        for r in recs:
+            rec_by_id[r["id"]] = r
+
+    # Build local out/in maps once.
+    out_edges: dict[str, list[tuple[str, str]]] = {}
+    in_edges: dict[str, list[tuple[str, str]]] = {}
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type")
+        if f is None or t is None or rt is None:
+            continue
+        out_edges.setdefault(f, []).append((t, rt))
+        in_edges.setdefault(t, []).append((f, rt))
+
+    def outs_by(eid: str, rtype: str) -> list[str]:
+        return sorted({t for t, rt in out_edges.get(eid, []) if rt == rtype})
+
+    def ins_by(eid: str, rtype: str) -> list[str]:
+        return sorted({s for s, rt in in_edges.get(eid, []) if rt == rtype})
+
+    gaps: list[dict] = []
+    for cons_rec in entity_records.get("constraints", []):
+        cid = cons_rec["id"]
+        cname = cons_rec.get("name", cid)
+        hop1 = ins_by(cid, "constrained-by")
+        # Collect impacted set: hop 1 + kind-specific hop 2 (mirrors
+        # _mermaid_constraint_impact so viewer + audit agree).
+        impacted: set[str] = set(hop1)
+        for h in hop1:
+            hrec = rec_by_id.get(h)
+            if hrec is None:
+                continue
+            hk = hrec.get("kind")
+            if hk in ("capability", "component"):
+                impacted.update(outs_by(h, "contains"))
+            elif hk == "behavior":
+                impacted.update(ins_by(h, "traces-to"))
+            elif hk == "interface":
+                impacted.update(ins_by(h, "exposes"))
+
+        for eid in sorted(impacted):
+            rec = rec_by_id.get(eid)
+            if rec is None:
+                continue
+            if _entity_has_compliance_evidence(rec):
+                continue
+            gaps.append({
+                "constraint_id": cid,
+                "constraint_name": cname,
+                "entity_id": eid,
+                "entity_kind": rec.get("kind", "?"),
+                "entity_name": rec.get("name", eid),
+                "reason": (
+                    f"no verified promise with attribute in "
+                    f"{sorted(_COMPLIANCE_EVIDENCE_ATTRS)}"
+                ),
+            })
+    return sorted(
+        gaps,
+        key=lambda g: (g["constraint_id"], g["entity_kind"], g["entity_id"]),
+    )
+
+
+def _stamp_compliance_gaps_on_entities(
+    gaps: list[dict], entity_records: dict
+) -> None:
+    """Reverse-index the constraint compliance gaps onto each affected
+    entity record as ``compliance_gaps: [constraint_id, ...]`` so entity
+    pages can surface the auditor's view without re-computing."""
+    idx: dict[str, list[str]] = {}
+    for g in gaps:
+        idx.setdefault(g["entity_id"], []).append(g["constraint_id"])
+    for kind, recs in entity_records.items():
+        for r in recs:
+            eid = r["id"]
+            if eid in idx:
+                r["compliance_gaps"] = sorted(set(idx[eid]))
+
+
 def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
     """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
     views = {
@@ -1397,9 +1516,15 @@ def _build_payload(model_path: Path) -> dict:
     # direction issues so systemic bugs like L9 fire early).
     direction_warnings = _lint_edge_note_directions(relationships)
     skip_reasons = _realization_skip_reasons(entities_by_kind, out_edges, in_edges)
+    # 7th walk: constraint compliance audit.
+    compliance_gaps = _constraint_compliance_gaps(
+        entities_by_kind, relationships, entity_records
+    )
+    _stamp_compliance_gaps_on_entities(compliance_gaps, entity_records)
     diagnostics = {
         "direction_warnings": direction_warnings,
         "realization_skip_reasons": skip_reasons,
+        "constraint_compliance_gaps": compliance_gaps,
     }
     # Print a one-line summary at build time (fail-soft; never blocks build).
     if direction_warnings:
@@ -1410,6 +1535,13 @@ def _build_payload(model_path: Path) -> dict:
         print(f"WARN: {len(skip_reasons)} entities silently skipped by realization walker:")
         for eid, reason in skip_reasons.items():
             print(f"  {eid}: {reason}")
+    if compliance_gaps:
+        by_cons: dict[str, int] = {}
+        for g in compliance_gaps:
+            by_cons[g["constraint_id"]] = by_cons.get(g["constraint_id"], 0) + 1
+        print(f"INFO: {len(compliance_gaps)} constraint compliance gap(s) across {len(by_cons)} constraint(s):")
+        for cid, n in sorted(by_cons.items()):
+            print(f"  {cid}: {n} entities lack compliance evidence")
 
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:
@@ -1715,15 +1847,30 @@ function showOverview() {
   const diag = data.diagnostics || {};
   const dw = diag.direction_warnings || [];
   const sr = diag.realization_skip_reasons || {};
+  const cg = diag.constraint_compliance_gaps || [];
   const srKeys = Object.keys(sr);
+  // Group compliance gaps by constraint for compact rendering.
+  const cgByCons = {};
+  for (const g of cg) {
+    (cgByCons[g.constraint_id] = cgByCons[g.constraint_id] || []).push(g);
+  }
+  const cgKeys = Object.keys(cgByCons).sort();
   let diagBanner = '';
-  if (dw.length || srKeys.length) {
+  if (dw.length || srKeys.length || cg.length) {
     const dwRows = dw.map(w => `<li><code>[${w.type}] ${w.from} -> ${w.to}</code>: ${escapeHtml(w.warning)}</li>`).join('');
     const srRows = srKeys.map(k => `<li><code>${k}</code>: ${escapeHtml(sr[k])}</li>`).join('');
-    diagBanner = `<div class="card" style="border-color:var(--warn,#c93);background:#3b2a10">` +
-      `<h3>Build diagnostics (${dw.length + srKeys.length})</h3>` +
+    const cgRows = cgKeys.map(k => {
+      const rows = cgByCons[k];
+      const chips = rows.map(g => `<span class="chip" data-id="${g.entity_id}" title="${escapeHtml(g.entity_name)}">${g.entity_id}</span>`).join('');
+      return `<li><code>${k}</code> <span class="badge warn">${rows.length}</span><div class="chips" style="margin-top:4px">${chips}</div></li>`;
+    }).join('');
+    const bannerColor = (dw.length || srKeys.length) ? '#c93' : '#8a6d3b';
+    const bannerBg = (dw.length || srKeys.length) ? '#3b2a10' : '#2a220f';
+    diagBanner = `<div class="card" style="border-color:${bannerColor};background:${bannerBg}">` +
+      `<h3>Build diagnostics (${dw.length + srKeys.length + cg.length})</h3>` +
       (dw.length ? `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:6px">Note-vs-edge direction (${dw.length})</div><ul style="margin:4px 0 0 0;padding-left:20px;font-size:12px">${dwRows}</ul>` : '') +
       (srKeys.length ? `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:8px">Realization silent-skips (${srKeys.length})</div><ul style="margin:4px 0 0 0;padding-left:20px;font-size:12px">${srRows}</ul>` : '') +
+      (cg.length ? `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:8px">Constraint compliance gaps (${cg.length} across ${cgKeys.length} constraint(s))</div><ul style="margin:4px 0 0 0;padding-left:20px;font-size:12px">${cgRows}</ul>` : '') +
       `</div>`;
   }
   document.getElementById('content').innerHTML = `
@@ -1843,6 +1990,14 @@ function selectEntity(id) {
 
     const neighCard = _walkCard('Neighbors (1-hop, typed)', e.neighbors_mermaid, e.neighbors_refs, 'neigh');
     html += neighCard.html;
+
+    // Per-entity constraint compliance (reverse index of diagnostics).
+    if (e.compliance_gaps && e.compliance_gaps.length) {
+      const chips = e.compliance_gaps.map(cid => `<span class="chip" data-id="${cid}">${cid}</span>`).join('');
+      html += `<div class="card" style="border-color:#8a6d3b"><h3>Compliance gaps (${e.compliance_gaps.length})</h3>` +
+        `<div style="font-size:11px;color:var(--muted);margin-bottom:6px">This entity is impacted by the following constraints but has no verified promise on any evidence attribute (verification / verified_by / slos / success_criteria).</div>` +
+        `<div class="chips">${chips}</div></div>`;
+    }
 
     html += `<div class="card"><h3>Neighbors</h3>`;
     html += `<div style="margin-bottom:6px;font-size:11px;color:var(--muted);text-transform:uppercase">Depends on (${e.outbound.length})</div><div class="chips" style="margin-bottom:12px">`;
