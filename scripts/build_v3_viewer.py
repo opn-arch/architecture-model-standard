@@ -19,7 +19,8 @@ Satisfied promises (see viewer.v3.yaml):
   ``notes.yaml`` (option A: browser download, user places manually)
 - D9 multi_entity_kind_sidebar — sidebar groups per entity kind
 - D10 authored_fragment_merge — merges pipeline + authored fragments;
-  id collisions across sources are a hard fail
+  same entity id across sources triggers promise-level union (C4);
+  kind collisions and conflicting promise content are hard-fails
 - P1 single_file_html, P2 offline_deterministic, P3 repo_agnostic
 
 Unrealized-entity detection: any authored capability/behavior with no
@@ -79,14 +80,23 @@ def _merge_sources(sources: list[tuple[str, dict]]) -> tuple[dict, dict, list, l
     """Merge sources → (meta, entities_by_kind, relationships, source_index).
 
     entities_by_kind: {kind: {id: entity}}
-    source_index: [{"id": ..., "source": ..., "kind": ...}]
-    Raises SystemExit on id collision across sources.
+    source_index: [{"id": ..., "source": ..., "kind": ...}] — first source wins
+      for the "source" tag; enrichment sources are recorded on collision but
+      not shown as primary.
+    Merge policy (as of C4, replaces prior hard-fail):
+      - Same entity id declared in multiple sources: promise-level union.
+        Promises are keyed by promise.id. Same promise.id across sources
+        must have identical content (hard-fail otherwise, exit 3).
+      - Same entity id across DIFFERENT kinds is a hard-fail.
+      - Relationship dedup by (from, to, type) tuple.
     """
     meta: dict = {}
     entities_by_kind: dict[str, dict] = {k: {} for k in ENTITY_KINDS}
-    id_source: dict[str, str] = {}
+    id_kind: dict[str, str] = {}  # id -> kind (kind-collision guard)
+    id_source: dict[str, str] = {}  # id -> primary source (first declarer)
     source_index: list[dict] = []
     relationships: list[dict] = []
+    rel_seen: set[tuple[str, str, str]] = set()
 
     for label, doc in sources:
         # First source's meta wins; later sources contribute nothing to meta.
@@ -97,17 +107,62 @@ def _merge_sources(sources: list[tuple[str, dict]]) -> tuple[dict, dict, list, l
                 eid = ent.get("id")
                 if not eid:
                     continue
-                if eid in id_source:
+                # Kind-collision guard: same id across different kinds is fatal.
+                if eid in id_kind and id_kind[eid] != kind:
                     print(
-                        f"error: id collision on {eid!r} between "
-                        f"{id_source[eid]!r} and {label!r}",
+                        f"error: id {eid!r} declared as {id_kind[eid]!r} in "
+                        f"{id_source[eid]!r} and as {kind!r} in {label!r}",
                         file=sys.stderr,
                     )
                     sys.exit(3)
-                id_source[eid] = label
-                entities_by_kind[kind][eid] = ent
-                source_index.append({"id": eid, "source": label, "kind": kind})
+                if eid not in id_kind:
+                    # First declaration: keep entity as-is.
+                    id_kind[eid] = kind
+                    id_source[eid] = label
+                    entities_by_kind[kind][eid] = dict(ent)
+                    source_index.append(
+                        {"id": eid, "source": label, "kind": kind}
+                    )
+                else:
+                    # Enrichment: union promises by id, hard-fail on conflict.
+                    existing = entities_by_kind[kind][eid]
+                    existing_promises = existing.get("promises", []) or []
+                    new_promises = ent.get("promises", []) or []
+                    by_pid = {p.get("id"): p for p in existing_promises}
+                    for p in new_promises:
+                        pid = p.get("id")
+                        if not pid:
+                            continue
+                        if pid in by_pid:
+                            # Same promise id: content must match exactly.
+                            a, b = by_pid[pid], p
+                            if (
+                                a.get("attribute") != b.get("attribute")
+                                or a.get("content") != b.get("content")
+                                or a.get("owner_entity") != b.get("owner_entity")
+                            ):
+                                print(
+                                    f"error: promise id {pid!r} on entity "
+                                    f"{eid!r} has conflicting content between "
+                                    f"{id_source[eid]!r} and {label!r}",
+                                    file=sys.stderr,
+                                )
+                                sys.exit(3)
+                            # Identical: silently accept.
+                        else:
+                            by_pid[pid] = p
+                    # Rebuild promises list in deterministic pid order.
+                    existing["promises"] = [by_pid[k] for k in sorted(by_pid)]
+                    # Enrichment sources do NOT override name / root_prefix /
+                    # module_names — pipeline stays authoritative on those.
+                    source_index.append(
+                        {"id": eid, "source": label, "kind": kind}
+                    )
         for rel in doc.get("relationships", []) or []:
+            key = (rel.get("from"), rel.get("to"), rel.get("type", "depends-on"))
+            if key in rel_seen:
+                continue
+            rel_seen.add(key)
             relationships.append(rel)
 
     return meta, entities_by_kind, relationships, source_index

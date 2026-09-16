@@ -1,6 +1,128 @@
 {
   "entities_by_kind": {
-    "actors": [],
+    "actors": [
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Runs pipeline_v3 on every commit; enforces byte-determinism and schema gates.",
+                "Consumes pipeline output as verification signal, not for interactive review."
+              ],
+              "gap_type": null,
+              "id": "PR-ACT-ci-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "ACT-ci",
+        "inbound": [],
+        "kind": "actor",
+        "module_count": 0,
+        "name": "CI / Gate Enforcer",
+        "outbound": [
+          "BEH-publish",
+          "BEH-scan"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Runs pipeline_v3 locally, opens viewer, authors fragment YAMLs, takes notes.",
+                "Primary daily user of the dev workflow loop (view \u2192 note \u2192 walk/author \u2192 validate \u2192 re-extract)."
+              ],
+              "gap_type": null,
+              "id": "PR-ACT-developer-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "ACT-developer",
+        "inbound": [],
+        "kind": "actor",
+        "module_count": 0,
+        "name": "Developer",
+        "outbound": [
+          "BEH-scan",
+          "BEH-view-browse",
+          "BEH-view-note",
+          "BEH-view-save"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Consumes IF-slicer output as prompt substrate.",
+                "Produces authored fragment YAMLs via IF-llm-provider.",
+                "Realizes BEH-S1 (entity-kind promotion) and BEH-S2 (gap remediation)."
+              ],
+              "gap_type": null,
+              "id": "PR-ACT-llm-intent",
+              "provenance": "2026-09-15 SE walk \u2014 declared not yet realized (Part 3 CAP-DF.4)",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "ACT-llm",
+        "inbound": [],
+        "kind": "actor",
+        "module_count": 0,
+        "name": "LLM (Part 3, deferred)",
+        "outbound": [
+          "BEH-S1",
+          "BEH-S2"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Performs SE graph walks; produces capability / behavior / interface fragments; reviews model coherence in viewer.",
+                "Owns Functional / Logical / Use-Case views."
+              ],
+              "gap_type": null,
+              "id": "PR-ACT-se-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "ACT-se",
+        "inbound": [],
+        "kind": "actor",
+        "module_count": 0,
+        "name": "Systems Engineer",
+        "outbound": [
+          "BEH-view-browse",
+          "BEH-walk-author",
+          "BEH-walk-descend",
+          "BEH-walk-realize"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      }
+    ],
     "behaviors": [
       {
         "by_attr": {
@@ -33,6 +155,7 @@
         "gap_count": 0,
         "id": "BEH-S1",
         "inbound": [
+          "ACT-llm",
           "CAP-DF.4"
         ],
         "kind": "behavior",
@@ -62,6 +185,7 @@
         "gap_count": 0,
         "id": "BEH-S2",
         "inbound": [
+          "ACT-llm",
           "CAP-DF.4"
         ],
         "kind": "behavior",
@@ -222,6 +346,7 @@
         "gap_count": 0,
         "id": "BEH-publish",
         "inbound": [
+          "ACT-ci",
           "CAP-PB"
         ],
         "kind": "behavior",
@@ -251,6 +376,8 @@
         "gap_count": 0,
         "id": "BEH-scan",
         "inbound": [
+          "ACT-ci",
+          "ACT-developer",
           "CAP-PB"
         ],
         "kind": "behavior",
@@ -309,6 +436,8 @@
         "gap_count": 0,
         "id": "BEH-view-browse",
         "inbound": [
+          "ACT-developer",
+          "ACT-se",
           "CAP-DF.2"
         ],
         "kind": "behavior",
@@ -338,6 +467,7 @@
         "gap_count": 0,
         "id": "BEH-view-note",
         "inbound": [
+          "ACT-developer",
           "CAP-DF.2"
         ],
         "kind": "behavior",
@@ -367,6 +497,7 @@
         "gap_count": 0,
         "id": "BEH-view-save",
         "inbound": [
+          "ACT-developer",
           "CAP-DF.2"
         ],
         "kind": "behavior",
@@ -396,6 +527,7 @@
         "gap_count": 0,
         "id": "BEH-walk-author",
         "inbound": [
+          "ACT-se",
           "CAP-DF.1"
         ],
         "kind": "behavior",
@@ -423,6 +555,7 @@
         "gap_count": 0,
         "id": "BEH-walk-descend",
         "inbound": [
+          "ACT-se",
           "CAP-DF.1"
         ],
         "kind": "behavior",
@@ -450,6 +583,7 @@
         "gap_count": 0,
         "id": "BEH-walk-realize",
         "inbound": [
+          "ACT-se",
           "CAP-DF.1"
         ],
         "kind": "behavior",
@@ -624,6 +758,7 @@
           "BEH-walk-author",
           "BEH-walk-descend",
           "BEH-walk-realize",
+          "CONS-open-schema",
           "IF-authored-fragment"
         ],
         "promise_count": 5,
@@ -685,7 +820,9 @@
           "BEH-view-browse",
           "BEH-view-note",
           "BEH-view-save",
-          "COMP-VIEWER"
+          "COMP-VIEWER",
+          "CONS-determinism",
+          "CONS-no-runtime-deps"
         ],
         "promise_count": 4,
         "root_prefix": "",
@@ -762,7 +899,8 @@
         "name": "llm_gap_remediation_and_entity_kind_promotion",
         "outbound": [
           "BEH-S1",
-          "BEH-S2"
+          "BEH-S2",
+          "CONS-open-schema"
         ],
         "promise_count": 3,
         "root_prefix": "",
@@ -875,7 +1013,9 @@
           "BEH-publish",
           "BEH-scan",
           "BEH-verify",
-          "COMP-c5a72728"
+          "COMP-c5a72728",
+          "CONS-determinism",
+          "CONS-pinned-clock"
         ],
         "promise_count": 9,
         "root_prefix": "",
@@ -916,6 +1056,7 @@
         "name": "slice_focused_subgraph",
         "outbound": [
           "COMP-c5a72728",
+          "CONS-determinism",
           "IF-slicer"
         ],
         "promise_count": 2,
@@ -4756,6 +4897,15 @@
             },
             {
               "content": [
+                "authored_fragment_merge"
+              ],
+              "gap_type": null,
+              "id": "PR-VIEWER-D10",
+              "provenance": "Necessary because pipeline_v3.publish.py:107 writes only\nentities:{\"components\": ...} and overwrites .architecture-model.v3.yaml\nwholesale on every run. Authored layer must live as separate\nfragment files merged at view time. Promoting merge into publish.py\nis Part 3 territory (see BEH-S1 entity-kind promotion).\n",
+              "status": "verified"
+            },
+            {
+              "content": [
                 "dependency_graph_visual"
               ],
               "gap_type": null,
@@ -4825,18 +4975,21 @@
               "id": "PR-VIEWER-D9",
               "provenance": "Sidebar dynamically generates one collapsible group per kind\npresent in the merged model. Small groups (<=15) auto-open;\nlarger groups start collapsed. Overview + Typed Gaps sit as\ntop-level nav items above the kind groups.\n",
               "status": "verified"
-            },
-            {
-              "content": [
-                "authored_fragment_merge"
-              ],
-              "gap_type": null,
-              "id": "PR-VIEWER-D10",
-              "provenance": "Necessary because pipeline_v3.publish.py:107 writes only\nentities:{\"components\": ...} and overwrites .architecture-model.v3.yaml\nwholesale on every run. Authored layer must live as separate\nfragment files merged at view time. Promoting merge into publish.py\nis Part 3 territory (see BEH-S1 entity-kind promotion).\n",
-              "status": "verified"
             }
           ],
           "failure_modes": [
+            {
+              "content": [
+                "fragment kind-collision aborts build (exit 3, by design)",
+                "conflicting promise content across fragments aborts build (exit 3, C4)",
+                "JS syntax errors in embedded template break browser render (mitigated by node --check in CI-adjacent workflow)",
+                "unrealized-gap detection may false-positive if new realizing edge types are introduced"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-VIEWER-failure-modes",
+              "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            },
             {
               "content": [
                 "id collision across .architecture-model.v3.yaml and .architecture/model/*.v3.yaml \u2192 hard-exit 3 with source-labelled error message",
@@ -4903,6 +5056,46 @@
               "provenance": "First example of a non-canonical Promise attribute \u2014 proves the viewer\nrenders 'requirements' cards below Provides without any code change\n(per D3 multi-attribute_entity_detail). Vocabulary chosen from\nschema 2.1's 14 semantic fields (Phase 2 CONTEXT.md).\n",
               "status": "verified"
             }
+          ],
+          "slos": [
+            {
+              "content": [
+                "viewer HTML under 500KB with current 50-entity payload (measured 326KB)",
+                "full rebuild + JSON regen under 5s on developer laptop",
+                "open-in-browser under 2s (no network waterfall)"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-VIEWER-slos",
+              "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            }
+          ],
+          "stakeholders": [
+            {
+              "content": [
+                "dev/se opening viewer to review the merged v3 model",
+                "authors of .architecture/model/*.v3.yaml fragments who validate via viewer",
+                "Part 3 LLM (ACT-llm) consuming rendered slices as prompt substrate"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-VIEWER-stakeholders",
+              "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            }
+          ],
+          "success_criteria": [
+            {
+              "content": [
+                "single self-contained HTML file, no network deps",
+                "byte-deterministic under fixed source set (verified via rerun-diff)",
+                "sidebar surfaces every entity kind present in the merged payload",
+                "any Promise attribute renders (open-schema-friendly)"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-VIEWER-success-criteria",
+              "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            }
           ]
         },
         "gap_count": 0,
@@ -4911,16 +5104,17 @@
           "BEH-view-browse",
           "BEH-view-note",
           "BEH-view-save",
-          "CAP-DF.2"
+          "CAP-DF.2",
+          "L-view"
         ],
         "kind": "component",
-        "module_count": 2,
-        "name": "v3_viewer",
+        "module_count": 0,
+        "name": "COMP-VIEWER",
         "outbound": [
           "COMP-1896b055"
         ],
-        "promise_count": 16,
-        "root_prefix": ".architecture.viewers.v3_viewer",
+        "promise_count": 20,
+        "root_prefix": "",
         "source": ".architecture/model/viewer.v3.yaml"
       },
       {
@@ -6107,6 +6301,20 @@
               "status": "open"
             }
           ],
+          "failure_modes": [
+            {
+              "content": [
+                "schema drift breaks byte-determinism gate \u2192 Phase 8 CI failure",
+                "import-edge asymmetry (src. prefix) causes cluster mis-attribution \u2192 mitigated by link.py root-prefix normalizer",
+                "unpinned AMS_DETERMINISTIC_NOW causes CI timestamp flake",
+                "pipeline emits only 1 of 7 entity kinds (components) \u2014 declared as Part 3 mainline gap CAP-DF.4 / BEH-S1"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-c5a72728-failure-modes",
+              "provenance": "2026-09-15 SE walk enrichment; last item cited in publish.py:107",
+              "status": "open"
+            }
+          ],
           "intent": [
             {
               "content": "pipeline_v3 \u2014 Promise-graph-native extraction pipeline (T0.14 Phase 6).\n\nEight-stage pipeline consuming a repo and producing a v3 architecture\nmodel (Promise-graph + entities + relationships):\n\n    scan -> derive_promises -> cluster -> link -> containerize\n         -> verify -> publish\n    (orchestrated by orchestrator)\n\nEach stage is a self-contained module with its own tests. Intermediate\ndata types flow between stages via typed dataclasses; no stage reaches\nback into a previous stage's internals.",
@@ -6236,6 +6444,47 @@
               "provenance": "pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.scan; via=pipeline_v3.derive_promises",
               "status": "open"
             }
+          ],
+          "slos": [
+            {
+              "content": [
+                "full extraction under 60s on 280-module repo (measured 2026-09-14 self-run)",
+                "byte-determinism guaranteed under pinned AMS_DETERMINISTIC_NOW (Phase 8 gate)",
+                "schema conformance validated by pipeline gates on every emit"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-c5a72728-slos",
+              "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            }
+          ],
+          "stakeholders": [
+            {
+              "content": [
+                "dev-team-running-pipeline-locally",
+                "se-team-reviewing-self-model",
+                "ci-gate-enforcing-byte-determinism (Phase 8 gates)",
+                "external-adopter-running-pipeline_v3-on-third-party-repo"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-c5a72728-stakeholders",
+              "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            }
+          ],
+          "success_criteria": [
+            {
+              "content": [
+                "byte-deterministic YAML output under pinned AMS_DETERMINISTIC_NOW",
+                "self-application yields 24-component / 650-promise model (2026-09-14 walk)",
+                "each stage is a pure function returning a typed dataclass consumed by the next",
+                "reproducible on any Python repo without configuration"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-c5a72728-success-criteria",
+              "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            }
           ]
         },
         "gap_count": 2,
@@ -6249,7 +6498,8 @@
           "BEH-scan",
           "BEH-verify",
           "CAP-PB",
-          "CAP-SL"
+          "CAP-SL",
+          "L-tooling"
         ],
         "kind": "component",
         "module_count": 9,
@@ -6259,9 +6509,9 @@
           "COMP-bb5e3d5a",
           "COMP-c58a2a80"
         ],
-        "promise_count": 25,
+        "promise_count": 29,
         "root_prefix": "src.architecture_model.pipeline_v3",
-        "source": ".architecture-model.v3.yaml"
+        "source": ".architecture/model/enrichment.v3.yaml"
       },
       {
         "by_attr": {
@@ -7472,7 +7722,123 @@
         "source": ".architecture-model.v3.yaml"
       }
     ],
-    "constraints": [],
+    "constraints": [
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "All artifact outputs (pipeline YAML, viewer HTML+JSON, notes.yaml serialization) must be byte-identical across runs given identical inputs and pinned clock."
+              ],
+              "gap_type": null,
+              "id": "PR-CONS-determinism-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CONS-determinism",
+        "inbound": [
+          "CAP-DF.2",
+          "CAP-PB",
+          "CAP-SL"
+        ],
+        "kind": "constraint",
+        "module_count": 0,
+        "name": "Byte-determinism across runs",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Viewer HTML must open in any modern browser with no network access, no build step, no npm.",
+                "Bundled assets (if any) are checked-in static files loaded via relative path."
+              ],
+              "gap_type": null,
+              "id": "PR-CONS-no-runtime-deps-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CONS-no-runtime-deps",
+        "inbound": [
+          "CAP-DF.2"
+        ],
+        "kind": "constraint",
+        "module_count": 0,
+        "name": "Viewer has zero runtime deps",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Promise.attribute accepts any non-empty string (no enum in spec/promise-graph.schema.json).",
+                "Enables Phase-2 semantic vocabulary (14 fields) without schema bump.",
+                "Pipeline's 3-attribute emission (intent/delivers/provides) is an emission choice, not a schema constraint."
+              ],
+              "gap_type": null,
+              "id": "PR-CONS-open-schema-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CONS-open-schema",
+        "inbound": [
+          "CAP-DF.1",
+          "CAP-DF.4"
+        ],
+        "kind": "constraint",
+        "module_count": 0,
+        "name": "Promise.attribute is an open string",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Timestamps consumed by publish / synthesize / sil.rollup must read AMS_DETERMINISTIC_NOW when set.",
+                "Enables reproducible extraction across machines and CI runs."
+              ],
+              "gap_type": null,
+              "id": "PR-CONS-pinned-clock-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CONS-pinned-clock",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "constraint",
+        "module_count": 0,
+        "name": "Pinned clock via AMS_DETERMINISTIC_NOW",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      }
+    ],
     "interfaces": [
       {
         "by_attr": {
@@ -7570,7 +7936,158 @@
         "source": ".architecture/model/capabilities.v3.yaml"
       }
     ],
-    "layers": []
+    "layers": [
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Contains hand-authored (or Part 3 LLM-authored) fragments under .architecture/model/*.v3.yaml.",
+                "Merged into pipeline output at view time by L-view."
+              ],
+              "gap_type": null,
+              "id": "PR-L-authoring-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "L-authoring",
+        "inbound": [
+          "L-llm",
+          "L-view"
+        ],
+        "kind": "layer",
+        "module_count": 0,
+        "name": "Authoring (fragment YAMLs)",
+        "outbound": [
+          "L-standard"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Contains llm/provider.py adapter and .architecture/llm/policy.yaml (both Part 3).",
+                "Produces authored fragments deposited in L-authoring; realizes ACT-llm behaviors."
+              ],
+              "gap_type": null,
+              "id": "PR-L-llm-intent",
+              "provenance": "2026-09-15 SE walk \u2014 Part 3 CAP-DF.4",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "L-llm",
+        "inbound": [],
+        "kind": "layer",
+        "module_count": 0,
+        "name": "LLM (Part 3, deferred)",
+        "outbound": [
+          "L-authoring",
+          "L-standard"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Contains the promise-graph JSON Schema and core Promise / PromiseStatus types.",
+                "Zero pipeline deps; usable by third-party extractors."
+              ],
+              "gap_type": null,
+              "id": "PR-L-standard-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "L-standard",
+        "inbound": [
+          "L-authoring",
+          "L-llm",
+          "L-tooling",
+          "L-view"
+        ],
+        "kind": "layer",
+        "module_count": 0,
+        "name": "Standard (schema + core types)",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Contains pipeline_v3 (scan..publish, orchestrator, slice).",
+                "Depends on L-standard for schema conformance."
+              ],
+              "gap_type": null,
+              "id": "PR-L-tooling-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "L-tooling",
+        "inbound": [],
+        "kind": "layer",
+        "module_count": 0,
+        "name": "Tooling (pipeline_v3)",
+        "outbound": [
+          "COMP-c5a72728",
+          "L-standard"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Contains build_v3_viewer.py + rendered .architecture/viewers/*.html + notes.yaml.",
+                "Depends on L-standard for entity semantics; consumes L-authoring fragments."
+              ],
+              "gap_type": null,
+              "id": "PR-L-view-intent",
+              "provenance": "2026-09-15 SE walk",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "L-view",
+        "inbound": [],
+        "kind": "layer",
+        "module_count": 0,
+        "name": "View (viewer + build script)",
+        "outbound": [
+          "COMP-VIEWER",
+          "L-authoring",
+          "L-standard"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      }
+    ]
   },
   "gap_type_hist": {
     "missing-intent": 7,
@@ -8136,7 +8653,10 @@
     "components",
     "capabilities",
     "behaviors",
-    "interfaces"
+    "interfaces",
+    "actors",
+    "constraints",
+    "layers"
   ],
   "meta": {
     "generated_at": "2026-09-14T00:00:00Z",
@@ -8149,12 +8669,13 @@
   "sources": [
     ".architecture-model.v3.yaml",
     ".architecture/model/capabilities.v3.yaml",
+    ".architecture/model/enrichment.v3.yaml",
     ".architecture/model/viewer.v3.yaml"
   ],
   "status_hist": {
-    "open": 610,
+    "open": 613,
     "typed-gap": 54,
-    "verified": 54
+    "verified": 72
   },
   "top_by_gaps": [
     {
@@ -8222,9 +8743,9 @@
   ],
   "totals": {
     "components": 25,
-    "entities": 50,
+    "entities": 63,
     "gaps": 60,
-    "promises": 718,
-    "relationships": 86
+    "promises": 739,
+    "relationships": 113
   }
 }
