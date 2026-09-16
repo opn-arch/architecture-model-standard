@@ -1,8 +1,928 @@
 {
   "entities_by_kind": {
     "actors": [],
-    "behaviors": [],
-    "capabilities": [],
+    "behaviors": [
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Use an LLM seam to promote pipeline output past the 1-of-7 entity-kind ceiling \u2014 from source + declared model, propose authored capabilities, behaviors, interfaces, actors, constraints, and layers that the AST-only pipeline cannot infer."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-S1-intent",
+              "provenance": "Feeds CAP-PB from below. Covers the output of the cluster / link /\ncontainerize / verify / publish stages by adding new entity kinds\nthat publish.py:107 does not currently emit. Part 3 candidate.\nInterface: IF-llm-provider.\n",
+              "status": "open"
+            }
+          ],
+          "requirements": [
+            {
+              "content": [
+                "propose authored fragments in .architecture/model/*.v3.yaml format (compatible with merge)",
+                "respect the existing pipeline component ids as traces-to targets",
+                "never overwrite hand-authored fragments (append-only)",
+                "report cost + confidence per proposal for human review"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-S1-requirements",
+              "provenance": "hand-authored requirements for Part 3 prototype",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-S1",
+        "inbound": [
+          "CAP-DF.4"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "llm_entity_kind_promotion",
+        "outbound": [
+          "IF-llm-provider"
+        ],
+        "promise_count": 2,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Use an LLM seam to fill typed gaps produced by scan / derive_promises (missing-intent, no-public-classes, no-public-functions) by proposing content from the module source itself."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-S2-intent",
+              "provenance": "Covers the output of the scan and derive_promises stages. Would\neliminate the 54 typed-gaps in the current model. Part 3 candidate.\nInterface: IF-llm-provider.\n",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-S2",
+        "inbound": [
+          "CAP-DF.4"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "llm_gap_remediation",
+        "outbound": [
+          "IF-llm-provider"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Group scanned modules into components using multi-signal affinity (subdirectory, name-prefix, imports)."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-cluster-intent",
+              "provenance": "stage 3 of pipeline_v3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-cluster",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "cluster_modules_into_components",
+        "outbound": [
+          "COMP-c5a72728"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Wrap component records with provenance metadata and normalize root prefixes."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-containerize-intent",
+              "provenance": "stage 5 of pipeline_v3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-containerize",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "containerize_components",
+        "outbound": [
+          "COMP-c5a72728"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Translate scan output into Promise records with attributes intent / delivers / provides \u2014 the ONLY attributes emitted by the current AST-only pipeline. Richer attributes (requirements, failure_modes, MoEs, verification, ...) are Part 3 LLM-seam territory."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-derive-intent",
+              "provenance": "stage 2 of pipeline_v3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-derive-promises",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "derive_promises_from_scan",
+        "outbound": [
+          "COMP-c5a72728"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Materialize inter-component depends-on edges from import edges."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-link-intent",
+              "provenance": "stage 4 of pipeline_v3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-link",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "link_components_via_edges",
+        "outbound": [
+          "COMP-c5a72728"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "failure_modes": [
+            {
+              "content": [
+                {
+                  "publish.py:107 writes entities={\"components\"": "components} only \u2014 overwrites .architecture-model.v3.yaml wholesale on every run"
+                },
+                "authored non-component entities (capabilities, behaviors, interfaces, ...) cannot live in the pipeline output file today",
+                "forces authored layer to be a separate fragment set at .architecture/model/*.v3.yaml, merged at view time by COMP-VIEWER (D10)"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-publish-failure_modes",
+              "provenance": "Documents the architectural discovery that motivated the\nfragment-merge design in Commit 1. Promoting merge into publish.py\nis the primary Part 3 candidate (BEH-S1).\n",
+              "status": "verified"
+            }
+          ],
+          "intent": [
+            {
+              "content": [
+                "Serialize the verified model to .architecture-model.v3.yaml, sorted deterministically for byte-stable output."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-publish-intent",
+              "provenance": "stage 7 of pipeline_v3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-publish",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "publish_v3_model_yaml",
+        "outbound": [
+          "COMP-c5a72728"
+        ],
+        "promise_count": 2,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Walk the source root and enumerate Python modules with their AST-derived signatures, docstrings, imports, and public surface."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-scan-intent",
+              "provenance": "stage 1 of pipeline_v3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-scan",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "scan_python_source_tree",
+        "outbound": [
+          "COMP-c5a72728"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Check structural invariants on the assembled model (id uniqueness, edge integrity, promise attribute non-empty)."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-verify-intent",
+              "provenance": "stage 6 of pipeline_v3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-verify",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "verify_structural_invariants",
+        "outbound": [
+          "COMP-c5a72728"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Navigate the merged pipeline + fragments model in the sidebar + per-entity detail viewer surface."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-view-browse-intent",
+              "provenance": "viewer surface behavior",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-view-browse",
+        "inbound": [
+          "CAP-DF.2"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "view_browse_merged_model",
+        "outbound": [
+          "COMP-VIEWER"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Attach a free-form human note to any entity via a textarea in the detail view."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-view-note-intent",
+              "provenance": "viewer surface behavior",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-view-note",
+        "inbound": [
+          "CAP-DF.2"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "view_capture_human_note",
+        "outbound": [
+          "COMP-VIEWER"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Persist accumulated notes to a .yaml file the pipeline / next viewer rebuild can consume (option A round-trip)."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-view-save-intent",
+              "provenance": "viewer surface behavior",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-view-save",
+        "inbound": [
+          "CAP-DF.2"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "view_save_notes_yaml",
+        "outbound": [
+          "COMP-VIEWER"
+        ],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Emit the walk output as a structured .v3.yaml fragment under .architecture/model/, not as prose."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-walk-author-intent",
+              "provenance": "hand-authored \u2014 walk step 2",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-walk-author",
+        "inbound": [
+          "CAP-DF.1"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "walk_author_fragment_yaml",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Descend from a concept (capability) through behaviors to components, naming each level explicitly."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-walk-descend-intent",
+              "provenance": "hand-authored \u2014 walk step 1",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-walk-descend",
+        "inbound": [
+          "CAP-DF.1"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "walk_descend_concept_to_components",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Cross-reference authored behaviors to extracted components via traces-to edges, or accept the resulting unrealized gap."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-walk-realize-intent",
+              "provenance": "hand-authored \u2014 walk step 3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-walk-realize",
+        "inbound": [
+          "CAP-DF.1"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "walk_link_to_extracted_components",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      }
+    ],
+    "capabilities": [
+      {
+        "by_attr": {
+          "delivers": [
+            {
+              "content": [
+                "CAP-DF.1"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF-D-walk",
+              "provenance": "decomposition edge to CAP-DF.1 graph_walk_as_capability",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "CAP-DF.2"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF-D-view",
+              "provenance": "decomposition edge to CAP-DF.2 review_in_viewer",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "CAP-DF.3"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF-D-validate",
+              "provenance": "decomposition edge to CAP-DF.3 validate_declared_vs_extracted",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "CAP-DF.4"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF-D-llm",
+              "provenance": "decomposition edge to CAP-DF.4 llm_seams. Status open because the\nsub-capability itself is open (Part 3).\n",
+              "status": "open"
+            }
+          ],
+          "failure_modes": [
+            {
+              "content": [
+                "authored fragment introduces id colliding with pipeline output \u2014 mitigated by hard-fail in COMP-VIEWER._merge_sources",
+                "authored capability/behavior lacks realizes/traces-to edge \u2014 surfaced as gap_type=unrealized on Typed Gaps page",
+                "pipeline re-run overwrites pipeline model but NOT authored fragments (publish.py:107 writes .architecture-model.v3.yaml only) \u2014 deliberate architectural split",
+                "LLM seams (CAP-DF.4) don't exist yet \u2014 pipeline is pure AST, so semantic attributes (requirements, failure_modes, MoEs) can only be hand-authored today"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF-failure_modes",
+              "provenance": "Second use of failure_modes attribute in the model (first is COMP-VIEWER F1).\nDocuments the intentional and unintentional failure modes of the\nmodel-based dev loop as it stands today.\n",
+              "status": "verified"
+            }
+          ],
+          "intent": [
+            {
+              "content": [
+                "Evolve the system by looping through view \u2192 note \u2192 walk / author \u2192 validate \u2192 re-extract, using the model itself as the prompt substrate and the source of truth for what \"done\" looks like."
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF-intent",
+              "provenance": "Formalized 2026-09-14 walk L1 + preview of 2026-09-15 dev-workflow walk.\nDecomposes into 4 sub-capabilities. CAP-DF.1 (walk-as-capability) and\nCAP-DF.2 (view) are Part 2 territory (this commit + previous).\nCAP-DF.3 (validate) is partially delivered. CAP-DF.4 (LLM seams) is\nPart 3 (deferred).\n",
+              "status": "verified"
+            }
+          ],
+          "requirements": [
+            {
+              "content": [
+                "authored fragments MUST merge cleanly with pipeline output (D10 in viewer)",
+                "view surface MUST render every attribute in the fragment (D3 in viewer)",
+                "notes surface MUST round-trip through a file the pipeline can re-read",
+                "walk MUST produce structured fragments, not just prose"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF-requirements",
+              "provenance": "Requirements distilled from the model-first meta-principle. The first\nthree are verified in COMP-VIEWER's D3/D8/D10. The fourth (walk \u2192\nfragment) is verified by this file's existence.\n",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CAP-DF",
+        "inbound": [],
+        "kind": "capability",
+        "module_count": 0,
+        "name": "evolve_via_model_based_dev_loop",
+        "outbound": [
+          "CAP-DF.1",
+          "CAP-DF.2",
+          "CAP-DF.3",
+          "CAP-DF.4"
+        ],
+        "promise_count": 7,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "delivers": [
+            {
+              "content": [
+                "BEH-walk-descend"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF1-D-descend",
+              "provenance": "decomposition edge",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-walk-author"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF1-D-author",
+              "provenance": "decomposition edge",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-walk-realize"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF1-D-realize",
+              "provenance": "decomposition edge",
+              "status": "verified"
+            }
+          ],
+          "intent": [
+            {
+              "content": [
+                "Decompose concepts into capabilities \u2192 behaviors \u2192 components via top-down SE walks, producing authored fragments (not prose) that merge into the model."
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF1-intent",
+              "provenance": "Walks are a first-class capability of the standard, not documentation.\nFragment output goes into .architecture/model/ and is merged by\nCOMP-VIEWER at view time (D10) and eventually by publish.py (Part 3).\n",
+              "status": "verified"
+            }
+          ],
+          "provides": [
+            {
+              "content": [
+                "IF-authored-fragment"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF1-P-fragment",
+              "provenance": "interface exposed to fragment-authoring workflow",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CAP-DF.1",
+        "inbound": [
+          "CAP-DF"
+        ],
+        "kind": "capability",
+        "module_count": 0,
+        "name": "graph_walk_as_capability",
+        "outbound": [
+          "BEH-walk-author",
+          "BEH-walk-descend",
+          "BEH-walk-realize",
+          "IF-authored-fragment"
+        ],
+        "promise_count": 5,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "delivers": [
+            {
+              "content": [
+                "BEH-view-browse"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF2-D-browse",
+              "provenance": "decomposition edge",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-view-note"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF2-D-note",
+              "provenance": "decomposition edge",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-view-save"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF2-D-save",
+              "provenance": "decomposition edge",
+              "status": "verified"
+            }
+          ],
+          "intent": [
+            {
+              "content": [
+                "Browse the merged model in a single-file HTML viewer with per-entity drill-down, typed-gap surfacing, and free-form note capture."
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF2-intent",
+              "provenance": "realized by COMP-VIEWER (realizes edge below)",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CAP-DF.2",
+        "inbound": [
+          "CAP-DF"
+        ],
+        "kind": "capability",
+        "module_count": 0,
+        "name": "review_in_viewer",
+        "outbound": [
+          "BEH-view-browse",
+          "BEH-view-note",
+          "BEH-view-save",
+          "COMP-VIEWER"
+        ],
+        "promise_count": 4,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Detect drift between authored fragments (declared) and pipeline output (extracted) \u2014 every authored capability/behavior should either resolve to an extracted component or be surfaced as an unrealized gap."
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF3-intent",
+              "provenance": "Currently delivered as viewer-side heuristic (build_v3_viewer.py\nunrealized_gaps loop). Deeper validation (declared attribute values\nvs extracted docstrings, declared requirements vs extracted tests)\nis a Part 3 LLM seam under CAP-DF.4.\n",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CAP-DF.3",
+        "inbound": [
+          "CAP-DF"
+        ],
+        "kind": "capability",
+        "module_count": 0,
+        "name": "validate_declared_vs_extracted",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "delivers": [
+            {
+              "content": [
+                "BEH-S1"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF4-D-S1",
+              "provenance": "decomposition edge to BEH-S1",
+              "status": "open"
+            },
+            {
+              "content": [
+                "BEH-S2"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF4-D-S2",
+              "provenance": "decomposition edge to BEH-S2",
+              "status": "open"
+            }
+          ],
+          "intent": [
+            {
+              "content": [
+                "Use LLM seams to (a) promote pipeline output past the current 1-of-7 entity-kind ceiling and (b) remediate gaps by proposing authored fragments from source-code + declared-model context."
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-DF4-intent",
+              "provenance": "Part 3 territory. Two candidate seams identified in 2026-09-14 walk L5:\nS1 entity-kind promotion (feeds CAP-PB output from below \u2014 cluster /\nlink / containerize / verify / publish stages) and S2 gap remediation\n(covers scan / derive_promises output). See BEH-S1 and BEH-S2 below.\n",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CAP-DF.4",
+        "inbound": [
+          "CAP-DF"
+        ],
+        "kind": "capability",
+        "module_count": 0,
+        "name": "llm_gap_remediation_and_entity_kind_promotion",
+        "outbound": [
+          "BEH-S1",
+          "BEH-S2"
+        ],
+        "promise_count": 3,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "delivers": [
+            {
+              "content": [
+                "BEH-scan"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-scan",
+              "provenance": "decomposition edge to BEH-scan (contains relationship below)",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-derive-promises"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-derive",
+              "provenance": "decomposition edge to BEH-derive-promises",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-cluster"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-cluster",
+              "provenance": "decomposition edge to BEH-cluster",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-link"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-link",
+              "provenance": "decomposition edge to BEH-link",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-containerize"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-containerize",
+              "provenance": "decomposition edge to BEH-containerize",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-verify"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-verify",
+              "provenance": "decomposition edge to BEH-verify",
+              "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-publish"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-publish",
+              "provenance": "decomposition edge to BEH-publish",
+              "status": "verified"
+            }
+          ],
+          "intent": [
+            {
+              "content": [
+                "Extract a v3 Promise-graph architecture model from any Python source tree using pure AST analysis, deterministically and without an LLM."
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-intent",
+              "provenance": "Formalized 2026-09-14 SE walk L1 (docs/reports/2026-09-14-v3-se-walk.md).\nRealized by pipeline_v3 (COMP-c5a72728). Decomposes into 7 stages\nBEH-scan..BEH-publish plus the orchestrator BEH-run-pipeline.\n",
+              "status": "verified"
+            }
+          ],
+          "requirements": [
+            {
+              "content": [
+                "deterministic AST-only extraction (no LLM in the extract path today)",
+                "stage-composable (each stage isolable and testable)",
+                "resumable via disk cache between stages",
+                "emit .architecture-model.v3.yaml compatible with promise-graph.schema.json"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-requirements",
+              "provenance": "Requirements distilled from 2026-09-14 walk L2 + pipeline_v3 module\ncontracts. First non-canonical Promise attribute on a Capability.\n",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CAP-PB",
+        "inbound": [],
+        "kind": "capability",
+        "module_count": 0,
+        "name": "extract_architecture_from_code",
+        "outbound": [
+          "BEH-cluster",
+          "BEH-containerize",
+          "BEH-derive-promises",
+          "BEH-link",
+          "BEH-publish",
+          "BEH-scan",
+          "BEH-verify",
+          "COMP-c5a72728"
+        ],
+        "promise_count": 9,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Produce focused subgraph slices of the v3 model (by component, capability, or attribute) as prompt / view substrate for downstream LLM tasks and diagram generation."
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-SL-intent",
+              "provenance": "Formalized 2026-09-14 walk L1. Slicer is a downstream tool, not a\npipeline stage \u2014 run_pipeline does not invoke it. Realized by the\nsame COMP-c5a72728 that hosts the pipeline stages.\n",
+              "status": "verified"
+            }
+          ],
+          "requirements": [
+            {
+              "content": [
+                "accept a v3 model + focus spec (component id, capability id, attribute filter)",
+                "return a sub-model that itself validates against promise-graph.schema.json",
+                "preserve all promises on retained entities (no truncation of attribute vocabulary)"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-SL-requirements",
+              "provenance": "Requirements enumerated from 2026-09-14 walk L2. Verification pending\nuntil slice.py contracts are exercised by CAP-DF.3 validate step.\n",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CAP-SL",
+        "inbound": [],
+        "kind": "capability",
+        "module_count": 0,
+        "name": "slice_focused_subgraph",
+        "outbound": [
+          "COMP-c5a72728",
+          "IF-slicer"
+        ],
+        "promise_count": 2,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      }
+    ],
     "components": [
       {
         "by_attr": {
@@ -3987,7 +4907,12 @@
         },
         "gap_count": 0,
         "id": "COMP-VIEWER",
-        "inbound": [],
+        "inbound": [
+          "BEH-view-browse",
+          "BEH-view-note",
+          "BEH-view-save",
+          "CAP-DF.2"
+        ],
         "kind": "component",
         "module_count": 2,
         "name": "v3_viewer",
@@ -5315,7 +6240,17 @@
         },
         "gap_count": 2,
         "id": "COMP-c5a72728",
-        "inbound": [],
+        "inbound": [
+          "BEH-cluster",
+          "BEH-containerize",
+          "BEH-derive-promises",
+          "BEH-link",
+          "BEH-publish",
+          "BEH-scan",
+          "BEH-verify",
+          "CAP-PB",
+          "CAP-SL"
+        ],
         "kind": "component",
         "module_count": 9,
         "name": "pipeline_v3",
@@ -6538,13 +7473,110 @@
       }
     ],
     "constraints": [],
-    "interfaces": [],
+    "interfaces": [
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "The .architecture/model/*.v3.yaml fragment format \u2014 meta + entities + relationships \u2014 is the wire contract between hand-authored / LLM-authored architectural claims and the pipeline output."
+              ],
+              "gap_type": null,
+              "id": "PR-IF-fragment-intent",
+              "provenance": "hand-authored interface definition",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "IF-authored-fragment",
+        "inbound": [
+          "CAP-DF.1"
+        ],
+        "kind": "interface",
+        "module_count": 0,
+        "name": "authored_fragment_yaml",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Abstract LLM provider Protocol exposing complete / stream / structured / tokenize \u2014 the seam through which Part 3 LLM capabilities (BEH-S1, BEH-S2) invoke frontier models."
+              ],
+              "gap_type": null,
+              "id": "PR-IF-llm-intent",
+              "provenance": "Protocol exists at src/architecture_model/llm/provider.py. Zero\ncurrent usages in AMS codebase (adapters live in opencode-arch per\nCONTEXT.md). AMS-side adapter + policy.yaml wiring is Part 3.\n",
+              "status": "verified"
+            }
+          ],
+          "requirements": [
+            {
+              "content": [
+                "runtime-checkable Protocol so adapters can be swapped",
+                "deterministic seed / temperature control for byte-stable rebuilds",
+                "cost accounting per call (feeds .architecture/llm/policy.yaml budget)"
+              ],
+              "gap_type": null,
+              "id": "PR-IF-llm-requirements",
+              "provenance": "Part 3 requirements",
+              "status": "open"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "IF-llm-provider",
+        "inbound": [
+          "BEH-S1",
+          "BEH-S2"
+        ],
+        "kind": "interface",
+        "module_count": 0,
+        "name": "llm_provider_protocol",
+        "outbound": [],
+        "promise_count": 2,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Slice API accepting a v3 model + focus spec (component id / capability id / attribute filter) and returning a sub-model. Substrate for prompt construction (LLM seams) and diagram generation."
+              ],
+              "gap_type": null,
+              "id": "PR-IF-slicer-intent",
+              "provenance": "interface exposed by CAP-SL",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "IF-slicer",
+        "inbound": [
+          "CAP-SL"
+        ],
+        "kind": "interface",
+        "module_count": 0,
+        "name": "slice_focused_subgraph",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      }
+    ],
     "layers": []
   },
   "gap_type_hist": {
     "missing-intent": 7,
     "no-public-classes": 24,
-    "no-public-functions": 23
+    "no-public-functions": 23,
+    "unrealized": 6
   },
   "gaps": [
     {
@@ -7032,10 +8064,79 @@
       "owner_kind": "component",
       "owner_name": "docs",
       "promise_id": "PR-f9ad700fbfc8"
+    },
+    {
+      "attribute": "-",
+      "content": [
+        "authored behavior without realizes/traces-to edge"
+      ],
+      "gap_type": "unrealized",
+      "owner": "BEH-S1",
+      "owner_kind": "behavior",
+      "owner_name": "llm_entity_kind_promotion",
+      "promise_id": "-"
+    },
+    {
+      "attribute": "-",
+      "content": [
+        "authored behavior without realizes/traces-to edge"
+      ],
+      "gap_type": "unrealized",
+      "owner": "BEH-S2",
+      "owner_kind": "behavior",
+      "owner_name": "llm_gap_remediation",
+      "promise_id": "-"
+    },
+    {
+      "attribute": "-",
+      "content": [
+        "authored behavior without realizes/traces-to edge"
+      ],
+      "gap_type": "unrealized",
+      "owner": "BEH-walk-author",
+      "owner_kind": "behavior",
+      "owner_name": "walk_author_fragment_yaml",
+      "promise_id": "-"
+    },
+    {
+      "attribute": "-",
+      "content": [
+        "authored behavior without realizes/traces-to edge"
+      ],
+      "gap_type": "unrealized",
+      "owner": "BEH-walk-descend",
+      "owner_kind": "behavior",
+      "owner_name": "walk_descend_concept_to_components",
+      "promise_id": "-"
+    },
+    {
+      "attribute": "-",
+      "content": [
+        "authored behavior without realizes/traces-to edge"
+      ],
+      "gap_type": "unrealized",
+      "owner": "BEH-walk-realize",
+      "owner_kind": "behavior",
+      "owner_name": "walk_link_to_extracted_components",
+      "promise_id": "-"
+    },
+    {
+      "attribute": "-",
+      "content": [
+        "authored capability without realizes/traces-to edge"
+      ],
+      "gap_type": "unrealized",
+      "owner": "CAP-DF.3",
+      "owner_kind": "capability",
+      "owner_name": "validate_declared_vs_extracted",
+      "promise_id": "-"
     }
   ],
   "kinds_present": [
-    "components"
+    "components",
+    "capabilities",
+    "behaviors",
+    "interfaces"
   ],
   "meta": {
     "generated_at": "2026-09-14T00:00:00Z",
@@ -7047,12 +8148,13 @@
   "notes": {},
   "sources": [
     ".architecture-model.v3.yaml",
+    ".architecture/model/capabilities.v3.yaml",
     ".architecture/model/viewer.v3.yaml"
   ],
   "status_hist": {
-    "open": 599,
+    "open": 610,
     "typed-gap": 54,
-    "verified": 13
+    "verified": 54
   },
   "top_by_gaps": [
     {
@@ -7120,9 +8222,9 @@
   ],
   "totals": {
     "components": 25,
-    "entities": 25,
-    "gaps": 54,
-    "promises": 666,
-    "relationships": 50
+    "entities": 50,
+    "gaps": 60,
+    "promises": 718,
+    "relationships": 86
   }
 }
