@@ -181,3 +181,81 @@ def test_slice_by_component_original_model_unchanged(model: dict) -> None:
     slice_by_component(model, "COMP-a")
     still_ids = {c["id"] for c in model["entities"]["components"]}
     assert orig_ids == still_ids
+
+
+# ---------------------------------------------------------------------------
+# L16 fix: cross-kind neighborhood retention.
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def multi_kind_model() -> dict:
+    """Model with one component and one neighbor of every other kind."""
+    return {
+        "meta": {"schema_version": "3.0", "project": "mk"},
+        "entities": {
+            "components": [
+                {"id": "COMP-x", "name": "X", "promises": []},
+                {"id": "COMP-far", "name": "Far", "promises": []},  # not neighbor
+            ],
+            "capabilities": [
+                {"id": "CAP-1", "name": "Cap1"},
+                {"id": "CAP-far", "name": "CapFar"},  # not neighbor
+            ],
+            "behaviors": [{"id": "BEH-1", "name": "Beh1"}],
+            "interfaces": [{"id": "IF-1", "name": "If1"}],
+            "constraints": [{"id": "CONS-1", "name": "Cons1"}],
+            "layers": [{"id": "LAY-1", "name": "Lay1"}],
+            "actors": [{"id": "ACT-1", "name": "Act1"}],
+        },
+        "relationships": [
+            {"from": "COMP-x", "to": "CAP-1", "type": "realizes"},
+            {"from": "COMP-x", "to": "IF-1", "type": "exposes"},
+            {"from": "COMP-x", "to": "BEH-1", "type": "traces-to"},
+            {"from": "COMP-x", "to": "CONS-1", "type": "constrained-by"},
+            {"from": "LAY-1", "to": "COMP-x", "type": "contains"},
+            {"from": "ACT-1", "to": "BEH-1", "type": "triggers"},   # not touching x
+            {"from": "COMP-far", "to": "CAP-far", "type": "realizes"},  # not touching x
+        ],
+    }
+
+
+def test_slice_by_component_retains_cross_kind_neighbors(multi_kind_model: dict) -> None:
+    """L16 gap closure: slice on COMP-x pulls in every neighbor kind."""
+    out = slice_by_component(multi_kind_model, "COMP-x")
+    ents = out["entities"]
+    assert {c["id"] for c in ents["components"]} == {"COMP-x"}
+    assert {c["id"] for c in ents["capabilities"]} == {"CAP-1"}
+    assert {c["id"] for c in ents["behaviors"]} == {"BEH-1"}
+    assert {c["id"] for c in ents["interfaces"]} == {"IF-1"}
+    assert {c["id"] for c in ents["constraints"]} == {"CONS-1"}
+    assert {c["id"] for c in ents["layers"]} == {"LAY-1"}
+    # ACT-1 is not a 1-hop neighbor of COMP-x → excluded.
+    assert "actors" not in ents
+
+
+def test_slice_by_component_no_neighbors_drops_other_kinds(multi_kind_model: dict) -> None:
+    out = slice_by_component(multi_kind_model, "COMP-x", include_neighbors=False)
+    ents = out["entities"]
+    assert {c["id"] for c in ents["components"]} == {"COMP-x"}
+    # No other kind buckets — only the target.
+    assert set(ents.keys()) == {"components"}
+
+
+def test_slice_by_component_retains_cross_kind_edges(multi_kind_model: dict) -> None:
+    """All 5 edges touching COMP-x must be in the sliced relationships."""
+    out = slice_by_component(multi_kind_model, "COMP-x")
+    edges = {(r["from"], r["to"], r["type"]) for r in out["relationships"]}
+    assert ("COMP-x", "CAP-1", "realizes") in edges
+    assert ("COMP-x", "IF-1", "exposes") in edges
+    assert ("COMP-x", "BEH-1", "traces-to") in edges
+    assert ("COMP-x", "CONS-1", "constrained-by") in edges
+    assert ("LAY-1", "COMP-x", "contains") in edges
+    # Distant edges must NOT be present.
+    assert ("ACT-1", "BEH-1", "triggers") not in edges
+    assert ("COMP-far", "CAP-far", "realizes") not in edges
+
+
+def test_slice_by_component_multi_kind_deterministic(multi_kind_model: dict) -> None:
+    a = yaml.safe_dump(slice_by_component(multi_kind_model, "COMP-x"), sort_keys=False)
+    b = yaml.safe_dump(slice_by_component(multi_kind_model, "COMP-x"), sort_keys=False)
+    assert a == b

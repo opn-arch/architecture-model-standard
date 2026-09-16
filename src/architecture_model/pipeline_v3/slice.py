@@ -40,6 +40,27 @@ def _components(model: dict[str, Any]) -> list[dict[str, Any]]:
     return list(model.get("entities", {}).get("components", []))
 
 
+def _all_entities_by_kind(model: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """Return {kind_plural: [entity_dict, ...]} across all entity kinds."""
+    ents = model.get("entities", {})
+    out: dict[str, list[dict[str, Any]]] = {}
+    for kind, lst in ents.items():
+        if isinstance(lst, list):
+            out[kind] = list(lst)
+    return out
+
+
+def _id_to_kind(model: dict[str, Any]) -> dict[str, str]:
+    """Map every entity id → kind_plural across all entity buckets."""
+    out: dict[str, str] = {}
+    for kind, lst in _all_entities_by_kind(model).items():
+        for ent in lst:
+            eid = ent.get("id")
+            if eid:
+                out[eid] = kind
+    return out
+
+
 def _relationships(model: dict[str, Any]) -> list[dict[str, Any]]:
     return list(model.get("relationships", []))
 
@@ -66,9 +87,14 @@ def slice_by_component(
     component_id:
         Target component id (must exist).
     include_neighbors:
-        When True (default), pulls in components at the other end of
-        any ``relationships`` edge touching the target (both inbound
-        and outbound). When False, returns only the target.
+        When True (default), pulls in the 1-hop neighborhood: any entity
+        (of any kind) at the other end of a ``relationships`` edge
+        touching the target. This closes over cross-kind edges
+        (``realizes`` → capability, ``exposes`` → interface,
+        ``traces-to`` → behavior, ``constrained-by`` → constraint,
+        ``contains`` → layer, etc.) so the resulting sub-model preserves
+        the graph downstream walkers expect (L16). When False, returns
+        only the target component.
 
     Raises
     ------
@@ -80,16 +106,29 @@ def slice_by_component(
     if component_id not in by_id:
         raise SliceError(f"unknown component: {component_id}")
 
+    id_to_kind = _id_to_kind(model)
     keep_ids: set[str] = {component_id}
     if include_neighbors:
         for rel in _relationships(model):
             f, t = rel.get("from"), rel.get("to")
-            if f == component_id and t in by_id:
+            if f == component_id and t in id_to_kind:
                 keep_ids.add(t)
-            if t == component_id and f in by_id:
+            if t == component_id and f in id_to_kind:
                 keep_ids.add(f)
 
-    kept_comps = [copy.deepcopy(by_id[i]) for i in sorted(keep_ids)]
+    # Group retained entities by their original kind bucket. This preserves
+    # cross-kind neighbors (capabilities, interfaces, behaviors, ...) so
+    # walk-substrate consumers see the graph, not just an isolated
+    # component list.
+    kept_by_kind: dict[str, list[dict[str, Any]]] = {}
+    for kind, lst in _all_entities_by_kind(model).items():
+        for ent in lst:
+            if ent.get("id") in keep_ids:
+                kept_by_kind.setdefault(kind, []).append(copy.deepcopy(ent))
+    # Deterministic order within each bucket.
+    for kind in kept_by_kind:
+        kept_by_kind[kind].sort(key=lambda e: e.get("id", ""))
+
     kept_rels = [
         copy.deepcopy(r)
         for r in _relationships(model)
@@ -98,7 +137,7 @@ def slice_by_component(
 
     return {
         "meta": _meta_with_slice(model, "component", component_id),
-        "entities": {"components": kept_comps},
+        "entities": kept_by_kind,
         "relationships": kept_rels,
     }
 
