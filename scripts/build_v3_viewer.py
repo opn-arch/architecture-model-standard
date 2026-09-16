@@ -631,6 +631,279 @@ def _mermaid_pipeline(
     return "\n".join(lines), sorted(refs)
 
 
+def _all_entities_flat(entities_by_kind: dict) -> dict:
+    """Return {entity_id: (kind_singular, entity_dict)} across all kinds."""
+    flat: dict = {}
+    for kind in ENTITY_KINDS:
+        ksing = _kind_singular(kind)
+        for eid, ent in entities_by_kind[kind].items():
+            flat[eid] = (ksing, ent)
+    return flat
+
+
+# Per-kind Mermaid node shape (deterministic, matches SE view aesthetic).
+_KIND_SHAPE = {
+    "component": ('[', ']'),
+    "capability": ('(', ')'),
+    "behavior": ('[[', ']]'),
+    "interface": ('[/', '/]'),
+    "actor": ('((', '))'),
+    "constraint": ('{{', '}}'),
+    "layer": ('[(', ')]'),
+}
+
+
+def _mnode(eid: str, name: str, kind: str) -> str:
+    """Emit a Mermaid node line with kind-appropriate shape + label."""
+    lo, hi = _KIND_SHAPE.get(kind, ('[', ']'))
+    return f'  {_mid(eid)}{lo}"{_mesc(eid)}<br/>{_mesc(name)}"{hi}'
+
+
+def _emit_class_defs(lines: list) -> None:
+    """Append v2-palette classDef lines used across walk diagrams."""
+    lines.append("  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;")
+    lines.append("  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;")
+    lines.append("  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;")
+    lines.append("  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;")
+    lines.append("  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;")
+    lines.append("  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;")
+    lines.append("  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;")
+    lines.append("  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;")
+
+
+def _apply_classes(lines: list, by_kind: dict, root_id: str | None = None) -> None:
+    """Emit `class <ids> <kind>;` lines for grouped nodes; root gets `root` class."""
+    for kind, ids in by_kind.items():
+        clean = [i for i in ids if i != root_id]
+        if clean:
+            lines.append(f"  class {','.join(_mid(i) for i in clean)} {kind};")
+    if root_id:
+        lines.append(f"  class {_mid(root_id)} root;")
+
+
+def _mermaid_decomposition(
+    entities_by_kind: dict, relationships: list, entity_id: str
+) -> tuple[str, list[str]] | None:
+    """BFS ≤2 hops of outbound `contains` edges. Cap 30 nodes; overflow as
+    ``...N more`` sink. Returns ``None`` when the root has no outbound
+    ``contains`` edges (silent skip)."""
+    flat = _all_entities_flat(entities_by_kind)
+    if entity_id not in flat:
+        return None
+
+    # Outbound contains map (only from entities we know about).
+    contains_out: dict[str, list[str]] = {}
+    for r in relationships:
+        if r.get("type") != "contains":
+            continue
+        f, t = r.get("from"), r.get("to")
+        if f in flat and t in flat:
+            contains_out.setdefault(f, []).append(t)
+
+    if not contains_out.get(entity_id):
+        return None
+
+    CAP = 30
+    visited = {entity_id}
+    edges: list[tuple[str, str]] = []
+    overflow = 0
+
+    def _expand(node: str) -> list[str]:
+        return sorted(set(contains_out.get(node, [])))
+
+    # Depth 1.
+    for child in _expand(entity_id):
+        if len(visited) >= CAP:
+            overflow += 1
+            continue
+        visited.add(child)
+        edges.append((entity_id, child))
+    # Depth 2.
+    depth1 = [c for c in _expand(entity_id) if c in visited]
+    for parent in depth1:
+        for child in _expand(parent):
+            if child in visited:
+                edges.append((parent, child))
+                continue
+            if len(visited) >= CAP:
+                overflow += 1
+                continue
+            visited.add(child)
+            edges.append((parent, child))
+
+    lines = ["flowchart TD"]
+    by_kind: dict[str, list[str]] = {}
+    for eid in sorted(visited):
+        ksing, ent = flat[eid]
+        lines.append(_mnode(eid, ent.get("name", eid), ksing))
+        by_kind.setdefault(ksing, []).append(eid)
+    for f, t in sorted(set(edges)):
+        lines.append(f"  {_mid(f)} --> {_mid(t)}")
+    if overflow:
+        lines.append(f'  overflow["...{overflow} more"]')
+        lines.append(f"  {_mid(entity_id)} -.-> overflow")
+    _emit_class_defs(lines)
+    _apply_classes(lines, by_kind, root_id=entity_id)
+    return "\n".join(lines), sorted(visited)
+
+
+def _mermaid_neighbors(
+    entities_by_kind: dict,
+    relationships: list,
+    entity_id: str,
+    out_edges: dict,
+    in_edges: dict,
+    threshold: int = 20,
+) -> tuple[str, list[str]] | None:
+    """1-hop typed-edge neighborhood. Skip when total 1-hop neighbors is 0
+    or > ``threshold``. Uses ``out_edges``/``in_edges`` (with rel_type),
+    NOT the deduplicated ``outbound``/``inbound`` lists on the record."""
+    flat = _all_entities_flat(entities_by_kind)
+    if entity_id not in flat:
+        return None
+
+    outs = [(t, rt) for t, rt in out_edges.get(entity_id, []) if t in flat]
+    ins = [(s, rt) for s, rt in in_edges.get(entity_id, []) if s in flat]
+    total = len(outs) + len(ins)
+    if total == 0 or total > threshold:
+        return None
+
+    refs = {entity_id}
+    lines = ["flowchart LR"]
+    by_kind: dict[str, list[str]] = {}
+
+    # Root node.
+    ksing, ent = flat[entity_id]
+    lines.append(_mnode(entity_id, ent.get("name", entity_id), ksing))
+    by_kind.setdefault(ksing, []).append(entity_id)
+
+    # Nodes for all neighbors (dedup by id).
+    neighbor_ids = sorted(set([t for t, _ in outs] + [s for s, _ in ins]))
+    for nid in neighbor_ids:
+        if nid == entity_id:
+            continue
+        nksing, nent = flat[nid]
+        lines.append(_mnode(nid, nent.get("name", nid), nksing))
+        by_kind.setdefault(nksing, []).append(nid)
+        refs.add(nid)
+
+    # Edges (deterministic order, typed labels).
+    for src, tgt, rt in sorted({(entity_id, t, rt) for t, rt in outs}):
+        lines.append(f'  {_mid(src)} -->|{_mesc(rt)}| {_mid(tgt)}')
+    for src, tgt, rt in sorted({(s, entity_id, rt) for s, rt in ins}):
+        lines.append(f'  {_mid(src)} -->|{_mesc(rt)}| {_mid(tgt)}')
+
+    _emit_class_defs(lines)
+    _apply_classes(lines, by_kind, root_id=entity_id)
+    return "\n".join(lines), sorted(refs)
+
+
+def _mermaid_realization(
+    entities_by_kind: dict,
+    relationships: list,
+    entity_id: str,
+    kind: str,
+    out_edges: dict,
+    in_edges: dict,
+) -> tuple[str, list[str]] | None:
+    """Kind-dispatched 2-hop realization chain. See CONTEXT plan decision 5
+    for the exact walks. Returns ``None`` when hop 1 is empty."""
+    flat = _all_entities_flat(entities_by_kind)
+    if entity_id not in flat:
+        return None
+
+    def outs_by(eid: str, rtype: str) -> list[str]:
+        return sorted({t for t, rt in out_edges.get(eid, []) if rt == rtype and t in flat})
+
+    def ins_by(eid: str, rtype: str) -> list[str]:
+        return sorted({s for s, rt in in_edges.get(eid, []) if rt == rtype and s in flat})
+
+    edges: list[tuple[str, str, str]] = []  # (from, to, label)
+    hop1: list[str] = []
+    hop2: list[str] = []
+
+    if kind == "capability":
+        # cap <-- realizes <-- components --> contains --> sub-components
+        hop1 = ins_by(entity_id, "realizes")
+        for c in hop1:
+            edges.append((c, entity_id, "realizes"))
+        for c in hop1:
+            for sub in outs_by(c, "contains"):
+                edges.append((c, sub, "contains"))
+                hop2.append(sub)
+    elif kind == "component":
+        # comp --> realizes --> capabilities <-- contains <-- parent caps
+        hop1 = outs_by(entity_id, "realizes")
+        for cap in hop1:
+            edges.append((entity_id, cap, "realizes"))
+        for cap in hop1:
+            for parent in ins_by(cap, "contains"):
+                edges.append((parent, cap, "contains"))
+                hop2.append(parent)
+    elif kind == "behavior":
+        # beh <-- traces-to <-- components --> realizes --> capabilities
+        hop1 = ins_by(entity_id, "traces-to")
+        for c in hop1:
+            edges.append((c, entity_id, "traces-to"))
+        for c in hop1:
+            for cap in outs_by(c, "realizes"):
+                edges.append((c, cap, "realizes"))
+                hop2.append(cap)
+    elif kind == "interface":
+        # if <-- exposes <-- components --> realizes --> capabilities
+        hop1 = ins_by(entity_id, "exposes")
+        for c in hop1:
+            edges.append((c, entity_id, "exposes"))
+        for c in hop1:
+            for cap in outs_by(c, "realizes"):
+                edges.append((c, cap, "realizes"))
+                hop2.append(cap)
+    elif kind == "layer":
+        # layer --> contains --> components --> realizes --> capabilities
+        hop1 = outs_by(entity_id, "contains")
+        for c in hop1:
+            edges.append((entity_id, c, "contains"))
+        for c in hop1:
+            for cap in outs_by(c, "realizes"):
+                edges.append((c, cap, "realizes"))
+                hop2.append(cap)
+    elif kind == "actor":
+        # actor --> triggers --> behaviors <-- traces-to <-- components
+        hop1 = outs_by(entity_id, "triggers")
+        for b in hop1:
+            edges.append((entity_id, b, "triggers"))
+        for b in hop1:
+            for c in ins_by(b, "traces-to"):
+                edges.append((c, b, "traces-to"))
+                hop2.append(c)
+    elif kind == "constraint":
+        # constraint <-- constrained-by (1-hop only)
+        hop1 = ins_by(entity_id, "constrained-by")
+        for c in hop1:
+            edges.append((c, entity_id, "constrained-by"))
+    else:
+        return None
+
+    if not hop1:
+        return None
+
+    # Dedup edges deterministically.
+    edges = sorted(set(edges))
+    node_ids = {entity_id} | set(hop1) | set(hop2)
+
+    lines = ["flowchart LR"]
+    by_kind: dict[str, list[str]] = {}
+    for nid in sorted(node_ids):
+        nksing, nent = flat[nid]
+        lines.append(_mnode(nid, nent.get("name", nid), nksing))
+        by_kind.setdefault(nksing, []).append(nid)
+    for f, t, lbl in edges:
+        lines.append(f'  {_mid(f)} -->|{_mesc(lbl)}| {_mid(t)}')
+    _emit_class_defs(lines)
+    _apply_classes(lines, by_kind, root_id=entity_id)
+    return "\n".join(lines), sorted(node_ids)
+
+
 def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
     """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
     views = {
@@ -715,10 +988,23 @@ def _build_payload(model_path: Path) -> dict:
                 attr = p.get("attribute", "other")
                 status = p.get("status", "open")
                 gtype = p.get("gap_type")
+                # Normalize content to list[str] regardless of source shape.
+                # Pipeline-emitted intent promises store docstrings as raw
+                # strings; authored fragments use lists. Coercing here keeps
+                # downstream JS shape-safe (no `.join()` on string errors).
+                raw_c = p.get("content", [])
+                if raw_c is None:
+                    norm_c: list[str] = []
+                elif isinstance(raw_c, str):
+                    norm_c = [raw_c] if raw_c.strip() else []
+                elif isinstance(raw_c, list):
+                    norm_c = [str(x) for x in raw_c]
+                else:
+                    norm_c = [str(raw_c)]
                 by_attr.setdefault(attr, []).append(
                     {
                         "id": p.get("id", ""),
-                        "content": p.get("content", []),
+                        "content": norm_c,
                         "status": status,
                         "gap_type": gtype,
                         "provenance": p.get("provenance", ""),
@@ -737,7 +1023,7 @@ def _build_payload(model_path: Path) -> dict:
                             "promise_id": p.get("id", ""),
                             "attribute": attr,
                             "gap_type": gtype,
-                            "content": p.get("content", []),
+                            "content": norm_c,
                         }
                     )
             outs_typed = sorted({t for t, _ in out_edges.get(eid, [])})
@@ -764,6 +1050,23 @@ def _build_payload(model_path: Path) -> dict:
                     mmd, flow_refs = flow
                     rec["flow_mermaid"] = mmd
                     rec["flow_refs"] = flow_refs
+            # Graph-walk-as-capability: three additional inline diagrams
+            # stamped on every entity kind (silent skip when N/A).
+            decomp = _mermaid_decomposition(entities_by_kind, relationships, eid)
+            if decomp is not None:
+                rec["decomposition_mermaid"], rec["decomposition_refs"] = decomp
+            realiz = _mermaid_realization(
+                entities_by_kind, relationships, eid, rec["kind"],
+                out_edges, in_edges,
+            )
+            if realiz is not None:
+                rec["realization_mermaid"], rec["realization_refs"] = realiz
+            neigh = _mermaid_neighbors(
+                entities_by_kind, relationships, eid,
+                out_edges, in_edges,
+            )
+            if neigh is not None:
+                rec["neighbors_mermaid"], rec["neighbors_refs"] = neigh
             recs.append(rec)
         entity_records[kind] = recs
 
@@ -890,7 +1193,7 @@ table.tops tr:hover td { background:var(--border); }
 .prom { padding:10px 12px; border:1px solid var(--border); border-radius:6px; margin-bottom:6px; background:var(--panel); position:relative; }
 .prom .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .pid { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size:11px; color:var(--muted); }
-.content-text { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size:12px; margin-top:6px; word-break:break-word; color:var(--fg); }
+.content-text { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size:12px; margin-top:6px; word-break:break-word; color:var(--fg); white-space:pre-wrap; }
 .prov { display:none; font-size:11px; color:var(--muted); margin-top:6px; font-family: ui-monospace, "SF Mono", Menlo, monospace; white-space:pre-wrap; border-top:1px dashed var(--border); padding-top:6px; }
 .prom:hover .prov { display:block; }
 .chips { display:flex; flex-wrap:wrap; gap:5px; }
@@ -1136,6 +1439,24 @@ function selectEntity(id) {
               `</div></div>`;
     }
 
+    // Additional graph-walk cards (silent skip when field absent).
+    function _walkCard(title, mmd, refs, slug) {
+      if (!mmd) return { id: null, html: '' };
+      const did = `mmd-${slug}-${e.id}-${++_seRenderCounter}`;
+      const chips = (refs || []).map(id =>
+        `<span class="chip" data-id="${id}">${id}</span>`
+      ).join('');
+      const html = `<div class="card"><h3>${title}</h3>` +
+        `<div class="mermaid-host" style="background:#0f172a;padding:12px;border-radius:6px;overflow-x:auto">` +
+        `<div id="${did}" class="mermaid">${escapeHtml(mmd)}</div></div>` +
+        (chips ? `<div style="margin-top:8px;font-size:11px;color:var(--muted);text-transform:uppercase">Entities referenced (${(refs||[]).length})</div><div class="chips" style="margin-top:4px">${chips}</div>` : '') +
+        `</div>`;
+      return { id: did, html };
+    }
+    const decompCard = _walkCard('Decomposition (contains, ≤2 hops)', e.decomposition_mermaid, e.decomposition_refs, 'decomp');
+    const realizCard = _walkCard('Realization chain', e.realization_mermaid, e.realization_refs, 'realiz');
+    html += decompCard.html + realizCard.html;
+
     const seen = new Set();
     for (const attr of attrs) {
       const rows = (e.by_attr[attr] || []);
@@ -1160,6 +1481,9 @@ function selectEntity(id) {
       }
       html += `</div>`;
     }
+
+    const neighCard = _walkCard('Neighbors (1-hop, typed)', e.neighbors_mermaid, e.neighbors_refs, 'neigh');
+    html += neighCard.html;
 
     html += `<div class="card"><h3>Neighbors</h3>`;
     html += `<div style="margin-bottom:6px;font-size:11px;color:var(--muted);text-transform:uppercase">Depends on (${e.outbound.length})</div><div class="chips" style="margin-bottom:12px">`;
@@ -1209,11 +1533,19 @@ function selectEntity(id) {
     }
 
     // Render inline Mermaid flow (after content injection so element exists).
-    if (flowDiagramId && window.mermaid) {
-      const el = document.getElementById(flowDiagramId);
-      if (el) {
+    if (window.mermaid) {
+      const targets = [
+        [flowDiagramId, 'flow'],
+        [decompCard.id, 'decomposition'],
+        [realizCard.id, 'realization'],
+        [neighCard.id, 'neighbors'],
+      ];
+      for (const [did, tag] of targets) {
+        if (!did) continue;
+        const el = document.getElementById(did);
+        if (!el) continue;
         mermaid.run({ nodes: [el] }).catch(err => {
-          console.error('flow mermaid render failed for', e.id, err);
+          console.error(tag + ' mermaid render failed for', e.id, err);
           el.innerHTML = `<pre style="color:var(--muted);font-size:11px">Mermaid error: ${escapeHtml(String(err))}</pre>`;
         });
       }
