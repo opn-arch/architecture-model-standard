@@ -336,6 +336,30 @@ entities:
         Second use of failure_modes attribute in the model (first is COMP-VIEWER F1).
         Documents the intentional and unintentional failure modes of the
         model-based dev loop as it stands today.
+    - id: PR-CAP-DF-lessons_learned
+      attribute: lessons_learned
+      content:
+      - "L1 (CAP-PB walk L1): modeling capability decomposition is a SEPARATE concern from current component decomposition — multiple behaviors can trace to a single COMP hash and that is deliberate; forcing per-stage split is a Part-3 candidate, not a modeling requirement."
+      - "L2 (CAP-PB walk L1/L4): semantic attributes (failure_modes, stakeholders, assumptions) force mechanism-level thinking during walks — attributes ARE the walk, not decoration. Every walk should emit at least intent + one reflective attribute."
+      - "L3 (CAP-PB walk L5): user-triggered entry behaviors (BEH-run-pipeline) must be modeled as first-class delivers, not implied by orchestrator prose. Missing entry behaviors leave the graph disconnected from actors."
+      - "L4 (2026-09-16 viewer walk): cross-source shape divergence (pipeline-emit str vs authored list for Promise.content) MUST normalize at the Python boundary in _build_payload — single source of truth beats consumer-side defense. Applied at scripts/build_v3_viewer.py:~714."
+      - "L5 (2026-09-16 viewer walk): layered defense (try/catch on selectEntity) surfaces bugs as 'Render error' but does NOT identify root cause. Diagnosis requires reading the DATA shape across sources, not the code. Falsification (2 working / 23 broken components) pointed at the divergence directly."
+      - "L6 (2026-09-16 viewer walk): graph-walk-as-capability generalizes — flow_mermaid → decomposition_mermaid / realization_mermaid / neighbors_mermaid using the same substrate (helper returns tuple | None, stamped on record, rendered by shared loop). Adding future walks = 1 helper + 1 entry in the render targets array."
+      - "L7 (2026-09-16 viewer walk): silent-skip (return None when N/A) beats always-render; adaptive thresholds (BFS depth ≤ 2, cap 30 nodes, neighbors threshold 20) keep diagrams readable across entity kinds that vary by 100x in neighborhood size."
+      - "L8 (2026-09-16 viewer walk): kind-dispatched walks are unavoidable when the semantic shape of the traversal varies across entity kinds. Realization needed 7 distinct walk strategies (capability / component / behavior / interface / layer / actor / constraint) because the meaningful 2-hop chain is different for each — a single generic template would lose more insight than it saves."
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by:
+      - docs/reports/2026-09-16-content-shape-and-more-diagrams.md documents L4-L8
+      - docs/reports/2026-09-16-cap-pb-walk.md documents L1-L3
+      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8)
+      status: verified
+      gap_type: null
+      provenance: |
+        Harvested 2026-09-16 across CAP-PB walk + viewer content-shape fix +
+        3-diagram generalization. These are lessons learned by DOING the
+        model-based dev loop on itself, and belong in the model so future
+        walks inherit them.
     - id: PR-CAP-DF-D-walk
       attribute: delivers
       content: [CAP-DF.1]
@@ -421,6 +445,25 @@ entities:
       status: verified
       gap_type: null
       provenance: decomposition edge
+    - id: PR-CAP-DF1-failure_modes
+      attribute: failure_modes
+      content:
+      - walk emits prose instead of structured fragment — mitigated by BEH-walk-author requiring .v3.yaml output
+      - walk skips reflective attributes (failure_modes / stakeholders / assumptions) — leaves promises verified but mechanism-blind
+      - walk introduces cross-source shape divergence for a Promise attribute — must normalize at Python boundary (viewer L4), never at consumer
+      - walk-authored capability that IS the walk substrate (e.g. CAP-PB flow) lacks a realizes edge from a component — capability appears in graph but has no realization diagram
+      - single generic diagram template forced across entity kinds loses more insight than it saves — kind-dispatched walks (viewer L8) are unavoidable when the meaningful 2-hop chain differs per kind
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by:
+      - PR-CAP-DF-lessons_learned L4-L8 above
+      status: verified
+      gap_type: null
+      provenance: |
+        Distilled from 2026-09-16 viewer walk + CAP-PB walk. These are the
+        failure modes a walk-as-capability run can hit; captured here so
+        the failure_modes surface on every entity-page detail view for
+        CAP-DF.1 as a checklist for future walks.
     - id: PR-CAP-DF1-P-fragment
       attribute: provides
       content: [IF-authored-fragment]
@@ -1261,3 +1304,24 @@ relationships:
 - {from: BEH-link,            to: BEH-containerize,    type: triggers, note: pipeline stage 4->5}
 - {from: BEH-containerize,    to: BEH-verify,          type: triggers, note: pipeline stage 5->6}
 - {from: BEH-verify,          to: BEH-publish,         type: triggers, note: pipeline stage 6->7}
+# --- 2026-09-16 Task B: close the CAP-DF dev loop (cross-pipeline triggers) ---
+- from: BEH-walk-author
+  to: BEH-run-pipeline
+  type: triggers
+  note: |
+    After the developer authors a .v3.yaml fragment, they re-run the extraction
+    pipeline so the fragment can be merged with (or checked against) refreshed
+    pipeline output. Closes CAP-DF -> CAP-PB feedback.
+- from: BEH-run-pipeline
+  to: BEH-view-browse
+  type: triggers
+  note: |
+    After BEH-publish emits a refreshed IF-model, the developer opens the viewer
+    to review the re-extracted graph. Closes CAP-PB -> CAP-DF.2 feedback.
+- from: BEH-view-note
+  to: BEH-walk-author
+  type: triggers
+  note: |
+    Notes captured in the viewer surface deltas / questions that motivate the
+    next walk fragment. Closes CAP-DF.2 -> CAP-DF.1 feedback and completes the
+    view -> note -> walk -> re-extract -> view loop.
