@@ -82,9 +82,50 @@ Commit 2 (`ef632b9`) demonstrated the gap can be closed **by hand** for capabili
 
 - **S3 (delivered, `1a721a5`)** — Viewer Save button emits `notes.yaml`. Human placement into `.architecture/viewers/`.
 - **CAP-DF.1 walk (delivered by hand, `ef632b9`)** — `.architecture/model/capabilities.v3.yaml` merges into the viewer payload, adds capabilities / behaviors / interfaces / requirements / failure_modes attributes.
+- **Enrichment + SE views (delivered, `81a614a` + `3a29114`)** — see Level 6 below.
 - **S1 + S2 (Part 3)** — declared as CAP-DF.4 in the capability tree, tracked as unrealized typed gaps in the v3 viewer.
 
 The self-model now declares its own dev workflow. Every future workflow improvement is one more CAP-DF cycle on the same loop.
+
+## Level 6 — Walks enrich existing entities (delivered `81a614a` + `3a29114`)
+
+The 2026-09-14 walk added *new* entities (capabilities, behaviors, interfaces). This walk formalizes and delivers a stronger claim: **walks also enrich existing entities by adding semantic promises**, and the viewer surfaces the aggregate result across four SE views.
+
+**Enrichment mechanism (`81a614a`).** `scripts/build_v3_viewer.py` merge policy changed from hard-fail on entity-id collision to **promise-level union**: same `entity.id` across sources unions `promises[]` by `promise.id`. Same `promise.id` with different content is still a hard-fail (guards against accidental drift). Kind collisions on the same id remain fatal. Relationships dedup by `(from, to, type)`. This preserves the pipeline as authoritative on `name` / `root_prefix` / `module_names` while letting authored fragments contribute additional semantic promises on the same entity.
+
+**Enrichment fragment (`81a614a`).** `.architecture/model/enrichment.v3.yaml` attaches four attributes (`stakeholders`, `success_criteria`, `failure_modes`, `slos` — the minimum-viable Schema-2.1 semantic suite) to `COMP-c5a72728` (pipeline_v3) and `COMP-VIEWER`. Every promise carries `provenance: 2026-09-15 SE walk enrichment` and, where possible, a `verified_by` list citing tests or commits. The same fragment adds:
+
+- 4 **actors** — `ACT-developer`, `ACT-se`, `ACT-ci`, `ACT-llm` (last is `open`, Part 3)
+- 4 **constraints** — `CONS-determinism`, `CONS-pinned-clock`, `CONS-no-runtime-deps`, `CONS-open-schema`
+- 5 **layers** — `L-standard`, `L-tooling`, `L-view`, `L-authoring`, `L-llm` (last is `open`, Part 3)
+- 27 new relationships: actors → behaviors (triggers), capabilities → constraints (constrained-by), layers → components (contains), layers → layers (depends-on / consumes / produces)
+
+Model growth: 50 → 63 entities, 4 kinds → 7 kinds, 86 → 113 edges. All 7 v3 entity kinds now present in the viewer sidebar.
+
+**Four SE views delivered (`3a29114`).** `build_v3_viewer.py` now emits a `se_views` payload with four deterministic Mermaid diagrams generated from the merged model:
+
+| View | Diagram type | Content |
+|---|---|---|
+| **ConOps** | flowchart LR | Actors → top-level capabilities via `triggers` edges (behavior triggers resolved to owning capability) |
+| **Functional Analysis** | flowchart TD | Capability tree: CAP-* → sub-caps → behaviors (contains), + interfaces (exposes) + constraints (constrained-by) |
+| **Logical Architecture** | flowchart TD | Layer subgraphs with contained components + layer↔layer depends-on / consumes / produces edges |
+| **Use Cases** | flowchart LR | Actor → behavior triggers, behaviors grouped in a single subgraph |
+
+Determinism is enforced by sorting nodes by id at every level and sorting edges by `(from, to, type)`. Every rebuild produces byte-identical HTML + JSON; verified by rerun-diff.
+
+**Zero-runtime-deps Mermaid.** Instead of loading Mermaid from a CDN (violates `CONS-no-runtime-deps`), `assets/mermaid.min.js` (v10.9.1, sha256 `61b335a4...`, 3.3MB) is checked in under `.architecture/viewers/assets/` and loaded via a relative path. The viewer remains offline-capable.
+
+**Viewer surface.** The sidebar gains an **SE Views** group with four nav items. Each opens a page with:
+1. **Intent** — one-paragraph narrative (version-controlled in `SE_VIEW_NARRATIVES`, not derived)
+2. **Diagram** — Mermaid-rendered inline via `mermaid.run({ nodes: [el] })` after DOM insertion
+3. **Entities referenced** — clickable chips linking back to per-entity detail pages
+4. **Mermaid source** (collapsed) — raw Mermaid string for copy/diff/debug
+
+The chip → entity-detail link closes the loop: SE view → entity page → promises → fragment source → next walk.
+
+**Verification.** After each commit: `python scripts/build_v3_viewer.py` → rerun-diff for byte-determinism → `node --check` on extracted logic JS → `python -c "import json; ..."` to inspect payload shape (7 kinds, `se_views` keys, `mermaid` strings non-empty). All checks green through `3a29114`.
+
+**What this proves for the standard.** Enrichment is *additive without pipeline modification* — the pipeline stays byte-deterministic and CI-gated while walks (human or, in Part 3, LLM) contribute semantic promises via merge. The SE view emission uses **only merged-payload data**, so any new fragment automatically flows through all four views without code changes. The standard supports arbitrary vocabulary; the tooling proves it end-to-end.
 
 ---
 
