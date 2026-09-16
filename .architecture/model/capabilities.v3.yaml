@@ -1166,18 +1166,19 @@ entities:
       gap_type: null
       provenance: interface exposed by CAP-SL
 relationships:
-- from: CAP-PB
-  to: COMP-c5a72728
+- from: COMP-c5a72728
+  to: CAP-PB
   type: realizes
-  note: CAP-PB Extract is realized by the pipeline_v3 component
-- from: CAP-SL
-  to: COMP-c5a72728
+  note: pipeline_v3 component realizes CAP-PB Extract (direction fixed 2026-09-16
+    L9 — walker expects COMP→realizes→CAP per standard convention)
+- from: COMP-c5a72728
+  to: CAP-SL
   type: realizes
-  note: CAP-SL Slice is realized by pipeline_v3.slice within the same component
-- from: CAP-DF.2
-  to: COMP-VIEWER
+  note: pipeline_v3.slice within the same component realizes CAP-SL Slice
+- from: COMP-VIEWER
+  to: CAP-DF.2
   type: realizes
-  note: CAP-DF.2 Review is realized by the viewer subsystem
+  note: viewer subsystem realizes CAP-DF.2 Review
 - from: CAP-PB
   to: BEH-scan
   type: contains
