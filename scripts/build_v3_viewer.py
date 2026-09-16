@@ -184,21 +184,21 @@ def _kind_singular(kind: str) -> str:
 # viewer surfaces a stable authorial voice. Update in lockstep with walks.
 SE_VIEW_NARRATIVES = {
     "conops": (
-        "Concept of Operations for the AMS dev workflow. Four actors "
-        "(developer, SE, CI, and the Part-3 LLM) drive the three top-level "
-        "capabilities. The developer + SE run the day-to-day loop "
-        "(view \u2192 note \u2192 walk/author \u2192 validate \u2192 re-extract). "
-        "CI enforces byte-determinism on every push. The LLM is declared "
-        "as future actor for CAP-DF.4 (Part 3, not yet realized)."
+        "Concept of Operations for the AMS dev workflow \u2014 actor "
+        "\u2192 top-level-capability roll-up. Behavior-level triggers are "
+        "aggregated upward through the contains-graph until they reach one "
+        "of the three top capabilities (CAP-PB extract, CAP-SL slice, "
+        "CAP-DF evolve). Actor\u2192behavior detail is available on each "
+        "actor's entity page and in the Use Cases view. The LLM is "
+        "declared as future actor for CAP-DF.4 (Part 3, not yet realized)."
     ),
     "functional": (
-        "Functional analysis \u2014 top-down capability tree derived from the "
-        "merged model. CAP-PB (extract) contains the 8 pipeline behaviors; "
-        "CAP-SL (slice) exposes IF-slicer; CAP-DF (evolve) contains four "
-        "sub-capabilities: walk, view, validate, and LLM seams. Behaviors "
-        "hang off their owning sub-capability; interfaces are leaves. "
-        "Constraint edges (constrained-by) surface non-functional "
-        "requirements at the capability level."
+        "Functional analysis \u2014 capability hierarchy only. Shows the "
+        "three top-level capabilities (CAP-PB extract, CAP-SL slice, "
+        "CAP-DF evolve) and the four CAP-DF sub-capabilities (walk, view, "
+        "validate, LLM seams). Behaviors, interfaces, and constraints are "
+        "accessible via the sidebar and each capability's entity page "
+        "(constrained-by targets appear as neighbor chips)."
     ),
     "logical": (
         "Logical architecture \u2014 layer\u2192component allocation and "
@@ -231,93 +231,127 @@ def _mesc(label: str) -> str:
 def _mermaid_conops(
     entities_by_kind: dict, relationships: list
 ) -> tuple[str, list[str]]:
-    """Actors on left, top-level capabilities on right; triggers edges between."""
+    """Actors on left, top-level capabilities on right; roll-up edges.
+
+    Actor\u2192behavior\u2192capability chains are walked upward through
+    ``contains``-edges until a top-level capability (no inbound ``contains``
+    from another capability) is reached. Edges are deduplicated on
+    ``(actor, top_cap)`` and rendered unlabeled to sidestep the Mermaid
+    paren-in-pipe-label parser bug and match the Use Cases aesthetic.
+    """
     actors = sorted(entities_by_kind["actors"].keys())
-    caps = sorted(entities_by_kind["capabilities"].keys())
-    lines = ["flowchart LR"]
-    if actors:
-        lines.append('  subgraph ACTORS["Actors"]')
-        for aid in actors:
-            name = entities_by_kind["actors"][aid].get("name", aid)
-            lines.append(f'    {_mid(aid)}["{_mesc(aid)}<br/>{_mesc(name)}"]')
-        lines.append("  end")
-    if caps:
-        lines.append('  subgraph CAPS["Capabilities"]')
-        for cid in caps:
-            name = entities_by_kind["capabilities"][cid].get("name", cid)
-            lines.append(f'    {_mid(cid)}["{_mesc(cid)}<br/>{_mesc(name)}"]')
-        lines.append("  end")
-    # Actor -> Behavior/Capability edges (from actors only).
-    refs: set[str] = set(actors) | set(caps)
-    edges: list[tuple[str, str, str]] = []
+    caps_dict = entities_by_kind["capabilities"]
+    caps = sorted(caps_dict.keys())
+    # Top-level caps = capabilities with no inbound `contains` edge from
+    # another capability.
+    contained_by_cap: set[str] = set()
     for r in relationships:
         f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
-        if f in actors and rt == "triggers":
-            # Follow behavior -> capability via contains reverse-lookup.
-            # If t is a capability, edge directly; else find containing cap.
-            if t in caps:
-                edges.append((f, t, "triggers"))
-                refs.add(t)
-            else:
-                # Find capability containing t.
-                for rr in relationships:
-                    if rr.get("to") == t and rr.get("type") == "contains":
-                        cap = rr.get("from")
-                        if cap in caps:
-                            edges.append((f, cap, f"triggers ({t})"))
-                            refs.add(cap)
-                            break
-    edges = sorted(set(edges))
-    for f, t, lbl in edges:
-        lines.append(f"  {_mid(f)} -->|{_mesc(lbl)}| {_mid(t)}")
+        if rt == "contains" and f in caps_dict and t in caps_dict:
+            contained_by_cap.add(t)
+    top_caps = {cid for cid in caps if cid not in contained_by_cap}
+
+    # Build reverse lookup: child_cap -> parent_cap via `contains`.
+    parent_of: dict[str, str] = {}
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if rt == "contains" and f in caps_dict and t in caps_dict:
+            parent_of[t] = f
+
+    # Owning cap for an arbitrary entity (behavior or otherwise): first
+    # capability that `contains` it.
+    owning_cap: dict[str, str] = {}
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if rt == "contains" and f in caps_dict and t not in caps_dict:
+            owning_cap.setdefault(t, f)
+
+    def _roll_up(cap_id: str) -> str | None:
+        """Walk contains-edges upward until a top-cap is reached (max 5 hops)."""
+        cur = cap_id
+        for _ in range(5):
+            if cur in top_caps:
+                return cur
+            nxt = parent_of.get(cur)
+            if nxt is None or nxt == cur:
+                return None
+            cur = nxt
+        return None
+
+    # Emit dedupe'd (actor, top_cap) pairs.
+    pairs: set[tuple[str, str]] = set()
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if f not in actors or rt != "triggers":
+            continue
+        if t in caps_dict:
+            start = t
+        else:
+            start = owning_cap.get(t)
+            if start is None:
+                # No capability owns this behavior; skip with warning.
+                print(
+                    f"[conops] warn: cannot roll up trigger {f}->{t}: "
+                    "no owning capability",
+                    file=sys.stderr,
+                )
+                continue
+        top = _roll_up(start)
+        if top is None:
+            print(
+                f"[conops] warn: cannot roll up trigger {f}->{t}: "
+                f"no top-cap ancestor within 5 hops (started at {start})",
+                file=sys.stderr,
+            )
+            continue
+        pairs.add((f, top))
+
+    used_actors = sorted({a for a, _ in pairs})
+    used_tops = sorted({c for _, c in pairs})
+
+    lines = ["flowchart LR"]
+    if used_actors:
+        lines.append('  subgraph ACTORS["Actors"]')
+        for aid in used_actors:
+            name = entities_by_kind["actors"][aid].get("name", aid)
+            lines.append(f'    {_mid(aid)}(("{_mesc(aid)}<br/>{_mesc(name)}"))')
+        lines.append("  end")
+    if used_tops:
+        lines.append('  subgraph CAPS["Top-level Capabilities"]')
+        for cid in used_tops:
+            name = caps_dict[cid].get("name", cid)
+            lines.append(f'    {_mid(cid)}["{_mesc(cid)}<br/>{_mesc(name)}"]')
+        lines.append("  end")
+    for f, t in sorted(pairs):
+        lines.append(f"  {_mid(f)} --> {_mid(t)}")
+    refs = set(used_actors) | set(used_tops)
     return "\n".join(lines), sorted(refs)
 
 
 def _mermaid_functional(
     entities_by_kind: dict, relationships: list
 ) -> tuple[str, list[str]]:
-    """Capability tree: CAP-* → sub-caps → behaviors + interfaces."""
+    """Capability hierarchy only: caps as nodes, contains-edges between caps.
+
+    Behaviors, interfaces, and constraints are intentionally omitted from
+    the diagram to keep the functional view high-level. They remain
+    browsable in the sidebar and appear as neighbor chips on each
+    capability's entity page (constrained-by targets included).
+    """
     caps = entities_by_kind["capabilities"]
-    behs = entities_by_kind["behaviors"]
-    ifaces = entities_by_kind["interfaces"]
-    cons = entities_by_kind["constraints"]
     lines = ["flowchart TD"]
     refs: set[str] = set()
     for cid in sorted(caps):
         name = caps[cid].get("name", cid)
         lines.append(f'  {_mid(cid)}["{_mesc(cid)}<br/>{_mesc(name)}"]')
         refs.add(cid)
-    for bid in sorted(behs):
-        name = behs[bid].get("name", bid)
-        lines.append(f'  {_mid(bid)}(["{_mesc(bid)}<br/>{_mesc(name)}"])')
-    for iid in sorted(ifaces):
-        name = ifaces[iid].get("name", iid)
-        lines.append(f'  {_mid(iid)}[/"{_mesc(iid)}<br/>{_mesc(name)}"/]')
-    for kid in sorted(cons):
-        name = cons[kid].get("name", kid)
-        lines.append(f'  {_mid(kid)}{{{{"{_mesc(kid)}<br/>{_mesc(name)}"}}}}')
-    edges: list[tuple[str, str, str]] = []
+    edges: list[tuple[str, str]] = []
     for r in relationships:
         f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
-        if f in caps and rt == "contains" and (t in caps or t in behs):
-            edges.append((f, t, "contains"))
-            refs.add(t)
-        elif f in caps and rt == "exposes" and t in ifaces:
-            edges.append((f, t, "exposes"))
-            refs.add(t)
-        elif f in caps and rt == "constrained-by" and t in cons:
-            edges.append((f, t, "constrained-by"))
-            refs.add(t)
-        elif f in caps and rt == "realizes":
-            # Skip capability -> component realizes edges here; those belong
-            # to logical view.
-            pass
-    edges = sorted(set(edges))
-    for f, t, rt in edges:
-        arrow = "-.->|constrained by|" if rt == "constrained-by" else (
-            "==>|exposes|" if rt == "exposes" else "-->"
-        )
-        lines.append(f"  {_mid(f)} {arrow} {_mid(t)}")
+        if f in caps and rt == "contains" and t in caps:
+            edges.append((f, t))
+    for f, t in sorted(set(edges)):
+        lines.append(f"  {_mid(f)} --> {_mid(t)}")
     return "\n".join(lines), sorted(refs)
 
 
