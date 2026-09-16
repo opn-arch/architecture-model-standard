@@ -2,7 +2,73 @@
   "diagnostics": {
     "constraint_compliance_gaps": [],
     "direction_warnings": [],
-    "realization_skip_reasons": {}
+    "realization_skip_reasons": {},
+    "unrealized_capabilities": [
+      {
+        "cap_id": "CAP-DF",
+        "open_promise_count": 2,
+        "open_promise_ids": [
+          "PR-CAP-DF-D-llm",
+          "PR-CAP-DF-requirements"
+        ],
+        "realizer_count": 0,
+        "realizers": [],
+        "severity": "critical"
+      },
+      {
+        "cap_id": "CAP-DF.4",
+        "open_promise_count": 3,
+        "open_promise_ids": [
+          "PR-CAP-DF4-D-S1",
+          "PR-CAP-DF4-D-S2",
+          "PR-CAP-DF4-intent"
+        ],
+        "realizer_count": 0,
+        "realizers": [],
+        "severity": "critical"
+      },
+      {
+        "cap_id": "CAP-DF.1",
+        "open_promise_count": 0,
+        "open_promise_ids": [],
+        "realizer_count": 0,
+        "realizers": [],
+        "severity": "unrealized"
+      },
+      {
+        "cap_id": "CAP-DF.3",
+        "open_promise_count": 0,
+        "open_promise_ids": [],
+        "realizer_count": 0,
+        "realizers": [],
+        "severity": "unrealized"
+      },
+      {
+        "cap_id": "CAP-PB",
+        "open_promise_count": 2,
+        "open_promise_ids": [
+          "PR-CAP-PB-open-llm-derive-enrichment",
+          "PR-CAP-PB-open-per-stage-split"
+        ],
+        "realizer_count": 1,
+        "realizers": [
+          "COMP-c5a72728"
+        ],
+        "severity": "partial"
+      },
+      {
+        "cap_id": "CAP-SL",
+        "open_promise_count": 1,
+        "open_promise_ids": [
+          "PR-CAP-SL-requirements"
+        ],
+        "realizer_count": 1,
+        "realizers": [
+          "COMP-c5a72728"
+        ],
+        "severity": "partial"
+      }
+    ]
   },
   "entities_by_kind": {
     "actors": [
@@ -1230,7 +1296,8 @@
                 "L13 (2026-09-16 compliance walk): the audit surfaces 3 legitimate constraint impacts on entities lacking evidence (CAP-DF.2 vs CONS-determinism/no-runtime-deps; CAP-DF.1/.4 vs CONS-open-schema; 6 BEH-* vs the same). These are AUTHORING todos, not walker bugs. The walker's job is to make gaps visible; closing them is model authoring work. Loop pattern: view (banner) \u2192 note (gap list) \u2192 walk/author (fill promises).",
                 "L14 (2026-09-16 gap closure): the universal-evidence audit accepts three distinct evidence tiers \u2014 runtime (test/harness citation), inherited (SLO promised on a realizes-target and reused via the edge), and design-only (compatible-by-construction, Part 3 deferred). All three passed the L12 rule, but only the first truly verifies at runtime. Provenance strings now flag design-only tier explicitly. A future refinement could add a tier field to promises and surface tier in the compliance banner so 'compatibility by construction' does not look identical to 'test citation' in the audit output.",
                 "L15 (2026-09-16 tier classifier): the L14 refinement lands as a pure classifier _promise_tier(promise) that reads existing provenance strings (no schema change, backward-compatible). Runtime > inherited > design > asserted priority. _entity_has_compliance_evidence and _constraint_compliance_gaps gain a strong_only flag (default False keeps L12 behavior byte-identical); strong_only=True raises the audit bar to runtime-tier only. _evidence_tier_summary(records) emits per-entity {tier: count} for future banner surfacing. Viewer output unchanged this commit \u2014 pure library-tier addition ready to be consumed by a follow-up UI change.",
-                "L16 (2026-09-16 CAP-SL self-exercise): applying slice_by_component('COMP-VIEWER') to the merged model and feeding the output back into the walk substrate shows CAP-SL is not walk-substrate-complete. The slicer drops 6 of 7 canonical entity kinds and any relationship pointing across kinds. 3 of 7 walks return None on the slice, 2 more degrade silently. Root cause: include_neighbors=True closes over relationships but only retains targets whose ids are already in the component map. This validates PR-CAP-SL-requirements as legitimately open \u2014 component-focus is delivered but the sub-model doesn't preserve the graph the downstream walker needs. Fix is bounded (~30 LOC to close over realizes/exposes/traces-to/constrained-by/contains) but deferred to Part 2 authoring. Filing L16 to make the gap visible before we build on top of CAP-SL as if it were a complete substrate."
+                "L16 (2026-09-16 CAP-SL self-exercise): applying slice_by_component('COMP-VIEWER') to the merged model and feeding the output back into the walk substrate shows CAP-SL is not walk-substrate-complete. The slicer drops 6 of 7 canonical entity kinds and any relationship pointing across kinds. 3 of 7 walks return None on the slice, 2 more degrade silently. Root cause: include_neighbors=True closes over relationships but only retains targets whose ids are already in the component map. This validates PR-CAP-SL-requirements as legitimately open \u2014 component-focus is delivered but the sub-model doesn't preserve the graph the downstream walker needs. Fix is bounded (~30 LOC to close over realizes/exposes/traces-to/constrained-by/contains) but deferred to Part 2 authoring. Filing L16 to make the gap visible before we build on top of CAP-SL as if it were a complete substrate.",
+                "L17 (2026-09-16 unrealized-capability walk): the 8th walk audits capabilities themselves against the same substrate everything else uses: (0 realizers \u00d7 0 open promises) \u2192 unrealized; (0 \u00d7 \u22651) \u2192 critical; (\u22651 \u00d7 \u22651) \u2192 partial; (\u22651 \u00d7 0) \u2192 ok/silent-skip. Applied to the current model this surfaced 2 critical (CAP-DF, CAP-DF.4), 2 unrealized (CAP-DF.1, CAP-DF.3), 2 partial (CAP-PB, CAP-SL) \u2014 the same shape L12-L13 predicted at the promise level, now visible at the capability level. Two design points reinforce prior lessons: the classifier is a pure function on (cap, realizes-edges, promises) with no schema change (L15 pattern), and the Mermaid card uses sentinel pseudo-nodes (NO_REALIZER + OPEN_pid) instead of rendering an empty diagram \u2014 silent-skip the ok case, but for non-ok cases make the gap the visual (L7 + L11 pattern). The walk closes the loop started by L12: promise-level compliance and capability-level realization now use the same auditable graph-walk substrate."
               ],
               "gap_type": null,
               "id": "PR-CAP-DF-lessons_learned",
@@ -1303,7 +1370,16 @@
         ],
         "promise_count": 8,
         "root_prefix": "",
-        "source": ".architecture/model/capabilities.v3.yaml"
+        "source": ".architecture/model/capabilities.v3.yaml",
+        "unrealized": {
+          "open_promise_count": 2,
+          "realizer_count": 0,
+          "severity": "critical"
+        },
+        "unrealized_mermaid": "flowchart LR\n  nCAPDF(\"CAP-DF<br/>evolve_via_model_based_dev_loop\")\n  NO_REALIZER{{\"(no realizer)\"}}\n  NO_REALIZER -.->|missing realizes| nCAPDF\n  OPEN_nPRCAPDFDllm{{\"OPEN: PR-CAP-DF-D-llm\"}}\n  nCAPDF -.->|has open promise| OPEN_nPRCAPDFDllm\n  OPEN_nPRCAPDFrequirements{{\"OPEN: PR-CAP-DF-requirements\"}}\n  nCAPDF -.->|has open promise| OPEN_nPRCAPDFrequirements\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapcrit fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapwarn fill:#3b2f1e,stroke:#f97316,color:#fed7aa,stroke-width:2px;\n  class nCAPDF gapcrit;\n  class nCAPDF root;",
+        "unrealized_refs": [
+          "CAP-DF"
+        ]
       },
       {
         "by_attr": {
@@ -1427,7 +1503,16 @@
         ],
         "promise_count": 7,
         "root_prefix": "",
-        "source": ".architecture/model/capabilities.v3.yaml"
+        "source": ".architecture/model/capabilities.v3.yaml",
+        "unrealized": {
+          "open_promise_count": 0,
+          "realizer_count": 0,
+          "severity": "unrealized"
+        },
+        "unrealized_mermaid": "flowchart LR\n  nCAPDF1(\"CAP-DF.1<br/>graph_walk_as_capability\")\n  NO_REALIZER{{\"(no realizer)\"}}\n  NO_REALIZER -.->|missing realizes| nCAPDF1\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapcrit fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapwarn fill:#3b2f1e,stroke:#f97316,color:#fed7aa,stroke-width:2px;\n  class nCAPDF1 gapwarn;\n  class nCAPDF1 root;",
+        "unrealized_refs": [
+          "CAP-DF.1"
+        ]
       },
       {
         "by_attr": {
@@ -1565,7 +1650,16 @@
         "outbound": [],
         "promise_count": 1,
         "root_prefix": "",
-        "source": ".architecture/model/capabilities.v3.yaml"
+        "source": ".architecture/model/capabilities.v3.yaml",
+        "unrealized": {
+          "open_promise_count": 0,
+          "realizer_count": 0,
+          "severity": "unrealized"
+        },
+        "unrealized_mermaid": "flowchart LR\n  nCAPDF3(\"CAP-DF.3<br/>validate_declared_vs_extracted\")\n  NO_REALIZER{{\"(no realizer)\"}}\n  NO_REALIZER -.->|missing realizes| nCAPDF3\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapcrit fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapwarn fill:#3b2f1e,stroke:#f97316,color:#fed7aa,stroke-width:2px;\n  class nCAPDF3 gapwarn;\n  class nCAPDF3 root;",
+        "unrealized_refs": [
+          "CAP-DF.3"
+        ]
       },
       {
         "by_attr": {
@@ -1641,7 +1735,16 @@
         ],
         "promise_count": 4,
         "root_prefix": "",
-        "source": ".architecture/model/capabilities.v3.yaml"
+        "source": ".architecture/model/capabilities.v3.yaml",
+        "unrealized": {
+          "open_promise_count": 3,
+          "realizer_count": 0,
+          "severity": "critical"
+        },
+        "unrealized_mermaid": "flowchart LR\n  nCAPDF4(\"CAP-DF.4<br/>llm_gap_remediation_and_entity_kind_promotion\")\n  NO_REALIZER{{\"(no realizer)\"}}\n  NO_REALIZER -.->|missing realizes| nCAPDF4\n  OPEN_nPRCAPDF4DS1{{\"OPEN: PR-CAP-DF4-D-S1\"}}\n  nCAPDF4 -.->|has open promise| OPEN_nPRCAPDF4DS1\n  OPEN_nPRCAPDF4DS2{{\"OPEN: PR-CAP-DF4-D-S2\"}}\n  nCAPDF4 -.->|has open promise| OPEN_nPRCAPDF4DS2\n  OPEN_nPRCAPDF4intent{{\"OPEN: PR-CAP-DF4-intent\"}}\n  nCAPDF4 -.->|has open promise| OPEN_nPRCAPDF4intent\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapcrit fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapwarn fill:#3b2f1e,stroke:#f97316,color:#fed7aa,stroke-width:2px;\n  class nCAPDF4 gapcrit;\n  class nCAPDF4 root;",
+        "unrealized_refs": [
+          "CAP-DF.4"
+        ]
       },
       {
         "by_attr": {
@@ -1936,7 +2039,17 @@
           "COMP-c5a72728"
         ],
         "root_prefix": "",
-        "source": ".architecture/model/capabilities.v3.yaml"
+        "source": ".architecture/model/capabilities.v3.yaml",
+        "unrealized": {
+          "open_promise_count": 2,
+          "realizer_count": 1,
+          "severity": "partial"
+        },
+        "unrealized_mermaid": "flowchart LR\n  nCAPPB(\"CAP-PB<br/>extract_architecture_from_code\")\n  nCOMPc5a72728[\"COMP-c5a72728<br/>pipeline_v3\"]\n  nCOMPc5a72728 -->|realizes| nCAPPB\n  OPEN_nPRCAPPBopenllmderiveenrichment{{\"OPEN: PR-CAP-PB-open-llm-derive-enrichment\"}}\n  nCAPPB -.->|has open promise| OPEN_nPRCAPPBopenllmderiveenrichment\n  OPEN_nPRCAPPBopenperstagesplit{{\"OPEN: PR-CAP-PB-open-per-stage-split\"}}\n  nCAPPB -.->|has open promise| OPEN_nPRCAPPBopenperstagesplit\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapcrit fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapwarn fill:#3b2f1e,stroke:#f97316,color:#fed7aa,stroke-width:2px;\n  class nCAPPB gapwarn;\n  class nCOMPc5a72728 component;\n  class nCAPPB root;",
+        "unrealized_refs": [
+          "CAP-PB",
+          "COMP-c5a72728"
+        ]
       },
       {
         "by_attr": {
@@ -2004,7 +2117,17 @@
           "COMP-c5a72728"
         ],
         "root_prefix": "",
-        "source": ".architecture/model/capabilities.v3.yaml"
+        "source": ".architecture/model/capabilities.v3.yaml",
+        "unrealized": {
+          "open_promise_count": 1,
+          "realizer_count": 1,
+          "severity": "partial"
+        },
+        "unrealized_mermaid": "flowchart LR\n  nCAPSL(\"CAP-SL<br/>slice_focused_subgraph\")\n  nCOMPc5a72728[\"COMP-c5a72728<br/>pipeline_v3\"]\n  nCOMPc5a72728 -->|realizes| nCAPSL\n  OPEN_nPRCAPSLrequirements{{\"OPEN: PR-CAP-SL-requirements\"}}\n  nCAPSL -.->|has open promise| OPEN_nPRCAPSLrequirements\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapcrit fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  classDef gapwarn fill:#3b2f1e,stroke:#f97316,color:#fed7aa,stroke-width:2px;\n  class nCAPSL gapwarn;\n  class nCOMPc5a72728 component;\n  class nCAPSL root;",
+        "unrealized_refs": [
+          "CAP-SL",
+          "COMP-c5a72728"
+        ]
       }
     ],
     "components": [

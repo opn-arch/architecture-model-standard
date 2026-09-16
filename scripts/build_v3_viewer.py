@@ -1401,6 +1401,164 @@ def _stamp_compliance_gaps_on_entities(
                 r["compliance_gaps"] = sorted(set(idx[eid]))
 
 
+# ---------------------------------------------------------------------------
+# 8th walk — unrealized-capability audit (L17).
+# ---------------------------------------------------------------------------
+#
+# Signal: a capability with 0 inbound `realizes` edges OR >=1 promise with
+# `status: open`. Severity is derived from the pair:
+#
+#   critical   — 0 realizers AND >=1 open promise (e.g. CAP-DF.4)
+#   unrealized — 0 realizers AND all promises verified (declared future work)
+#   partial    — has realizers but >=1 open promise (implementation drift)
+#   ok         — has realizers AND no open promises (silent-skip in walker)
+#
+# The pure classifier + Mermaid + reverse-stamp mirror the L12/L15 pattern:
+# audit fn returns a deterministic list; per-entity Mermaid renders a card
+# for non-ok capabilities; stamper reverse-indexes onto the capability
+# record so entity pages surface the severity without recomputation.
+
+
+def _capability_realization_status(
+    cap_id: str, entities_by_kind: dict, relationships: list
+) -> dict | None:
+    """Classify a capability's realization state.
+
+    Returns ``None`` when ``cap_id`` is not a capability. Otherwise
+    returns ``{cap_id, realizer_count, realizers, open_promise_count,
+    open_promise_ids, severity}`` deterministically.
+    """
+    caps = entities_by_kind.get("capabilities", {})
+    if cap_id not in caps:
+        return None
+    cap = caps[cap_id]
+
+    realizers = sorted({
+        r["from"] for r in relationships
+        if r.get("type") == "realizes" and r.get("to") == cap_id
+    })
+    open_ids = sorted({
+        p["id"] for p in cap.get("promises", [])
+        if p.get("status") == "open" and p.get("id")
+    })
+
+    if not realizers and open_ids:
+        severity = "critical"
+    elif not realizers:
+        severity = "unrealized"
+    elif open_ids:
+        severity = "partial"
+    else:
+        severity = "ok"
+
+    return {
+        "cap_id": cap_id,
+        "realizer_count": len(realizers),
+        "realizers": realizers,
+        "open_promise_count": len(open_ids),
+        "open_promise_ids": open_ids,
+        "severity": severity,
+    }
+
+
+def _unrealized_capability_summary(
+    entities_by_kind: dict, relationships: list
+) -> list[dict]:
+    """Model-level audit: one entry per non-ok capability. Sorted by
+    (severity_rank, cap_id). ok capabilities are omitted."""
+    order = {"critical": 0, "unrealized": 1, "partial": 2}
+    out: list[dict] = []
+    for cid in sorted(entities_by_kind.get("capabilities", {}).keys()):
+        st = _capability_realization_status(cid, entities_by_kind, relationships)
+        if st is None or st["severity"] == "ok":
+            continue
+        out.append(st)
+    out.sort(key=lambda s: (order.get(s["severity"], 9), s["cap_id"]))
+    return out
+
+
+def _mermaid_unrealized(
+    entities_by_kind: dict, relationships: list, cap_id: str
+) -> tuple[str, list[str]] | None:
+    """Per-capability Mermaid card for the 8th walk.
+
+    Silent-skip when the capability is ``ok`` or absent. Otherwise renders
+    the capability + its (possibly empty) realizer set + open promises as
+    gap-marked pseudo-nodes.
+    """
+    st = _capability_realization_status(cap_id, entities_by_kind, relationships)
+    if st is None or st["severity"] == "ok":
+        return None
+
+    caps = entities_by_kind["capabilities"]
+    comps = entities_by_kind.get("components", {})
+    cap_name = caps[cap_id].get("name", cap_id)
+    refs: set[str] = {cap_id}
+
+    lines = ["flowchart LR"]
+    # Capability node.
+    lines.append(_mnode(cap_id, cap_name, "capability"))
+    by_kind: dict[str, list[str]] = {"capability": [cap_id]}
+
+    # Realizer components (if any).
+    for rid in st["realizers"]:
+        rname = comps.get(rid, {}).get("name", rid)
+        lines.append(_mnode(rid, rname, "component"))
+        by_kind.setdefault("component", []).append(rid)
+        lines.append(f"  {_mid(rid)} -->|realizes| {_mid(cap_id)}")
+        refs.add(rid)
+
+    # Sentinel "no realizer" node when unrealized.
+    if not st["realizers"]:
+        lines.append('  NO_REALIZER{{"(no realizer)"}}')
+        lines.append(f"  NO_REALIZER -.->|missing realizes| {_mid(cap_id)}")
+
+    # Open-promise pseudo-nodes (one per open promise id).
+    for pid in st["open_promise_ids"]:
+        # Use a namespaced pseudo-id to avoid colliding with real entities.
+        node = f"OPEN_{_mid(pid)}"
+        lines.append(f'  {node}{{{{"OPEN: {_mesc(pid)}"}}}}')
+        lines.append(f"  {_mid(cap_id)} -.->|has open promise| {node}")
+
+    _emit_class_defs(lines)
+    # Add gap-severity class for the root capability.
+    lines.append(
+        "  classDef gapcrit fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,"
+        "stroke-width:3px;"
+    )
+    lines.append(
+        "  classDef gapwarn fill:#3b2f1e,stroke:#f97316,color:#fed7aa,"
+        "stroke-width:2px;"
+    )
+    if st["severity"] == "critical":
+        lines.append(f"  class {_mid(cap_id)} gapcrit;")
+    else:
+        lines.append(f"  class {_mid(cap_id)} gapwarn;")
+    # Apply standard classes to realizer components (root already styled).
+    _apply_classes(lines, by_kind, root_id=cap_id)
+
+    return "\n".join(lines), sorted(refs)
+
+
+def _stamp_unrealized_on_entities(
+    summary: list[dict], entity_records: dict
+) -> None:
+    """Reverse-index the unrealized audit onto capability records as
+    ``unrealized: {severity, open_promise_count, realizer_count}`` so
+    entity pages can surface the badge without recomputation."""
+    idx = {s["cap_id"]: s for s in summary}
+    for rec in entity_records.get("capabilities", []):
+        cid = rec["id"]
+        if cid in idx:
+            s = idx[cid]
+            rec["unrealized"] = {
+                "severity": s["severity"],
+                "open_promise_count": s["open_promise_count"],
+                "realizer_count": s["realizer_count"],
+            }
+
+
+
 def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
     """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
     views = {
@@ -1597,10 +1755,21 @@ def _build_payload(model_path: Path) -> dict:
         entities_by_kind, relationships, entity_records
     )
     _stamp_compliance_gaps_on_entities(compliance_gaps, entity_records)
+    # 8th walk: unrealized-capability audit (L17).
+    unrealized_caps = _unrealized_capability_summary(entities_by_kind, relationships)
+    _stamp_unrealized_on_entities(unrealized_caps, entity_records)
+    # Also stamp per-cap Mermaid card onto the capability record.
+    _unrealized_by_id = {s["cap_id"]: s for s in unrealized_caps}
+    for rec in entity_records.get("capabilities", []):
+        if rec["id"] in _unrealized_by_id:
+            mmd = _mermaid_unrealized(entities_by_kind, relationships, rec["id"])
+            if mmd is not None:
+                rec["unrealized_mermaid"], rec["unrealized_refs"] = mmd
     diagnostics = {
         "direction_warnings": direction_warnings,
         "realization_skip_reasons": skip_reasons,
         "constraint_compliance_gaps": compliance_gaps,
+        "unrealized_capabilities": unrealized_caps,
     }
     # Print a one-line summary at build time (fail-soft; never blocks build).
     if direction_warnings:
@@ -1618,6 +1787,20 @@ def _build_payload(model_path: Path) -> dict:
         print(f"INFO: {len(compliance_gaps)} constraint compliance gap(s) across {len(by_cons)} constraint(s):")
         for cid, n in sorted(by_cons.items()):
             print(f"  {cid}: {n} entities lack compliance evidence")
+    if unrealized_caps:
+        by_sev: dict[str, int] = {}
+        for s in unrealized_caps:
+            by_sev[s["severity"]] = by_sev.get(s["severity"], 0) + 1
+        print(
+            f"INFO: {len(unrealized_caps)} unrealized-capability audit finding(s): "
+            + ", ".join(f"{k}={v}" for k, v in sorted(by_sev.items()))
+        )
+        for s in unrealized_caps:
+            print(
+                f"  [{s['severity']}] {s['cap_id']}: "
+                f"{s['realizer_count']} realizers, "
+                f"{s['open_promise_count']} open promises"
+            )
 
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:

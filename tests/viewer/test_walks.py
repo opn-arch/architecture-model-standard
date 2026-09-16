@@ -692,11 +692,160 @@ def test_gaps_default_matches_weak_mode(bv):
 
 
 # ---------------------------------------------------------------------------
+# 8th walk: _capability_realization_status / _unrealized_capability_summary
+# / _mermaid_unrealized / _stamp_unrealized_on_entities
+# ---------------------------------------------------------------------------
+
+def _add_open_promise(cap: dict, pid: str) -> None:
+    """Attach an open promise to a capability entity in-place."""
+    cap.setdefault("promises", []).append(
+        {"id": pid, "content": "x", "status": "open"}
+    )
+
+
+def test_realization_status_ok_for_realized_no_open(bv):
+    """CAP-P has 1 realizer (COMP-x) and no open promises → ok."""
+    E, R, *_ = _make_fixture()
+    st = bv._capability_realization_status("CAP-P", E, R)
+    assert st is not None
+    assert st["severity"] == "ok"
+    assert st["realizer_count"] == 1
+    assert st["realizers"] == ["COMP-x"]
+    assert st["open_promise_count"] == 0
+
+
+def test_realization_status_critical(bv):
+    """0 realizers + open promise → critical."""
+    E, R, *_ = _make_fixture()
+    _add_open_promise(E["capabilities"]["CAP-C"], "PR-CAP-C-1")
+    st = bv._capability_realization_status("CAP-C", E, R)
+    assert st["severity"] == "critical"
+    assert st["realizer_count"] == 0
+    assert st["open_promise_ids"] == ["PR-CAP-C-1"]
+
+
+def test_realization_status_unrealized(bv):
+    """0 realizers + 0 open promises → unrealized."""
+    E, R, *_ = _make_fixture()
+    st = bv._capability_realization_status("CAP-C", E, R)
+    assert st["severity"] == "unrealized"
+    assert st["realizer_count"] == 0
+    assert st["open_promise_count"] == 0
+
+
+def test_realization_status_partial(bv):
+    """>=1 realizer + open promise → partial."""
+    E, R, *_ = _make_fixture()
+    _add_open_promise(E["capabilities"]["CAP-P"], "PR-CAP-P-1")
+    st = bv._capability_realization_status("CAP-P", E, R)
+    assert st["severity"] == "partial"
+    assert st["realizer_count"] == 1
+    assert st["open_promise_ids"] == ["PR-CAP-P-1"]
+
+
+def test_realization_status_returns_none_for_non_capability(bv):
+    E, R, *_ = _make_fixture()
+    assert bv._capability_realization_status("COMP-x", E, R) is None
+
+
+def test_realization_status_returns_none_for_unknown_id(bv):
+    E, R, *_ = _make_fixture()
+    assert bv._capability_realization_status("CAP-NOPE", E, R) is None
+
+
+def test_unrealized_summary_omits_ok(bv):
+    """CAP-P is ok in the base fixture; must not appear in summary."""
+    E, R, *_ = _make_fixture()
+    summary = bv._unrealized_capability_summary(E, R)
+    ids = [s["cap_id"] for s in summary]
+    assert "CAP-P" not in ids
+    # CAP-C is unrealized (0 realizers, 0 open) → present.
+    assert "CAP-C" in ids
+
+
+def test_unrealized_summary_sorted_by_severity_then_id(bv):
+    """Order: critical < unrealized < partial; ties broken by cap_id asc."""
+    E, R, *_ = _make_fixture()
+    _add_open_promise(E["capabilities"]["CAP-P"], "PR-P")  # partial
+    _add_open_promise(E["capabilities"]["CAP-C"], "PR-C")  # critical
+    # Add a second critical cap with lower id to check id ordering.
+    E["capabilities"]["CAP-A"] = {"id": "CAP-A", "name": "AlphaCap"}
+    _add_open_promise(E["capabilities"]["CAP-A"], "PR-A")  # critical
+    summary = bv._unrealized_capability_summary(E, R)
+    order = [(s["severity"], s["cap_id"]) for s in summary]
+    # CAP-A and CAP-C both critical; CAP-A < CAP-C alphabetically.
+    assert order == [
+        ("critical", "CAP-A"),
+        ("critical", "CAP-C"),
+        ("partial", "CAP-P"),
+    ]
+
+
+def test_mermaid_unrealized_skips_ok(bv):
+    """CAP-P is ok → renderer returns None."""
+    E, R, *_ = _make_fixture()
+    assert bv._mermaid_unrealized(E, R, "CAP-P") is None
+
+
+def test_mermaid_unrealized_skips_unknown(bv):
+    E, R, *_ = _make_fixture()
+    assert bv._mermaid_unrealized(E, R, "CAP-NOPE") is None
+
+
+def test_mermaid_unrealized_renders_critical(bv):
+    """Critical cap → body has NO_REALIZER sentinel, an OPEN_ node, and gapcrit."""
+    E, R, *_ = _make_fixture()
+    _add_open_promise(E["capabilities"]["CAP-C"], "PR-CAP-C-1")
+    result = bv._mermaid_unrealized(E, R, "CAP-C")
+    assert result is not None
+    body, refs = result
+    assert body.startswith("flowchart LR")
+    assert "NO_REALIZER" in body
+    assert "(no realizer)" in body
+    assert "OPEN_" in body
+    assert "PR-CAP-C-1" in body
+    assert "gapcrit" in body
+    assert "CAP-C" in refs
+
+
+def test_mermaid_unrealized_renders_partial(bv):
+    """Partial cap → body has realizer node + OPEN_ + gapwarn (not gapcrit)."""
+    E, R, *_ = _make_fixture()
+    _add_open_promise(E["capabilities"]["CAP-P"], "PR-CAP-P-1")
+    result = bv._mermaid_unrealized(E, R, "CAP-P")
+    assert result is not None
+    body, refs = result
+    assert "COMP-x" in body           # the realizer
+    assert "NO_REALIZER" not in body  # has a realizer
+    assert "OPEN_" in body
+    assert "gapwarn" in body
+    # Root cap should not be classed as gapcrit.
+    assert "class CAP_P gapcrit" not in body
+    assert "COMP-x" in refs
+
+
+def test_stamp_unrealized_annotates_capability_records(bv):
+    E, R, _, _, records = _make_fixture()
+    _add_open_promise(E["capabilities"]["CAP-C"], "PR-CAP-C-1")
+    summary = bv._unrealized_capability_summary(E, R)
+    bv._stamp_unrealized_on_entities(summary, records)
+    by_id = {r["id"]: r for r in records["capabilities"]}
+    assert by_id["CAP-C"]["unrealized"] == {
+        "severity": "critical",
+        "open_promise_count": 1,
+        "realizer_count": 0,
+    }
+    # CAP-P is ok → not stamped.
+    assert "unrealized" not in by_id["CAP-P"]
+
+
+# ---------------------------------------------------------------------------
 # Determinism (byte-equal on repeated invocation).
 # ---------------------------------------------------------------------------
 
 def test_walks_deterministic(bv):
     E, R, oe, ie, records = _make_fixture()
+    _add_open_promise(E["capabilities"]["CAP-C"], "PR-CAP-C-1")
     calls = [
         lambda: bv._mermaid_pipeline(E, R, "CAP-P"),
         lambda: bv._mermaid_decomposition(E, R, "CAP-P"),
@@ -705,6 +854,8 @@ def test_walks_deterministic(bv):
         lambda: bv._mermaid_cross_capability_flow(E, R, "CAP-P"),
         lambda: bv._mermaid_constraint_impact(E, R, "CONS-1"),
         lambda: bv._constraint_compliance_gaps(E, R, records),
+        lambda: bv._unrealized_capability_summary(E, R),
+        lambda: bv._mermaid_unrealized(E, R, "CAP-C"),
     ]
     for c in calls:
         assert c() == c()
