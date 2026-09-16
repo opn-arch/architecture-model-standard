@@ -244,6 +244,37 @@ entities:
             - src/architecture_model/core/promise.py:101 — accepts any non-empty string
           provenance: 2026-09-15 SE walk
 
+    - id: CONS-ast-only
+      name: Extract path uses AST only
+      promises:
+        - id: PR-CONS-ast-only-intent
+          attribute: intent
+          content:
+            - No LLM invocation inside any pipeline_v3 stage (scan..publish, orchestrator).
+            - Guarantees determinism + zero external dependencies during extraction.
+            - Trades semantic richness for reproducibility; enrichment is a downstream (Part 3) concern.
+          owner_entity: CONS-ast-only
+          status: verified
+          verified_by:
+            - src/architecture_model/pipeline_v3/ modules import no LLM adapter
+            - IF-llm-provider has zero AMS-side callers (per CONTEXT.md)
+          provenance: 2026-09-16 CAP-PB walk L5
+
+    - id: CONS-resumable
+      name: Stages persist intermediate state
+      promises:
+        - id: PR-CONS-resumable-intent
+          attribute: intent
+          content:
+            - Each pipeline_v3 stage persists its typed intermediate (ScanResult, PromiseSet, ...) to disk cache.
+            - Enables resume from any stage boundary without re-running upstream work.
+            - Supports incremental development of downstream stages.
+          owner_entity: CONS-resumable
+          status: verified
+          verified_by:
+            - orchestrator.py implements per-stage cache
+          provenance: 2026-09-16 CAP-PB walk L5
+
   # =====================================================================
   # New Layer entities — drive Logical Architecture view.
   # =====================================================================
@@ -331,9 +362,9 @@ relationships:
     to: BEH-view-save
     type: triggers
   - from: ACT-developer
-    to: BEH-scan
+    to: BEH-run-pipeline
     type: triggers
-    note: developer runs pipeline_v3 locally
+    note: 2026-09-16 CAP-PB walk L5 — developer runs `architecture-model pipeline .` which invokes the orchestrator (BEH-run-pipeline), not individual stages
   - from: ACT-se
     to: BEH-walk-descend
     type: triggers
@@ -347,11 +378,9 @@ relationships:
     to: BEH-view-browse
     type: triggers
   - from: ACT-ci
-    to: BEH-scan
+    to: BEH-run-pipeline
     type: triggers
-  - from: ACT-ci
-    to: BEH-publish
-    type: triggers
+    note: 2026-09-16 CAP-PB walk L5 — CI invokes the orchestrator as gate; retargeted from BEH-scan / BEH-publish
   - from: ACT-llm
     to: BEH-S1
     type: triggers
@@ -366,6 +395,14 @@ relationships:
   - from: CAP-PB
     to: CONS-pinned-clock
     type: constrained-by
+  - from: CAP-PB
+    to: CONS-ast-only
+    type: constrained-by
+    note: 2026-09-16 CAP-PB walk L5
+  - from: CAP-PB
+    to: CONS-resumable
+    type: constrained-by
+    note: 2026-09-16 CAP-PB walk L5
   - from: CAP-SL
     to: CONS-determinism
     type: constrained-by
@@ -389,6 +426,16 @@ relationships:
   - from: L-view
     to: COMP-VIEWER
     type: contains
+
+  # Layer → Capability edges.
+  - from: L-tooling
+    to: CAP-PB
+    type: contains
+    note: 2026-09-16 CAP-PB walk L5 — CAP-PB lives in the tooling layer
+  - from: L-tooling
+    to: CAP-SL
+    type: contains
+    note: 2026-09-16 CAP-PB walk L5 — CAP-SL lives in the tooling layer (same package)
 
   # Layer → Layer dep edges.
   - from: L-tooling

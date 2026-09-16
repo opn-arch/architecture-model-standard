@@ -23,8 +23,7 @@
         "module_count": 0,
         "name": "CI / Gate Enforcer",
         "outbound": [
-          "BEH-publish",
-          "BEH-scan"
+          "BEH-run-pipeline"
         ],
         "promise_count": 1,
         "root_prefix": "",
@@ -52,7 +51,7 @@
         "module_count": 0,
         "name": "Developer",
         "outbound": [
-          "BEH-scan",
+          "BEH-run-pipeline",
           "BEH-view-browse",
           "BEH-view-note",
           "BEH-view-save"
@@ -200,6 +199,18 @@
       },
       {
         "by_attr": {
+          "failure_modes": [
+            {
+              "content": [
+                "name-prefix affinity misgroups unrelated sibling modules that share a common prefix (e.g. test_* / util_*)",
+                "subdirectory affinity fails when a single directory hosts multiple unrelated modules"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-cluster-failure_modes",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
           "intent": [
             {
               "content": [
@@ -208,6 +219,28 @@
               "gap_type": null,
               "id": "PR-BEH-cluster-intent",
               "provenance": "stage 3 of pipeline_v3",
+              "status": "verified"
+            }
+          ],
+          "provides": [
+            {
+              "content": [
+                "ComponentSet (typed intermediate) \u2014 modules grouped into candidate components with affinity scores"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-cluster-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_cluster.py exercises multi-signal affinity"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-cluster-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
               "status": "verified"
             }
           ]
@@ -223,7 +256,7 @@
         "outbound": [
           "COMP-c5a72728"
         ],
-        "promise_count": 1,
+        "promise_count": 4,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
@@ -239,6 +272,28 @@
               "provenance": "stage 5 of pipeline_v3",
               "status": "verified"
             }
+          ],
+          "provides": [
+            {
+              "content": [
+                "ContainedModel (typed intermediate) \u2014 components with provenance metadata + normalized root_prefix"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-containerize-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_containerize.py exercises provenance wrapping"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-containerize-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
           ]
         },
         "gap_count": 0,
@@ -252,7 +307,7 @@
         "outbound": [
           "COMP-c5a72728"
         ],
-        "promise_count": 1,
+        "promise_count": 3,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
@@ -268,6 +323,28 @@
               "provenance": "stage 2 of pipeline_v3",
               "status": "verified"
             }
+          ],
+          "provides": [
+            {
+              "content": [
+                "PromiseSet (typed intermediate) \u2014 list of Promise records per module with intent/delivers/provides only"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-derive-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_derive_promises.py exercises attribute emission"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-derive-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
           ]
         },
         "gap_count": 0,
@@ -281,12 +358,25 @@
         "outbound": [
           "COMP-c5a72728"
         ],
-        "promise_count": 1,
+        "promise_count": 3,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
       {
         "by_attr": {
+          "failure_modes": [
+            {
+              "content": [
+                "import cycles yield ambiguous or lossy edge direction",
+                "conditional imports (behind if TYPE_CHECKING / try-except) may be missed",
+                "dynamic imports (importlib) invisible to AST"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-link-failure_modes",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
           "intent": [
             {
               "content": [
@@ -295,6 +385,28 @@
               "gap_type": null,
               "id": "PR-BEH-link-intent",
               "provenance": "stage 4 of pipeline_v3",
+              "status": "verified"
+            }
+          ],
+          "provides": [
+            {
+              "content": [
+                "LinkedGraph (typed intermediate) \u2014 components + depends-on edges derived from import graph"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-link-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_link.py exercises edge materialization"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-link-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
               "status": "verified"
             }
           ]
@@ -310,7 +422,7 @@
         "outbound": [
           "COMP-c5a72728"
         ],
-        "promise_count": 1,
+        "promise_count": 4,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
@@ -341,21 +453,97 @@
               "provenance": "stage 7 of pipeline_v3",
               "status": "verified"
             }
+          ],
+          "provides": [
+            {
+              "content": [
+                ".architecture-model.v3.yaml on disk (byte-stable, deterministically sorted)"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-publish-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_publish.py exercises serialization + determinism"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-publish-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
           ]
         },
         "gap_count": 0,
         "id": "BEH-publish",
         "inbound": [
-          "ACT-ci",
           "CAP-PB"
         ],
         "kind": "behavior",
         "module_count": 0,
         "name": "publish_v3_model_yaml",
         "outbound": [
+          "COMP-c5a72728",
+          "IF-model"
+        ],
+        "promise_count": 4,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Orchestrate the 7 pipeline_v3 stages (scan \u2192 derive_promises \u2192 cluster \u2192 link \u2192 containerize \u2192 verify \u2192 publish) in dependency order, persisting intermediate state to enable resume, and emit .architecture-model.v3.yaml."
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-run-pipeline-intent",
+              "provenance": "Added 2026-09-16 CAP-PB walk L5. This is the actual user-triggered\nentry point (invoked via `architecture-model pipeline .`); the 7\nstage behaviors are internal steps the orchestrator invokes.\nPreviously mentioned in the intent-provenance of CAP-PB but not\nmodeled as a first-class behavior.\n",
+              "status": "verified"
+            }
+          ],
+          "provides": [
+            {
+              "content": [
+                ".architecture-model.v3.yaml on disk (the canonical output of CAP-PB)"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-run-pipeline-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_orchestrator.py exercises end-to-end run"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-run-pipeline-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "BEH-run-pipeline",
+        "inbound": [
+          "ACT-ci",
+          "ACT-developer",
+          "CAP-PB"
+        ],
+        "kind": "behavior",
+        "module_count": 0,
+        "name": "run_extraction_pipeline_end_to_end",
+        "outbound": [
+          "BEH-scan",
           "COMP-c5a72728"
         ],
-        "promise_count": 2,
+        "promise_count": 3,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
@@ -371,13 +559,34 @@
               "provenance": "stage 1 of pipeline_v3",
               "status": "verified"
             }
+          ],
+          "provides": [
+            {
+              "content": [
+                "ScanResult (typed intermediate) \u2014 list of ModuleRecord with signatures, docstrings, imports, public surface"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-scan-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_scan.py exercises AST walk on fixture trees"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-scan-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
           ]
         },
         "gap_count": 0,
         "id": "BEH-scan",
         "inbound": [
-          "ACT-ci",
-          "ACT-developer",
+          "BEH-run-pipeline",
           "CAP-PB"
         ],
         "kind": "behavior",
@@ -386,12 +595,24 @@
         "outbound": [
           "COMP-c5a72728"
         ],
-        "promise_count": 1,
+        "promise_count": 3,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
       {
         "by_attr": {
+          "failure_modes": [
+            {
+              "content": [
+                "schema-version drift not caught when schema is not version-pinned in verify",
+                "broken references to non-existent entity ids surface only via CAP-DF.3 (walk-realize), not in verify"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-verify-failure_modes",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
           "intent": [
             {
               "content": [
@@ -400,6 +621,28 @@
               "gap_type": null,
               "id": "PR-BEH-verify-intent",
               "provenance": "stage 6 of pipeline_v3",
+              "status": "verified"
+            }
+          ],
+          "provides": [
+            {
+              "content": [
+                "VerifiedModel (typed intermediate) \u2014 the assembled model with invariants asserted; ready for publish"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-verify-provides",
+              "provenance": "2026-09-16 CAP-PB walk L3",
+              "status": "verified"
+            }
+          ],
+          "verified_by": [
+            {
+              "content": [
+                "tests/pipeline_v3/test_verify.py exercises invariant checks"
+              ],
+              "gap_type": null,
+              "id": "PR-BEH-verify-verified_by",
+              "provenance": "2026-09-16 CAP-PB walk L3",
               "status": "verified"
             }
           ]
@@ -415,7 +658,7 @@
         "outbound": [
           "COMP-c5a72728"
         ],
-        "promise_count": 1,
+        "promise_count": 4,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
@@ -908,6 +1151,19 @@
       },
       {
         "by_attr": {
+          "assumptions": [
+            {
+              "content": [
+                "source is pure Python (no C-extension source, no .pyi type stubs)",
+                "files are utf-8 encoded",
+                "modules are AST-parseable (syntactically valid at scan time)"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-assumptions",
+              "provenance": "2026-09-16 CAP-PB walk L1",
+              "status": "verified"
+            }
+          ],
           "delivers": [
             {
               "content": [
@@ -971,6 +1227,29 @@
               "id": "PR-CAP-PB-D-publish",
               "provenance": "decomposition edge to BEH-publish",
               "status": "verified"
+            },
+            {
+              "content": [
+                "BEH-run-pipeline"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-D-run-pipeline",
+              "provenance": "Decomposition edge to BEH-run-pipeline. Added 2026-09-16 CAP-PB walk L5\n\u2014 BEH-run-pipeline is the actual user-triggered entry point; the other\n7 delivers behaviors are internal stages the orchestrator invokes.\n",
+              "status": "verified"
+            }
+          ],
+          "failure_modes": [
+            {
+              "content": [
+                "import cycles hide depends-on edge direction (BEH-link)",
+                "name-prefix clustering misgroups unrelated sibling modules (BEH-cluster)",
+                "publish overwrites the pipeline output file wholesale, cannot host authored non-component entities (BEH-publish)",
+                "dynamic imports / meta-programming / decorator effects invisible to AST scan (BEH-scan)"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-failure_modes",
+              "provenance": "2026-09-16 CAP-PB walk L1",
+              "status": "verified"
             }
           ],
           "intent": [
@@ -982,6 +1261,26 @@
               "id": "PR-CAP-PB-intent",
               "provenance": "Formalized 2026-09-14 SE walk L1 (docs/reports/2026-09-14-v3-se-walk.md).\nRealized by pipeline_v3 (COMP-c5a72728). Decomposes into 7 stages\nBEH-scan..BEH-publish plus the orchestrator BEH-run-pipeline.\n",
               "status": "verified"
+            }
+          ],
+          "open_questions": [
+            {
+              "content": [
+                "Should the 8 pipeline_v3 modules (scan..publish + orchestrator) split from single COMP-c5a72728 into 8 per-stage components? Would enable per-stage SI&L badges, per-stage validation scores, and finer failure isolation in the viewer. Requires pipeline_v3/emit.py change (out of walk scope)."
+              ],
+              "gap_type": "deferred-split",
+              "id": "PR-CAP-PB-open-per-stage-split",
+              "provenance": "2026-09-16 CAP-PB walk L4. Surfaces the per-stage component split\nquestion as an open_question + typed-gap so it appears in gap\ntallies for future review. Related to CAP-DF.4 BEH-S1\nentity-kind promotion.\n",
+              "status": "open"
+            },
+            {
+              "content": [
+                "Should BEH-derive-promises grow an LLM seam that emits richer attributes (failure_modes, MoEs, verification, requirements)? Would eliminate the ~54 typed-gaps in the current model. Blocked on Part-3 LLM adapter + policy.yaml wiring."
+              ],
+              "gap_type": "llm-seam",
+              "id": "PR-CAP-PB-open-llm-derive-enrichment",
+              "provenance": "2026-09-16 CAP-PB walk L5. Surfaces the LLM-derive-enrichment seam\nas an open_question + typed-gap. Blocked by IF-llm-provider having\nno AMS-side adapter (Part 3).\n",
+              "status": "open"
             }
           ],
           "requirements": [
@@ -997,11 +1296,68 @@
               "provenance": "Requirements distilled from 2026-09-14 walk L2 + pipeline_v3 module\ncontracts. First non-canonical Promise attribute on a Capability.\n",
               "status": "verified"
             }
+          ],
+          "slos": [
+            {
+              "content": [
+                "byte-determinism = 100% (hard requirement, gated in CI)",
+                "module coverage >= 95% of Python source under src/ (empirical target)",
+                "typical wall-clock < 10s on architecture-model-standard repo (empirical target)"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-slos",
+              "provenance": "2026-09-16 CAP-PB walk L1",
+              "status": "verified"
+            }
+          ],
+          "stakeholders": [
+            {
+              "content": [
+                "ACT-developer \u2014 runs pipeline after code changes; consumes emitted model via viewer",
+                "ACT-se \u2014 reads emitted model during SE walks; authors fragments alongside",
+                "ACT-ci \u2014 invokes pipeline as gate; consumes byte-determinism guarantee",
+                "COMP-VIEWER \u2014 consumes IF-model to render the browsable graph",
+                "ACT-llm \u2014 Part-3 future consumer for richer-attribute enrichment"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-stakeholders",
+              "provenance": "2026-09-16 CAP-PB walk L1",
+              "status": "verified"
+            }
+          ],
+          "success_criteria": [
+            {
+              "content": [
+                "emitted .architecture-model.v3.yaml is byte-identical across reruns given identical source + pinned clock",
+                "at least 1 component emitted per non-empty source root",
+                "promise-graph.schema.json validates the output",
+                "decompose reaches fixed point (no further re-clustering on rerun)"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-success_criteria",
+              "provenance": "2026-09-16 CAP-PB walk L1",
+              "status": "verified"
+            }
+          ],
+          "trade_offs": [
+            {
+              "content": [
+                "AST-only means dynamic imports, meta-programming, and decorator effects are invisible",
+                "traded semantic richness (failure_modes, MoEs, verification) for determinism + no-LLM dependency",
+                "single-component allocation (COMP-c5a72728) traded finer observability for extraction simplicity"
+              ],
+              "gap_type": null,
+              "id": "PR-CAP-PB-trade_offs",
+              "provenance": "2026-09-16 CAP-PB walk L1",
+              "status": "verified"
+            }
           ]
         },
         "gap_count": 0,
         "id": "CAP-PB",
-        "inbound": [],
+        "inbound": [
+          "L-tooling"
+        ],
         "kind": "capability",
         "module_count": 0,
         "name": "extract_architecture_from_code",
@@ -1011,13 +1367,17 @@
           "BEH-derive-promises",
           "BEH-link",
           "BEH-publish",
+          "BEH-run-pipeline",
           "BEH-scan",
           "BEH-verify",
           "COMP-c5a72728",
+          "CONS-ast-only",
           "CONS-determinism",
-          "CONS-pinned-clock"
+          "CONS-pinned-clock",
+          "CONS-resumable",
+          "IF-model"
         ],
-        "promise_count": 9,
+        "promise_count": 18,
         "root_prefix": "",
         "source": ".architecture/model/capabilities.v3.yaml"
       },
@@ -1050,7 +1410,9 @@
         },
         "gap_count": 0,
         "id": "CAP-SL",
-        "inbound": [],
+        "inbound": [
+          "L-tooling"
+        ],
         "kind": "capability",
         "module_count": 0,
         "name": "slice_focused_subgraph",
@@ -6495,6 +6857,7 @@
           "BEH-derive-promises",
           "BEH-link",
           "BEH-publish",
+          "BEH-run-pipeline",
           "BEH-scan",
           "BEH-verify",
           "CAP-PB",
@@ -7728,6 +8091,35 @@
           "intent": [
             {
               "content": [
+                "No LLM invocation inside any pipeline_v3 stage (scan..publish, orchestrator).",
+                "Guarantees determinism + zero external dependencies during extraction.",
+                "Trades semantic richness for reproducibility; enrichment is a downstream (Part 3) concern."
+              ],
+              "gap_type": null,
+              "id": "PR-CONS-ast-only-intent",
+              "provenance": "2026-09-16 CAP-PB walk L5",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CONS-ast-only",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "constraint",
+        "module_count": 0,
+        "name": "Extract path uses AST only",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
                 "All artifact outputs (pipeline YAML, viewer HTML+JSON, notes.yaml serialization) must be byte-identical across runs given identical inputs and pinned clock."
               ],
               "gap_type": null,
@@ -7837,6 +8229,35 @@
         "promise_count": 1,
         "root_prefix": "",
         "source": ".architecture/model/enrichment.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "Each pipeline_v3 stage persists its typed intermediate (ScanResult, PromiseSet, ...) to disk cache.",
+                "Enables resume from any stage boundary without re-running upstream work.",
+                "Supports incremental development of downstream stages."
+              ],
+              "gap_type": null,
+              "id": "PR-CONS-resumable-intent",
+              "provenance": "2026-09-16 CAP-PB walk L5",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "CONS-resumable",
+        "inbound": [
+          "CAP-PB"
+        ],
+        "kind": "constraint",
+        "module_count": 0,
+        "name": "Stages persist intermediate state",
+        "outbound": [],
+        "promise_count": 1,
+        "root_prefix": "",
+        "source": ".architecture/model/enrichment.v3.yaml"
       }
     ],
     "interfaces": [
@@ -7903,6 +8324,47 @@
         "kind": "interface",
         "module_count": 0,
         "name": "llm_provider_protocol",
+        "outbound": [],
+        "promise_count": 2,
+        "root_prefix": "",
+        "source": ".architecture/model/capabilities.v3.yaml"
+      },
+      {
+        "by_attr": {
+          "intent": [
+            {
+              "content": [
+                "The emitted .architecture-model.v3.yaml artifact \u2014 the canonical output of CAP-PB. Consumed by COMP-VIEWER (D10 merge), IF-slicer (input model), Part-3 LLM (enrichment substrate), and CI gates (schema validation)."
+              ],
+              "gap_type": null,
+              "id": "PR-IF-model-intent",
+              "provenance": "Added 2026-09-16 CAP-PB walk L4. The emitted YAML was implicit in\nthe BEH-publish delivers link; modeling it as an Interface makes\nit a first-class citizen in the graph and enables downstream\nconsumer edges (COMP-VIEWER consumes IF-model, IF-slicer consumes\nIF-model, ACT-llm consumes IF-model).\n",
+              "status": "verified"
+            }
+          ],
+          "requirements": [
+            {
+              "content": [
+                "byte-stable serialization (sorted keys, canonical scalar formatting)",
+                "validates against src/architecture_model/spec/promise-graph.schema.json",
+                "schema_version pinned in meta block"
+              ],
+              "gap_type": null,
+              "id": "PR-IF-model-requirements",
+              "provenance": "2026-09-16 CAP-PB walk L4",
+              "status": "verified"
+            }
+          ]
+        },
+        "gap_count": 0,
+        "id": "IF-model",
+        "inbound": [
+          "BEH-publish",
+          "CAP-PB"
+        ],
+        "kind": "interface",
+        "module_count": 0,
+        "name": "architecture_model_yaml",
         "outbound": [],
         "promise_count": 2,
         "root_prefix": "",
@@ -8050,6 +8512,8 @@
         "module_count": 0,
         "name": "Tooling (pipeline_v3)",
         "outbound": [
+          "CAP-PB",
+          "CAP-SL",
           "COMP-c5a72728",
           "L-standard"
         ],
@@ -8090,12 +8554,36 @@
     ]
   },
   "gap_type_hist": {
+    "deferred-split": 1,
+    "llm-seam": 1,
     "missing-intent": 7,
     "no-public-classes": 24,
     "no-public-functions": 23,
     "unrealized": 6
   },
   "gaps": [
+    {
+      "attribute": "open_questions",
+      "content": [
+        "Should the 8 pipeline_v3 modules (scan..publish + orchestrator) split from single COMP-c5a72728 into 8 per-stage components? Would enable per-stage SI&L badges, per-stage validation scores, and finer failure isolation in the viewer. Requires pipeline_v3/emit.py change (out of walk scope)."
+      ],
+      "gap_type": "deferred-split",
+      "owner": "CAP-PB",
+      "owner_kind": "capability",
+      "owner_name": "extract_architecture_from_code",
+      "promise_id": "PR-CAP-PB-open-per-stage-split"
+    },
+    {
+      "attribute": "open_questions",
+      "content": [
+        "Should BEH-derive-promises grow an LLM seam that emits richer attributes (failure_modes, MoEs, verification, requirements)? Would eliminate the ~54 typed-gaps in the current model. Blocked on Part-3 LLM adapter + policy.yaml wiring."
+      ],
+      "gap_type": "llm-seam",
+      "owner": "CAP-PB",
+      "owner_kind": "capability",
+      "owner_name": "extract_architecture_from_code",
+      "promise_id": "PR-CAP-PB-open-llm-derive-enrichment"
+    },
     {
       "attribute": "intent",
       "content": "",
@@ -8716,8 +9204,7 @@
         "ACT-se",
         "BEH-S1",
         "BEH-S2",
-        "BEH-publish",
-        "BEH-scan",
+        "BEH-run-pipeline",
         "BEH-view-browse",
         "BEH-view-note",
         "BEH-view-save",
@@ -8725,7 +9212,7 @@
         "BEH-walk-descend",
         "BEH-walk-realize"
       ],
-      "mermaid": "flowchart LR\n  nACTci((\"ACT-ci<br/>CI / Gate Enforcer\"))\n  nACTdeveloper((\"ACT-developer<br/>Developer\"))\n  nACTllm((\"ACT-llm<br/>LLM (Part 3, deferred)\"))\n  nACTse((\"ACT-se<br/>Systems Engineer\"))\n  subgraph USE_CASES[\"Use Cases (Behaviors)\"]\n    nBEHS1[\"BEH-S1<br/>llm_entity_kind_promotion\"]\n    nBEHS2[\"BEH-S2<br/>llm_gap_remediation\"]\n    nBEHpublish[\"BEH-publish<br/>publish_v3_model_yaml\"]\n    nBEHscan[\"BEH-scan<br/>scan_python_source_tree\"]\n    nBEHviewbrowse[\"BEH-view-browse<br/>view_browse_merged_model\"]\n    nBEHviewnote[\"BEH-view-note<br/>view_capture_human_note\"]\n    nBEHviewsave[\"BEH-view-save<br/>view_save_notes_yaml\"]\n    nBEHwalkauthor[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]\n    nBEHwalkdescend[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]\n    nBEHwalkrealize[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]\n  end\n  nACTci --> nBEHpublish\n  nACTci --> nBEHscan\n  nACTdeveloper --> nBEHscan\n  nACTdeveloper --> nBEHviewbrowse\n  nACTdeveloper --> nBEHviewnote\n  nACTdeveloper --> nBEHviewsave\n  nACTllm --> nBEHS1\n  nACTllm --> nBEHS2\n  nACTse --> nBEHviewbrowse\n  nACTse --> nBEHwalkauthor\n  nACTse --> nBEHwalkdescend\n  nACTse --> nBEHwalkrealize",
+      "mermaid": "flowchart LR\n  nACTci((\"ACT-ci<br/>CI / Gate Enforcer\"))\n  nACTdeveloper((\"ACT-developer<br/>Developer\"))\n  nACTllm((\"ACT-llm<br/>LLM (Part 3, deferred)\"))\n  nACTse((\"ACT-se<br/>Systems Engineer\"))\n  subgraph USE_CASES[\"Use Cases (Behaviors)\"]\n    nBEHS1[\"BEH-S1<br/>llm_entity_kind_promotion\"]\n    nBEHS2[\"BEH-S2<br/>llm_gap_remediation\"]\n    nBEHrunpipeline[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]\n    nBEHviewbrowse[\"BEH-view-browse<br/>view_browse_merged_model\"]\n    nBEHviewnote[\"BEH-view-note<br/>view_capture_human_note\"]\n    nBEHviewsave[\"BEH-view-save<br/>view_save_notes_yaml\"]\n    nBEHwalkauthor[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]\n    nBEHwalkdescend[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]\n    nBEHwalkrealize[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]\n  end\n  nACTci --> nBEHrunpipeline\n  nACTdeveloper --> nBEHrunpipeline\n  nACTdeveloper --> nBEHviewbrowse\n  nACTdeveloper --> nBEHviewnote\n  nACTdeveloper --> nBEHviewsave\n  nACTllm --> nBEHS1\n  nACTllm --> nBEHS2\n  nACTse --> nBEHviewbrowse\n  nACTse --> nBEHwalkauthor\n  nACTse --> nBEHwalkdescend\n  nACTse --> nBEHwalkrealize",
       "narrative": "Use cases \u2014 actor\u2192behavior triggers grouped per actor. Each actor's behaviors are the concrete operations they perform. ACT-llm behaviors (BEH-S1, BEH-S2) are declared open (Part 3). ACT-developer and ACT-se share BEH-view-browse (both open the viewer to review the model).",
       "title": "Use Cases"
     }
@@ -8737,9 +9224,9 @@
     ".architecture/model/viewer.v3.yaml"
   ],
   "status_hist": {
-    "open": 613,
+    "open": 615,
     "typed-gap": 54,
-    "verified": 72
+    "verified": 103
   },
   "top_by_gaps": [
     {
@@ -8807,9 +9294,9 @@
   ],
   "totals": {
     "components": 25,
-    "entities": 63,
+    "entities": 67,
     "gaps": 60,
-    "promises": 739,
-    "relationships": 113
+    "promises": 772,
+    "relationships": 121
   }
 }

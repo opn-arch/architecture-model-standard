@@ -127,6 +127,127 @@ entities:
       status: verified
       gap_type: null
       provenance: decomposition edge to BEH-publish
+    - id: PR-CAP-PB-D-run-pipeline
+      attribute: delivers
+      content: [BEH-run-pipeline]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: |
+        Decomposition edge to BEH-run-pipeline. Added 2026-09-16 CAP-PB walk L5
+        — BEH-run-pipeline is the actual user-triggered entry point; the other
+        7 delivers behaviors are internal stages the orchestrator invokes.
+    - id: PR-CAP-PB-stakeholders
+      attribute: stakeholders
+      content:
+      - ACT-developer — runs pipeline after code changes; consumes emitted model via viewer
+      - ACT-se — reads emitted model during SE walks; authors fragments alongside
+      - ACT-ci — invokes pipeline as gate; consumes byte-determinism guarantee
+      - COMP-VIEWER — consumes IF-model to render the browsable graph
+      - ACT-llm — Part-3 future consumer for richer-attribute enrichment
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - triggers relationships from ACT-developer/ACT-ci to BEH-run-pipeline (see enrichment.v3.yaml)
+      - COMP-VIEWER D10 merges pipeline output at view time
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-success_criteria
+      attribute: success_criteria
+      content:
+      - emitted .architecture-model.v3.yaml is byte-identical across reruns given identical source + pinned clock
+      - at least 1 component emitted per non-empty source root
+      - promise-graph.schema.json validates the output
+      - decompose reaches fixed point (no further re-clustering on rerun)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - Phase 8 byte-determinism gate
+      - pipeline_v3 test suite (tests/pipeline_v3/)
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-failure_modes
+      attribute: failure_modes
+      content:
+      - import cycles hide depends-on edge direction (BEH-link)
+      - name-prefix clustering misgroups unrelated sibling modules (BEH-cluster)
+      - publish overwrites the pipeline output file wholesale, cannot host authored non-component entities (BEH-publish)
+      - dynamic imports / meta-programming / decorator effects invisible to AST scan (BEH-scan)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - PR-BEH-publish-failure_modes documents the overwrite discovery
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-slos
+      attribute: slos
+      content:
+      - byte-determinism = 100% (hard requirement, gated in CI)
+      - module coverage >= 95% of Python source under src/ (empirical target)
+      - typical wall-clock < 10s on architecture-model-standard repo (empirical target)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - CI byte-determinism gate
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-assumptions
+      attribute: assumptions
+      content:
+      - source is pure Python (no C-extension source, no .pyi type stubs)
+      - files are utf-8 encoded
+      - modules are AST-parseable (syntactically valid at scan time)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-trade_offs
+      attribute: trade_offs
+      content:
+      - AST-only means dynamic imports, meta-programming, and decorator effects are invisible
+      - traded semantic richness (failure_modes, MoEs, verification) for determinism + no-LLM dependency
+      - single-component allocation (COMP-c5a72728) traded finer observability for extraction simplicity
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-open-per-stage-split
+      attribute: open_questions
+      content:
+      - Should the 8 pipeline_v3 modules (scan..publish + orchestrator) split from single COMP-c5a72728 into 8 per-stage components? Would enable per-stage SI&L badges, per-stage validation scores, and finer failure isolation in the viewer. Requires pipeline_v3/emit.py change (out of walk scope).
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: deferred-split
+      provenance: |
+        2026-09-16 CAP-PB walk L4. Surfaces the per-stage component split
+        question as an open_question + typed-gap so it appears in gap
+        tallies for future review. Related to CAP-DF.4 BEH-S1
+        entity-kind promotion.
+    - id: PR-CAP-PB-open-llm-derive-enrichment
+      attribute: open_questions
+      content:
+      - Should BEH-derive-promises grow an LLM seam that emits richer attributes (failure_modes, MoEs, verification, requirements)? Would eliminate the ~54 typed-gaps in the current model. Blocked on Part-3 LLM adapter + policy.yaml wiring.
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: llm-seam
+      provenance: |
+        2026-09-16 CAP-PB walk L5. Surfaces the LLM-derive-enrichment seam
+        as an open_question + typed-gap. Blocked by IF-llm-provider having
+        no AMS-side adapter (Part 3).
   - id: CAP-SL
     name: slice_focused_subgraph
     promises:
@@ -410,6 +531,47 @@ entities:
       gap_type: null
       provenance: decomposition edge to BEH-S2
   behaviors:
+  - id: BEH-run-pipeline
+    name: run_extraction_pipeline_end_to_end
+    promises:
+    - id: PR-BEH-run-pipeline-intent
+      attribute: intent
+      content:
+      - Orchestrate the 7 pipeline_v3 stages (scan → derive_promises → cluster → link → containerize → verify → publish) in dependency order, persisting intermediate state to enable resume, and emit .architecture-model.v3.yaml.
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/orchestrator.py exists
+      - tests/pipeline_v3/test_orchestrator.py exists
+      status: verified
+      gap_type: null
+      provenance: |
+        Added 2026-09-16 CAP-PB walk L5. This is the actual user-triggered
+        entry point (invoked via `architecture-model pipeline .`); the 7
+        stage behaviors are internal steps the orchestrator invokes.
+        Previously mentioned in the intent-provenance of CAP-PB but not
+        modeled as a first-class behavior.
+    - id: PR-BEH-run-pipeline-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_orchestrator.py exercises end-to-end run
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-run-pipeline-provides
+      attribute: provides
+      content:
+      - .architecture-model.v3.yaml on disk (the canonical output of CAP-PB)
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by:
+      - publish.py:107 writes the file
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
   - id: BEH-scan
     name: scan_python_source_tree
     promises:
@@ -426,6 +588,26 @@ entities:
       status: verified
       gap_type: null
       provenance: stage 1 of pipeline_v3
+    - id: PR-BEH-scan-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_scan.py exercises AST walk on fixture trees
+      owner_entity: BEH-scan
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-scan-provides
+      attribute: provides
+      content:
+      - ScanResult (typed intermediate) — list of ModuleRecord with signatures, docstrings, imports, public surface
+      owner_entity: BEH-scan
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
   - id: BEH-derive-promises
     name: derive_promises_from_scan
     promises:
@@ -444,6 +626,26 @@ entities:
       status: verified
       gap_type: null
       provenance: stage 2 of pipeline_v3
+    - id: PR-BEH-derive-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_derive_promises.py exercises attribute emission
+      owner_entity: BEH-derive-promises
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-derive-provides
+      attribute: provides
+      content:
+      - PromiseSet (typed intermediate) — list of Promise records per module with intent/delivers/provides only
+      owner_entity: BEH-derive-promises
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
   - id: BEH-cluster
     name: cluster_modules_into_components
     promises:
@@ -459,6 +661,37 @@ entities:
       status: verified
       gap_type: null
       provenance: stage 3 of pipeline_v3
+    - id: PR-BEH-cluster-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_cluster.py exercises multi-signal affinity
+      owner_entity: BEH-cluster
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-cluster-provides
+      attribute: provides
+      content:
+      - ComponentSet (typed intermediate) — modules grouped into candidate components with affinity scores
+      owner_entity: BEH-cluster
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-cluster-failure_modes
+      attribute: failure_modes
+      content:
+      - name-prefix affinity misgroups unrelated sibling modules that share a common prefix (e.g. test_* / util_*)
+      - subdirectory affinity fails when a single directory hosts multiple unrelated modules
+      owner_entity: BEH-cluster
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
   - id: BEH-link
     name: link_components_via_edges
     promises:
@@ -473,6 +706,38 @@ entities:
       status: verified
       gap_type: null
       provenance: stage 4 of pipeline_v3
+    - id: PR-BEH-link-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_link.py exercises edge materialization
+      owner_entity: BEH-link
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-link-provides
+      attribute: provides
+      content:
+      - LinkedGraph (typed intermediate) — components + depends-on edges derived from import graph
+      owner_entity: BEH-link
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-link-failure_modes
+      attribute: failure_modes
+      content:
+      - import cycles yield ambiguous or lossy edge direction
+      - conditional imports (behind if TYPE_CHECKING / try-except) may be missed
+      - dynamic imports (importlib) invisible to AST
+      owner_entity: BEH-link
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
   - id: BEH-containerize
     name: containerize_components
     promises:
@@ -488,6 +753,26 @@ entities:
       status: verified
       gap_type: null
       provenance: stage 5 of pipeline_v3
+    - id: PR-BEH-containerize-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_containerize.py exercises provenance wrapping
+      owner_entity: BEH-containerize
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-containerize-provides
+      attribute: provides
+      content:
+      - ContainedModel (typed intermediate) — components with provenance metadata + normalized root_prefix
+      owner_entity: BEH-containerize
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
   - id: BEH-verify
     name: verify_structural_invariants
     promises:
@@ -503,6 +788,37 @@ entities:
       status: verified
       gap_type: null
       provenance: stage 6 of pipeline_v3
+    - id: PR-BEH-verify-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_verify.py exercises invariant checks
+      owner_entity: BEH-verify
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-verify-provides
+      attribute: provides
+      content:
+      - VerifiedModel (typed intermediate) — the assembled model with invariants asserted; ready for publish
+      owner_entity: BEH-verify
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-verify-failure_modes
+      attribute: failure_modes
+      content:
+      - schema-version drift not caught when schema is not version-pinned in verify
+      - broken references to non-existent entity ids surface only via CAP-DF.3 (walk-realize), not in verify
+      owner_entity: BEH-verify
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
   - id: BEH-publish
     name: publish_v3_model_yaml
     promises:
@@ -518,6 +834,26 @@ entities:
       status: verified
       gap_type: null
       provenance: stage 7 of pipeline_v3
+    - id: PR-BEH-publish-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_publish.py exercises serialization + determinism
+      owner_entity: BEH-publish
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-publish-provides
+      attribute: provides
+      content:
+      - .architecture-model.v3.yaml on disk (byte-stable, deterministically sorted)
+      owner_entity: BEH-publish
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
     - id: PR-BEH-publish-failure_modes
       attribute: failure_modes
       content:
@@ -677,6 +1013,40 @@ entities:
         eliminate the 54 typed-gaps in the current model. Part 3 candidate.
         Interface: IF-llm-provider.
   interfaces:
+  - id: IF-model
+    name: architecture_model_yaml
+    promises:
+    - id: PR-IF-model-intent
+      attribute: intent
+      content:
+      - The emitted .architecture-model.v3.yaml artifact — the canonical output of CAP-PB. Consumed by COMP-VIEWER (D10 merge), IF-slicer (input model), Part-3 LLM (enrichment substrate), and CI gates (schema validation).
+      owner_entity: IF-model
+      delivered_from: null
+      verified_by:
+      - .architecture-model.v3.yaml exists in this repo
+      - promise-graph.schema.json validates the wire format
+      - COMP-VIEWER._merge_sources ingests it at build time
+      status: verified
+      gap_type: null
+      provenance: |
+        Added 2026-09-16 CAP-PB walk L4. The emitted YAML was implicit in
+        the BEH-publish delivers link; modeling it as an Interface makes
+        it a first-class citizen in the graph and enables downstream
+        consumer edges (COMP-VIEWER consumes IF-model, IF-slicer consumes
+        IF-model, ACT-llm consumes IF-model).
+    - id: PR-IF-model-requirements
+      attribute: requirements
+      content:
+      - byte-stable serialization (sorted keys, canonical scalar formatting)
+      - validates against src/architecture_model/spec/promise-graph.schema.json
+      - schema_version pinned in meta block
+      owner_entity: IF-model
+      delivered_from: null
+      verified_by:
+      - Phase 8 byte-determinism gate
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L4
   - id: IF-authored-fragment
     name: authored_fragment_yaml
     promises:
@@ -853,3 +1223,23 @@ relationships:
 - from: CAP-SL
   to: IF-slicer
   type: exposes
+# --- 2026-09-16 CAP-PB walk additions ---
+- from: CAP-PB
+  to: BEH-run-pipeline
+  type: contains
+  note: orchestrator behavior is the user-triggered entry point
+- from: CAP-PB
+  to: IF-model
+  type: exposes
+  note: CAP-PB emits IF-model as its canonical output artifact
+- from: BEH-run-pipeline
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-run-pipeline
+  to: BEH-scan
+  type: triggers
+  note: orchestrator invokes scan as stage 1
+- from: BEH-publish
+  to: IF-model
+  type: produces
+  note: BEH-publish is the stage that materializes IF-model on disk
