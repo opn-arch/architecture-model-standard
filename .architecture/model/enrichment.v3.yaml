@@ -68,6 +68,50 @@ entities:
           verified_by:
             - Phase 8 gates in tests/pipeline_v3/test_orchestrator.py
           provenance: 2026-09-15 SE walk enrichment
+        - id: PR-COMP-c5a72728-stage-decomposition
+          attribute: stage_decomposition
+          content:
+            - "1. scan — walk source tree, produce ScanResult (modules, imports, classes, functions)"
+            - "2. derive — extract behavior/promise candidates from scanned units (PromiseSet)"
+            - "3. cluster — group modules into candidate components by affinity (ClusterSet)"
+            - "4. link — resolve import edges to component-level dependencies (DependencyGraph)"
+            - "5. containerize — assign clusters to layers/components (ContainerizedModel)"
+            - "6. verify — schema + relationship integrity gates (VerificationReport)"
+            - "7. publish — emit .architecture-model.yaml deterministically (PublishedArtifact)"
+            - "8. orchestrator — runs 1..7 with resumability + typed intermediates"
+          owner_entity: COMP-c5a72728
+          status: verified
+          verified_by:
+            - src/architecture_model/pipeline_v3/{scan,derive,cluster,link,containerize,verify,publish,orchestrator}.py
+            - each stage has a corresponding tests/pipeline_v3/test_<stage>.py suite
+          provenance: 2026-09-16 CAP-DF walk enrichment (L10 — realization chain
+            populated in 3c6950b needs stage detail to be useful)
+        - id: PR-COMP-c5a72728-verification
+          attribute: verification
+          content:
+            - self-application — pipeline_v3 emits AMS's own .architecture-model.yaml every commit (CI gate)
+            - 95+ pytest tests across all 8 stages + orchestrator
+            - byte-determinism round-trip test (test_publish.py) catches ordering regressions
+            - Phase 8 orchestrator tests enforce end-to-end gate compliance
+            - external benchmark suite (arch-agent) exercises 4 third-party repos with 100% blind-regen fidelity
+          owner_entity: COMP-c5a72728
+          status: verified
+          verified_by:
+            - tests/pipeline_v3/ (95+ tests)
+            - CI enforces `pytest tests/ -v` on every push
+            - docs/reports/2026-09-14-v3-se-walk.md Level 2 (benchmark reference)
+          provenance: 2026-09-16 CAP-DF walk enrichment (L10)
+        - id: PR-COMP-c5a72728-assumptions
+          attribute: assumptions
+          content:
+            - source tree contains at least one Python file with importable modules
+            - AMS_DETERMINISTIC_NOW is pinned by caller when byte-determinism matters
+            - no LLM adapter is imported by any stage (CONS-ast-only)
+            - each stage's intermediate is small enough to hold in memory (measured OK for 3k-module repos)
+          owner_entity: COMP-c5a72728
+          status: open
+          gap_type: null
+          provenance: 2026-09-16 CAP-DF walk enrichment (L10)
 
     - id: COMP-VIEWER
       promises:

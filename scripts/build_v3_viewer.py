@@ -1031,6 +1031,181 @@ def _mermaid_cross_capability_flow(
     return "\n".join(lines), sorted(refs)
 
 
+def _mermaid_constraint_impact(
+    entities_by_kind: dict, relationships: list, cons_id: str
+) -> tuple[str, list[str]] | None:
+    """Constraint impact graph (2-hop walk).
+
+    Extends the 1-hop constraint case in ``_mermaid_realization`` to show
+    downstream impact: what specifically inside each constrained entity
+    has to uphold the constraint. Walk:
+
+    hop 1: ``ins_by(cons_id, "constrained-by")``
+      \u2014 entities directly declaring they are constrained.
+    hop 2 per hop-1 kind:
+      capability   -> outbound ``contains`` (sub-caps / behaviors affected)
+      component    -> outbound ``contains`` (sub-components affected)
+      behavior     -> inbound ``traces-to``  (components that implement it)
+      interface    -> inbound ``exposes``     (components exposing it)
+
+    Returns ``None`` when hop 1 is empty. Silent-skip when hop 2 adds no
+    new nodes (identical to what the 1-hop realization already shows).
+    """
+    flat = _all_entities_flat(entities_by_kind)
+    if cons_id not in flat:
+        return None
+    ck, _ = flat[cons_id]
+    if ck != "constraint":
+        return None
+
+    # Local edge maps.
+    out_edges: dict[str, list[tuple[str, str]]] = {}
+    in_edges: dict[str, list[tuple[str, str]]] = {}
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type")
+        if f is None or t is None or rt is None:
+            continue
+        out_edges.setdefault(f, []).append((t, rt))
+        in_edges.setdefault(t, []).append((f, rt))
+
+    def outs_by(eid: str, rtype: str) -> list[str]:
+        return sorted({t for t, rt in out_edges.get(eid, []) if rt == rtype and t in flat})
+
+    def ins_by(eid: str, rtype: str) -> list[str]:
+        return sorted({s for s, rt in in_edges.get(eid, []) if rt == rtype and s in flat})
+
+    hop1 = ins_by(cons_id, "constrained-by")
+    if not hop1:
+        return None
+
+    edges: list[tuple[str, str, str]] = []
+    for c in hop1:
+        edges.append((c, cons_id, "constrained-by"))
+
+    hop2_ids: list[str] = []
+    for h in hop1:
+        hk, _ = flat[h]
+        if hk in ("capability", "component"):
+            for kid in outs_by(h, "contains"):
+                edges.append((h, kid, "contains"))
+                hop2_ids.append(kid)
+        elif hk == "behavior":
+            for comp in ins_by(h, "traces-to"):
+                edges.append((comp, h, "traces-to"))
+                hop2_ids.append(comp)
+        elif hk == "interface":
+            for comp in ins_by(h, "exposes"):
+                edges.append((comp, h, "exposes"))
+                hop2_ids.append(comp)
+
+    # Silent-skip: no hop2 nodes means this is identical to the 1-hop
+    # realization view already rendered. Avoid duplicate cards.
+    if not hop2_ids:
+        return None
+
+    edges = sorted(set(edges))
+    node_ids = {cons_id} | set(hop1) | set(hop2_ids)
+
+    lines = ["flowchart LR"]
+    by_kind: dict[str, list[str]] = {}
+    for nid in sorted(node_ids):
+        nksing, nent = flat[nid]
+        lines.append(_mnode(nid, nent.get("name", nid), nksing))
+        by_kind.setdefault(nksing, []).append(nid)
+    for f, t, lbl in edges:
+        lines.append(f'  {_mid(f)} -->|{_mesc(lbl)}| {_mid(t)}')
+    _emit_class_defs(lines)
+    _apply_classes(lines, by_kind, root_id=cons_id)
+    return "\n".join(lines), sorted(node_ids)
+
+
+def _lint_edge_note_directions(relationships: list) -> list[dict]:
+    """Direction-vs-note linter (L2 lesson from realizes-direction-fix).
+
+    Scans every relationship for note-text patterns that describe the
+    opposite direction of the stored edge. Returns a deterministic list
+    of ``{from, to, type, note, warning}`` dicts. Empty list = clean.
+
+    Patterns caught (case-insensitive on lowercased note):
+      "<X> is realized by <Y>"    on edge X -> realizes -> Y   (expects Y -> X)
+      "<X> depends on <Y>"        on edge Y -> depends-on -> X (expects X -> Y)
+      "<X> is contained in <Y>"   on edge X -> contains -> Y   (expects Y -> X)
+      "<X> exposes <Y>"           on edge Y -> exposes -> X    (expects X -> Y)
+
+    IDs in the note are matched by substring on the stored ``from``/``to``
+    ids, so both bare ids ("CAP-PB") and qualified references
+    ("CAP-PB Extract") trigger the same rule.
+    """
+    warnings: list[dict] = []
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type")
+        note = (r.get("note") or "").lower()
+        if not (f and t and rt and note):
+            continue
+        f_l, t_l = str(f).lower(), str(t).lower()
+
+        rules = [
+            ("realizes",     f"{f_l} is realized by",  f"{t_l} realizes"),
+            ("depends-on",   f"{t_l} depends on",       f"{f_l} depends on"),
+            ("contains",     f"{f_l} is contained",     f"{t_l} contains"),
+            ("exposes",      f"{t_l} exposes",          f"{f_l} exposes"),
+        ]
+        for rule_type, wrong_pattern, right_pattern in rules:
+            if rt != rule_type:
+                continue
+            if wrong_pattern in note and right_pattern not in note:
+                warnings.append({
+                    "from": f, "to": t, "type": rt, "note": r.get("note", ""),
+                    "warning": (
+                        f"note text suggests {rule_type} direction is "
+                        f"reversed (expected {t}->{f})"
+                    ),
+                })
+                break
+    return sorted(warnings, key=lambda w: (w["type"], w["from"], w["to"]))
+
+
+def _realization_skip_reasons(
+    entities_by_kind: dict,
+    out_edges: dict,
+    in_edges: dict,
+) -> dict[str, str]:
+    """Strict-realiz diagnostic: for every entity that has NO
+    ``realization_mermaid`` populated but DOES have adjacent edges of the
+    kind the walker examines, record a one-line reason. Used to surface
+    systemic direction bugs (like the L9 realizes-direction fix) early.
+
+    Returns ``{entity_id: reason}`` for skipped-with-signal entities. An
+    entity truly disconnected from realization (no relevant edges at all)
+    is NOT included \u2014 the walker's silent-skip is correct for those.
+    """
+    flat = _all_entities_flat(entities_by_kind)
+    reasons: dict[str, str] = {}
+    for eid, (kind, _) in flat.items():
+        # Emulate the walker's hop-1 lookup without rendering.
+        if kind == "capability":
+            hop1 = [s for s, rt in in_edges.get(eid, []) if rt == "realizes"]
+            if not hop1:
+                # Signal case: capability has *outbound* realizes edges
+                # (direction inverted, matches L9 bug shape).
+                out_realizes = [t for t, rt in out_edges.get(eid, []) if rt == "realizes"]
+                if out_realizes:
+                    reasons[eid] = (
+                        f"has outbound realizes to {sorted(out_realizes)} "
+                        f"but walker expects inbound (see L9)"
+                    )
+        elif kind == "component":
+            hop1 = [t for t, rt in out_edges.get(eid, []) if rt == "realizes"]
+            if not hop1:
+                in_realizes = [s for s, rt in in_edges.get(eid, []) if rt == "realizes"]
+                if in_realizes:
+                    reasons[eid] = (
+                        f"has inbound realizes from {sorted(in_realizes)} "
+                        f"but walker expects outbound"
+                    )
+    return dict(sorted(reasons.items()))
+
+
 def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
     """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
     views = {
@@ -1206,8 +1381,35 @@ def _build_payload(model_path: Path) -> dict:
             )
             if neigh is not None:
                 rec["neighbors_mermaid"], rec["neighbors_refs"] = neigh
+            # 6th walk: constraint impact (2-hop; extends the 1-hop
+            # constraint case in _mermaid_realization). Silent-skip when
+            # hop2 is empty (identical to realization view).
+            if kind == "constraints":
+                cimp = _mermaid_constraint_impact(
+                    entities_by_kind, relationships, eid
+                )
+                if cimp is not None:
+                    rec["constraint_impact_mermaid"], rec["constraint_impact_refs"] = cimp
             recs.append(rec)
         entity_records[kind] = recs
+
+    # Build-time diagnostics (surface silent-skips + note-vs-edge
+    # direction issues so systemic bugs like L9 fire early).
+    direction_warnings = _lint_edge_note_directions(relationships)
+    skip_reasons = _realization_skip_reasons(entities_by_kind, out_edges, in_edges)
+    diagnostics = {
+        "direction_warnings": direction_warnings,
+        "realization_skip_reasons": skip_reasons,
+    }
+    # Print a one-line summary at build time (fail-soft; never blocks build).
+    if direction_warnings:
+        print(f"WARN: {len(direction_warnings)} note-vs-edge direction mismatch(es):")
+        for w in direction_warnings:
+            print(f"  [{w['type']}] {w['from']} -> {w['to']}: {w['warning']}")
+    if skip_reasons:
+        print(f"WARN: {len(skip_reasons)} entities silently skipped by realization walker:")
+        for eid, reason in skip_reasons.items():
+            print(f"  {eid}: {reason}")
 
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:
@@ -1270,6 +1472,7 @@ def _build_payload(model_path: Path) -> dict:
         "sources": [s[0] for s in sources],
         "notes": notes,
         "se_views": se_views,
+        "diagnostics": diagnostics,
     }
 
 
@@ -1509,10 +1712,25 @@ function showOverview() {
   const kindSummary = data.kinds_present.map(k =>
     `<div class="bar-row"><div class="label">${k}</div><div class="bar neutral" style="width:${(data.entities_by_kind[k].length/data.totals.entities*100).toFixed(1)}%"></div><div class="num">${data.entities_by_kind[k].length}</div></div>`
   ).join('');
+  const diag = data.diagnostics || {};
+  const dw = diag.direction_warnings || [];
+  const sr = diag.realization_skip_reasons || {};
+  const srKeys = Object.keys(sr);
+  let diagBanner = '';
+  if (dw.length || srKeys.length) {
+    const dwRows = dw.map(w => `<li><code>[${w.type}] ${w.from} -> ${w.to}</code>: ${escapeHtml(w.warning)}</li>`).join('');
+    const srRows = srKeys.map(k => `<li><code>${k}</code>: ${escapeHtml(sr[k])}</li>`).join('');
+    diagBanner = `<div class="card" style="border-color:var(--warn,#c93);background:#3b2a10">` +
+      `<h3>Build diagnostics (${dw.length + srKeys.length})</h3>` +
+      (dw.length ? `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:6px">Note-vs-edge direction (${dw.length})</div><ul style="margin:4px 0 0 0;padding-left:20px;font-size:12px">${dwRows}</ul>` : '') +
+      (srKeys.length ? `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-top:8px">Realization silent-skips (${srKeys.length})</div><ul style="margin:4px 0 0 0;padding-left:20px;font-size:12px">${srRows}</ul>` : '') +
+      `</div>`;
+  }
   document.getElementById('content').innerHTML = `
     <div class="breadcrumb">Overview</div>
     <h2 class="content-header">Architecture Model</h2>
     <div class="subtitle">${data.sources.length} source(s) &middot; ${data.totals.entities} entities across ${data.kinds_present.length} kinds</div>
+    ${diagBanner}
     <div class="grid2">
       <div class="card"><h3>Promise status</h3>${statusBars}</div>
       <div class="card"><h3>Typed gap distribution</h3>${gapBars}</div>
@@ -1595,7 +1813,8 @@ function selectEntity(id) {
     const decompCard = _walkCard('Decomposition (contains, ≤2 hops)', e.decomposition_mermaid, e.decomposition_refs, 'decomp');
     const realizCard = _walkCard('Realization chain', e.realization_mermaid, e.realization_refs, 'realiz');
     const xflowCard = _walkCard('Cross-capability flow (triggers)', e.cross_flow_mermaid, e.cross_flow_refs, 'xflow');
-    html += xflowCard.html + decompCard.html + realizCard.html;
+    const cimpCard = _walkCard('Constraint impact (2-hop)', e.constraint_impact_mermaid, e.constraint_impact_refs, 'cimp');
+    html += xflowCard.html + cimpCard.html + decompCard.html + realizCard.html;
 
     const seen = new Set();
     for (const attr of attrs) {
@@ -1677,6 +1896,7 @@ function selectEntity(id) {
       const targets = [
         [flowDiagramId, 'flow'],
         [xflowCard.id, 'cross_flow'],
+        [cimpCard.id, 'constraint_impact'],
         [decompCard.id, 'decomposition'],
         [realizCard.id, 'realization'],
         [neighCard.id, 'neighbors'],

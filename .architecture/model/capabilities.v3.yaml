@@ -347,12 +347,17 @@ entities:
       - "L6 (2026-09-16 viewer walk): graph-walk-as-capability generalizes — flow_mermaid → decomposition_mermaid / realization_mermaid / neighbors_mermaid using the same substrate (helper returns tuple | None, stamped on record, rendered by shared loop). Adding future walks = 1 helper + 1 entry in the render targets array."
       - "L7 (2026-09-16 viewer walk): silent-skip (return None when N/A) beats always-render; adaptive thresholds (BFS depth ≤ 2, cap 30 nodes, neighbors threshold 20) keep diagrams readable across entity kinds that vary by 100x in neighborhood size."
       - "L8 (2026-09-16 viewer walk): kind-dispatched walks are unavoidable when the semantic shape of the traversal varies across entity kinds. Realization needed 7 distinct walk strategies (capability / component / behavior / interface / layer / actor / constraint) because the meaningful 2-hop chain is different for each — a single generic template would lose more insight than it saves."
+      - "L9 (2026-09-16 realizes-direction-fix): follow-up notes framed as 'add one edge' can hide systemic direction bugs; investigating the CONSUMER contract (walker semantics) before adding data revealed 3 edges + 5 entities affected, not 1. Always probe the consumer before adding producer data."
+      - "L10 (2026-09-16 realizes-direction-fix): silent-skip (return None when N/A) is a double-edged sword — correct behavior masking systemic bugs. Mitigation: build-time diagnostic pass (_realization_skip_reasons + _lint_edge_note_directions) that surfaces silently-skipped entities with adjacent-but-wrong-direction edges, plus in-viewer diagnostics banner. Fires zero warnings today (L9 fix cleared all), but present as tripwire for future direction bugs."
+      - "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper — additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate."
       owner_entity: CAP-DF
       delivered_from: null
       verified_by:
       - docs/reports/2026-09-16-content-shape-and-more-diagrams.md documents L4-L8
       - docs/reports/2026-09-16-cap-pb-walk.md documents L1-L3
-      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8)
+      - docs/reports/2026-09-16-realizes-direction-fix.md documents L9-L10
+      - docs/reports/2026-09-16-constraint-impact-and-diagnostics.md documents L11
+      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10)
       status: verified
       gap_type: null
       provenance: |

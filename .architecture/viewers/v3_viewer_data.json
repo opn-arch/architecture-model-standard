@@ -1,4 +1,8 @@
 {
+  "diagnostics": {
+    "direction_warnings": [],
+    "realization_skip_reasons": {}
+  },
   "entities_by_kind": {
     "actors": [
       {
@@ -1121,7 +1125,10 @@
                 "L5 (2026-09-16 viewer walk): layered defense (try/catch on selectEntity) surfaces bugs as 'Render error' but does NOT identify root cause. Diagnosis requires reading the DATA shape across sources, not the code. Falsification (2 working / 23 broken components) pointed at the divergence directly.",
                 "L6 (2026-09-16 viewer walk): graph-walk-as-capability generalizes \u2014 flow_mermaid \u2192 decomposition_mermaid / realization_mermaid / neighbors_mermaid using the same substrate (helper returns tuple | None, stamped on record, rendered by shared loop). Adding future walks = 1 helper + 1 entry in the render targets array.",
                 "L7 (2026-09-16 viewer walk): silent-skip (return None when N/A) beats always-render; adaptive thresholds (BFS depth \u2264 2, cap 30 nodes, neighbors threshold 20) keep diagrams readable across entity kinds that vary by 100x in neighborhood size.",
-                "L8 (2026-09-16 viewer walk): kind-dispatched walks are unavoidable when the semantic shape of the traversal varies across entity kinds. Realization needed 7 distinct walk strategies (capability / component / behavior / interface / layer / actor / constraint) because the meaningful 2-hop chain is different for each \u2014 a single generic template would lose more insight than it saves."
+                "L8 (2026-09-16 viewer walk): kind-dispatched walks are unavoidable when the semantic shape of the traversal varies across entity kinds. Realization needed 7 distinct walk strategies (capability / component / behavior / interface / layer / actor / constraint) because the meaningful 2-hop chain is different for each \u2014 a single generic template would lose more insight than it saves.",
+                "L9 (2026-09-16 realizes-direction-fix): follow-up notes framed as 'add one edge' can hide systemic direction bugs; investigating the CONSUMER contract (walker semantics) before adding data revealed 3 edges + 5 entities affected, not 1. Always probe the consumer before adding producer data.",
+                "L10 (2026-09-16 realizes-direction-fix): silent-skip (return None when N/A) is a double-edged sword \u2014 correct behavior masking systemic bugs. Mitigation: build-time diagnostic pass (_realization_skip_reasons + _lint_edge_note_directions) that surfaces silently-skipped entities with adjacent-but-wrong-direction edges, plus in-viewer diagnostics banner. Fires zero warnings today (L9 fix cleared all), but present as tripwire for future direction bugs.",
+                "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper \u2014 additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate."
               ],
               "gap_type": null,
               "id": "PR-CAP-DF-lessons_learned",
@@ -7528,6 +7535,20 @@
       },
       {
         "by_attr": {
+          "assumptions": [
+            {
+              "content": [
+                "source tree contains at least one Python file with importable modules",
+                "AMS_DETERMINISTIC_NOW is pinned by caller when byte-determinism matters",
+                "no LLM adapter is imported by any stage (CONS-ast-only)",
+                "each stage's intermediate is small enough to hold in memory (measured OK for 3k-module repos)"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-c5a72728-assumptions",
+              "provenance": "2026-09-16 CAP-DF walk enrichment (L10)",
+              "status": "open"
+            }
+          ],
           "delivers": [
             {
               "content": [
@@ -7787,6 +7808,24 @@
               "status": "verified"
             }
           ],
+          "stage_decomposition": [
+            {
+              "content": [
+                "1. scan \u2014 walk source tree, produce ScanResult (modules, imports, classes, functions)",
+                "2. derive \u2014 extract behavior/promise candidates from scanned units (PromiseSet)",
+                "3. cluster \u2014 group modules into candidate components by affinity (ClusterSet)",
+                "4. link \u2014 resolve import edges to component-level dependencies (DependencyGraph)",
+                "5. containerize \u2014 assign clusters to layers/components (ContainerizedModel)",
+                "6. verify \u2014 schema + relationship integrity gates (VerificationReport)",
+                "7. publish \u2014 emit .architecture-model.yaml deterministically (PublishedArtifact)",
+                "8. orchestrator \u2014 runs 1..7 with resumability + typed intermediates"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-c5a72728-stage-decomposition",
+              "provenance": "2026-09-16 CAP-DF walk enrichment (L10 \u2014 realization chain populated in 3c6950b needs stage detail to be useful)",
+              "status": "verified"
+            }
+          ],
           "stakeholders": [
             {
               "content": [
@@ -7812,6 +7851,21 @@
               "gap_type": null,
               "id": "PR-COMP-c5a72728-success-criteria",
               "provenance": "2026-09-15 SE walk enrichment",
+              "status": "verified"
+            }
+          ],
+          "verification": [
+            {
+              "content": [
+                "self-application \u2014 pipeline_v3 emits AMS's own .architecture-model.yaml every commit (CI gate)",
+                "95+ pytest tests across all 8 stages + orchestrator",
+                "byte-determinism round-trip test (test_publish.py) catches ordering regressions",
+                "Phase 8 orchestrator tests enforce end-to-end gate compliance",
+                "external benchmark suite (arch-agent) exercises 4 third-party repos with 100% blind-regen fidelity"
+              ],
+              "gap_type": null,
+              "id": "PR-COMP-c5a72728-verification",
+              "provenance": "2026-09-16 CAP-DF walk enrichment (L10)",
               "status": "verified"
             }
           ]
@@ -7857,7 +7911,7 @@
           "COMP-bb5e3d5a",
           "COMP-c58a2a80"
         ],
-        "promise_count": 29,
+        "promise_count": 32,
         "realization_mermaid": "flowchart LR\n  nCAPPB(\"CAP-PB<br/>extract_architecture_from_code\")\n  nCAPSL(\"CAP-SL<br/>slice_focused_subgraph\")\n  nCOMPc5a72728[\"COMP-c5a72728<br/>pipeline_v3\"]\n  nLtooling[(\"L-tooling<br/>Tooling (pipeline_v3)\")]\n  nCOMPc5a72728 -->|realizes| nCAPPB\n  nCOMPc5a72728 -->|realizes| nCAPSL\n  nLtooling -->|contains| nCAPPB\n  nLtooling -->|contains| nCAPSL\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nCAPPB,nCAPSL capability;\n  class nLtooling layer;\n  class nCOMPc5a72728 root;",
         "realization_refs": [
           "CAP-PB",
@@ -9251,6 +9305,19 @@
             }
           ]
         },
+        "constraint_impact_mermaid": "flowchart LR\n  nBEHcluster[[\"BEH-cluster<br/>cluster_modules_into_components\"]]\n  nBEHcontainerize[[\"BEH-containerize<br/>containerize_components\"]]\n  nBEHderivepromises[[\"BEH-derive-promises<br/>derive_promises_from_scan\"]]\n  nBEHlink[[\"BEH-link<br/>link_components_via_edges\"]]\n  nBEHpublish[[\"BEH-publish<br/>publish_v3_model_yaml\"]]\n  nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n  nBEHscan[[\"BEH-scan<br/>scan_python_source_tree\"]]\n  nBEHverify[[\"BEH-verify<br/>verify_structural_invariants\"]]\n  nCAPPB(\"CAP-PB<br/>extract_architecture_from_code\")\n  nCONSastonly{{\"CONS-ast-only<br/>Extract path uses AST only\"}}\n  nCAPPB -->|contains| nBEHcluster\n  nCAPPB -->|contains| nBEHcontainerize\n  nCAPPB -->|contains| nBEHderivepromises\n  nCAPPB -->|contains| nBEHlink\n  nCAPPB -->|contains| nBEHpublish\n  nCAPPB -->|contains| nBEHrunpipeline\n  nCAPPB -->|contains| nBEHscan\n  nCAPPB -->|contains| nBEHverify\n  nCAPPB -->|constrained-by| nCONSastonly\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHcluster,nBEHcontainerize,nBEHderivepromises,nBEHlink,nBEHpublish,nBEHrunpipeline,nBEHscan,nBEHverify behavior;\n  class nCAPPB capability;\n  class nCONSastonly root;",
+        "constraint_impact_refs": [
+          "BEH-cluster",
+          "BEH-containerize",
+          "BEH-derive-promises",
+          "BEH-link",
+          "BEH-publish",
+          "BEH-run-pipeline",
+          "BEH-scan",
+          "BEH-verify",
+          "CAP-PB",
+          "CONS-ast-only"
+        ],
         "gap_count": 0,
         "id": "CONS-ast-only",
         "inbound": [
@@ -9288,6 +9355,24 @@
             }
           ]
         },
+        "constraint_impact_mermaid": "flowchart LR\n  nBEHcluster[[\"BEH-cluster<br/>cluster_modules_into_components\"]]\n  nBEHcontainerize[[\"BEH-containerize<br/>containerize_components\"]]\n  nBEHderivepromises[[\"BEH-derive-promises<br/>derive_promises_from_scan\"]]\n  nBEHlink[[\"BEH-link<br/>link_components_via_edges\"]]\n  nBEHpublish[[\"BEH-publish<br/>publish_v3_model_yaml\"]]\n  nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n  nBEHscan[[\"BEH-scan<br/>scan_python_source_tree\"]]\n  nBEHverify[[\"BEH-verify<br/>verify_structural_invariants\"]]\n  nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n  nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n  nBEHviewsave[[\"BEH-view-save<br/>view_save_notes_yaml\"]]\n  nCAPDF2(\"CAP-DF.2<br/>review_in_viewer\")\n  nCAPPB(\"CAP-PB<br/>extract_architecture_from_code\")\n  nCAPSL(\"CAP-SL<br/>slice_focused_subgraph\")\n  nCONSdeterminism{{\"CONS-determinism<br/>Byte-determinism across runs\"}}\n  nCAPDF2 -->|contains| nBEHviewbrowse\n  nCAPDF2 -->|contains| nBEHviewnote\n  nCAPDF2 -->|contains| nBEHviewsave\n  nCAPDF2 -->|constrained-by| nCONSdeterminism\n  nCAPPB -->|contains| nBEHcluster\n  nCAPPB -->|contains| nBEHcontainerize\n  nCAPPB -->|contains| nBEHderivepromises\n  nCAPPB -->|contains| nBEHlink\n  nCAPPB -->|contains| nBEHpublish\n  nCAPPB -->|contains| nBEHrunpipeline\n  nCAPPB -->|contains| nBEHscan\n  nCAPPB -->|contains| nBEHverify\n  nCAPPB -->|constrained-by| nCONSdeterminism\n  nCAPSL -->|constrained-by| nCONSdeterminism\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHcluster,nBEHcontainerize,nBEHderivepromises,nBEHlink,nBEHpublish,nBEHrunpipeline,nBEHscan,nBEHverify,nBEHviewbrowse,nBEHviewnote,nBEHviewsave behavior;\n  class nCAPDF2,nCAPPB,nCAPSL capability;\n  class nCONSdeterminism root;",
+        "constraint_impact_refs": [
+          "BEH-cluster",
+          "BEH-containerize",
+          "BEH-derive-promises",
+          "BEH-link",
+          "BEH-publish",
+          "BEH-run-pipeline",
+          "BEH-scan",
+          "BEH-verify",
+          "BEH-view-browse",
+          "BEH-view-note",
+          "BEH-view-save",
+          "CAP-DF.2",
+          "CAP-PB",
+          "CAP-SL",
+          "CONS-determinism"
+        ],
         "gap_count": 0,
         "id": "CONS-determinism",
         "inbound": [
@@ -9332,6 +9417,14 @@
             }
           ]
         },
+        "constraint_impact_mermaid": "flowchart LR\n  nBEHviewbrowse[[\"BEH-view-browse<br/>view_browse_merged_model\"]]\n  nBEHviewnote[[\"BEH-view-note<br/>view_capture_human_note\"]]\n  nBEHviewsave[[\"BEH-view-save<br/>view_save_notes_yaml\"]]\n  nCAPDF2(\"CAP-DF.2<br/>review_in_viewer\")\n  nCONSnoruntimedeps{{\"CONS-no-runtime-deps<br/>Viewer has zero runtime deps\"}}\n  nCAPDF2 -->|contains| nBEHviewbrowse\n  nCAPDF2 -->|contains| nBEHviewnote\n  nCAPDF2 -->|contains| nBEHviewsave\n  nCAPDF2 -->|constrained-by| nCONSnoruntimedeps\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHviewbrowse,nBEHviewnote,nBEHviewsave behavior;\n  class nCAPDF2 capability;\n  class nCONSnoruntimedeps root;",
+        "constraint_impact_refs": [
+          "BEH-view-browse",
+          "BEH-view-note",
+          "BEH-view-save",
+          "CAP-DF.2",
+          "CONS-no-runtime-deps"
+        ],
         "gap_count": 0,
         "id": "CONS-no-runtime-deps",
         "inbound": [
@@ -9371,6 +9464,17 @@
             }
           ]
         },
+        "constraint_impact_mermaid": "flowchart LR\n  nBEHS1[[\"BEH-S1<br/>llm_entity_kind_promotion\"]]\n  nBEHS2[[\"BEH-S2<br/>llm_gap_remediation\"]]\n  nBEHwalkauthor[[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]]\n  nBEHwalkdescend[[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]]\n  nBEHwalkrealize[[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]]\n  nCAPDF1(\"CAP-DF.1<br/>graph_walk_as_capability\")\n  nCAPDF4(\"CAP-DF.4<br/>llm_gap_remediation_and_entity_kind_promotion\")\n  nCONSopenschema{{\"CONS-open-schema<br/>Promise.attribute is an open string\"}}\n  nCAPDF1 -->|contains| nBEHwalkauthor\n  nCAPDF1 -->|contains| nBEHwalkdescend\n  nCAPDF1 -->|contains| nBEHwalkrealize\n  nCAPDF1 -->|constrained-by| nCONSopenschema\n  nCAPDF4 -->|contains| nBEHS1\n  nCAPDF4 -->|contains| nBEHS2\n  nCAPDF4 -->|constrained-by| nCONSopenschema\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHS1,nBEHS2,nBEHwalkauthor,nBEHwalkdescend,nBEHwalkrealize behavior;\n  class nCAPDF1,nCAPDF4 capability;\n  class nCONSopenschema root;",
+        "constraint_impact_refs": [
+          "BEH-S1",
+          "BEH-S2",
+          "BEH-walk-author",
+          "BEH-walk-descend",
+          "BEH-walk-realize",
+          "CAP-DF.1",
+          "CAP-DF.4",
+          "CONS-open-schema"
+        ],
         "gap_count": 0,
         "id": "CONS-open-schema",
         "inbound": [
@@ -9412,6 +9516,19 @@
             }
           ]
         },
+        "constraint_impact_mermaid": "flowchart LR\n  nBEHcluster[[\"BEH-cluster<br/>cluster_modules_into_components\"]]\n  nBEHcontainerize[[\"BEH-containerize<br/>containerize_components\"]]\n  nBEHderivepromises[[\"BEH-derive-promises<br/>derive_promises_from_scan\"]]\n  nBEHlink[[\"BEH-link<br/>link_components_via_edges\"]]\n  nBEHpublish[[\"BEH-publish<br/>publish_v3_model_yaml\"]]\n  nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n  nBEHscan[[\"BEH-scan<br/>scan_python_source_tree\"]]\n  nBEHverify[[\"BEH-verify<br/>verify_structural_invariants\"]]\n  nCAPPB(\"CAP-PB<br/>extract_architecture_from_code\")\n  nCONSpinnedclock{{\"CONS-pinned-clock<br/>Pinned clock via AMS_DETERMINISTIC_NOW\"}}\n  nCAPPB -->|contains| nBEHcluster\n  nCAPPB -->|contains| nBEHcontainerize\n  nCAPPB -->|contains| nBEHderivepromises\n  nCAPPB -->|contains| nBEHlink\n  nCAPPB -->|contains| nBEHpublish\n  nCAPPB -->|contains| nBEHrunpipeline\n  nCAPPB -->|contains| nBEHscan\n  nCAPPB -->|contains| nBEHverify\n  nCAPPB -->|constrained-by| nCONSpinnedclock\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHcluster,nBEHcontainerize,nBEHderivepromises,nBEHlink,nBEHpublish,nBEHrunpipeline,nBEHscan,nBEHverify behavior;\n  class nCAPPB capability;\n  class nCONSpinnedclock root;",
+        "constraint_impact_refs": [
+          "BEH-cluster",
+          "BEH-containerize",
+          "BEH-derive-promises",
+          "BEH-link",
+          "BEH-publish",
+          "BEH-run-pipeline",
+          "BEH-scan",
+          "BEH-verify",
+          "CAP-PB",
+          "CONS-pinned-clock"
+        ],
         "gap_count": 0,
         "id": "CONS-pinned-clock",
         "inbound": [
@@ -9451,6 +9568,19 @@
             }
           ]
         },
+        "constraint_impact_mermaid": "flowchart LR\n  nBEHcluster[[\"BEH-cluster<br/>cluster_modules_into_components\"]]\n  nBEHcontainerize[[\"BEH-containerize<br/>containerize_components\"]]\n  nBEHderivepromises[[\"BEH-derive-promises<br/>derive_promises_from_scan\"]]\n  nBEHlink[[\"BEH-link<br/>link_components_via_edges\"]]\n  nBEHpublish[[\"BEH-publish<br/>publish_v3_model_yaml\"]]\n  nBEHrunpipeline[[\"BEH-run-pipeline<br/>run_extraction_pipeline_end_to_end\"]]\n  nBEHscan[[\"BEH-scan<br/>scan_python_source_tree\"]]\n  nBEHverify[[\"BEH-verify<br/>verify_structural_invariants\"]]\n  nCAPPB(\"CAP-PB<br/>extract_architecture_from_code\")\n  nCONSresumable{{\"CONS-resumable<br/>Stages persist intermediate state\"}}\n  nCAPPB -->|contains| nBEHcluster\n  nCAPPB -->|contains| nBEHcontainerize\n  nCAPPB -->|contains| nBEHderivepromises\n  nCAPPB -->|contains| nBEHlink\n  nCAPPB -->|contains| nBEHpublish\n  nCAPPB -->|contains| nBEHrunpipeline\n  nCAPPB -->|contains| nBEHscan\n  nCAPPB -->|contains| nBEHverify\n  nCAPPB -->|constrained-by| nCONSresumable\n  classDef component fill:#1e293b,stroke:#6639ba,color:#e6edf3;\n  classDef capability fill:#3b1e5a,stroke:#a855f7,color:#f3e8ff,stroke-width:2px;\n  classDef behavior fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef interface fill:#0f2e1e,stroke:#1a7f37,color:#dafbe1;\n  classDef actor fill:#1e293b,stroke:#0969da,color:#e6edf3;\n  classDef constraint fill:#3b1e1e,stroke:#f97316,color:#fed7aa;\n  classDef layer fill:#1a2f4a,stroke:#38bdf8,color:#e0f2fe;\n  classDef root fill:#7f1d1d,stroke:#e94560,color:#ffe4e6,stroke-width:3px;\n  class nBEHcluster,nBEHcontainerize,nBEHderivepromises,nBEHlink,nBEHpublish,nBEHrunpipeline,nBEHscan,nBEHverify behavior;\n  class nCAPPB capability;\n  class nCONSresumable root;",
+        "constraint_impact_refs": [
+          "BEH-cluster",
+          "BEH-containerize",
+          "BEH-derive-promises",
+          "BEH-link",
+          "BEH-publish",
+          "BEH-run-pipeline",
+          "BEH-scan",
+          "BEH-verify",
+          "CAP-PB",
+          "CONS-resumable"
+        ],
         "gap_count": 0,
         "id": "CONS-resumable",
         "inbound": [
@@ -10556,9 +10686,9 @@
     ".architecture/model/viewer.v3.yaml"
   ],
   "status_hist": {
-    "open": 615,
+    "open": 616,
     "typed-gap": 54,
-    "verified": 106
+    "verified": 108
   },
   "top_by_gaps": [
     {
@@ -10628,7 +10758,7 @@
     "components": 25,
     "entities": 67,
     "gaps": 61,
-    "promises": 775,
+    "promises": 778,
     "relationships": 130
   }
 }
