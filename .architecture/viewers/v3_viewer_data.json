@@ -8666,6 +8666,96 @@
     "source_root": "."
   },
   "notes": {},
+  "se_views": {
+    "conops": {
+      "entity_refs": [
+        "ACT-ci",
+        "ACT-developer",
+        "ACT-llm",
+        "ACT-se",
+        "CAP-DF",
+        "CAP-DF.1",
+        "CAP-DF.2",
+        "CAP-DF.3",
+        "CAP-DF.4",
+        "CAP-PB",
+        "CAP-SL"
+      ],
+      "mermaid": "flowchart LR\n  subgraph ACTORS[\"Actors\"]\n    nACTci[\"ACT-ci<br/>CI / Gate Enforcer\"]\n    nACTdeveloper[\"ACT-developer<br/>Developer\"]\n    nACTllm[\"ACT-llm<br/>LLM (Part 3, deferred)\"]\n    nACTse[\"ACT-se<br/>Systems Engineer\"]\n  end\n  subgraph CAPS[\"Capabilities\"]\n    nCAPDF[\"CAP-DF<br/>evolve_via_model_based_dev_loop\"]\n    nCAPDF1[\"CAP-DF.1<br/>graph_walk_as_capability\"]\n    nCAPDF2[\"CAP-DF.2<br/>review_in_viewer\"]\n    nCAPDF3[\"CAP-DF.3<br/>validate_declared_vs_extracted\"]\n    nCAPDF4[\"CAP-DF.4<br/>llm_gap_remediation_and_entity_kind_promotion\"]\n    nCAPPB[\"CAP-PB<br/>extract_architecture_from_code\"]\n    nCAPSL[\"CAP-SL<br/>slice_focused_subgraph\"]\n  end\n  nACTci -->|triggers (BEH-publish)| nCAPPB\n  nACTci -->|triggers (BEH-scan)| nCAPPB\n  nACTdeveloper -->|triggers (BEH-view-browse)| nCAPDF2\n  nACTdeveloper -->|triggers (BEH-view-note)| nCAPDF2\n  nACTdeveloper -->|triggers (BEH-view-save)| nCAPDF2\n  nACTdeveloper -->|triggers (BEH-scan)| nCAPPB\n  nACTllm -->|triggers (BEH-S1)| nCAPDF4\n  nACTllm -->|triggers (BEH-S2)| nCAPDF4\n  nACTse -->|triggers (BEH-walk-author)| nCAPDF1\n  nACTse -->|triggers (BEH-walk-descend)| nCAPDF1\n  nACTse -->|triggers (BEH-walk-realize)| nCAPDF1\n  nACTse -->|triggers (BEH-view-browse)| nCAPDF2",
+      "narrative": "Concept of Operations for the AMS dev workflow. Four actors (developer, SE, CI, and the Part-3 LLM) drive the three top-level capabilities. The developer + SE run the day-to-day loop (view \u2192 note \u2192 walk/author \u2192 validate \u2192 re-extract). CI enforces byte-determinism on every push. The LLM is declared as future actor for CAP-DF.4 (Part 3, not yet realized).",
+      "title": "Concept of Operations"
+    },
+    "functional": {
+      "entity_refs": [
+        "BEH-S1",
+        "BEH-S2",
+        "BEH-cluster",
+        "BEH-containerize",
+        "BEH-derive-promises",
+        "BEH-link",
+        "BEH-publish",
+        "BEH-scan",
+        "BEH-verify",
+        "BEH-view-browse",
+        "BEH-view-note",
+        "BEH-view-save",
+        "BEH-walk-author",
+        "BEH-walk-descend",
+        "BEH-walk-realize",
+        "CAP-DF",
+        "CAP-DF.1",
+        "CAP-DF.2",
+        "CAP-DF.3",
+        "CAP-DF.4",
+        "CAP-PB",
+        "CAP-SL",
+        "CONS-determinism",
+        "CONS-no-runtime-deps",
+        "CONS-open-schema",
+        "CONS-pinned-clock",
+        "IF-authored-fragment",
+        "IF-slicer"
+      ],
+      "mermaid": "flowchart TD\n  nCAPDF[\"CAP-DF<br/>evolve_via_model_based_dev_loop\"]\n  nCAPDF1[\"CAP-DF.1<br/>graph_walk_as_capability\"]\n  nCAPDF2[\"CAP-DF.2<br/>review_in_viewer\"]\n  nCAPDF3[\"CAP-DF.3<br/>validate_declared_vs_extracted\"]\n  nCAPDF4[\"CAP-DF.4<br/>llm_gap_remediation_and_entity_kind_promotion\"]\n  nCAPPB[\"CAP-PB<br/>extract_architecture_from_code\"]\n  nCAPSL[\"CAP-SL<br/>slice_focused_subgraph\"]\n  nBEHS1([\"BEH-S1<br/>llm_entity_kind_promotion\"])\n  nBEHS2([\"BEH-S2<br/>llm_gap_remediation\"])\n  nBEHcluster([\"BEH-cluster<br/>cluster_modules_into_components\"])\n  nBEHcontainerize([\"BEH-containerize<br/>containerize_components\"])\n  nBEHderivepromises([\"BEH-derive-promises<br/>derive_promises_from_scan\"])\n  nBEHlink([\"BEH-link<br/>link_components_via_edges\"])\n  nBEHpublish([\"BEH-publish<br/>publish_v3_model_yaml\"])\n  nBEHscan([\"BEH-scan<br/>scan_python_source_tree\"])\n  nBEHverify([\"BEH-verify<br/>verify_structural_invariants\"])\n  nBEHviewbrowse([\"BEH-view-browse<br/>view_browse_merged_model\"])\n  nBEHviewnote([\"BEH-view-note<br/>view_capture_human_note\"])\n  nBEHviewsave([\"BEH-view-save<br/>view_save_notes_yaml\"])\n  nBEHwalkauthor([\"BEH-walk-author<br/>walk_author_fragment_yaml\"])\n  nBEHwalkdescend([\"BEH-walk-descend<br/>walk_descend_concept_to_components\"])\n  nBEHwalkrealize([\"BEH-walk-realize<br/>walk_link_to_extracted_components\"])\n  nIFauthoredfragment[/\"IF-authored-fragment<br/>authored_fragment_yaml\"/]\n  nIFllmprovider[/\"IF-llm-provider<br/>llm_provider_protocol\"/]\n  nIFslicer[/\"IF-slicer<br/>slice_focused_subgraph\"/]\n  nCONSdeterminism{{\"CONS-determinism<br/>Byte-determinism across runs\"}}\n  nCONSnoruntimedeps{{\"CONS-no-runtime-deps<br/>Viewer has zero runtime deps\"}}\n  nCONSopenschema{{\"CONS-open-schema<br/>Promise.attribute is an open string\"}}\n  nCONSpinnedclock{{\"CONS-pinned-clock<br/>Pinned clock via AMS_DETERMINISTIC_NOW\"}}\n  nCAPDF --> nCAPDF1\n  nCAPDF --> nCAPDF2\n  nCAPDF --> nCAPDF3\n  nCAPDF --> nCAPDF4\n  nCAPDF1 --> nBEHwalkauthor\n  nCAPDF1 --> nBEHwalkdescend\n  nCAPDF1 --> nBEHwalkrealize\n  nCAPDF1 -.->|constrained by| nCONSopenschema\n  nCAPDF1 ==>|exposes| nIFauthoredfragment\n  nCAPDF2 --> nBEHviewbrowse\n  nCAPDF2 --> nBEHviewnote\n  nCAPDF2 --> nBEHviewsave\n  nCAPDF2 -.->|constrained by| nCONSdeterminism\n  nCAPDF2 -.->|constrained by| nCONSnoruntimedeps\n  nCAPDF4 --> nBEHS1\n  nCAPDF4 --> nBEHS2\n  nCAPDF4 -.->|constrained by| nCONSopenschema\n  nCAPPB --> nBEHcluster\n  nCAPPB --> nBEHcontainerize\n  nCAPPB --> nBEHderivepromises\n  nCAPPB --> nBEHlink\n  nCAPPB --> nBEHpublish\n  nCAPPB --> nBEHscan\n  nCAPPB --> nBEHverify\n  nCAPPB -.->|constrained by| nCONSdeterminism\n  nCAPPB -.->|constrained by| nCONSpinnedclock\n  nCAPSL -.->|constrained by| nCONSdeterminism\n  nCAPSL ==>|exposes| nIFslicer",
+      "narrative": "Functional analysis \u2014 top-down capability tree derived from the merged model. CAP-PB (extract) contains the 8 pipeline behaviors; CAP-SL (slice) exposes IF-slicer; CAP-DF (evolve) contains four sub-capabilities: walk, view, validate, and LLM seams. Behaviors hang off their owning sub-capability; interfaces are leaves. Constraint edges (constrained-by) surface non-functional requirements at the capability level.",
+      "title": "Functional Analysis"
+    },
+    "logical": {
+      "entity_refs": [
+        "COMP-VIEWER",
+        "COMP-c5a72728",
+        "L-authoring",
+        "L-llm",
+        "L-standard",
+        "L-tooling",
+        "L-view"
+      ],
+      "mermaid": "flowchart TD\n  subgraph nLauthoring[\"L-authoring: Authoring (fragment YAMLs)\"]\n    nLauthoring_empty([empty])\n  end\n  subgraph nLllm[\"L-llm: LLM (Part 3, deferred)\"]\n    nLllm_empty([empty])\n  end\n  subgraph nLstandard[\"L-standard: Standard (schema + core types)\"]\n    nLstandard_empty([empty])\n  end\n  subgraph nLtooling[\"L-tooling: Tooling (pipeline_v3)\"]\n    nCOMPc5a72728[\"COMP-c5a72728<br/>pipeline_v3\"]\n  end\n  subgraph nLview[\"L-view: View (viewer + build script)\"]\n    nCOMPVIEWER[\"COMP-VIEWER<br/>COMP-VIEWER\"]\n  end\n  nLauthoring -->|depends on| nLstandard\n  nLllm -.->|produces| nLauthoring\n  nLllm -->|depends on| nLstandard\n  nLtooling -->|depends on| nLstandard\n  nLview ==>|consumes| nLauthoring\n  nLview -->|depends on| nLstandard",
+      "narrative": "Logical architecture \u2014 layer\u2192component allocation and layer\u2192layer dependency graph. Five layers separate concerns: L-standard (schema + core), L-tooling (pipeline_v3), L-view (viewer + build), L-authoring (fragment YAMLs), L-llm (Part 3). Each layer subgraphs its owned components; edges between layers show depends-on / consumes / produces relationships.",
+      "title": "Logical Architecture"
+    },
+    "use_cases": {
+      "entity_refs": [
+        "ACT-ci",
+        "ACT-developer",
+        "ACT-llm",
+        "ACT-se",
+        "BEH-S1",
+        "BEH-S2",
+        "BEH-publish",
+        "BEH-scan",
+        "BEH-view-browse",
+        "BEH-view-note",
+        "BEH-view-save",
+        "BEH-walk-author",
+        "BEH-walk-descend",
+        "BEH-walk-realize"
+      ],
+      "mermaid": "flowchart LR\n  nACTci((\"ACT-ci<br/>CI / Gate Enforcer\"))\n  nACTdeveloper((\"ACT-developer<br/>Developer\"))\n  nACTllm((\"ACT-llm<br/>LLM (Part 3, deferred)\"))\n  nACTse((\"ACT-se<br/>Systems Engineer\"))\n  subgraph USE_CASES[\"Use Cases (Behaviors)\"]\n    nBEHS1[\"BEH-S1<br/>llm_entity_kind_promotion\"]\n    nBEHS2[\"BEH-S2<br/>llm_gap_remediation\"]\n    nBEHpublish[\"BEH-publish<br/>publish_v3_model_yaml\"]\n    nBEHscan[\"BEH-scan<br/>scan_python_source_tree\"]\n    nBEHviewbrowse[\"BEH-view-browse<br/>view_browse_merged_model\"]\n    nBEHviewnote[\"BEH-view-note<br/>view_capture_human_note\"]\n    nBEHviewsave[\"BEH-view-save<br/>view_save_notes_yaml\"]\n    nBEHwalkauthor[\"BEH-walk-author<br/>walk_author_fragment_yaml\"]\n    nBEHwalkdescend[\"BEH-walk-descend<br/>walk_descend_concept_to_components\"]\n    nBEHwalkrealize[\"BEH-walk-realize<br/>walk_link_to_extracted_components\"]\n  end\n  nACTci --> nBEHpublish\n  nACTci --> nBEHscan\n  nACTdeveloper --> nBEHscan\n  nACTdeveloper --> nBEHviewbrowse\n  nACTdeveloper --> nBEHviewnote\n  nACTdeveloper --> nBEHviewsave\n  nACTllm --> nBEHS1\n  nACTllm --> nBEHS2\n  nACTse --> nBEHviewbrowse\n  nACTse --> nBEHwalkauthor\n  nACTse --> nBEHwalkdescend\n  nACTse --> nBEHwalkrealize",
+      "narrative": "Use cases \u2014 actor\u2192behavior triggers grouped per actor. Each actor's behaviors are the concrete operations they perform. ACT-llm behaviors (BEH-S1, BEH-S2) are declared open (Part 3). ACT-developer and ACT-se share BEH-view-browse (both open the viewer to review the model).",
+      "title": "Use Cases"
+    }
+  },
   "sources": [
     ".architecture-model.v3.yaml",
     ".architecture/model/capabilities.v3.yaml",

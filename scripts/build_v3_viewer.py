@@ -176,6 +176,267 @@ def _kind_singular(kind: str) -> str:
     return kind
 
 
+# ---------------------------------------------------------------------------
+# SE Views — deterministic Mermaid generation from merged payload.
+# ---------------------------------------------------------------------------
+
+# Narrative text is version-controlled here (not derived from model) so the
+# viewer surfaces a stable authorial voice. Update in lockstep with walks.
+SE_VIEW_NARRATIVES = {
+    "conops": (
+        "Concept of Operations for the AMS dev workflow. Four actors "
+        "(developer, SE, CI, and the Part-3 LLM) drive the three top-level "
+        "capabilities. The developer + SE run the day-to-day loop "
+        "(view \u2192 note \u2192 walk/author \u2192 validate \u2192 re-extract). "
+        "CI enforces byte-determinism on every push. The LLM is declared "
+        "as future actor for CAP-DF.4 (Part 3, not yet realized)."
+    ),
+    "functional": (
+        "Functional analysis \u2014 top-down capability tree derived from the "
+        "merged model. CAP-PB (extract) contains the 8 pipeline behaviors; "
+        "CAP-SL (slice) exposes IF-slicer; CAP-DF (evolve) contains four "
+        "sub-capabilities: walk, view, validate, and LLM seams. Behaviors "
+        "hang off their owning sub-capability; interfaces are leaves. "
+        "Constraint edges (constrained-by) surface non-functional "
+        "requirements at the capability level."
+    ),
+    "logical": (
+        "Logical architecture \u2014 layer\u2192component allocation and "
+        "layer\u2192layer dependency graph. Five layers separate concerns: "
+        "L-standard (schema + core), L-tooling (pipeline_v3), L-view "
+        "(viewer + build), L-authoring (fragment YAMLs), L-llm (Part 3). "
+        "Each layer subgraphs its owned components; edges between layers "
+        "show depends-on / consumes / produces relationships."
+    ),
+    "use_cases": (
+        "Use cases \u2014 actor\u2192behavior triggers grouped per actor. "
+        "Each actor's behaviors are the concrete operations they perform. "
+        "ACT-llm behaviors (BEH-S1, BEH-S2) are declared open (Part 3). "
+        "ACT-developer and ACT-se share BEH-view-browse (both open the "
+        "viewer to review the model)."
+    ),
+}
+
+
+def _mid(entity_id: str) -> str:
+    """Sanitize entity id for Mermaid node id (alnum only, letter-prefixed)."""
+    return "n" + "".join(c for c in entity_id if c.isalnum())
+
+
+def _mesc(label: str) -> str:
+    """Escape a Mermaid quoted label."""
+    return label.replace('"', "'").replace("\n", " ").strip()
+
+
+def _mermaid_conops(
+    entities_by_kind: dict, relationships: list
+) -> tuple[str, list[str]]:
+    """Actors on left, top-level capabilities on right; triggers edges between."""
+    actors = sorted(entities_by_kind["actors"].keys())
+    caps = sorted(entities_by_kind["capabilities"].keys())
+    lines = ["flowchart LR"]
+    if actors:
+        lines.append('  subgraph ACTORS["Actors"]')
+        for aid in actors:
+            name = entities_by_kind["actors"][aid].get("name", aid)
+            lines.append(f'    {_mid(aid)}["{_mesc(aid)}<br/>{_mesc(name)}"]')
+        lines.append("  end")
+    if caps:
+        lines.append('  subgraph CAPS["Capabilities"]')
+        for cid in caps:
+            name = entities_by_kind["capabilities"][cid].get("name", cid)
+            lines.append(f'    {_mid(cid)}["{_mesc(cid)}<br/>{_mesc(name)}"]')
+        lines.append("  end")
+    # Actor -> Behavior/Capability edges (from actors only).
+    refs: set[str] = set(actors) | set(caps)
+    edges: list[tuple[str, str, str]] = []
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if f in actors and rt == "triggers":
+            # Follow behavior -> capability via contains reverse-lookup.
+            # If t is a capability, edge directly; else find containing cap.
+            if t in caps:
+                edges.append((f, t, "triggers"))
+                refs.add(t)
+            else:
+                # Find capability containing t.
+                for rr in relationships:
+                    if rr.get("to") == t and rr.get("type") == "contains":
+                        cap = rr.get("from")
+                        if cap in caps:
+                            edges.append((f, cap, f"triggers ({t})"))
+                            refs.add(cap)
+                            break
+    edges = sorted(set(edges))
+    for f, t, lbl in edges:
+        lines.append(f"  {_mid(f)} -->|{_mesc(lbl)}| {_mid(t)}")
+    return "\n".join(lines), sorted(refs)
+
+
+def _mermaid_functional(
+    entities_by_kind: dict, relationships: list
+) -> tuple[str, list[str]]:
+    """Capability tree: CAP-* → sub-caps → behaviors + interfaces."""
+    caps = entities_by_kind["capabilities"]
+    behs = entities_by_kind["behaviors"]
+    ifaces = entities_by_kind["interfaces"]
+    cons = entities_by_kind["constraints"]
+    lines = ["flowchart TD"]
+    refs: set[str] = set()
+    for cid in sorted(caps):
+        name = caps[cid].get("name", cid)
+        lines.append(f'  {_mid(cid)}["{_mesc(cid)}<br/>{_mesc(name)}"]')
+        refs.add(cid)
+    for bid in sorted(behs):
+        name = behs[bid].get("name", bid)
+        lines.append(f'  {_mid(bid)}(["{_mesc(bid)}<br/>{_mesc(name)}"])')
+    for iid in sorted(ifaces):
+        name = ifaces[iid].get("name", iid)
+        lines.append(f'  {_mid(iid)}[/"{_mesc(iid)}<br/>{_mesc(name)}"/]')
+    for kid in sorted(cons):
+        name = cons[kid].get("name", kid)
+        lines.append(f'  {_mid(kid)}{{{{"{_mesc(kid)}<br/>{_mesc(name)}"}}}}')
+    edges: list[tuple[str, str, str]] = []
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if f in caps and rt == "contains" and (t in caps or t in behs):
+            edges.append((f, t, "contains"))
+            refs.add(t)
+        elif f in caps and rt == "exposes" and t in ifaces:
+            edges.append((f, t, "exposes"))
+            refs.add(t)
+        elif f in caps and rt == "constrained-by" and t in cons:
+            edges.append((f, t, "constrained-by"))
+            refs.add(t)
+        elif f in caps and rt == "realizes":
+            # Skip capability -> component realizes edges here; those belong
+            # to logical view.
+            pass
+    edges = sorted(set(edges))
+    for f, t, rt in edges:
+        arrow = "-.->|constrained by|" if rt == "constrained-by" else (
+            "==>|exposes|" if rt == "exposes" else "-->"
+        )
+        lines.append(f"  {_mid(f)} {arrow} {_mid(t)}")
+    return "\n".join(lines), sorted(refs)
+
+
+def _mermaid_logical(
+    entities_by_kind: dict, relationships: list
+) -> tuple[str, list[str]]:
+    """Layer subgraphs with contained components; layer→layer dep edges."""
+    layers = entities_by_kind["layers"]
+    comps = entities_by_kind["components"]
+    lines = ["flowchart TD"]
+    refs: set[str] = set()
+    # For each layer, subgraph with contained components.
+    layer_comps: dict[str, list[str]] = {lid: [] for lid in layers}
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if f in layers and rt == "contains" and t in comps:
+            layer_comps[f].append(t)
+    orphan_comps: list[str] = []
+    contained_ids: set[str] = set()
+    for lid, cs in layer_comps.items():
+        for c in cs:
+            contained_ids.add(c)
+    for cid in comps:
+        if cid not in contained_ids:
+            orphan_comps.append(cid)
+    for lid in sorted(layers):
+        name = layers[lid].get("name", lid)
+        cs = sorted(layer_comps.get(lid, []))
+        lines.append(f'  subgraph {_mid(lid)}["{_mesc(lid)}: {_mesc(name)}"]')
+        if cs:
+            for cid in cs:
+                cname = comps[cid].get("name", cid)
+                lines.append(
+                    f'    {_mid(cid)}["{_mesc(cid)}<br/>{_mesc(cname)}"]'
+                )
+                refs.add(cid)
+        else:
+            # Empty layer placeholder for visual completeness.
+            lines.append(f'    {_mid(lid)}_empty([empty])')
+        lines.append("  end")
+        refs.add(lid)
+    # Layer→layer edges.
+    edges: list[tuple[str, str, str]] = []
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if f in layers and t in layers and rt in (
+            "depends-on",
+            "consumes",
+            "produces",
+        ):
+            edges.append((f, t, rt))
+    edges = sorted(set(edges))
+    for f, t, rt in edges:
+        arrow = "-.->|produces|" if rt == "produces" else (
+            "==>|consumes|" if rt == "consumes" else "-->|depends on|"
+        )
+        lines.append(f"  {_mid(f)} {arrow} {_mid(t)}")
+    return "\n".join(lines), sorted(refs)
+
+
+def _mermaid_use_cases(
+    entities_by_kind: dict, relationships: list
+) -> tuple[str, list[str]]:
+    """Actor→Behavior triggers, grouped per actor."""
+    actors = entities_by_kind["actors"]
+    behs = entities_by_kind["behaviors"]
+    lines = ["flowchart LR"]
+    refs: set[str] = set()
+    # Collect triggered behaviors per actor.
+    per_actor: dict[str, list[str]] = {aid: [] for aid in sorted(actors)}
+    for r in relationships:
+        f, t, rt = r.get("from"), r.get("to"), r.get("type", "")
+        if f in actors and rt == "triggers" and t in behs:
+            per_actor.setdefault(f, []).append(t)
+    for aid in sorted(actors):
+        name = actors[aid].get("name", aid)
+        lines.append(f'  {_mid(aid)}(("{_mesc(aid)}<br/>{_mesc(name)}"))')
+        refs.add(aid)
+    # Group behaviors in a single subgraph, deduplicated + sorted.
+    used_behs = sorted({b for bs in per_actor.values() for b in bs})
+    if used_behs:
+        lines.append('  subgraph USE_CASES["Use Cases (Behaviors)"]')
+        for bid in used_behs:
+            name = behs[bid].get("name", bid)
+            lines.append(
+                f'    {_mid(bid)}["{_mesc(bid)}<br/>{_mesc(name)}"]'
+            )
+            refs.add(bid)
+        lines.append("  end")
+    # Edges.
+    edges: list[tuple[str, str]] = []
+    for aid, bs in per_actor.items():
+        for b in bs:
+            edges.append((aid, b))
+    for f, t in sorted(set(edges)):
+        lines.append(f"  {_mid(f)} --> {_mid(t)}")
+    return "\n".join(lines), sorted(refs)
+
+
+def _build_se_views(entities_by_kind: dict, relationships: list) -> dict:
+    """Return {view_id: {title, narrative, mermaid, entity_refs}} deterministically."""
+    views = {
+        "conops": ("Concept of Operations", _mermaid_conops),
+        "functional": ("Functional Analysis", _mermaid_functional),
+        "logical": ("Logical Architecture", _mermaid_logical),
+        "use_cases": ("Use Cases", _mermaid_use_cases),
+    }
+    out: dict = {}
+    for vid, (title, fn) in views.items():
+        mmd, refs = fn(entities_by_kind, relationships)
+        out[vid] = {
+            "title": title,
+            "narrative": SE_VIEW_NARRATIVES[vid],
+            "mermaid": mmd,
+            "entity_refs": refs,
+        }
+    return out
+
+
 def _build_payload(model_path: Path) -> dict:
     sources = _load_sources(model_path)
     meta, entities_by_kind, relationships, source_index = _merge_sources(sources)
@@ -330,6 +591,8 @@ def _build_payload(model_path: Path) -> dict:
     }
     kinds_present = [k for k in ENTITY_KINDS if entity_records[k]]
 
+    se_views = _build_se_views(entities_by_kind, relationships)
+
     return {
         "meta": meta,
         "totals": totals,
@@ -342,6 +605,7 @@ def _build_payload(model_path: Path) -> dict:
         "kinds_present": kinds_present,
         "sources": [s[0] for s in sources],
         "notes": notes,
+        "se_views": se_views,
     }
 
 
@@ -441,10 +705,17 @@ h3.gap-header { margin:18px 0 8px; font-size:12px; text-transform:uppercase; let
   </div>
   <a class="nav-item" data-nav="overview">Overview</a>
   <a class="nav-item" data-nav="gaps">Typed Gaps</a>
+  <details open><summary style="pointer-events:none">SE Views</summary>
+    <a class="entity-link" data-se="conops">Concept of Operations<span class="cid">conops</span></a>
+    <a class="entity-link" data-se="functional">Functional Analysis<span class="cid">functional</span></a>
+    <a class="entity-link" data-se="logical">Logical Architecture<span class="cid">logical</span></a>
+    <a class="entity-link" data-se="use_cases">Use Cases<span class="cid">use_cases</span></a>
+  </details>
   <div id="entity-groups"></div>
 </aside>
 <main id="content"></main>
 </div>
+<script src="assets/mermaid.min.js"></script>
 <script id="v3-data" type="application/json">__PAYLOAD__</script>
 <script>
 const data = JSON.parse(document.getElementById('v3-data').textContent);
@@ -476,7 +747,18 @@ function renderSidebar() {
   }
   host.innerHTML = html;
   host.querySelectorAll('.entity-link').forEach(a => {
-    a.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); selectEntity(a.dataset.id); });
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      if (a.dataset.id) selectEntity(a.dataset.id);
+      else if (a.dataset.se) showSEView(a.dataset.se);
+    });
+  });
+  // Also wire the SE Views section (rendered before entity-groups).
+  document.querySelectorAll('#sidebar .entity-link[data-se]').forEach(a => {
+    a.addEventListener('click', (ev) => {
+      ev.preventDefault(); ev.stopPropagation();
+      showSEView(a.dataset.se);
+    });
   });
   host.querySelectorAll('summary[data-kind]').forEach(s => {
     s.addEventListener('click', () => showKindList(s.dataset.kind));
@@ -519,7 +801,11 @@ function escapeHtml(s) {
 
 function highlightNav(kind, id) {
   document.querySelectorAll('.nav-item').forEach(a => a.classList.toggle('active', a.dataset.nav === kind));
-  document.querySelectorAll('.entity-link').forEach(a => a.classList.toggle('active', a.dataset.id === id));
+  document.querySelectorAll('.entity-link').forEach(a => {
+    const isEntity = a.dataset.id === id;
+    const isSE = a.dataset.se && a.dataset.se === kind;
+    a.classList.toggle('active', isEntity || isSE);
+  });
 }
 
 // --- Overview ---
@@ -674,6 +960,48 @@ function selectEntity(id) {
 
 renderSidebar();
 showOverview();
+
+// --- SE Views (Mermaid diagrams) ---
+if (window.mermaid) {
+  mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose', flowchart: { htmlLabels: true, curve: 'basis' } });
+}
+
+let _seRenderCounter = 0;
+async function showSEView(viewId) {
+  highlightNav(viewId, null);
+  const v = (data.se_views || {})[viewId];
+  if (!v) { document.getElementById('content').innerHTML = `<div class="empty">SE view ${escapeHtml(viewId)} not found.</div>`; return; }
+  const refs = (v.entity_refs || []).map(id =>
+    `<span class="chip" data-id="${id}">${id}</span>`
+  ).join('');
+  const diagramId = `mmd-${viewId}-${++_seRenderCounter}`;
+  document.getElementById('content').innerHTML = `
+    <div class="breadcrumb"><a data-nav="overview">Overview</a> / SE Views / ${escapeHtml(v.title)}</div>
+    <h2 class="content-header">${escapeHtml(v.title)}</h2>
+    <div class="subtitle">Deterministic render from merged model (${v.entity_refs.length} entity refs)</div>
+    <div class="card"><h3>Intent</h3><div style="font-size:13px;line-height:1.6">${escapeHtml(v.narrative)}</div></div>
+    <div class="card"><h3>Diagram</h3>
+      <div class="mermaid-host" style="background:#0f172a;padding:12px;border-radius:6px;overflow-x:auto">
+        <div id="${diagramId}" class="mermaid">${escapeHtml(v.mermaid)}</div>
+      </div>
+    </div>
+    <div class="card"><h3>Entities referenced (${v.entity_refs.length})</h3><div class="chips">${refs || '<span class="empty">none</span>'}</div></div>
+    <details class="card"><summary style="cursor:pointer;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:0.05em">Mermaid source</summary><pre style="margin:8px 0 0;font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:var(--muted);white-space:pre-wrap">${escapeHtml(v.mermaid)}</pre></details>
+  `;
+  document.querySelectorAll('.chip').forEach(ch => ch.addEventListener('click', () => selectEntity(ch.dataset.id)));
+  document.querySelectorAll('.breadcrumb a').forEach(a => a.addEventListener('click', () => {
+    if (a.dataset.nav === 'overview') showOverview();
+  }));
+  if (window.mermaid) {
+    try {
+      const el = document.getElementById(diagramId);
+      await mermaid.run({ nodes: [el] });
+    } catch (err) {
+      const el = document.getElementById(diagramId);
+      if (el) el.innerHTML = `<div class="empty">Mermaid render failed: ${escapeHtml(err.message || String(err))}</div>`;
+    }
+  }
+}
 </script>
 </body>
 </html>
