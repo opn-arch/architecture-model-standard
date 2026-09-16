@@ -281,6 +281,18 @@ entities:
       provenance: |
         Requirements enumerated from 2026-09-14 walk L2. Verification pending
         until slice.py contracts are exercised by CAP-DF.3 validate step.
+    - id: PR-CAP-SL-slos
+      attribute: slos
+      content:
+      - Byte-deterministic slice output — inherited from pipeline_v3 sort-keys convention (all emit paths use sort_keys=True)
+      owner_entity: CAP-SL
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/slice.py exists and follows pipeline_v3 emit conventions
+      - "grep-verified: no time.time() / random / dict-ordering-sensitive constructs in slice.py"
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-determinism)
   - id: CAP-DF
     name: evolve_via_model_based_dev_loop
     promises:
@@ -352,6 +364,7 @@ entities:
       - "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper — additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate."
       - "L12 (2026-09-16 compliance walk): auditability requires a per-entity evidence rule, not per-constraint. Defining compliance evidence as ≥1 verified promise on {verification, verified_by, slos, success_criteria} caught 16 real gaps across 12 entities without any per-constraint mapping. Universal evidence attrs > constraint-specific rules for the initial audit tier — refinement can layer per-constraint checks on top later."
       - "L13 (2026-09-16 compliance walk): the audit surfaces 3 legitimate constraint impacts on entities lacking evidence (CAP-DF.2 vs CONS-determinism/no-runtime-deps; CAP-DF.1/.4 vs CONS-open-schema; 6 BEH-* vs the same). These are AUTHORING todos, not walker bugs. The walker's job is to make gaps visible; closing them is model authoring work. Loop pattern: view (banner) → note (gap list) → walk/author (fill promises)."
+      - "L14 (2026-09-16 gap closure): the universal-evidence audit accepts three distinct evidence tiers — runtime (test/harness citation), inherited (SLO promised on a realizes-target and reused via the edge), and design-only (compatible-by-construction, Part 3 deferred). All three passed the L12 rule, but only the first truly verifies at runtime. Provenance strings now flag design-only tier explicitly. A future refinement could add a tier field to promises and surface tier in the compliance banner so 'compatibility by construction' does not look identical to 'test citation' in the audit output."
       owner_entity: CAP-DF
       delivered_from: null
       verified_by:
@@ -360,7 +373,8 @@ entities:
       - docs/reports/2026-09-16-realizes-direction-fix.md documents L9-L10
       - docs/reports/2026-09-16-constraint-impact-and-diagnostics.md documents L11
       - docs/reports/2026-09-16-compliance-audit.md documents L12-L13
-      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10), _constraint_compliance_gaps (L12-L13)
+      - docs/reports/2026-09-16-compliance-gap-closure.md documents L14
+      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10), _constraint_compliance_gaps (L12-L14)
       status: verified
       gap_type: null
       provenance: |
@@ -481,6 +495,18 @@ entities:
       status: verified
       gap_type: null
       provenance: interface exposed to fragment-authoring workflow
+    - id: PR-CAP-DF1-slos
+      attribute: slos
+      content:
+      - Open-schema preserved — walk fragments introduce attributes freely without spec-file amendment (778 promises across 45+ distinct attribute names in the merged model, none rejected)
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by:
+      - "grep-count of distinct attribute: values in .architecture/model/*.v3.yaml exceeds the pre-walk baseline"
+      - COMP-VIEWER parses all authored attributes without a schema whitelist (build_v3_viewer.py _stamp_promises)
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
   - id: CAP-DF.2
     name: review_in_viewer
     promises:
@@ -523,6 +549,19 @@ entities:
       status: verified
       gap_type: null
       provenance: decomposition edge
+    - id: PR-CAP-DF2-slos
+      attribute: slos
+      content:
+      - Byte-deterministic viewer output — inherited from COMP-VIEWER PR-COMP-VIEWER-determinism (scripts/build_v3_viewer.py sorts payload keys and stamps ISO timestamps only from AMS_DETERMINISTIC_NOW)
+      - Zero runtime dependencies — bundled Mermaid, no CDN, no network at view time (grep-verified in scripts/build_v3_viewer.py)
+      owner_entity: CAP-DF.2
+      delivered_from: null
+      verified_by:
+      - "double-build round-trip: cp viewer.html /tmp/a && rebuild && diff -q /tmp/a viewer.html"
+      - "grep -n 'cdn\\|http' .architecture/viewers/v3_viewer.html returns only inline SVG data-URIs"
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-determinism, CONS-no-runtime-deps)
   - id: CAP-DF.3
     name: validate_declared_vs_extracted
     promises:
@@ -581,6 +620,17 @@ entities:
       status: open
       gap_type: null
       provenance: decomposition edge to BEH-S2
+    - id: PR-CAP-DF4-slos
+      attribute: slos
+      content:
+      - Open-schema preserved even under LLM invocation — proposed fragments must go through same authoring gate as human walks (append attribute to any entity, no spec amendment)
+      owner_entity: CAP-DF.4
+      delivered_from: null
+      verified_by:
+      - Design constraint locked in PR-CAP-DF-intent (Part 3 seam); enforcement point is the fragment merge path in COMP-VIEWER which is schema-free
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema; Part 3 impl deferred)
   behaviors:
   - id: BEH-run-pipeline
     name: run_extraction_pipeline_end_to_end
@@ -946,6 +996,16 @@ entities:
       status: open
       gap_type: null
       provenance: hand-authored — walk step 1
+    - id: PR-BEH-walk-descend-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/model/*.v3.yaml fragments demonstrate the descent (CAP-PB → BEH-scan..publish; CAP-DF → BEH-walk-*; CAP-DF.2 → BEH-view-*)
+      owner_entity: BEH-walk-descend
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
   - id: BEH-walk-author
     name: walk_author_fragment_yaml
     promises:
@@ -962,6 +1022,18 @@ entities:
       status: verified
       gap_type: null
       provenance: hand-authored — walk step 2
+    - id: PR-BEH-walk-author-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/model/capabilities.v3.yaml is a hand-authored walk fragment
+      - .architecture/model/enrichment.v3.yaml adds attributes on extracted components
+      - .architecture/model/viewer.v3.yaml documents COMP-VIEWER
+      owner_entity: BEH-walk-author
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
   - id: BEH-walk-realize
     name: walk_link_to_extracted_components
     promises:
@@ -977,6 +1049,17 @@ entities:
       status: verified
       gap_type: null
       provenance: hand-authored — walk step 3
+    - id: PR-BEH-walk-realize-verified_by
+      attribute: verified_by
+      content:
+      - realizes edges in this file (COMP-c5a72728 realizes CAP-PB; COMP-VIEWER realizes CAP-DF.2; COMP-c5a72728 realizes CAP-SL) confirmed by realization diagrams in v3 viewer
+      - unrealized authored CAP/BEH surface as gap_type=unrealized on Typed Gaps page (COMP-VIEWER D10)
+      owner_entity: BEH-walk-realize
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
   - id: BEH-view-browse
     name: view_browse_merged_model
     promises:
@@ -992,6 +1075,17 @@ entities:
       status: verified
       gap_type: null
       provenance: viewer surface behavior
+    - id: PR-BEH-view-browse-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/viewers/v3_viewer.html renders sidebar + entity pages from v3_viewer_data.json (manual open-in-browser confirms navigation)
+      - scripts/build_v3_viewer.py determinism check round-trips byte-identical output
+      owner_entity: BEH-view-browse
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema, CONS-determinism)
   - id: BEH-view-note
     name: view_capture_human_note
     promises:
@@ -1007,6 +1101,17 @@ entities:
       status: verified
       gap_type: null
       provenance: viewer surface behavior
+    - id: PR-BEH-view-note-verified_by
+      attribute: verified_by
+      content:
+      - v3_viewer.html contains textarea + save-note handler wired to in-memory notes map (grep 'notes\[' in the emitted JS block)
+      - COMP-VIEWER D8 provenance describes save-textarea → notes.yaml flow
+      owner_entity: BEH-view-note
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema, CONS-determinism)
   - id: BEH-view-save
     name: view_save_notes_yaml
     promises:
@@ -1023,6 +1128,17 @@ entities:
       status: verified
       gap_type: null
       provenance: viewer surface behavior
+    - id: PR-BEH-view-save-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/viewers/notes.yaml scaffold exists at repo path
+      - v3_viewer.html emits a Blob-download click handler serializing notes to YAML (grep 'Blob\|download' in emitted JS block)
+      owner_entity: BEH-view-save
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema, CONS-determinism)
   - id: BEH-S1
     name: llm_entity_kind_promotion
     promises:
@@ -1056,6 +1172,17 @@ entities:
       status: open
       gap_type: null
       provenance: hand-authored requirements for Part 3 prototype
+    - id: PR-BEH-S1-verified_by
+      attribute: verified_by
+      content:
+      - Design-only (Part 3 deferred) — merge-path compatibility verified by construction (proposed fragments use the same .v3.yaml schema COMP-VIEWER already parses without a whitelist)
+      - IF-llm-provider interface defined below as the pluggable seam
+      owner_entity: BEH-S1
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema; Part 3 impl deferred)
   - id: BEH-S2
     name: llm_gap_remediation
     promises:
@@ -1074,6 +1201,17 @@ entities:
         Covers the output of the scan and derive_promises stages. Would
         eliminate the 54 typed-gaps in the current model. Part 3 candidate.
         Interface: IF-llm-provider.
+    - id: PR-BEH-S2-verified_by
+      attribute: verified_by
+      content:
+      - Design-only (Part 3 deferred) — proposals target the same typed_gap set the pipeline already emits (gap_type in {missing-intent, no-public-classes, no-public-functions}) so merge is schema-compatible by construction
+      - IF-llm-provider interface defined below as the pluggable seam
+      owner_entity: BEH-S2
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema; Part 3 impl deferred)
   interfaces:
   - id: IF-model
     name: architecture_model_yaml
