@@ -318,6 +318,14 @@ function selectEntity(id) {
     let html = `<div class="breadcrumb"><a data-nav="overview">Overview</a> / ${e.kind}s / ${e.id}</div>`;
     html += `<h2 class="content-header">${escapeHtml(e.name)}</h2>`;
     html += `<div class="subtitle">${e.id} &middot; ${e.kind}${e.root_prefix ? ' &middot; '+escapeHtml(e.root_prefix) : ''}<span class="source-tag">from ${escapeHtml(e.source)}</span></div>`;
+    // Capability-level realization severity badge (8th walk, L17).
+    if (e.unrealized) {
+      const sev = e.unrealized.severity;
+      const bg = sev === 'critical' ? '#7f1d1d' : (sev === 'partial' ? '#3b2f1e' : '#312e81');
+      const bd = sev === 'critical' ? '#e94560' : (sev === 'partial' ? '#f97316' : '#818cf8');
+      html += `<div style="margin:6px 0 0;font-size:11px"><span class="badge" style="background:${bg};border:1px solid ${bd};color:#fff;text-transform:uppercase">${sev}</span>` +
+              ` <span style="color:var(--muted)">realizers=${e.unrealized.realizer_count} &middot; open promises=${e.unrealized.open_promise_count}</span></div>`;
+    }
     html += `<div class="card"><h3>Summary</h3><div style="font-size:13px">${e.module_count} modules &middot; ${e.promise_count} promises &middot; ${e.gap_count} typed gaps</div></div>`;
 
     // Inline capability-scoped flow diagram (design principle: any
@@ -351,7 +359,9 @@ function selectEntity(id) {
     const realizCard = _walkCard('Realization chain', e.realization_mermaid, e.realization_refs, 'realiz');
     const xflowCard = _walkCard('Cross-capability flow (triggers)', e.cross_flow_mermaid, e.cross_flow_refs, 'xflow');
     const cimpCard = _walkCard('Constraint impact (2-hop)', e.constraint_impact_mermaid, e.constraint_impact_refs, 'cimp');
-    html += xflowCard.html + cimpCard.html + decompCard.html + realizCard.html;
+    const unrealCard = _walkCard('Unrealized capability (audit)', e.unrealized_mermaid, e.unrealized_refs, 'unreal');
+    // Unrealized card first (loudest) when present, then the rest.
+    html += unrealCard.html + xflowCard.html + cimpCard.html + decompCard.html + realizCard.html;
 
     const seen = new Set();
     for (const attr of attrs) {
@@ -445,6 +455,7 @@ function selectEntity(id) {
         [decompCard.id, 'decomposition'],
         [realizCard.id, 'realization'],
         [neighCard.id, 'neighbors'],
+        [unrealCard.id, 'unrealized'],
       ];
       for (const [did, tag] of targets) {
         if (!did) continue;
