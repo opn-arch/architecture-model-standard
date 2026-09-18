@@ -356,18 +356,22 @@ entities:
       - "L3 (CAP-PB walk L5): user-triggered entry behaviors (BEH-run-pipeline) must be modeled as first-class delivers, not implied by orchestrator prose. Missing entry behaviors leave the graph disconnected from actors."
       - "L4 (2026-09-16 viewer walk): cross-source shape divergence (pipeline-emit str vs authored list for Promise.content) MUST normalize at the Python boundary in _build_payload — single source of truth beats consumer-side defense. Applied at scripts/build_v3_viewer.py:~714."
       - "L5 (2026-09-16 viewer walk): layered defense (try/catch on selectEntity) surfaces bugs as 'Render error' but does NOT identify root cause. Diagnosis requires reading the DATA shape across sources, not the code. Falsification (2 working / 23 broken components) pointed at the divergence directly."
-      - "L6 (2026-09-16 viewer walk): graph-walk-as-capability generalizes — flow_mermaid → decomposition_mermaid / realization_mermaid / neighbors_mermaid using the same substrate (helper returns tuple | None, stamped on record, rendered by shared loop). Adding future walks = 1 helper + 1 entry in the render targets array."
+      - "L6 (2026-09-16 viewer walk): graph-walk-as-capability generalizes — flow_mermaid → decomposition_mermaid / realization_mermaid / neighbors_mermaid using the same substrate (helper returns tuple | None, stamped on record, rendered by shared loop). Adding future walks = 1 helper + 1 entry in the render targets array. SUPERSEDED 2026-09-18 by Parts 1–7 walk substrate: the informal 'helper + entry' pattern is now a formal 6-stage pipeline (select→traverse→classify→rollup→evidence→emit) driven by declarative WalkSpec YAML. See L18."
       - "L7 (2026-09-16 viewer walk): silent-skip (return None when N/A) beats always-render; adaptive thresholds (BFS depth ≤ 2, cap 30 nodes, neighbors threshold 20) keep diagrams readable across entity kinds that vary by 100x in neighborhood size."
       - "L8 (2026-09-16 viewer walk): kind-dispatched walks are unavoidable when the semantic shape of the traversal varies across entity kinds. Realization needed 7 distinct walk strategies (capability / component / behavior / interface / layer / actor / constraint) because the meaningful 2-hop chain is different for each — a single generic template would lose more insight than it saves."
       - "L9 (2026-09-16 realizes-direction-fix): follow-up notes framed as 'add one edge' can hide systemic direction bugs; investigating the CONSUMER contract (walker semantics) before adding data revealed 3 edges + 5 entities affected, not 1. Always probe the consumer before adding producer data."
       - "L10 (2026-09-16 realizes-direction-fix): silent-skip (return None when N/A) is a double-edged sword — correct behavior masking systemic bugs. Mitigation: build-time diagnostic pass (_realization_skip_reasons + _lint_edge_note_directions) that surfaces silently-skipped entities with adjacent-but-wrong-direction edges, plus in-viewer diagnostics banner. Fires zero warnings today (L9 fix cleared all), but present as tripwire for future direction bugs."
-      - "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper — additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate."
+      - "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper — additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate. SUPERSEDED 2026-09-18: kind-dispatched hops (HopSpec.by_kind) formalize this pattern into the substrate. Constraint-impact is now WALK-constraint-impact (declarative, silent_skip_when_last_hop_empty=true). See L19."
       - "L12 (2026-09-16 compliance walk): auditability requires a per-entity evidence rule, not per-constraint. Defining compliance evidence as ≥1 verified promise on {verification, verified_by, slos, success_criteria} caught 16 real gaps across 12 entities without any per-constraint mapping. Universal evidence attrs > constraint-specific rules for the initial audit tier — refinement can layer per-constraint checks on top later."
       - "L13 (2026-09-16 compliance walk): the audit surfaces 3 legitimate constraint impacts on entities lacking evidence (CAP-DF.2 vs CONS-determinism/no-runtime-deps; CAP-DF.1/.4 vs CONS-open-schema; 6 BEH-* vs the same). These are AUTHORING todos, not walker bugs. The walker's job is to make gaps visible; closing them is model authoring work. Loop pattern: view (banner) → note (gap list) → walk/author (fill promises)."
       - "L14 (2026-09-16 gap closure): the universal-evidence audit accepts three distinct evidence tiers — runtime (test/harness citation), inherited (SLO promised on a realizes-target and reused via the edge), and design-only (compatible-by-construction, Part 3 deferred). All three passed the L12 rule, but only the first truly verifies at runtime. Provenance strings now flag design-only tier explicitly. A future refinement could add a tier field to promises and surface tier in the compliance banner so 'compatibility by construction' does not look identical to 'test citation' in the audit output."
       - "L15 (2026-09-16 tier classifier): the L14 refinement lands as a pure classifier _promise_tier(promise) that reads existing provenance strings (no schema change, backward-compatible). Runtime > inherited > design > asserted priority. _entity_has_compliance_evidence and _constraint_compliance_gaps gain a strong_only flag (default False keeps L12 behavior byte-identical); strong_only=True raises the audit bar to runtime-tier only. _evidence_tier_summary(records) emits per-entity {tier: count} for future banner surfacing. Viewer output unchanged this commit — pure library-tier addition ready to be consumed by a follow-up UI change."
       - "L16 (2026-09-16 CAP-SL self-exercise): applying slice_by_component('COMP-VIEWER') to the merged model and feeding the output back into the walk substrate shows CAP-SL is not walk-substrate-complete. The slicer drops 6 of 7 canonical entity kinds and any relationship pointing across kinds. 3 of 7 walks return None on the slice, 2 more degrade silently. Root cause: include_neighbors=True closes over relationships but only retains targets whose ids are already in the component map. This validates PR-CAP-SL-requirements as legitimately open — component-focus is delivered but the sub-model doesn't preserve the graph the downstream walker needs. Fix is bounded (~30 LOC to close over realizes/exposes/traces-to/constrained-by/contains) but deferred to Part 2 authoring. Filing L16 to make the gap visible before we build on top of CAP-SL as if it were a complete substrate. RESOLVED 2026-09-16: slice_by_component now closes over the full id-to-kind index (any relationship type), retaining cross-kind neighbors in their original entity buckets. 18/18 slicer tests + 4 new cross-kind tests pass. CAP-SL is now walk-substrate-complete for the 1-hop case; multi-hop closure remains a Part 2 refinement if needed."
       - "L17 (2026-09-16 unrealized-capability walk): the 8th walk audits capabilities themselves against the same substrate everything else uses: (0 realizers × 0 open promises) → unrealized; (0 × ≥1) → critical; (≥1 × ≥1) → partial; (≥1 × 0) → ok/silent-skip. Applied to the current model this surfaced 2 critical (CAP-DF, CAP-DF.4), 2 unrealized (CAP-DF.1, CAP-DF.3), 2 partial (CAP-PB, CAP-SL) — the same shape L12-L13 predicted at the promise level, now visible at the capability level. Two design points reinforce prior lessons: the classifier is a pure function on (cap, realizes-edges, promises) with no schema change (L15 pattern), and the Mermaid card uses sentinel pseudo-nodes (NO_REALIZER + OPEN_pid) instead of rendering an empty diagram — silent-skip the ok case, but for non-ok cases make the gap the visual (L7 + L11 pattern). The walk closes the loop started by L12: promise-level compliance and capability-level realization now use the same auditable graph-walk substrate."
+      - "L18 (2026-09-18 walk substrate Parts 1–7): walks are first-class capabilities, not viewer helpers. Every walk is (a) a sub-cap under CAP-WK with a `verified_by` path to its WalkSpec YAML and (b) a declarative pipeline of 6 stages (select→traverse→classify→rollup→evidence→emit). 13 hand-rolled Python walkers collapsed to 13 YAML files + 6 shared stages. Adding a walk = writing ~30 lines of YAML; no viewer code touched. Coverage becomes auditable — the meta-walk `audit_walk_coverage` cross-references WalkSpec `audits` lists against the CAP-WK sub-cap inventory and emits Cards for uncovered sub-caps and dangling refs. This is the formalization of L6."
+      - "L19 (2026-09-18 kind-dispatched hops): the informal 'walk kind-per-target' pattern from L8 lands in the substrate as HopSpec.by_kind — a mapping from source-node kind to a sub-HopSpec. Realize splits into 7 WalkSpec YAMLs (one per target kind) because the semantic 2-hop chain differs by kind (behavior→component vs capability→component vs constraint→component). Realization-skip splits into 2 (capability side + component side) to audit both endpoints of realizes. The substrate also gains `silent_skip_when_last_hop_empty` (matches L7's adaptive-skip heuristic) so constraint-impact's hop-2 identical-to-hop-1 case is a declarative concern, not a Python conditional. Formalizes L11 into a substrate feature."
+      - "L20 (2026-09-18 classify DSL): the classify stage's predicate DSL (`has:`, `count:`, `verified:`, `inbound_count:`, `outbound_count:`, `promise_status_count:`, joined by `and`/`or`) covers every classifier from the pre-substrate era. WALK-attribute-completeness (Part 7) is a pure-YAML meta-walk that buckets entities by promise coverage using only `count:promises` + `promise_status_count:{verified,open}` — no Python. Custom classifier code is now a code smell: if a classifier can be expressed in the DSL, do it in YAML. If it can't, extending the DSL beats writing a walker (see follow-on: `promise_for:<attribute>` atom)."
+      - "L21 (2026-09-18 graph adapter Stage 1): NetworkX MultiDiGraph adapter (`architecture_model.graph.to_networkx`) landed as export-only ahead of the walk-substrate refactor; walks continue to use the dict-based substrate. This proves the graph model can round-trip through a proper graph backend (18/18 export tests + graphml round-trip) without perturbing walk behavior. Stage 2 (walk backend swap to NetworkX) is unblocked once all viewer helpers are declarative. Real-repo export: 1011 nodes / 1086 edges (802 promises + 132 unique evidence URIs promoted). Design decision: promise + evidence promotion runs at export time only — the walk substrate keeps its own promise-aware semantics inside classify."
       owner_entity: CAP-DF
       delivered_from: null
       verified_by:
@@ -381,6 +385,12 @@ entities:
       - docs/reports/2026-09-16-cap-sl-exercise.md documents L16
       - docs/reports/2026-09-16-unrealized-walk.md documents L17
       - tests/viewer/test_walks.py::test_realization_status_* documents L17 classifier
+      - docs/reports/2026-09-18-walk-substrate.md documents L18-L21
+      - src/architecture_model/walks/spec/loader.py implements L18 substrate
+      - src/architecture_model/walks/meta/walk_coverage.py implements L18 meta-audit
+      - .architecture/model/walks/attribute-completeness.v3.yaml documents L20
+      - src/architecture_model/graph/networkx_adapter.py documents L21
+      - docs/graph-export.md documents L21
       - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10), _constraint_compliance_gaps (L12-L14), _promise_tier + _evidence_tier_summary (L15), _capability_realization_status + _unrealized_capability_summary + _mermaid_unrealized (L17)
       status: verified
       gap_type: null
@@ -829,6 +839,77 @@ entities:
       status: proposed
       gap_type: not-yet-implemented
       provenance: Q6=c ceremony mechanism (locked plan).
+  - id: CAP-WK.constraint-impact
+    name: walk_constraint_impact
+    promises:
+    - id: PR-CAP-WK-constraint-impact-intent
+      attribute: intent
+      content:
+      - Constraint blast-radius walk. Traverses constrained-by edges from
+        every constraint to compute impacted entities, buckets by cardinality
+        (isolated / focused / broad / systemic), and rolls up per-constraint
+        counts.
+      owner_entity: CAP-WK.constraint-impact
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/constraint-impact.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Retrofit (Part 6d.2).
+  - id: CAP-WK.realization-skip
+    name: walk_realization_skip
+    promises:
+    - id: PR-CAP-WK-realization-skip-intent
+      attribute: intent
+      content:
+      - Realization-skip audit. Two walks (capability-side + component-side)
+        cross-check that every realizes edge is bidirectionally coherent and
+        flags orphan capabilities / stub components. Emits skip / ok / mismatch
+        buckets.
+      owner_entity: CAP-WK.realization-skip
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/realization-skip-capability.v3.yaml
+      - .architecture/model/walks/realization-skip-component.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Retrofit (Part 6d.1).
+  - id: CAP-WK.meta-coverage
+    name: walk_meta_coverage
+    promises:
+    - id: PR-CAP-WK-meta-coverage-intent
+      attribute: intent
+      content:
+      - Meta-walk that audits the walk substrate itself. Scans every
+        WalkSpec in .architecture/model/walks/, extracts audits lists,
+        cross-references CAP-WK.* sub-cap inventory, and emits Cards
+        flagging (a) sub-caps with zero walks and (b) walks that audit
+        non-existent sub-caps. Enforces walk-coverage discipline.
+      owner_entity: CAP-WK.meta-coverage
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/walk_coverage.py
+      status: verified
+      gap_type: null
+      provenance: Part 7 (2026-09-18) — meta-walk substrate.
+  - id: CAP-WK.attribute-completeness
+    name: walk_attribute_completeness
+    promises:
+    - id: PR-CAP-WK-attribute-completeness-intent
+      attribute: intent
+      content:
+      - Meta-walk that audits promise coverage per entity. Checks each
+        entity carries promises for the core attribute set (intent,
+        requirements, verified_by, provenance) and buckets by
+        completeness (complete / partial / bare / empty). Pure declarative
+        WalkSpec — exercises the classify DSL on promise arrays.
+      owner_entity: CAP-WK.attribute-completeness
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/attribute-completeness.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Part 7 (2026-09-18) — meta-walk substrate.
   behaviors:
   - id: BEH-run-pipeline
     name: run_extraction_pipeline_end_to_end
@@ -1701,6 +1782,18 @@ relationships:
 - from: CAP-WK
   to: CAP-WK.promotion
   type: contains
+- from: CAP-WK
+  to: CAP-WK.constraint-impact
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.realization-skip
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.meta-coverage
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.attribute-completeness
+  type: contains
 # audits: sub-caps → target caps (list-valued semantics: multiple relationship
 # rows for the same walk when audits is a list)
 - from: CAP-WK.direction-lint
@@ -1738,4 +1831,16 @@ relationships:
   type: audits
 - from: CAP-WK.promotion
   to: CAP-WK
+  type: audits
+- from: CAP-WK.constraint-impact
+  to: CAP-SL
+  type: audits
+- from: CAP-WK.realization-skip
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.meta-coverage
+  to: CAP-WK
+  type: audits
+- from: CAP-WK.attribute-completeness
+  to: CAP-DF
   type: audits

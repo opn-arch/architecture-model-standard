@@ -888,6 +888,50 @@ and YAML remains source of truth.
 Out of scope (Stage 2+): walk-backend swap, Neo4j Cypher surface,
 compliance-evidence walk.
 
+## Walk substrate (Parts 1–7, 2026-09-18)
+
+Walks are first-class capabilities. 13 hand-rolled Python walkers in
+``scripts/build_v3_viewer.py`` were collapsed to 13 declarative WalkSpec
+YAMLs + a 6-stage shared pipeline
+(``select → traverse → classify → rollup → evidence → emit``). Each walk
+lives as a sub-cap under ``CAP-WK`` in ``capabilities.v3.yaml``;
+``verified_by`` on each sub-cap points at its WalkSpec YAML.
+
+- ``architecture_model.walks.spec.loader.load_walk_spec(path)`` — parse
+  a WalkSpec YAML into typed dataclasses.
+- ``architecture_model.walks.runner.run_walk(spec, model)`` — execute
+  one walk; returns ``{walk_id, audits, cards}``.
+- Classify DSL atoms: ``has:<attr>``, ``missing:<attr>``,
+  ``count:<attr> {>=,>,<=,<,==} N``, ``verified:<attr>``,
+  ``unverified:<attr>``, ``inbound_count:<edge> …``,
+  ``outbound_count:<edge> …``, ``promise_status_count:<status> …``,
+  joined by ``and``/``or``. See ``walks/stages/classify.py``.
+- Kind-dispatched hops: ``HopSpec.by_kind`` maps source-node kind to
+  a sub-HopSpec. Realize splits into 7 WalkSpecs (per target kind);
+  realization-skip splits into 2 (both sides of ``realizes``).
+- Silent-skip heuristics: ``EmitSpec.subgraph_neighbor_threshold``
+  (max non-root neighbors) and ``silent_skip_when_last_hop_empty`` are
+  declarative.
+
+**Part 7 meta-walks** audit the substrate itself:
+
+- ``architecture_model.walks.meta.audit_walk_coverage(walks_dir, model)``
+  — Python meta-walk that scans ``.architecture/model/walks/*.v3.yaml``,
+  extracts ``audits`` lists, and cross-references the CAP-WK.* sub-cap
+  inventory. Emits Cards for covered / uncovered / dangling-ref /
+  duplicate-walk verdicts. Real-repo signal (2026-09-18): 5 covered,
+  2 duplicate-walk (kind-dispatched), 6 uncovered (Part 8 backlog:
+  ``author``, ``direction-lint``, ``note``, ``promotion``, ``save``,
+  ``meta-coverage`` itself).
+- ``.architecture/model/walks/attribute-completeness.v3.yaml`` — pure
+  declarative meta-walk that audits promise coverage on every entity
+  using ``count:promises`` + ``promise_status_count:{verified,open}``.
+  Realizes ``CAP-WK.attribute-completeness``.
+
+Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
+Lessons L18–L21 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
+superseded by L18 and L19 respectively.
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 
