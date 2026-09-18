@@ -864,6 +864,30 @@ slicer, deprecation, adapters). Two lenses ship alongside:
   through the existing 2.x HTML viewer for the classic box-and-arrow
   lens. Rebuild via `python scripts/render_v3_in_legacy_viewer.py`.
 
+## Graph export (Stage 1, 2026-09-18)
+
+The AMS model is now exportable as a NetworkX ``MultiDiGraph`` for
+graph-analysis tooling (yEd, Gephi, Cytoscape, Neo4j import, Python
+analytics). Stage 1 is **export-only** — walks/traverse are unchanged
+and YAML remains source of truth.
+
+- `architecture_model.graph.to_networkx(model, ...)` builds a
+  deterministic ``MultiDiGraph`` with 17 canonical relationship types
+  plus synthetic ``has-promise`` and ``verified-by`` edges.
+- Promises promoted to first-class sub-nodes (id: ``{owner}#p{index}``);
+  evidence URIs deduped and promoted (id: ``ev:{sha1(uri)[:8]}``).
+- Parallel typed edges preserved (browse regression: CAP-A ↔ CAP-B via
+  ``contains`` **and** ``triggers`` survive as two distinct edges).
+- CLI: ``architecture-model export-graph [-f graphml|gpickle|json-graph|dot]``
+  (default graphml). ``--stats`` prints node/edge counts without writing.
+- Optional dep: ``pip install 'architecture-model-standard[graph]'``.
+- v3 fragment merge extracted to ``core.v3_loader.load_v3_model`` for
+  reuse across CLI and scripts.
+- Full docs: ``docs/graph-export.md``.
+
+Out of scope (Stage 2+): walk-backend swap, Neo4j Cypher surface,
+compliance-evidence walk.
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 

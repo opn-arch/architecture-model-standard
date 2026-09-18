@@ -176,6 +176,10 @@ def main(argv: list[str] | None = None) -> int:
     from architecture_model.cli import migrate as _migrate_cli
     _migrate_cli.add_subparser(subparsers)
 
+    # --- export-graph ---
+    from architecture_model.cli import export_graph as _export_graph_cli
+    _export_graph_cli.add_subparser(subparsers)
+
     # --- audit ---
     p_audit = subparsers.add_parser(
         "audit",
@@ -219,6 +223,7 @@ def main(argv: list[str] | None = None) -> int:
         "comment": _cmd_comment,
         "migrate": _cmd_migrate,
         "audit": _cmd_audit,
+        "export-graph": _cmd_export_graph,
     }
     return handlers[args.command](args)
 
@@ -1269,6 +1274,11 @@ def _cmd_audit(args) -> int:
     """Six-pipeline completeness audit."""
     from architecture_model.audit import run_audit
     return run_audit(args.model, pipeline=args.pipeline, strict=args.strict)
+
+
+def _cmd_export_graph(args) -> int:
+    from architecture_model.cli import export_graph as _export_graph_cli
+    return _export_graph_cli.run(args)
 
 
 if __name__ == "__main__":
