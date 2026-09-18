@@ -1,0 +1,32 @@
+walk:
+  id: WALK-realize-capability
+  audits:
+    - CAP-WK.realize
+
+  scope:
+    kind: capability
+
+  traverse:
+    hops:
+      # Hop 1: components that realize this capability (inbound realizes).
+      - edges: [realizes]
+        direction: inbound
+      # Hop 2: sub-components those realizers contain (outbound contains).
+      - edges: [contains]
+        direction: outbound
+
+  classify:
+    verdicts:
+      - name: ready-to-code
+        when: "true"
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: realization-chain
+    severity_from: verdict
+    include_subgraph: true

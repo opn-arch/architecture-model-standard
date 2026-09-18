@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from architecture_model.pipeline_v3.substrate import Stage, wrap_function
-from architecture_model.walks.spec.loader import TraverseSpec, WalkSpec
+from architecture_model.walks.spec.loader import HopSpec, TraverseSpec, WalkSpec
 
 __all__ = ["traverse_stage"]
 
@@ -44,6 +44,76 @@ def _find_entity(model: dict[str, Any], eid: str) -> dict | None:
 
 
 def _walk_from(
+    model: dict[str, Any],
+    root_id: str,
+    traverse: TraverseSpec,
+    outbound: dict[str, list[dict]],
+    inbound: dict[str, list[dict]],
+) -> dict[str, Any]:
+    """BFS from root_id per traverse spec. Returns {nodes, edges}.
+
+    Two modes:
+      - Legacy (traverse.hops empty): uniform BFS on (edges, direction) up
+        to depth, then induced-subgraph pass among visited nodes.
+      - Hop mode (traverse.hops non-empty): apply each hop's (edges,
+        direction) to that hop's frontier; NO induced-subgraph pass. Used
+        for kind-dispatched walks whose hops mix edge types/directions.
+    """
+    if traverse.hops:
+        return _walk_hops(model, root_id, traverse.hops, outbound, inbound)
+    return _walk_uniform(model, root_id, traverse, outbound, inbound)
+
+
+def _walk_hops(
+    model: dict[str, Any],
+    root_id: str,
+    hops: tuple[HopSpec, ...],
+    outbound: dict[str, list[dict]],
+    inbound: dict[str, list[dict]],
+) -> dict[str, Any]:
+    """Multi-hop traversal: hop N walks from hop N-1's newly-visited set."""
+    visited: set[str] = {root_id}
+    nodes: list[dict] = []
+    root_ent = _find_entity(model, root_id)
+    if root_ent is not None:
+        nodes.append(root_ent)
+    edges_out: list[dict] = []
+    frontier: list[str] = [root_id]
+
+    for hop in hops:
+        edge_types = set(hop.edges) if hop.edges else None
+        direction = hop.direction
+        next_frontier: list[str] = []
+        for cur in frontier:
+            neighbors: list[tuple[dict, str]] = []
+            if direction in ("outbound", "both"):
+                for r in outbound.get(cur, []):
+                    if edge_types is None or r.get("type") in edge_types:
+                        neighbors.append((r, r.get("to", "")))
+            if direction in ("inbound", "both"):
+                for r in inbound.get(cur, []):
+                    if edge_types is None or r.get("type") in edge_types:
+                        neighbors.append((r, r.get("from", "")))
+            for edge, nid in neighbors:
+                if not nid:
+                    continue
+                # Always record the traversed edge (even to previously-visited
+                # nodes) — the viewer's realize walk emits duplicate contains
+                # edges when two siblings share a child, and parity requires
+                # matching that shape.
+                edges_out.append(edge)
+                if nid not in visited:
+                    visited.add(nid)
+                    nent = _find_entity(model, nid)
+                    if nent is not None:
+                        nodes.append(nent)
+                    next_frontier.append(nid)
+        frontier = next_frontier
+
+    return {"root_id": root_id, "nodes": nodes, "edges": edges_out}
+
+
+def _walk_uniform(
     model: dict[str, Any],
     root_id: str,
     traverse: TraverseSpec,

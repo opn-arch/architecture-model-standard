@@ -1930,6 +1930,84 @@ def _build_payload(model_path: Path) -> dict:
     except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
         print(f"WARN: WALK-descend sidecar failed (non-fatal): {_walk_err}")
 
+    # ------------------------------------------------------------------
+    # WALK-realize-* parallel run (kind-dispatched 2-hop retrofit).
+    # Seven WalkSpecs (one per kind) run beside legacy _mermaid_realization.
+    # Fail-soft — never blocks the build.
+    # ------------------------------------------------------------------
+    try:
+        from architecture_model.walks.runner import run_walk as _run_walk
+        from architecture_model.walks.spec.loader import (
+            load_walk_spec as _load_walk_spec,
+        )
+
+        _repo_root = Path(__file__).resolve().parent.parent
+        _realize_kinds = [
+            "capability", "component", "behavior", "interface",
+            "layer", "actor", "constraint",
+        ]
+        # Local out_edges/in_edges for the legacy walk.
+        _re_out: dict[str, list[tuple[str, str]]] = {}
+        _re_in: dict[str, list[tuple[str, str]]] = {}
+        for _r in relationships:
+            _f, _t, _rt = _r.get("from"), _r.get("to"), _r.get("type")
+            if _f is None or _t is None or _rt is None:
+                continue
+            _re_out.setdefault(_f, []).append((_t, _rt))
+            _re_in.setdefault(_t, []).append((_f, _rt))
+
+        _model_for_walk = {
+            "entities": {
+                kind: list(by_id.values())
+                for kind, by_id in entities_by_kind.items()
+            },
+            "relationships": relationships,
+        }
+        _plural = {
+            "capability": "capabilities",
+            "component": "components",
+            "behavior": "behaviors",
+            "interface": "interfaces",
+            "layer": "layers",
+            "actor": "actors",
+            "constraint": "constraints",
+        }
+        _total_cards = 0
+        _total_match = 0
+        _total_silent = 0
+        _total_div = 0
+        for _kind in _realize_kinds:
+            _spec_path = _repo_root / f".architecture/model/walks/realize-{_kind}.v3.yaml"
+            if not _spec_path.exists():
+                continue
+            _spec = _load_walk_spec(_spec_path)
+            _walk = _run_walk(_spec, _model_for_walk)
+            _cards = {c["entity_id"]: c for c in _walk["cards"]}
+            _total_cards += len(_cards)
+            for _eid, _card in _cards.items():
+                _legacy = _mermaid_realization(
+                    entities_by_kind, relationships, _eid, _kind,
+                    _re_out, _re_in,
+                )
+                if _legacy is None:
+                    if _card["subgraph_edges"] == [] and _card["subgraph_nodes"] == [_eid]:
+                        _total_silent += 1
+                    else:
+                        _total_div += 1
+                    continue
+                _, _viewer_nodes = _legacy
+                if set(_card["subgraph_nodes"]) == set(_viewer_nodes):
+                    _total_match += 1
+                else:
+                    _total_div += 1
+        print(
+            f"INFO: WALK-realize-* ran across 7 kinds: {_total_cards} cards, "
+            f"{_total_match} structural matches, {_total_silent} silent-skip "
+            f"matches, {_total_div} divergence(s)"
+        )
+    except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
+        print(f"WARN: WALK-realize-* sidecar failed (non-fatal): {_walk_err}")
+
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:
         gap_type_hist["unrealized"] = gap_type_hist.get("unrealized", 0) + 1

@@ -12,6 +12,7 @@ __all__ = [
     "WalkSpec",
     "ScopeSpec",
     "TraverseSpec",
+    "HopSpec",
     "ClassifySpec",
     "VerdictRule",
     "RollupSpec",
@@ -35,10 +36,28 @@ class ScopeSpec:
 
 
 @dataclass(frozen=True)
+class HopSpec:
+    """One hop of a multi-hop traversal.
+
+    Hop N is applied to the set of nodes newly-visited in hop N-1 (hop 0
+    starts from the scope root). Edges taken are recorded verbatim; no
+    induced-subgraph pass runs in hop mode.
+    """
+
+    edges: tuple[str, ...] = ()
+    direction: str = "outbound"  # inbound | outbound | both
+
+
+@dataclass(frozen=True)
 class TraverseSpec:
     edges: tuple[str, ...] = ()
     direction: str = "outbound"  # inbound | outbound | both
     depth: int | None = 1  # None = unbounded
+    # Multi-hop mode: when non-empty, edges/direction/depth are ignored and
+    # the traversal walks hops[0] from root, hops[1] from hops[0]'s frontier,
+    # etc. Used for kind-dispatched walks like realize whose hops apply
+    # different edge types in different directions.
+    hops: tuple[HopSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -113,6 +132,18 @@ def _parse_scope(raw: dict[str, Any]) -> ScopeSpec:
 def _parse_traverse(raw: dict[str, Any] | None) -> TraverseSpec:
     if raw is None:
         return TraverseSpec()
+    hops_raw = raw.get("hops")
+    if hops_raw:
+        hops = tuple(
+            HopSpec(
+                edges=tuple(h.get("edges", ())),
+                direction=h.get("direction", "outbound"),
+            )
+            for h in hops_raw
+        )
+        # In hop mode, edges/direction/depth are unused but preserved as
+        # defaults for consumers that inspect them.
+        return TraverseSpec(hops=hops)
     edges = tuple(raw.get("edges", ()))
     direction = raw.get("direction", "outbound")
     depth_raw = raw.get("depth", 1)
