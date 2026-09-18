@@ -1,0 +1,46 @@
+walk:
+  id: WALK-constraint-impact
+  audits:
+    - CAP-WK.constraint-impact
+
+  scope:
+    kind: constraint
+
+  # 2-hop traversal:
+  #   hop 1: inbound `constrained-by` (entities directly constrained).
+  #   hop 2: kind-dispatched per hop-1 node kind.
+  #     capability/component -> outbound `contains` (sub-entities inherit)
+  #     behavior             -> inbound `traces-to` (components implement)
+  #     interface            -> inbound `exposes`   (components expose)
+  traverse:
+    hops:
+      - edges: [constrained-by]
+        direction: inbound
+      - by_kind:
+          capability: {edges: [contains], direction: outbound}
+          component:  {edges: [contains], direction: outbound}
+          behavior:   {edges: [traces-to], direction: inbound}
+          interface:  {edges: [exposes], direction: inbound}
+
+  # Diagram-mode: value is the impacted subgraph. Verdict is a placeholder
+  # — compliance-evidence checking is a separate concern deferred to the
+  # attribute-completeness meta-walk (Part 7). Downstream sidecars can
+  # cross-reference the emitted subgraph with per-entity evidence.
+  classify:
+    verdicts:
+      - name: ready-to-code
+        when: true
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: constraint-impact
+    severity_from: verdict
+    include_subgraph: true
+    # Silent-skip when hop 2 added no new nodes (identical to 1-hop
+    # constraint realization view — no incremental impact information).
+    silent_skip_when_last_hop_empty: true

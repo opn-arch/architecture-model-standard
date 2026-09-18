@@ -79,6 +79,18 @@ def _run_emit(input: dict[str, Any]) -> dict[str, Any]:
                     ]
                     edges = []
                     overflow = 0
+            # Silent-skip: hop-mode walks reduce to root-only when the
+            # LAST traversal hop added no new nodes (matches viewer's
+            # _mermaid_constraint_impact "hop 2 empty" skip).
+            if spec.emit.silent_skip_when_last_hop_empty:
+                hop_added = sub.get("hop_added") or []
+                if hop_added and hop_added[-1] == 0:
+                    nodes = [
+                        n for n in nodes
+                        if isinstance(n, dict) and n.get("id") == root_id
+                    ]
+                    edges = []
+                    overflow = 0
             card["subgraph_nodes"] = [n.get("id") for n in nodes if isinstance(n, dict)]
             card["subgraph_edges"] = [
                 {"from": e.get("from"), "to": e.get("to"), "type": e.get("type")}

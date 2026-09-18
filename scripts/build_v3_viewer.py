@@ -2134,6 +2134,56 @@ def _build_payload(model_path: Path) -> dict:
     except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
         print(f"WARN: WALK-realization-skip-* sidecar failed (non-fatal): {_walk_err}")
 
+    # ------------------------------------------------------------------
+    # WALK-constraint-impact parallel run (diagram-mode, kind-dispatched
+    # hop 2). Compared node-set + edge-set against legacy
+    # _mermaid_constraint_impact. Fail-soft.
+    # ------------------------------------------------------------------
+    try:
+        from architecture_model.walks.runner import run_walk as _run_walk
+        from architecture_model.walks.spec.loader import (
+            load_walk_spec as _load_walk_spec,
+        )
+
+        _repo_root = Path(__file__).resolve().parent.parent
+        _spec_path = _repo_root / ".architecture/model/walks/constraint-impact.v3.yaml"
+        if _spec_path.exists():
+            _spec = _load_walk_spec(_spec_path)
+            _model_for_walk = {
+                "entities": {
+                    kind: list(by_id.values())
+                    for kind, by_id in entities_by_kind.items()
+                },
+                "relationships": relationships,
+            }
+            _walk = _run_walk(_spec, _model_for_walk)
+            _cards = {c["entity_id"]: c for c in _walk["cards"]}
+            _match = 0
+            _silent = 0
+            _div = 0
+            for _cid, _card in _cards.items():
+                _legacy = _mermaid_constraint_impact(
+                    entities_by_kind, relationships, _cid
+                )
+                if _legacy is None:
+                    if _card["subgraph_edges"] == [] and _card["subgraph_nodes"] == [_cid]:
+                        _silent += 1
+                    else:
+                        _div += 1
+                    continue
+                _, _viewer_nodes = _legacy
+                if set(_card["subgraph_nodes"]) == set(_viewer_nodes):
+                    _match += 1
+                else:
+                    _div += 1
+            print(
+                f"INFO: WALK-constraint-impact ran: {len(_cards)} cards, "
+                f"{_match} structural matches, {_silent} silent-skip "
+                f"matches, {_div} divergence(s)"
+            )
+    except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
+        print(f"WARN: WALK-constraint-impact sidecar failed (non-fatal): {_walk_err}")
+
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:
         gap_type_hist["unrealized"] = gap_type_hist.get("unrealized", 0) + 1

@@ -42,10 +42,22 @@ class HopSpec:
     Hop N is applied to the set of nodes newly-visited in hop N-1 (hop 0
     starts from the scope root). Edges taken are recorded verbatim; no
     induced-subgraph pass runs in hop mode.
+
+    Two dispatch modes:
+      - Uniform (default): every frontier node uses ``edges`` + ``direction``.
+      - Kind-dispatched: when ``by_kind`` is non-empty, per-node dispatch
+        looks up the source node's singular kind (capability, component,
+        behavior, interface, actor, constraint) and applies that sub-spec.
+        Nodes whose kind is not in the map silent-skip (no outgoing walk
+        from them for this hop). ``edges``/``direction`` on the parent
+        HopSpec are IGNORED when ``by_kind`` is set.
     """
 
     edges: tuple[str, ...] = ()
     direction: str = "outbound"  # inbound | outbound | both
+    # Kind-dispatched sub-specs. Stored as an ordered tuple of (kind, spec)
+    # pairs so the outer HopSpec remains hashable (frozen dataclass).
+    by_kind: tuple[tuple[str, "HopSpec"], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -100,6 +112,10 @@ class EmitSpec:
     # only the root node (empty edges) if the number of NON-ROOT visited
     # nodes is 0 or > threshold. Matches _mermaid_neighbors semantics.
     subgraph_neighbor_threshold: int | None = None
+    # Silent-skip when the LAST traversal hop added zero new nodes.
+    # Matches _mermaid_constraint_impact's "hop 2 identical to 1-hop view"
+    # skip. Only meaningful in hop-mode traversal. Ignored otherwise.
+    silent_skip_when_last_hop_empty: bool = False
 
 
 @dataclass(frozen=True)
@@ -133,18 +149,50 @@ def _parse_scope(raw: dict[str, Any]) -> ScopeSpec:
     )
 
 
+def _parse_hop(raw: dict[str, Any]) -> HopSpec:
+    """Parse one hop entry (uniform or kind-dispatched)."""
+    by_kind_raw = raw.get("by_kind") or {}
+    by_kind_items: list[tuple[str, HopSpec]] = []
+    if by_kind_raw:
+        if not isinstance(by_kind_raw, dict):
+            raise WalkSpecError(
+                f"traverse.hops[].by_kind: expected mapping, "
+                f"got {type(by_kind_raw).__name__}"
+            )
+        for k in sorted(by_kind_raw.keys()):
+            sub = by_kind_raw[k]
+            if not isinstance(sub, dict):
+                raise WalkSpecError(
+                    f"traverse.hops[].by_kind[{k!r}]: expected mapping"
+                )
+            # Nested by_kind is not supported (would need multi-level
+            # dispatch semantics we don't have). Enforce single-level.
+            if sub.get("by_kind"):
+                raise WalkSpecError(
+                    f"traverse.hops[].by_kind[{k!r}]: nested by_kind not supported"
+                )
+            by_kind_items.append(
+                (
+                    str(k),
+                    HopSpec(
+                        edges=tuple(sub.get("edges", ())),
+                        direction=sub.get("direction", "outbound"),
+                    ),
+                )
+            )
+    return HopSpec(
+        edges=tuple(raw.get("edges", ())),
+        direction=raw.get("direction", "outbound"),
+        by_kind=tuple(by_kind_items),
+    )
+
+
 def _parse_traverse(raw: dict[str, Any] | None) -> TraverseSpec:
     if raw is None:
         return TraverseSpec()
     hops_raw = raw.get("hops")
     if hops_raw:
-        hops = tuple(
-            HopSpec(
-                edges=tuple(h.get("edges", ())),
-                direction=h.get("direction", "outbound"),
-            )
-            for h in hops_raw
-        )
+        hops = tuple(_parse_hop(h) for h in hops_raw)
         # In hop mode, edges/direction/depth are unused but preserved as
         # defaults for consumers that inspect them.
         return TraverseSpec(hops=hops)
@@ -201,6 +249,9 @@ def _parse_emit(raw: dict[str, Any] | None) -> EmitSpec:
         include_subgraph=bool(raw.get("include_subgraph", False)),
         subgraph_cap=cap,
         subgraph_neighbor_threshold=thr,
+        silent_skip_when_last_hop_empty=bool(
+            raw.get("silent_skip_when_last_hop_empty", False)
+        ),
     )
 
 
