@@ -70,6 +70,13 @@ class EvidenceSpec:
 class EmitSpec:
     card_template: str = "default"
     severity_from: str = "verdict"
+    # When True, emit includes the traverse subgraph (nodes, edges,
+    # overflow_count) on each card. Used by diagram-mode walks whose
+    # value is the traversed subgraph itself, not a verdict.
+    include_subgraph: bool = False
+    # Depth-1 → depth-2 cap on visited nodes for diagram-mode walks.
+    # None = no cap (traverse.depth still applies).
+    subgraph_cap: int | None = None
 
 
 @dataclass(frozen=True)
@@ -149,9 +156,13 @@ def _parse_evidence(raw: dict[str, Any] | None) -> EvidenceSpec:
 def _parse_emit(raw: dict[str, Any] | None) -> EmitSpec:
     if raw is None:
         return EmitSpec()
+    cap_raw = raw.get("subgraph_cap")
+    cap = None if cap_raw is None else int(cap_raw)
     return EmitSpec(
         card_template=raw.get("card_template", "default"),
         severity_from=raw.get("severity_from", "verdict"),
+        include_subgraph=bool(raw.get("include_subgraph", False)),
+        subgraph_cap=cap,
     )
 
 

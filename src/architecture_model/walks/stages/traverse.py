@@ -87,6 +87,28 @@ def _walk_from(
                     nodes.append(nent)
                 frontier.append((nid, depth + 1))
 
+    # Induced-subgraph pass: also record edges (of matching direction + type)
+    # between already-visited nodes that the BFS spanning tree omitted. This
+    # makes the returned edges a proper induced subgraph, matching viewer
+    # semantics for diagram-mode walks and remaining a superset for edge-
+    # counting classifiers (which only care about root-anchored edges).
+    seen_edges: set[int] = {id(e) for e in edges_out}
+    for src in visited:
+        if direction in ("outbound", "both"):
+            for r in outbound.get(src, []):
+                if edge_types is not None and r.get("type") not in edge_types:
+                    continue
+                if r.get("to") in visited and id(r) not in seen_edges:
+                    edges_out.append(r)
+                    seen_edges.add(id(r))
+        if direction in ("inbound", "both"):
+            for r in inbound.get(src, []):
+                if edge_types is not None and r.get("type") not in edge_types:
+                    continue
+                if r.get("from") in visited and id(r) not in seen_edges:
+                    edges_out.append(r)
+                    seen_edges.add(id(r))
+
     return {"root_id": root_id, "nodes": nodes, "edges": edges_out}
 
 

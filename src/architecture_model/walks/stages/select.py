@@ -46,7 +46,9 @@ def _entities_of_kind(model: dict[str, Any], kind: str) -> list[Entity]:
     """Extract entities of a given kind from the v3 model.
 
     Recognizes plural keys under ``entities`` (components, capabilities,
-    behaviors, interfaces, actors, constraints).
+    behaviors, interfaces, actors, constraints). Special value ``"any"``
+    returns every entity across every kind — used by walks whose logic
+    applies uniformly (e.g., decomposition, neighbors).
     """
     ents = model.get("entities", {})
     # Map singular scope kind to plural entity bucket.
@@ -58,6 +60,12 @@ def _entities_of_kind(model: dict[str, Any], kind: str) -> list[Entity]:
         "actor": "actors",
         "constraint": "constraints",
     }
+    if kind == "any":
+        out: list[Entity] = []
+        for bucket in ents.values():
+            if isinstance(bucket, list):
+                out.extend(bucket)
+        return out
     bucket = bucket_map.get(kind, kind + "s")
     return list(ents.get(bucket, []))
 

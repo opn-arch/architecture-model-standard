@@ -32,21 +32,44 @@ def _run_emit(input: dict[str, Any]) -> dict[str, Any]:
 
     cards = []
     for c in classifications:
-        cards.append(
-            {
-                "walk_id": spec.id,
-                "audits": list(spec.audits),
-                "entity_id": c.get("entity_id"),
-                "entity": c["entity"],
-                "verdict": c["verdict"],
-                "severity": _severity_for(c["verdict"]),
-                "reasons": list(c.get("reasons", [])),
-                "verified_by": list(c.get("verified_by", [])),
-                "evidence_tier": c.get("evidence_tier", "structural"),
-                "rollup_notes": list(c.get("rollup_notes", [])),
-                "card_template": spec.emit.card_template,
-            }
-        )
+        card = {
+            "walk_id": spec.id,
+            "audits": list(spec.audits),
+            "entity_id": c.get("entity_id"),
+            "entity": c["entity"],
+            "verdict": c["verdict"],
+            "severity": _severity_for(c["verdict"]),
+            "reasons": list(c.get("reasons", [])),
+            "verified_by": list(c.get("verified_by", [])),
+            "evidence_tier": c.get("evidence_tier", "structural"),
+            "rollup_notes": list(c.get("rollup_notes", [])),
+            "card_template": spec.emit.card_template,
+        }
+        # Diagram-mode: attach the traverse subgraph (nodes + edges) so the
+        # viewer / a downstream renderer can produce a graph visualization
+        # from the same source as verdict-mode walks.
+        if spec.emit.include_subgraph:
+            sub = c.get("subgraph") or {}
+            nodes = list(sub.get("nodes", []))
+            edges = list(sub.get("edges", []))
+            overflow = 0
+            cap = spec.emit.subgraph_cap
+            if cap is not None and len(nodes) > cap:
+                overflow = len(nodes) - cap
+                nodes = nodes[:cap]
+                # Prune edges whose endpoints didn't survive the cap.
+                node_ids = {n.get("id") for n in nodes if isinstance(n, dict)}
+                edges = [
+                    e for e in edges
+                    if e.get("from") in node_ids and e.get("to") in node_ids
+                ]
+            card["subgraph_nodes"] = [n.get("id") for n in nodes if isinstance(n, dict)]
+            card["subgraph_edges"] = [
+                {"from": e.get("from"), "to": e.get("to"), "type": e.get("type")}
+                for e in edges
+            ]
+            card["subgraph_overflow"] = overflow
+        cards.append(card)
 
     # Deterministic order — sort by (severity desc, entity_id).
     cards.sort(key=lambda c: (-int(c["severity"]), c.get("entity_id") or ""))

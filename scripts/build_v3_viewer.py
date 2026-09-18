@@ -1854,6 +1854,82 @@ def _build_payload(model_path: Path) -> dict:
     except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
         print(f"WARN: WALK-unrealized-cap sidecar failed (non-fatal): {_walk_err}")
 
+    # ------------------------------------------------------------------
+    # WALK-descend parallel run (diagram-mode retrofit). Runs the WalkSpec
+    # beside the legacy _mermaid_decomposition helper and reports structural
+    # (node-set + edge-set) divergences. Fail-soft — never blocks the build.
+    # ------------------------------------------------------------------
+    try:
+        from architecture_model.walks.runner import run_walk as _run_walk
+        from architecture_model.walks.spec.loader import (
+            load_walk_spec as _load_walk_spec,
+        )
+
+        _repo_root = Path(__file__).resolve().parent.parent
+        _spec_path = _repo_root / ".architecture/model/walks/descend.v3.yaml"
+        if _spec_path.exists():
+            _spec = _load_walk_spec(_spec_path)
+            _model_for_walk = {
+                "entities": {
+                    kind: list(by_id.values())
+                    for kind, by_id in entities_by_kind.items()
+                },
+                "relationships": relationships,
+            }
+            _walk = _run_walk(_spec, _model_for_walk)
+            _cards = {c["entity_id"]: c for c in _walk["cards"]}
+            _node_div = 0
+            _edge_div = 0
+            _silent_ok = 0
+            _compared = 0
+            _overflow_skipped = 0
+            for _eid, _card in _cards.items():
+                _legacy = _mermaid_decomposition(
+                    entities_by_kind, relationships, _eid
+                )
+                if _legacy is None:
+                    if _card["subgraph_edges"] == [] and _card["subgraph_nodes"] == [_eid]:
+                        _silent_ok += 1
+                    else:
+                        _node_div += 1
+                    continue
+                if _card["subgraph_overflow"] > 0:
+                    _overflow_skipped += 1
+                    continue
+                _viewer_nodes = set(_legacy[1])
+                _walk_nodes = set(_card["subgraph_nodes"])
+                if _walk_nodes != _viewer_nodes:
+                    _node_div += 1
+                    continue
+                _walk_edges = {
+                    (e["from"], e["to"])
+                    for e in _card["subgraph_edges"]
+                    if e.get("type") == "contains"
+                }
+                _viewer_edges = {
+                    (r.get("from"), r.get("to"))
+                    for r in relationships
+                    if r.get("type") == "contains"
+                    and r.get("from") in _viewer_nodes
+                    and r.get("to") in _viewer_nodes
+                }
+                if _walk_edges != _viewer_edges:
+                    _edge_div += 1
+                    continue
+                _compared += 1
+            print(
+                f"INFO: WALK-descend ran: {len(_walk['cards'])} cards, "
+                f"{_compared} structural matches, {_silent_ok} silent-skip matches, "
+                f"{_overflow_skipped} overflow-skipped"
+            )
+            if _node_div or _edge_div:
+                print(
+                    f"WARN: WALK-descend parity: {_node_div} node-set + "
+                    f"{_edge_div} edge-set divergence(s)"
+                )
+    except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
+        print(f"WARN: WALK-descend sidecar failed (non-fatal): {_walk_err}")
+
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:
         gap_type_hist["unrealized"] = gap_type_hist.get("unrealized", 0) + 1
