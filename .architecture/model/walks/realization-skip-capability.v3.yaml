@@ -1,0 +1,37 @@
+walk:
+  id: WALK-realization-skip-capability
+  audits:
+    - CAP-WK.realization-skip
+
+  scope:
+    kind: capability
+
+  # Both directions of `realizes` so classify can compare inbound vs outbound
+  # counts from the root — surfaces the L9-shape direction-inversion bug.
+  traverse:
+    edges:
+      - realizes
+    direction: both
+    depth: 1
+
+  classify:
+    verdicts:
+      # Direction-inverted: no inbound realizer BUT has outbound realizes.
+      # This is the L9 signal — capability points at its realizer instead
+      # of being pointed at.
+      - name: contradictory
+        when: inbound_count:realizes == 0 and outbound_count:realizes >= 1
+      # Silent-skip everything else via ready-to-code — matches the viewer
+      # helper which only surfaces the wrong-direction case.
+      - name: ready-to-code
+        when: true
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: realization-skip-reason
+    severity_from: verdict

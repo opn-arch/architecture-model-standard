@@ -1,0 +1,33 @@
+walk:
+  id: WALK-realization-skip-component
+  audits:
+    - CAP-WK.realization-skip
+
+  scope:
+    kind: component
+
+  traverse:
+    edges:
+      - realizes
+    direction: both
+    depth: 1
+
+  classify:
+    verdicts:
+      # Direction-inverted: component has inbound realizes (someone points
+      # AT it as a realizer) BUT no outbound realizes (it doesn't declare
+      # what it realizes). Mirror image of the capability rule.
+      - name: contradictory
+        when: outbound_count:realizes == 0 and inbound_count:realizes >= 1
+      - name: ready-to-code
+        when: true
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: realization-skip-reason
+    severity_from: verdict

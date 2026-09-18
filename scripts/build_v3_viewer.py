@@ -2067,6 +2067,73 @@ def _build_payload(model_path: Path) -> dict:
     except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
         print(f"WARN: WALK-browse sidecar failed (non-fatal): {_walk_err}")
 
+    # ------------------------------------------------------------------
+    # WALK-realization-skip-{capability,component} parallel run. Two
+    # verdict-shape walks that flag direction-inverted realizes edges
+    # (the L9 bug signal). Compared against legacy
+    # _realization_skip_reasons keyed by kind. Fail-soft.
+    # ------------------------------------------------------------------
+    try:
+        from architecture_model.walks.runner import run_walk as _run_walk
+        from architecture_model.walks.spec.loader import (
+            load_walk_spec as _load_walk_spec,
+        )
+
+        _repo_root = Path(__file__).resolve().parent.parent
+        _model_for_walk = {
+            "entities": {
+                kind: list(by_id.values())
+                for kind, by_id in entities_by_kind.items()
+            },
+            "relationships": relationships,
+        }
+        _sk_out: dict[str, list[tuple[str, str]]] = {}
+        _sk_in: dict[str, list[tuple[str, str]]] = {}
+        for _r in relationships:
+            _f, _t, _rt = _r.get("from"), _r.get("to"), _r.get("type")
+            if _f is None or _t is None or _rt is None:
+                continue
+            _sk_out.setdefault(_f, []).append((_t, _rt))
+            _sk_in.setdefault(_t, []).append((_f, _rt))
+        _viewer_reasons = _realization_skip_reasons(
+            entities_by_kind, _sk_out, _sk_in
+        )
+        _cap_ids = set(entities_by_kind.get("capabilities", {}).keys())
+        _comp_ids = set(entities_by_kind.get("components", {}).keys())
+        _viewer_cap_flags = {e for e in _viewer_reasons if e in _cap_ids}
+        _viewer_comp_flags = {e for e in _viewer_reasons if e in _comp_ids}
+
+        _total_cards = 0
+        _total_flag = 0
+        _div = 0
+        for _kind_slug, _ids, _viewer_flags in (
+            ("capability", _cap_ids, _viewer_cap_flags),
+            ("component", _comp_ids, _viewer_comp_flags),
+        ):
+            _spec_path = _repo_root / (
+                f".architecture/model/walks/realization-skip-{_kind_slug}.v3.yaml"
+            )
+            if not _spec_path.exists():
+                continue
+            _spec = _load_walk_spec(_spec_path)
+            _walk = _run_walk(_spec, _model_for_walk)
+            _total_cards += len(_walk["cards"])
+            _walk_flags = {
+                c["entity_id"] for c in _walk["cards"]
+                if c["verdict"] == "contradictory"
+            }
+            _total_flag += len(_walk_flags)
+            if _walk_flags != _viewer_flags:
+                _div += 1
+        print(
+            f"INFO: WALK-realization-skip-* ran: {_total_cards} cards, "
+            f"{_total_flag} flagged (legacy flagged "
+            f"{len(_viewer_cap_flags) + len(_viewer_comp_flags)}), "
+            f"{_div} kind-level divergence(s)"
+        )
+    except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
+        print(f"WARN: WALK-realization-skip-* sidecar failed (non-fatal): {_walk_err}")
+
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:
         gap_type_hist["unrealized"] = gap_type_hist.get("unrealized", 0) + 1
