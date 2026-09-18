@@ -1,0 +1,39 @@
+walk:
+  id: WALK-unrealized-cap
+  audits:
+    - CAP-WK.unrealized-cap
+
+  scope:
+    kind: capability
+
+  traverse:
+    edges:
+      - realizes
+    direction: inbound
+    depth: 1
+
+  classify:
+    verdicts:
+      # ok: has realizer(s) AND no open promises. Silent-skip via ready-to-code
+      # (viewer omits ready-to-code cards for this walk).
+      - name: ready-to-code
+        when: inbound_count:realizes >= 1 and promise_status_count:open == 0
+      # partial: has realizer(s) BUT still carries open promises.
+      - name: needs-validation
+        when: inbound_count:realizes >= 1 and promise_status_count:open >= 1
+      # critical: no realizer AND has open promises. Severity floor.
+      - name: needs-validation
+        when: inbound_count:realizes == 0 and promise_status_count:open >= 1
+      # unrealized: no realizer AND no open promises. Undeclared implementation.
+      - name: needs-enrichment
+        when: inbound_count:realizes == 0
+    on_missing_attributes: needs-enrichment
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: capability-realization
+    severity_from: verdict
