@@ -1318,6 +1318,197 @@ entities:
       status: verified
       gap_type: null
       provenance: interface exposed by CAP-SL
+  # --- 2026-09-16 Part 3 (walk-substrate): CAP-WK umbrella + 9 sub-caps -----
+  # Walks are AMS capabilities. CAP-WK is the umbrella; each sub-cap is one
+  # walk realized by a WalkSpec YAML file. Full v3 attributes below on the
+  # umbrella cap; sub-caps carry minimal-intent + audits pointer. Retrofits
+  # (Part 4) will flesh out per-walk promises as each Python walk lands as
+  # a spec YAML.
+  - id: CAP-WK
+    name: walk_substrate
+    promises:
+    - id: PR-CAP-WK-intent
+      attribute: intent
+      content:
+      - Provide a declarative substrate for graph-walk audits over an
+        architecture model. Each walk is a WalkSpec YAML running on
+        pipeline_v3.substrate through six pure stages
+        (select → traverse → classify → rollup → evidence → emit),
+        modeled itself as an AMS capability so that walks are first-class
+        entities auditable by other walks (meta-closure).
+      owner_entity: CAP-WK
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/ package
+      - tests/walks/ (24 tests pass 2026-09-16)
+      status: verified
+      gap_type: null
+      provenance: |
+        Part 1+2 of the walk-substrate plan (2026-09-16). Substrate promoted
+        into pipeline_v3/substrate/; walks module built on top. See
+        docs/plans/2026-09-16-walk-substrate.md.
+    - id: PR-CAP-WK-requirements
+      attribute: requirements
+      content:
+      - Substrate MUST expose Stage/Pipeline/ContentCache/silent_skip primitives
+        that both pipeline_v3 and walks can share without divergence.
+      - WalkSpec YAML MUST support kind+predicate selection AND composition via
+        scope.from_walk (full-payload passthrough).
+      - Classify MUST emit one of five verdicts (ready-to-code, needs-decomp,
+        needs-enrichment, needs-validation, contradictory).
+      - "Rollup MUST be attribute-category-aware (A=union, B=conjunction, C=contract-composition) and driven by declarative strategy."
+      - Every attribute participating in walks MUST carry full provenance
+        (value, source, confidence, verified_by) with schema-default category
+        overridable inline.
+      - Composition graph across WalkSpecs MUST be cycle-detected at load time.
+      owner_entity: CAP-WK
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/substrate/{stage,pipeline,cache,contract}.py
+      - src/architecture_model/walks/{attribute,verdict,runner}.py
+      - src/architecture_model/walks/stages/*.py
+      - src/architecture_model/walks/spec/loader.py (cycle detection)
+      status: verified
+      gap_type: null
+      provenance: Locked plan decisions from 2026-09-16 (Q1–Q8).
+    - id: PR-CAP-WK-goals
+      attribute: goals
+      content:
+      - Reduce a new walk from ~60 LOC hand-written Python to ~20 lines of
+        declarative YAML.
+      - Enable declarative rollup so umbrella caps (e.g. CAP-DF) inherit
+        realization from sub-caps without bespoke Python.
+      - Make walks themselves auditable so meta-walks can enforce coverage.
+      owner_entity: CAP-WK
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: null
+      provenance: Design goals per plan §4.b table.
+  - id: CAP-WK.direction-lint
+    name: walk_direction_lint
+    promises:
+    - id: PR-CAP-WK-direction-lint-intent
+      attribute: intent
+      content:
+      - Audit relationship notes for direction phrasing that contradicts the
+        stored edge direction (L2/L9 lesson). Structural tier.
+      owner_entity: CAP-WK.direction-lint
+      delivered_from: null
+      verified_by:
+      - scripts/build_v3_viewer.py:_lint_edge_note_directions
+      - .architecture/model/walks/direction-lint.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Retrofit pilot (Part 4 step 1).
+  - id: CAP-WK.unrealized-cap
+    name: walk_unrealized_capability
+    promises:
+    - id: PR-CAP-WK-unrealized-cap-intent
+      attribute: intent
+      content:
+      - Audit every capability for realization coverage; emit ok / partial /
+        unrealized / critical buckets. Rollup via contains propagates
+        sub-cap status up to umbrella caps (Concern B fix).
+      owner_entity: CAP-WK.unrealized-cap
+      delivered_from: null
+      verified_by:
+      - scripts/build_v3_viewer.py:_unrealized_capability_summary
+      - .architecture/model/walks/unrealized-cap.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Retrofit (Part 4 step 8) + Concern B declarative fix (Part 5).
+  - id: CAP-WK.descend
+    name: walk_descend
+    promises:
+    - id: PR-CAP-WK-descend-intent
+      attribute: intent
+      content:
+      - Drill-down walk over the component contains-tree for viewer nav cards.
+      owner_entity: CAP-WK.descend
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 2 (deferred to follow-up commit).
+  - id: CAP-WK.author
+    name: walk_author
+    promises:
+    - id: PR-CAP-WK-author-intent
+      attribute: intent
+      content:
+      - Author walk over promise chain producing authored fragments.
+      owner_entity: CAP-WK.author
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 7 (deferred to follow-up commit).
+  - id: CAP-WK.realize
+    name: walk_realize
+    promises:
+    - id: PR-CAP-WK-realize-intent
+      attribute: intent
+      content:
+      - Behavior → component realization walk.
+      owner_entity: CAP-WK.realize
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 4 (deferred to follow-up commit).
+  - id: CAP-WK.browse
+    name: walk_browse
+    promises:
+    - id: PR-CAP-WK-browse-intent
+      attribute: intent
+      content:
+      - Rendered-artifact browse walk (viewer nav).
+      owner_entity: CAP-WK.browse
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 3 (deferred to follow-up commit).
+  - id: CAP-WK.note
+    name: walk_note
+    promises:
+    - id: PR-CAP-WK-note-intent
+      attribute: intent
+      content:
+      - Viewer-annotation walk producing note payloads.
+      owner_entity: CAP-WK.note
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 5 (deferred to follow-up commit).
+  - id: CAP-WK.save
+    name: walk_save
+    promises:
+    - id: PR-CAP-WK-save-intent
+      attribute: intent
+      content:
+      - Note → walk-author closure trigger.
+      owner_entity: CAP-WK.save
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 6 (deferred to follow-up commit).
+  - id: CAP-WK.promotion
+    name: walk_promotion
+    promises:
+    - id: PR-CAP-WK-promotion-intent
+      attribute: intent
+      content:
+      - "Ceremony walk (Q6=c) emits a diff of candidate Category B -> Category C attribute promotions for human/LLM confirmation. Reads specification-tier attributes (goals, requirements, success-criteria) and identifies those that satisfy the promise criteria (observable, testable, contract-shaped, exposed on an interface)."
+      owner_entity: CAP-WK.promotion
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: not-yet-implemented
+      provenance: Q6=c ceremony mechanism (locked plan).
 relationships:
 - from: COMP-c5a72728
   to: CAP-PB
@@ -1479,3 +1670,72 @@ relationships:
     Notes captured in the viewer surface deltas / questions that motivate the
     next walk fragment. Closes CAP-DF.2 -> CAP-DF.1 feedback and completes the
     view -> note -> walk -> re-extract -> view loop.
+# --- 2026-09-16 Part 3 (walk-substrate): CAP-WK umbrella + sub-caps -----------
+# Walks are AMS capabilities. CAP-WK umbrella; sub-caps per walk. Each sub-cap
+# is realized by a WalkSpec YAML in .architecture/model/walks/. The `audits`
+# relationship (list-valued) declares which capability(s) each walk audits.
+- from: CAP-WK
+  to: CAP-WK.direction-lint
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.unrealized-cap
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.descend
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.author
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.realize
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.browse
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.note
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.save
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.promotion
+  type: contains
+# audits: sub-caps → target caps (list-valued semantics: multiple relationship
+# rows for the same walk when audits is a list)
+- from: CAP-WK.direction-lint
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.direction-lint
+  to: CAP-SL
+  type: audits
+- from: CAP-WK.unrealized-cap
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.unrealized-cap
+  to: CAP-SL
+  type: audits
+- from: CAP-WK.unrealized-cap
+  to: CAP-DF
+  type: audits
+- from: CAP-WK.descend
+  to: CAP-DF.2
+  type: audits
+- from: CAP-WK.author
+  to: CAP-DF.1
+  type: audits
+- from: CAP-WK.realize
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.browse
+  to: CAP-DF.2
+  type: audits
+- from: CAP-WK.note
+  to: CAP-DF.3
+  type: audits
+- from: CAP-WK.save
+  to: CAP-DF.1
+  type: audits
+- from: CAP-WK.promotion
+  to: CAP-WK
+  type: audits
