@@ -149,9 +149,15 @@ def _walk_uniform(
                     neighbors.append((r, r.get("from", "")))
 
         for edge, nid in neighbors:
-            if nid and nid not in visited:
+            if not nid:
+                continue
+            # Record every traversed edge, even to already-visited nodes.
+            # A pair of nodes may be connected by multiple relationship
+            # types; missing any of them would break browse-style walks
+            # whose value is exactly "all typed edges touching root".
+            edges_out.append(edge)
+            if nid not in visited:
                 visited.add(nid)
-                edges_out.append(edge)
                 nent = _find_entity(model, nid)
                 if nent is not None:
                     nodes.append(nent)
@@ -162,22 +168,25 @@ def _walk_uniform(
     # makes the returned edges a proper induced subgraph, matching viewer
     # semantics for diagram-mode walks and remaining a superset for edge-
     # counting classifiers (which only care about root-anchored edges).
-    seen_edges: set[int] = {id(e) for e in edges_out}
-    for src in visited:
-        if direction in ("outbound", "both"):
-            for r in outbound.get(src, []):
-                if edge_types is not None and r.get("type") not in edge_types:
-                    continue
-                if r.get("to") in visited and id(r) not in seen_edges:
-                    edges_out.append(r)
-                    seen_edges.add(id(r))
-        if direction in ("inbound", "both"):
-            for r in inbound.get(src, []):
-                if edge_types is not None and r.get("type") not in edge_types:
-                    continue
-                if r.get("from") in visited and id(r) not in seen_edges:
-                    edges_out.append(r)
-                    seen_edges.add(id(r))
+    # Skipped when depth == 1 because 1-hop walks want root-anchored edges
+    # only (matches _mermaid_neighbors semantics).
+    if max_depth > 1:
+        seen_edges: set[int] = {id(e) for e in edges_out}
+        for src in visited:
+            if direction in ("outbound", "both"):
+                for r in outbound.get(src, []):
+                    if edge_types is not None and r.get("type") not in edge_types:
+                        continue
+                    if r.get("to") in visited and id(r) not in seen_edges:
+                        edges_out.append(r)
+                        seen_edges.add(id(r))
+            if direction in ("inbound", "both"):
+                for r in inbound.get(src, []):
+                    if edge_types is not None and r.get("type") not in edge_types:
+                        continue
+                    if r.get("from") in visited and id(r) not in seen_edges:
+                        edges_out.append(r)
+                        seen_edges.add(id(r))
 
     return {"root_id": root_id, "nodes": nodes, "edges": edges_out}
 

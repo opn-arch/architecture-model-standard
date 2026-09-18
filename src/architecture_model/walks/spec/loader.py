@@ -96,6 +96,10 @@ class EmitSpec:
     # Depth-1 → depth-2 cap on visited nodes for diagram-mode walks.
     # None = no cap (traverse.depth still applies).
     subgraph_cap: int | None = None
+    # Silent-skip threshold: when set, emit reduces the card's subgraph to
+    # only the root node (empty edges) if the number of NON-ROOT visited
+    # nodes is 0 or > threshold. Matches _mermaid_neighbors semantics.
+    subgraph_neighbor_threshold: int | None = None
 
 
 @dataclass(frozen=True)
@@ -189,11 +193,14 @@ def _parse_emit(raw: dict[str, Any] | None) -> EmitSpec:
         return EmitSpec()
     cap_raw = raw.get("subgraph_cap")
     cap = None if cap_raw is None else int(cap_raw)
+    thr_raw = raw.get("subgraph_neighbor_threshold")
+    thr = None if thr_raw is None else int(thr_raw)
     return EmitSpec(
         card_template=raw.get("card_template", "default"),
         severity_from=raw.get("severity_from", "verdict"),
         include_subgraph=bool(raw.get("include_subgraph", False)),
         subgraph_cap=cap,
+        subgraph_neighbor_threshold=thr,
     )
 
 

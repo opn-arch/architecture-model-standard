@@ -63,6 +63,22 @@ def _run_emit(input: dict[str, Any]) -> dict[str, Any]:
                     e for e in edges
                     if e.get("from") in node_ids and e.get("to") in node_ids
                 ]
+            # Silent-skip: reduce to root-only when the 1-hop edge count
+            # falls outside the neighbor threshold band [1, threshold].
+            # Counts edges (not unique neighbor nodes) so parallel typed
+            # edges to the same neighbor each contribute — matches the
+            # viewer's `_mermaid_neighbors` skip condition.
+            thr = spec.emit.subgraph_neighbor_threshold
+            root_id = c.get("entity_id")
+            if thr is not None:
+                edge_count = len(edges)
+                if edge_count == 0 or edge_count > thr:
+                    nodes = [
+                        n for n in nodes
+                        if isinstance(n, dict) and n.get("id") == root_id
+                    ]
+                    edges = []
+                    overflow = 0
             card["subgraph_nodes"] = [n.get("id") for n in nodes if isinstance(n, dict)]
             card["subgraph_edges"] = [
                 {"from": e.get("from"), "to": e.get("to"), "type": e.get("type")}
