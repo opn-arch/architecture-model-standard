@@ -34,6 +34,15 @@ walk:
     sources:
       - model
 
+  # Concern B declarative fix: propagate child capability verdicts up the
+  # contains graph. Category B (specification-tier: promises describe
+  # capability contracts) => conjunction/worst-child. Parent CAP marked
+  # needs-* if any descendant CAP is needs-*.
+  rollup:
+    via: contains
+    category: B
+    strategy: worst-child
+
   emit:
     card_template: capability-realization
     severity_from: verdict

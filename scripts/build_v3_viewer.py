@@ -1802,6 +1802,58 @@ def _build_payload(model_path: Path) -> dict:
                 f"{s['open_promise_count']} open promises"
             )
 
+    # ------------------------------------------------------------------
+    # 8th walk (declarative): WALK-unrealized-cap parallel run + Concern B
+    # rollup surfacing. Runs the WalkSpec beside the legacy Python walk,
+    # asserts flagged-set parity (fail-soft), and prints any additional
+    # capabilities flagged only by rollup — the value-add of the substrate.
+    # ------------------------------------------------------------------
+    try:
+        from architecture_model.walks.runner import run_walk as _run_walk
+        from architecture_model.walks.spec.loader import (
+            load_walk_spec as _load_walk_spec,
+        )
+
+        _repo_root = Path(__file__).resolve().parent.parent
+        _spec_path = _repo_root / ".architecture/model/walks/unrealized-cap.v3.yaml"
+        if _spec_path.exists():
+            _spec = _load_walk_spec(_spec_path)
+            # Reconstruct a v3-shaped model dict from the viewer's in-scope
+            # entities_by_kind (id-keyed dicts) + relationships list.
+            _model_for_walk = {
+                "entities": {
+                    kind: list(by_id.values())
+                    for kind, by_id in entities_by_kind.items()
+                },
+                "relationships": relationships,
+            }
+            _walk = _run_walk(_spec, _model_for_walk)
+            _walk_flagged = {
+                c["entity_id"] for c in _walk["cards"]
+                if c["verdict"] != "ready-to-code"
+            }
+            _legacy_flagged = {s["cap_id"] for s in unrealized_caps}
+            _only_walk = _walk_flagged - _legacy_flagged
+            _only_legacy = _legacy_flagged - _walk_flagged
+            print(
+                f"INFO: WALK-unrealized-cap ran: {len(_walk['cards'])} cards, "
+                f"{len(_walk_flagged)} flagged (legacy flagged {len(_legacy_flagged)})"
+            )
+            if _only_legacy:
+                print(
+                    f"WARN: WALK-unrealized-cap parity: legacy flagged "
+                    f"{sorted(_only_legacy)} but WalkSpec did not"
+                )
+            if _only_walk:
+                # These are the Concern B wins: parents surfaced only by rollup.
+                print(
+                    f"INFO: WALK-unrealized-cap rollup surfaced {len(_only_walk)} "
+                    f"additional cap(s) via contains (Concern B): "
+                    f"{sorted(_only_walk)}"
+                )
+    except Exception as _walk_err:  # noqa: BLE001 — never block viewer build
+        print(f"WARN: WALK-unrealized-cap sidecar failed (non-fatal): {_walk_err}")
+
     # Bump gap-type histogram + gap list with unrealized.
     for g in unrealized_gaps:
         gap_type_hist["unrealized"] = gap_type_hist.get("unrealized", 0) + 1

@@ -116,3 +116,143 @@ def test_verdict_reasons_are_deterministic(walk_output):
     severities = [c["severity"] for c in walk_output["cards"]]
     for i in range(len(ids) - 1):
         assert (-severities[i], ids[i]) <= (-severities[i + 1], ids[i + 1])
+
+
+# ---------------------------------------------------------------------------
+# Rollup (Concern B fix): parent capabilities inherit worst descendant verdict
+# via the contains relationship. This is the DECLARATIVE fix — no code, just
+# rollup.via=contains, category=B, strategy=worst-child in the WalkSpec.
+# ---------------------------------------------------------------------------
+
+
+def _cards_by_id(walk_output):
+    return {c["entity_id"]: c for c in walk_output["cards"]}
+
+
+def test_rollup_surfaces_child_verdicts_to_parent(model, walk_output):
+    """For every CAP-A contains CAP-B edge, if CAP-B has a worse verdict than
+    CAP-A's local verdict, CAP-A's post-rollup verdict MUST be at least as
+    severe as CAP-B's."""
+    from architecture_model.walks.verdict import VERDICT_SEVERITY, Verdict
+
+    def sev(v):
+        try:
+            return VERDICT_SEVERITY[Verdict(v)]
+        except (KeyError, ValueError):
+            return -1
+
+    cards = _cards_by_id(walk_output)
+    cap_ids = {c["id"] for c in model["entities"].get("capabilities", [])}
+    contains = [
+        r for r in model.get("relationships", [])
+        if r.get("type") == "contains"
+        and r.get("from") in cap_ids
+        and r.get("to") in cap_ids
+    ]
+    assert contains, "test fixture requires at least one CAP contains CAP edge"
+
+    for r in contains:
+        parent, child = r["from"], r["to"]
+        if parent not in cards or child not in cards:
+            continue
+        pv, cv = cards[parent]["verdict"], cards[child]["verdict"]
+        assert sev(pv) >= sev(cv), (
+            f"rollup failed: parent {parent}={pv} (sev {sev(pv)}) should be "
+            f">= worst child {child}={cv} (sev {sev(cv)})"
+        )
+
+
+def test_rollup_notes_recorded_on_parents_with_children(model, walk_output):
+    """Every CAP that has CAP children in the model MUST carry a rollup note."""
+    cards = _cards_by_id(walk_output)
+    cap_ids = {c["id"] for c in model["entities"].get("capabilities", [])}
+    parents_with_cap_kids = {
+        r["from"] for r in model.get("relationships", [])
+        if r.get("type") == "contains"
+        and r.get("from") in cap_ids
+        and r.get("to") in cap_ids
+    }
+    for pid in parents_with_cap_kids:
+        if pid not in cards:
+            continue
+        notes = cards[pid].get("rollup_notes", [])
+        assert notes, f"parent cap {pid} missing rollup_notes"
+        assert any("via contains" in n for n in notes), (
+            f"parent {pid} rollup_notes lack 'via contains': {notes}"
+        )
+
+
+def test_rollup_leaves_childless_caps_unchanged(model, walk_output):
+    """CAPs with no CAP children carry no rollup notes."""
+    cards = _cards_by_id(walk_output)
+    cap_ids = {c["id"] for c in model["entities"].get("capabilities", [])}
+    has_cap_children = {
+        r["from"] for r in model.get("relationships", [])
+        if r.get("type") == "contains"
+        and r.get("from") in cap_ids
+        and r.get("to") in cap_ids
+    }
+    childless = cap_ids - has_cap_children
+    for cid in childless:
+        if cid not in cards:
+            continue
+        notes = cards[cid].get("rollup_notes", [])
+        assert not notes, f"childless cap {cid} unexpectedly has rollup_notes={notes}"
+
+
+# ---------------------------------------------------------------------------
+# Concern B demonstration: on a synthetic model where a parent is LOCALLY
+# ready-to-code (has realizer, no open promises) but a child is NOT,
+# rollup MUST flip the parent's verdict. This proves the substrate delivers
+# the rollup value the legacy flat walk cannot.
+# ---------------------------------------------------------------------------
+
+
+def test_rollup_concern_b_surfaces_parent_that_would_be_ready():
+    synthetic_model = {
+        "entities": {
+            "capabilities": [
+                {
+                    "id": "CAP-PARENT",
+                    "name": "parent",
+                    "promises": [],
+                },
+                {
+                    "id": "CAP-CHILD",
+                    "name": "child",
+                    "promises": [
+                        {"id": "PR-open", "status": "open", "attribute": "intent"},
+                    ],
+                },
+            ],
+            "components": [
+                {"id": "COMP-A", "name": "a"},
+                {"id": "COMP-B", "name": "b"},
+            ],
+        },
+        "relationships": [
+            # Both caps have a realizer, so LOCALLY both are non-needs-enrichment.
+            {"from": "COMP-A", "to": "CAP-PARENT", "type": "realizes"},
+            {"from": "COMP-B", "to": "CAP-CHILD", "type": "realizes"},
+            # Parent contains child.
+            {"from": "CAP-PARENT", "to": "CAP-CHILD", "type": "contains"},
+        ],
+    }
+    spec = load_walk_spec(SPEC_PATH)
+    out = run_walk(spec, synthetic_model)
+    cards = {c["entity_id"]: c for c in out["cards"]}
+
+    # Child: has realizer + open promise -> needs-validation.
+    assert cards["CAP-CHILD"]["verdict"] == "needs-validation"
+
+    # Parent: has realizer + no open promises -> would be ready-to-code LOCALLY,
+    # but rollup via contains inherits child's needs-validation.
+    assert cards["CAP-PARENT"]["verdict"] == "needs-validation", (
+        "Concern B failure: parent should inherit child's non-ok verdict via "
+        f"rollup, got {cards['CAP-PARENT']['verdict']}"
+    )
+    # And it MUST carry a rollup note recording the propagation.
+    notes = cards["CAP-PARENT"].get("rollup_notes", [])
+    assert any("worst-child" in n and "via contains" in n for n in notes), (
+        f"parent missing rollup provenance note; got {notes}"
+    )
