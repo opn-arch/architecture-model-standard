@@ -726,11 +726,11 @@ entities:
       owner_entity: CAP-WK.direction-lint
       delivered_from: null
       verified_by:
-      - scripts/build_v3_viewer.py:_lint_edge_note_directions
-      - .architecture/model/walks/direction-lint.v3.yaml
+      - src/architecture_model/walks/meta/direction_lint.py
+      - tests/walks/test_meta_direction_lint.py
       status: verified
       gap_type: null
-      provenance: Retrofit pilot (Part 4 step 1).
+      provenance: Retrofit pilot (Part 4 step 1); Part 8 migrated to walks/meta/.
   - id: CAP-WK.unrealized-cap
     name: walk_unrealized_capability
     promises:
@@ -835,10 +835,12 @@ entities:
       - "Ceremony walk (Q6=c) emits a diff of candidate Category B -> Category C attribute promotions for human/LLM confirmation. Reads specification-tier attributes (goals, requirements, success-criteria) and identifies those that satisfy the promise criteria (observable, testable, contract-shaped, exposed on an interface)."
       owner_entity: CAP-WK.promotion
       delivered_from: null
-      verified_by: []
-      status: proposed
-      gap_type: not-yet-implemented
-      provenance: Q6=c ceremony mechanism (locked plan).
+      verified_by:
+      - .architecture/model/walks/promotion.v3.yaml
+      - tests/walks/test_pilot_promotion.py
+      status: verified
+      gap_type: null
+      provenance: Q6=c ceremony mechanism (locked plan); Part 8 declarative WalkSpec.
   - id: CAP-WK.constraint-impact
     name: walk_constraint_impact
     promises:

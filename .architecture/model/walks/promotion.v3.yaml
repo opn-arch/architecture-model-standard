@@ -1,0 +1,64 @@
+walk:
+  id: WALK-promotion
+  audits:
+    - CAP-WK.promotion
+
+  # Ceremony walk (Q6=c): identify entities whose promises are ready for
+  # Category B -> Category C promotion. Promotion is the human/LLM step
+  # that turns internal specification commitments (proposed promises)
+  # into external contracts (verified promises). This walk buckets
+  # entities by ceremony-readiness so the operator knows where to focus.
+  #
+  # KNOWN LIMITATION (2026-09-18): the classify DSL cannot yet filter
+  # by promise `attribute` name — a `promise_attribute_count:<name>` atom
+  # would let us scope to Category B attrs (goals, requirements,
+  # success_criteria, failure_modes, constraints) specifically. Filed as
+  # L22 follow-on. Whole-entity readiness is a legitimate ceremony
+  # primitive in the meantime.
+  scope:
+    kind: any
+
+  # Structural-tier walk: no graph traversal. Each entity is its own
+  # subgraph root; classify inspects the promises list in isolation.
+  traverse:
+    edges: []
+    direction: outbound
+    depth: 0
+
+  classify:
+    verdicts:
+      # Empty: no promises at all. Author before promotion applies.
+      - name: needs-enrichment
+        when: count:promises == 0
+      # All-verified: promotion complete. Contract-shaped, exposed.
+      - name: ready-to-code
+        when: promise_status_count:verified >= 1 and promise_status_count:proposed == 0 and promise_status_count:open == 0
+      # Proposed content pending ceremony: at least one proposed promise
+      # with no blocking open gaps -> clear promotion candidate.
+      - name: promotion-candidate
+        when: promise_status_count:proposed >= 1 and promise_status_count:open == 0
+      # Mixed with open gaps: cannot promote until validated.
+      - name: needs-validation
+        when: promise_status_count:open >= 1
+      # Fallback: proposed promises alongside a verified baseline —
+      # still ceremony-eligible.
+      - name: promotion-candidate
+        when: promise_status_count:proposed >= 1
+    on_missing_attributes: needs-enrichment
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  # Category B rollup: parent capability inherits worst child status.
+  # Any child promotion-candidate surfaces upward so the ceremony
+  # driver sees the aggregate boundary.
+  rollup:
+    via: contains
+    category: B
+    strategy: worst-child
+
+  emit:
+    card_template: default
+    severity_from: verdict

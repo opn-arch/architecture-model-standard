@@ -399,21 +399,23 @@ def test_constraint_impact_returns_none_when_hop2_empty(bv):
 
 
 # ---------------------------------------------------------------------------
-# _lint_edge_note_directions
+# direction lint — migrated Part 8 to architecture_model.walks.meta.direction_lint
 # ---------------------------------------------------------------------------
 
 def test_direction_linter_clean_on_wellformed(bv):
+    from architecture_model.walks.meta import lint_edge_note_directions
     _, R, *_ = _make_fixture()
     # None of the base-fixture relationships carry notes.
-    assert bv._lint_edge_note_directions(R) == []
+    assert lint_edge_note_directions(R) == []
 
 
 def test_direction_linter_catches_reversed_realizes(bv):
+    from architecture_model.walks.meta import lint_edge_note_directions
     R = [
         {"from": "XY-DUMMY-A", "to": "XY-DUMMY-B", "type": "realizes",
          "note": "XY-DUMMY-A is realized by XY-DUMMY-B"},
     ]
-    warnings = bv._lint_edge_note_directions(R)
+    warnings = lint_edge_note_directions(R)
     assert len(warnings) == 1
     w = warnings[0]
     assert w["type"] == "realizes"
@@ -423,11 +425,12 @@ def test_direction_linter_catches_reversed_realizes(bv):
 
 
 def test_direction_linter_ignores_correct_note(bv):
+    from architecture_model.walks.meta import lint_edge_note_directions
     R = [
         {"from": "COMP-x", "to": "CAP-P", "type": "realizes",
          "note": "COMP-x realizes CAP-P"},
     ]
-    assert bv._lint_edge_note_directions(R) == []
+    assert lint_edge_note_directions(R) == []
 
 
 # ---------------------------------------------------------------------------

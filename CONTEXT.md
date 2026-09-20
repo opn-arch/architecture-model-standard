@@ -888,7 +888,7 @@ and YAML remains source of truth.
 Out of scope (Stage 2+): walk-backend swap, Neo4j Cypher surface,
 compliance-evidence walk.
 
-## Walk substrate (Parts 1–7, 2026-09-18)
+## Walk substrate (Parts 1–8, 2026-09-18)
 
 Walks are first-class capabilities. 13 hand-rolled Python walkers in
 ``scripts/build_v3_viewer.py`` were collapsed to 13 declarative WalkSpec
@@ -919,14 +919,35 @@ lives as a sub-cap under ``CAP-WK`` in ``capabilities.v3.yaml``;
   — Python meta-walk that scans ``.architecture/model/walks/*.v3.yaml``,
   extracts ``audits`` lists, and cross-references the CAP-WK.* sub-cap
   inventory. Emits Cards for covered / uncovered / dangling-ref /
-  duplicate-walk verdicts. Real-repo signal (2026-09-18): 5 covered,
-  2 duplicate-walk (kind-dispatched), 6 uncovered (Part 8 backlog:
-  ``author``, ``direction-lint``, ``note``, ``promotion``, ``save``,
-  ``meta-coverage`` itself).
+  duplicate-walk verdicts.
 - ``.architecture/model/walks/attribute-completeness.v3.yaml`` — pure
   declarative meta-walk that audits promise coverage on every entity
   using ``count:promises`` + ``promise_status_count:{verified,open}``.
   Realizes ``CAP-WK.attribute-completeness``.
+
+**Part 8 additions** (2026-09-18):
+
+- ``architecture_model.walks.meta.lint_edge_note_directions(relationships)``
+  — Python meta-walk retrofitted from ``scripts/build_v3_viewer.py``
+  (helper deleted; single caller updated to import from
+  ``walks.meta``). Audits relationship notes for phrasing that
+  contradicts the stored edge direction (L2/L9 pattern). Realizes
+  ``CAP-WK.direction-lint``.
+- ``.architecture/model/walks/promotion.v3.yaml`` — declarative
+  ceremony walk (Q6=c) that buckets entities by Category B → C
+  promotion readiness using ``promise_status_count:{proposed,verified,
+  open}``. Realizes ``CAP-WK.promotion``. Real-repo signal
+  (2026-09-18): 24 ``ready-to-code``, 8 ``promotion-candidate``,
+  9 ``needs-validation`` on ``capabilities.v3.yaml``.
+- ``author`` / ``note`` / ``save`` sub-caps deferred pending CAP-DF
+  substrate design (no ceremony spec yet).
+
+Coverage after Part 8 (2026-09-18): 6 covered, 2 duplicate-walk
+(kind-dispatched), 5 uncovered. Two of the remaining uncovered are
+Python meta-walks (``direction-lint``, ``meta-coverage``) — the audit
+only sees declarative WalkSpecs. Extending discovery to
+``walks/meta/*.py`` is a follow-on (candidate lesson L22). The other
+three (``author``, ``note``, ``save``) await CAP-DF design.
 
 Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
 Lessons L18–L21 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11

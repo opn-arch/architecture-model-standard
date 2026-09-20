@@ -1119,52 +1119,6 @@ def _mermaid_constraint_impact(
     return "\n".join(lines), sorted(node_ids)
 
 
-def _lint_edge_note_directions(relationships: list) -> list[dict]:
-    """Direction-vs-note linter (L2 lesson from realizes-direction-fix).
-
-    Scans every relationship for note-text patterns that describe the
-    opposite direction of the stored edge. Returns a deterministic list
-    of ``{from, to, type, note, warning}`` dicts. Empty list = clean.
-
-    Patterns caught (case-insensitive on lowercased note):
-      "<X> is realized by <Y>"    on edge X -> realizes -> Y   (expects Y -> X)
-      "<X> depends on <Y>"        on edge Y -> depends-on -> X (expects X -> Y)
-      "<X> is contained in <Y>"   on edge X -> contains -> Y   (expects Y -> X)
-      "<X> exposes <Y>"           on edge Y -> exposes -> X    (expects X -> Y)
-
-    IDs in the note are matched by substring on the stored ``from``/``to``
-    ids, so both bare ids ("CAP-PB") and qualified references
-    ("CAP-PB Extract") trigger the same rule.
-    """
-    warnings: list[dict] = []
-    for r in relationships:
-        f, t, rt = r.get("from"), r.get("to"), r.get("type")
-        note = (r.get("note") or "").lower()
-        if not (f and t and rt and note):
-            continue
-        f_l, t_l = str(f).lower(), str(t).lower()
-
-        rules = [
-            ("realizes",     f"{f_l} is realized by",  f"{t_l} realizes"),
-            ("depends-on",   f"{t_l} depends on",       f"{f_l} depends on"),
-            ("contains",     f"{f_l} is contained",     f"{t_l} contains"),
-            ("exposes",      f"{t_l} exposes",          f"{f_l} exposes"),
-        ]
-        for rule_type, wrong_pattern, right_pattern in rules:
-            if rt != rule_type:
-                continue
-            if wrong_pattern in note and right_pattern not in note:
-                warnings.append({
-                    "from": f, "to": t, "type": rt, "note": r.get("note", ""),
-                    "warning": (
-                        f"note text suggests {rule_type} direction is "
-                        f"reversed (expected {t}->{f})"
-                    ),
-                })
-                break
-    return sorted(warnings, key=lambda w: (w["type"], w["from"], w["to"]))
-
-
 def _realization_skip_reasons(
     entities_by_kind: dict,
     out_edges: dict,
@@ -1748,7 +1702,9 @@ def _build_payload(model_path: Path) -> dict:
 
     # Build-time diagnostics (surface silent-skips + note-vs-edge
     # direction issues so systemic bugs like L9 fire early).
-    direction_warnings = _lint_edge_note_directions(relationships)
+    from architecture_model.walks.meta import lint_edge_note_directions
+
+    direction_warnings = lint_edge_note_directions(relationships)
     skip_reasons = _realization_skip_reasons(entities_by_kind, out_edges, in_edges)
     # 7th walk: constraint compliance audit.
     compliance_gaps = _constraint_compliance_gaps(
