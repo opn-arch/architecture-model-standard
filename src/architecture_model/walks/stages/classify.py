@@ -11,6 +11,8 @@ Predicate DSL (extended from select):
   - count:<attr> > N
   - verified:<attr>         attribute has verified_by paths
   - unverified:<attr>       attribute lacks verified_by paths
+  - promise_status_count:<status> >= N   count promises by status
+  - promise_attribute_count:<name> >= N  count promises by attribute name (L22)
   - combined via " and " / " or "
 """
 
@@ -31,6 +33,9 @@ _COUNT_RE = re.compile(r"count:(\w+)\s*(>=|>|<=|<|==)\s*(\d+)")
 _INBOUND_RE = re.compile(r"inbound_count:([\w-]+)\s*(>=|>|<=|<|==)\s*(\d+)")
 _OUTBOUND_RE = re.compile(r"outbound_count:([\w-]+)\s*(>=|>|<=|<|==)\s*(\d+)")
 _PROMISE_RE = re.compile(r"promise_status_count:(\w+)\s*(>=|>|<=|<|==)\s*(\d+)")
+_PROMISE_ATTR_RE = re.compile(
+    r"promise_attribute_count:([\w-]+)\s*(>=|>|<=|<|==)\s*(\d+)"
+)
 
 
 def _cmp(length: int, op: str, n: int) -> bool:
@@ -94,6 +99,21 @@ def _eval_atom(atom: str, entity: dict[str, Any], subgraph: dict[str, Any] | Non
         count = sum(
             1 for p in (entity.get("promises") or [])
             if isinstance(p, dict) and p.get("status") == status
+        )
+        return _cmp(count, op, n)
+    # Promise-attribute count (L22): filter promises by their `attribute`
+    # field, count matches, apply operator. Unblocks per-attribute
+    # readiness audits (e.g. Category B strict-promotion gate needs
+    # `promise_attribute_count:goals >= 1 and promise_attribute_count:
+    # requirements >= 1 ...`). Counts all statuses — combine with
+    # `promise_status_count` if a status filter is also needed at the
+    # verdict level.
+    m = _PROMISE_ATTR_RE.match(atom)
+    if m:
+        name, op, n = m.group(1), m.group(2), int(m.group(3))
+        count = sum(
+            1 for p in (entity.get("promises") or [])
+            if isinstance(p, dict) and p.get("attribute") == name
         )
         return _cmp(count, op, n)
     m = _COUNT_RE.match(atom)

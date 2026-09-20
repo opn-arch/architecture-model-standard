@@ -949,8 +949,43 @@ only sees declarative WalkSpecs. Extending discovery to
 ``walks/meta/*.py`` is a follow-on (candidate lesson L22). The other
 three (``author``, ``note``, ``save``) await CAP-DF design.
 
+**Part 9 additions** (2026-09-18):
+
+- ``architecture_model.walks.meta.walk_coverage.audit_walk_coverage``
+  gained a ``python_meta_dir: Path | None = None`` parameter (defaults
+  to the package meta dir) and now merges Python meta-walks alongside
+  declarative WalkSpecs. Discovery uses ``discover_python_meta_walks``
+  + ``_extract_module_docstring`` and parses the RST marker
+  ``Realizes \`\`CAP-WK.<id>\`\``` (regex ``r"Realizes\s+``(CAP-WK\.[\w-]+)``"``,
+  ``\s+`` allows newlines). Walk id convention: ``META-<module_stem>``.
+  Closes L22 — meta-coverage now audits itself.
+- ``architecture_model.walks.stages.classify`` gained the
+  ``promise_attribute_count:<name> {>=,>,<=,<,==} N`` DSL atom.
+  Counts promises where ``p.get("attribute") == name`` (status-
+  independent). Enables Category B strict-gate expression without
+  new classifier code.
+- ``.architecture/model/walks/promotion-strict.v3.yaml`` — additive
+  strict-gate ceremony walk. Buckets entities by Category B attribute
+  coverage (``goals``, ``requirements``, ``success_criteria``,
+  ``failure_modes``, ``constraints``) into three verdicts:
+  ``ready-to-code-strict`` (5-attr AND), ``partial-strict`` (5-attr
+  OR), ``insufficient-strict`` (on_missing_attributes). Realizes
+  ``CAP-WK.promotion-strict``. Does NOT rewrite ``promotion.v3.yaml``.
+  Classify DSL predicate engine only supports pure-AND / pure-OR
+  splits (no mixed, no parens); N-of-M "3 of 5" cannot be expressed
+  cleanly, so promotion-strict uses 3 buckets instead of 5.
+- Real-repo signal on ``capabilities.v3.yaml`` (2026-09-18):
+  32 ``insufficient-strict``, 9 ``partial-strict``,
+  0 ``ready-to-code-strict``. Sharp drop from 24 ``ready-to-code``
+  under the loose gate confirms strict gate surfaces genuine
+  specification gaps.
+
+Coverage after Part 9 (2026-09-18): **9 covered**, 2 duplicate-walk,
+**3 uncovered** (``author``, ``note``, ``save`` — all await CAP-DF
+ceremony design in Part 10+).
+
 Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
-Lessons L18–L21 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
+Lessons L18–L22 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
 superseded by L18 and L19 respectively.
 
 <!-- opencode-arch:start -->

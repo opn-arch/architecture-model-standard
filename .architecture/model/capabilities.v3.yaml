@@ -372,6 +372,7 @@ entities:
       - "L19 (2026-09-18 kind-dispatched hops): the informal 'walk kind-per-target' pattern from L8 lands in the substrate as HopSpec.by_kind — a mapping from source-node kind to a sub-HopSpec. Realize splits into 7 WalkSpec YAMLs (one per target kind) because the semantic 2-hop chain differs by kind (behavior→component vs capability→component vs constraint→component). Realization-skip splits into 2 (capability side + component side) to audit both endpoints of realizes. The substrate also gains `silent_skip_when_last_hop_empty` (matches L7's adaptive-skip heuristic) so constraint-impact's hop-2 identical-to-hop-1 case is a declarative concern, not a Python conditional. Formalizes L11 into a substrate feature."
       - "L20 (2026-09-18 classify DSL): the classify stage's predicate DSL (`has:`, `count:`, `verified:`, `inbound_count:`, `outbound_count:`, `promise_status_count:`, joined by `and`/`or`) covers every classifier from the pre-substrate era. WALK-attribute-completeness (Part 7) is a pure-YAML meta-walk that buckets entities by promise coverage using only `count:promises` + `promise_status_count:{verified,open}` — no Python. Custom classifier code is now a code smell: if a classifier can be expressed in the DSL, do it in YAML. If it can't, extending the DSL beats writing a walker (see follow-on: `promise_for:<attribute>` atom)."
       - "L21 (2026-09-18 graph adapter Stage 1): NetworkX MultiDiGraph adapter (`architecture_model.graph.to_networkx`) landed as export-only ahead of the walk-substrate refactor; walks continue to use the dict-based substrate. This proves the graph model can round-trip through a proper graph backend (18/18 export tests + graphml round-trip) without perturbing walk behavior. Stage 2 (walk backend swap to NetworkX) is unblocked once all viewer helpers are declarative. Real-repo export: 1011 nodes / 1086 edges (802 promises + 132 unique evidence URIs promoted). Design decision: promise + evidence promotion runs at export time only — the walk substrate keeps its own promise-aware semantics inside classify."
+      - "L22 (2026-09-18 walk substrate Part 9): meta-coverage audit was invisible to Python-authored meta-walks (only YAML WalkSpecs were discovered), and the classify DSL could not filter promises by ATTRIBUTE NAME (only STATUS via promise_status_count). Both gaps close together: (a) audit_walk_coverage now scans src/architecture_model/walks/meta/*.py for a `Realizes ``CAP-WK.<id>``` docstring marker, treating each match as walk id `META-<module_stem>`, and (b) classify.py gains `promise_attribute_count:<name> {op} N` alongside `promise_status_count`. The gap was visible because Part 8 reported CAP-WK.meta-coverage and CAP-WK.direction-lint as uncovered despite both having Python implementations. The strict-promotion WalkSpec (promotion-strict.v3.yaml) is the first consumer of the new atom — it buckets entities by Category B attribute coverage (goals, requirements, success_criteria, failure_modes, constraints) as a stricter gate than WALK-promotion's status-based ready-to-code. Real-repo signal on capabilities.v3.yaml: 32 insufficient-strict / 9 partial-strict / 0 ready-to-code-strict — genuine specification gap. Lesson: when a walk YAML carries a `KNOWN LIMITATION` comment referencing a missing DSL primitive, that primitive is a schema follow-on, not a permanent constraint. Adding the atom + separate WalkSpec (additive, not rewrite) preserves the loose-gate signal while surfacing the strict-gate signal."
       owner_entity: CAP-DF
       delivered_from: null
       verified_by:
@@ -391,6 +392,10 @@ entities:
       - .architecture/model/walks/attribute-completeness.v3.yaml documents L20
       - src/architecture_model/graph/networkx_adapter.py documents L21
       - docs/graph-export.md documents L21
+      - src/architecture_model/walks/meta/walk_coverage.py implements L22 Python meta-walk discovery
+      - src/architecture_model/walks/stages/classify.py implements L22 promise_attribute_count atom
+      - .architecture/model/walks/promotion-strict.v3.yaml implements L22 strict Category B gate
+      - tests/walks/test_meta_walk_coverage.py::test_python_meta_walks_discovered documents L22
       - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10), _constraint_compliance_gaps (L12-L14), _promise_tier + _evidence_tier_summary (L15), _capability_realization_status + _unrealized_capability_summary + _mermaid_unrealized (L17)
       status: verified
       gap_type: null
@@ -841,6 +846,21 @@ entities:
       status: verified
       gap_type: null
       provenance: Q6=c ceremony mechanism (locked plan); Part 8 declarative WalkSpec.
+  - id: CAP-WK.promotion-strict
+    name: walk_promotion_strict
+    promises:
+    - id: PR-CAP-WK-promotion-strict-intent
+      attribute: intent
+      content:
+      - "Strict Category B -> C promotion audit. Where CAP-WK.promotion buckets by promise STATUS (verified/proposed/open), CAP-WK.promotion-strict buckets by ATTRIBUTE COVERAGE across the Category B specification set (goals, requirements, success_criteria, failure_modes, constraints). An entity is `ready-to-code-strict` only when it carries at least one promise for EVERY Category B attribute. Additive to CAP-WK.promotion — both walks emit distinct signals. Enabled by the L22 `promise_attribute_count:<name>` DSL atom."
+      owner_entity: CAP-WK.promotion-strict
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/promotion-strict.v3.yaml
+      - tests/walks/test_pilot_promotion_strict.py
+      status: verified
+      gap_type: null
+      provenance: Part 9 (2026-09-18) — L22 follow-on completing the KNOWN LIMITATION comment on promotion.v3.yaml.
   - id: CAP-WK.constraint-impact
     name: walk_constraint_impact
     promises:
@@ -1785,6 +1805,9 @@ relationships:
   to: CAP-WK.promotion
   type: contains
 - from: CAP-WK
+  to: CAP-WK.promotion-strict
+  type: contains
+- from: CAP-WK
   to: CAP-WK.constraint-impact
   type: contains
 - from: CAP-WK
@@ -1832,6 +1855,9 @@ relationships:
   to: CAP-DF.1
   type: audits
 - from: CAP-WK.promotion
+  to: CAP-WK
+  type: audits
+- from: CAP-WK.promotion-strict
   to: CAP-WK
   type: audits
 - from: CAP-WK.constraint-impact
