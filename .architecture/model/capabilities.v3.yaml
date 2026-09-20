@@ -775,10 +775,14 @@ entities:
       - Author walk over promise chain producing authored fragments.
       owner_entity: CAP-WK.author
       delivered_from: null
-      verified_by: []
-      status: proposed
+      verified_by:
+      - src/architecture_model/walks/meta/author_promise_note.py
+      - src/architecture_model/walks/meta/_prompt_assembly.py
+      - src/architecture_model/llm/prompts/fill_promise.md
+      - ../opencode-arch/src/opencode_arch/mcp/tools/promise_author.py
+      status: verified
       gap_type: retrofit-pending
-      provenance: Part 4 step 7 (deferred to follow-up commit).
+      provenance: Part 12 CAP-DF ceremony verb — LLM-authored promise content.
   - id: CAP-WK.realize
     name: walk_realize
     promises:

@@ -1038,6 +1038,62 @@ Coverage after Part 10 (2026-09-18): **10 covered**, 2 duplicate-walk,
 Coverage after Part 11 (2026-09-18): **11 covered**, 2 duplicate-walk,
 **1 uncovered** (``author`` — Part 12).
 
+**Part 12 additions** (2026-09-18):
+
+- `src/architecture_model/llm/prompts/fill_promise.md` (new package
+  resource): default prompt template with `{attribute}`, `{entity_id}`,
+  `{entity_kind}`, `{entity_kind_singular}`, `{entity_name}`,
+  `{entity_description}`, `{note_body}`, `{promises_block}`,
+  `{parent_chain}`, `{siblings_block}`, `{relations_block}`
+  placeholders. Optional per-repo override at
+  `.architecture/llm/prompts/fill_promise.md` (checked first by
+  `_prompt_assembly.default_template_body`). One generic template —
+  `{attribute}` interpolation covers all five Category-B attributes.
+- `src/architecture_model/walks/meta/_prompt_assembly.py` (new):
+  `default_template_body(repo_path) -> str` and
+  `assemble_promise_prompt(model, entity_id, attribute, note_body,
+  template) -> str`. Hand-rolled v3-native projector — walks the v3
+  dict directly (no legacy `format_model_context` or
+  `slice_by_entity` call). Deterministic string output; excludes
+  target attribute from `promises_block`; empty sections rendered as
+  `(none)` so digest is stable.
+- `src/architecture_model/walks/meta/author_promise_note.py` (new
+  Python meta-walk, ``Realizes ``CAP-WK.author```):
+  `author_promise_note(repo_path, job_id, provider) -> Proposal`.
+  Pure walk (no MCP concerns, no journal writes). Loads Job, verifies
+  `state == queued`, loads WorkOrder + CommentStub, resolves entity
+  from v3 model (fallback path
+  `.architecture/model/capabilities.v3.yaml` when `load_v3_model`
+  returns nothing under `repo_path`), assembles prompt, calls
+  `provider.structured(prompt, schema=ModelPatchSchema)`, wraps
+  response in a `Proposal` with `ModelPatch` operations and
+  `Provenance(work_order_id, prompt_digest=sha256(prompt),
+  model_version="v3")`. Errors: `AuthorPromiseError` base +
+  `JobNotQueuedError`, `WorkOrderMissingError`, `CommentMissingError`,
+  `NotAPromiseNoteError`, `EntityNotFoundError`,
+  `ProviderResponseError`. Tier T2 (LLM call).
+- Job state chain (Part 12 executes): `queued → running → validating
+  → completed`. Terminal `completed` transition requires
+  `result_ref = "proposal:<proposal_id>"`. Actor `"promise_author"`.
+  Part 11 amendment (committed OCA `2a8ad2e`) auto-advances
+  `draft → approved → queued` at save time so Part 12's walk starts
+  from a queued job with no user intervention required.
+- Provider registry pattern (Task 4, in OCA):
+  `_PROVIDER_REGISTRY = {"none": lambda: None}` at MCP tool boundary.
+  Default `provider_name="none"` → `PRECONDITION_FAILED reason=
+  no_provider`. Real providers (mock, mcp, frontier, relay) register
+  via monkeypatch in tests and via OCA's own bootstrap in production.
+  The walk itself is provider-agnostic — takes any `LLMProvider`
+  Protocol implementation.
+- `.architecture/model/capabilities.v3.yaml`:
+  ``PR-CAP-WK-author-intent`` flipped ``proposed`` → ``verified`` with
+  4 ``verified_by`` entries (walk, prompt assembly, template, tests).
+
+Coverage after Part 12 (2026-09-18): **12 covered**, 2 duplicate-walk,
+**0 uncovered**. CAP-DF ceremony `note → save → author → apply` is
+now end-to-end wired; `apply` uses the existing
+`architect_proposal_apply` MCP tool.
+
 Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
 Lessons L18–L22 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
 superseded by L18 and L19 respectively.
