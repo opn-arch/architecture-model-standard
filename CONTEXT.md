@@ -984,6 +984,30 @@ Coverage after Part 9 (2026-09-18): **9 covered**, 2 duplicate-walk,
 **3 uncovered** (``author``, ``note``, ``save`` — all await CAP-DF
 ceremony design in Part 10+).
 
+**Part 10 additions** (2026-09-18):
+
+- `src/architecture_model/comments/models.py`: added `PromiseTarget`
+  pydantic model (frozen, ``extra="forbid"``, entity_id + attribute) and
+  optional ``target: PromiseTarget | None`` field on ``CommentStub``.
+  Additive — existing stubs without ``target`` continue to parse.
+- `src/architecture_model/walks/meta/promise_note.py` (new Python
+  meta-walk, ``Realizes ``CAP-WK.note```): ``note_promise(repo_path,
+  model, entity_id, attribute, text, author, now=None) -> CommentStub``.
+  Validates target against v3 model, derives deterministic
+  ``comment_id`` (sha1 of entity|attr|body|author|iso-time), persists
+  via ``comments.store.write_stub`` with sentinel view-scope fields
+  (``artifact_id="promise-note:<entity>:<attr>"``, other view fields
+  fixed sentinel). Tier T1 (no LLM).
+- `.architecture/model/capabilities.v3.yaml`: ``PR-CAP-WK-note-intent``
+  flipped ``proposed`` → ``verified`` with verified_by wires.
+- `../opencode-arch/src/opencode_arch/mcp/tools/promise_note.py` (new
+  MCP tool): ``architect_promise_note`` envelope wrapper. Error codes:
+  INVALID_ARGUMENT | NOT_FOUND (repo_missing | model_missing) |
+  PRECONDITION_FAILED (unknown_entity | unknown_attribute) | INTERNAL.
+
+Coverage after Part 10 (2026-09-18): **10 covered**, 2 duplicate-walk,
+**2 uncovered** (``save``, ``author`` — Parts 11–12).
+
 Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
 Lessons L18–L22 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
 superseded by L18 and L19 respectively.

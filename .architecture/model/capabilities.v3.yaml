@@ -811,13 +811,17 @@ entities:
     - id: PR-CAP-WK-note-intent
       attribute: intent
       content:
-      - Viewer-annotation walk producing note payloads.
+      - Promise-scoped note walk. Attaches a comment to a specific (entity_id, attribute) promise slot on a v3 architecture model, persisting it via the existing comments/store substrate. Tier T1 (no LLM). Enables the L13 loop's `note` step at promise granularity.
       owner_entity: CAP-WK.note
       delivered_from: null
-      verified_by: []
-      status: proposed
-      gap_type: retrofit-pending
-      provenance: Part 4 step 5 (deferred to follow-up commit).
+      verified_by:
+      - src/architecture_model/walks/meta/promise_note.py
+      - src/architecture_model/comments/models.py
+      - tests/walks/meta/test_promise_note.py
+      - tests/comments/test_promise_target.py
+      status: verified
+      gap_type: null
+      provenance: Part 10 (2026-09-18) — CAP-DF ceremony ships note as Python meta-walk over comments/store.
   - id: CAP-WK.save
     name: walk_save
     promises:

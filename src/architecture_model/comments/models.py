@@ -22,6 +22,20 @@ class IssueRef(BaseModel):
     synced_at: Optional[datetime] = None
 
 
+class PromiseTarget(BaseModel):
+    """Pointer to a specific promise slot on a v3 entity.
+
+    Used by CAP-WK.note (Part 10) to attach comments to (entity_id,
+    attribute) tuples rather than freeform bodies. Additive: existing
+    stubs without a `target` field continue to parse unchanged.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    entity_id: str = Field(..., min_length=1)
+    attribute: str = Field(..., min_length=1)
+
+
 class CommentStub(BaseModel):
     """Local, authoritative record of a user comment on a lifecycle-rendered view."""
 
@@ -38,6 +52,7 @@ class CommentStub(BaseModel):
     author: str
     created_at: datetime
     issue_ref: Optional[IssueRef] = None
+    target: Optional[PromiseTarget] = None
 
     @field_validator("body")
     @classmethod
