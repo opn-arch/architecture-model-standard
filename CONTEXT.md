@@ -1179,6 +1179,56 @@ Coverage after Part 14 (2026-09-18): unchanged **13 covered**,
 2 duplicate-walk, **0 uncovered** (substrate hardening; no walk
 added).
 
+**Part 15 additions** (2026-09-18):
+
+- `src/architecture_model/feedback/llm_calls.py` (new): append-only
+  journal at `<repo>/.architecture/llm_calls.jsonl`. `append(repo,
+  record, endpoint_id="", task_class="") -> bool` uses `O_APPEND |
+  O_CREAT | O_WRONLY` + `fsync`, is fail-soft (returns `False` on any
+  error; never raises), and honors `AMS_DETERMINISTIC_NOW` for the
+  fallback timestamp. `read(repo) -> list[dict]` returns `[]` when
+  the file is absent and silently skips malformed lines. Mirrors the
+  `feedback/gates.py` + `feedback/drift.py` pattern. Reuses the
+  existing `LLMCallRecord` dataclass at `pipeline/protocol.py:269` —
+  the `endpoint_id` and `task_class` overlay fields are omitted from
+  JSON when empty so pre-Part-15 records stay byte-identical.
+- `src/architecture_model/walks/meta/prompt_refiner.py` (new Python
+  meta-walk, ``Realizes ``CAP-WK.prompt-refinement```):
+  `refine_prompts(repo_path) -> RefinerReport`. Reads the journal
+  plus optional `.architecture/llm/endpoints.yaml` and emits one
+  `PromptTemplateCard(template_id, verdict, details)` per template.
+  Verdicts:
+  * `high-failure` — `output_used=False` rate ≥ `HIGH_FAILURE_RATE`
+    (0.30) over ≥ `HIGH_FAILURE_MIN_CALLS` (3) calls.
+  * `high-cost` — median `total_tokens` ≥ `HIGH_COST_MULTIPLE` (4.0)
+    × overall median over ≥ `HIGH_COST_MIN_CALLS` (3) calls.
+  * `unused` — declared endpoint with zero journal entries.
+  * `stable` — declared+present or observed with no flag.
+  Thresholds are module constants. Endpoint discovery falls back to
+  the `task_class` field when `prompt_template` is absent on an
+  endpoint entry (accommodates the Part 13 shape).
+- `.architecture/model/capabilities.v3.yaml`:
+  ``CAP-WK.prompt-refinement`` sub-cap added after
+  ``CAP-WK.llm-endpoint-inventory``; ``PR-CAP-WK-prompt-refinement-intent``
+  flipped ``proposed`` → ``verified`` with 4 ``verified_by`` entries
+  (walk, journal writer, walk tests, journal tests).
+
+**Part 15 test surface** (AMS): 8 tests in
+`tests/feedback/test_llm_calls_journal.py` (create-on-demand,
+round-trip, endpoint/task_class overlay, empty-field elision,
+missing-file empty read, fail-soft on unwritable, append-never-
+truncates, malformed-line skip); 9 tests in
+`tests/walks/meta/test_prompt_refiner.py` (empty inputs, stable,
+high-failure, min-sample gating, high-cost, unused declared,
+declared+present endpoint_id passthrough, counts aggregation,
+docstring marker present). Baseline **4334 → 4351 passed**.
+
+Coverage after Part 15 (2026-09-18): **14 covered**, 2 duplicate-walk,
+**0 uncovered** on `capabilities.v3.yaml`. Part 15 closes the CAP-DF
+Part 13–15 arc; OCA provider-adapter journal wiring is a follow-on
+task (see JIT plan
+`docs/plans/2026-09-18-cap-df-part-15-llm-journal-and-refiner-plan.md`).
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 

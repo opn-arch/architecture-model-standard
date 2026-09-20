@@ -965,6 +965,31 @@ entities:
       status: verified
       gap_type: null
       provenance: Part 13 (2026-09-18) — CAP-DF ceremony L2 endpoint coverage audit.
+  - id: CAP-WK.prompt-refinement
+    name: walk_prompt_refinement
+    promises:
+    - id: PR-CAP-WK-prompt-refinement-intent
+      attribute: intent
+      content:
+      - Meta-walk that analyzes the append-only LLM call journal
+        (.architecture/llm_calls.jsonl) and the declared endpoint
+        inventory (.architecture/llm/endpoints.yaml) to classify each
+        prompt template by observed quality. Emits per-template Cards
+        with verdicts stable / high-failure (>=30% output_used=False
+        over >=3 calls) / high-cost (median tokens >=4x overall median
+        over >=3 calls) / unused (declared but zero journal entries).
+        Deterministic thresholds live as module constants. Pure Tier T1
+        walk (no LLM call).
+      owner_entity: CAP-WK.prompt-refinement
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/prompt_refiner.py
+      - src/architecture_model/feedback/llm_calls.py
+      - tests/walks/meta/test_prompt_refiner.py
+      - tests/feedback/test_llm_calls_journal.py
+      status: verified
+      gap_type: null
+      provenance: Part 15 (2026-09-18) — CAP-DF ceremony LLM journal + refiner.
   behaviors:
   - id: BEH-run-pipeline
     name: run_extraction_pipeline_end_to_end
