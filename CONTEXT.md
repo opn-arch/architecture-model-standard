@@ -1131,6 +1131,54 @@ superseded by L18 and L19 respectively.
 Coverage after Part 13 (2026-09-18): **13 covered**, 2 duplicate-walk,
 **0 uncovered**. Part 13 is AMS-only; no OCA changes required.
 
+**Part 14 additions** (2026-09-18):
+
+- `../opencode-arch/src/opencode_arch/llm/bundle.py` (new): `Bundle`
+  dataclass + `BundleScheduler.schedule(work_orders) -> list[Bundle]`
+  + `dispatch_bundle(bundle, provider) -> dict[wo_id, result]`. Groups
+  WorkOrders by `(task_class, provider, model, tier, prompt_template)`
+  where task_class is derived from intent prefix via
+  `TASK_CLASS_BY_INTENT_PREFIX`. Tier caps: T1=1 (never bundle),
+  T2=10, T3=3. Cost cap splits bundle when `sum(estimated_cost) >
+  rule.max_cost_usd_per_call * bundle_size` (only active when
+  `unit_cost_usd_per_token > 0`, default 0.0). Batched prompt shape:
+  numbered items with JSON demux keys `"1"..."N"`; missing/malformed
+  items omitted from results (per-item retry is caller's
+  responsibility).
+- `../opencode-arch/src/opencode_arch/llm/policy.py` (edit):
+  `RoutingRule.tier: str = "T2"` field added (additive; existing
+  fixtures parse unchanged). `load_policy` reads optional `tier:` key
+  from each rule spec, defaults to `"T2"`.
+- `../opencode-arch/.architecture/llm/policy.yaml` (new): declares 8
+  task classes matching master design taxonomy — `naming`,
+  `enrichment`, `review`, `authoring`, `diff`, `gate`,
+  `decomposition`, `merge`. All ship pointing at `mock` provider so
+  nothing accidentally hits a paid API; users edit post-install to
+  activate real providers. `global_budget_usd: 10.0`,
+  `retry_backoff: [1.0, 2.0, 4.0]`.
+- `../opencode-arch/src/opencode_arch/mcp/tools/promise_author.py`
+  (edit): new optional `job_ids: list[str] | None = None` parameter.
+  When present, dispatches each job through the batch path
+  (`_architect_promise_author_batch`) and returns
+  `{ok: True, results: [{job_id, ok, proposal_id?, work_order_id?,
+  error?}, ...]}`. Single-job path (`job_id=...`) unchanged for
+  backward-compat. First cut iterates single-job dispatches inside
+  the batch call — true one-round-trip batched provider calls
+  require hoisting the prompt-assembly step out of `author_promise_note`
+  (deferred to Part 15 alongside LLMCallRecord).
+
+**Part 14 test surface** (OCA): 19 tests in
+`tests/llm/test_bundle_scheduler.py` (grouping, tier caps, cost
+splits, prompt shape, dispatch demux, malformed-item degrade, Bundle
+invariants); 5 tests in `tests/mcp/test_promise_author_batch.py`
+(batch happy path, mixed success/failure, empty-list rejection,
+non-string rejection, single-job backward-compat). Baseline
+1081 → **1105 passed**.
+
+Coverage after Part 14 (2026-09-18): unchanged **13 covered**,
+2 duplicate-walk, **0 uncovered** (substrate hardening; no walk
+added).
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 
