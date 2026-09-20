@@ -1098,6 +1098,39 @@ Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
 Lessons L18–L22 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
 superseded by L18 and L19 respectively.
 
+**Part 13 additions** (2026-09-18):
+
+- `src/architecture_model/walks/meta/llm_endpoint_inventory.py` (new
+  Python meta-walk, ``Realizes ``CAP-WK.llm-endpoint-inventory```):
+  `audit_llm_endpoints(repo_path, oca_path=None) -> InventoryReport`.
+  AST-based cross-repo audit of LLM integration points across AMS +
+  OCA. Detects six call patterns via `ast.walk` on attribute-name-only
+  match (receivers ignored): `provider.complete`, `provider.structured`,
+  `provider.stream`, `ctx.llm_enrich`, `llm_callback(...)` (bare call),
+  `run_via_policy`. Scans `src/` only (not tests/scripts). Endpoint id
+  form: `<repo_slug>:<posix_relpath>:<lineno>` where `repo_slug` is
+  the last path component of the repo root.
+- `.architecture/llm/endpoints.yaml` (declared inventory): top-level
+  `endpoints:` list with fields `{id, location, kind, task_class,
+  tier, migration_status, description}`. Ships with 29 declared
+  endpoints (13 AMS + 16 OCA) matching AST-derived ids.
+- `EndpointCard` dataclass with four verdicts: `covered` (declared
+  and detected), `undeclared` (detected but not declared), `stale`
+  (declared but not detected), `legacy` (overrides `covered` when
+  `migration_status == "legacy"`). `InventoryReport` carries
+  `{cards, counts}` where counts is a `dict[verdict, int]`.
+- Silent-skip on missing OCA sibling: emits informational
+  `__meta__:oca_missing` card (no raise). AMS-only usage is a
+  supported mode.
+- `.architecture/model/capabilities.v3.yaml`:
+  ``CAP-WK.llm-endpoint-inventory`` sub-cap added after
+  ``CAP-WK.attribute-completeness``; ``PR-CAP-WK-llm-endpoint-inventory-intent``
+  flipped ``proposed`` → ``verified`` with 3 ``verified_by`` entries
+  (walk, endpoints.yaml, tests).
+
+Coverage after Part 13 (2026-09-18): **13 covered**, 2 duplicate-walk,
+**0 uncovered**. Part 13 is AMS-only; no OCA changes required.
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 

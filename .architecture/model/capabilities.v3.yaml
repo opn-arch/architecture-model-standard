@@ -942,6 +942,29 @@ entities:
       status: verified
       gap_type: null
       provenance: Part 7 (2026-09-18) — meta-walk substrate.
+  - id: CAP-WK.llm-endpoint-inventory
+    name: walk_llm_endpoint_inventory
+    promises:
+    - id: PR-CAP-WK-llm-endpoint-inventory-intent
+      attribute: intent
+      content:
+      - Meta-walk that audits LLM integration endpoints across AMS + OCA
+        source trees. AST-scans for six call-site patterns
+        (provider.complete/structured/stream, ctx.llm_enrich,
+        llm_callback, run_via_policy) and cross-references against a
+        declared inventory at .architecture/llm/endpoints.yaml. Emits
+        per-endpoint Cards with verdicts covered / undeclared / stale /
+        legacy. Cross-repo — OCA discovered as sibling directory with
+        silent-skip when absent. Pure Tier T1 walk (no LLM call).
+      owner_entity: CAP-WK.llm-endpoint-inventory
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/llm_endpoint_inventory.py
+      - .architecture/llm/endpoints.yaml
+      - tests/walks/meta/test_llm_endpoint_inventory.py
+      status: verified
+      gap_type: null
+      provenance: Part 13 (2026-09-18) — CAP-DF ceremony L2 endpoint coverage audit.
   behaviors:
   - id: BEH-run-pipeline
     name: run_extraction_pipeline_end_to_end
