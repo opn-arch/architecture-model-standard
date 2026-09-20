@@ -1008,6 +1008,36 @@ ceremony design in Part 10+).
 Coverage after Part 10 (2026-09-18): **10 covered**, 2 duplicate-walk,
 **2 uncovered** (``save``, ``author`` — Parts 11–12).
 
+**Part 11 additions** (2026-09-18):
+
+- `src/architecture_model/walks/meta/save_promise_note.py` (new Python
+  meta-walk, ``Realizes ``CAP-WK.save```): ``save_promise_note(
+  repo_path, comment_id, requested_by, now=None, parameters=None) ->
+  WorkOrder``. Loads a promise note via ``comments.store.load_stub``,
+  refuses stubs without ``target``, builds a WorkOrder with
+  ``intent="fill_promise:<entity>:<attr>"``,
+  ``expected_proposal_kinds=[MODEL_PATCH]``, T2 budget
+  (max_tokens=8000, max_wall_seconds=120), a single synthetic
+  ``SliceRef(slice_id="promise-slot:<entity>:<attr>",
+  model_revision=<current gen or "0000000">)`` (Option A —
+  materialization deferred to Part 12), and parameters
+  ``{kind: "fill_promise", entity_id, attribute, source_comment_id,
+  note_body}``. Tier T1 (no LLM); the enqueued Job is what Part 12's
+  author walk later executes.
+- `.architecture/model/capabilities.v3.yaml`: ``PR-CAP-WK-save-intent``
+  flipped ``proposed`` → ``verified`` with verified_by wires.
+- `../opencode-arch/src/opencode_arch/mcp/tools/promise_save.py` (new
+  MCP tool): ``architect_promise_save`` envelope wrapper. Persists the
+  WorkOrder atomically, creates a tracking Job via ``JobStore.create``,
+  and records an ``ai.workorder.submit`` journal event — reuses the
+  same primitives as ``architect_workorder_submit_tool``. Error codes:
+  INVALID_ARGUMENT | NOT_FOUND (repo_missing) | PRECONDITION_FAILED
+  (comment_missing | not_a_promise_note | already_exists) |
+  SCHEMA_VIOLATION | INTERNAL.
+
+Coverage after Part 11 (2026-09-18): **11 covered**, 2 duplicate-walk,
+**1 uncovered** (``author`` — Part 12).
+
 Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
 Lessons L18–L22 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
 superseded by L18 and L19 respectively.

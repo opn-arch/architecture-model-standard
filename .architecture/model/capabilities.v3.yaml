@@ -828,13 +828,15 @@ entities:
     - id: PR-CAP-WK-save-intent
       attribute: intent
       content:
-      - Note → walk-author closure trigger.
+      - Save-promise-note walk. Reads a promise note (CommentStub with PromiseTarget) and constructs a WorkOrder with intent="fill_promise:<entity>:<attr>" and parameters describing the promise slot to fill. Persistence + Job creation happen in the OCA MCP tool architect_promise_save which reuses the existing WorkOrder store + JobStore + Journal primitives. Tier T1 (no LLM); the enqueued Job is what Part 12's author walk later executes.
       owner_entity: CAP-WK.save
       delivered_from: null
-      verified_by: []
-      status: proposed
-      gap_type: retrofit-pending
-      provenance: Part 4 step 6 (deferred to follow-up commit).
+      verified_by:
+      - src/architecture_model/walks/meta/save_promise_note.py
+      - tests/walks/meta/test_save_promise_note.py
+      status: verified
+      gap_type: null
+      provenance: Part 11 (2026-09-18) — CAP-DF ceremony ships save as Python meta-walk over comments/store + ai/work_order.
   - id: CAP-WK.promotion
     name: walk_promotion
     promises:
