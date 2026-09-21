@@ -2,8 +2,8 @@ meta:
   schema_version: '3.0'
   project: architecture-model-standard
   generated_by: pipeline_v3
-  generated_at: '2026-09-21T07:39:49Z'
-  source_root: .
+  generated_at: '2026-09-21T08:40:25Z'
+  source_root: /Users/baigm2/Documents/Projects/architecture-model-standard
 entities:
   components:
   - id: COMP-1896b055
@@ -8752,9 +8752,11 @@ entities:
     - src.architecture_model.pipeline_v3.adapters.legacy_pipeline
     - src.architecture_model.pipeline_v3.cluster
     - src.architecture_model.pipeline_v3.containerize
+    - src.architecture_model.pipeline_v3.derive_attributes_llm
     - src.architecture_model.pipeline_v3.derive_behaviors
     - src.architecture_model.pipeline_v3.derive_promises
     - src.architecture_model.pipeline_v3.derive_triggers
+    - src.architecture_model.pipeline_v3.ingest_requirements
     - src.architecture_model.pipeline_v3.link
     - src.architecture_model.pipeline_v3.orchestrator
     - src.architecture_model.pipeline_v3.publish
@@ -8767,6 +8769,17 @@ entities:
     - src.architecture_model.pipeline_v3.substrate.stage
     - src.architecture_model.pipeline_v3.verify
     promises:
+    - id: PR-03c59eec9e8c
+      attribute: delivers
+      content:
+      - derive_attributes
+      owner_entity: COMP-c5a72728
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.derive_attributes_llm;
+        via=pipeline_v3.derive_promises
     - id: PR-147a237f2f62
       attribute: delivers
       content:
@@ -8891,6 +8904,18 @@ entities:
       gap_type: null
       provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.cluster;
         via=pipeline_v3.derive_promises
+    - id: PR-ccc5c84e341d
+      attribute: delivers
+      content:
+      - ingest_requirements
+      - scan_docs
+      owner_entity: COMP-c5a72728
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.ingest_requirements;
+        via=pipeline_v3.derive_promises
     - id: PR-cf0f350e5f08
       attribute: delivers
       content:
@@ -8936,6 +8961,30 @@ entities:
       status: open
       gap_type: null
       provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.verify;
+        via=pipeline_v3.derive_promises
+    - id: PR-2640925fc171
+      attribute: intent
+      content: "R8 — Requirements ingestion from documentation.\n\nScans authored\
+        \ documentation (reports, plans, top-level CONTEXT/README)\nand attaches doc-sourced\
+        \ requirements to model entities as promises.\n\nThree binding layers:\n \
+        \   * Layer 1 (deterministic, verified): YAML frontmatter ``binds_to:``,\n\
+        \      inline HTML comment ``<!-- binds: ID -->``, or heading anchor\n   \
+        \   ``{#ID}``.\n    * Layer 2 (deterministic, verified): exact match between\
+        \ the\n      section heading (case-insensitive, punctuation-normalized) and\n\
+        \      an entity name.\n    * Layer 3 (LLM, proposed): fuzzy heading matched\
+        \ via an\n      ``LLMProvider.structured`` call; only fires when the heading\n\
+        \      shares at least one token with a candidate entity's name.\n      Confidence\
+        \ threshold configurable (default 0.75).\n\nDesign: ``docs/plans/2026-09-20-r8-requirements-ingestion-design.md``.\n\
+        \nIdempotency:\n    * ``verified`` promises for ``requirements`` are preserved.\n\
+        \    * ``proposed`` promises for ``requirements`` are wiped before\n     \
+        \ re-ingest (both R7 guesses and prior R8 Layer-3 output).\n    * ``open``\
+        \ / ``typed-gap`` / other-attribute promises untouched."
+      owner_entity: COMP-c5a72728
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.ingest_requirements;
         via=pipeline_v3.derive_promises
     - id: PR-3b2d68bad421
       attribute: intent
@@ -9334,6 +9383,27 @@ entities:
       gap_type: null
       provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.containerize;
         via=pipeline_v3.derive_promises
+    - id: PR-ba295c261b5d
+      attribute: intent
+      content: "R7 — LLM-based Category B attribute inference stage for pipeline_v3.\n\
+        \nOptional pipeline stage that proposes goals / requirements /\nsuccess_criteria\
+        \ / failure_modes / constraints as ``status=proposed``\npromises using an\
+        \ LLM provider. Gated behind\n``run_pipeline(infer_attributes=True)``.\n\n\
+        Design: ``docs/plans/2026-09-20-r7-llm-attribute-inference-design.md``.\n\n\
+        Idempotency policy:\n    * Skip entities that already carry a ``verified``\
+        \ promise for the\n      target attribute.\n    * Replace any existing ``proposed``\
+        \ promises for the target attribute.\n    * ``open``, ``typed-gap``, and ``intent``\
+        \ promises are preserved.\n\nFailure model:\n    * A provider raise for a\
+        \ single (entity, attribute) pair leaves that\n      pair unchanged; the rest\
+        \ of the pass continues.\n    * A malformed provider response is treated as\
+        \ an empty proposal."
+      owner_entity: COMP-c5a72728
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.derive_attributes_llm;
+        via=pipeline_v3.derive_promises
     - id: PR-c40cd79d9664
       attribute: intent
       content: "pipeline_v3.adapters.legacy_pipeline — v3→2.x model converter (T0.14\
@@ -9449,6 +9519,18 @@ entities:
       status: open
       gap_type: null
       provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.substrate;
+        via=pipeline_v3.derive_promises
+    - id: PR-0f48d619c4d1
+      attribute: provides
+      content:
+      - AttributeInferenceRequest
+      - AttributeInferenceResult
+      owner_entity: COMP-c5a72728
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.derive_attributes_llm;
         via=pipeline_v3.derive_promises
     - id: PR-1c9eec4e61e0
       attribute: provides
@@ -9585,6 +9667,17 @@ entities:
       status: typed-gap
       gap_type: no-public-classes
       provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.verify;
+        via=pipeline_v3.derive_promises
+    - id: PR-d3e1018a9e5a
+      attribute: provides
+      content:
+      - DocSection
+      owner_entity: COMP-c5a72728
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.containerize; src=src.architecture_model.pipeline_v3.ingest_requirements;
         via=pipeline_v3.derive_promises
     - id: PR-d8918f9711d8
       attribute: provides
@@ -12438,6 +12531,22 @@ entities:
       status: open
       gap_type: null
       provenance: pipeline_v3.derive_behaviors
+  - id: BEH-2ed076ce
+    name: scan_docs
+    description: Walk configured doc roots and return a flat list of DocSections.
+    owner_component: COMP-c5a72728
+    owner_module: src.architecture_model.pipeline_v3.ingest_requirements
+    function_name: scan_docs
+    promises:
+    - id: PR-8dc1464baf04
+      attribute: intent
+      content: Walk configured doc roots and return a flat list of DocSections.
+      owner_entity: BEH-2ed076ce
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.derive_behaviors
   - id: BEH-304be987
     name: generate_component_spec
     description: Generate a rich markdown spec sheet for a single component.
@@ -12546,6 +12655,22 @@ entities:
       attribute: intent
       content: Render the HTML shell embedding the pipeline_state JSON.
       owner_entity: BEH-31c51a0c
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.derive_behaviors
+  - id: BEH-324bba91
+    name: ingest_requirements
+    description: Scan docs and attach doc-sourced requirement promises to entities.
+    owner_component: COMP-c5a72728
+    owner_module: src.architecture_model.pipeline_v3.ingest_requirements
+    function_name: ingest_requirements
+    promises:
+    - id: PR-3591638b5894
+      attribute: intent
+      content: Scan docs and attach doc-sourced requirement promises to entities.
+      owner_entity: BEH-324bba91
       delivered_from: null
       verified_by: []
       status: open
@@ -13078,6 +13203,22 @@ entities:
       attribute: intent
       content: Apply :func:`bind_evidence` across a Promise list, preserving order.
       owner_entity: BEH-4870f02b
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: pipeline_v3.derive_behaviors
+  - id: BEH-4962713b
+    name: derive_attributes
+    description: Return a new model dict with proposed attribute promises appended.
+    owner_component: COMP-c5a72728
+    owner_module: src.architecture_model.pipeline_v3.derive_attributes_llm
+    function_name: derive_attributes
+    promises:
+    - id: PR-cb3c1ba3a801
+      attribute: intent
+      content: Return a new model dict with proposed attribute promises appended.
+      owner_entity: BEH-4962713b
       delivered_from: null
       verified_by: []
       status: open
@@ -18304,6 +18445,10 @@ relationships:
   to: BEH-63df0a99
   type: triggers
   weight: 1
+- from: BEH-324bba91
+  to: BEH-2ed076ce
+  type: triggers
+  weight: 1
 - from: BEH-33a71c9b
   to: BEH-715c7e87
   type: triggers
@@ -18770,10 +18915,6 @@ relationships:
   type: triggers
   weight: 1
   sequence: 2
-- from: BEH-b903ea1a
-  to: BEH-8e223f00
-  type: triggers
-  weight: 1
 - from: BEH-b9a1661d
   to: BEH-ebb7fa2d
   type: triggers
@@ -20678,11 +20819,23 @@ relationships:
   type: traces-to
   weight: 1
 - from: COMP-c5a72728
+  to: BEH-2ed076ce
+  type: traces-to
+  weight: 1
+- from: COMP-c5a72728
+  to: BEH-324bba91
+  type: traces-to
+  weight: 1
+- from: COMP-c5a72728
   to: BEH-404e6f8f
   type: traces-to
   weight: 1
 - from: COMP-c5a72728
   to: BEH-407f3f12
+  type: traces-to
+  weight: 1
+- from: COMP-c5a72728
+  to: BEH-4962713b
   type: traces-to
   weight: 1
 - from: COMP-c5a72728
@@ -20752,7 +20905,11 @@ relationships:
 - from: COMP-c5a72728
   to: COMP-1896b055
   type: depends-on
-  weight: 5
+  weight: 7
+- from: COMP-c5a72728
+  to: COMP-8eb90583
+  type: depends-on
+  weight: 2
 - from: COMP-c5a72728
   to: COMP-bb5e3d5a
   type: depends-on

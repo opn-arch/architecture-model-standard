@@ -402,3 +402,81 @@ Both are ad-hoc scratch files, not committed. Regenerate via `/tmp/ams_eval.py` 
 ### Next
 
 R9 is the substrate half of Path 3 ("promise-emission during derivation"). Content richness (Paths 1 + 2 = R7 + R8) remains the delta to criterion 8. Proceeding to R7 brainstorm next.
+
+---
+
+## 8. Post-R7 + R8 checkpoint (2026-09-20)
+
+R7 (LLM attribute inference — Path 1) and R8 (requirements ingestion from documentation — Path 2) landed as opt-in pipeline_v3 stages. Both are behind flags on `run_pipeline`; default runs remain byte-identical.
+
+### R7 landed (commit `9e3f518`)
+
+New stage `derive_attributes_llm.py`. When `run_pipeline(infer_attributes=True, attribute_provider=<LLMProvider>)`, proposes 1–5 items per (entity, Cat-B attribute) pair for target kinds `behaviors ∪ components ∪ capabilities`. Emits `status: proposed` promises. Skips entities with an existing `verified` promise for the target attribute; overwrites `proposed`. `PROPOSED` added to `PromiseStatus` enum (was in schema but not in Python). Default provider is `MCPProvider` (lazy-imported from OCA) with actionable RuntimeError when OCA missing.
+
+### R8 landed (commit `0acdf70`)
+
+New stage `ingest_requirements.py`. When `run_pipeline(ingest_requirements=True)`, scans doc roots (`docs/reports/`, `docs/plans/`, `CONTEXT.md`, `README.md` — configurable via `doc_roots=`) for markdown sections and attaches doc-sourced requirements to entities. Three binding layers:
+
+| Layer | Mechanism | Status |
+|---|---|---|
+| 1 | YAML frontmatter `binds_to:`, HTML comment `<!-- binds: ID -->`, or heading anchor `{#ID}` | `verified` |
+| 2 | Exact heading match against entity name (case-insensitive, punctuation-normalized) | `verified` |
+| 3 | LLM classifier over candidates whose name shares a token with the heading (CamelCase-aware); confidence threshold default 0.75 | `proposed` |
+
+Bullet + numbered list items in the section body become requirement content (one item = one promise). Prose paragraphs ignored. When R7 and R8 both on, R8 wipes R7's proposed `requirements` promises before binding (real docs beat LLM guesses). Existing `verified` promises always preserved.
+
+### Measured effect on AMS self-model
+
+Method: re-ran `run_pipeline(ingest_requirements=True, doc_roots=<default>)` on this repo. Merged model via `load_v3_model()`. Ran `promotion-strict` walk.
+
+| Metric | Pre-R8 (post-R9) | Post-R8 | Δ |
+|---|---:|---:|---:|
+| Total entities | 522 | 525 | +3 (pipeline rescan) |
+| `requirements` promises `verified` | 4 | 4 | 0 |
+| `requirements` promises from R8 | — | 0 | 0 |
+| Sections scanned | — | 1279 | — |
+| Layer 1/2 exact matches | — | 1 (`Validate` in README) | — |
+| Layer 2 sections producing promises | — | 0 | 0 |
+| `promotion-strict / ready-to-code-strict` | 0 | 0 | 0 |
+| `promotion-strict / partial-strict` | 13 | 13 | 0 |
+| `promotion-strict / insufficient-strict` | 509 | 512 | +3 |
+
+### Interpretation
+
+**R8 substrate proven, R8 signal null on AMS.** 39 unit tests + 3 orchestrator tests confirm all three binding layers work on fixtures with realistic docs. On AMS itself, R8 scanned 1279 sections and found exactly one exact-heading match — `## Validate` in `README.md` — which contained a bash code block, not a bullet list, so zero requirement promises were emitted. The AMS doc corpus is process-oriented (`## Design`, `## Testing strategy`, `## Phase N substrate`) rather than entity-indexed (`## AuthService\n- must verify JWT`), so the assumption R8 encodes — that authored docs cite entity names as headings and list requirements as bullets — does not hold on this repo.
+
+**Where R8 will fire.** Downstream consumer repos with SE-style component docs — one report per component, headings naming the component, requirement bullets under it — should see Layer 2 matches at high rate. This is the target shape for R8's design and matches the pattern in most enterprise SE deliverables. Empirical validation on such a repo is R8 follow-on work.
+
+**R7 not exercised on AMS.** R7 requires an `LLMProvider`. OCA is not installed in this session's Python environment, and running the full 522-entity × 5-attribute pass through a real provider is out of scope for the substrate-landing checkpoint. R7's structural correctness is verified by 16 tests (12 unit + 4 orchestrator, all against `MockProvider`). Effect measurement on a real corpus is R7 follow-on work.
+
+**Scorecard update:**
+
+| # | Criterion | Pre-R7/R8 | Post-R7/R8 |
+|---|-----------|-----------|------------|
+| 8 | Category B specification tier reachable | Fail (self) | Fail (self) — R7/R8 substrate landed; content lift requires real provider or entity-indexed docs |
+
+### Delivered substrate summary
+
+Post-R2/R3/R7/R8/R9 the pipeline_v3 surface exposes three opt-in enrichment lanes on top of the baseline AST extraction:
+
+```
+scan → derive_promises → derive_behaviors → derive_triggers →
+cluster → link → containerize → verify →
+    ┌─ [R7: derive_attributes_llm]      (Cat-B proposals from LLM)
+    ├─ [R8: ingest_requirements]        (Cat-B verified from docs)
+    └─ publish (with R9 intent baked in)
+```
+
+R9's intent-per-behavior emission runs unconditionally inside `containerize` and is now the pipeline's default provenance floor. R7 and R8 stack: when both are on, R8 runs after R7 and R8's doc-grounded content replaces R7's guesses on the `requirements` attribute; R7's proposals on the other four Cat-B attributes (`goals`, `success_criteria`, `failure_modes`, `constraints`) survive.
+
+Verification: full test suite **4517 passed, 105 skipped** (baseline 4351 → +166 tests from R7, R8, R9, and the PROPOSED enum lock). No regressions.
+
+### Next
+
+R7/R8 substrate is complete. Follow-ons carrying real content lift:
+
+1. **R7 empirical run** — install OCA, run `run_pipeline(infer_attributes=True)` on AMS self-model with real MCPProvider. Measure promotion-strict verdict shift.
+2. **R8 empirical run** — pick a downstream consumer repo (or author component-indexed docs on AMS itself). Measure Layer 2 hit rate and requirements promise growth.
+3. **R8b1 (deferred)** — retry queue for low-confidence Layer 3 classifications, exposed as a human-review CLI.
+4. **R8d (deferred)** — doc drift detector: invalidate `verified` R8 promises when their source section changes.
+5. **R4/R5 (out of scope this session)** — content-authoring skills.
