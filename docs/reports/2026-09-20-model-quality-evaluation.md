@@ -345,3 +345,60 @@ The **most impactful substrate improvement** discoverable only after the refresh
 - `/tmp/ams_coherence.json` — substrate coherence per-component modules, orphan list, broken refs (refreshed)
 
 Both are ad-hoc scratch files, not committed. Regenerate via `/tmp/ams_eval.py` + `/tmp/ams_coherence.py`.
+
+---
+
+## §7 Post-R9 Checkpoint (behavior intent-promise emission)
+
+**Change under test:** commit `4d7c377` `feat(pipeline): R9 — derive intent promises for behavior candidates`. Adds `derive_promises_for_behavior()` in `pipeline_v3/derive_behaviors.py`; wires `promises: tuple[Promise, ...]` through `ContainerizedBehavior` and `publish._behavior_to_dict()`. Each behavior gets one Promise with `attribute="intent"`, `status=OPEN`, `content=<description>`.
+
+**Method:** re-ran `run_pipeline(repo_path='.', out_path='.architecture-model.v3.yaml')` post-R9. Merged model via `load_v3_model()` (fragments: authored `.architecture/model/capabilities.v3.yaml` + pipeline output `.architecture-model.v3.yaml`). Re-ran attribute-completeness and promotion-strict walks.
+
+### Entity/Promise deltas
+
+| Metric | Pre-R9 (refreshed) | Post-R9 | Δ |
+|--------|-------------------:|--------:|---:|
+| Total entities | 520 | 522 | +2 |
+| Entities carrying promises | 88 (16.9%) | **522 (100%)** | **+434 (+83.1 pp)** |
+| Total promises | 901 | 1336 | +435 |
+| `verified` promises | 138 | 138 | 0 |
+| `open` promises | 699 | 1134 | +435 |
+| `typed-gap` promises | 60 | 60 | 0 |
+| `proposed` promises | 4 | 4 | 0 |
+
+### Walk verdict deltas
+
+**Attribute-completeness:**
+
+| Verdict | Pre-R9 | Post-R9 | Δ |
+|---------|-------:|--------:|---:|
+| `ready-to-code` | 44 | 44 | 0 |
+| `needs-validation` | 44 | **478** | **+434** |
+| `needs-enrichment` | **432** | **0** | **−432** |
+
+**Promotion-strict (5-attribute Category B gate):**
+
+| Verdict | Pre-R9 | Post-R9 | Δ |
+|---------|-------:|--------:|---:|
+| `ready-to-code-strict` | 0 | 0 | 0 |
+| `partial-strict` | 13 | 13 | 0 |
+| `insufficient-strict` | 507 | 509 | +2 |
+
+### Interpretation
+
+**Substrate gap closed.** The `needs-enrichment` cohort — 432 derived behaviors that carried zero promises — is empty. Every entity in the model now participates in the promise substrate. This was the concrete finding in §2 Criterion 2 ("83% of entities have NO promises"), and R9 resolves it structurally.
+
+**Promotion-strict unchanged (as expected).** R9 emits only the `intent` attribute; the strict gate requires `goals ∧ requirements ∧ success_criteria ∧ failure_modes ∧ constraints`. Zero movement on `ready-to-code-strict` is the correct outcome — R7 (LLM attribute inference) is the substrate extension that targets that gate.
+
+**Criterion 2 verdict revision.** Pre-R9: **Partial** (mechanism uniform on 88 entities). Post-R9: **Pass** (mechanism uniform on 522/522 entities). The substrate is now provenance-complete; the remaining problem is content richness, not substrate coverage.
+
+**Scorecard update:**
+
+| # | Criterion | Pre-R9 | Post-R9 |
+|---|-----------|--------|---------|
+| 2 | Auditable provenance per entity | Partial | **Pass** |
+| 8 | Category B specification tier reachable | Fail (self) | Fail (self) — unchanged, R7 target |
+
+### Next
+
+R9 is the substrate half of Path 3 ("promise-emission during derivation"). Content richness (Paths 1 + 2 = R7 + R8) remains the delta to criterion 8. Proceeding to R7 brainstorm next.
