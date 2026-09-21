@@ -38,6 +38,7 @@ from architecture_model.pipeline_v3.containerize import (
     ContainerizedComponent,
     ContainerizedModel,
 )
+from architecture_model.pipeline_v3.link import Link
 
 __all__ = ["PublishResult", "publish_model", "serialize_model"]
 
@@ -89,6 +90,25 @@ def _behavior_to_dict(b: ContainerizedBehavior) -> dict[str, Any]:
     return out
 
 
+def _relationship_to_dict(l: Link) -> dict[str, Any]:
+    """Serialize a :class:`Link` to the v3 YAML relationship shape.
+
+    Emits ``sequence`` only when non-``None`` (composite-flow
+    metadata from Part 17a3). Omission preserves byte-identical
+    output for non-composite ``depends-on`` / ``traces-to`` /
+    ``triggers`` edges, keeping pre-17a3 fixtures digest-stable.
+    """
+    out: dict[str, Any] = {
+        "from": l.from_cluster,
+        "to": l.to_cluster,
+        "type": l.kind,
+        "weight": l.weight,
+    }
+    if l.sequence is not None:
+        out["sequence"] = l.sequence
+    return out
+
+
 def _build_meta(project_name: str, source_root: Path | None) -> dict[str, Any]:
     meta: dict[str, Any] = {
         "schema_version": "3.0",
@@ -113,12 +133,7 @@ def _build_doc(
     )
     relationships = sorted(
         (
-            {
-                "from": l.from_cluster,
-                "to": l.to_cluster,
-                "type": l.kind,
-                "weight": l.weight,
-            }
+            _relationship_to_dict(l)
             for l in model.relationships
         ),
         key=lambda d: (d["from"], d["to"], d["type"]),

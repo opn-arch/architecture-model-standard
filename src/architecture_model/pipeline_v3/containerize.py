@@ -223,6 +223,7 @@ def containerize(
                     to_cluster=edge.to_behavior,
                     kind="triggers",
                     weight=1,
+                    sequence=edge.sequence,
                 )
             )
 

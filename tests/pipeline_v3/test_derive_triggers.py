@@ -23,6 +23,7 @@ from architecture_model.pipeline_v3.derive_behaviors import (
     _behavior_id,
 )
 from architecture_model.pipeline_v3.derive_triggers import (
+    COMPOSITE_MIN_TRIGGERS,
     TriggerEdge,
     derive_triggers,
 )
@@ -268,3 +269,152 @@ def test_trigger_edge_is_frozen_hashable():
     import pytest
     with pytest.raises((AttributeError, Exception)):
         e.from_behavior = "other"  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
+# Part 17a3: composite behavior detection + sequence emission
+# ---------------------------------------------------------------------------
+
+
+def test_below_threshold_source_emits_no_sequence():
+    # 2 resolved outgoing triggers (< COMPOSITE_MIN_TRIGGERS = 3):
+    # sequence must be None on every edge.
+    mod = _mod(
+        "pkg.a",
+        functions=[
+            _fn("caller", ["a", "b"]),
+            _fn("a"),
+            _fn("b"),
+        ],
+    )
+    behs = [
+        _cand("pkg.a", "caller"),
+        _cand("pkg.a", "a"),
+        _cand("pkg.a", "b"),
+    ]
+    edges = derive_triggers(_scan([mod]), behs)
+    assert all(e.sequence is None for e in edges)
+
+
+def test_at_threshold_source_emits_sequences_in_call_order():
+    # 3 resolved outgoing triggers → composite. Sequences 1..3 in
+    # call-site order (the ``calls`` list from the AST scan).
+    mod = _mod(
+        "pkg.a",
+        functions=[
+            _fn("orchestrator", ["step1", "step2", "step3"]),
+            _fn("step1"),
+            _fn("step2"),
+            _fn("step3"),
+        ],
+    )
+    behs = [
+        _cand("pkg.a", "orchestrator"),
+        _cand("pkg.a", "step1"),
+        _cand("pkg.a", "step2"),
+        _cand("pkg.a", "step3"),
+    ]
+    edges = derive_triggers(_scan([mod]), behs)
+    # Locate the three composite edges (from == orchestrator) and
+    # index them by target id.
+    orch_id = _behavior_id("pkg.a", "orchestrator")
+    composite = {e.to_behavior: e.sequence for e in edges if e.from_behavior == orch_id}
+    assert composite[_behavior_id("pkg.a", "step1")] == 1
+    assert composite[_behavior_id("pkg.a", "step2")] == 2
+    assert composite[_behavior_id("pkg.a", "step3")] == 3
+
+
+def test_sequence_reflects_calls_list_order_not_id_order():
+    # Reverse the calls list; sequences should follow the calls list,
+    # NOT the sorted target-id order.
+    mod = _mod(
+        "pkg.a",
+        functions=[
+            _fn("orchestrator", ["zeta", "mu", "alpha"]),
+            _fn("zeta"),
+            _fn("mu"),
+            _fn("alpha"),
+        ],
+    )
+    behs = [
+        _cand("pkg.a", "orchestrator"),
+        _cand("pkg.a", "zeta"),
+        _cand("pkg.a", "mu"),
+        _cand("pkg.a", "alpha"),
+    ]
+    edges = derive_triggers(_scan([mod]), behs)
+    orch_id = _behavior_id("pkg.a", "orchestrator")
+    composite = {e.to_behavior: e.sequence for e in edges if e.from_behavior == orch_id}
+    assert composite[_behavior_id("pkg.a", "zeta")] == 1
+    assert composite[_behavior_id("pkg.a", "mu")] == 2
+    assert composite[_behavior_id("pkg.a", "alpha")] == 3
+
+
+def test_unresolved_calls_do_not_consume_sequence_slots():
+    # calls = [x, unresolved, y, z] where ``unresolved`` doesn't match
+    # any behavior. Sequences must be 1, 2, 3 across x, y, z — the
+    # unresolved call is silently skipped (not a phantom "slot 2").
+    mod = _mod(
+        "pkg.a",
+        functions=[
+            _fn("orchestrator", ["x", "unresolved", "y", "z"]),
+            _fn("x"),
+            _fn("y"),
+            _fn("z"),
+        ],
+    )
+    behs = [
+        _cand("pkg.a", "orchestrator"),
+        _cand("pkg.a", "x"),
+        _cand("pkg.a", "y"),
+        _cand("pkg.a", "z"),
+    ]
+    edges = derive_triggers(_scan([mod]), behs)
+    orch_id = _behavior_id("pkg.a", "orchestrator")
+    seqs = sorted(
+        (e.to_behavior, e.sequence)
+        for e in edges if e.from_behavior == orch_id
+    )
+    assert [s for (_t, s) in seqs] != [None, None, None]  # composite
+    # All three targets have sequences in {1, 2, 3}, no gaps
+    seq_values = sorted(s for (_t, s) in seqs)
+    assert seq_values == [1, 2, 3]
+
+
+def test_composite_threshold_constant_is_three():
+    # Guard against silent threshold drift — documented value is 3.
+    assert COMPOSITE_MIN_TRIGGERS == 3
+
+
+def test_mixed_composite_and_noncomposite_sources_coexist():
+    # Two source behaviors: one composite (3 targets), one not (1
+    # target). Only the composite's edges get sequences.
+    mod = _mod(
+        "pkg.a",
+        functions=[
+            _fn("orch", ["a", "b", "c"]),
+            _fn("small", ["a"]),
+            _fn("a"),
+            _fn("b"),
+            _fn("c"),
+        ],
+    )
+    behs = [
+        _cand("pkg.a", "orch"),
+        _cand("pkg.a", "small"),
+        _cand("pkg.a", "a"),
+        _cand("pkg.a", "b"),
+        _cand("pkg.a", "c"),
+    ]
+    edges = derive_triggers(_scan([mod]), behs)
+    orch_id = _behavior_id("pkg.a", "orch")
+    small_id = _behavior_id("pkg.a", "small")
+    orch_seqs = [e.sequence for e in edges if e.from_behavior == orch_id]
+    small_seqs = [e.sequence for e in edges if e.from_behavior == small_id]
+    assert sorted(s for s in orch_seqs) == [1, 2, 3]
+    assert small_seqs == [None]
+
+
+def test_trigger_edge_sequence_defaults_to_none():
+    e = TriggerEdge(from_behavior="BEH-a", to_behavior="BEH-b")
+    assert e.sequence is None

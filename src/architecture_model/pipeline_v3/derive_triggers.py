@@ -1,4 +1,4 @@
-"""pipeline_v3.derive_triggers — Behavior-to-behavior trigger emission (Part 17a2).
+"""pipeline_v3.derive_triggers — Behavior-to-behavior trigger emission (Parts 17a2, 17a3).
 
 Consumes :class:`ScanResult` + list of :class:`BehaviorCandidate` and
 produces a list of :class:`TriggerEdge` values connecting behaviors
@@ -23,18 +23,35 @@ For each BehaviorCandidate ``A`` owned by module ``M_A`` with function
         must equal ``M``.
       - ``import M`` in ``M_A.imports`` → any behavior in module ``M``
         (any function name matching) qualifies.
-   c. If exactly one candidate matches → emit ``TriggerEdge(A.id,
-      match.id)``. Ambiguous matches are skipped to bound noise.
+   c. If exactly one candidate matches → collect ``TriggerEdge(A.id,
+      match.id)`` in call-site order (per-source dedup preserves first
+      occurrence). Ambiguous matches are skipped to bound noise.
 3. Self-triggers (A → A) are dropped.
+
+Composite detection (Part 17a3)
+-------------------------------
+
+A source behavior with ``>= COMPOSITE_MIN_TRIGGERS`` (default 3)
+resolved outgoing trigger edges is treated as **composite**. Each of
+its outgoing edges is tagged with ``sequence = 1..N`` in call-site
+order (per the ``calls`` list from the AST scan). Behaviors below the
+threshold emit edges with ``sequence = None``.
+
+The threshold matches the plan heuristic: "a behavior whose owning
+module calls >= 3 other behaviors in fixed order". Detection is
+implicit — no separate ``is_composite`` flag; consumers detect
+compositeness by observing at least one outgoing edge with a non-None
+``sequence`` on any behavior.
 
 Determinism
 -----------
 
-Output list sorted by ``(from_behavior, to_behavior)``. Duplicates
-collapsed at emit time.
+Output list sorted by ``(from_behavior, to_behavior)``. Edge identity
+is ``(from, to)`` — parallel edges are not emitted. When sequences
+are stamped, they reflect the source function's call-site order at
+the time of derivation.
 
-Non-scope for 17a2: ``sequence:`` field on emitted edges (composite
-detection — 17a3). Call-chain metadata on ``traces-to`` (17a4).
+Non-scope for 17a3: Call-chain metadata on ``traces-to`` edges (17a4).
 """
 
 from __future__ import annotations
@@ -44,15 +61,33 @@ from dataclasses import dataclass
 from architecture_model.pipeline_v3.derive_behaviors import BehaviorCandidate
 from architecture_model.pipeline_v3.scan import ScannedModule, ScanResult
 
-__all__ = ["TriggerEdge", "derive_triggers"]
+__all__ = ["COMPOSITE_MIN_TRIGGERS", "TriggerEdge", "derive_triggers"]
+
+#: Minimum number of unambiguously-resolved outgoing triggers required
+#: for a source behavior to be treated as **composite** and receive
+#: ``sequence:`` annotations on its outgoing edges. Below this
+#: threshold, ``sequence`` remains ``None``.
+COMPOSITE_MIN_TRIGGERS = 3
 
 
 @dataclass(frozen=True)
 class TriggerEdge:
-    """A directed behavior→behavior trigger edge."""
+    """A directed behavior→behavior trigger edge.
+
+    Attributes:
+        from_behavior: Source behavior id.
+        to_behavior: Destination behavior id.
+        sequence: 1-indexed ordinal position of the destination in the
+            source behavior's outgoing flow, or ``None`` when the
+            source has fewer than :data:`COMPOSITE_MIN_TRIGGERS`
+            resolved outgoing triggers (i.e. is not treated as
+            composite). Semantics mirror Part 16a's ``sequence:`` on
+            declarative model triggers relationships.
+    """
 
     from_behavior: str
     to_behavior: str
+    sequence: int | None = None
 
 
 def _parse_imports(imports: list[str]) -> tuple[dict[str, set[str]], set[str]]:
@@ -126,6 +161,10 @@ def derive_triggers(
 
     Returns:
         Deterministically sorted, deduped list of ``TriggerEdge``.
+        Edges whose source behavior resolved
+        ``>= COMPOSITE_MIN_TRIGGERS`` outgoing targets carry a
+        1-indexed ``sequence`` matching the source function's
+        call-site order.
     """
     if not behaviors:
         return []
@@ -133,18 +172,16 @@ def derive_triggers(
     # module → ScannedModule
     modules_by_name: dict[str, ScannedModule] = {m.name: m for m in scan.modules}
 
-    # module → list[BehaviorCandidate] (for imported-resolution)
-    behs_by_module: dict[str, list[BehaviorCandidate]] = {}
     # (module, function_name) → BehaviorCandidate (for exact-name lookup)
     beh_by_module_func: dict[tuple[str, str], BehaviorCandidate] = {}
-    # function_name → list[BehaviorCandidate] (for ambiguous fallback)
+    # function_name → list[BehaviorCandidate] (for imported-module fallback)
     beh_by_func: dict[str, list[BehaviorCandidate]] = {}
     for b in behaviors:
-        behs_by_module.setdefault(b.owner_module, []).append(b)
         beh_by_module_func[(b.owner_module, b.function_name)] = b
         beh_by_func.setdefault(b.function_name, []).append(b)
 
-    edges: set[tuple[str, str]] = set()
+    # source_id → ordered list[target_id] (in call-site order, deduped)
+    per_source_targets: dict[str, list[str]] = {}
 
     for src in behaviors:
         mod = modules_by_name.get(src.owner_module)
@@ -156,11 +193,16 @@ def derive_triggers(
 
         from_imports, module_imports = _parse_imports(mod.imports)
 
+        ordered: list[str] = []
+        seen_targets: set[str] = set()
+
         for callee_name in calls:
             # 1. Local resolution
             local = beh_by_module_func.get((src.owner_module, callee_name))
             if local is not None and local.id != src.id:
-                edges.add((src.id, local.id))
+                if local.id not in seen_targets:
+                    ordered.append(local.id)
+                    seen_targets.add(local.id)
                 continue
 
             # 2. Imported resolution — collect candidates
@@ -177,13 +219,9 @@ def derive_triggers(
             for cand in beh_by_func.get(callee_name, []):
                 if cand.id == src.id:
                     continue
-                # Match if candidate's module appears (in whole or as a
-                # prefix segment) in the caller's module_imports set.
                 if cand.owner_module in module_imports:
                     candidates.append(cand)
                     continue
-                # Also match when the caller imported a parent package
-                # and the candidate lives in a submodule.
                 for imp in module_imports:
                     if cand.owner_module == imp or cand.owner_module.startswith(
                         imp + "."
@@ -198,9 +236,27 @@ def derive_triggers(
 
             # Only emit when unambiguous (single distinct match)
             if len(unique) == 1:
-                edges.add((src.id, unique[0].id))
+                target_id = unique[0].id
+                if target_id not in seen_targets:
+                    ordered.append(target_id)
+                    seen_targets.add(target_id)
 
-    return sorted(
-        (TriggerEdge(from_behavior=a, to_behavior=b) for a, b in edges),
-        key=lambda e: (e.from_behavior, e.to_behavior),
-    )
+        if ordered:
+            per_source_targets[src.id] = ordered
+
+    # Build TriggerEdges. Sources at or above the composite threshold
+    # get 1-indexed sequences; others emit sequence=None.
+    edges: list[TriggerEdge] = []
+    for src_id, targets in per_source_targets.items():
+        composite = len(targets) >= COMPOSITE_MIN_TRIGGERS
+        for idx, tgt in enumerate(targets, start=1):
+            edges.append(
+                TriggerEdge(
+                    from_behavior=src_id,
+                    to_behavior=tgt,
+                    sequence=idx if composite else None,
+                )
+            )
+
+    edges.sort(key=lambda e: (e.from_behavior, e.to_behavior))
+    return edges

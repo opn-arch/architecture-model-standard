@@ -265,3 +265,57 @@ def test_containerize_accepts_no_triggers_default():
     clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
     model = containerize(clusters, [], [], [_cand("pkg.a.x", "f")])
     assert all(r.kind != "triggers" for r in model.relationships)
+
+
+# ---------------------------------------------------------------------------
+# Part 17a3: sequence field passthrough on triggers edges
+# ---------------------------------------------------------------------------
+
+
+def test_containerize_passes_sequence_through_to_link():
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    src = _cand("pkg.a.x", "orch")
+    a = _cand("pkg.a.x", "a")
+    b = _cand("pkg.a.x", "b")
+    c = _cand("pkg.a.x", "c")
+    trigs = [
+        TriggerEdge(from_behavior=src.id, to_behavior=a.id, sequence=1),
+        TriggerEdge(from_behavior=src.id, to_behavior=b.id, sequence=2),
+        TriggerEdge(from_behavior=src.id, to_behavior=c.id, sequence=3),
+    ]
+    model = containerize(clusters, [], [], [src, a, b, c], trigs)
+    triggers = sorted(
+        (r for r in model.relationships if r.kind == "triggers"),
+        key=lambda r: r.sequence,
+    )
+    assert [r.sequence for r in triggers] == [1, 2, 3]
+
+
+def test_containerize_trigger_with_no_sequence_stays_none():
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    src = _cand("pkg.a.x", "caller")
+    dst = _cand("pkg.a.x", "callee")
+    trig = TriggerEdge(from_behavior=src.id, to_behavior=dst.id, sequence=None)
+    model = containerize(clusters, [], [], [src, dst], [trig])
+    trigger_link = next(r for r in model.relationships if r.kind == "triggers")
+    assert trigger_link.sequence is None
+
+
+def test_publish_emits_sequence_only_when_set():
+    # Two triggers edges: one with sequence, one without. YAML output
+    # should include ``sequence`` on the composite edge and omit it
+    # on the non-composite one so pre-17a3 fixtures stay byte-stable.
+    model = ContainerizedModel(
+        components=[],
+        relationships=[
+            Link(from_cluster="BEH-11111111", to_cluster="BEH-22222222",
+                 kind="triggers", weight=1, sequence=1),
+            Link(from_cluster="BEH-33333333", to_cluster="BEH-44444444",
+                 kind="triggers", weight=1, sequence=None),
+        ],
+        behaviors=[],
+    )
+    doc = yaml.safe_load(serialize_model(model))
+    rels_by_from = {r["from"]: r for r in doc["relationships"]}
+    assert rels_by_from["BEH-11111111"]["sequence"] == 1
+    assert "sequence" not in rels_by_from["BEH-33333333"]

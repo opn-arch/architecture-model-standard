@@ -41,12 +41,20 @@ __all__ = ["Link", "link_clusters"]
 
 @dataclass(frozen=True)
 class Link:
-    """A directed relationship between two clusters."""
+    """A directed relationship between two clusters (or entities).
 
-    from_cluster: str          # source Cluster.id
-    to_cluster: str            # target Cluster.id
+    ``sequence`` is 17a3 flow-ordering metadata: 1-indexed ordinal
+    position of the destination in the source's outgoing flow when the
+    source is a composite. Non-``None`` only on ``triggers`` edges
+    emitted by containerize from composite behaviors (see
+    :mod:`architecture_model.pipeline_v3.derive_triggers`).
+    """
+
+    from_cluster: str          # source Cluster.id (or entity id)
+    to_cluster: str            # target Cluster.id (or entity id)
     kind: str = "depends-on"
     weight: int = 1
+    sequence: int | None = None
 
 
 def _strip_src(prefix: str) -> str:
