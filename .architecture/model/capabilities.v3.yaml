@@ -990,6 +990,32 @@ entities:
       status: verified
       gap_type: null
       provenance: Part 15 (2026-09-18) — CAP-DF ceremony LLM journal + refiner.
+  - id: CAP-WK.flow-audit
+    name: walk_flow_audit
+    promises:
+    - id: PR-CAP-WK-flow-audit-intent
+      attribute: intent
+      content:
+      - Declarative meta-walk that audits behavior-flow coverage across
+        the v3 model. Buckets each behavior by its outgoing / incoming
+        `triggers` edges into composite orchestrators (>=3 outbound,
+        matching containerize's COMPOSITE_MIN_TRIGGERS threshold),
+        linked participants (1-2 outbound, or >=1 inbound), and
+        isolated behaviors (neither source nor target of any trigger).
+        Complements attribute-completeness (promise coverage) by
+        auditing flow coverage — the second axis of v3 semantic
+        completeness surfaced by pipeline_v3 Part 17a. Structural-tier
+        walk driven by 1-hop `triggers` traversal + the classify DSL
+        atoms `outbound_count:triggers` / `inbound_count:triggers`.
+        No rollup — behavior flow is horizontal, not containment.
+      owner_entity: CAP-WK.flow-audit
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/flow-audit.v3.yaml
+      - tests/walks/test_pilot_flow_audit.py
+      status: verified
+      gap_type: null
+      provenance: Part 17b (2026-09-20) — flow-modeling substrate audit walk.
   behaviors:
   - id: BEH-run-pipeline
     name: run_extraction_pipeline_end_to_end
@@ -1920,6 +1946,9 @@ relationships:
 - from: CAP-WK
   to: CAP-WK.attribute-completeness
   type: contains
+- from: CAP-WK
+  to: CAP-WK.flow-audit
+  type: contains
 # audits: sub-caps → target caps (list-valued semantics: multiple relationship
 # rows for the same walk when audits is a list)
 - from: CAP-WK.direction-lint
@@ -1972,4 +2001,7 @@ relationships:
   type: audits
 - from: CAP-WK.attribute-completeness
   to: CAP-DF
+  type: audits
+- from: CAP-WK.flow-audit
+  to: CAP-PB
   type: audits
