@@ -163,3 +163,20 @@ def test_base_entity_trade_offs_accepts_typed_and_string(schema: dict) -> None:
 def test_base_entity_requirements_accepts_typed_and_string(schema: dict) -> None:
     r = schema["$defs"]["base_entity"]["properties"]["requirements"]
     assert r["$ref"] == "#/$defs/requirement_ref_list"
+
+
+# --- Part 16a (2026-09-20) : relationship.sequence field ---
+
+
+def test_relationship_declares_sequence_property(schema: dict) -> None:
+    props = schema["$defs"]["relationship"]["properties"]
+    assert "sequence" in props, "relationship.$defs missing 'sequence' property"
+    seq = props["sequence"]
+    assert seq["type"] == "integer"
+    assert seq["minimum"] == 1
+
+
+def test_relationship_sequence_is_optional(schema: dict) -> None:
+    """'sequence' must NOT be in required[] — additive, backward-compatible."""
+    required = schema["$defs"]["relationship"].get("required", [])
+    assert "sequence" not in required

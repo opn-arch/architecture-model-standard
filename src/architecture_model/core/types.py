@@ -772,6 +772,11 @@ class Relationship:
     weight: float = 0.0  # Numeric coupling weight (0.0 = unquantified)
     extensions: dict[str, Any] = field(default_factory=dict)
     imports: list[str] = field(default_factory=list)
+    # --- Part 16a (2026-09-20) : ordinal position within a composite flow ---
+    # Only meaningful on ``triggers`` edges. ``None`` = unordered (existing
+    # behavior). Presence of ``sequence`` on any outgoing ``triggers`` edge
+    # implicitly marks the source Behavior as composite.
+    sequence: Optional[int] = None
 
 
 # ---------------------------------------------------------------------------
@@ -1540,4 +1545,6 @@ class ArchitectureModel:
             d["import_count"] = r.import_count
         if r.weight:
             d["weight"] = r.weight
+        if r.sequence is not None:
+            d["sequence"] = r.sequence
         return d

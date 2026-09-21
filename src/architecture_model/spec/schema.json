@@ -1660,6 +1660,11 @@
         "description": {
           "type": "string"
         },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Ordinal position of this edge within a composite flow (triggers edges only). Absent/None = unordered."
+        },
         "strength": {
           "type": "string",
           "enum": [

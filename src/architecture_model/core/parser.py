@@ -704,8 +704,31 @@ def _parse_relationship(d: dict) -> Relationship:
     # Accept multiple key formats agents might use
     from_id = d.get("from") or d.get("from_id") or d.get("source") or ""
     to_id = d.get("to") or d.get("to_id") or d.get("target") or ""
+    rel_type = RelationType.parse(d.get("type", "depends-on"))
+    # --- Part 16a (2026-09-20) : optional flow ordinal ---
+    sequence_raw = d.get("sequence")
+    sequence: int | None = None
+    if sequence_raw is not None:
+        if not isinstance(sequence_raw, int) or isinstance(sequence_raw, bool) or sequence_raw < 1:
+            import warnings as _w
+            _w.warn(
+                f"Relationship 'sequence' must be a positive int; got {sequence_raw!r} — dropping",
+                UserWarning,
+                stacklevel=2,
+            )
+        else:
+            sequence = sequence_raw
+            # Soft-warn if applied to a non-triggers edge (parses still succeed).
+            type_str = rel_type.value if hasattr(rel_type, "value") else str(rel_type)
+            if type_str != "triggers":
+                import warnings as _w
+                _w.warn(
+                    f"'sequence' on non-'triggers' relationship (type={type_str!r}) has no defined semantics",
+                    UserWarning,
+                    stacklevel=2,
+                )
     return Relationship(
-        type=RelationType.parse(d.get("type", "depends-on")),
+        type=rel_type,
         from_id=from_id,
         to_id=to_id,
         description=d.get("description", ""),
@@ -714,6 +737,7 @@ def _parse_relationship(d: dict) -> Relationship:
         imports=d.get("imports", []),
         import_count=d.get("import_count", 0),
         weight=d.get("weight", 0.0),
+        sequence=sequence,
     )
 
 
