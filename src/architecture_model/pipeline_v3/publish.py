@@ -195,17 +195,32 @@ def publish_model(
     *,
     project_name: str = "",
     source_root: Path | None = None,
+    transform_doc=None,
 ) -> PublishResult:
     """Serialize ``model`` and write it atomically to ``out_path``.
 
     Creates parent directories if needed. Overwrites any existing file.
     Returns a :class:`PublishResult` carrying the YAML text and the meta
     block for programmatic follow-up (e.g. logging, provenance sidecar).
+
+    Args:
+        transform_doc: Optional callable ``(doc: dict) -> dict`` applied
+            to the intermediate document between build and serialize. Used
+            by R7 to inject LLM-inferred proposed promises. When ``None``
+            the doc is written unchanged.
     """
-    text = serialize_model(model, project_name=project_name, source_root=source_root)
+    import yaml as _yaml
+
+    doc = _build_doc(model, project_name=project_name, source_root=source_root)
+    if transform_doc is not None:
+        doc = transform_doc(doc)
+    text = _yaml.safe_dump(
+        doc,
+        sort_keys=False,
+        default_flow_style=False,
+        allow_unicode=True,
+    )
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(text, encoding="utf-8")
-    # Reparse the meta from doc for the return value (single source of truth)
-    doc = _build_doc(model, project_name=project_name, source_root=source_root)
     return PublishResult(model_path=out_path, model_yaml=text, meta=doc["meta"])

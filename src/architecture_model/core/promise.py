@@ -47,12 +47,15 @@ class PromiseStatus(str, Enum):
     - DELIVERED: content matches (or derives from) a parent's delivery
     - VERIFIED: at least one verified_by evidence record confirms delivery
     - TYPED_GAP: content deliberately empty; gap_type names the category
+    - PROPOSED: content authored by an LLM or automated proposer, pending
+      human review; promoted to OPEN or VERIFIED after validation
     """
 
     OPEN = "open"
     DELIVERED = "delivered"
     VERIFIED = "verified"
     TYPED_GAP = "typed-gap"
+    PROPOSED = "proposed"
 
 
 def _canonicalize_content(content: object) -> str:

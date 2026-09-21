@@ -66,6 +66,25 @@ from architecture_model.quality.chain_closure import ChainClosureReport
 __all__ = ["PipelineRunResult", "run_pipeline"]
 
 
+def _load_default_provider():
+    """Lazy-load OCA's MCPProvider. Raise actionable error if unavailable.
+
+    Called only when ``infer_attributes=True`` and no
+    ``attribute_provider`` was passed. Keeps AMS free of hard dependencies
+    on opencode-arch.
+    """
+    try:
+        from opencode_arch.llm.providers.mcp import MCPProvider  # type: ignore
+    except ImportError as exc:
+        raise RuntimeError(
+            "run_pipeline(infer_attributes=True) requires either an "
+            "explicit `attribute_provider=...` argument or the "
+            "`opencode-arch` package. Install with "
+            "`pip install opencode-arch` or pass a custom LLMProvider."
+        ) from exc
+    return MCPProvider()
+
+
 @dataclass(frozen=True)
 class PipelineRunResult:
     """All intermediate artifacts + final outputs from a pipeline_v3 run."""
@@ -88,6 +107,8 @@ def _build_pipeline(
     project_name: str,
     cluster_depth: int,
     skip_publish: bool,
+    infer_attributes: bool = False,
+    attribute_provider=None,
 ) -> Pipeline:
     """Build the pipeline_v3 stage pipeline over a shared state dict.
 
@@ -141,11 +162,25 @@ def _build_pipeline(
         if skip_publish:
             state["published"] = None
         else:
+            transform_doc = None
+            if infer_attributes:
+                from architecture_model.pipeline_v3.derive_attributes_llm import (
+                    derive_attributes,
+                )
+
+                _provider = attribute_provider
+                if _provider is None:
+                    _provider = _load_default_provider()
+
+                def transform_doc(doc: dict) -> dict:
+                    return derive_attributes(doc, provider=_provider)
+
             state["published"] = publish_model(
                 state["model"],
                 out,
                 project_name=project_name,
                 source_root=repo,
+                transform_doc=transform_doc,
             )
         return state
 
@@ -171,6 +206,8 @@ def run_pipeline(
     project_name: str = "",
     cluster_depth: int = 3,
     skip_publish: bool = False,
+    infer_attributes: bool = False,
+    attribute_provider=None,
 ) -> PipelineRunResult:
     """Run the full pipeline_v3 end-to-end via the substrate runner.
 
@@ -182,6 +219,13 @@ def run_pipeline(
         cluster_depth: Dotted-segment depth for cluster grouping.
         skip_publish: If True, skip the publish stage entirely — no
             file is written and ``PipelineRunResult.published`` is None.
+        infer_attributes: If True, run R7's LLM-based Category B attribute
+            inference before serialization. Off by default so runs stay
+            deterministic and cost-free.
+        attribute_provider: LLMProvider used when ``infer_attributes=True``.
+            When ``None`` and the flag is on, the pipeline lazy-loads the
+            MCPProvider from ``opencode_arch`` and raises RuntimeError with
+            install instructions when it is not available.
 
     Returns:
         :class:`PipelineRunResult` with every intermediate and final artifact.
@@ -189,7 +233,15 @@ def run_pipeline(
     repo = Path(repo_path)
     out = Path(out_path)
 
-    pipeline = _build_pipeline(repo, out, project_name, cluster_depth, skip_publish)
+    pipeline = _build_pipeline(
+        repo,
+        out,
+        project_name,
+        cluster_depth,
+        skip_publish,
+        infer_attributes=infer_attributes,
+        attribute_provider=attribute_provider,
+    )
     initial_state: dict[str, Any] = {"repo": repo}
     result = pipeline.run(initial_state, StageContext(run_id="pipeline_v3"))
 

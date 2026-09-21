@@ -144,9 +144,10 @@ def test_promise_default_status_is_open():
 
 
 def test_promise_status_values():
-    # Locked enum values per plan-b design + walk-instance #1 finding
+    # Locked enum values per plan-b design + walk-instance #1 finding.
+    # Extended 2026-09-20 with "proposed" for R7 LLM attribute inference.
     assert {s.value for s in PromiseStatus} == {
-        "open", "delivered", "verified", "typed-gap"
+        "open", "delivered", "verified", "typed-gap", "proposed"
     }
 
 
