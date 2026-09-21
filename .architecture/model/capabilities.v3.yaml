@@ -1498,6 +1498,37 @@ entities:
       status: verified
       gap_type: null
       provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema, CONS-determinism)
+  # --- 2026-09-20 Part 16c: BEH-mcp-dev-loop composite (CAP-DF ceremony flow) ---
+  - id: BEH-mcp-dev-loop
+    name: mcp_driven_development_loop
+    promises:
+    - id: PR-BEH-mcp-dev-loop-intent
+      attribute: intent
+      content:
+      - Composite ceremony behavior that orchestrates the CAP-DF developer
+        loop as an ordered flow view → note → save → author → reconcile.
+        Each step delegates to an existing sub-behavior; the ordering is
+        made explicit via sequence-tagged triggers edges so slicers,
+        viewers, and audits can render the flow as a first-class pipeline.
+      owner_entity: BEH-mcp-dev-loop
+      delivered_from: null
+      verified_by:
+      - Sub-behaviors BEH-view-browse, BEH-view-note, BEH-view-save, BEH-walk-author, BEH-run-pipeline all exist
+      - slice_by_behavior(BEH-mcp-dev-loop) returns the full ceremony sub-model
+      status: verified
+      gap_type: null
+      provenance: 2026-09-20 Part 16c flow-modeling substrate
+    - id: PR-BEH-mcp-dev-loop-delivers
+      attribute: delivers
+      content:
+      - "Executes ceremony in linear order: view (browse) -> note -> save -> author -> reconcile (run pipeline). Each step's output is the next step's precondition."
+      owner_entity: BEH-mcp-dev-loop
+      delivered_from: null
+      verified_by:
+      - Ordered triggers edges in relationships block carry sequence: 1..5
+      status: verified
+      gap_type: null
+      provenance: 2026-09-20 Part 16c
   - id: BEH-S1
     name: llm_entity_kind_promotion
     promises:
@@ -1798,18 +1829,20 @@ relationships:
 - from: BEH-run-pipeline
   to: BEH-scan
   type: triggers
+  sequence: 1
   note: orchestrator invokes scan as stage 1
 - from: BEH-publish
   to: IF-model
   type: produces
   note: BEH-publish is the stage that materializes IF-model on disk
 # --- 2026-09-16 CAP-PB stage-to-stage flow (Task A) ---
-- {from: BEH-scan,            to: BEH-derive-promises, type: triggers, note: pipeline stage 1->2}
-- {from: BEH-derive-promises, to: BEH-cluster,         type: triggers, note: pipeline stage 2->3}
-- {from: BEH-cluster,         to: BEH-link,            type: triggers, note: pipeline stage 3->4}
-- {from: BEH-link,            to: BEH-containerize,    type: triggers, note: pipeline stage 4->5}
-- {from: BEH-containerize,    to: BEH-verify,          type: triggers, note: pipeline stage 5->6}
-- {from: BEH-verify,          to: BEH-publish,         type: triggers, note: pipeline stage 6->7}
+# --- 2026-09-20 Part 16c: sequence: added to make ordered composite flow explicit ---
+- {from: BEH-scan,            to: BEH-derive-promises, type: triggers, sequence: 2, note: pipeline stage 1->2}
+- {from: BEH-derive-promises, to: BEH-cluster,         type: triggers, sequence: 3, note: pipeline stage 2->3}
+- {from: BEH-cluster,         to: BEH-link,            type: triggers, sequence: 4, note: pipeline stage 3->4}
+- {from: BEH-link,            to: BEH-containerize,    type: triggers, sequence: 5, note: pipeline stage 4->5}
+- {from: BEH-containerize,    to: BEH-verify,          type: triggers, sequence: 6, note: pipeline stage 5->6}
+- {from: BEH-verify,          to: BEH-publish,         type: triggers, sequence: 7, note: pipeline stage 6->7}
 # --- 2026-09-16 Task B: close the CAP-DF dev loop (cross-pipeline triggers) ---
 - from: BEH-walk-author
   to: BEH-run-pipeline
@@ -1831,6 +1864,16 @@ relationships:
     Notes captured in the viewer surface deltas / questions that motivate the
     next walk fragment. Closes CAP-DF.2 -> CAP-DF.1 feedback and completes the
     view -> note -> walk -> re-extract -> view loop.
+# --- 2026-09-20 Part 16c: BEH-mcp-dev-loop composite orchestration ---
+- from: CAP-DF
+  to: BEH-mcp-dev-loop
+  type: contains
+  note: CAP-DF owns the composite ceremony behavior
+- {from: BEH-mcp-dev-loop, to: BEH-view-browse, type: triggers, sequence: 1, note: ceremony step 1 — open viewer to review current model}
+- {from: BEH-mcp-dev-loop, to: BEH-view-note,   type: triggers, sequence: 2, note: ceremony step 2 — capture note on visible entity}
+- {from: BEH-mcp-dev-loop, to: BEH-view-save,   type: triggers, sequence: 3, note: ceremony step 3 — persist notes to YAML fragment}
+- {from: BEH-mcp-dev-loop, to: BEH-walk-author, type: triggers, sequence: 4, note: ceremony step 4 — author fragment from saved note}
+- {from: BEH-mcp-dev-loop, to: BEH-run-pipeline, type: triggers, sequence: 5, note: ceremony step 5 — reconcile via pipeline re-run}
 # --- 2026-09-16 Part 3 (walk-substrate): CAP-WK umbrella + sub-caps -----------
 # Walks are AMS capabilities. CAP-WK umbrella; sub-caps per walk. Each sub-cap
 # is realized by a WalkSpec YAML in .architecture/model/walks/. The `audits`
