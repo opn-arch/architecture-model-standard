@@ -10,7 +10,12 @@ that exercises the classify DSL on promise arrays.
 Realizes CAP-WK.meta-coverage.
 """
 
-from architecture_model.walks.meta.direction_lint import lint_edge_note_directions
+from architecture_model.walks.meta.direction_lint import (
+    DirectionLintCard,
+    DirectionLintReport,
+    audit_edge_note_directions,
+    lint_edge_note_directions,
+)
 from architecture_model.walks.meta.walk_coverage import (
     CoverageCard,
     CoverageReport,
@@ -21,6 +26,9 @@ from architecture_model.walks.meta.walk_coverage import (
 __all__ = [
     "CoverageCard",
     "CoverageReport",
+    "DirectionLintCard",
+    "DirectionLintReport",
+    "audit_edge_note_directions",
     "audit_walk_coverage",
     "collect_cap_wk_subcaps",
     "lint_edge_note_directions",

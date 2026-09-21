@@ -23,9 +23,36 @@ trigger the same rule.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Any
 
-__all__ = ["lint_edge_note_directions"]
+__all__ = [
+    "DirectionLintCard",
+    "DirectionLintReport",
+    "audit_edge_note_directions",
+    "lint_edge_note_directions",
+]
+
+
+@dataclass(frozen=True)
+class DirectionLintCard:
+    """One reversed-note finding for a single relationship edge."""
+
+    from_id: str
+    to_id: str
+    edge_type: str
+    note: str
+    warning: str
+    verdict: str = "reversed-note"
+
+
+@dataclass(frozen=True)
+class DirectionLintReport:
+    """Cards + aggregate counts by verdict — matches the report shape of
+    walk_coverage, llm_endpoint_inventory, and prompt_refiner meta-walks."""
+
+    cards: tuple[DirectionLintCard, ...]
+    counts: dict[str, int] = field(default_factory=dict)
 
 
 def lint_edge_note_directions(relationships: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -33,6 +60,10 @@ def lint_edge_note_directions(relationships: list[dict[str, Any]]) -> list[dict[
 
     Empty list means the model is clean (no note-vs-direction contradictions).
     Sort key: ``(type, from, to)``.
+
+    Compatibility shim: preserved so callers relying on the bare-list return
+    (viewer builder, older tests) keep working. New code should prefer
+    :func:`audit_edge_note_directions`.
     """
     warnings: list[dict[str, Any]] = []
     for r in relationships:
@@ -66,3 +97,30 @@ def lint_edge_note_directions(relationships: list[dict[str, Any]]) -> list[dict[
                 )
                 break
     return sorted(warnings, key=lambda w: (w["type"], w["from"], w["to"]))
+
+
+def audit_edge_note_directions(
+    relationships: list[dict[str, Any]],
+) -> DirectionLintReport:
+    """Report-shape wrapper around :func:`lint_edge_note_directions`.
+
+    Returns a :class:`DirectionLintReport` mirroring the shape used by the
+    other Python meta-walks (walk_coverage, llm_endpoint_inventory,
+    prompt_refiner) so evaluation drivers can dispatch on ``.cards`` /
+    ``.counts`` uniformly. Realizes ``CAP-WK.direction-lint``.
+    """
+    raw = lint_edge_note_directions(relationships)
+    cards = tuple(
+        DirectionLintCard(
+            from_id=w["from"],
+            to_id=w["to"],
+            edge_type=w["type"],
+            note=w["note"],
+            warning=w["warning"],
+        )
+        for w in raw
+    )
+    counts: dict[str, int] = {}
+    for c in cards:
+        counts[c.verdict] = counts.get(c.verdict, 0) + 1
+    return DirectionLintReport(cards=cards, counts=counts)

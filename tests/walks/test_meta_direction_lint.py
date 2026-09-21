@@ -18,6 +18,11 @@ import pytest
 import yaml
 
 from architecture_model.walks.meta import lint_edge_note_directions
+from architecture_model.walks.meta.direction_lint import (
+    DirectionLintCard,
+    DirectionLintReport,
+    audit_edge_note_directions,
+)
 
 REPO = Path(__file__).resolve().parents[2]
 MODEL_PATH = REPO / ".architecture/model/capabilities.v3.yaml"
@@ -201,3 +206,76 @@ def test_real_model_clean(real_relationships):
     assert warnings == [], (
         f"unexpected direction-lint warnings: {warnings}"
     )
+
+
+# ---------- report-shape API (R2) ------------------------------------------
+
+
+def test_audit_returns_direction_lint_report():
+    """audit_edge_note_directions returns a DirectionLintReport dataclass
+    with .cards and .counts, matching the shape of other meta-walks
+    (walk_coverage, llm_endpoint_inventory, prompt_refiner).
+    """
+    rels = [
+        {"from": "CAP-A", "to": "COMP-1", "type": "realizes",
+         "note": "CAP-A is realized by COMP-1"},
+    ]
+    report = audit_edge_note_directions(rels)
+    assert isinstance(report, DirectionLintReport)
+    assert isinstance(report.cards, tuple)
+    assert len(report.cards) == 1
+    assert isinstance(report.cards[0], DirectionLintCard)
+    assert report.counts == {"reversed-note": 1}
+
+
+def test_audit_clean_report_empty_cards():
+    """Clean input → empty cards tuple and counts dict."""
+    rels = [{"from": "COMP-1", "to": "CAP-A", "type": "realizes",
+             "note": "COMP-1 realizes CAP-A"}]
+    report = audit_edge_note_directions(rels)
+    assert report.cards == ()
+    assert report.counts == {}
+
+
+def test_audit_card_preserves_edge_fields():
+    """DirectionLintCard exposes from/to/type/note/warning."""
+    rels = [
+        {"from": "CAP-A", "to": "COMP-1", "type": "realizes",
+         "note": "CAP-A is realized by COMP-1"},
+    ]
+    card = audit_edge_note_directions(rels).cards[0]
+    assert card.from_id == "CAP-A"
+    assert card.to_id == "COMP-1"
+    assert card.edge_type == "realizes"
+    assert card.note == "CAP-A is realized by COMP-1"
+    assert "reversed" in card.warning
+
+
+def test_audit_deterministic_sort():
+    """Cards sorted by (edge_type, from_id, to_id) — same as legacy."""
+    rels = [
+        {"from": "Z", "to": "Y", "type": "realizes",
+         "note": "Z is realized by Y"},
+        {"from": "A", "to": "B", "type": "contains",
+         "note": "A is contained in B"},
+        {"from": "M", "to": "N", "type": "realizes",
+         "note": "M is realized by N"},
+    ]
+    report = audit_edge_note_directions(rels)
+    types = [c.edge_type for c in report.cards]
+    assert types == ["contains", "realizes", "realizes"]
+    assert report.cards[1].from_id == "M"
+    assert report.cards[2].from_id == "Z"
+    assert report.counts == {"reversed-note": 3}
+
+
+def test_shim_and_audit_agree_on_real_model(real_relationships):
+    """Legacy shim and new audit produce the same underlying findings."""
+    legacy = lint_edge_note_directions(real_relationships)
+    report = audit_edge_note_directions(real_relationships)
+    assert len(legacy) == len(report.cards)
+    for l, c in zip(legacy, report.cards):
+        assert l["from"] == c.from_id
+        assert l["to"] == c.to_id
+        assert l["type"] == c.edge_type
+        assert l["warning"] == c.warning
