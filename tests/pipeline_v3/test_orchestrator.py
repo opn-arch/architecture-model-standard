@@ -217,3 +217,50 @@ def test_published_yaml_omits_behaviors_when_absent(tmp_path):
     result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
     doc = yaml.safe_load(result.published.model_yaml)
     assert "behaviors" not in doc["entities"]
+
+
+# ---------------------------------------------------------------------------
+# Part 17a2: trigger edges flow through end-to-end
+# ---------------------------------------------------------------------------
+
+
+def _make_triggering_repo(tmp: Path) -> Path:
+    """Repo where ``caller`` calls ``callee`` in the same module."""
+    (tmp / "pkg").mkdir()
+    (tmp / "pkg" / "__init__.py").write_text('"""pkg init."""\n')
+    (tmp / "pkg" / "a.py").write_text(
+        '"""module a."""\n'
+        "def callee():\n"
+        '    """Do the work."""\n'
+        "    return 1\n"
+        "\n"
+        "def caller():\n"
+        '    """Orchestrate work."""\n'
+        "    return callee()\n"
+    )
+    return tmp
+
+
+def test_result_carries_trigger_edges(tmp_path):
+    _make_triggering_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    assert result.trigger_edges, "expected at least one trigger edge"
+
+
+def test_pipeline_emits_triggers_relationship_beh_to_beh(tmp_path):
+    _make_triggering_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    triggers = [r for r in result.model.relationships if r.kind == "triggers"]
+    assert triggers, "expected triggers relationship in containerized model"
+    beh_ids = {b.id for b in result.model.behaviors}
+    for r in triggers:
+        assert r.from_cluster in beh_ids
+        assert r.to_cluster in beh_ids
+
+
+def test_published_yaml_includes_triggers_relationship(tmp_path):
+    _make_triggering_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    doc = yaml.safe_load(result.published.model_yaml)
+    kinds = {r["type"] for r in doc["relationships"]}
+    assert "triggers" in kinds

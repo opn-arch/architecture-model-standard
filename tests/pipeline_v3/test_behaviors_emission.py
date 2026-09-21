@@ -25,6 +25,7 @@ from architecture_model.pipeline_v3.containerize import (
     containerize,
 )
 from architecture_model.pipeline_v3.derive_behaviors import BehaviorCandidate
+from architecture_model.pipeline_v3.derive_triggers import TriggerEdge
 from architecture_model.pipeline_v3.link import Link
 from architecture_model.pipeline_v3.publish import serialize_model
 from architecture_model.pipeline_v3.scan import ScannedModule
@@ -230,3 +231,37 @@ def test_publish_traces_to_relationships_serialized_with_type():
             "weight": 1,
         }
     ]
+
+
+# ---------------------------------------------------------------------------
+# Part 17a2: trigger edge emission through containerize
+# ---------------------------------------------------------------------------
+
+
+def test_containerize_emits_triggers_edge_beh_to_beh():
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    src = _cand("pkg.a.x", "caller")
+    dst = _cand("pkg.a.x", "callee")
+    trig = TriggerEdge(from_behavior=src.id, to_behavior=dst.id)
+    model = containerize(clusters, [], [], [src, dst], [trig])
+    triggers = [r for r in model.relationships if r.kind == "triggers"]
+    assert len(triggers) == 1
+    assert triggers[0].from_cluster == src.id
+    assert triggers[0].to_cluster == dst.id
+
+
+def test_containerize_skips_trigger_when_endpoint_not_containerized():
+    # ``dst`` behavior's owner module isn't in any cluster → dst does
+    # not survive rebinding → trigger edge is silently dropped.
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    src = _cand("pkg.a.x", "caller")
+    orphan_dst = _cand("pkg.z.unknown", "callee")
+    trig = TriggerEdge(from_behavior=src.id, to_behavior=orphan_dst.id)
+    model = containerize(clusters, [], [], [src, orphan_dst], [trig])
+    assert all(r.kind != "triggers" for r in model.relationships)
+
+
+def test_containerize_accepts_no_triggers_default():
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    model = containerize(clusters, [], [], [_cand("pkg.a.x", "f")])
+    assert all(r.kind != "triggers" for r in model.relationships)

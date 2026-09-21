@@ -30,6 +30,7 @@ from dataclasses import dataclass, field, replace
 from architecture_model.core.promise import Promise, compute_promise_id
 from architecture_model.pipeline_v3.cluster import Cluster
 from architecture_model.pipeline_v3.derive_behaviors import BehaviorCandidate
+from architecture_model.pipeline_v3.derive_triggers import TriggerEdge
 from architecture_model.pipeline_v3.link import Link
 
 __all__ = [
@@ -115,6 +116,7 @@ def containerize(
     promises: list[Promise],
     relationships: list[Link],
     behaviors: list[BehaviorCandidate] | None = None,
+    trigger_edges: list[TriggerEdge] | None = None,
 ) -> ContainerizedModel:
     """Compose scan/derive/cluster/link outputs into a v3-shaped model.
 
@@ -128,11 +130,18 @@ def containerize(
             When provided, each candidate is rebound to its owning
             cluster and one ``traces-to`` :class:`Link`
             (component → behavior) is emitted per behavior.
+        trigger_edges: Optional list of :class:`TriggerEdge` values
+            from :func:`architecture_model.pipeline_v3.derive_triggers.derive_triggers`.
+            Each edge is emitted as a BEH→BEH :class:`Link` with
+            ``kind="triggers"``. Edges whose endpoints did not survive
+            behavior rebinding (e.g. source module not in any cluster)
+            are silently dropped.
 
     Returns:
         A :class:`ContainerizedModel` with Promises rebound to component
         ownership. Relationships carry through unchanged plus any
-        ``traces-to`` edges emitted from ``behaviors``.
+        ``traces-to`` edges (from behaviors) and ``triggers`` edges
+        (from trigger_edges).
     """
     # Build reverse index: module name → cluster
     module_to_cluster: dict[str, Cluster] = {}
@@ -196,7 +205,28 @@ def containerize(
         )
 
     rebound_behaviors.sort(key=lambda b: b.id)
-    combined_relationships = list(relationships) + traces_to_edges
+
+    # Trigger edges: emit BEH→BEH ``triggers`` Links, but only when both
+    # endpoints correspond to behaviors that survived rebinding (i.e.
+    # their owner module was resolved to a cluster). This mirrors the
+    # silent-drop semantics of promise + behavior rebinding above.
+    surviving_behavior_ids = {b.id for b in rebound_behaviors}
+    trigger_links: list[Link] = []
+    for edge in trigger_edges or []:
+        if (
+            edge.from_behavior in surviving_behavior_ids
+            and edge.to_behavior in surviving_behavior_ids
+        ):
+            trigger_links.append(
+                Link(
+                    from_cluster=edge.from_behavior,
+                    to_cluster=edge.to_behavior,
+                    kind="triggers",
+                    weight=1,
+                )
+            )
+
+    combined_relationships = list(relationships) + traces_to_edges + trigger_links
 
     return ContainerizedModel(
         components=components,

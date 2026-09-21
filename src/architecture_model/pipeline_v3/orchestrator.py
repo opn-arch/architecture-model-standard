@@ -45,6 +45,10 @@ from architecture_model.pipeline_v3.derive_behaviors import (
     derive_behaviors,
 )
 from architecture_model.pipeline_v3.derive_promises import derive_promises
+from architecture_model.pipeline_v3.derive_triggers import (
+    TriggerEdge,
+    derive_triggers,
+)
 from architecture_model.pipeline_v3.link import Link, link_clusters
 from architecture_model.pipeline_v3.publish import PublishResult, publish_model
 from architecture_model.pipeline_v3.scan import ScanResult, scan_repo
@@ -69,6 +73,7 @@ class PipelineRunResult:
     scan: ScanResult
     module_promises: list[Promise]
     behavior_candidates: list[BehaviorCandidate]
+    trigger_edges: list[TriggerEdge]
     clusters: list[Cluster]
     links: list[Link]
     model: ContainerizedModel
@@ -103,6 +108,12 @@ def _build_pipeline(
         state["behavior_candidates"] = derive_behaviors(state["scan"])
         return state
 
+    def _derive_triggers(state: dict[str, Any]) -> dict[str, Any]:
+        state["trigger_edges"] = derive_triggers(
+            state["scan"], state["behavior_candidates"]
+        )
+        return state
+
     def _cluster(state: dict[str, Any]) -> dict[str, Any]:
         state["clusters"] = cluster_modules(state["scan"], depth=cluster_depth)
         return state
@@ -117,6 +128,7 @@ def _build_pipeline(
             state["module_promises"],
             state["links"],
             state["behavior_candidates"],
+            state["trigger_edges"],
         )
         return state
 
@@ -142,6 +154,7 @@ def _build_pipeline(
             wrap_function("scan", _scan),
             wrap_function("derive_promises", _derive),
             wrap_function("derive_behaviors", _derive_behaviors),
+            wrap_function("derive_triggers", _derive_triggers),
             wrap_function("cluster", _cluster),
             wrap_function("link", _link),
             wrap_function("containerize", _containerize),
@@ -188,6 +201,7 @@ def run_pipeline(
         scan=state["scan"],
         module_promises=state["module_promises"],
         behavior_candidates=state["behavior_candidates"],
+        trigger_edges=state["trigger_edges"],
         clusters=state["clusters"],
         links=state["links"],
         model=state["model"],

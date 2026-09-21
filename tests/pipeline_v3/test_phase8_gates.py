@@ -115,16 +115,29 @@ def test_self_model_relationships_reference_known_components(self_model):
     known = {c["id"] for c in self_model["entities"]["components"]}
     # Part 17a1: traces-to targets are Behaviors, not Components — accept
     # any known behavior id as a valid ``to`` for those edges.
+    # Part 17a2: triggers edges are BEH→BEH.
     known_behaviors = {
         b["id"] for b in self_model["entities"].get("behaviors", [])
     }
     for r in self_model["relationships"]:
-        assert r["from"] in known, f"relationship from unknown component {r['from']!r}"
         if r["type"] == "traces-to":
+            assert r["from"] in known, (
+                f"traces-to relationship from unknown component {r['from']!r}"
+            )
             assert r["to"] in known_behaviors, (
                 f"traces-to relationship to unknown behavior {r['to']!r}"
             )
+        elif r["type"] == "triggers":
+            assert r["from"] in known_behaviors, (
+                f"triggers relationship from unknown behavior {r['from']!r}"
+            )
+            assert r["to"] in known_behaviors, (
+                f"triggers relationship to unknown behavior {r['to']!r}"
+            )
         else:
+            assert r["from"] in known, (
+                f"relationship from unknown component {r['from']!r}"
+            )
             assert r["to"] in known, (
                 f"relationship to unknown component {r['to']!r}"
             )
@@ -133,8 +146,10 @@ def test_self_model_relationships_reference_known_components(self_model):
 def test_self_model_relationships_use_valid_kind(self_model):
     # Part 17a1: pipeline_v3 emits ``depends-on`` (link stage) and
     # ``traces-to`` (containerize stage from behavior candidates).
+    # Part 17a2: also emits ``triggers`` (containerize stage from
+    # derive_triggers).
     for r in self_model["relationships"]:
-        assert r["type"] in {"depends-on", "traces-to"}
+        assert r["type"] in {"depends-on", "traces-to", "triggers"}
 
 
 def test_self_model_promise_status_values_are_recognized(self_model):
