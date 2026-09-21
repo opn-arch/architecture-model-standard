@@ -264,3 +264,90 @@ def test_published_yaml_includes_triggers_relationship(tmp_path):
     doc = yaml.safe_load(result.published.model_yaml)
     kinds = {r["type"] for r in doc["relationships"]}
     assert "triggers" in kinds
+
+
+# ---------------------------------------------------------------------------
+# Part 17a4: call_chain flows end-to-end on composite traces-to edges
+# ---------------------------------------------------------------------------
+
+
+def _make_composite_repo(tmp: Path) -> Path:
+    """Repo where ``orch`` calls three callees — enough to be composite
+    (>= COMPOSITE_MIN_TRIGGERS = 3)."""
+    (tmp / "pkg").mkdir()
+    (tmp / "pkg" / "__init__.py").write_text('"""pkg init."""\n')
+    (tmp / "pkg" / "a.py").write_text(
+        '"""module a."""\n'
+        "def step_a():\n"
+        '    """Step A."""\n'
+        "    return 1\n"
+        "\n"
+        "def step_b():\n"
+        '    """Step B."""\n'
+        "    return 2\n"
+        "\n"
+        "def step_c():\n"
+        '    """Step C."""\n'
+        "    return 3\n"
+        "\n"
+        "def orch():\n"
+        '    """Orchestrate steps."""\n'
+        "    step_a()\n"
+        "    step_b()\n"
+        "    step_c()\n"
+        "    return None\n"
+    )
+    return tmp
+
+
+def test_pipeline_composite_traces_to_carries_call_chain(tmp_path):
+    _make_composite_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    # Find the composite (orch) behavior id
+    orch = next(b for b in result.model.behaviors if b.function_name == "orch")
+    step_ids_by_name = {
+        b.function_name: b.id for b in result.model.behaviors
+    }
+    # Its traces-to edge should carry call_chain in call-site order
+    traces = [
+        r for r in result.model.relationships
+        if r.kind == "traces-to" and r.to_cluster == orch.id
+    ]
+    assert len(traces) == 1
+    assert traces[0].call_chain == (
+        step_ids_by_name["step_a"],
+        step_ids_by_name["step_b"],
+        step_ids_by_name["step_c"],
+    )
+
+
+def test_pipeline_non_composite_traces_to_has_no_call_chain(tmp_path):
+    # The two-function triggering repo has only 1 outgoing trigger from
+    # caller — below the composite threshold — so its traces-to edge
+    # must not carry a call_chain.
+    _make_triggering_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    caller = next(b for b in result.model.behaviors if b.function_name == "caller")
+    traces = [
+        r for r in result.model.relationships
+        if r.kind == "traces-to" and r.to_cluster == caller.id
+    ]
+    assert len(traces) == 1
+    assert traces[0].call_chain is None
+
+
+def test_published_yaml_call_chain_is_list_in_order(tmp_path):
+    _make_composite_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    doc = yaml.safe_load(result.published.model_yaml)
+    orch = next(b for b in result.model.behaviors if b.function_name == "orch")
+    trace_rels = [
+        r for r in doc["relationships"]
+        if r["type"] == "traces-to" and r["to"] == orch.id
+    ]
+    assert len(trace_rels) == 1
+    chain = trace_rels[0]["call_chain"]
+    assert isinstance(chain, list)
+    assert len(chain) == 3
+    # All entries are BEH-<hash> ids
+    assert all(c.startswith("BEH-") for c in chain)

@@ -176,6 +176,26 @@ def containerize(
         )
 
     # Rebind behaviors + emit traces-to edges.
+    #
+    # Composite call-chain assembly (Part 17a4): every source behavior
+    # whose outgoing trigger edges carry ``sequence`` values is treated
+    # as composite. Build ``composite_chains`` = ``{src_id: (tgt_id,
+    # tgt_id, ...)}`` sorted by sequence so we can attach the ordered
+    # downstream ids to the composite's outgoing ``traces-to`` edge.
+    # Uses the raw ``trigger_edges`` (pre-survivorship-filter) so the
+    # chain reflects the source function's intent even if some target
+    # behaviors were dropped later. Target-survivorship checks happen
+    # separately when emitting the ``triggers`` edges themselves.
+    composite_chains: dict[str, tuple[str, ...]] = {}
+    if trigger_edges:
+        _by_src: dict[str, list[TriggerEdge]] = {}
+        for e in trigger_edges:
+            if e.sequence is not None:
+                _by_src.setdefault(e.from_behavior, []).append(e)
+        for src_id, edges in _by_src.items():
+            ordered = sorted(edges, key=lambda e: e.sequence)  # type: ignore[arg-type,return-value]
+            composite_chains[src_id] = tuple(e.to_behavior for e in ordered)
+
     rebound_behaviors: list[ContainerizedBehavior] = []
     traces_to_edges: list[Link] = []
     for cand in behaviors or []:
@@ -201,6 +221,7 @@ def containerize(
                 to_cluster=cand.id,
                 kind="traces-to",
                 weight=1,
+                call_chain=composite_chains.get(cand.id),
             )
         )
 

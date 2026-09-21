@@ -319,3 +319,99 @@ def test_publish_emits_sequence_only_when_set():
     rels_by_from = {r["from"]: r for r in doc["relationships"]}
     assert rels_by_from["BEH-11111111"]["sequence"] == 1
     assert "sequence" not in rels_by_from["BEH-33333333"]
+
+
+# ---------------------------------------------------------------------------
+# Part 17a4: call_chain enrichment on composite traces-to edges
+# ---------------------------------------------------------------------------
+
+
+def test_containerize_sets_call_chain_on_composite_traces_to():
+    # An orchestrator behavior with three sequenced triggers should get
+    # its outgoing ``traces-to`` edge (component → composite behavior)
+    # stamped with the ordered downstream ids.
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    src = _cand("pkg.a.x", "orch")
+    a = _cand("pkg.a.x", "step_a")
+    b = _cand("pkg.a.x", "step_b")
+    c = _cand("pkg.a.x", "step_c")
+    trigs = [
+        TriggerEdge(from_behavior=src.id, to_behavior=a.id, sequence=1),
+        TriggerEdge(from_behavior=src.id, to_behavior=b.id, sequence=2),
+        TriggerEdge(from_behavior=src.id, to_behavior=c.id, sequence=3),
+    ]
+    model = containerize(clusters, [], [], [src, a, b, c], trigs)
+    traces = {r.to_cluster: r for r in model.relationships if r.kind == "traces-to"}
+    assert traces[src.id].call_chain == (a.id, b.id, c.id)
+
+
+def test_containerize_non_composite_traces_to_has_no_call_chain():
+    # A behavior with no outgoing sequenced triggers is non-composite,
+    # so its traces-to edge must have ``call_chain=None``.
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    lone = _cand("pkg.a.x", "solo")
+    model = containerize(clusters, [], [], [lone])
+    traces = [r for r in model.relationships if r.kind == "traces-to"]
+    assert len(traces) == 1
+    assert traces[0].call_chain is None
+
+
+def test_containerize_call_chain_uses_pre_survivorship_targets():
+    # The chain reflects the source function's *intent* — targets that
+    # were dropped by survivorship filtering (e.g. unresolved module)
+    # still appear in the composite's call_chain, since it's assembled
+    # from the raw trigger_edges list.
+    clusters = [_cluster("COMP-1", "pkg.a", ["pkg.a.x"])]
+    src = _cand("pkg.a.x", "orch")
+    a = _cand("pkg.a.x", "step_a")
+    b = _cand("pkg.a.x", "step_b")
+    dead_target_id = "BEH-deadbeef"
+    trigs = [
+        TriggerEdge(from_behavior=src.id, to_behavior=a.id, sequence=1),
+        TriggerEdge(from_behavior=src.id, to_behavior=dead_target_id, sequence=2),
+        TriggerEdge(from_behavior=src.id, to_behavior=b.id, sequence=3),
+    ]
+    model = containerize(clusters, [], [], [src, a, b], trigs)
+    traces = {r.to_cluster: r for r in model.relationships if r.kind == "traces-to"}
+    # Chain preserves the raw ordering including the non-surviving id
+    assert traces[src.id].call_chain == (a.id, dead_target_id, b.id)
+    # But the triggers edges themselves silently drop the dead one
+    trigger_targets = {r.to_cluster for r in model.relationships if r.kind == "triggers"}
+    assert dead_target_id not in trigger_targets
+
+
+def test_publish_emits_call_chain_only_when_set():
+    # Two traces-to edges: one composite (with call_chain), one plain.
+    # YAML should include ``call_chain`` on the composite edge and omit
+    # it on the plain one so pre-17a4 fixtures stay byte-stable.
+    model = ContainerizedModel(
+        components=[],
+        relationships=[
+            Link(from_cluster="COMP-1", to_cluster="BEH-11111111",
+                 kind="traces-to", weight=1,
+                 call_chain=("BEH-22222222", "BEH-33333333", "BEH-44444444")),
+            Link(from_cluster="COMP-1", to_cluster="BEH-55555555",
+                 kind="traces-to", weight=1, call_chain=None),
+        ],
+        behaviors=[],
+    )
+    doc = yaml.safe_load(serialize_model(model))
+    rels_by_to = {r["to"]: r for r in doc["relationships"]}
+    assert rels_by_to["BEH-11111111"]["call_chain"] == [
+        "BEH-22222222", "BEH-33333333", "BEH-44444444",
+    ]
+    assert "call_chain" not in rels_by_to["BEH-55555555"]
+
+
+def test_publish_omits_call_chain_on_non_traces_to_edges():
+    # A ``depends-on`` link with call_chain=None (the default) must not
+    # emit the field. Guards against accidental key leakage.
+    model = ContainerizedModel(
+        components=[],
+        relationships=[
+            Link(from_cluster="COMP-1", to_cluster="COMP-2"),
+        ],
+        behaviors=[],
+    )
+    doc = yaml.safe_load(serialize_model(model))
+    assert "call_chain" not in doc["relationships"][0]

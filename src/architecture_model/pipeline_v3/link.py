@@ -48,6 +48,13 @@ class Link:
     source is a composite. Non-``None`` only on ``triggers`` edges
     emitted by containerize from composite behaviors (see
     :mod:`architecture_model.pipeline_v3.derive_triggers`).
+
+    ``call_chain`` is 17a4 composite-flow metadata: ordered tuple of
+    downstream behavior ids reached from a composite behavior's source
+    function, in call-site order. Non-``None`` only on ``traces-to``
+    edges (component → composite-behavior) emitted by containerize.
+    Empty tuple means "composite with no resolved triggers" — never
+    emitted by the current pipeline (composite implies >= 3 triggers).
     """
 
     from_cluster: str          # source Cluster.id (or entity id)
@@ -55,6 +62,7 @@ class Link:
     kind: str = "depends-on"
     weight: int = 1
     sequence: int | None = None
+    call_chain: tuple[str, ...] | None = None
 
 
 def _strip_src(prefix: str) -> str:

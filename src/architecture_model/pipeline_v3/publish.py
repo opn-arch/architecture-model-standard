@@ -94,9 +94,12 @@ def _relationship_to_dict(l: Link) -> dict[str, Any]:
     """Serialize a :class:`Link` to the v3 YAML relationship shape.
 
     Emits ``sequence`` only when non-``None`` (composite-flow
-    metadata from Part 17a3). Omission preserves byte-identical
-    output for non-composite ``depends-on`` / ``traces-to`` /
-    ``triggers`` edges, keeping pre-17a3 fixtures digest-stable.
+    metadata from Part 17a3) and ``call_chain`` only when non-``None``
+    (composite-flow metadata from Part 17a4). Omission preserves
+    byte-identical output for non-composite ``depends-on`` /
+    ``traces-to`` / ``triggers`` edges, keeping pre-17a3/17a4
+    fixtures digest-stable. ``call_chain`` is emitted as a list
+    (YAML block-style sequence) rather than the underlying tuple.
     """
     out: dict[str, Any] = {
         "from": l.from_cluster,
@@ -106,6 +109,8 @@ def _relationship_to_dict(l: Link) -> dict[str, Any]:
     }
     if l.sequence is not None:
         out["sequence"] = l.sequence
+    if l.call_chain is not None:
+        out["call_chain"] = list(l.call_chain)
     return out
 
 
