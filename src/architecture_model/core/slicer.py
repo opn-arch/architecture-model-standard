@@ -158,6 +158,107 @@ def slice_by_entity(
     )
 
 
+# ---------------------------------------------------------------------------
+# Part 16b (2026-09-20) : flow-scoped slice
+# ---------------------------------------------------------------------------
+
+
+@monitored(
+    module="core.slicer",
+    outputs=lambda r: {
+        "entities_retained": r.entity_count,
+        "relationships_retained": len(r.relationships),
+    },
+)
+def slice_by_behavior(
+    model: ArchitectureModel,
+    behavior_id: str,
+    *,
+    include_components: bool = True,
+    include_capability: bool = True,
+) -> ArchitectureModel:
+    """Return the flow sub-model rooted at a composite Behavior.
+
+    Walks outgoing ``triggers`` edges transitively (BFS) from ``behavior_id``,
+    collecting every reachable sub-behavior. When ``include_components`` is
+    True, every ``traces-to`` component reached by any flow behavior is also
+    retained (bounds the model to actual flow participants). When
+    ``include_capability`` is True, the parent Capability that ``contains``
+    the composite root is also included.
+
+    ``triggers`` edges are ordered by ``sequence`` when set (composite flow);
+    unordered triggers still traverse but retain source-order.
+
+    The returned model's ``meta.extensions.flow_root`` is set to
+    ``behavior_id`` for downstream tooling. Missing ``behavior_id`` raises
+    :class:`KeyError`; a non-Behavior id raises :class:`ValueError`.
+    """
+    behavior_ids: set[str] = {b.id for b in model.entities.behaviors}
+    if behavior_id not in model.all_entity_ids:
+        raise KeyError(behavior_id)
+    if behavior_id not in behavior_ids:
+        raise ValueError(
+            f"slice_by_behavior: {behavior_id!r} is not a Behavior"
+        )
+
+    kept_behaviors: set[str] = {behavior_id}
+    # BFS along triggers edges; deterministic order (sequence asc, then to_id).
+    frontier: set[str] = {behavior_id}
+    while frontier:
+        next_frontier: set[str] = set()
+        triggers = [
+            r for r in model.relationships
+            if r.type == RelationType.TRIGGERS and r.from_id in frontier
+        ]
+        # Sort for determinism: sequence (None sorts last), then to_id.
+        triggers.sort(key=lambda r: (r.sequence is None, r.sequence or 0, r.to_id))
+        for rel in triggers:
+            if rel.to_id in behavior_ids and rel.to_id not in kept_behaviors:
+                kept_behaviors.add(rel.to_id)
+                next_frontier.add(rel.to_id)
+        frontier = next_frontier
+
+    kept: set[str] = set(kept_behaviors)
+
+    # Optionally include components reached via traces-to from any flow behavior.
+    if include_components:
+        component_ids = {c.id for c in model.entities.components}
+        for rel in model.relationships:
+            if rel.type != RelationType.TRACES_TO:
+                continue
+            if rel.from_id in kept_behaviors and rel.to_id in component_ids:
+                kept.add(rel.to_id)
+
+    # Optionally include the parent capability(ies) that contain the root.
+    if include_capability:
+        capability_ids = {c.id for c in model.entities.capabilities}
+        for rel in model.relationships:
+            if rel.type != RelationType.CONTAINS:
+                continue
+            if rel.to_id == behavior_id and rel.from_id in capability_ids:
+                kept.add(rel.from_id)
+
+    # Rebuild filtered Entities using the fixed kind list.
+    entity_kwargs: dict[str, list] = {}
+    for kind in _ENTITY_KINDS:
+        entity_kwargs[kind] = [
+            e for e in getattr(model.entities, kind) if e.id in kept
+        ]
+    sub_entities = Entities(**entity_kwargs)
+
+    sub_rels = [
+        deepcopy(r)
+        for r in model.relationships
+        if r.from_id in kept and r.to_id in kept
+    ]
+
+    return ArchitectureModel(
+        meta=deepcopy(model.meta),
+        entities=sub_entities,
+        relationships=sub_rels,
+    )
+
+
 @monitored(module="core.slicer", outputs=lambda r: {"entities_retained": len(r.entities.components), "relationships_retained": len(r.relationships)})
 def slice_by_source_block(
     model: ArchitectureModel,
