@@ -109,6 +109,9 @@ def _build_pipeline(
     skip_publish: bool,
     infer_attributes: bool = False,
     attribute_provider=None,
+    ingest_requirements: bool = False,
+    doc_roots=None,
+    requirements_provider=None,
 ) -> Pipeline:
     """Build the pipeline_v3 stage pipeline over a shared state dict.
 
@@ -163,17 +166,31 @@ def _build_pipeline(
             state["published"] = None
         else:
             transform_doc = None
-            if infer_attributes:
-                from architecture_model.pipeline_v3.derive_attributes_llm import (
-                    derive_attributes,
-                )
-
-                _provider = attribute_provider
-                if _provider is None:
-                    _provider = _load_default_provider()
+            if infer_attributes or ingest_requirements:
+                _attr_provider = attribute_provider
+                if infer_attributes and _attr_provider is None:
+                    _attr_provider = _load_default_provider()
 
                 def transform_doc(doc: dict) -> dict:
-                    return derive_attributes(doc, provider=_provider)
+                    if infer_attributes:
+                        from architecture_model.pipeline_v3.derive_attributes_llm import (
+                            derive_attributes,
+                        )
+
+                        doc = derive_attributes(doc, provider=_attr_provider)
+                    if ingest_requirements:
+                        from architecture_model.pipeline_v3.ingest_requirements import (
+                            DEFAULT_DOC_ROOTS,
+                            ingest_requirements as _ingest,
+                        )
+
+                        doc = _ingest(
+                            doc,
+                            repo_path=repo,
+                            doc_roots=doc_roots or DEFAULT_DOC_ROOTS,
+                            provider=requirements_provider,
+                        )
+                    return doc
 
             state["published"] = publish_model(
                 state["model"],
@@ -208,6 +225,9 @@ def run_pipeline(
     skip_publish: bool = False,
     infer_attributes: bool = False,
     attribute_provider=None,
+    ingest_requirements: bool = False,
+    doc_roots=None,
+    requirements_provider=None,
 ) -> PipelineRunResult:
     """Run the full pipeline_v3 end-to-end via the substrate runner.
 
@@ -241,6 +261,9 @@ def run_pipeline(
         skip_publish,
         infer_attributes=infer_attributes,
         attribute_provider=attribute_provider,
+        ingest_requirements=ingest_requirements,
+        doc_roots=doc_roots,
+        requirements_provider=requirements_provider,
     )
     initial_state: dict[str, Any] = {"repo": repo}
     result = pipeline.run(initial_state, StageContext(run_id="pipeline_v3"))
