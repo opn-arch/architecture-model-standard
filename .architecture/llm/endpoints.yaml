@@ -1,19 +1,10 @@
 # LLM endpoint inventory
 #
-# Declared registry of all LLM integration points across the AMS + OCA
-# codebases. Consumed by
-# ``src/architecture_model/walks/meta/llm_endpoint_inventory.py``
+# Declared registry of all LLM integration points across AMS + OCA.
+# Consumed by src/architecture_model/walks/meta/llm_endpoint_inventory.py
 # (CAP-WK.llm-endpoint-inventory audit walk).
 #
-# Endpoint id format: ``<repo_slug>:<posix_relpath_from_repo>:<lineno>``
-# - repo_slug = last component of the repo root path
-#   (``architecture-model-standard`` | ``opencode-arch``)
-# - posix_relpath = path from the repo root, forward-slash separated
-# - lineno = 1-based source line of the LLM call site
-#
-# The id must match the AST-derived form exactly for the audit walk to
-# emit ``covered``. Mismatch → ``stale`` (declared, no AST) or
-# ``undeclared`` (AST hit, not declared).
+# Endpoint id format: <repo_slug>:<posix_relpath_from_repo>:<lineno>
 #
 # migration_status values:
 #   protocol   — new LLMProvider Protocol (provider.complete/structured/stream)
@@ -21,266 +12,175 @@
 #   provenance — passive read of provider metadata (no call)
 #   routing    — routing/policy glue (calls provider indirectly)
 #
-# Line numbers reflect the code state on ``feat/phase-5-fanout-provenance-family5``
-# at the AMS commit that ships Part 13. As code moves, ids drift — the audit
-# walk surfaces drift as ``stale`` (declared, no AST hit) so the inventory can
-# be maintained.
+# Auto-refreshed by R3 driver (docs/reports/2026-09-20-model-quality-evaluation.md).
+# Entries with kind=unclassified need manual metadata review.
 ---
 endpoints:
-  # ==== AMS-side (13) ====
-  - id: architecture-model-standard:src/architecture_model/pipeline/protocol.py:219
-    location: pipeline/protocol.py:219
-    kind: completion
-    task_class: enrichment
-    tier: T2
-    migration_status: protocol
-    description: PipelineContext.llm_enrich — universal stage entry (A1)
-
-  - id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:630
-    location: pipeline/coordinator.py:630
-    kind: enrichment
-    task_class: naming
-    tier: T2
-    migration_status: protocol
-    description: Coordinator infer-stage naming (A2, via A1)
-
-  - id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:674
-    location: pipeline/coordinator.py:674
-    kind: enrichment
-    task_class: naming
-    tier: T2
-    migration_status: protocol
-    description: Coordinator allocate-stage naming (A3, via A1)
-
-  - id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:500
-    location: pipeline/coordinator.py:500
-    kind: enrichment
-    task_class: review
-    tier: T2
-    migration_status: protocol
-    description: Coordinator semantic review (A4, via A1)
-
-  - id: architecture-model-standard:src/architecture_model/pipeline/llm_refine.py:413
-    location: pipeline/llm_refine.py:413
-    kind: enrichment
-    task_class: enrichment
-    tier: T2
-    migration_status: protocol
-    description: llm_refine refinement pass (A5, via A1)
-
-  - id: architecture-model-standard:src/architecture_model/pipeline/emit.py:554
-    location: pipeline/emit.py:554
-    kind: review
-    task_class: review
-    tier: T2
-    migration_status: legacy
-    description: Emit-stage review (A6, uses legacy llm_callback)
-
-  - id: architecture-model-standard:src/architecture_model/pipeline/gap_analysis.py:479
-    location: pipeline/gap_analysis.py:479
-    kind: diff
-    task_class: diff
-    tier: T2
-    migration_status: legacy
-    description: Gap-analysis stage diff (A7, uses legacy llm_callback)
-
-  - id: architecture-model-standard:src/architecture_model/pipeline/emit.py:32
-    location: pipeline/emit.py:32
-    kind: provenance
-    task_class: none
-    tier: T1
-    migration_status: provenance
-    description: Provider provenance stamp — passive read (A8, no call)
-
-  - id: architecture-model-standard:src/architecture_model/docs/components/author.py:249
-    location: docs/components/author.py:249
-    kind: authoring
-    task_class: authoring
-    tier: T3
-    migration_status: legacy
-    description: Docs component-spec author (A9, uses legacy llm_callback)
-
-  - id: architecture-model-standard:src/architecture_model/quality/code_improver.py:200
-    location: quality/code_improver.py:200
-    kind: authoring
-    task_class: authoring
-    tier: T3
-    migration_status: legacy
-    description: Quality code_improver (A10, uses legacy llm_callback)
-
-  - id: architecture-model-standard:src/architecture_model/quality/orchestrator.py:28
-    location: quality/orchestrator.py:28
-    kind: orchestration
-    task_class: authoring
-    tier: T3
-    migration_status: legacy
-    description: Quality orchestrator loop (A11, wraps A10)
-
-  - id: architecture-model-standard:src/architecture_model/lifecycle/projectors/write_back_variants.py:1
-    location: lifecycle/projectors/write_back_variants.py
-    kind: structured-author
-    task_class: authoring
-    tier: T3
-    migration_status: protocol
-    description: 7 write-back .llm variants — Family1/2/3/4/6/7/8 (A12, collective)
-
-  - id: architecture-model-standard:src/architecture_model/cli/main.py:829
-    location: cli/main.py:829
-    kind: di-factory
-    task_class: none
-    tier: T1
-    migration_status: routing
-    description: CLI create_llm_callback bootstrap (A13, one of 3 call sites)
-
-  # ==== OCA-side (16) ====
-  - id: opencode-arch:src/opencode_arch/llm/policy.py:120
-    location: opencode-arch:llm/policy.py:120
-    kind: routing
-    task_class: none
-    tier: T1
-    migration_status: routing
-    description: Policy.pick(TaskClass) router (B1) — no config yet
-
-  - id: opencode-arch:src/opencode_arch/llm/policy.py:70
-    location: opencode-arch:llm/policy.py:70
-    kind: routing
-    task_class: none
-    tier: T1
-    migration_status: routing
-    description: _FallbackProvider.complete cascade (B2)
-
-  - id: opencode-arch:src/opencode_arch/llm/providers/frontier.py:1
-    location: opencode-arch:llm/providers/frontier.py
-    kind: transport
-    task_class: none
-    tier: T1
-    migration_status: protocol
-    description: Frontier provider adapter (B3.1 of 4)
-
-  - id: opencode-arch:src/opencode_arch/llm/providers/mcp.py:1
-    location: opencode-arch:llm/providers/mcp.py
-    kind: transport
-    task_class: none
-    tier: T1
-    migration_status: protocol
-    description: MCP provider adapter (B3.2 of 4)
-
-  - id: opencode-arch:src/opencode_arch/llm/providers/mock.py:1
-    location: opencode-arch:llm/providers/mock.py
-    kind: transport
-    task_class: none
-    tier: T1
-    migration_status: protocol
-    description: Mock provider adapter (B3.3 of 4)
-
-  - id: opencode-arch:src/opencode_arch/llm/providers/relay_ext.py:1
-    location: opencode-arch:llm/providers/relay_ext.py
-    kind: transport
-    task_class: none
-    tier: T1
-    migration_status: protocol
-    description: Relay-ext provider adapter (B3.4 of 4)
-
-  - id: opencode-arch:src/opencode_arch/llm/prompts:1
-    location: opencode-arch:llm/prompts/
-    kind: prompt-catalog
-    task_class: none
-    tier: T1
-    migration_status: routing
-    description: 3 prompt templates — audit/matching/requirements (B4, collective)
-
-  - id: opencode-arch:src/opencode_arch/mcp/tools/ai/propose.py:1
-    location: opencode-arch:mcp/tools/ai/propose.py
-    kind: structured-author-invoke
-    task_class: authoring
-    tier: T3
-    migration_status: protocol
-    description: architect_propose MCP tool (B5)
-
-  - id: opencode-arch:src/opencode_arch/mcp/tools/work_issue.py:272
-    location: opencode-arch:mcp/tools/work_issue.py:272
-    kind: orchestration
-    task_class: authoring
-    tier: T3
-    migration_status: protocol
-    description: architect_work_issue full comment→apply loop (B6)
-
-  - id: opencode-arch:src/opencode_arch/mcp/tools/author.py:1
-    location: opencode-arch:mcp/tools/author.py
-    kind: forward-authoring
-    task_class: authoring
-    tier: T3
-    migration_status: legacy
-    description: architect_author — requirements→model (B7)
-
-  - id: opencode-arch:src/opencode_arch/mcp/tools/gate.py:1
-    location: opencode-arch:mcp/tools/gate.py
-    kind: gate
-    task_class: gate
-    tier: T2
-    migration_status: protocol
-    description: architect_gate check (B8)
-
-  - id: opencode-arch:src/opencode_arch/mcp/tools/pipeline.py:1
-    location: opencode-arch:mcp/tools/pipeline.py
-    kind: pipeline-invoke
-    task_class: enrichment
-    tier: T2
-    migration_status: protocol
-    description: architect_pipeline LLM-enrichment path (B9)
-
-  - id: opencode-arch:src/opencode_arch/mcp/tools/llm_audit.py:1
-    location: opencode-arch:mcp/tools/llm_audit.py
-    kind: meta-audit
-    task_class: decomposition
-    tier: T3
-    migration_status: protocol
-    description: architect_llm_audit two-stage decomposition (B10)
-
-  - id: opencode-arch:src/opencode_arch/requirements/llm_extractor.py:1
-    location: opencode-arch:requirements/llm_extractor.py
-    kind: requirement-authoring
-    task_class: authoring
-    tier: T3
-    migration_status: protocol
-    description: Requirements LLM extractor + matcher (B11, collective)
-
-  - id: opencode-arch:src/opencode_arch/learning/classifier.py:1
-    location: opencode-arch:learning/
-    kind: self-improvement
-    task_class: enrichment
-    tier: T2
-    migration_status: legacy
-    description: Learning classifier/patterns/lessons (B12, collective)
-
-  - id: opencode-arch:src/opencode_arch/cli/regen_loop.py:1
-    location: opencode-arch:cli/regen_loop.py
-    kind: iterative-codegen
-    task_class: authoring
-    tier: T3
-    migration_status: legacy
-    description: Regen loop (B13)
-
-  - id: opencode-arch:src/opencode_arch/cli:1
-    location: opencode-arch:cli/
-    kind: batch-invoke
-    task_class: enrichment
-    tier: T2
-    migration_status: legacy
-    description: Calibrate/generate/docs/extract/gap_analyzer CLIs (B14, collective)
-
-  - id: opencode-arch:src/opencode_arch/lifecycle_exec/worker.py:1
-    location: opencode-arch:lifecycle_exec/worker.py
-    kind: job-runner
-    task_class: authoring
-    tier: T3
-    migration_status: protocol
-    description: Job worker — calls A12 via B5 (B15)
-
-  - id: opencode-arch:src/opencode_arch/lifecycle_exec/merge.py:1
-    location: opencode-arch:lifecycle_exec/merge.py
-    kind: package-merge
-    task_class: merge
-    tier: T3
-    migration_status: protocol
-    description: Package-merge LLM assist — 3-way merge (B16)
+- id: architecture-model-standard:src/architecture_model/docs/components/author.py:249
+  location: docs/components/author.py:249
+  kind: authoring
+  task_class: authoring
+  tier: T3
+  migration_status: legacy
+  description: Docs component-spec author (A9, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/docs/components/author.py:252
+  location: src/architecture_model/docs/components/author.py:252
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=llm_callback, needs manual metadata."
+- id: architecture-model-standard:src/architecture_model/lifecycle/projectors/write_back.py:86
+  location: src/architecture_model/lifecycle/projectors/write_back.py:86
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:500
+  location: pipeline/coordinator.py:500
+  kind: enrichment
+  task_class: review
+  tier: T2
+  migration_status: protocol
+  description: Coordinator semantic review (A4, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:630
+  location: pipeline/coordinator.py:630
+  kind: enrichment
+  task_class: naming
+  tier: T2
+  migration_status: protocol
+  description: Coordinator infer-stage naming (A2, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:674
+  location: pipeline/coordinator.py:674
+  kind: enrichment
+  task_class: naming
+  tier: T2
+  migration_status: protocol
+  description: Coordinator allocate-stage naming (A3, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/emit.py:554
+  location: pipeline/emit.py:554
+  kind: review
+  task_class: review
+  tier: T2
+  migration_status: legacy
+  description: Emit-stage review (A6, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/pipeline/gap_analysis.py:479
+  location: pipeline/gap_analysis.py:479
+  kind: diff
+  task_class: diff
+  tier: T2
+  migration_status: legacy
+  description: Gap-analysis stage diff (A7, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/pipeline/llm_refine.py:413
+  location: pipeline/llm_refine.py:413
+  kind: enrichment
+  task_class: enrichment
+  tier: T2
+  migration_status: protocol
+  description: llm_refine refinement pass (A5, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/protocol.py:227
+  location: src/architecture_model/pipeline/protocol.py:227
+  kind: completion
+  task_class: enrichment
+  tier: T2
+  migration_status: protocol
+  description: "PipelineContext.llm_enrich \u2014 universal stage entry (A1)"
+- id: architecture-model-standard:src/architecture_model/quality/code_improver.py:200
+  location: quality/code_improver.py:200
+  kind: authoring
+  task_class: authoring
+  tier: T3
+  migration_status: legacy
+  description: Quality code_improver (A10, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/walks/meta/author_promise_note.py:200
+  location: src/architecture_model/walks/meta/author_promise_note.py:200
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/bundle.py:260
+  location: src/opencode_arch/llm/bundle.py:260
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/bundle.py:264
+  location: src/opencode_arch/llm/bundle.py:264
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/policy.py:74
+  location: src/opencode_arch/llm/policy.py:74
+  kind: routing
+  task_class: none
+  tier: T1
+  migration_status: routing
+  description: "Policy.pick(TaskClass) router (B1) \u2014 no config yet"
+- id: opencode-arch:src/opencode_arch/llm/policy.py:90
+  location: src/opencode_arch/llm/policy.py:90
+  kind: routing
+  task_class: none
+  tier: T1
+  migration_status: routing
+  description: _FallbackProvider.complete cascade (B2)
+- id: opencode-arch:src/opencode_arch/llm/policy.py:97
+  location: src/opencode_arch/llm/policy.py:97
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/providers/frontier.py:114
+  location: src/opencode_arch/llm/providers/frontier.py:114
+  kind: transport
+  task_class: none
+  tier: T1
+  migration_status: protocol
+  description: Frontier provider adapter (B3.1 of 4)
+- id: opencode-arch:src/opencode_arch/llm/providers/frontier.py:119
+  location: src/opencode_arch/llm/providers/frontier.py:119
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/providers/mcp.py:37
+  location: src/opencode_arch/llm/providers/mcp.py:37
+  kind: transport
+  task_class: none
+  tier: T1
+  migration_status: protocol
+  description: MCP provider adapter (B3.2 of 4)
+- id: opencode-arch:src/opencode_arch/llm/providers/mcp.py:44
+  location: src/opencode_arch/llm/providers/mcp.py:44
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/providers/relay_ext.py:70
+  location: src/opencode_arch/llm/providers/relay_ext.py:70
+  kind: transport
+  task_class: none
+  tier: T1
+  migration_status: protocol
+  description: Relay-ext provider adapter (B3.4 of 4)
+- id: opencode-arch:src/opencode_arch/llm/providers/relay_ext.py:75
+  location: src/opencode_arch/llm/providers/relay_ext.py:75
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/runner/opencode.py:92
+  location: src/opencode_arch/runner/opencode.py:92
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
