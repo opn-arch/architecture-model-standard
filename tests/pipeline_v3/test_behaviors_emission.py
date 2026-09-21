@@ -162,6 +162,7 @@ def test_publish_includes_behaviors_when_present():
             "owner_component": "COMP-1",
             "owner_module": "pkg.a.x",
             "function_name": "scan",
+            "promises": [],
         }
     ]
 

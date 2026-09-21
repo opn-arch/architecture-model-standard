@@ -213,3 +213,49 @@ def test_containerize_promises_within_component_sorted_by_attribute():
     model = containerize(clusters, ps, links)
     attrs = [p.attribute for p in model.components[0].promises]
     assert attrs == sorted(attrs)
+
+
+# ---------------------------------------------------------------------------
+# R9: behavior intent Promise attachment
+# ---------------------------------------------------------------------------
+
+
+def test_containerize_attaches_intent_promise_to_each_behavior():
+    """Each ContainerizedBehavior carries a promises list containing at
+    least an intent Promise derived from its description."""
+    from architecture_model.pipeline_v3.derive_behaviors import (
+        BehaviorCandidate,
+        derive_behaviors,
+    )
+
+    scan = ScanResult(
+        source_root=Path("/tmp"),
+        modules=[
+            _mod(
+                "a.b.x",
+                docstring="mod",
+                functions=[
+                    {"name": "scan_repo", "docstring": "Scan a repository."}
+                ],
+            ),
+        ],
+    )
+    clusters, ps, links = _pipeline(scan, depth=2)
+    behaviors = derive_behaviors(scan)
+    model = containerize(clusters, ps, links, behaviors=behaviors)
+    assert len(model.behaviors) == 1
+    beh = model.behaviors[0]
+    assert hasattr(beh, "promises")
+    intents = [p for p in beh.promises if p.attribute == "intent"]
+    assert len(intents) == 1
+    assert intents[0].content == "Scan a repository."
+    assert intents[0].owner_entity == beh.id
+
+
+def test_containerize_behavior_promises_empty_when_no_behaviors_passed():
+    """Backward-compat: containerize called without behaviors still works
+    (behaviors list is empty; nothing to attach)."""
+    scan = ScanResult(source_root=Path("/tmp"), modules=[_mod("a.b.x")])
+    clusters, ps, links = _pipeline(scan, depth=2)
+    model = containerize(clusters, ps, links)
+    assert model.behaviors == []

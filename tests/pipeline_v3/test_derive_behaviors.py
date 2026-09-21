@@ -195,3 +195,43 @@ def test_behavior_candidate_is_frozen_hashable():
     import pytest
     with pytest.raises((AttributeError, Exception)):
         cand.name = "other"  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
+# R9: intent Promise emission per BehaviorCandidate
+# ---------------------------------------------------------------------------
+
+
+def test_derive_promises_for_behavior_emits_one_intent_promise():
+    """Every BehaviorCandidate yields a single intent Promise whose
+    content = the candidate description. Owner = candidate id (behaviors
+    are first-class entities at v3 YAML emission time)."""
+    from architecture_model.core.promise import PromiseStatus
+    from architecture_model.pipeline_v3.derive_behaviors import (
+        derive_promises_for_behavior,
+    )
+
+    m = _mod("pkg.core", functions=[_fn("scan_repo", "Scan a repository.")])
+    cand = derive_behaviors_for_module(m)[0]
+    promises = derive_promises_for_behavior(cand)
+    assert len(promises) == 1
+    p = promises[0]
+    assert p.attribute == "intent"
+    assert p.content == "Scan a repository."
+    assert p.owner_entity == cand.id
+    assert p.status == PromiseStatus.OPEN
+    assert p.provenance == "pipeline_v3.derive_behaviors"
+
+
+def test_derive_promises_for_behavior_is_deterministic():
+    """Same input → identical Promise id (id is deterministic from
+    (attribute, content, owner))."""
+    from architecture_model.pipeline_v3.derive_behaviors import (
+        derive_promises_for_behavior,
+    )
+
+    m = _mod("pkg.core", functions=[_fn("scan_repo", "Scan a repository.")])
+    cand = derive_behaviors_for_module(m)[0]
+    p1 = derive_promises_for_behavior(cand)[0]
+    p2 = derive_promises_for_behavior(cand)[0]
+    assert p1.id == p2.id

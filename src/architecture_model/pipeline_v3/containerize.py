@@ -29,7 +29,10 @@ from dataclasses import dataclass, field, replace
 
 from architecture_model.core.promise import Promise, compute_promise_id
 from architecture_model.pipeline_v3.cluster import Cluster
-from architecture_model.pipeline_v3.derive_behaviors import BehaviorCandidate
+from architecture_model.pipeline_v3.derive_behaviors import (
+    BehaviorCandidate,
+    derive_promises_for_behavior,
+)
 from architecture_model.pipeline_v3.derive_triggers import TriggerEdge
 from architecture_model.pipeline_v3.link import Link
 
@@ -72,6 +75,9 @@ class ContainerizedBehavior:
         function_name: Source symbol name.
         class_name: Owning class name if the source was a method,
             otherwise ``None``.
+        promises: Promises owned by this behavior (R9). Populated by
+            :func:`containerize` via :func:`derive_promises_for_behavior`.
+            Sorted by ``(attribute, id)`` for stable YAML output.
     """
 
     id: str
@@ -81,6 +87,7 @@ class ContainerizedBehavior:
     owner_module: str
     function_name: str
     class_name: str | None = None
+    promises: tuple[Promise, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -213,6 +220,12 @@ def containerize(
                 owner_module=cand.owner_module,
                 function_name=cand.function_name,
                 class_name=cand.class_name,
+                promises=tuple(
+                    sorted(
+                        derive_promises_for_behavior(cand),
+                        key=lambda p: (p.attribute, p.id),
+                    )
+                ),
             )
         )
         traces_to_edges.append(

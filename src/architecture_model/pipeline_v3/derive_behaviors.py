@@ -30,13 +30,17 @@ import hashlib
 from dataclasses import dataclass
 from typing import Any
 
+from architecture_model.core.promise import Promise, PromiseStatus
 from architecture_model.pipeline_v3.scan import ScannedModule, ScanResult
 
 __all__ = [
     "BehaviorCandidate",
     "derive_behaviors",
     "derive_behaviors_for_module",
+    "derive_promises_for_behavior",
 ]
+
+_PROVENANCE = "pipeline_v3.derive_behaviors"
 
 
 @dataclass(frozen=True)
@@ -165,3 +169,27 @@ def derive_behaviors(scan: ScanResult) -> list[BehaviorCandidate]:
             seen.add(cand.id)
             out.append(cand)
     return out
+
+
+def derive_promises_for_behavior(cand: BehaviorCandidate) -> list[Promise]:
+    """Derive intent Promise(s) for a single BehaviorCandidate (R9).
+
+    Emits a single ``intent`` Promise whose content is the candidate's
+    ``description`` (already the first non-empty docstring line, guaranteed
+    non-empty by the candidate filter). Owner is the candidate id — behaviors
+    are first-class entities at v3 YAML emission time, and their promises
+    are owned by them directly rather than by the containing component.
+
+    Status is always ``OPEN`` — an intent derived from a docstring is a
+    proposed claim about behavioral intent that downstream verification
+    (Category B strict gate, LLM inference in R7) can promote or refute.
+    """
+    return [
+        Promise(
+            attribute="intent",
+            content=cand.description,
+            owner_entity=cand.id,
+            status=PromiseStatus.OPEN,
+            provenance=_PROVENANCE,
+        )
+    ]

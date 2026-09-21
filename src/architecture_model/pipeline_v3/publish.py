@@ -75,7 +75,10 @@ def _behavior_to_dict(b: ContainerizedBehavior) -> dict[str, Any]:
 
     ``class_name`` is omitted when ``None`` so module-level behaviors
     (the common case) do not carry a null field. Field order is fixed
-    for stable key ordering under ``sort_keys=False``.
+    for stable key ordering under ``sort_keys=False``. ``promises`` list
+    (R9) is emitted after class_name (or after function_name when
+    class_name is omitted) so behavior entities carry attribute-completeness
+    signal even before human/LLM enrichment.
     """
     out: dict[str, Any] = {
         "id": b.id,
@@ -87,6 +90,7 @@ def _behavior_to_dict(b: ContainerizedBehavior) -> dict[str, Any]:
     }
     if b.class_name is not None:
         out["class_name"] = b.class_name
+    out["promises"] = [p.to_dict() for p in b.promises]
     return out
 
 

@@ -203,3 +203,35 @@ def test_publish_overwrites_existing_file(tmp_path):
     publish_model(model, out)
     assert "stale content" not in out.read_text()
     assert "schema_version" in out.read_text()
+
+
+# ---------------------------------------------------------------------------
+# R9: behavior promises emitted in YAML
+# ---------------------------------------------------------------------------
+
+
+def test_serialize_behavior_carries_promises_list():
+    """Each behavior dict in serialized YAML carries a promises list
+    with at least one intent promise (from R9 emission)."""
+    from architecture_model.pipeline_v3.derive_behaviors import derive_behaviors
+
+    m = _mod(
+        "a.b.x",
+        docstring="mod",
+        functions=[{"name": "scan_repo", "docstring": "Scan a repository."}],
+    )
+    scan = ScanResult(source_root=Path("/tmp"), modules=[m])
+    clusters = cluster_modules(scan, depth=2)
+    ps = derive_promises(scan)
+    links = link_clusters(clusters)
+    behaviors = derive_behaviors(scan)
+    model = containerize(clusters, ps, links, behaviors=behaviors)
+
+    text = serialize_model(model)
+    data = yaml.safe_load(text)
+    behs = data["entities"]["behaviors"]
+    assert len(behs) == 1
+    assert "promises" in behs[0]
+    intents = [p for p in behs[0]["promises"] if p["attribute"] == "intent"]
+    assert len(intents) == 1
+    assert intents[0]["content"] == "Scan a repository."
