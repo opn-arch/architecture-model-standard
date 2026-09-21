@@ -29,9 +29,15 @@ from dataclasses import dataclass, field, replace
 
 from architecture_model.core.promise import Promise, compute_promise_id
 from architecture_model.pipeline_v3.cluster import Cluster
+from architecture_model.pipeline_v3.derive_behaviors import BehaviorCandidate
 from architecture_model.pipeline_v3.link import Link
 
-__all__ = ["ContainerizedComponent", "ContainerizedModel", "containerize"]
+__all__ = [
+    "ContainerizedBehavior",
+    "ContainerizedComponent",
+    "ContainerizedModel",
+    "containerize",
+]
 
 _PROVENANCE = "pipeline_v3.containerize"
 
@@ -48,11 +54,41 @@ class ContainerizedComponent:
 
 
 @dataclass(frozen=True)
+class ContainerizedBehavior:
+    """A v3 behavior rebound to its owning component (Part 17a1).
+
+    Attributes:
+        id: The ``BEH-<sha1[:8]>`` id carried over from the
+            :class:`BehaviorCandidate` (identity is module+function-
+            derived, not component-derived, so ids survive
+            rebinding without recomputation).
+        name: Function name.
+        description: First docstring line.
+        owner_component: Component (cluster) id that owns the source
+            module. Empty string if the source module was not resolved
+            to any cluster (defensive; should not occur in practice).
+        owner_module: Original source module dotted name.
+        function_name: Source symbol name.
+        class_name: Owning class name if the source was a method,
+            otherwise ``None``.
+    """
+
+    id: str
+    name: str
+    description: str
+    owner_component: str
+    owner_module: str
+    function_name: str
+    class_name: str | None = None
+
+
+@dataclass(frozen=True)
 class ContainerizedModel:
     """A v3 model ready for chain-closure verification and YAML emit."""
 
     components: list[ContainerizedComponent] = field(default_factory=list)
     relationships: list[Link] = field(default_factory=list)
+    behaviors: list[ContainerizedBehavior] = field(default_factory=list)
 
 
 def _rebind_promise(p: Promise, new_owner: str) -> Promise:
@@ -78,6 +114,7 @@ def containerize(
     clusters: list[Cluster],
     promises: list[Promise],
     relationships: list[Link],
+    behaviors: list[BehaviorCandidate] | None = None,
 ) -> ContainerizedModel:
     """Compose scan/derive/cluster/link outputs into a v3-shaped model.
 
@@ -86,11 +123,16 @@ def containerize(
         promises: Output of :func:`architecture_model.pipeline_v3.derive_promises.derive_promises`
             (Promises owned by module dotted names).
         relationships: Output of :func:`architecture_model.pipeline_v3.link.link_clusters`.
+        behaviors: Optional list of BehaviorCandidates from
+            :func:`architecture_model.pipeline_v3.derive_behaviors.derive_behaviors`.
+            When provided, each candidate is rebound to its owning
+            cluster and one ``traces-to`` :class:`Link`
+            (component → behavior) is emitted per behavior.
 
     Returns:
         A :class:`ContainerizedModel` with Promises rebound to component
-        ownership. Relationships pass through unchanged (they already
-        speak in cluster ids).
+        ownership. Relationships carry through unchanged plus any
+        ``traces-to`` edges emitted from ``behaviors``.
     """
     # Build reverse index: module name → cluster
     module_to_cluster: dict[str, Cluster] = {}
@@ -124,4 +166,40 @@ def containerize(
             )
         )
 
-    return ContainerizedModel(components=components, relationships=list(relationships))
+    # Rebind behaviors + emit traces-to edges.
+    rebound_behaviors: list[ContainerizedBehavior] = []
+    traces_to_edges: list[Link] = []
+    for cand in behaviors or []:
+        target = module_to_cluster.get(cand.owner_module)
+        if target is None:
+            # Source module wasn't in any cluster — skip silently to
+            # mirror the promise-rebinding contract above.
+            continue
+        rebound_behaviors.append(
+            ContainerizedBehavior(
+                id=cand.id,
+                name=cand.name,
+                description=cand.description,
+                owner_component=target.id,
+                owner_module=cand.owner_module,
+                function_name=cand.function_name,
+                class_name=cand.class_name,
+            )
+        )
+        traces_to_edges.append(
+            Link(
+                from_cluster=target.id,
+                to_cluster=cand.id,
+                kind="traces-to",
+                weight=1,
+            )
+        )
+
+    rebound_behaviors.sort(key=lambda b: b.id)
+    combined_relationships = list(relationships) + traces_to_edges
+
+    return ContainerizedModel(
+        components=components,
+        relationships=combined_relationships,
+        behaviors=rebound_behaviors,
+    )

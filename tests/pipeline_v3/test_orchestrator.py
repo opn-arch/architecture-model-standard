@@ -157,3 +157,63 @@ def test_pipeline_empty_repo(tmp_path):
     assert result.model.components == []
     assert result.verify_report.total_promises == 0
     assert (tmp_path / "arch.yaml").exists()
+
+
+# ---------------------------------------------------------------------------
+# Part 17a1: behaviors flow through end-to-end
+# ---------------------------------------------------------------------------
+
+
+def _make_documented_repo(tmp: Path) -> Path:
+    """Repo with a single documented public function → 1 behavior."""
+    (tmp / "pkg").mkdir()
+    (tmp / "pkg" / "__init__.py").write_text('"""pkg init."""\n')
+    (tmp / "pkg" / "a.py").write_text(
+        '"""module a."""\n'
+        "def scan_repo():\n"
+        '    """Scan a repository and emit modules."""\n'
+        "    pass\n"
+    )
+    return tmp
+
+
+def test_result_carries_behavior_candidates(tmp_path):
+    _make_documented_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    assert any(c.function_name == "scan_repo" for c in result.behavior_candidates)
+
+
+def test_pipeline_containerizes_behaviors_with_owner_component(tmp_path):
+    _make_documented_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    assert result.model.behaviors, "expected at least one containerized behavior"
+    b = result.model.behaviors[0]
+    assert b.owner_component  # non-empty component id
+    assert any(
+        c.id == b.owner_component for c in result.model.components
+    )
+
+
+def test_pipeline_emits_traces_to_edge_for_each_behavior(tmp_path):
+    _make_documented_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    traces = [r for r in result.model.relationships if r.kind == "traces-to"]
+    assert len(traces) == len(result.model.behaviors)
+    beh_ids = {b.id for b in result.model.behaviors}
+    for r in traces:
+        assert r.to_cluster in beh_ids
+
+
+def test_published_yaml_includes_behaviors_when_present(tmp_path):
+    _make_documented_repo(tmp_path)
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    doc = yaml.safe_load(result.published.model_yaml)
+    assert "behaviors" in doc["entities"]
+    assert doc["entities"]["behaviors"]
+
+
+def test_published_yaml_omits_behaviors_when_absent(tmp_path):
+    _make_repo(tmp_path)  # functions without docstrings
+    result = run_pipeline(tmp_path, out_path=tmp_path / "arch.yaml")
+    doc = yaml.safe_load(result.published.model_yaml)
+    assert "behaviors" not in doc["entities"]

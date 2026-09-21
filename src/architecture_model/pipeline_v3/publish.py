@@ -34,6 +34,7 @@ from typing import Any
 import yaml
 
 from architecture_model.pipeline_v3.containerize import (
+    ContainerizedBehavior,
     ContainerizedComponent,
     ContainerizedModel,
 )
@@ -68,6 +69,26 @@ def _component_to_dict(c: ContainerizedComponent) -> dict[str, Any]:
     }
 
 
+def _behavior_to_dict(b: ContainerizedBehavior) -> dict[str, Any]:
+    """Serialize a ContainerizedBehavior to the v3 YAML shape.
+
+    ``class_name`` is omitted when ``None`` so module-level behaviors
+    (the common case) do not carry a null field. Field order is fixed
+    for stable key ordering under ``sort_keys=False``.
+    """
+    out: dict[str, Any] = {
+        "id": b.id,
+        "name": b.name,
+        "description": b.description,
+        "owner_component": b.owner_component,
+        "owner_module": b.owner_module,
+        "function_name": b.function_name,
+    }
+    if b.class_name is not None:
+        out["class_name"] = b.class_name
+    return out
+
+
 def _build_meta(project_name: str, source_root: Path | None) -> dict[str, Any]:
     meta: dict[str, Any] = {
         "schema_version": "3.0",
@@ -100,11 +121,19 @@ def _build_doc(
             }
             for l in model.relationships
         ),
-        key=lambda d: (d["from"], d["to"]),
+        key=lambda d: (d["from"], d["to"], d["type"]),
     )
+    entities: dict[str, Any] = {"components": components}
+    # Behaviors block is omitted when empty so pre-17a1 fixtures remain
+    # digest-stable. Present when the pipeline produced any behaviors.
+    if model.behaviors:
+        entities["behaviors"] = sorted(
+            (_behavior_to_dict(b) for b in model.behaviors),
+            key=lambda d: d["id"],
+        )
     return {
         "meta": _build_meta(project_name, source_root),
-        "entities": {"components": components},
+        "entities": entities,
         "relationships": relationships,
     }
 
