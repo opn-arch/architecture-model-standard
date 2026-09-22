@@ -1,0 +1,1085 @@
+meta:
+  schema_version: '3.0'
+  project: architecture-model-standard
+  subsystem: pipelines
+  generated_by: hand-authored
+  generated_at: '2026-09-20T00:00:00Z'
+  source_root: .architecture/model/
+  note: |
+    Authored v3 counterparts of the seven operational pipelines that
+    define AMS as a running system:
+
+      BEH-P1  EXTRACT           — 10-stage extraction pipeline
+      BEH-26  SLICE             — token-budget scoped context delivery
+      BEH-27  SELF-IMPROVEMENT  — cross-run learning + drift correction
+      BEH-28  DEV-LOOP          — model-driven development loop
+      BEH-LLM PROVIDER LAYER    — provider-agnostic LLM routing
+      BEH-SIL LOGGING           — Structural Interface Layer telemetry
+      BEH-FBK JOURNALS          — feedback journal append + read
+
+    Inspired by (not ported from) the schema-2.x entries in
+    .architecture-model.yaml:687-1650. Sub-sub-behaviors and cross-
+    pipeline flow edges are deliberately out of scope. Design doc:
+    docs/plans/2026-09-20-g1-pipelines-v3-fragment-design.md.
+
+entities:
+  behaviors:
+  # ==========================================================================
+  # BEH-P1 — Run Extraction Pipeline (10 stages + orchestrator + recursive)
+  # ==========================================================================
+  - id: BEH-P1
+    name: run_extraction_pipeline
+    promises:
+    - id: PR-BEH-P1-intent
+      attribute: intent
+      content:
+      - Orchestrate the 10-stage extraction pipeline (observe → infer → allocate → relate → specify → contract → validate → decompose → synthesize → emit) to produce .architecture-model.yaml from any Python source tree with zero manual configuration.
+      owner_entity: BEH-P1
+      delivered_from: CAP-PB
+      verified_by:
+      - src/architecture_model/pipeline/coordinator.py
+      - architecture-model pipeline CLI at src/architecture_model/cli/main.py
+      status: verified
+      gap_type: null
+      provenance: G1 authoring 2026-09-20; realizes CAP-PB (extract_architecture_from_code).
+    - id: PR-BEH-P1-goals
+      attribute: goals
+      content:
+      - Deliver a validated architecture model from source code without hand-editing configuration
+      - Preserve stage isolation so each stage is independently testable and resumable
+      - Emit deterministic bytes given identical inputs (freeze-clock via AMS_DETERMINISTIC_NOW)
+      owner_entity: BEH-P1
+      delivered_from: null
+      verified_by:
+      - tests/pipeline/ suite covers per-stage isolation
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-P1-requirements
+      attribute: requirements
+      content:
+      - Stages execute in strict linear dependency order
+      - Intermediate state persists to .architecture-models/cache/ between stages
+      - Every stage records a report entry in pipeline-report.md
+      - Emit stamps meta.provider when a provider generated any output
+      owner_entity: BEH-P1
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline/cache.py
+      - src/architecture_model/pipeline/report.py
+      - src/architecture_model/pipeline/emit.py:_stamp_provider
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-P1-success_criteria
+      attribute: success_criteria
+      content:
+      - Validator score ≥ configured threshold (default 80/100)
+      - Zero broken references in emitted model
+      - All 10 stages record completion in pipeline-report.md
+      - Component file coverage ≥ 90%
+      owner_entity: BEH-P1
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline/validate.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-P1-failure_modes
+      attribute: failure_modes
+      content:
+      - Stage cache corruption forces re-run of upstream stages
+      - Circular imports break relate stage's dependency graph
+      - Sub-system decomposition explodes on flat repos (mitigated by decompose.py threshold)
+      - Provider timeout mid-emit leaves partial model on disk
+      owner_entity: BEH-P1
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1 — failure modes catalogued from operational experience; automated verification is future work
+    - id: PR-BEH-P1-constraints
+      attribute: constraints
+      content:
+      - Must respect AMS_DETERMINISTIC_NOW for reproducibility guarantees
+      - Every LLM call routed through the provider layer (BEH-LLM) — no direct HTTPS from stages
+      - Every architecturally-significant stage entry point instrumented with @sil_instrument (BEH-SIL)
+      owner_entity: BEH-P1
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline/llm_provider.py
+      - src/architecture_model/sil/decorators.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-P1.1
+    name: run_observe_stage
+    promises:
+    - id: PR-BEH-P1.1-intent
+      attribute: intent
+      content:
+      - AST-scan source files to produce a module inventory with signatures, imports, routes, and constraint markers.
+      owner_entity: BEH-P1.1
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/observe.py
+      - src/architecture_model/pipeline/observe_types.py
+      - tests/pipeline/ (observe coverage via coordinator tests)
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 1 of BEH-P1
+    - id: PR-BEH-P1.1-goals
+      attribute: goals
+      content:
+      - Produce complete module inventory with zero AST parse failures on typical Python trees
+      - Preserve source line numbers for downstream traceability
+      owner_entity: BEH-P1.1
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1
+    - id: PR-BEH-P1.1-success_criteria
+      attribute: success_criteria
+      content:
+      - 100% of importable Python files enumerated in observe output
+      - Signatures, docstrings, decorators, and top-level constants captured per module
+      owner_entity: BEH-P1.1
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1
+
+  - id: BEH-P1.2
+    name: run_infer_stage
+    promises:
+    - id: PR-BEH-P1.2-intent
+      attribute: intent
+      content:
+      - Infer semantic entities (actors, capabilities, candidate behaviors) from raw observations using pattern rules and heuristics.
+      owner_entity: BEH-P1.2
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/infer.py
+      - src/architecture_model/pipeline/infer_types.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 2 of BEH-P1
+    - id: PR-BEH-P1.2-goals
+      attribute: goals
+      content:
+      - Produce inferred entity set that survives validator without inference-specific errors
+      owner_entity: BEH-P1.2
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1
+
+  - id: BEH-P1.3
+    name: run_allocate_stage
+    promises:
+    - id: PR-BEH-P1.3-intent
+      attribute: intent
+      content:
+      - Allocate observed modules to components using multi-signal affinity (imports, name-prefix, directory).
+      owner_entity: BEH-P1.3
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/allocate.py
+      - src/architecture_model/pipeline/allocate_types.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 3 of BEH-P1
+    - id: PR-BEH-P1.3-success_criteria
+      attribute: success_criteria
+      content:
+      - Every non-empty module allocated to exactly one component
+      - Boundary coherence score ≥ 60% (per architect_check)
+      owner_entity: BEH-P1.3
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1 — see G8 for current BC=17% investigation
+
+  - id: BEH-P1.4
+    name: run_relate_stage
+    promises:
+    - id: PR-BEH-P1.4-intent
+      attribute: intent
+      content:
+      - Derive typed relationships (realizes, depends-on, contains, exposes, constrained-by) between entities from observation and inference outputs.
+      owner_entity: BEH-P1.4
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/relate.py
+      - src/architecture_model/pipeline/relate_types.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 4 of BEH-P1
+
+  - id: BEH-P1.5
+    name: run_specify_stage
+    promises:
+    - id: PR-BEH-P1.5-intent
+      attribute: intent
+      content:
+      - Specify interface contracts by promoting routes to REST specs, argparse to CLI specs, and public APIs to library specs.
+      owner_entity: BEH-P1.5
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/specify.py
+      - src/architecture_model/pipeline/specify_types.py
+      - src/architecture_model/pipeline/endpoint_promotion.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 5 of BEH-P1
+
+  - id: BEH-P1.6
+    name: run_contract_stage
+    promises:
+    - id: PR-BEH-P1.6-intent
+      attribute: intent
+      content:
+      - Bind test contracts to components by mapping test files to their targets and extracting per-test expectations.
+      owner_entity: BEH-P1.6
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/contract.py
+      - src/architecture_model/pipeline/contract_types.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 6 of BEH-P1
+
+  - id: BEH-P1.7
+    name: run_validate_stage
+    promises:
+    - id: PR-BEH-P1.7-intent
+      attribute: intent
+      content:
+      - Validate the intermediate model for structural integrity (ID uniqueness, referential integrity, orphan detection) and score 0–100.
+      owner_entity: BEH-P1.7
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/validate.py
+      - src/architecture_model/core/validator.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 7 of BEH-P1
+    - id: PR-BEH-P1.7-success_criteria
+      attribute: success_criteria
+      content:
+      - Score ≥ 80/100 on synthetic and self-model inputs
+      - Zero false-positive orphan verdicts on well-formed models
+      owner_entity: BEH-P1.7
+      delivered_from: null
+      verified_by:
+      - tests/test_validator.py (score assertions)
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-P1.8
+    name: run_decompose_stage
+    promises:
+    - id: PR-BEH-P1.8-intent
+      attribute: intent
+      content:
+      - Detect system boundaries by identifying components with ≥5 files that qualify as autonomous subsystems, splitting the emit target list accordingly.
+      owner_entity: BEH-P1.8
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/decompose.py
+      - src/architecture_model/pipeline/decompose_types.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 8 of BEH-P1
+
+  - id: BEH-P1.9
+    name: run_synthesize_stage
+    promises:
+    - id: PR-BEH-P1.9-intent
+      attribute: intent
+      content:
+      - Run scoped sub-pipelines for each detected system to produce per-subsystem models with local coherence.
+      owner_entity: BEH-P1.9
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/synthesize.py
+      - src/architecture_model/pipeline/synthesize_types.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 9 of BEH-P1
+
+  - id: BEH-P1.10
+    name: run_emit_stage
+    promises:
+    - id: PR-BEH-P1.10-intent
+      attribute: intent
+      content:
+      - Write all artifacts to disk (.architecture-model.yaml plus .architecture-models/<subsystem>/ tree) with deterministic bytes given identical inputs.
+      owner_entity: BEH-P1.10
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/emit.py
+      - src/architecture_model/pipeline/emit_types.py
+      status: verified
+      gap_type: null
+      provenance: G1 — stage 10 of BEH-P1
+    - id: PR-BEH-P1.10-requirements
+      attribute: requirements
+      content:
+      - Stamp meta.provider on any model when a provider generated output
+      - Auto-seed Component.intent from module docstrings when synthesize left it empty
+      owner_entity: BEH-P1.10
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline/emit.py:_stamp_provider
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-P1.R
+    name: run_recursive_subsystem_pipeline
+    promises:
+    - id: PR-BEH-P1.R-intent
+      attribute: intent
+      content:
+      - Recursively invoke the extraction pipeline on each detected subsystem so nested systems get their own self-contained model plus manifest.
+      owner_entity: BEH-P1.R
+      delivered_from: BEH-P1
+      verified_by:
+      - src/architecture_model/pipeline/coordinator.py (recursive branch)
+      - src/architecture_model/manifest/recursive.py
+      status: verified
+      gap_type: null
+      provenance: G1 — recursive branch of BEH-P1
+
+  # ==========================================================================
+  # BEH-26 — Slice-Scoped Context
+  # ==========================================================================
+  - id: BEH-26
+    name: deliver_slice_scoped_context
+    promises:
+    - id: PR-BEH-26-intent
+      attribute: intent
+      content:
+      - Deliver a focused architectural context (single F-block, layer, or entity) to an LLM caller within a strict token budget, so the caller receives compressed evidence rather than the full model.
+      owner_entity: BEH-26
+      delivered_from: CAP-SL
+      verified_by:
+      - src/architecture_model/core/slicer.py
+      - src/architecture_model/integrations/llm_context.py
+      status: verified
+      gap_type: null
+      provenance: G1 — realizes CAP-SL (slice_scoped_context).
+    - id: PR-BEH-26-goals
+      attribute: goals
+      content:
+      - Reduce prompt tokens ≥ 5× versus full-model delivery on typical queries
+      - Preserve fragment digest stability across identical inputs
+      owner_entity: BEH-26
+      delivered_from: null
+      verified_by:
+      - E2E benchmark: 26.4× average compression on click (CONTEXT.md §E2E)
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-26-requirements
+      attribute: requirements
+      content:
+      - Respect max_tokens caller budget without silent truncation
+      - No dangling references after closure computation
+      - Renderer emits deterministic bytes for identical scope+detail inputs
+      owner_entity: BEH-26
+      delivered_from: null
+      verified_by:
+      - tests/test_slicer.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-26-success_criteria
+      attribute: success_criteria
+      content:
+      - Fragment digest stable across two identical slice calls
+      - Zero broken cross-references in emitted fragment
+      - Renderer output byte-identical across runs
+      owner_entity: BEH-26
+      delivered_from: null
+      verified_by:
+      - tests/lifecycle/test_overlay_determinism.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-26-failure_modes
+      attribute: failure_modes
+      content:
+      - Token budget too small to fit essential entities → hard-fail rather than silently drop
+      - Scope references unknown entity id → KeyError with clear message
+      - Overlay ordering perturbation breaks digest stability
+      owner_entity: BEH-26
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1
+
+  # ==========================================================================
+  # BEH-27 — Self-Improvement (Learning Loop)
+  # ==========================================================================
+  - id: BEH-27
+    name: learn_across_pipeline_runs
+    promises:
+    - id: PR-BEH-27-intent
+      attribute: intent
+      content:
+      - Accumulate lessons (heuristics, archetypes, workflows) from prior pipeline runs and apply them to subsequent extractions so quality improves monotonically across runs on the same repository.
+      owner_entity: BEH-27
+      delivered_from: CAP-DF
+      verified_by:
+      - src/architecture_model/pipeline/lessons.py
+      - src/architecture_model/pipeline/learning.py
+      - src/architecture_model/pipeline/global_learning.py
+      - src/architecture_model/pipeline/history.py
+      status: verified
+      gap_type: null
+      provenance: G1 — traces to CAP-DF (evolve loop). A dedicated CAP-LR (learning) is a future consideration.
+    - id: PR-BEH-27-goals
+      attribute: goals
+      content:
+      - Reduce repeat mistakes across runs by encoding pattern-fix pairs
+      - Improve regen readiness grade run over run on the same repository
+      - Keep learning-curve trend monotonically non-decreasing on happy-path repos
+      owner_entity: BEH-27
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1 — verification requires longitudinal metrics; see G5 sweep.
+    - id: PR-BEH-27-requirements
+      attribute: requirements
+      content:
+      - Persist lessons to .architecture/learning/history.json
+      - Deduplicate lessons by content-hash id
+      - Apply lessons at stage entry (infer, allocate, relate) not at emit
+      owner_entity: BEH-27
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline/history.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-27-success_criteria
+      attribute: success_criteria
+      content:
+      - Pattern hit-rate trending upward across successive runs
+      - Regen readiness grade improving or stable
+      - Zero oscillation (regression → improvement → regression) in learning curve
+      owner_entity: BEH-27
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1 — measured by opencode-arch report metrics; longitudinal telemetry required.
+
+  # ==========================================================================
+  # BEH-28 — Development Loop
+  # ==========================================================================
+  - id: BEH-28
+    name: run_model_driven_development_loop
+    promises:
+    - id: PR-BEH-28-intent
+      attribute: intent
+      content:
+      - Support the developer inner loop where a developer edits code, re-runs extraction, browses the v3 viewer, captures a promise-note, and files a change proposal — all without leaving the tool suite.
+      owner_entity: BEH-28
+      delivered_from: CAP-DF
+      verified_by:
+      - src/architecture_model/comments/store.py
+      - src/architecture_model/walks/meta/promise_note.py
+      - src/architecture_model/walks/meta/save_promise_note.py
+      - src/architecture_model/walks/meta/author_promise_note.py
+      status: verified
+      gap_type: null
+      provenance: G1 — realizes CAP-DF (evolve). Wired end-to-end via CAP-WK.note → CAP-WK.save → CAP-WK.author → apply.
+    - id: PR-BEH-28-goals
+      attribute: goals
+      content:
+      - Close the loop from a developer note to a validated model change
+      - Zero context-switch cost between viewer, note, and proposal
+      - Every change proposal is auditable back to the note that seeded it
+      owner_entity: BEH-28
+      delivered_from: null
+      verified_by:
+      - CommentStub.target + WorkOrder provenance chain
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-28-requirements
+      attribute: requirements
+      content:
+      - Notes persist under .architecture/comments/ with deterministic ids
+      - Save auto-advances Job draft → approved → queued
+      - Author walk is provider-agnostic (works with any LLMProvider Protocol impl)
+      owner_entity: BEH-28
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/comments/store.py
+      - src/architecture_model/walks/meta/save_promise_note.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-28-success_criteria
+      attribute: success_criteria
+      content:
+      - Proposal applies without drift on model tip
+      - Gate passes post-apply
+      - SI&L failure_rate on affected components not regressing
+      owner_entity: BEH-28
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1
+    - id: PR-BEH-28-failure_modes
+      attribute: failure_modes
+      content:
+      - Note targets a stale entity id (renamed between capture and save)
+      - Provider returns malformed ModelPatch → validator catches, job fails
+      - Concurrent notes on the same entity attribute produce merge conflict
+      owner_entity: BEH-28
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1
+
+  # ==========================================================================
+  # BEH-LLM — Provider Layer
+  # ==========================================================================
+  - id: BEH-LLM
+    name: route_llm_calls_via_policy
+    promises:
+    - id: PR-BEH-LLM-intent
+      attribute: intent
+      content:
+      - Route every LLM call through a provider-agnostic policy layer (.architecture/llm/policy.yaml) so callers name a TaskClass rather than a provider or model, enabling per-repo policy override without code changes.
+      owner_entity: BEH-LLM
+      delivered_from: CAP-DF
+      verified_by:
+      - src/architecture_model/llm/provider.py
+      - src/architecture_model/llm/prompts/
+      status: verified
+      gap_type: null
+      provenance: G1 — traces to CAP-DF pending dedicated CAP-LLM.
+    - id: PR-BEH-LLM-goals
+      attribute: goals
+      content:
+      - Zero direct HTTPS calls from stages or walks — every LLM path routed through the provider layer
+      - Cost cap enforcement per call and global budget cap
+      - Fallback provider on transient error
+      owner_entity: BEH-LLM
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1 — enforcement audit is a follow-on walk.
+    - id: PR-BEH-LLM-requirements
+      attribute: requirements
+      content:
+      - Providers implement the LLMProvider Protocol (complete, stream, structured, tokenize)
+      - Routing rules map TaskClass name → (provider, model, tier, max_cost_usd_per_call, fallback)
+      - Every call records a LLMCallRecord to .architecture/llm_calls.jsonl (BEH-FBK)
+      owner_entity: BEH-LLM
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/llm/provider.py
+      - src/architecture_model/feedback/llm_calls.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-LLM-success_criteria
+      attribute: success_criteria
+      content:
+      - 100% of LLM calls in the codebase go through the policy layer (audited by CAP-WK.llm-endpoint-inventory)
+      - Zero calls exceed configured max_cost_usd_per_call
+      - Fallback engages on ≥90% of transient provider errors
+      owner_entity: BEH-LLM
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/llm_endpoint_inventory.py
+      - .architecture/llm/endpoints.yaml
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-LLM.1
+    name: expose_provider_protocol
+    promises:
+    - id: PR-BEH-LLM.1-intent
+      attribute: intent
+      content:
+      - Expose the runtime-checkable LLMProvider Protocol (complete, stream, structured, tokenize) as the sole integration surface for LLM providers.
+      owner_entity: BEH-LLM.1
+      delivered_from: BEH-LLM
+      verified_by:
+      - src/architecture_model/llm/provider.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-LLM.2
+    name: complete_prompt
+    promises:
+    - id: PR-BEH-LLM.2-intent
+      attribute: intent
+      content:
+      - Perform a single-shot completion via the resolved provider given a prompt and optional parameters.
+      owner_entity: BEH-LLM.2
+      delivered_from: BEH-LLM
+      verified_by:
+      - src/architecture_model/llm/provider.py (complete method)
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-LLM.3
+    name: stream_prompt
+    promises:
+    - id: PR-BEH-LLM.3-intent
+      attribute: intent
+      content:
+      - Stream tokens from the resolved provider so long-running calls surface progress and can be canceled early.
+      owner_entity: BEH-LLM.3
+      delivered_from: BEH-LLM
+      verified_by:
+      - src/architecture_model/llm/provider.py (stream method)
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-LLM.4
+    name: structured_output
+    promises:
+    - id: PR-BEH-LLM.4-intent
+      attribute: intent
+      content:
+      - Request structured JSON output validated against a caller-supplied schema so downstream consumers receive typed proposals.
+      owner_entity: BEH-LLM.4
+      delivered_from: BEH-LLM
+      verified_by:
+      - src/architecture_model/llm/provider.py (structured method)
+      - src/architecture_model/walks/meta/author_promise_note.py (consumer)
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-LLM.5
+    name: tokenize_text
+    promises:
+    - id: PR-BEH-LLM.5-intent
+      attribute: intent
+      content:
+      - Return token count for arbitrary text so callers can enforce budget caps before dispatch.
+      owner_entity: BEH-LLM.5
+      delivered_from: BEH-LLM
+      verified_by:
+      - src/architecture_model/llm/provider.py (tokenize method)
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-LLM.6
+    name: enforce_cost_cap
+    promises:
+    - id: PR-BEH-LLM.6-intent
+      attribute: intent
+      content:
+      - Enforce per-call max_cost_usd_per_call and global_budget_usd budget caps before dispatch, blocking calls that would exceed either.
+      owner_entity: BEH-LLM.6
+      delivered_from: BEH-LLM
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1 — enforcement lives in caller adapters (OCA); AMS provides the policy schema.
+
+  - id: BEH-LLM.7
+    name: fallback_on_error
+    promises:
+    - id: PR-BEH-LLM.7-intent
+      attribute: intent
+      content:
+      - On provider error (timeout, 5xx, malformed response) retry via the fallback provider named in the routing rule, up to retry_backoff steps.
+      owner_entity: BEH-LLM.7
+      delivered_from: BEH-LLM
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1 — implemented in OCA runner; AMS-side surface is the schema field.
+
+  - id: BEH-LLM.8
+    name: record_call_provenance
+    promises:
+    - id: PR-BEH-LLM.8-intent
+      attribute: intent
+      content:
+      - Record every LLM call as an LLMCallRecord to .architecture/llm_calls.jsonl so the prompt-refinement walk (CAP-WK.prompt-refinement) has evidence to score templates.
+      owner_entity: BEH-LLM.8
+      delivered_from: BEH-LLM
+      verified_by:
+      - src/architecture_model/feedback/llm_calls.py
+      - src/architecture_model/walks/meta/prompt_refiner.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  # ==========================================================================
+  # BEH-SIL — Structural Interface Layer (telemetry)
+  # ==========================================================================
+  - id: BEH-SIL
+    name: emit_component_scoped_telemetry
+    promises:
+    - id: PR-BEH-SIL-intent
+      attribute: intent
+      content:
+      - Emit component-scoped telemetry for architecturally-significant call sites (pipeline stages, renderers, validators, MCP tool handlers) so the model carries live evidence of runtime behavior.
+      owner_entity: BEH-SIL
+      delivered_from: CAP-DF
+      verified_by:
+      - src/architecture_model/sil/decorators.py
+      - src/architecture_model/sil/record.py
+      - src/architecture_model/sil/rollup.py
+      - src/architecture_model/sil/evidence.py
+      status: verified
+      gap_type: null
+      provenance: G1 — traces to CAP-DF pending dedicated CAP-SIL.
+    - id: PR-BEH-SIL-goals
+      attribute: goals
+      content:
+      - Turn the pipeline from an opaque batch process into an observable one
+      - Provide 7-day trend evidence (invocations, failure_rate, avg_duration_ms) per component
+      - Zero overhead when no SILStore is bound (decorator is no-op)
+      owner_entity: BEH-SIL
+      delivered_from: null
+      verified_by:
+      - tests/sil/test_decorators_noop.py
+      - tests/sil/test_rollup.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-SIL-requirements
+      attribute: requirements
+      content:
+      - Store events in a SQLite ring buffer at .architecture/sil.sqlite (50 most recent per component)
+      - Emit rollup snapshots to .architecture/sil/<component_id>.yaml with pre-aggregated 7-day metrics
+      - Instrument every stage entry point, every renderer, every validator, every MCP tool handler
+      owner_entity: BEH-SIL
+      delivered_from: null
+      verified_by:
+      - tests/sil/test_instrumentation_pipeline.py
+      - tests/sil/test_instrumentation_renderers.py
+      - tests/sil/test_instrumentation_validators.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-SIL-success_criteria
+      attribute: success_criteria
+      content:
+      - Instrumentation coverage ≥ 100% on defined architectural surfaces (audited by tests/sil/test_decorator_coverage.py)
+      - Rollup snapshots regenerate deterministically on identical inputs
+      - Ring buffer never grows beyond 50 events per component
+      owner_entity: BEH-SIL
+      delivered_from: null
+      verified_by:
+      - tests/sil/test_decorator_coverage.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.1
+    name: instrument_call_site
+    promises:
+    - id: PR-BEH-SIL.1-intent
+      attribute: intent
+      content:
+      - Wrap a call site with the @sil_instrument decorator so every invocation records a SILRecord to the bound store.
+      owner_entity: BEH-SIL.1
+      delivered_from: BEH-SIL
+      verified_by:
+      - src/architecture_model/sil/decorators.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.2
+    name: append_event
+    promises:
+    - id: PR-BEH-SIL.2-intent
+      attribute: intent
+      content:
+      - Append a SILRecord event to the SQLite ring buffer, evicting the oldest when the per-component cap is reached.
+      owner_entity: BEH-SIL.2
+      delivered_from: BEH-SIL
+      verified_by:
+      - src/architecture_model/sil/record.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.3
+    name: compute_rollup
+    promises:
+    - id: PR-BEH-SIL.3-intent
+      attribute: intent
+      content:
+      - Compute pre-aggregated 7-day metrics (invocations, failure_rate, avg_duration_ms) per component and emit rollup snapshot YAML.
+      owner_entity: BEH-SIL.3
+      delivered_from: BEH-SIL
+      verified_by:
+      - src/architecture_model/sil/rollup.py
+      - tests/sil/test_rollup.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.4
+    name: query_component_health
+    promises:
+    - id: PR-BEH-SIL.4-intent
+      attribute: intent
+      content:
+      - Answer a single-component health query returning the SILRecord + 7-day trend, backing the OCA architect_component_health MCP tool.
+      owner_entity: BEH-SIL.4
+      delivered_from: BEH-SIL
+      verified_by:
+      - src/architecture_model/sil/rollup.py (query helpers)
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.5
+    name: attach_evidence_to_promise
+    promises:
+    - id: PR-BEH-SIL.5-intent
+      attribute: intent
+      content:
+      - Attach SIL evidence (recent events, metric summary) to a promise's verified_by chain so runtime behavior is auditable back to the promise it upholds.
+      owner_entity: BEH-SIL.5
+      delivered_from: BEH-SIL
+      verified_by:
+      - src/architecture_model/sil/evidence.py
+      - tests/sil/test_evidence.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.6
+    name: no_op_when_unbound
+    promises:
+    - id: PR-BEH-SIL.6-intent
+      attribute: intent
+      content:
+      - When no SILStore is bound to the current context, the decorator becomes a no-op so instrumentation adds zero overhead in unbound processes (tests, CLI, one-shot scripts).
+      owner_entity: BEH-SIL.6
+      delivered_from: BEH-SIL
+      verified_by:
+      - tests/sil/test_decorators_noop.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.7
+    name: audit_decorator_coverage
+    promises:
+    - id: PR-BEH-SIL.7-intent
+      attribute: intent
+      content:
+      - Audit that every architecturally-significant call site is decorated, failing CI if instrumentation drifts.
+      owner_entity: BEH-SIL.7
+      delivered_from: BEH-SIL
+      verified_by:
+      - tests/sil/test_decorator_coverage.py
+      - scripts/apply_sil_decorators.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-SIL.8
+    name: async_call_instrumentation
+    promises:
+    - id: PR-BEH-SIL.8-intent
+      attribute: intent
+      content:
+      - Instrument async call sites correctly so start/end timestamps span the await, not the coroutine construction.
+      owner_entity: BEH-SIL.8
+      delivered_from: BEH-SIL
+      verified_by:
+      - tests/sil/test_decorators_async.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  # ==========================================================================
+  # BEH-FBK — Feedback Journals
+  # ==========================================================================
+  - id: BEH-FBK
+    name: append_and_read_feedback_journals
+    promises:
+    - id: PR-BEH-FBK-intent
+      attribute: intent
+      content:
+      - Provide append-only JSONL journals under .architecture/ that capture gate outcomes, drift snapshots, test results, and LLM call provenance so the model has evidence to close its own quality loop.
+      owner_entity: BEH-FBK
+      delivered_from: CAP-DF
+      verified_by:
+      - src/architecture_model/feedback/gates.py
+      - src/architecture_model/feedback/drift.py
+      - src/architecture_model/feedback/test_results.py
+      - src/architecture_model/feedback/llm_calls.py
+      status: verified
+      gap_type: null
+      provenance: G1 — traces to CAP-DF pending dedicated CAP-FBK.
+    - id: PR-BEH-FBK-goals
+      attribute: goals
+      content:
+      - Zero data loss on append (fsync every record)
+      - Fail-soft on read (missing files → empty list, malformed lines skipped)
+      - Byte-stable digests when AMS_DETERMINISTIC_NOW is set
+      owner_entity: BEH-FBK
+      delivered_from: null
+      verified_by:
+      - tests/feedback/test_gates_journal.py
+      - tests/feedback/test_drift_journal.py
+      - tests/feedback/test_test_results_journal.py
+      - tests/feedback/test_llm_calls_journal.py
+      status: verified
+      gap_type: null
+      provenance: G1
+    - id: PR-BEH-FBK-requirements
+      attribute: requirements
+      content:
+      - Journals live at .architecture/<gates|drift|test_results|llm_calls>.jsonl
+      - Append uses O_APPEND | O_CREAT | O_WRONLY plus fsync
+      - Read returns empty list when file is absent
+      - Malformed lines are silently skipped, not raised
+      owner_entity: BEH-FBK
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/feedback/llm_calls.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-FBK.1
+    name: append_gate_event
+    promises:
+    - id: PR-BEH-FBK.1-intent
+      attribute: intent
+      content:
+      - Append a GateEvent record to .architecture/gates.jsonl every time the OCA architect_gate MCP tool runs.
+      owner_entity: BEH-FBK.1
+      delivered_from: BEH-FBK
+      verified_by:
+      - src/architecture_model/feedback/gates.py
+      - tests/feedback/test_gates_journal.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-FBK.2
+    name: append_drift_snapshot
+    promises:
+    - id: PR-BEH-FBK.2-intent
+      attribute: intent
+      content:
+      - Append a drift snapshot (broken_ref, unrealized_capability, orphan, missing_impl) to .architecture/drift.jsonl after every pipeline run.
+      owner_entity: BEH-FBK.2
+      delivered_from: BEH-FBK
+      verified_by:
+      - src/architecture_model/feedback/drift.py
+      - tests/feedback/test_drift_journal.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-FBK.3
+    name: ingest_test_results
+    promises:
+    - id: PR-BEH-FBK.3-intent
+      attribute: intent
+      content:
+      - Ingest a JUnit XML report as a TestResult batch and append to .architecture/test_results.jsonl, backing the opencode-arch feedback ingest-junit CLI.
+      owner_entity: BEH-FBK.3
+      delivered_from: BEH-FBK
+      verified_by:
+      - src/architecture_model/feedback/junit_ingest.py
+      - src/architecture_model/feedback/test_results.py
+      - tests/feedback/test_junit_ingest.py
+      - tests/feedback/test_test_results_journal.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+  - id: BEH-FBK.4
+    name: append_llm_call_record
+    promises:
+    - id: PR-BEH-FBK.4-intent
+      attribute: intent
+      content:
+      - Append an LLMCallRecord to .architecture/llm_calls.jsonl on every provider call so the prompt-refinement walk has evidence for scoring.
+      owner_entity: BEH-FBK.4
+      delivered_from: BEH-FBK
+      verified_by:
+      - src/architecture_model/feedback/llm_calls.py
+      - tests/feedback/test_llm_calls_journal.py
+      status: verified
+      gap_type: null
+      provenance: G1
+
+relationships:
+# BEH-P1 contains its 11 direct sub-behaviors
+- {from: BEH-P1, to: BEH-P1.1, type: contains}
+- {from: BEH-P1, to: BEH-P1.2, type: contains}
+- {from: BEH-P1, to: BEH-P1.3, type: contains}
+- {from: BEH-P1, to: BEH-P1.4, type: contains}
+- {from: BEH-P1, to: BEH-P1.5, type: contains}
+- {from: BEH-P1, to: BEH-P1.6, type: contains}
+- {from: BEH-P1, to: BEH-P1.7, type: contains}
+- {from: BEH-P1, to: BEH-P1.8, type: contains}
+- {from: BEH-P1, to: BEH-P1.9, type: contains}
+- {from: BEH-P1, to: BEH-P1.10, type: contains}
+- {from: BEH-P1, to: BEH-P1.R, type: contains}
+# BEH-LLM contains its 8 direct sub-behaviors
+- {from: BEH-LLM, to: BEH-LLM.1, type: contains}
+- {from: BEH-LLM, to: BEH-LLM.2, type: contains}
+- {from: BEH-LLM, to: BEH-LLM.3, type: contains}
+- {from: BEH-LLM, to: BEH-LLM.4, type: contains}
+- {from: BEH-LLM, to: BEH-LLM.5, type: contains}
+- {from: BEH-LLM, to: BEH-LLM.6, type: contains}
+- {from: BEH-LLM, to: BEH-LLM.7, type: contains}
+- {from: BEH-LLM, to: BEH-LLM.8, type: contains}
+# BEH-SIL contains its 8 direct sub-behaviors
+- {from: BEH-SIL, to: BEH-SIL.1, type: contains}
+- {from: BEH-SIL, to: BEH-SIL.2, type: contains}
+- {from: BEH-SIL, to: BEH-SIL.3, type: contains}
+- {from: BEH-SIL, to: BEH-SIL.4, type: contains}
+- {from: BEH-SIL, to: BEH-SIL.5, type: contains}
+- {from: BEH-SIL, to: BEH-SIL.6, type: contains}
+- {from: BEH-SIL, to: BEH-SIL.7, type: contains}
+- {from: BEH-SIL, to: BEH-SIL.8, type: contains}
+# BEH-FBK contains its 4 direct sub-behaviors
+- {from: BEH-FBK, to: BEH-FBK.1, type: contains}
+- {from: BEH-FBK, to: BEH-FBK.2, type: contains}
+- {from: BEH-FBK, to: BEH-FBK.3, type: contains}
+- {from: BEH-FBK, to: BEH-FBK.4, type: contains}
+# Realizes edges (top-level pipelines → capabilities in capabilities.v3.yaml)
+- {from: BEH-P1, to: CAP-PB, type: realizes}
+- {from: BEH-26, to: CAP-SL, type: realizes}
+- {from: BEH-27, to: CAP-DF, type: realizes}
+- {from: BEH-28, to: CAP-DF, type: realizes}
+- {from: BEH-LLM, to: CAP-DF, type: realizes}
+- {from: BEH-SIL, to: CAP-DF, type: realizes}
+- {from: BEH-FBK, to: CAP-DF, type: realizes}
