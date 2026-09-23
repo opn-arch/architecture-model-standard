@@ -1,0 +1,142 @@
+meta:
+  purpose: |
+    Rendering annotations consumed by scripts/print_pipelines_pdf.py to
+    overlay Logging (L), LLM, and SI&L markers on flow diagrams, plus
+    per-step CAP and COMP references. Aggregation view: current sites
+    are unmarked (solid), proposed sites are suffixed with `*`.
+  authoritative: false
+  generated_by: hand-authored
+  generated_at: '2026-09-20T00:00:00Z'
+
+# Component id resolution — short badges used on flow boxes.
+# Long form appears once in the PDF glossary page.
+comp_glossary:
+  COMP-3-3:  Architecture Model (pipeline)
+  COMP-3-4:  Architecture Model (llm)
+  COMP-3-5:  Architecture Model (core)
+  COMP-3-2:  Architecture Model (comments)
+  COMP-3-11: Architecture Model (cli)
+  COMP-3-12: Architecture Model (feedback)
+  COMP-3-14: Architecture Model (ai)
+  COMP-3-16: Architecture Model (orchestration)
+  COMP-3-18: Architecture Model (sil)
+
+cap_glossary:
+  CAP-PB: Extract architecture from code (pipeline)
+  CAP-SL: Deliver slice-scoped context within token budget
+  CAP-DF: Evolve architecture via feedback + self-improvement
+
+# ---------------------------------------------------------------------------
+# Flow entries — one per top-level pipeline.
+# markers: any of L, LLM, SI&L, L*, LLM*, SI&L*  (starred = proposed)
+# ---------------------------------------------------------------------------
+flows:
+
+  # ---- BEH-P1 EXTRACT — linear 10 stages + recursive loopback -----------
+  - pipeline: BEH-P1
+    cap: CAP-PB
+    layout: linear
+    wrap: 5
+    steps:
+      - {id: BEH-P1.1,  short: observe,     comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.2,  short: infer,       comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.3,  short: allocate,    comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.4,  short: relate,      comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.5,  short: specify,     comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.6,  short: contract,    comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.7,  short: validate,    comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.8,  short: decompose,   comp: COMP-3-3, markers: [SI&L]}
+      - {id: BEH-P1.9,  short: synthesize,  comp: COMP-3-3, markers: [SI&L, "LLM*"]}
+      - {id: BEH-P1.10, short: emit,        comp: COMP-3-3, markers: [SI&L, L, LLM]}
+    loopback:
+      from: BEH-P1.9
+      to:   BEH-P1.1
+      label: BEH-P1.R (recursive scoped sub-pipeline)
+
+  # ---- BEH-26 SLICE — linear 6 steps ------------------------------------
+  - pipeline: BEH-26
+    cap: CAP-SL
+    layout: linear
+    wrap: 6
+    steps:
+      - {id: BEH-26.1, short: parse_focus,      comp: COMP-3-11, markers: [L]}
+      - {id: BEH-26.2, short: load_model,       comp: COMP-3-5,  markers: []}
+      - {id: BEH-26.3, short: slice_by_scope,   comp: COMP-3-5,  markers: []}
+      - {id: BEH-26.4, short: format_context,   comp: COMP-3-16, markers: []}
+      - {id: BEH-26.5, short: enforce_budget,   comp: COMP-3-16, markers: []}
+      - {id: BEH-26.6, short: emit_string,      comp: COMP-3-11, markers: [L]}
+
+  # ---- BEH-27 SELF-IMPROVEMENT — linear 6 steps -------------------------
+  - pipeline: BEH-27
+    cap: CAP-DF
+    layout: linear
+    wrap: 6
+    steps:
+      - {id: BEH-27.1, short: read_journals,    comp: COMP-3-12, markers: [L]}
+      - {id: BEH-27.2, short: classify,         comp: COMP-3-16, markers: ["L*"]}
+      - {id: BEH-27.3, short: extract_lessons,  comp: COMP-3-16, markers: [L]}
+      - {id: BEH-27.4, short: write_lessons,    comp: COMP-3-3,  markers: [L]}
+      - {id: BEH-27.5, short: update_rules,     comp: COMP-3-3,  markers: []}
+      - {id: BEH-27.6, short: propose_patches,  comp: COMP-3-14, markers: ["LLM*", "SI&L*"]}
+
+  # ---- BEH-28 DEV-LOOP — linear 4-step CAP-DF ceremony ------------------
+  - pipeline: BEH-28
+    cap: CAP-DF
+    layout: linear
+    wrap: 4
+    steps:
+      - {id: BEH-28.1, short: note,       comp: COMP-3-2,  markers: [SI&L, L]}
+      - {id: BEH-28.2, short: save,       comp: COMP-3-14, markers: [SI&L, L]}
+      - {id: BEH-28.3, short: author,     comp: COMP-3-14, markers: [SI&L, L, LLM]}
+      - {id: BEH-28.4, short: apply,      comp: COMP-3-14, markers: [SI&L, L]}
+
+  # ---- BEH-LLM — fan-out Protocol surface -------------------------------
+  - pipeline: BEH-LLM
+    cap: CAP-DF
+    layout: fanout
+    hub_comp: COMP-3-4
+    leaves:
+      - {id: BEH-LLM.1, short: protocol,    comp: COMP-3-4}
+      - {id: BEH-LLM.2, short: complete,    comp: COMP-3-4}
+      - {id: BEH-LLM.3, short: stream,      comp: COMP-3-4}
+      - {id: BEH-LLM.4, short: structured,  comp: COMP-3-4}
+      - {id: BEH-LLM.5, short: tokenize,    comp: COMP-3-4}
+      - {id: BEH-LLM.6, short: cost_cap,    comp: COMP-3-4}
+      - {id: BEH-LLM.7, short: fallback,    comp: COMP-3-4}
+      - {id: BEH-LLM.8, short: provenance,  comp: COMP-3-4}
+    side_boxes:
+      - .architecture/llm/policy.yaml
+
+  # ---- BEH-SIL — fan-out capability surface -----------------------------
+  - pipeline: BEH-SIL
+    cap: CAP-DF
+    layout: fanout
+    hub_comp: COMP-3-18
+    leaves:
+      - {id: BEH-SIL.1, short: instrument,  comp: COMP-3-18}
+      - {id: BEH-SIL.2, short: append,      comp: COMP-3-18}
+      - {id: BEH-SIL.3, short: rollup,      comp: COMP-3-18}
+      - {id: BEH-SIL.4, short: query,       comp: COMP-3-18}
+      - {id: BEH-SIL.5, short: evidence,    comp: COMP-3-18}
+      - {id: BEH-SIL.6, short: no_op,       comp: COMP-3-18}
+      - {id: BEH-SIL.7, short: audit,       comp: COMP-3-18}
+      - {id: BEH-SIL.8, short: async,       comp: COMP-3-18}
+    side_boxes:
+      - .architecture/sil.sqlite
+      - .architecture/sil/*.yaml
+
+  # ---- BEH-FBK — fan-out (4 journals) ------------------------------------
+  - pipeline: BEH-FBK
+    cap: CAP-DF
+    layout: fanout
+    hub_comp: COMP-3-12
+    leaves:
+      - {id: BEH-FBK.1, short: gates,        comp: COMP-3-12}
+      - {id: BEH-FBK.2, short: drift,        comp: COMP-3-12}
+      - {id: BEH-FBK.3, short: test_results, comp: COMP-3-12}
+      - {id: BEH-FBK.4, short: llm_calls,    comp: COMP-3-12}
+    side_boxes:
+      - .architecture/gates.jsonl
+      - .architecture/drift.jsonl
+      - .architecture/test_results.jsonl
+      - .architecture/llm_calls.jsonl
