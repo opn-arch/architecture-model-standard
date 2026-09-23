@@ -57,7 +57,7 @@ flows:
   - pipeline: BEH-26
     cap: CAP-SL
     layout: linear
-    wrap: 6
+    wrap: 3
     steps:
       - {id: BEH-26.1, short: parse_focus,      comp: COMP-3-11, markers: [L]}
       - {id: BEH-26.2, short: load_model,       comp: COMP-3-5,  markers: []}
@@ -70,7 +70,7 @@ flows:
   - pipeline: BEH-27
     cap: CAP-DF
     layout: linear
-    wrap: 6
+    wrap: 3
     steps:
       - {id: BEH-27.1, short: read_journals,    comp: COMP-3-12, markers: [L]}
       - {id: BEH-27.2, short: classify,         comp: COMP-3-16, markers: ["L*"]}

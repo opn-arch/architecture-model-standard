@@ -131,13 +131,23 @@ Flow diagrams overlay three marker kinds at each step. **Solid** markers (`L`, `
 ## Flow
 
 ```
-┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐
-│  parse_focus   │   │   load_model   │   │ slice_by_scope │   │ format_context │   │ enforce_budget │   │  emit_string   │
-│    BEH-26.1    │ → │    BEH-26.2    │ → │    BEH-26.3    │ → │    BEH-26.4    │ → │    BEH-26.5    │ → │    BEH-26.6    │
-│     CAP-SL     │   │     CAP-SL     │   │     CAP-SL     │   │     CAP-SL     │   │     CAP-SL     │   │     CAP-SL     │
-│   COMP-3-11    │   │    COMP-3-5    │   │    COMP-3-5    │   │   COMP-3-16    │   │   COMP-3-16    │   │   COMP-3-11    │
-└────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘
-        L                    ·                    ·                    ·                    ·                    L         
+┌────────────────┐   ┌────────────────┐   ┌────────────────┐
+│  parse_focus   │   │   load_model   │   │ slice_by_scope │
+│    BEH-26.1    │ → │    BEH-26.2    │ → │    BEH-26.3    │
+│     CAP-SL     │   │     CAP-SL     │   │     CAP-SL     │
+│   COMP-3-11    │   │    COMP-3-5    │   │    COMP-3-5    │
+└────────────────┘   └────────────────┘   └────────────────┘
+        L                    ·                    ·         
+
+                             ↓                              
+
+┌────────────────┐   ┌────────────────┐   ┌────────────────┐
+│ format_context │   │ enforce_budget │   │  emit_string   │
+│    BEH-26.4    │ → │    BEH-26.5    │ → │    BEH-26.6    │
+│     CAP-SL     │   │     CAP-SL     │   │     CAP-SL     │
+│   COMP-3-16    │   │   COMP-3-16    │   │   COMP-3-11    │
+└────────────────┘   └────────────────┘   └────────────────┘
+        ·                    ·                    L         
 ```
 
 
@@ -171,13 +181,23 @@ Flow diagrams overlay three marker kinds at each step. **Solid** markers (`L`, `
 ## Flow
 
 ```
-┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐
-│ read_journals  │   │    classify    │   │extract_lessons │   │ write_lessons  │   │  update_rules  │   │propose_patches │
-│    BEH-27.1    │ → │    BEH-27.2    │ → │    BEH-27.3    │ → │    BEH-27.4    │ → │    BEH-27.5    │ → │    BEH-27.6    │
-│     CAP-DF     │   │     CAP-DF     │   │     CAP-DF     │   │     CAP-DF     │   │     CAP-DF     │   │     CAP-DF     │
-│   COMP-3-12    │   │   COMP-3-16    │   │   COMP-3-16    │   │    COMP-3-3    │   │    COMP-3-3    │   │   COMP-3-14    │
-└────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘   └────────────────┘
-        L                    L*                   L                    L                    ·                LLM*,SI&L*    
+┌────────────────┐   ┌────────────────┐   ┌────────────────┐
+│ read_journals  │   │    classify    │   │extract_lessons │
+│    BEH-27.1    │ → │    BEH-27.2    │ → │    BEH-27.3    │
+│     CAP-DF     │   │     CAP-DF     │   │     CAP-DF     │
+│   COMP-3-12    │   │   COMP-3-16    │   │   COMP-3-16    │
+└────────────────┘   └────────────────┘   └────────────────┘
+        L                    L*                   L         
+
+                             ↓                              
+
+┌────────────────┐   ┌────────────────┐   ┌────────────────┐
+│ write_lessons  │   │  update_rules  │   │propose_patches │
+│    BEH-27.4    │ → │    BEH-27.5    │ → │    BEH-27.6    │
+│     CAP-DF     │   │     CAP-DF     │   │     CAP-DF     │
+│    COMP-3-3    │   │    COMP-3-3    │   │   COMP-3-14    │
+└────────────────┘   └────────────────┘   └────────────────┘
+        L                    ·                LLM*,SI&L*    
 ```
 
 
