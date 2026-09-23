@@ -427,6 +427,100 @@ entities:
       gap_type: unverified
       provenance: G1
 
+  # --- BEH-26 direct sub-behaviors (ordered) --------------------------------
+
+  - id: BEH-26.1
+    name: parse_focus_arg
+    promises:
+    - id: PR-BEH-26.1-intent
+      attribute: intent
+      content:
+      - Resolve the focus argument (all, F-block id, layer name, artifact name) into a typed scope descriptor for the slicer.
+      owner_entity: BEH-26.1
+      delivered_from: BEH-26
+      verified_by:
+      - src/architecture_model/cli/main.py
+      - src/architecture_model/integrations/llm_context.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 1 of BEH-26
+
+  - id: BEH-26.2
+    name: load_model
+    promises:
+    - id: PR-BEH-26.2-intent
+      attribute: intent
+      content:
+      - Load .architecture-model.yaml and merge v3 fragments into a queryable in-memory model.
+      owner_entity: BEH-26.2
+      delivered_from: BEH-26
+      verified_by:
+      - src/architecture_model/core/parser.py
+      - src/architecture_model/core/v3_loader.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 2 of BEH-26
+
+  - id: BEH-26.3
+    name: slice_by_scope
+    promises:
+    - id: PR-BEH-26.3-intent
+      attribute: intent
+      content:
+      - Reduce the model to the requested scope via slice_by_fblock / slice_by_layer / slice_by_entity.
+      owner_entity: BEH-26.3
+      delivered_from: BEH-26
+      verified_by:
+      - src/architecture_model/core/slicer.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 3 of BEH-26
+
+  - id: BEH-26.4
+    name: format_context
+    promises:
+    - id: PR-BEH-26.4-intent
+      attribute: intent
+      content:
+      - Render the sliced model as a deterministic context string using llm_context.format_model_context.
+      owner_entity: BEH-26.4
+      delivered_from: BEH-26
+      verified_by:
+      - src/architecture_model/integrations/llm_context.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 4 of BEH-26
+
+  - id: BEH-26.5
+    name: enforce_token_budget
+    promises:
+    - id: PR-BEH-26.5-intent
+      attribute: intent
+      content:
+      - Truncate or prioritize the formatted context to fit max_tokens, preserving highest-signal entities first.
+      owner_entity: BEH-26.5
+      delivered_from: BEH-26
+      verified_by:
+      - src/architecture_model/integrations/llm_context.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 5 of BEH-26
+
+  - id: BEH-26.6
+    name: emit_context_string
+    promises:
+    - id: PR-BEH-26.6-intent
+      attribute: intent
+      content:
+      - Return the budget-enforced context string to the caller (CLI/MCP/agent).
+      owner_entity: BEH-26.6
+      delivered_from: BEH-26
+      verified_by:
+      - src/architecture_model/cli/main.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 6 of BEH-26
+
   # ==========================================================================
   # BEH-27 — Self-Improvement (Learning Loop)
   # ==========================================================================
@@ -484,6 +578,99 @@ entities:
       status: open
       gap_type: unverified
       provenance: G1 — measured by opencode-arch report metrics; longitudinal telemetry required.
+
+  # --- BEH-27 direct sub-behaviors (ordered) --------------------------------
+
+  - id: BEH-27.1
+    name: read_feedback_journals
+    promises:
+    - id: PR-BEH-27.1-intent
+      attribute: intent
+      content:
+      - Read append-only feedback journals (gates.jsonl, drift.jsonl, test_results.jsonl, llm_calls.jsonl) as ordered event streams.
+      owner_entity: BEH-27.1
+      delivered_from: BEH-27
+      verified_by:
+      - src/architecture_model/feedback/gates.py
+      - src/architecture_model/feedback/drift.py
+      - src/architecture_model/feedback/junit_ingest.py
+      - src/architecture_model/feedback/llm_calls.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 1 of BEH-27
+
+  - id: BEH-27.2
+    name: classify_patterns
+    promises:
+    - id: PR-BEH-27.2-intent
+      attribute: intent
+      content:
+      - Classify observed events into pattern types (CROSS_DEP, MISSING_IMPL, WRONG_CONSTANT, API_MISMATCH, COMPLEX_BEHAVIOR, TEST_INFRA, UNKNOWN) via regex + structured heuristics.
+      owner_entity: BEH-27.2
+      delivered_from: BEH-27
+      verified_by: []
+      status: open
+      gap_type: unverified
+      provenance: G1-flow — sub-behavior 2 of BEH-27; classifier lives in opencode-arch, not yet mirrored in AMS.
+
+  - id: BEH-27.3
+    name: extract_lessons
+    promises:
+    - id: PR-BEH-27.3-intent
+      attribute: intent
+      content:
+      - Derive deduplicated lessons from classified patterns, using content-hashed IDs so identical insights collapse.
+      owner_entity: BEH-27.3
+      delivered_from: BEH-27
+      verified_by:
+      - src/architecture_model/orchestration/compaction.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 3 of BEH-27
+
+  - id: BEH-27.4
+    name: write_lessons_md
+    promises:
+    - id: PR-BEH-27.4-intent
+      attribute: intent
+      content:
+      - Append new lessons to .architecture-models/lessons.md preserving append-only history.
+      owner_entity: BEH-27.4
+      delivered_from: BEH-27
+      verified_by:
+      - src/architecture_model/pipeline/lessons.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 4 of BEH-27
+
+  - id: BEH-27.5
+    name: update_auto_correct_rules
+    promises:
+    - id: PR-BEH-27.5-intent
+      attribute: intent
+      content:
+      - Feed accumulated lessons into pipeline auto-correction rules that adjust future runs.
+      owner_entity: BEH-27.5
+      delivered_from: BEH-27
+      verified_by:
+      - src/architecture_model/pipeline/auto_correct.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 5 of BEH-27
+
+  - id: BEH-27.6
+    name: propose_model_patches
+    promises:
+    - id: PR-BEH-27.6-intent
+      attribute: intent
+      content:
+      - PROPOSED — use an LLM provider (R7-style) to author ModelPatch proposals that fill promise gaps flagged by the drift journal, feeding CAP-DF's note→save→author→apply ceremony.
+      owner_entity: BEH-27.6
+      delivered_from: BEH-27
+      verified_by: []
+      status: proposed
+      gap_type: unverified
+      provenance: G1-flow — sub-behavior 6 of BEH-27; not yet wired. Design intent for aggregation view.
 
   # ==========================================================================
   # BEH-28 — Development Loop
@@ -556,6 +743,72 @@ entities:
       status: open
       gap_type: unverified
       provenance: G1
+
+  # --- BEH-28 direct sub-behaviors (ordered ceremony) -----------------------
+
+  - id: BEH-28.1
+    name: note_promise
+    promises:
+    - id: PR-BEH-28.1-intent
+      attribute: intent
+      content:
+      - Capture a free-text note attached to a promise (entity_id + attribute) via architect_promise_note; persists a CommentStub with a PromiseTarget.
+      owner_entity: BEH-28.1
+      delivered_from: BEH-28
+      verified_by:
+      - src/architecture_model/walks/meta/promise_note.py
+      - src/architecture_model/comments/store.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 1 of BEH-28; CAP-DF Part 10 ceremony.
+
+  - id: BEH-28.2
+    name: save_promise_note
+    promises:
+    - id: PR-BEH-28.2-intent
+      attribute: intent
+      content:
+      - Convert a promise note into a WorkOrder + tracking Job (queued) via architect_promise_save; enqueue for authoring.
+      owner_entity: BEH-28.2
+      delivered_from: BEH-28
+      verified_by:
+      - src/architecture_model/walks/meta/save_promise_note.py
+      - src/architecture_model/ai/jobs.py
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 2 of BEH-28; CAP-DF Part 11 ceremony.
+
+  - id: BEH-28.3
+    name: author_promise_content
+    promises:
+    - id: PR-BEH-28.3-intent
+      attribute: intent
+      content:
+      - Call an LLM provider to synthesize promise content into a Proposal via architect_promise_author; walks Job queued→running→validating→completed.
+      owner_entity: BEH-28.3
+      delivered_from: BEH-28
+      verified_by:
+      - src/architecture_model/walks/meta/author_promise_note.py
+      - src/architecture_model/llm/prompts/fill_promise.md
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 3 of BEH-28; CAP-DF Part 12 ceremony. LLM call site.
+
+  - id: BEH-28.4
+    name: apply_proposal
+    promises:
+    - id: PR-BEH-28.4-intent
+      attribute: intent
+      content:
+      - Apply a validated Proposal to the lifecycle store via architect_proposal_apply, publishing a new architecture generation.
+      owner_entity: BEH-28.4
+      delivered_from: BEH-28
+      verified_by:
+      - src/architecture_model/ai/patch.py
+      - src/architecture_model/lifecycle/
+      status: verified
+      gap_type: null
+      provenance: G1-flow — sub-behavior 4 of BEH-28; CAP-DF apply verb.
 
   # ==========================================================================
   # BEH-LLM — Provider Layer
@@ -1075,6 +1328,25 @@ relationships:
 - {from: BEH-FBK, to: BEH-FBK.2, type: contains}
 - {from: BEH-FBK, to: BEH-FBK.3, type: contains}
 - {from: BEH-FBK, to: BEH-FBK.4, type: contains}
+# BEH-26 contains its 6 direct sub-behaviors (added G1-flow)
+- {from: BEH-26, to: BEH-26.1, type: contains}
+- {from: BEH-26, to: BEH-26.2, type: contains}
+- {from: BEH-26, to: BEH-26.3, type: contains}
+- {from: BEH-26, to: BEH-26.4, type: contains}
+- {from: BEH-26, to: BEH-26.5, type: contains}
+- {from: BEH-26, to: BEH-26.6, type: contains}
+# BEH-27 contains its 6 direct sub-behaviors (added G1-flow)
+- {from: BEH-27, to: BEH-27.1, type: contains}
+- {from: BEH-27, to: BEH-27.2, type: contains}
+- {from: BEH-27, to: BEH-27.3, type: contains}
+- {from: BEH-27, to: BEH-27.4, type: contains}
+- {from: BEH-27, to: BEH-27.5, type: contains}
+- {from: BEH-27, to: BEH-27.6, type: contains}
+# BEH-28 contains its 4 direct sub-behaviors (added G1-flow)
+- {from: BEH-28, to: BEH-28.1, type: contains}
+- {from: BEH-28, to: BEH-28.2, type: contains}
+- {from: BEH-28, to: BEH-28.3, type: contains}
+- {from: BEH-28, to: BEH-28.4, type: contains}
 # Realizes edges (top-level pipelines → capabilities in capabilities.v3.yaml)
 - {from: BEH-P1, to: CAP-PB, type: realizes}
 - {from: BEH-26, to: CAP-SL, type: realizes}
