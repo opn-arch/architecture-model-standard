@@ -1229,6 +1229,89 @@ Part 13–15 arc; OCA provider-adapter journal wiring is a follow-on
 task (see JIT plan
 `docs/plans/2026-09-18-cap-df-part-15-llm-journal-and-refiner-plan.md`).
 
+## openAG — graph-native successor engine (design, 2026-10-04 → 2026-10-12)
+
+**openAG** is a greenfield sibling to AMS: a single-engine, graph-native
+architecture engine that **sustains a verified architecture graph of a
+target system by promise-discharge**. AMS is **frozen until openAG reaches
+parity** — all current openAG work is **design documentation only** (zero
+code, zero standard artifacts yet). The four session design docs live in
+`docs/plans/2026-10-04-openAG-*.md`; new normative/architecture/tooling
+docs live under `docs/openAG/`.
+
+**The one engine — B-ROUND.** openAG has exactly one engine, the `B-ROUND`
+fixpoint (`govern → grow → ground → reconcile → bind → gate`), and eight
+behaviors (`B0`–`B7`) that are entry points into it. It is a monotone
+worklist/dataflow framework: expanders are transfer functions, `reconcile`
+is the join (a closure operator), the budget is the widening operator.
+Runs are **confluent modulo budget** — scheduling changes *which gaps
+appear under a budget cut*, never the canonical grounded form.
+
+**Session locks (2026-10-12 brainstorming).**
+
+- **Extract = B-ROUND to promise-fixpoint** (top-down intent + bottom-up
+  grounding). `scan` survives only as a **code-scan fact source**; A1
+  decomposition is **emergent**, not a phase; downward termination =
+  structural fixpoint per branch.
+- **Conservation laws:** A1 `contains` = strict partition (module = atom;
+  cross-cutting escapes via shared component / `LAY-CrossCutting`); A2
+  `realizes` = many-to-many free. Re-binding fluid-until-grounded then
+  sticky; `reconcile` + σ is the single binding operator (θ ≥ 0.85 bind /
+  0.60–0.85 ambiguous / < 0.60 new).
+- **Neural govern** (replaces deterministic BudgetGovernor): symbolic
+  legality filter → symbolic budget read → **neural VoI prioritization** →
+  symbolic bundle + clamp. Safe because confluence makes scheduling
+  correctness-neutral (govern = accelerator, not guarantor); temp-0 for
+  reproducible gap-sets. `govern` schedules only the down-and-local half;
+  `reconcile` owns all up-flows (keeps the DAG acyclic).
+- **Ground = mixed per-axis** (structural→symbolic, semantic→neural),
+  arbitrating **four fact-source oracles**: code-scan, human-dialogue,
+  model-self, runtime/composition-execution — all VoI-arbitrated.
+- **VoI economic model:** `VoI = (value × expected confidence gain) ÷
+  cost`; termination = `top-VoI < cost-floor`. New gaps: `gap:trivial`
+  (neural), `gap:low-confidence` / `gap:confidence-ceiling` (mixed).
+- **Gate two layers:** L1 symbolic well-formedness (hard — never publish
+  malformed); L2 decision-authority go/no-go (same economic test; escalate
+  judgment calls to human/neural). Provisional roll-ups publish WITH gaps
+  visible.
+- **Attribute four end-states:** verified-promise / reservoir(open) /
+  **plain attribute** (non-verifiable prose — legitimate terminal
+  non-gap) / typed-gap (the only gap). Valence floor = a declarative
+  type-signature; `grow` proposes above it into the reservoir; `ground`
+  promotes only what verifies.
+- **B0 stakeholder-needs** = the continuous-ROUND opening: seed graph of
+  promised entities (OPEN, none grounded); need = an OPEN promise owned by
+  the voicing Actor; **no hard B0→B1 boundary**; termination = VoI test
+  with human-attention as budget.
+- **Risk is intrinsic** to every promise (`P(won't ground) ×
+  consequence`), collapsed into VoI (consequence = value, P = confidence —
+  no new math). Risk register = a VIEW over the gap register, surfaced at
+  gate L2.
+- **Integration no longer deferred:** two promises per interface/behavior
+  — **static** (left-of-Vee, grounded by reconcile/model-check) +
+  **dynamic** (right-of-Vee, grounded by the runtime oracle). Ungrounded
+  dynamic promise = `gap:integration-mismatch`. Failure localizes to the
+  interface's own promise; "A was wrong" = a superseded promise → a
+  diachronic `Generation` change, not a synchronic retraction.
+- **SE-completeness:** ROUND is a **convergent** engine (~60% of SE).
+  Trade-space / decision-management is a **diachronic meta-ROUND** (runs
+  ROUND per candidate, selects the winning `Generation`); lifecycle A6 is
+  a diachronic reading of the bind θ-crosswalk history. Both deferred;
+  ROUND stays synchronic.
+
+**Pipeline crosswalk.** openAG drops exactly one AMS pipeline (legacy
+10-stage linear batch) and absorbs the other four: v3 7-stage → B1
+Extract; walk 6-stage → `CAP-model.traverse` + the operator skeleton;
+lifecycle substrate → B4 Represent; CAP-DF ceremony → B2 Author. Zero
+prior AMS effort is lost (zero-loss `$defs` crosswalk).
+
+**Design docs.**
+- `docs/plans/2026-10-04-openAG-graph-native-engine-design.md` — formal core
+- `docs/plans/2026-10-04-openAG-entity-model.md` — gen-0 entity ledger
+- `docs/plans/2026-10-04-openAG-attribute-corpus.md` — provenance ledger
+- `docs/plans/2026-10-04-openAG-pipelines.md` — B-ROUND + B0–B7 pipelines
+- `docs/openAG/standard.md`, `engine-architecture.md`, `tooling.md` — normative
+
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)
 
