@@ -176,6 +176,21 @@ def main(argv: list[str] | None = None) -> int:
     from architecture_model.cli import migrate as _migrate_cli
     _migrate_cli.add_subparser(subparsers)
 
+    # --- export-graph ---
+    from architecture_model.cli import export_graph as _export_graph_cli
+    _export_graph_cli.add_subparser(subparsers)
+
+    # --- audit ---
+    p_audit = subparsers.add_parser(
+        "audit",
+        help="Six-pipeline completeness audit (behavior descriptions, "
+             "triggers, evidence, RTM coverage)",
+    )
+    p_audit.add_argument("model", nargs="?", default=".architecture-model.yaml",
+                         help="Path to architecture-model.yaml (default: .architecture-model.yaml)")
+    p_audit.add_argument("--pipeline", help="Restrict audit to a single pipeline (BEH-P1|BEH-26|BEH-27|BEH-28|BEH-LLM|BEH-SIL|BEH-FBK)")
+    p_audit.add_argument("--strict", action="store_true", help="Exit non-zero on any missing description or trigger")
+
     args = parser.parse_args(argv)
 
     if not args.command:
@@ -207,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
         "deepen": _cmd_deepen,
         "comment": _cmd_comment,
         "migrate": _cmd_migrate,
+        "audit": _cmd_audit,
+        "export-graph": _cmd_export_graph,
     }
     return handlers[args.command](args)
 
@@ -1143,6 +1160,7 @@ def _cmd_viewer(args) -> int:
     import zipfile as _zipfile
 
     from ..core.parser import load_model
+    from ..core.slice_anchor import VIEW_TO_ARTIFACT, build_slice_anchor
     from ..core.visualize import generate_html_viewer
 
     repo_path = Path(args.path).resolve()
@@ -1180,11 +1198,13 @@ def _cmd_viewer(args) -> int:
         print(f"WARNING: Curation file is unreadable; using automatic views: {curation_path}")
     # Auto-detect SI&L store under repo root; helper returns {} if absent.
     sil_store_path = repo_path / ".architecture" / "sil.sqlite"
+    anchors = {v: build_slice_anchor(model, v, repo_path) for v in VIEW_TO_ARTIFACT}
     result_path = generate_html_viewer(
         model, output_path, title=title, repo_path=repo_path, model_path=model_path,
         include_docs=not args.no_docs, include_history=not args.no_docs,
         curation_path=curation_path, use_curation=not getattr(args, "no_curation", False),
         sil_store_path=sil_store_path if sil_store_path.is_file() else None,
+        anchors=anchors,
     )
     size_kb = result_path.stat().st_size / 1024
     print(f"Viewer: {result_path} ({size_kb:.0f}KB)")
@@ -1248,6 +1268,17 @@ def _cmd_comment(args) -> int:
 def _cmd_migrate(args) -> int:
     from architecture_model.cli import migrate as _migrate_cli
     return _migrate_cli.run(args)
+
+
+def _cmd_audit(args) -> int:
+    """Six-pipeline completeness audit."""
+    from architecture_model.audit import run_audit
+    return run_audit(args.model, pipeline=args.pipeline, strict=args.strict)
+
+
+def _cmd_export_graph(args) -> int:
+    from architecture_model.cli import export_graph as _export_graph_cli
+    return _export_graph_cli.run(args)
 
 
 if __name__ == "__main__":

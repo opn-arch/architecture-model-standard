@@ -1,0 +1,289 @@
+meta:
+  schema_version: '3.0'
+  project: architecture-model-standard
+  subsystem: viewer
+  generated_by: hand-authored
+  generated_at: '2026-09-15T00:00:00Z'
+  source_root: .architecture/viewers/
+  note: |
+    v3 fragment modeling the viewer subsystem itself. Applies the AMS
+    standard recursively: the viewer is a component with declared
+    promises. The implementation at v3_viewer.html must satisfy each
+    delivers-attribute promise below. Missing satisfaction = typed-gap;
+    explicit scope-decline = status:open with declined rationale in
+    provenance.
+entities:
+  components:
+  - id: COMP-VIEWER
+    name: v3_viewer
+    root_prefix: .architecture.viewers.v3_viewer
+    module_names:
+    - .architecture.viewers.v3_viewer.html
+    - scripts.build_v3_viewer
+    promises:
+    - id: PR-VIEWER-intent
+      attribute: intent
+      content:
+      - Render the merged v3 Promise-graph model (pipeline output + authored fragments)
+        as an inspectable, offline, single-file HTML artifact with per-entity drill-down,
+        gap visibility, and human-note capture.
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: hand-authored viewer model
+    - id: PR-VIEWER-D1
+      attribute: delivers
+      content:
+      - overview_landing
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - viewer opens to overview screen with totals + histograms + top-5 tables
+      status: verified
+      gap_type: null
+      provenance: |
+        Landing screen shows totals, status distribution, gap-type distribution,
+        entity-kind distribution, sources merged, and top-5 tables.
+    - id: PR-VIEWER-D2
+      attribute: delivers
+      content:
+      - dependency_graph_visual
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        scope declined 2026-09-15 — SVG circular layout in prior overhaul
+        wasted screen space and did not scale past ~24 nodes. Deferred until
+        an interactive force-directed / hierarchical layout is warranted.
+        Neighbor navigation via chips (D6) covers the immediate use case.
+    - id: PR-VIEWER-D3
+      attribute: delivers
+      content:
+      - multi_attribute_entity_detail
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - promises grouped by attribute with status badges + hover provenance
+      - detail view supports all entity kinds (components, capabilities, behaviors,
+        interfaces, actors, constraints, layers)
+      - canonical attributes (intent, delivers, provides) render first in fixed
+        order; any additional attribute (requirements, failure_modes, goals,
+        success_criteria, verification, slos, trade_offs, assumptions,
+        open_questions, MoEs, ...) renders below in insertion order
+      status: verified
+      gap_type: null
+      provenance: |
+        Renders promises grouped by attribute. Canonical order: intent → delivers
+        → provides, then any remaining attributes in insertion order. Attribute
+        vocabulary is open-ended per Promise schema — promise.attribute is any
+        non-empty string, promise-graph.schema.json enforces no enum. Reference
+        vocabulary is Phase 2 schema 2.1's 14 semantic fields (intent, goals,
+        stakeholders, success_criteria, failure_modes, trade_offs, assumptions,
+        open_questions, requirements, verification, slos, owner, maturity,
+        dependencies_rationale) — see CONTEXT.md Phase 2 section. Badges:
+        ok=verified, warn=open, error=typed-gap. Gap type shown as secondary
+        badge. Renamed from component_detail_with_promises 2026-09-15 to reflect
+        multi-kind support; renamed from entity_detail_with_promises 2026-09-15
+        to reflect open-ended attribute vocabulary.
+    - id: PR-VIEWER-D4
+      attribute: delivers
+      content:
+      - gap_index_view
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - Typed Gaps page lists all gap promises grouped by gap_type
+      - includes new gap_type=unrealized surfaced from authored fragments
+      status: verified
+      gap_type: null
+      provenance: |
+        Flat list across all entities. Grouped by gap_type. Click owner id
+        to jump to entity detail. Unrealized authored CAP/BEH entries
+        surfaced automatically.
+    - id: PR-VIEWER-D5
+      attribute: delivers
+      content:
+      - se_level_navigation
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        scope declined 2026-09-15 — SE views (ConOps, Functional Analysis,
+        Logical Architecture, etc.) live in the 2.x SE document suite
+        (COMP-4.2) and are not part of the v3-native viewer surface.
+        Sidebar organizes by entity kind, which is the v3 modeling
+        primitive. Revisit if v3 SE view projectors are built.
+    - id: PR-VIEWER-D6
+      attribute: delivers
+      content:
+      - inbound_outbound_neighbors_inline
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - neighbors shown inline in entity detail as clickable chips
+      status: verified
+      gap_type: null
+      provenance: |
+        Detail view Neighbors card lists depends-on outbound + inbound
+        clickable chips. Sidebar sits to the left; content area is
+        full-width — no wasted right rail.
+    - id: PR-VIEWER-D7
+      attribute: delivers
+      content:
+      - component_search_and_filter
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        scope declined 2026-09-15 — at current 24-component scale, sidebar
+        <details> groups + browser Cmd-F is sufficient. Revisit if entity
+        count grows past ~100 or when authored fragments make sidebar
+        exceed one screen.
+    - id: PR-VIEWER-D8
+      attribute: delivers
+      content:
+      - per_entity_notes_save
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - each entity detail has a Notes textarea prefilled from notes.yaml
+      - Save button downloads updated notes.yaml as a browser file
+      status: verified
+      gap_type: null
+      provenance: |
+        Option A round-trip: viewer loads .architecture/viewers/notes.yaml
+        into embedded payload; edits kept in memory; Save button emits full
+        notes.yaml as a Blob download. User places file back into
+        .architecture/viewers/notes.yaml manually; next viewer rebuild
+        picks it up. Zero server dependency.
+    - id: PR-VIEWER-D9
+      attribute: delivers
+      content:
+      - multi_entity_kind_sidebar
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - sidebar has one <details> group per non-empty entity kind
+      - kinds covered - components, capabilities, behaviors, interfaces, actors,
+        constraints, layers
+      status: verified
+      gap_type: null
+      provenance: |
+        Sidebar dynamically generates one collapsible group per kind
+        present in the merged model. Small groups (<=15) auto-open;
+        larger groups start collapsed. Overview + Typed Gaps sit as
+        top-level nav items above the kind groups.
+    - id: PR-VIEWER-D10
+      attribute: delivers
+      content:
+      - authored_fragment_merge
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - build_v3_viewer.py loads .architecture-model.v3.yaml PLUS all
+        .architecture/model/*.v3.yaml fragments
+      - id collisions across sources are a hard fail (exit code 3)
+      - authored capabilities/behaviors without realizes/traces-to edge are
+        surfaced as gap_type=unrealized on the Typed Gaps page
+      status: verified
+      gap_type: null
+      provenance: |
+        Necessary because pipeline_v3.publish.py:107 writes only
+        entities:{"components": ...} and overwrites .architecture-model.v3.yaml
+        wholesale on every run. Authored layer must live as separate
+        fragment files merged at view time. Promoting merge into publish.py
+        is Part 3 territory (see BEH-S1 entity-kind promotion).
+    - id: PR-VIEWER-P1
+      attribute: provides
+      content:
+      - single_file_html
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - one .html file, no external assets, no build step at view time
+      status: verified
+      gap_type: null
+      provenance: All CSS + JS inline; payload embedded as JSON <script>.
+    - id: PR-VIEWER-P2
+      attribute: provides
+      content:
+      - offline_deterministic
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - no network requests, byte-deterministic under sorted JSON payload
+      status: verified
+      gap_type: null
+      provenance: |
+        payload = json.dumps(payload, sort_keys=True); no fonts/CDN;
+        rebuild yields identical bytes given same v3 model inputs.
+    - id: PR-VIEWER-P3
+      attribute: provides
+      content:
+      - repo_agnostic
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - builder script accepts arbitrary v3 model path via argv[1]
+      status: verified
+      gap_type: null
+      provenance: |
+        `python scripts/build_v3_viewer.py <path>` — reads model from
+        arbitrary path; authored fragments still read from
+        .architecture/model/ relative to REPO. Multi-repo fragment
+        directory support is a future enhancement.
+    - id: PR-VIEWER-R1
+      attribute: requirements
+      content:
+      - single-file HTML output (no external assets, no CDN, no build step at view time)
+      - renders any Promise attribute name, not only intent/delivers/provides
+      - id collisions across fragment sources must be a hard fail with a clear message
+      - notes.yaml round-trip via browser download (option A, zero server dependency)
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - inline CSS + JS in v3_viewer.html; grep for external src/href = 0
+      - selectEntity() renders canonical attrs then any Object.keys(by_attr) remainder
+      - _merge_sources() raises SystemExit(3) on duplicate id (verified in build 1 tests)
+      - save button emits Blob with schema_version + notes dict, downloads as notes.yaml
+      status: verified
+      gap_type: null
+      provenance: |
+        First example of a non-canonical Promise attribute — proves the viewer
+        renders 'requirements' cards below Provides without any code change
+        (per D3 multi-attribute_entity_detail). Vocabulary chosen from
+        schema 2.1's 14 semantic fields (Phase 2 CONTEXT.md).
+    - id: PR-VIEWER-F1
+      attribute: failure_modes
+      content:
+      - id collision across .architecture-model.v3.yaml and .architecture/model/*.v3.yaml → hard-exit 3 with source-labelled error message
+      - missing .architecture/viewers/notes.yaml → embed empty notes dict (non-fatal, viewer still functions)
+      - unrealized authored capability/behavior (no realizes/traces-to edge) → surface as gap_type=unrealized on Typed Gaps page (dogfooding)
+      - browser download of notes.yaml requires user to manually place file back into .architecture/viewers/ (option A round-trip trade-off)
+      owner_entity: COMP-VIEWER
+      delivered_from: null
+      verified_by:
+      - collision test in Commit 1 verification battery — exit code 3 confirmed
+      - _build_payload() guards NOTES_PATH.exists() before loading
+      - _build_payload() unrealized loop populates unrealized_gaps and increments gap_type_hist
+      status: verified
+      gap_type: null
+      provenance: |
+        Second example of a non-canonical Promise attribute. Enumerates the
+        failure modes the viewer subsystem's implementation handles explicitly,
+        plus the one intentional trade-off (manual file placement) inherited
+        from option A save mechanism. Vocabulary chosen from schema 2.1.
+relationships:
+- from: COMP-VIEWER
+  to: COMP-1896b055
+  type: depends-on
+  weight: 1
+  note: viewer reads the core v3 model produced by pipeline_v3

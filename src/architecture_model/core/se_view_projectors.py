@@ -30,6 +30,105 @@ from architecture_model.core.view_curation import (
 DEFAULT_MAX_OVERVIEW_NODES = 15
 
 
+def _first_str(value: object) -> str:
+    """Return the first meaningful string from a value that may be str or sequence.
+
+    Behavior semantic fields (``goals``, ``postconditions``, ``preconditions``)
+    are typed as ``list[str]`` but real-world YAML often declares them as
+    scalar strings (see BEH-26/27/28 in this repo's own model). The parser
+    stores those scalars verbatim, so ``next(iter(field), "")`` iterates the
+    string character-by-character and yields the first char — producing
+    labels like ``"A"``, ``"C"`` instead of the full sentence.
+
+    This helper normalizes both shapes: str -> the string itself,
+    list/tuple -> its first element (as str), anything else -> ``""``.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        return str(value[0]) if value else ""
+    return ""
+
+
+def _operational_use_case_keys(
+    context: ArchitectureViewContext,
+    curation: "ViewCuration | None" = None,
+) -> frozenset[str]:
+    """Return the set of behavior keys that qualify as top-level use cases.
+
+    A behavior qualifies iff it EITHER:
+
+    a. Has **narrative content** — a non-empty ``trigger``, or a
+       non-empty first ``goals`` / ``postconditions`` value. Real user
+       stories have story-shape fields regardless of whether they're
+       structural roots (a fixture may legitimately model use-case
+       decomposition via ``contains`` where both parent and child
+       carry narrative); OR
+
+    b. Is an **aggregation root** — the source of at least one
+       ``contains`` edge to another behavior (e.g. ``BEH-P1`` which
+       aggregates its pipeline stages but has sparse narrative fields
+       itself); OR
+
+    c. Is **explicitly named by curation** — an operator listing a
+       behavior in ``featured`` / ``order`` / ``annotations`` /
+       ``scenarios[].members`` declares operational intent, and that
+       authority overrides field-shape heuristics. Behaviors scraped
+       into fixtures without narrative are still surfaced when the
+       operator chose them.
+
+    This deliberately excludes:
+
+    - Pipeline sub-behaviors (e.g. ``BEH-P1.1..P1.N``) that carry no
+       narrative, no children, and no explicit curation.
+    - Auto-derived CLI-argparse / CLI-test roots not chosen by
+       curation.
+    """
+    behavior_entities = list(context.entities("behavior"))
+    behavior_keys = {item.key for item in behavior_entities}
+    aggregators: set[str] = set()
+    contains_children: set[str] = set()
+    for item in behavior_entities:
+        for edge in context.outgoing(item.key, "contains"):
+            if edge.target in behavior_keys:
+                aggregators.add(item.key)
+                contains_children.add(edge.target)
+    curated_ids: set[str] = set()
+    if curation is not None:
+        for selector in curation.featured:
+            if selector.resolved_id:
+                curated_ids.add(selector.resolved_id)
+        for key in curation.order:
+            curated_ids.add(key)
+        for annotation in curation.annotations:
+            curated_ids.add(annotation.use_case)
+        for scenario in curation.scenarios:
+            for member in scenario.members:
+                curated_ids.add(member)
+    qualifying: set[str] = set()
+    for item in behavior_entities:
+        has_narrative = bool(
+            item.value.trigger
+            or _first_str(item.value.goals)
+            or _first_str(item.value.postconditions)
+        )
+        if item.key in curated_ids or item.key in aggregators or has_narrative:
+            qualifying.add(item.key)
+            continue
+        # No positive signal. Exclude only when a source-scraped fingerprint
+        # is present (steps but no narrative — CLI-argparse / test-runner
+        # scrapes) or when the entity is a ``contains`` child of another
+        # behavior (auto-derived sub-step, e.g. ``BEH-P1.*``). Submodel
+        # behaviors with sparse fields (no steps, no children, no
+        # narrative) remain visible so root-scope conops can summarize
+        # them.
+        has_only_steps = bool(item.value.steps) and not has_narrative
+        if item.key in contains_children or has_only_steps:
+            continue
+        qualifying.add(item.key)
+    return frozenset(qualifying)
+
+
 def _visibility(curation: ViewCuration) -> Callable[[str | IndexedEntity], bool]:
     hidden = frozenset(
         item.resolved_id or item.qualified_id
@@ -650,7 +749,10 @@ def project_conops(
             "warning", "CONOPS_DEGRADED_INTERFACE", f"Unresolved interface endpoint: {interface.name}", view="conops",
         ))
 
-    behaviors = [item for item in context.entities("behavior") if item.key not in hidden]
+    behaviors = [
+        item for item in context.entities("behavior")
+        if item.key not in hidden and item.key in _operational_use_case_keys(context, curation)
+    ]
     behaviors.sort(key=lambda item: (item.key not in featured, order.get(item.key, len(order)), item.key))
     omitted = 0
     for behavior in behaviors:
@@ -666,14 +768,14 @@ def project_conops(
             ]
         interface = interfaces[0] if interfaces else None
         system = _interface_system(context, interface) if interface else _owning_system(context, behavior.model)
-        outcome = next(iter(behavior.value.postconditions or behavior.value.goals), "")
+        outcome = _first_str(behavior.value.postconditions) or _first_str(behavior.value.goals)
         path_nodes = []
         if actor:
             path_nodes.append(DiagramNode(_node_id(actor.key), _label(actor, curation), "actor", lane="actors", entity_ref=actor.key, evidence=[_provenance(actor)]))
         drilldown_id = _drilldown_id(curation, behavior.key)
         path_nodes.append(
             DiagramNode(_node_id(behavior.key), _label(behavior, curation), "scenario", lane="scenarios", group=membership.get(behavior.key, ""),
-                        subtitle=" | ".join(value for value in (behavior.value.trigger, next(iter(behavior.value.goals), "")) if value),
+                        subtitle=" | ".join(value for value in (behavior.value.trigger, _first_str(behavior.value.goals)) if value),
                         entity_ref=behavior.key, drilldown_ref=drilldown_id, badges=_badges(behavior), evidence=[_provenance(behavior)])
         )
         if interface and system:
@@ -1395,13 +1497,36 @@ def project_logical_architecture(
     order = {key: index for index, key in enumerate(curation.order)}
     systems, model_owner = _system_models(context)
     tier_defs = {tier: (label, index) for index, (tier, label, _) in enumerate(_LOGICAL_TIERS)}
+    model_layers = [
+        item for item in context.entities("layer")
+        if visible(item) and item.model == "root"
+    ]
+    layer_lane_by_key: dict[str, str] = {}
     lanes = []
     membership: dict[str, str] = {}
     if curation.tiers:
         for curated in sorted(curation.tiers, key=lambda item: (item.order, item.id)):
             if visible(curated.id):
-                lanes.append(DiagramGroup(curated.id, curated.label, "tier", curated.parent, curated.order))
+                # Allow curation.labels to override the tier's own label by tier id.
+                lane_label = curation.labels.get(curated.id, curated.label)
+                lanes.append(DiagramGroup(curated.id, lane_label, "tier", curated.parent, curated.order))
                 membership.update({member: curated.id for member in curated.members if visible(member)})
+    elif model_layers:
+        # Prefer explicit model-declared layers over the canonical tier
+        # taxonomy. Order by ``layer.order`` if set (0 defaults sort
+        # first, which mirrors YAML declaration order); tie-break on id.
+        def _layer_order(item: IndexedEntity) -> tuple[int, str]:
+            raw = getattr(item.value, "order", 0) or 0
+            return (int(raw), item.key)
+
+        for index, layer in enumerate(sorted(model_layers, key=_layer_order)):
+            lane_id = f"logical-tier:{layer.key}"
+            if visible(lane_id):
+                # curation.labels keyed by the layer's fully-qualified entity
+                # key (e.g. ``root::LAY-1``) overrides the model layer name.
+                lane_label = curation.labels.get(layer.key, layer.name)
+                lanes.append(DiagramGroup(lane_id, lane_label, "tier", order=index))
+                layer_lane_by_key[layer.key] = lane_id
     else:
         lanes = [
             DiagramGroup(f"logical-tier:{tier}", label, "tier", order=index)
@@ -1412,6 +1537,11 @@ def project_logical_architecture(
         assigned = membership.get(entity.key, "")
         if assigned:
             return assigned
+        # Model-layer path: if the entity declares a layer that matches a
+        # model-declared Layer entity, route it to that lane directly.
+        entity_layer = getattr(entity.value, "layer", "")
+        if entity_layer and entity_layer in layer_lane_by_key:
+            return layer_lane_by_key[entity_layer]
         tier = _logical_tier(entity)
         automatic = f"logical-tier:{tier}"
         if any(item.id == automatic for item in lanes):
@@ -1738,7 +1868,7 @@ def _use_case_drilldown(
     context: ArchitectureViewContext, behavior: IndexedEntity, curation: ViewCuration,
     visible: Callable[[str | IndexedEntity], bool], annotation: CuratedUseCaseAnnotation | None = None,
 ) -> DiagramSpec:
-    goal = next(iter(behavior.value.goals), "") or (annotation.goal if annotation else "")
+    goal = _first_str(behavior.value.goals) or (annotation.goal if annotation else "")
     trigger = behavior.value.trigger or (annotation.trigger if annotation else "")
     uses_annotation = bool(annotation and (
         (not behavior.value.trigger and annotation.trigger)
@@ -1964,7 +2094,10 @@ def project_use_cases(
     featured = {item.resolved_id for item in curation.featured if item.resolved_id}
     annotations = {item.use_case: item for item in curation.annotations if visible(item.use_case)}
     order = {key: index for index, key in enumerate(curation.order)}
-    behaviors = [item for item in context.entities("behavior") if visible(item)]
+    behaviors = [
+        item for item in context.entities("behavior")
+        if visible(item) and item.key in _operational_use_case_keys(context, curation)
+    ]
     by_actor: dict[str, list[IndexedEntity]] = defaultdict(list)
     for behavior in behaviors:
         actor = _behavior_actor(context, behavior)
@@ -2003,10 +2136,10 @@ def project_use_cases(
         systems = _behavior_systems(context, behavior, visible)
         annotation = annotations.get(behavior.key)
         drilldown_id = _drilldown_id(curation, behavior.key)
-        goal = next(iter(behavior.value.goals), "") or (annotation.goal if annotation else "")
+        goal = _first_str(behavior.value.goals) or (annotation.goal if annotation else "")
         trigger = behavior.value.trigger or (annotation.trigger if annotation else "")
-        outcome = next(iter(behavior.value.postconditions or behavior.value.goals), "") or (
-            annotation.success_outcome or next(iter(annotation.postconditions), "") if annotation else ""
+        outcome = _first_str(behavior.value.postconditions) or _first_str(behavior.value.goals) or (
+            annotation.success_outcome or _first_str(annotation.postconditions) if annotation else ""
         )
         uses_annotation = bool(annotation and (
             (not behavior.value.trigger and annotation.trigger)

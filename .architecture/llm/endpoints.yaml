@@ -1,0 +1,186 @@
+# LLM endpoint inventory
+#
+# Declared registry of all LLM integration points across AMS + OCA.
+# Consumed by src/architecture_model/walks/meta/llm_endpoint_inventory.py
+# (CAP-WK.llm-endpoint-inventory audit walk).
+#
+# Endpoint id format: <repo_slug>:<posix_relpath_from_repo>:<lineno>
+#
+# migration_status values:
+#   protocol   — new LLMProvider Protocol (provider.complete/structured/stream)
+#   legacy     — old llm_callback pattern (drives migration audit)
+#   provenance — passive read of provider metadata (no call)
+#   routing    — routing/policy glue (calls provider indirectly)
+#
+# Auto-refreshed by R3 driver (docs/reports/2026-09-20-model-quality-evaluation.md).
+# Entries with kind=unclassified need manual metadata review.
+---
+endpoints:
+- id: architecture-model-standard:src/architecture_model/docs/components/author.py:249
+  location: docs/components/author.py:249
+  kind: authoring
+  task_class: authoring
+  tier: T3
+  migration_status: legacy
+  description: Docs component-spec author (A9, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/docs/components/author.py:252
+  location: src/architecture_model/docs/components/author.py:252
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=llm_callback, needs manual metadata."
+- id: architecture-model-standard:src/architecture_model/lifecycle/projectors/write_back.py:86
+  location: src/architecture_model/lifecycle/projectors/write_back.py:86
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:500
+  location: pipeline/coordinator.py:500
+  kind: enrichment
+  task_class: review
+  tier: T2
+  migration_status: protocol
+  description: Coordinator semantic review (A4, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:630
+  location: pipeline/coordinator.py:630
+  kind: enrichment
+  task_class: naming
+  tier: T2
+  migration_status: protocol
+  description: Coordinator infer-stage naming (A2, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/coordinator.py:674
+  location: pipeline/coordinator.py:674
+  kind: enrichment
+  task_class: naming
+  tier: T2
+  migration_status: protocol
+  description: Coordinator allocate-stage naming (A3, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/emit.py:554
+  location: pipeline/emit.py:554
+  kind: review
+  task_class: review
+  tier: T2
+  migration_status: legacy
+  description: Emit-stage review (A6, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/pipeline/gap_analysis.py:479
+  location: pipeline/gap_analysis.py:479
+  kind: diff
+  task_class: diff
+  tier: T2
+  migration_status: legacy
+  description: Gap-analysis stage diff (A7, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/pipeline/llm_refine.py:413
+  location: pipeline/llm_refine.py:413
+  kind: enrichment
+  task_class: enrichment
+  tier: T2
+  migration_status: protocol
+  description: llm_refine refinement pass (A5, via A1)
+- id: architecture-model-standard:src/architecture_model/pipeline/protocol.py:227
+  location: src/architecture_model/pipeline/protocol.py:227
+  kind: completion
+  task_class: enrichment
+  tier: T2
+  migration_status: protocol
+  description: "PipelineContext.llm_enrich \u2014 universal stage entry (A1)"
+- id: architecture-model-standard:src/architecture_model/quality/code_improver.py:200
+  location: quality/code_improver.py:200
+  kind: authoring
+  task_class: authoring
+  tier: T3
+  migration_status: legacy
+  description: Quality code_improver (A10, uses legacy llm_callback)
+- id: architecture-model-standard:src/architecture_model/walks/meta/author_promise_note.py:200
+  location: src/architecture_model/walks/meta/author_promise_note.py:200
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/bundle.py:260
+  location: src/opencode_arch/llm/bundle.py:260
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/bundle.py:264
+  location: src/opencode_arch/llm/bundle.py:264
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=structured, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/policy.py:74
+  location: src/opencode_arch/llm/policy.py:74
+  kind: routing
+  task_class: none
+  tier: T1
+  migration_status: routing
+  description: "Policy.pick(TaskClass) router (B1) \u2014 no config yet"
+- id: opencode-arch:src/opencode_arch/llm/policy.py:90
+  location: src/opencode_arch/llm/policy.py:90
+  kind: routing
+  task_class: none
+  tier: T1
+  migration_status: routing
+  description: _FallbackProvider.complete cascade (B2)
+- id: opencode-arch:src/opencode_arch/llm/policy.py:97
+  location: src/opencode_arch/llm/policy.py:97
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/providers/frontier.py:114
+  location: src/opencode_arch/llm/providers/frontier.py:114
+  kind: transport
+  task_class: none
+  tier: T1
+  migration_status: protocol
+  description: Frontier provider adapter (B3.1 of 4)
+- id: opencode-arch:src/opencode_arch/llm/providers/frontier.py:119
+  location: src/opencode_arch/llm/providers/frontier.py:119
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/providers/mcp.py:37
+  location: src/opencode_arch/llm/providers/mcp.py:37
+  kind: transport
+  task_class: none
+  tier: T1
+  migration_status: protocol
+  description: MCP provider adapter (B3.2 of 4)
+- id: opencode-arch:src/opencode_arch/llm/providers/mcp.py:44
+  location: src/opencode_arch/llm/providers/mcp.py:44
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/llm/providers/relay_ext.py:70
+  location: src/opencode_arch/llm/providers/relay_ext.py:70
+  kind: transport
+  task_class: none
+  tier: T1
+  migration_status: protocol
+  description: Relay-ext provider adapter (B3.4 of 4)
+- id: opencode-arch:src/opencode_arch/llm/providers/relay_ext.py:75
+  location: src/opencode_arch/llm/providers/relay_ext.py:75
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."
+- id: opencode-arch:src/opencode_arch/runner/opencode.py:92
+  location: src/opencode_arch/runner/opencode.py:92
+  kind: unclassified
+  task_class: none
+  tier: T2
+  migration_status: protocol
+  description: "Auto-added by R3 refresh \u2014 pattern=complete, needs manual metadata."

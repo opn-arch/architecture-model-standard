@@ -1,0 +1,59 @@
+walk:
+  id: WALK-promotion-strict
+  audits:
+    - CAP-WK.promotion-strict
+
+  # Strict Category B → C promotion audit (Q6=c ceremony, follow-on to
+  # WALK-promotion). Where WALK-promotion buckets by promise STATUS
+  # (verified / proposed / open), this walk buckets by ATTRIBUTE COVERAGE
+  # over the Category B specification set:
+  #
+  #   goals, requirements, success_criteria, failure_modes, constraints
+  #
+  # An entity is `ready-to-code-strict` only when it carries at least one
+  # promise for EVERY Category B attribute. This is a stricter gate than
+  # WALK-promotion's `ready-to-code` (which only requires all promises be
+  # verified) — an entity can have all-verified promises but only cover
+  # 1 of 5 Category B attrs, in which case it is genuinely under-specified
+  # for external contract emission.
+  #
+  # Enabled by the L22 follow-on: `promise_attribute_count:<name>` DSL
+  # atom (classify.py) filters promises by attribute name at classify time.
+  # See CAP-DF PR-CAP-DF-lessons_learned L22.
+  scope:
+    kind: any
+
+  # Structural-tier walk: no graph traversal. Each entity is its own
+  # subgraph root; classify inspects the promises list in isolation.
+  traverse:
+    edges: []
+    direction: outbound
+    depth: 0
+
+  classify:
+    verdicts:
+      # All 5 Category B attrs represented → strict ready.
+      - name: ready-to-code-strict
+        when: promise_attribute_count:goals >= 1 and promise_attribute_count:requirements >= 1 and promise_attribute_count:success_criteria >= 1 and promise_attribute_count:failure_modes >= 1 and promise_attribute_count:constraints >= 1
+      # At least 1 of 5 Category B attrs represented → partial coverage,
+      # promotion possible but under-specified.
+      - name: partial-strict
+        when: promise_attribute_count:goals >= 1 or promise_attribute_count:requirements >= 1 or promise_attribute_count:success_criteria >= 1 or promise_attribute_count:failure_modes >= 1 or promise_attribute_count:constraints >= 1
+    on_missing_attributes: insufficient-strict
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  # Category B rollup: parent capability inherits worst child status —
+  # any child under-specified surfaces upward so the ceremony driver
+  # sees aggregate readiness.
+  rollup:
+    via: contains
+    category: B
+    strategy: worst-child
+
+  emit:
+    card_template: default
+    severity_from: verdict

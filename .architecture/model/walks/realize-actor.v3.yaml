@@ -1,0 +1,32 @@
+walk:
+  id: WALK-realize-actor
+  audits:
+    - CAP-WK.realize
+
+  scope:
+    kind: actor
+
+  traverse:
+    hops:
+      # Hop 1: behaviors this actor triggers (outbound triggers).
+      - edges: [triggers]
+        direction: outbound
+      # Hop 2: components that trace to those behaviors (inbound traces-to).
+      - edges: [traces-to]
+        direction: inbound
+
+  classify:
+    verdicts:
+      - name: ready-to-code
+        when: "true"
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: realization-chain
+    severity_from: verdict
+    include_subgraph: true

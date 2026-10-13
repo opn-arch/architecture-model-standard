@@ -1,0 +1,2007 @@
+meta:
+  schema_version: '3.0'
+  project: architecture-model-standard
+  subsystem: capabilities
+  generated_by: hand-authored
+  generated_at: '2026-09-16T00:00:00Z'
+  source_root: .architecture/model/
+  note: |
+    Formalizes the 2026-09-14 v3 SE walk (docs/reports/2026-09-14-v3-se-walk.md)
+    into the architecture model as a capability tree. Three top-level
+    capabilities decompose the standard + tooling story:
+
+      CAP-PB Extract — extract architecture from source code (pipeline_v3)
+      CAP-SL Slice   — produce focused subgraphs (slice.py)
+      CAP-DF Evolve  — the model-based development loop (view / note / walk /
+                       author / validate / re-extract)
+
+    BEH-* entities trace to the actual COMP-<hash> ids in the pipeline output
+    (looked up 2026-09-16 against .architecture-model.v3.yaml). Today the
+    entire pipeline_v3 package allocates to a single COMP-c5a72728 —
+    per-stage split is a Part 3 candidate (see CAP-DF.4 BEH-S1 entity-kind
+    promotion). Every trace listed below therefore resolves to that single
+    component id, which is deliberate: this fragment models the CAPABILITY
+    decomposition, not the current component decomposition.
+
+    Meta-principle: AMS is a standard + tooling to model ANY system;
+    self-application is the validation strategy. This fragment is that
+    self-application at the capability layer.
+entities:
+  capabilities:
+  - id: CAP-PB
+    name: extract_architecture_from_code
+    promises:
+    - id: PR-CAP-PB-intent
+      attribute: intent
+      content:
+      - Extract a v3 Promise-graph architecture model from any Python source tree
+        using pure AST analysis, deterministically and without an LLM.
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - pipeline_v3.orchestrator.run_pipeline emits .architecture-model.v3.yaml
+        end-to-end on this repo (25 components, 664 promises, 50 edges)
+      status: verified
+      gap_type: null
+      provenance: |
+        Formalized 2026-09-14 SE walk L1 (docs/reports/2026-09-14-v3-se-walk.md).
+        Realized by pipeline_v3 (COMP-c5a72728). Decomposes into 7 stages
+        BEH-scan..BEH-publish plus the orchestrator BEH-run-pipeline.
+    - id: PR-CAP-PB-requirements
+      attribute: requirements
+      content:
+      - deterministic AST-only extraction (no LLM in the extract path today)
+      - stage-composable (each stage isolable and testable)
+      - resumable via disk cache between stages
+      - emit .architecture-model.v3.yaml compatible with promise-graph.schema.json
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - pipeline_v3 tests under tests/pipeline_v3/
+      - promise-graph.schema.json validates the emitted YAML
+      status: verified
+      gap_type: null
+      provenance: |
+        Requirements distilled from 2026-09-14 walk L2 + pipeline_v3 module
+        contracts. First non-canonical Promise attribute on a Capability.
+    - id: PR-CAP-PB-D-scan
+      attribute: delivers
+      content: [BEH-scan]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to BEH-scan (contains relationship below)
+    - id: PR-CAP-PB-D-derive
+      attribute: delivers
+      content: [BEH-derive-promises]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to BEH-derive-promises
+    - id: PR-CAP-PB-D-cluster
+      attribute: delivers
+      content: [BEH-cluster]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to BEH-cluster
+    - id: PR-CAP-PB-D-link
+      attribute: delivers
+      content: [BEH-link]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to BEH-link
+    - id: PR-CAP-PB-D-containerize
+      attribute: delivers
+      content: [BEH-containerize]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to BEH-containerize
+    - id: PR-CAP-PB-D-verify
+      attribute: delivers
+      content: [BEH-verify]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to BEH-verify
+    - id: PR-CAP-PB-D-publish
+      attribute: delivers
+      content: [BEH-publish]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to BEH-publish
+    - id: PR-CAP-PB-D-run-pipeline
+      attribute: delivers
+      content: [BEH-run-pipeline]
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: |
+        Decomposition edge to BEH-run-pipeline. Added 2026-09-16 CAP-PB walk L5
+        — BEH-run-pipeline is the actual user-triggered entry point; the other
+        7 delivers behaviors are internal stages the orchestrator invokes.
+    - id: PR-CAP-PB-stakeholders
+      attribute: stakeholders
+      content:
+      - ACT-developer — runs pipeline after code changes; consumes emitted model via viewer
+      - ACT-se — reads emitted model during SE walks; authors fragments alongside
+      - ACT-ci — invokes pipeline as gate; consumes byte-determinism guarantee
+      - COMP-VIEWER — consumes IF-model to render the browsable graph
+      - ACT-llm — Part-3 future consumer for richer-attribute enrichment
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - triggers relationships from ACT-developer/ACT-ci to BEH-run-pipeline (see enrichment.v3.yaml)
+      - COMP-VIEWER D10 merges pipeline output at view time
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-success_criteria
+      attribute: success_criteria
+      content:
+      - emitted .architecture-model.v3.yaml is byte-identical across reruns given identical source + pinned clock
+      - at least 1 component emitted per non-empty source root
+      - promise-graph.schema.json validates the output
+      - decompose reaches fixed point (no further re-clustering on rerun)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - Phase 8 byte-determinism gate
+      - pipeline_v3 test suite (tests/pipeline_v3/)
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-failure_modes
+      attribute: failure_modes
+      content:
+      - import cycles hide depends-on edge direction (BEH-link)
+      - name-prefix clustering misgroups unrelated sibling modules (BEH-cluster)
+      - publish overwrites the pipeline output file wholesale, cannot host authored non-component entities (BEH-publish)
+      - dynamic imports / meta-programming / decorator effects invisible to AST scan (BEH-scan)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - PR-BEH-publish-failure_modes documents the overwrite discovery
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-slos
+      attribute: slos
+      content:
+      - byte-determinism = 100% (hard requirement, gated in CI)
+      - module coverage >= 95% of Python source under src/ (empirical target)
+      - typical wall-clock < 10s on architecture-model-standard repo (empirical target)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by:
+      - CI byte-determinism gate
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-assumptions
+      attribute: assumptions
+      content:
+      - source is pure Python (no C-extension source, no .pyi type stubs)
+      - files are utf-8 encoded
+      - modules are AST-parseable (syntactically valid at scan time)
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-trade_offs
+      attribute: trade_offs
+      content:
+      - AST-only means dynamic imports, meta-programming, and decorator effects are invisible
+      - traded semantic richness (failure_modes, MoEs, verification) for determinism + no-LLM dependency
+      - single-component allocation (COMP-c5a72728) traded finer observability for extraction simplicity
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L1
+    - id: PR-CAP-PB-open-per-stage-split
+      attribute: open_questions
+      content:
+      - Should the 8 pipeline_v3 modules (scan..publish + orchestrator) split from single COMP-c5a72728 into 8 per-stage components? Would enable per-stage SI&L badges, per-stage validation scores, and finer failure isolation in the viewer. Requires pipeline_v3/emit.py change (out of walk scope).
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: deferred-split
+      provenance: |
+        2026-09-16 CAP-PB walk L4. Surfaces the per-stage component split
+        question as an open_question + typed-gap so it appears in gap
+        tallies for future review. Related to CAP-DF.4 BEH-S1
+        entity-kind promotion.
+    - id: PR-CAP-PB-open-llm-derive-enrichment
+      attribute: open_questions
+      content:
+      - Should BEH-derive-promises grow an LLM seam that emits richer attributes (failure_modes, MoEs, verification, requirements)? Would eliminate the ~54 typed-gaps in the current model. Blocked on Part-3 LLM adapter + policy.yaml wiring.
+      owner_entity: CAP-PB
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: llm-seam
+      provenance: |
+        2026-09-16 CAP-PB walk L5. Surfaces the LLM-derive-enrichment seam
+        as an open_question + typed-gap. Blocked by IF-llm-provider having
+        no AMS-side adapter (Part 3).
+  - id: CAP-SL
+    name: slice_focused_subgraph
+    promises:
+    - id: PR-CAP-SL-intent
+      attribute: intent
+      content:
+      - Produce focused subgraph slices of the v3 model (by component,
+        capability, or attribute) as prompt / view substrate for downstream
+        LLM tasks and diagram generation.
+      owner_entity: CAP-SL
+      delivered_from: null
+      verified_by:
+      - pipeline_v3.slice module exists at src/architecture_model/pipeline_v3/slice.py
+      status: verified
+      gap_type: null
+      provenance: |
+        Formalized 2026-09-14 walk L1. Slicer is a downstream tool, not a
+        pipeline stage — run_pipeline does not invoke it. Realized by the
+        same COMP-c5a72728 that hosts the pipeline stages.
+    - id: PR-CAP-SL-requirements
+      attribute: requirements
+      content:
+      - accept a v3 model + focus spec (component id, capability id, attribute filter)
+      - return a sub-model that itself validates against promise-graph.schema.json
+      - preserve all promises on retained entities (no truncation of attribute vocabulary)
+      owner_entity: CAP-SL
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        Requirements enumerated from 2026-09-14 walk L2. Verification pending
+        until slice.py contracts are exercised by CAP-DF.3 validate step.
+    - id: PR-CAP-SL-slos
+      attribute: slos
+      content:
+      - Byte-deterministic slice output — inherited from pipeline_v3 sort-keys convention (all emit paths use sort_keys=True)
+      owner_entity: CAP-SL
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/slice.py exists and follows pipeline_v3 emit conventions
+      - "grep-verified: no time.time() / random / dict-ordering-sensitive constructs in slice.py"
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-determinism)
+  - id: CAP-DF
+    name: evolve_via_model_based_dev_loop
+    promises:
+    - id: PR-CAP-DF-intent
+      attribute: intent
+      content:
+      - Evolve the system by looping through view → note → walk / author →
+        validate → re-extract, using the model itself as the prompt substrate
+        and the source of truth for what "done" looks like.
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by:
+      - COMP-VIEWER exists (viewer.v3.yaml) — view step is delivered
+      - notes.yaml round-trip via option A — note step is delivered
+      - capabilities.v3.yaml is the first fragment authored via the walk step
+      status: verified
+      gap_type: null
+      provenance: |
+        Formalized 2026-09-14 walk L1 + preview of 2026-09-15 dev-workflow walk.
+        Decomposes into 4 sub-capabilities. CAP-DF.1 (walk-as-capability) and
+        CAP-DF.2 (view) are Part 2 territory (this commit + previous).
+        CAP-DF.3 (validate) is partially delivered. CAP-DF.4 (LLM seams) is
+        Part 3 (deferred).
+    - id: PR-CAP-DF-requirements
+      attribute: requirements
+      content:
+      - authored fragments MUST merge cleanly with pipeline output (D10 in viewer)
+      - view surface MUST render every attribute in the fragment (D3 in viewer)
+      - notes surface MUST round-trip through a file the pipeline can re-read
+      - walk MUST produce structured fragments, not just prose
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        Requirements distilled from the model-first meta-principle. The first
+        three are verified in COMP-VIEWER's D3/D8/D10. The fourth (walk →
+        fragment) is verified by this file's existence.
+    - id: PR-CAP-DF-failure_modes
+      attribute: failure_modes
+      content:
+      - authored fragment introduces id colliding with pipeline output — mitigated by hard-fail in COMP-VIEWER._merge_sources
+      - authored capability/behavior lacks realizes/traces-to edge — surfaced as gap_type=unrealized on Typed Gaps page
+      - pipeline re-run overwrites pipeline model but NOT authored fragments (publish.py:107 writes .architecture-model.v3.yaml only) — deliberate architectural split
+      - LLM seams (CAP-DF.4) don't exist yet — pipeline is pure AST, so semantic attributes (requirements, failure_modes, MoEs) can only be hand-authored today
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: |
+        Second use of failure_modes attribute in the model (first is COMP-VIEWER F1).
+        Documents the intentional and unintentional failure modes of the
+        model-based dev loop as it stands today.
+    - id: PR-CAP-DF-lessons_learned
+      attribute: lessons_learned
+      content:
+      - "L1 (CAP-PB walk L1): modeling capability decomposition is a SEPARATE concern from current component decomposition — multiple behaviors can trace to a single COMP hash and that is deliberate; forcing per-stage split is a Part-3 candidate, not a modeling requirement."
+      - "L2 (CAP-PB walk L1/L4): semantic attributes (failure_modes, stakeholders, assumptions) force mechanism-level thinking during walks — attributes ARE the walk, not decoration. Every walk should emit at least intent + one reflective attribute."
+      - "L3 (CAP-PB walk L5): user-triggered entry behaviors (BEH-run-pipeline) must be modeled as first-class delivers, not implied by orchestrator prose. Missing entry behaviors leave the graph disconnected from actors."
+      - "L4 (2026-09-16 viewer walk): cross-source shape divergence (pipeline-emit str vs authored list for Promise.content) MUST normalize at the Python boundary in _build_payload — single source of truth beats consumer-side defense. Applied at scripts/build_v3_viewer.py:~714."
+      - "L5 (2026-09-16 viewer walk): layered defense (try/catch on selectEntity) surfaces bugs as 'Render error' but does NOT identify root cause. Diagnosis requires reading the DATA shape across sources, not the code. Falsification (2 working / 23 broken components) pointed at the divergence directly."
+      - "L6 (2026-09-16 viewer walk): graph-walk-as-capability generalizes — flow_mermaid → decomposition_mermaid / realization_mermaid / neighbors_mermaid using the same substrate (helper returns tuple | None, stamped on record, rendered by shared loop). Adding future walks = 1 helper + 1 entry in the render targets array. SUPERSEDED 2026-09-18 by Parts 1–7 walk substrate: the informal 'helper + entry' pattern is now a formal 6-stage pipeline (select→traverse→classify→rollup→evidence→emit) driven by declarative WalkSpec YAML. See L18."
+      - "L7 (2026-09-16 viewer walk): silent-skip (return None when N/A) beats always-render; adaptive thresholds (BFS depth ≤ 2, cap 30 nodes, neighbors threshold 20) keep diagrams readable across entity kinds that vary by 100x in neighborhood size."
+      - "L8 (2026-09-16 viewer walk): kind-dispatched walks are unavoidable when the semantic shape of the traversal varies across entity kinds. Realization needed 7 distinct walk strategies (capability / component / behavior / interface / layer / actor / constraint) because the meaningful 2-hop chain is different for each — a single generic template would lose more insight than it saves."
+      - "L9 (2026-09-16 realizes-direction-fix): follow-up notes framed as 'add one edge' can hide systemic direction bugs; investigating the CONSUMER contract (walker semantics) before adding data revealed 3 edges + 5 entities affected, not 1. Always probe the consumer before adding producer data."
+      - "L10 (2026-09-16 realizes-direction-fix): silent-skip (return None when N/A) is a double-edged sword — correct behavior masking systemic bugs. Mitigation: build-time diagnostic pass (_realization_skip_reasons + _lint_edge_note_directions) that surfaces silently-skipped entities with adjacent-but-wrong-direction edges, plus in-viewer diagnostics banner. Fires zero warnings today (L9 fix cleared all), but present as tripwire for future direction bugs."
+      - "L11 (2026-09-16 constraint-impact walk): the 6th walk (2-hop constraint impact) extended _mermaid_realization's 1-hop constraint case without touching that helper — additive walks in a separate helper + separate stamped field beat in-place extension of an existing walker. Same pattern as cross_flow vs flow. Reinforces L6 substrate. SUPERSEDED 2026-09-18: kind-dispatched hops (HopSpec.by_kind) formalize this pattern into the substrate. Constraint-impact is now WALK-constraint-impact (declarative, silent_skip_when_last_hop_empty=true). See L19."
+      - "L12 (2026-09-16 compliance walk): auditability requires a per-entity evidence rule, not per-constraint. Defining compliance evidence as ≥1 verified promise on {verification, verified_by, slos, success_criteria} caught 16 real gaps across 12 entities without any per-constraint mapping. Universal evidence attrs > constraint-specific rules for the initial audit tier — refinement can layer per-constraint checks on top later."
+      - "L13 (2026-09-16 compliance walk): the audit surfaces 3 legitimate constraint impacts on entities lacking evidence (CAP-DF.2 vs CONS-determinism/no-runtime-deps; CAP-DF.1/.4 vs CONS-open-schema; 6 BEH-* vs the same). These are AUTHORING todos, not walker bugs. The walker's job is to make gaps visible; closing them is model authoring work. Loop pattern: view (banner) → note (gap list) → walk/author (fill promises)."
+      - "L14 (2026-09-16 gap closure): the universal-evidence audit accepts three distinct evidence tiers — runtime (test/harness citation), inherited (SLO promised on a realizes-target and reused via the edge), and design-only (compatible-by-construction, Part 3 deferred). All three passed the L12 rule, but only the first truly verifies at runtime. Provenance strings now flag design-only tier explicitly. A future refinement could add a tier field to promises and surface tier in the compliance banner so 'compatibility by construction' does not look identical to 'test citation' in the audit output."
+      - "L15 (2026-09-16 tier classifier): the L14 refinement lands as a pure classifier _promise_tier(promise) that reads existing provenance strings (no schema change, backward-compatible). Runtime > inherited > design > asserted priority. _entity_has_compliance_evidence and _constraint_compliance_gaps gain a strong_only flag (default False keeps L12 behavior byte-identical); strong_only=True raises the audit bar to runtime-tier only. _evidence_tier_summary(records) emits per-entity {tier: count} for future banner surfacing. Viewer output unchanged this commit — pure library-tier addition ready to be consumed by a follow-up UI change."
+      - "L16 (2026-09-16 CAP-SL self-exercise): applying slice_by_component('COMP-VIEWER') to the merged model and feeding the output back into the walk substrate shows CAP-SL is not walk-substrate-complete. The slicer drops 6 of 7 canonical entity kinds and any relationship pointing across kinds. 3 of 7 walks return None on the slice, 2 more degrade silently. Root cause: include_neighbors=True closes over relationships but only retains targets whose ids are already in the component map. This validates PR-CAP-SL-requirements as legitimately open — component-focus is delivered but the sub-model doesn't preserve the graph the downstream walker needs. Fix is bounded (~30 LOC to close over realizes/exposes/traces-to/constrained-by/contains) but deferred to Part 2 authoring. Filing L16 to make the gap visible before we build on top of CAP-SL as if it were a complete substrate. RESOLVED 2026-09-16: slice_by_component now closes over the full id-to-kind index (any relationship type), retaining cross-kind neighbors in their original entity buckets. 18/18 slicer tests + 4 new cross-kind tests pass. CAP-SL is now walk-substrate-complete for the 1-hop case; multi-hop closure remains a Part 2 refinement if needed."
+      - "L17 (2026-09-16 unrealized-capability walk): the 8th walk audits capabilities themselves against the same substrate everything else uses: (0 realizers × 0 open promises) → unrealized; (0 × ≥1) → critical; (≥1 × ≥1) → partial; (≥1 × 0) → ok/silent-skip. Applied to the current model this surfaced 2 critical (CAP-DF, CAP-DF.4), 2 unrealized (CAP-DF.1, CAP-DF.3), 2 partial (CAP-PB, CAP-SL) — the same shape L12-L13 predicted at the promise level, now visible at the capability level. Two design points reinforce prior lessons: the classifier is a pure function on (cap, realizes-edges, promises) with no schema change (L15 pattern), and the Mermaid card uses sentinel pseudo-nodes (NO_REALIZER + OPEN_pid) instead of rendering an empty diagram — silent-skip the ok case, but for non-ok cases make the gap the visual (L7 + L11 pattern). The walk closes the loop started by L12: promise-level compliance and capability-level realization now use the same auditable graph-walk substrate."
+      - "L18 (2026-09-18 walk substrate Parts 1–7): walks are first-class capabilities, not viewer helpers. Every walk is (a) a sub-cap under CAP-WK with a `verified_by` path to its WalkSpec YAML and (b) a declarative pipeline of 6 stages (select→traverse→classify→rollup→evidence→emit). 13 hand-rolled Python walkers collapsed to 13 YAML files + 6 shared stages. Adding a walk = writing ~30 lines of YAML; no viewer code touched. Coverage becomes auditable — the meta-walk `audit_walk_coverage` cross-references WalkSpec `audits` lists against the CAP-WK sub-cap inventory and emits Cards for uncovered sub-caps and dangling refs. This is the formalization of L6."
+      - "L19 (2026-09-18 kind-dispatched hops): the informal 'walk kind-per-target' pattern from L8 lands in the substrate as HopSpec.by_kind — a mapping from source-node kind to a sub-HopSpec. Realize splits into 7 WalkSpec YAMLs (one per target kind) because the semantic 2-hop chain differs by kind (behavior→component vs capability→component vs constraint→component). Realization-skip splits into 2 (capability side + component side) to audit both endpoints of realizes. The substrate also gains `silent_skip_when_last_hop_empty` (matches L7's adaptive-skip heuristic) so constraint-impact's hop-2 identical-to-hop-1 case is a declarative concern, not a Python conditional. Formalizes L11 into a substrate feature."
+      - "L20 (2026-09-18 classify DSL): the classify stage's predicate DSL (`has:`, `count:`, `verified:`, `inbound_count:`, `outbound_count:`, `promise_status_count:`, joined by `and`/`or`) covers every classifier from the pre-substrate era. WALK-attribute-completeness (Part 7) is a pure-YAML meta-walk that buckets entities by promise coverage using only `count:promises` + `promise_status_count:{verified,open}` — no Python. Custom classifier code is now a code smell: if a classifier can be expressed in the DSL, do it in YAML. If it can't, extending the DSL beats writing a walker (see follow-on: `promise_for:<attribute>` atom)."
+      - "L21 (2026-09-18 graph adapter Stage 1): NetworkX MultiDiGraph adapter (`architecture_model.graph.to_networkx`) landed as export-only ahead of the walk-substrate refactor; walks continue to use the dict-based substrate. This proves the graph model can round-trip through a proper graph backend (18/18 export tests + graphml round-trip) without perturbing walk behavior. Stage 2 (walk backend swap to NetworkX) is unblocked once all viewer helpers are declarative. Real-repo export: 1011 nodes / 1086 edges (802 promises + 132 unique evidence URIs promoted). Design decision: promise + evidence promotion runs at export time only — the walk substrate keeps its own promise-aware semantics inside classify."
+      - "L22 (2026-09-18 walk substrate Part 9): meta-coverage audit was invisible to Python-authored meta-walks (only YAML WalkSpecs were discovered), and the classify DSL could not filter promises by ATTRIBUTE NAME (only STATUS via promise_status_count). Both gaps close together: (a) audit_walk_coverage now scans src/architecture_model/walks/meta/*.py for a `Realizes ``CAP-WK.<id>``` docstring marker, treating each match as walk id `META-<module_stem>`, and (b) classify.py gains `promise_attribute_count:<name> {op} N` alongside `promise_status_count`. The gap was visible because Part 8 reported CAP-WK.meta-coverage and CAP-WK.direction-lint as uncovered despite both having Python implementations. The strict-promotion WalkSpec (promotion-strict.v3.yaml) is the first consumer of the new atom — it buckets entities by Category B attribute coverage (goals, requirements, success_criteria, failure_modes, constraints) as a stricter gate than WALK-promotion's status-based ready-to-code. Real-repo signal on capabilities.v3.yaml: 32 insufficient-strict / 9 partial-strict / 0 ready-to-code-strict — genuine specification gap. Lesson: when a walk YAML carries a `KNOWN LIMITATION` comment referencing a missing DSL primitive, that primitive is a schema follow-on, not a permanent constraint. Adding the atom + separate WalkSpec (additive, not rewrite) preserves the loose-gate signal while surfacing the strict-gate signal."
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by:
+      - docs/reports/2026-09-16-content-shape-and-more-diagrams.md documents L4-L8
+      - docs/reports/2026-09-16-cap-pb-walk.md documents L1-L3
+      - docs/reports/2026-09-16-realizes-direction-fix.md documents L9-L10
+      - docs/reports/2026-09-16-constraint-impact-and-diagnostics.md documents L11
+      - docs/reports/2026-09-16-compliance-audit.md documents L12-L13
+      - docs/reports/2026-09-16-compliance-gap-closure.md documents L14
+      - tests/viewer/test_walks.py::test_promise_tier_* documents L15 classifier
+      - docs/reports/2026-09-16-cap-sl-exercise.md documents L16
+      - docs/reports/2026-09-16-unrealized-walk.md documents L17
+      - tests/viewer/test_walks.py::test_realization_status_* documents L17 classifier
+      - docs/reports/2026-09-18-walk-substrate.md documents L18-L21
+      - src/architecture_model/walks/spec/loader.py implements L18 substrate
+      - src/architecture_model/walks/meta/walk_coverage.py implements L18 meta-audit
+      - .architecture/model/walks/attribute-completeness.v3.yaml documents L20
+      - src/architecture_model/graph/networkx_adapter.py documents L21
+      - docs/graph-export.md documents L21
+      - src/architecture_model/walks/meta/walk_coverage.py implements L22 Python meta-walk discovery
+      - src/architecture_model/walks/stages/classify.py implements L22 promise_attribute_count atom
+      - .architecture/model/walks/promotion-strict.v3.yaml implements L22 strict Category B gate
+      - tests/walks/test_meta_walk_coverage.py::test_python_meta_walks_discovered documents L22
+      - scripts/build_v3_viewer.py lines ~714 (L4), ~1131 try/catch (L5), _mermaid_* helpers (L6-L8, L11), _lint_edge_note_directions + _realization_skip_reasons (L10), _constraint_compliance_gaps (L12-L14), _promise_tier + _evidence_tier_summary (L15), _capability_realization_status + _unrealized_capability_summary + _mermaid_unrealized (L17)
+      status: verified
+      gap_type: null
+      provenance: |
+        Harvested 2026-09-16 across CAP-PB walk + viewer content-shape fix +
+        3-diagram generalization. These are lessons learned by DOING the
+        model-based dev loop on itself, and belong in the model so future
+        walks inherit them.
+    - id: PR-CAP-DF-D-walk
+      attribute: delivers
+      content: [CAP-DF.1]
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to CAP-DF.1 graph_walk_as_capability
+    - id: PR-CAP-DF-D-view
+      attribute: delivers
+      content: [CAP-DF.2]
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to CAP-DF.2 review_in_viewer
+    - id: PR-CAP-DF-D-validate
+      attribute: delivers
+      content: [CAP-DF.3]
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge to CAP-DF.3 validate_declared_vs_extracted
+    - id: PR-CAP-DF-D-llm
+      attribute: delivers
+      content: [CAP-DF.4]
+      owner_entity: CAP-DF
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        decomposition edge to CAP-DF.4 llm_seams. Status open because the
+        sub-capability itself is open (Part 3).
+  - id: CAP-DF.1
+    name: graph_walk_as_capability
+    promises:
+    - id: PR-CAP-DF1-intent
+      attribute: intent
+      content:
+      - Decompose concepts into capabilities → behaviors → components via
+        top-down SE walks, producing authored fragments (not prose) that
+        merge into the model.
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by:
+      - this file (capabilities.v3.yaml) is a walk fragment
+      - .architecture/model/viewer.v3.yaml is another walk fragment
+      status: verified
+      gap_type: null
+      provenance: |
+        Walks are a first-class capability of the standard, not documentation.
+        Fragment output goes into .architecture/model/ and is merged by
+        COMP-VIEWER at view time (D10) and eventually by publish.py (Part 3).
+    - id: PR-CAP-DF1-D-descend
+      attribute: delivers
+      content: [BEH-walk-descend]
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge
+    - id: PR-CAP-DF1-D-author
+      attribute: delivers
+      content: [BEH-walk-author]
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge
+    - id: PR-CAP-DF1-D-realize
+      attribute: delivers
+      content: [BEH-walk-realize]
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge
+    - id: PR-CAP-DF1-failure_modes
+      attribute: failure_modes
+      content:
+      - walk emits prose instead of structured fragment — mitigated by BEH-walk-author requiring .v3.yaml output
+      - walk skips reflective attributes (failure_modes / stakeholders / assumptions) — leaves promises verified but mechanism-blind
+      - walk introduces cross-source shape divergence for a Promise attribute — must normalize at Python boundary (viewer L4), never at consumer
+      - walk-authored capability that IS the walk substrate (e.g. CAP-PB flow) lacks a realizes edge from a component — capability appears in graph but has no realization diagram
+      - single generic diagram template forced across entity kinds loses more insight than it saves — kind-dispatched walks (viewer L8) are unavoidable when the meaningful 2-hop chain differs per kind
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by:
+      - PR-CAP-DF-lessons_learned L4-L8 above
+      status: verified
+      gap_type: null
+      provenance: |
+        Distilled from 2026-09-16 viewer walk + CAP-PB walk. These are the
+        failure modes a walk-as-capability run can hit; captured here so
+        the failure_modes surface on every entity-page detail view for
+        CAP-DF.1 as a checklist for future walks.
+    - id: PR-CAP-DF1-P-fragment
+      attribute: provides
+      content: [IF-authored-fragment]
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: interface exposed to fragment-authoring workflow
+    - id: PR-CAP-DF1-slos
+      attribute: slos
+      content:
+      - Open-schema preserved — walk fragments introduce attributes freely without spec-file amendment (778 promises across 45+ distinct attribute names in the merged model, none rejected)
+      owner_entity: CAP-DF.1
+      delivered_from: null
+      verified_by:
+      - "grep-count of distinct attribute: values in .architecture/model/*.v3.yaml exceeds the pre-walk baseline"
+      - COMP-VIEWER parses all authored attributes without a schema whitelist (build_v3_viewer.py _stamp_promises)
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
+  - id: CAP-DF.2
+    name: review_in_viewer
+    promises:
+    - id: PR-CAP-DF2-intent
+      attribute: intent
+      content:
+      - Browse the merged model in a single-file HTML viewer with per-entity
+        drill-down, typed-gap surfacing, and free-form note capture.
+      owner_entity: CAP-DF.2
+      delivered_from: null
+      verified_by:
+      - COMP-VIEWER delivers D1..D10 (see .architecture/model/viewer.v3.yaml)
+      status: verified
+      gap_type: null
+      provenance: realized by COMP-VIEWER (realizes edge below)
+    - id: PR-CAP-DF2-D-browse
+      attribute: delivers
+      content: [BEH-view-browse]
+      owner_entity: CAP-DF.2
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge
+    - id: PR-CAP-DF2-D-note
+      attribute: delivers
+      content: [BEH-view-note]
+      owner_entity: CAP-DF.2
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge
+    - id: PR-CAP-DF2-D-save
+      attribute: delivers
+      content: [BEH-view-save]
+      owner_entity: CAP-DF.2
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: decomposition edge
+    - id: PR-CAP-DF2-slos
+      attribute: slos
+      content:
+      - Byte-deterministic viewer output — inherited from COMP-VIEWER PR-COMP-VIEWER-determinism (scripts/build_v3_viewer.py sorts payload keys and stamps ISO timestamps only from AMS_DETERMINISTIC_NOW)
+      - Zero runtime dependencies — bundled Mermaid, no CDN, no network at view time (grep-verified in scripts/build_v3_viewer.py)
+      owner_entity: CAP-DF.2
+      delivered_from: null
+      verified_by:
+      - "double-build round-trip: cp viewer.html /tmp/a && rebuild && diff -q /tmp/a viewer.html"
+      - "grep -n 'cdn\\|http' .architecture/viewers/v3_viewer.html returns only inline SVG data-URIs"
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-determinism, CONS-no-runtime-deps)
+  - id: CAP-DF.3
+    name: validate_declared_vs_extracted
+    promises:
+    - id: PR-CAP-DF3-intent
+      attribute: intent
+      content:
+      - Detect drift between authored fragments (declared) and pipeline output
+        (extracted) — every authored capability/behavior should either resolve
+        to an extracted component or be surfaced as an unrealized gap.
+      owner_entity: CAP-DF.3
+      delivered_from: null
+      verified_by:
+      - COMP-VIEWER D10 unrealized-detection surfaces authored CAP/BEH without
+        realizes/traces-to edges as gap_type=unrealized on Typed Gaps page
+      status: verified
+      gap_type: null
+      provenance: |
+        Currently delivered as viewer-side heuristic (build_v3_viewer.py
+        unrealized_gaps loop). Deeper validation (declared attribute values
+        vs extracted docstrings, declared requirements vs extracted tests)
+        is a Part 3 LLM seam under CAP-DF.4.
+  - id: CAP-DF.4
+    name: llm_gap_remediation_and_entity_kind_promotion
+    promises:
+    - id: PR-CAP-DF4-intent
+      attribute: intent
+      content:
+      - Use LLM seams to (a) promote pipeline output past the current 1-of-7
+        entity-kind ceiling and (b) remediate gaps by proposing authored
+        fragments from source-code + declared-model context.
+      owner_entity: CAP-DF.4
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        Part 3 territory. Two candidate seams identified in 2026-09-14 walk L5:
+        S1 entity-kind promotion (feeds CAP-PB output from below — cluster /
+        link / containerize / verify / publish stages) and S2 gap remediation
+        (covers scan / derive_promises output). See BEH-S1 and BEH-S2 below.
+    - id: PR-CAP-DF4-D-S1
+      attribute: delivers
+      content: [BEH-S1]
+      owner_entity: CAP-DF.4
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: decomposition edge to BEH-S1
+    - id: PR-CAP-DF4-D-S2
+      attribute: delivers
+      content: [BEH-S2]
+      owner_entity: CAP-DF.4
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: decomposition edge to BEH-S2
+    - id: PR-CAP-DF4-slos
+      attribute: slos
+      content:
+      - Open-schema preserved even under LLM invocation — proposed fragments must go through same authoring gate as human walks (append attribute to any entity, no spec amendment)
+      owner_entity: CAP-DF.4
+      delivered_from: null
+      verified_by:
+      - Design constraint locked in PR-CAP-DF-intent (Part 3 seam); enforcement point is the fragment merge path in COMP-VIEWER which is schema-free
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema; Part 3 impl deferred)
+  # --- 2026-09-16 Part 3 (walk-substrate): CAP-WK umbrella + 9 sub-caps -----
+  # Walks are AMS capabilities. CAP-WK is the umbrella; each sub-cap is one
+  # walk realized by a WalkSpec YAML file. Full v3 attributes below on the
+  # umbrella cap; sub-caps carry minimal-intent + audits pointer. Retrofits
+  # (Part 4) will flesh out per-walk promises as each Python walk lands as
+  # a spec YAML.
+  - id: CAP-WK
+    name: walk_substrate
+    promises:
+    - id: PR-CAP-WK-intent
+      attribute: intent
+      content:
+      - Provide a declarative substrate for graph-walk audits over an
+        architecture model. Each walk is a WalkSpec YAML running on
+        pipeline_v3.substrate through six pure stages
+        (select → traverse → classify → rollup → evidence → emit),
+        modeled itself as an AMS capability so that walks are first-class
+        entities auditable by other walks (meta-closure).
+      owner_entity: CAP-WK
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/ package
+      - tests/walks/ (24 tests pass 2026-09-16)
+      status: verified
+      gap_type: null
+      provenance: |
+        Part 1+2 of the walk-substrate plan (2026-09-16). Substrate promoted
+        into pipeline_v3/substrate/; walks module built on top. See
+        docs/plans/2026-09-16-walk-substrate.md.
+    - id: PR-CAP-WK-requirements
+      attribute: requirements
+      content:
+      - Substrate MUST expose Stage/Pipeline/ContentCache/silent_skip primitives
+        that both pipeline_v3 and walks can share without divergence.
+      - WalkSpec YAML MUST support kind+predicate selection AND composition via
+        scope.from_walk (full-payload passthrough).
+      - Classify MUST emit one of five verdicts (ready-to-code, needs-decomp,
+        needs-enrichment, needs-validation, contradictory).
+      - "Rollup MUST be attribute-category-aware (A=union, B=conjunction, C=contract-composition) and driven by declarative strategy."
+      - Every attribute participating in walks MUST carry full provenance
+        (value, source, confidence, verified_by) with schema-default category
+        overridable inline.
+      - Composition graph across WalkSpecs MUST be cycle-detected at load time.
+      owner_entity: CAP-WK
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/substrate/{stage,pipeline,cache,contract}.py
+      - src/architecture_model/walks/{attribute,verdict,runner}.py
+      - src/architecture_model/walks/stages/*.py
+      - src/architecture_model/walks/spec/loader.py (cycle detection)
+      status: verified
+      gap_type: null
+      provenance: Locked plan decisions from 2026-09-16 (Q1–Q8).
+    - id: PR-CAP-WK-goals
+      attribute: goals
+      content:
+      - Reduce a new walk from ~60 LOC hand-written Python to ~20 lines of
+        declarative YAML.
+      - Enable declarative rollup so umbrella caps (e.g. CAP-DF) inherit
+        realization from sub-caps without bespoke Python.
+      - Make walks themselves auditable so meta-walks can enforce coverage.
+      owner_entity: CAP-WK
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: null
+      provenance: Design goals per plan §4.b table.
+  - id: CAP-WK.direction-lint
+    name: walk_direction_lint
+    promises:
+    - id: PR-CAP-WK-direction-lint-intent
+      attribute: intent
+      content:
+      - Audit relationship notes for direction phrasing that contradicts the
+        stored edge direction (L2/L9 lesson). Structural tier.
+      owner_entity: CAP-WK.direction-lint
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/direction_lint.py
+      - tests/walks/test_meta_direction_lint.py
+      status: verified
+      gap_type: null
+      provenance: Retrofit pilot (Part 4 step 1); Part 8 migrated to walks/meta/.
+  - id: CAP-WK.unrealized-cap
+    name: walk_unrealized_capability
+    promises:
+    - id: PR-CAP-WK-unrealized-cap-intent
+      attribute: intent
+      content:
+      - Audit every capability for realization coverage; emit ok / partial /
+        unrealized / critical buckets. Rollup via contains propagates
+        sub-cap status up to umbrella caps (Concern B fix).
+      owner_entity: CAP-WK.unrealized-cap
+      delivered_from: null
+      verified_by:
+      - scripts/build_v3_viewer.py:_unrealized_capability_summary
+      - .architecture/model/walks/unrealized-cap.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Retrofit (Part 4 step 8) + Concern B declarative fix (Part 5).
+  - id: CAP-WK.descend
+    name: walk_descend
+    promises:
+    - id: PR-CAP-WK-descend-intent
+      attribute: intent
+      content:
+      - Drill-down walk over the component contains-tree for viewer nav cards.
+      owner_entity: CAP-WK.descend
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 2 (deferred to follow-up commit).
+  - id: CAP-WK.author
+    name: walk_author
+    promises:
+    - id: PR-CAP-WK-author-intent
+      attribute: intent
+      content:
+      - Author walk over promise chain producing authored fragments.
+      owner_entity: CAP-WK.author
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/author_promise_note.py
+      - src/architecture_model/walks/meta/_prompt_assembly.py
+      - src/architecture_model/llm/prompts/fill_promise.md
+      - ../opencode-arch/src/opencode_arch/mcp/tools/promise_author.py
+      status: verified
+      gap_type: retrofit-pending
+      provenance: Part 12 CAP-DF ceremony verb — LLM-authored promise content.
+  - id: CAP-WK.realize
+    name: walk_realize
+    promises:
+    - id: PR-CAP-WK-realize-intent
+      attribute: intent
+      content:
+      - Behavior → component realization walk.
+      owner_entity: CAP-WK.realize
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 4 (deferred to follow-up commit).
+  - id: CAP-WK.browse
+    name: walk_browse
+    promises:
+    - id: PR-CAP-WK-browse-intent
+      attribute: intent
+      content:
+      - Rendered-artifact browse walk (viewer nav).
+      owner_entity: CAP-WK.browse
+      delivered_from: null
+      verified_by: []
+      status: proposed
+      gap_type: retrofit-pending
+      provenance: Part 4 step 3 (deferred to follow-up commit).
+  - id: CAP-WK.note
+    name: walk_note
+    promises:
+    - id: PR-CAP-WK-note-intent
+      attribute: intent
+      content:
+      - Promise-scoped note walk. Attaches a comment to a specific (entity_id, attribute) promise slot on a v3 architecture model, persisting it via the existing comments/store substrate. Tier T1 (no LLM). Enables the L13 loop's `note` step at promise granularity.
+      owner_entity: CAP-WK.note
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/promise_note.py
+      - src/architecture_model/comments/models.py
+      - tests/walks/meta/test_promise_note.py
+      - tests/comments/test_promise_target.py
+      status: verified
+      gap_type: null
+      provenance: Part 10 (2026-09-18) — CAP-DF ceremony ships note as Python meta-walk over comments/store.
+  - id: CAP-WK.save
+    name: walk_save
+    promises:
+    - id: PR-CAP-WK-save-intent
+      attribute: intent
+      content:
+      - Save-promise-note walk. Reads a promise note (CommentStub with PromiseTarget) and constructs a WorkOrder with intent="fill_promise:<entity>:<attr>" and parameters describing the promise slot to fill. Persistence + Job creation happen in the OCA MCP tool architect_promise_save which reuses the existing WorkOrder store + JobStore + Journal primitives. Tier T1 (no LLM); the enqueued Job is what Part 12's author walk later executes.
+      owner_entity: CAP-WK.save
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/save_promise_note.py
+      - tests/walks/meta/test_save_promise_note.py
+      status: verified
+      gap_type: null
+      provenance: Part 11 (2026-09-18) — CAP-DF ceremony ships save as Python meta-walk over comments/store + ai/work_order.
+  - id: CAP-WK.promotion
+    name: walk_promotion
+    promises:
+    - id: PR-CAP-WK-promotion-intent
+      attribute: intent
+      content:
+      - "Ceremony walk (Q6=c) emits a diff of candidate Category B -> Category C attribute promotions for human/LLM confirmation. Reads specification-tier attributes (goals, requirements, success-criteria) and identifies those that satisfy the promise criteria (observable, testable, contract-shaped, exposed on an interface)."
+      owner_entity: CAP-WK.promotion
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/promotion.v3.yaml
+      - tests/walks/test_pilot_promotion.py
+      status: verified
+      gap_type: null
+      provenance: Q6=c ceremony mechanism (locked plan); Part 8 declarative WalkSpec.
+  - id: CAP-WK.promotion-strict
+    name: walk_promotion_strict
+    promises:
+    - id: PR-CAP-WK-promotion-strict-intent
+      attribute: intent
+      content:
+      - "Strict Category B -> C promotion audit. Where CAP-WK.promotion buckets by promise STATUS (verified/proposed/open), CAP-WK.promotion-strict buckets by ATTRIBUTE COVERAGE across the Category B specification set (goals, requirements, success_criteria, failure_modes, constraints). An entity is `ready-to-code-strict` only when it carries at least one promise for EVERY Category B attribute. Additive to CAP-WK.promotion — both walks emit distinct signals. Enabled by the L22 `promise_attribute_count:<name>` DSL atom."
+      owner_entity: CAP-WK.promotion-strict
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/promotion-strict.v3.yaml
+      - tests/walks/test_pilot_promotion_strict.py
+      status: verified
+      gap_type: null
+      provenance: Part 9 (2026-09-18) — L22 follow-on completing the KNOWN LIMITATION comment on promotion.v3.yaml.
+  - id: CAP-WK.constraint-impact
+    name: walk_constraint_impact
+    promises:
+    - id: PR-CAP-WK-constraint-impact-intent
+      attribute: intent
+      content:
+      - Constraint blast-radius walk. Traverses constrained-by edges from
+        every constraint to compute impacted entities, buckets by cardinality
+        (isolated / focused / broad / systemic), and rolls up per-constraint
+        counts.
+      owner_entity: CAP-WK.constraint-impact
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/constraint-impact.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Retrofit (Part 6d.2).
+  - id: CAP-WK.realization-skip
+    name: walk_realization_skip
+    promises:
+    - id: PR-CAP-WK-realization-skip-intent
+      attribute: intent
+      content:
+      - Realization-skip audit. Two walks (capability-side + component-side)
+        cross-check that every realizes edge is bidirectionally coherent and
+        flags orphan capabilities / stub components. Emits skip / ok / mismatch
+        buckets.
+      owner_entity: CAP-WK.realization-skip
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/realization-skip-capability.v3.yaml
+      - .architecture/model/walks/realization-skip-component.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Retrofit (Part 6d.1).
+  - id: CAP-WK.meta-coverage
+    name: walk_meta_coverage
+    promises:
+    - id: PR-CAP-WK-meta-coverage-intent
+      attribute: intent
+      content:
+      - Meta-walk that audits the walk substrate itself. Scans every
+        WalkSpec in .architecture/model/walks/, extracts audits lists,
+        cross-references CAP-WK.* sub-cap inventory, and emits Cards
+        flagging (a) sub-caps with zero walks and (b) walks that audit
+        non-existent sub-caps. Enforces walk-coverage discipline.
+      owner_entity: CAP-WK.meta-coverage
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/walk_coverage.py
+      status: verified
+      gap_type: null
+      provenance: Part 7 (2026-09-18) — meta-walk substrate.
+  - id: CAP-WK.attribute-completeness
+    name: walk_attribute_completeness
+    promises:
+    - id: PR-CAP-WK-attribute-completeness-intent
+      attribute: intent
+      content:
+      - Meta-walk that audits promise coverage per entity. Checks each
+        entity carries promises for the core attribute set (intent,
+        requirements, verified_by, provenance) and buckets by
+        completeness (complete / partial / bare / empty). Pure declarative
+        WalkSpec — exercises the classify DSL on promise arrays.
+      owner_entity: CAP-WK.attribute-completeness
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/attribute-completeness.v3.yaml
+      status: verified
+      gap_type: null
+      provenance: Part 7 (2026-09-18) — meta-walk substrate.
+  - id: CAP-WK.llm-endpoint-inventory
+    name: walk_llm_endpoint_inventory
+    promises:
+    - id: PR-CAP-WK-llm-endpoint-inventory-intent
+      attribute: intent
+      content:
+      - Meta-walk that audits LLM integration endpoints across AMS + OCA
+        source trees. AST-scans for six call-site patterns
+        (provider.complete/structured/stream, ctx.llm_enrich,
+        llm_callback, run_via_policy) and cross-references against a
+        declared inventory at .architecture/llm/endpoints.yaml. Emits
+        per-endpoint Cards with verdicts covered / undeclared / stale /
+        legacy. Cross-repo — OCA discovered as sibling directory with
+        silent-skip when absent. Pure Tier T1 walk (no LLM call).
+      owner_entity: CAP-WK.llm-endpoint-inventory
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/llm_endpoint_inventory.py
+      - .architecture/llm/endpoints.yaml
+      - tests/walks/meta/test_llm_endpoint_inventory.py
+      status: verified
+      gap_type: null
+      provenance: Part 13 (2026-09-18) — CAP-DF ceremony L2 endpoint coverage audit.
+  - id: CAP-WK.prompt-refinement
+    name: walk_prompt_refinement
+    promises:
+    - id: PR-CAP-WK-prompt-refinement-intent
+      attribute: intent
+      content:
+      - Meta-walk that analyzes the append-only LLM call journal
+        (.architecture/llm_calls.jsonl) and the declared endpoint
+        inventory (.architecture/llm/endpoints.yaml) to classify each
+        prompt template by observed quality. Emits per-template Cards
+        with verdicts stable / high-failure (>=30% output_used=False
+        over >=3 calls) / high-cost (median tokens >=4x overall median
+        over >=3 calls) / unused (declared but zero journal entries).
+        Deterministic thresholds live as module constants. Pure Tier T1
+        walk (no LLM call).
+      owner_entity: CAP-WK.prompt-refinement
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/walks/meta/prompt_refiner.py
+      - src/architecture_model/feedback/llm_calls.py
+      - tests/walks/meta/test_prompt_refiner.py
+      - tests/feedback/test_llm_calls_journal.py
+      status: verified
+      gap_type: null
+      provenance: Part 15 (2026-09-18) — CAP-DF ceremony LLM journal + refiner.
+  - id: CAP-WK.flow-audit
+    name: walk_flow_audit
+    promises:
+    - id: PR-CAP-WK-flow-audit-intent
+      attribute: intent
+      content:
+      - Declarative meta-walk that audits behavior-flow coverage across
+        the v3 model. Buckets each behavior by its outgoing / incoming
+        `triggers` edges into composite orchestrators (>=3 outbound,
+        matching containerize's COMPOSITE_MIN_TRIGGERS threshold),
+        linked participants (1-2 outbound, or >=1 inbound), and
+        isolated behaviors (neither source nor target of any trigger).
+        Complements attribute-completeness (promise coverage) by
+        auditing flow coverage — the second axis of v3 semantic
+        completeness surfaced by pipeline_v3 Part 17a. Structural-tier
+        walk driven by 1-hop `triggers` traversal + the classify DSL
+        atoms `outbound_count:triggers` / `inbound_count:triggers`.
+        No rollup — behavior flow is horizontal, not containment.
+      owner_entity: CAP-WK.flow-audit
+      delivered_from: null
+      verified_by:
+      - .architecture/model/walks/flow-audit.v3.yaml
+      - tests/walks/test_pilot_flow_audit.py
+      status: verified
+      gap_type: null
+      provenance: Part 17b (2026-09-20) — flow-modeling substrate audit walk.
+  behaviors:
+  - id: BEH-run-pipeline
+    name: run_extraction_pipeline_end_to_end
+    promises:
+    - id: PR-BEH-run-pipeline-intent
+      attribute: intent
+      content:
+      - Orchestrate the 7 pipeline_v3 stages (scan → derive_promises → cluster → link → containerize → verify → publish) in dependency order, persisting intermediate state to enable resume, and emit .architecture-model.v3.yaml.
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/orchestrator.py exists
+      - tests/pipeline_v3/test_orchestrator.py exists
+      status: verified
+      gap_type: null
+      provenance: |
+        Added 2026-09-16 CAP-PB walk L5. This is the actual user-triggered
+        entry point (invoked via `architecture-model pipeline .`); the 7
+        stage behaviors are internal steps the orchestrator invokes.
+        Previously mentioned in the intent-provenance of CAP-PB but not
+        modeled as a first-class behavior.
+    - id: PR-BEH-run-pipeline-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_orchestrator.py exercises end-to-end run
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-run-pipeline-provides
+      attribute: provides
+      content:
+      - .architecture-model.v3.yaml on disk (the canonical output of CAP-PB)
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by:
+      - publish.py:107 writes the file
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-run-pipeline-sequence
+      attribute: delivers
+      content:
+      - "Executes stages in strict linear order: scan -> derive-promises -> cluster -> link -> containerize -> verify -> publish. Each stage's output is the next stage's input."
+      owner_entity: BEH-run-pipeline
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/orchestrator.py
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB flow triggers
+  - id: BEH-scan
+    name: scan_python_source_tree
+    promises:
+    - id: PR-BEH-scan-intent
+      attribute: intent
+      content:
+      - Walk the source root and enumerate Python modules with their AST-derived
+        signatures, docstrings, imports, and public surface.
+      owner_entity: BEH-scan
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/scan.py exists
+      - allocated to COMP-c5a72728 (traces-to below)
+      status: verified
+      gap_type: null
+      provenance: stage 1 of pipeline_v3
+    - id: PR-BEH-scan-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_scan.py exercises AST walk on fixture trees
+      owner_entity: BEH-scan
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-scan-provides
+      attribute: provides
+      content:
+      - ScanResult (typed intermediate) — list of ModuleRecord with signatures, docstrings, imports, public surface
+      owner_entity: BEH-scan
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+  - id: BEH-derive-promises
+    name: derive_promises_from_scan
+    promises:
+    - id: PR-BEH-derive-intent
+      attribute: intent
+      content:
+      - Translate scan output into Promise records with attributes intent /
+        delivers / provides — the ONLY attributes emitted by the current
+        AST-only pipeline. Richer attributes (requirements, failure_modes,
+        MoEs, verification, ...) are Part 3 LLM-seam territory.
+      owner_entity: BEH-derive-promises
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/derive_promises.py emits 3 attributes
+        at lines 51 / 58 / 71 / 78 / 91 / 98
+      status: verified
+      gap_type: null
+      provenance: stage 2 of pipeline_v3
+    - id: PR-BEH-derive-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_derive_promises.py exercises attribute emission
+      owner_entity: BEH-derive-promises
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-derive-provides
+      attribute: provides
+      content:
+      - PromiseSet (typed intermediate) — list of Promise records per module with intent/delivers/provides only
+      owner_entity: BEH-derive-promises
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+  - id: BEH-cluster
+    name: cluster_modules_into_components
+    promises:
+    - id: PR-BEH-cluster-intent
+      attribute: intent
+      content:
+      - Group scanned modules into components using multi-signal affinity
+        (subdirectory, name-prefix, imports).
+      owner_entity: BEH-cluster
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/cluster.py exists
+      status: verified
+      gap_type: null
+      provenance: stage 3 of pipeline_v3
+    - id: PR-BEH-cluster-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_cluster.py exercises multi-signal affinity
+      owner_entity: BEH-cluster
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-cluster-provides
+      attribute: provides
+      content:
+      - ComponentSet (typed intermediate) — modules grouped into candidate components with affinity scores
+      owner_entity: BEH-cluster
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-cluster-failure_modes
+      attribute: failure_modes
+      content:
+      - name-prefix affinity misgroups unrelated sibling modules that share a common prefix (e.g. test_* / util_*)
+      - subdirectory affinity fails when a single directory hosts multiple unrelated modules
+      owner_entity: BEH-cluster
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+  - id: BEH-link
+    name: link_components_via_edges
+    promises:
+    - id: PR-BEH-link-intent
+      attribute: intent
+      content:
+      - Materialize inter-component depends-on edges from import edges.
+      owner_entity: BEH-link
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/link.py exists
+      status: verified
+      gap_type: null
+      provenance: stage 4 of pipeline_v3
+    - id: PR-BEH-link-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_link.py exercises edge materialization
+      owner_entity: BEH-link
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-link-provides
+      attribute: provides
+      content:
+      - LinkedGraph (typed intermediate) — components + depends-on edges derived from import graph
+      owner_entity: BEH-link
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-link-failure_modes
+      attribute: failure_modes
+      content:
+      - import cycles yield ambiguous or lossy edge direction
+      - conditional imports (behind if TYPE_CHECKING / try-except) may be missed
+      - dynamic imports (importlib) invisible to AST
+      owner_entity: BEH-link
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+  - id: BEH-containerize
+    name: containerize_components
+    promises:
+    - id: PR-BEH-containerize-intent
+      attribute: intent
+      content:
+      - Wrap component records with provenance metadata and normalize root
+        prefixes.
+      owner_entity: BEH-containerize
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/containerize.py exists
+      status: verified
+      gap_type: null
+      provenance: stage 5 of pipeline_v3
+    - id: PR-BEH-containerize-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_containerize.py exercises provenance wrapping
+      owner_entity: BEH-containerize
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-containerize-provides
+      attribute: provides
+      content:
+      - ContainedModel (typed intermediate) — components with provenance metadata + normalized root_prefix
+      owner_entity: BEH-containerize
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+  - id: BEH-verify
+    name: verify_structural_invariants
+    promises:
+    - id: PR-BEH-verify-intent
+      attribute: intent
+      content:
+      - Check structural invariants on the assembled model (id uniqueness,
+        edge integrity, promise attribute non-empty).
+      owner_entity: BEH-verify
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/verify.py exists
+      status: verified
+      gap_type: null
+      provenance: stage 6 of pipeline_v3
+    - id: PR-BEH-verify-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_verify.py exercises invariant checks
+      owner_entity: BEH-verify
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-verify-provides
+      attribute: provides
+      content:
+      - VerifiedModel (typed intermediate) — the assembled model with invariants asserted; ready for publish
+      owner_entity: BEH-verify
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-verify-failure_modes
+      attribute: failure_modes
+      content:
+      - schema-version drift not caught when schema is not version-pinned in verify
+      - broken references to non-existent entity ids surface only via CAP-DF.3 (walk-realize), not in verify
+      owner_entity: BEH-verify
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+  - id: BEH-publish
+    name: publish_v3_model_yaml
+    promises:
+    - id: PR-BEH-publish-intent
+      attribute: intent
+      content:
+      - Serialize the verified model to .architecture-model.v3.yaml, sorted
+        deterministically for byte-stable output.
+      owner_entity: BEH-publish
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/publish.py exists
+      status: verified
+      gap_type: null
+      provenance: stage 7 of pipeline_v3
+    - id: PR-BEH-publish-verified_by
+      attribute: verified_by
+      content:
+      - tests/pipeline_v3/test_publish.py exercises serialization + determinism
+      owner_entity: BEH-publish
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-publish-provides
+      attribute: provides
+      content:
+      - .architecture-model.v3.yaml on disk (byte-stable, deterministically sorted)
+      owner_entity: BEH-publish
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L3
+    - id: PR-BEH-publish-failure_modes
+      attribute: failure_modes
+      content:
+      - publish.py:107 writes entities={"components": components} only — overwrites .architecture-model.v3.yaml wholesale on every run
+      - authored non-component entities (capabilities, behaviors, interfaces, ...) cannot live in the pipeline output file today
+      - forces authored layer to be a separate fragment set at .architecture/model/*.v3.yaml, merged at view time by COMP-VIEWER (D10)
+      owner_entity: BEH-publish
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/publish.py:107,139-160
+      status: verified
+      gap_type: null
+      provenance: |
+        Documents the architectural discovery that motivated the
+        fragment-merge design in Commit 1. Promoting merge into publish.py
+        is the primary Part 3 candidate (BEH-S1).
+  - id: BEH-walk-descend
+    name: walk_descend_concept_to_components
+    promises:
+    - id: PR-BEH-walk-descend-intent
+      attribute: intent
+      content:
+      - Descend from a concept (capability) through behaviors to components,
+        naming each level explicitly.
+      owner_entity: BEH-walk-descend
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: hand-authored — walk step 1
+    - id: PR-BEH-walk-descend-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/model/*.v3.yaml fragments demonstrate the descent (CAP-PB → BEH-scan..publish; CAP-DF → BEH-walk-*; CAP-DF.2 → BEH-view-*)
+      owner_entity: BEH-walk-descend
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
+  - id: BEH-walk-author
+    name: walk_author_fragment_yaml
+    promises:
+    - id: PR-BEH-walk-author-intent
+      attribute: intent
+      content:
+      - Emit the walk output as a structured .v3.yaml fragment under
+        .architecture/model/, not as prose.
+      owner_entity: BEH-walk-author
+      delivered_from: null
+      verified_by:
+      - this file (capabilities.v3.yaml) exists
+      - .architecture/model/viewer.v3.yaml exists
+      status: verified
+      gap_type: null
+      provenance: hand-authored — walk step 2
+    - id: PR-BEH-walk-author-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/model/capabilities.v3.yaml is a hand-authored walk fragment
+      - .architecture/model/enrichment.v3.yaml adds attributes on extracted components
+      - .architecture/model/viewer.v3.yaml documents COMP-VIEWER
+      owner_entity: BEH-walk-author
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
+  - id: BEH-walk-realize
+    name: walk_link_to_extracted_components
+    promises:
+    - id: PR-BEH-walk-realize-intent
+      attribute: intent
+      content:
+      - Cross-reference authored behaviors to extracted components via
+        traces-to edges, or accept the resulting unrealized gap.
+      owner_entity: BEH-walk-realize
+      delivered_from: null
+      verified_by:
+      - BEH-scan..BEH-publish all trace to COMP-c5a72728 below
+      status: verified
+      gap_type: null
+      provenance: hand-authored — walk step 3
+    - id: PR-BEH-walk-realize-verified_by
+      attribute: verified_by
+      content:
+      - realizes edges in this file (COMP-c5a72728 realizes CAP-PB; COMP-VIEWER realizes CAP-DF.2; COMP-c5a72728 realizes CAP-SL) confirmed by realization diagrams in v3 viewer
+      - unrealized authored CAP/BEH surface as gap_type=unrealized on Typed Gaps page (COMP-VIEWER D10)
+      owner_entity: BEH-walk-realize
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema)
+  - id: BEH-view-browse
+    name: view_browse_merged_model
+    promises:
+    - id: PR-BEH-view-browse-intent
+      attribute: intent
+      content:
+      - Navigate the merged pipeline + fragments model in the sidebar +
+        per-entity detail viewer surface.
+      owner_entity: BEH-view-browse
+      delivered_from: null
+      verified_by:
+      - COMP-VIEWER D9 multi_entity_kind_sidebar + D3 multi_attribute_entity_detail
+      status: verified
+      gap_type: null
+      provenance: viewer surface behavior
+    - id: PR-BEH-view-browse-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/viewers/v3_viewer.html renders sidebar + entity pages from v3_viewer_data.json (manual open-in-browser confirms navigation)
+      - scripts/build_v3_viewer.py determinism check round-trips byte-identical output
+      owner_entity: BEH-view-browse
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema, CONS-determinism)
+  - id: BEH-view-note
+    name: view_capture_human_note
+    promises:
+    - id: PR-BEH-view-note-intent
+      attribute: intent
+      content:
+      - Attach a free-form human note to any entity via a textarea in the
+        detail view.
+      owner_entity: BEH-view-note
+      delivered_from: null
+      verified_by:
+      - COMP-VIEWER D8 per_entity_notes_save
+      status: verified
+      gap_type: null
+      provenance: viewer surface behavior
+    - id: PR-BEH-view-note-verified_by
+      attribute: verified_by
+      content:
+      - v3_viewer.html contains textarea + save-note handler wired to in-memory notes map (grep 'notes\[' in the emitted JS block)
+      - COMP-VIEWER D8 provenance describes save-textarea → notes.yaml flow
+      owner_entity: BEH-view-note
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema, CONS-determinism)
+  - id: BEH-view-save
+    name: view_save_notes_yaml
+    promises:
+    - id: PR-BEH-view-save-intent
+      attribute: intent
+      content:
+      - Persist accumulated notes to a .yaml file the pipeline / next viewer
+        rebuild can consume (option A round-trip).
+      owner_entity: BEH-view-save
+      delivered_from: null
+      verified_by:
+      - COMP-VIEWER D8 provenance describes the round-trip
+      - .architecture/viewers/notes.yaml scaffold exists
+      status: verified
+      gap_type: null
+      provenance: viewer surface behavior
+    - id: PR-BEH-view-save-verified_by
+      attribute: verified_by
+      content:
+      - .architecture/viewers/notes.yaml scaffold exists at repo path
+      - v3_viewer.html emits a Blob-download click handler serializing notes to YAML (grep 'Blob\|download' in emitted JS block)
+      owner_entity: BEH-view-save
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema, CONS-determinism)
+  # --- 2026-09-20 Part 16c: BEH-mcp-dev-loop composite (CAP-DF ceremony flow) ---
+  - id: BEH-mcp-dev-loop
+    name: mcp_driven_development_loop
+    promises:
+    - id: PR-BEH-mcp-dev-loop-intent
+      attribute: intent
+      content:
+      - Composite ceremony behavior that orchestrates the CAP-DF developer
+        loop as an ordered flow view → note → save → author → reconcile.
+        Each step delegates to an existing sub-behavior; the ordering is
+        made explicit via sequence-tagged triggers edges so slicers,
+        viewers, and audits can render the flow as a first-class pipeline.
+      owner_entity: BEH-mcp-dev-loop
+      delivered_from: null
+      verified_by:
+      - Sub-behaviors BEH-view-browse, BEH-view-note, BEH-view-save, BEH-walk-author, BEH-run-pipeline all exist
+      - slice_by_behavior(BEH-mcp-dev-loop) returns the full ceremony sub-model
+      status: verified
+      gap_type: null
+      provenance: 2026-09-20 Part 16c flow-modeling substrate
+    - id: PR-BEH-mcp-dev-loop-delivers
+      attribute: delivers
+      content:
+      - "Executes ceremony in linear order: view (browse) -> note -> save -> author -> reconcile (run pipeline). Each step's output is the next step's precondition."
+      owner_entity: BEH-mcp-dev-loop
+      delivered_from: null
+      verified_by:
+      - Ordered triggers edges in relationships block carry sequence: 1..5
+      status: verified
+      gap_type: null
+      provenance: 2026-09-20 Part 16c
+  - id: BEH-S1
+    name: llm_entity_kind_promotion
+    promises:
+    - id: PR-BEH-S1-intent
+      attribute: intent
+      content:
+      - Use an LLM seam to promote pipeline output past the 1-of-7 entity-kind
+        ceiling — from source + declared model, propose authored capabilities,
+        behaviors, interfaces, actors, constraints, and layers that the
+        AST-only pipeline cannot infer.
+      owner_entity: BEH-S1
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        Feeds CAP-PB from below. Covers the output of the cluster / link /
+        containerize / verify / publish stages by adding new entity kinds
+        that publish.py:107 does not currently emit. Part 3 candidate.
+        Interface: IF-llm-provider.
+    - id: PR-BEH-S1-requirements
+      attribute: requirements
+      content:
+      - propose authored fragments in .architecture/model/*.v3.yaml format (compatible with merge)
+      - respect the existing pipeline component ids as traces-to targets
+      - never overwrite hand-authored fragments (append-only)
+      - report cost + confidence per proposal for human review
+      owner_entity: BEH-S1
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: hand-authored requirements for Part 3 prototype
+    - id: PR-BEH-S1-verified_by
+      attribute: verified_by
+      content:
+      - Design-only (Part 3 deferred) — merge-path compatibility verified by construction (proposed fragments use the same .v3.yaml schema COMP-VIEWER already parses without a whitelist)
+      - IF-llm-provider interface defined below as the pluggable seam
+      owner_entity: BEH-S1
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema; Part 3 impl deferred)
+  - id: BEH-S2
+    name: llm_gap_remediation
+    promises:
+    - id: PR-BEH-S2-intent
+      attribute: intent
+      content:
+      - Use an LLM seam to fill typed gaps produced by scan / derive_promises
+        (missing-intent, no-public-classes, no-public-functions) by proposing
+        content from the module source itself.
+      owner_entity: BEH-S2
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: |
+        Covers the output of the scan and derive_promises stages. Would
+        eliminate the 54 typed-gaps in the current model. Part 3 candidate.
+        Interface: IF-llm-provider.
+    - id: PR-BEH-S2-verified_by
+      attribute: verified_by
+      content:
+      - Design-only (Part 3 deferred) — proposals target the same typed_gap set the pipeline already emits (gap_type in {missing-intent, no-public-classes, no-public-functions}) so merge is schema-compatible by construction
+      - IF-llm-provider interface defined below as the pluggable seam
+      owner_entity: BEH-S2
+      delivered_from: null
+      verified_by: []
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-DF walk L13 (compliance gap closure for CONS-open-schema; Part 3 impl deferred)
+  interfaces:
+  - id: IF-model
+    name: architecture_model_yaml
+    promises:
+    - id: PR-IF-model-intent
+      attribute: intent
+      content:
+      - The emitted .architecture-model.v3.yaml artifact — the canonical output of CAP-PB. Consumed by COMP-VIEWER (D10 merge), IF-slicer (input model), Part-3 LLM (enrichment substrate), and CI gates (schema validation).
+      owner_entity: IF-model
+      delivered_from: null
+      verified_by:
+      - .architecture-model.v3.yaml exists in this repo
+      - promise-graph.schema.json validates the wire format
+      - COMP-VIEWER._merge_sources ingests it at build time
+      status: verified
+      gap_type: null
+      provenance: |
+        Added 2026-09-16 CAP-PB walk L4. The emitted YAML was implicit in
+        the BEH-publish delivers link; modeling it as an Interface makes
+        it a first-class citizen in the graph and enables downstream
+        consumer edges (COMP-VIEWER consumes IF-model, IF-slicer consumes
+        IF-model, ACT-llm consumes IF-model).
+    - id: PR-IF-model-requirements
+      attribute: requirements
+      content:
+      - byte-stable serialization (sorted keys, canonical scalar formatting)
+      - validates against src/architecture_model/spec/promise-graph.schema.json
+      - schema_version pinned in meta block
+      owner_entity: IF-model
+      delivered_from: null
+      verified_by:
+      - Phase 8 byte-determinism gate
+      status: verified
+      gap_type: null
+      provenance: 2026-09-16 CAP-PB walk L4
+  - id: IF-authored-fragment
+    name: authored_fragment_yaml
+    promises:
+    - id: PR-IF-fragment-intent
+      attribute: intent
+      content:
+      - The .architecture/model/*.v3.yaml fragment format — meta + entities
+        + relationships — is the wire contract between hand-authored /
+        LLM-authored architectural claims and the pipeline output.
+      owner_entity: IF-authored-fragment
+      delivered_from: null
+      verified_by:
+      - promise-graph.schema.json validates fragments
+      - COMP-VIEWER._merge_sources ingests fragments and enforces id uniqueness
+      status: verified
+      gap_type: null
+      provenance: hand-authored interface definition
+  - id: IF-llm-provider
+    name: llm_provider_protocol
+    promises:
+    - id: PR-IF-llm-intent
+      attribute: intent
+      content:
+      - Abstract LLM provider Protocol exposing complete / stream / structured
+        / tokenize — the seam through which Part 3 LLM capabilities (BEH-S1,
+        BEH-S2) invoke frontier models.
+      owner_entity: IF-llm-provider
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/llm/provider.py exists with LLMProvider Protocol
+      status: verified
+      gap_type: null
+      provenance: |
+        Protocol exists at src/architecture_model/llm/provider.py. Zero
+        current usages in AMS codebase (adapters live in opencode-arch per
+        CONTEXT.md). AMS-side adapter + policy.yaml wiring is Part 3.
+    - id: PR-IF-llm-requirements
+      attribute: requirements
+      content:
+      - runtime-checkable Protocol so adapters can be swapped
+      - deterministic seed / temperature control for byte-stable rebuilds
+      - cost accounting per call (feeds .architecture/llm/policy.yaml budget)
+      owner_entity: IF-llm-provider
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: Part 3 requirements
+  - id: IF-slicer
+    name: slice_focused_subgraph
+    promises:
+    - id: PR-IF-slicer-intent
+      attribute: intent
+      content:
+      - Slice API accepting a v3 model + focus spec (component id / capability
+        id / attribute filter) and returning a sub-model. Substrate for
+        prompt construction (LLM seams) and diagram generation.
+      owner_entity: IF-slicer
+      delivered_from: null
+      verified_by:
+      - src/architecture_model/pipeline_v3/slice.py exists
+      status: verified
+      gap_type: null
+      provenance: interface exposed by CAP-SL
+relationships:
+- from: COMP-c5a72728
+  to: CAP-PB
+  type: realizes
+  note: pipeline_v3 component realizes CAP-PB Extract (direction fixed 2026-09-16
+    L9 — walker expects COMP→realizes→CAP per standard convention)
+- from: COMP-c5a72728
+  to: CAP-SL
+  type: realizes
+  note: pipeline_v3.slice within the same component realizes CAP-SL Slice
+- from: COMP-VIEWER
+  to: CAP-DF.2
+  type: realizes
+  note: viewer subsystem realizes CAP-DF.2 Review
+- from: CAP-PB
+  to: BEH-scan
+  type: contains
+- from: CAP-PB
+  to: BEH-derive-promises
+  type: contains
+- from: CAP-PB
+  to: BEH-cluster
+  type: contains
+- from: CAP-PB
+  to: BEH-link
+  type: contains
+- from: CAP-PB
+  to: BEH-containerize
+  type: contains
+- from: CAP-PB
+  to: BEH-verify
+  type: contains
+- from: CAP-PB
+  to: BEH-publish
+  type: contains
+- from: CAP-DF
+  to: CAP-DF.1
+  type: contains
+- from: CAP-DF
+  to: CAP-DF.2
+  type: contains
+- from: CAP-DF
+  to: CAP-DF.3
+  type: contains
+- from: CAP-DF
+  to: CAP-DF.4
+  type: contains
+- from: CAP-DF.1
+  to: BEH-walk-descend
+  type: contains
+- from: CAP-DF.1
+  to: BEH-walk-author
+  type: contains
+- from: CAP-DF.1
+  to: BEH-walk-realize
+  type: contains
+- from: CAP-DF.1
+  to: IF-authored-fragment
+  type: exposes
+- from: CAP-DF.2
+  to: BEH-view-browse
+  type: contains
+- from: CAP-DF.2
+  to: BEH-view-note
+  type: contains
+- from: CAP-DF.2
+  to: BEH-view-save
+  type: contains
+- from: CAP-DF.4
+  to: BEH-S1
+  type: contains
+- from: CAP-DF.4
+  to: BEH-S2
+  type: contains
+- from: BEH-scan
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-derive-promises
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-cluster
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-link
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-containerize
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-verify
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-publish
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-view-browse
+  to: COMP-VIEWER
+  type: traces-to
+- from: BEH-view-note
+  to: COMP-VIEWER
+  type: traces-to
+- from: BEH-view-save
+  to: COMP-VIEWER
+  type: traces-to
+- from: BEH-S1
+  to: IF-llm-provider
+  type: consumes
+- from: BEH-S2
+  to: IF-llm-provider
+  type: consumes
+- from: CAP-SL
+  to: IF-slicer
+  type: exposes
+# --- 2026-09-16 CAP-PB walk additions ---
+- from: CAP-PB
+  to: BEH-run-pipeline
+  type: contains
+  note: orchestrator behavior is the user-triggered entry point
+- from: CAP-PB
+  to: IF-model
+  type: exposes
+  note: CAP-PB emits IF-model as its canonical output artifact
+- from: BEH-run-pipeline
+  to: COMP-c5a72728
+  type: traces-to
+- from: BEH-run-pipeline
+  to: BEH-scan
+  type: triggers
+  sequence: 1
+  note: orchestrator invokes scan as stage 1
+- from: BEH-publish
+  to: IF-model
+  type: produces
+  note: BEH-publish is the stage that materializes IF-model on disk
+# --- 2026-09-16 CAP-PB stage-to-stage flow (Task A) ---
+# --- 2026-09-20 Part 16c: sequence: added to make ordered composite flow explicit ---
+- {from: BEH-scan,            to: BEH-derive-promises, type: triggers, sequence: 2, note: pipeline stage 1->2}
+- {from: BEH-derive-promises, to: BEH-cluster,         type: triggers, sequence: 3, note: pipeline stage 2->3}
+- {from: BEH-cluster,         to: BEH-link,            type: triggers, sequence: 4, note: pipeline stage 3->4}
+- {from: BEH-link,            to: BEH-containerize,    type: triggers, sequence: 5, note: pipeline stage 4->5}
+- {from: BEH-containerize,    to: BEH-verify,          type: triggers, sequence: 6, note: pipeline stage 5->6}
+- {from: BEH-verify,          to: BEH-publish,         type: triggers, sequence: 7, note: pipeline stage 6->7}
+# --- 2026-09-16 Task B: close the CAP-DF dev loop (cross-pipeline triggers) ---
+- from: BEH-walk-author
+  to: BEH-run-pipeline
+  type: triggers
+  note: |
+    After the developer authors a .v3.yaml fragment, they re-run the extraction
+    pipeline so the fragment can be merged with (or checked against) refreshed
+    pipeline output. Closes CAP-DF -> CAP-PB feedback.
+- from: BEH-run-pipeline
+  to: BEH-view-browse
+  type: triggers
+  note: |
+    After BEH-publish emits a refreshed IF-model, the developer opens the viewer
+    to review the re-extracted graph. Closes CAP-PB -> CAP-DF.2 feedback.
+- from: BEH-view-note
+  to: BEH-walk-author
+  type: triggers
+  note: |
+    Notes captured in the viewer surface deltas / questions that motivate the
+    next walk fragment. Closes CAP-DF.2 -> CAP-DF.1 feedback and completes the
+    view -> note -> walk -> re-extract -> view loop.
+# --- 2026-09-20 Part 16c: BEH-mcp-dev-loop composite orchestration ---
+- from: CAP-DF
+  to: BEH-mcp-dev-loop
+  type: contains
+  note: CAP-DF owns the composite ceremony behavior
+- {from: BEH-mcp-dev-loop, to: BEH-view-browse, type: triggers, sequence: 1, note: ceremony step 1 — open viewer to review current model}
+- {from: BEH-mcp-dev-loop, to: BEH-view-note,   type: triggers, sequence: 2, note: ceremony step 2 — capture note on visible entity}
+- {from: BEH-mcp-dev-loop, to: BEH-view-save,   type: triggers, sequence: 3, note: ceremony step 3 — persist notes to YAML fragment}
+- {from: BEH-mcp-dev-loop, to: BEH-walk-author, type: triggers, sequence: 4, note: ceremony step 4 — author fragment from saved note}
+- {from: BEH-mcp-dev-loop, to: BEH-run-pipeline, type: triggers, sequence: 5, note: ceremony step 5 — reconcile via pipeline re-run}
+# --- 2026-09-16 Part 3 (walk-substrate): CAP-WK umbrella + sub-caps -----------
+# Walks are AMS capabilities. CAP-WK umbrella; sub-caps per walk. Each sub-cap
+# is realized by a WalkSpec YAML in .architecture/model/walks/. The `audits`
+# relationship (list-valued) declares which capability(s) each walk audits.
+- from: CAP-WK
+  to: CAP-WK.direction-lint
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.unrealized-cap
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.descend
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.author
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.realize
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.browse
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.note
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.save
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.promotion
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.promotion-strict
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.constraint-impact
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.realization-skip
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.meta-coverage
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.attribute-completeness
+  type: contains
+- from: CAP-WK
+  to: CAP-WK.flow-audit
+  type: contains
+# audits: sub-caps → target caps (list-valued semantics: multiple relationship
+# rows for the same walk when audits is a list)
+- from: CAP-WK.direction-lint
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.direction-lint
+  to: CAP-SL
+  type: audits
+- from: CAP-WK.unrealized-cap
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.unrealized-cap
+  to: CAP-SL
+  type: audits
+- from: CAP-WK.unrealized-cap
+  to: CAP-DF
+  type: audits
+- from: CAP-WK.descend
+  to: CAP-DF.2
+  type: audits
+- from: CAP-WK.author
+  to: CAP-DF.1
+  type: audits
+- from: CAP-WK.realize
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.browse
+  to: CAP-DF.2
+  type: audits
+- from: CAP-WK.note
+  to: CAP-DF.3
+  type: audits
+- from: CAP-WK.save
+  to: CAP-DF.1
+  type: audits
+- from: CAP-WK.promotion
+  to: CAP-WK
+  type: audits
+- from: CAP-WK.promotion-strict
+  to: CAP-WK
+  type: audits
+- from: CAP-WK.constraint-impact
+  to: CAP-SL
+  type: audits
+- from: CAP-WK.realization-skip
+  to: CAP-PB
+  type: audits
+- from: CAP-WK.meta-coverage
+  to: CAP-WK
+  type: audits
+- from: CAP-WK.attribute-completeness
+  to: CAP-DF
+  type: audits
+- from: CAP-WK.flow-audit
+  to: CAP-PB
+  type: audits

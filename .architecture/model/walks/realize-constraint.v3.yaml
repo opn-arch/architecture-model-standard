@@ -1,0 +1,29 @@
+walk:
+  id: WALK-realize-constraint
+  audits:
+    - CAP-WK.realize
+
+  # Single-hop realize for constraints: entities constrained by this one.
+  scope:
+    kind: constraint
+
+  traverse:
+    hops:
+      - edges: [constrained-by]
+        direction: inbound
+
+  classify:
+    verdicts:
+      - name: ready-to-code
+        when: "true"
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: realization-chain
+    severity_from: verdict
+    include_subgraph: true

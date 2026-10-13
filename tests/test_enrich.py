@@ -174,3 +174,70 @@ class IntTag:
     assert "MarkupTag.key" in const_names
     assert "MarkupTag.ensure_ascii" in const_names
     assert "IntTag.key" in const_names
+
+
+def test_enrich_seeds_observability_when_sigs_and_contracts_present(tmp_path):
+    """Components with signatures + test contracts get one INFO contract per sig."""
+    src = tmp_path / "src" / "mymod.py"
+    src.parent.mkdir(parents=True)
+    src.write_text('''
+def greet(name: str) -> str:
+    """Say hello."""
+    return f"Hello, {name}"
+''')
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_mymod.py").write_text('''
+def test_greet():
+    assert greet("world") == "Hello, world"
+''')
+    comp = Component(id="C1", name="mymod", status="ACTIVE", files=["src/mymod.py"])
+    model = _make_model(comp)
+    enriched = enrich_model(model, tmp_path)
+    c = enriched.entities["components"][0]
+    assert c.signatures, "expected signatures enriched"
+    assert c.test_contracts, "expected test contracts enriched"
+    obs_names = {o.function for o in c.observability}
+    assert "greet" in obs_names
+    o = next(o for o in c.observability if o.function == "greet")
+    assert o.log_level == "INFO"
+    assert o.on_error == "ERROR"
+
+
+def test_enrich_observability_skips_when_no_test_contracts(tmp_path):
+    """No test contracts => no observability seeded (validator flags earlier)."""
+    src = tmp_path / "src" / "mymod.py"
+    src.parent.mkdir(parents=True)
+    src.write_text('''
+def greet(name: str) -> str:
+    return name
+''')
+    comp = Component(id="C1", name="mymod", status="ACTIVE", files=["src/mymod.py"])
+    model = _make_model(comp)
+    enriched = enrich_model(model, tmp_path)
+    c = enriched.entities["components"][0]
+    assert c.signatures
+    assert not c.test_contracts
+    assert not c.observability
+
+
+def test_enrich_observability_preserves_existing(tmp_path):
+    """Existing observability contracts are not overwritten."""
+    from architecture_model.core.types import ObservabilityContract
+    src = tmp_path / "src" / "mymod.py"
+    src.parent.mkdir(parents=True)
+    src.write_text('def greet(): pass\n')
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test_mymod.py").write_text('def test_greet(): assert greet() is None\n')
+    comp = Component(
+        id="C1", name="mymod", status="ACTIVE", files=["src/mymod.py"],
+        observability=[ObservabilityContract(function="greet", log_level="WARNING", on_error="CRITICAL")],
+    )
+    model = _make_model(comp)
+    enriched = enrich_model(model, tmp_path)
+    c = enriched.entities["components"][0]
+    # Untouched — additive-only means "seed only when list is empty".
+    assert len(c.observability) == 1
+    assert c.observability[0].log_level == "WARNING"
+    assert c.observability[0].on_error == "CRITICAL"

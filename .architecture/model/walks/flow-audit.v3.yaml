@@ -1,0 +1,61 @@
+walk:
+  id: WALK-flow-audit
+  audits:
+    - CAP-WK.flow-audit
+
+  # Meta-walk: audit behavior-flow coverage across the v3 model. Every
+  # behavior is either an orchestrator (composite, drives >=3 sequenced
+  # sub-behaviors via `triggers`), a link in a chain (has 1-2 outgoing
+  # triggers), a sink (target of triggers but drives none), or isolated
+  # (neither source nor target of any trigger). Complements
+  # attribute-completeness (promise coverage) by auditing flow coverage —
+  # the second axis of v3 semantic completeness introduced by Part 17a's
+  # pipeline_v3 behaviors + triggers extraction.
+  scope:
+    kind: behavior
+
+  # Structural-tier walk: 1-hop outbound + inbound over `triggers` edges
+  # so the classify stage can read outbound_count:triggers and
+  # inbound_count:triggers from the subgraph.
+  traverse:
+    edges:
+      - triggers
+    direction: both
+    depth: 1
+
+  classify:
+    verdicts:
+      # Composite orchestrator: >=3 outgoing triggers matches the
+      # containerize composite threshold (COMPOSITE_MIN_TRIGGERS=3 from
+      # derive_triggers.py). Flow substrate is fully declared — mark
+      # ready-to-code. Silent-skip via ready-to-code (viewer omits
+      # ready-to-code cards for structural walks).
+      - name: ready-to-code
+        when: outbound_count:triggers >= 3
+      # Linked participant: has some outbound flow but below the
+      # composite threshold, OR is a downstream target of some flow.
+      # Not a gap — this is the common case for step behaviors.
+      - name: ready-to-code
+        when: outbound_count:triggers >= 1
+      - name: ready-to-code
+        when: inbound_count:triggers >= 1
+      # Isolated behavior: neither source nor target of any trigger.
+      # Either (a) a truly leaf-level behavior with no flow (fine),
+      # (b) an orchestrator whose calls didn't resolve (needs review),
+      # or (c) dead code. Surface for authoring review.
+      - name: needs-enrichment
+        when: outbound_count:triggers == 0 and inbound_count:triggers == 0
+    on_missing_attributes: needs-enrichment
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  # No rollup: behaviors don't form a Category B containment hierarchy
+  # in the v3 model. Flow relationships are horizontal (triggers) not
+  # vertical (contains), so worst-child propagation doesn't apply.
+
+  emit:
+    card_template: default
+    severity_from: verdict

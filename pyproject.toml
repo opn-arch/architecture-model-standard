@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "architecture-model-standard"
-version = "1.2.0"
+version = "1.3.0"
 description = "Universal machine-readable YAML architecture model for LLM-driven system engineering"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -30,6 +30,8 @@ Repository = "https://github.com/opn-arch/architecture-model-standard"
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "playwright>=1.40", "jsonschema>=4.0"]
 jvm = ["tree-sitter>=0.22", "tree-sitter-kotlin>=0.1", "tree-sitter-java>=0.1"]
+graph = ["networkx>=3.0"]
+graph-dot = ["networkx>=3.0", "pydot>=2.0"]
 
 [project.scripts]
 architecture-model = "architecture_model.cli.main:main"

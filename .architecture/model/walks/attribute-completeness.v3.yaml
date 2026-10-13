@@ -1,0 +1,60 @@
+walk:
+  id: WALK-attribute-completeness
+  audits:
+    - CAP-WK.attribute-completeness
+
+  # Meta-walk: audit promise coverage across ALL entity kinds. Every entity
+  # in the v3 model carries semantic content through its `promises: [...]`
+  # list — this walk buckets entities by how many promises they carry and
+  # what fraction are verified. Complements walk-coverage (which audits
+  # the walk substrate) by auditing the promise substrate.
+  scope:
+    kind: any
+
+  # Structural-tier walk: no graph traversal needed. Each entity is its own
+  # subgraph root; classify inspects `promises` list in isolation.
+  traverse:
+    edges: []
+    direction: outbound
+    depth: 0
+
+  classify:
+    verdicts:
+      # Rich + fully verified: 3+ promises, all verified. Gold standard.
+      - name: ready-to-code
+        when: count:promises >= 3 and promise_status_count:verified >= 3 and promise_status_count:open == 0
+      # Substantially covered: 2+ verified promises, no open gaps.
+      - name: ready-to-code
+        when: promise_status_count:verified >= 2 and promise_status_count:open == 0
+      # Has content but unverified: 1+ promise, none verified. Needs
+      # verified_by paths to lift out of gap.
+      - name: needs-validation
+        when: count:promises >= 1 and promise_status_count:verified == 0
+      # Partial: has some promises AND some open gaps still to close.
+      - name: needs-validation
+        when: count:promises >= 1 and promise_status_count:open >= 1
+      # Bare: exactly one promise, verified. Minimal but sound.
+      - name: ready-to-code
+        when: count:promises >= 1 and promise_status_count:verified >= 1
+      # Empty: zero promises. Semantic void — needs authoring.
+      - name: needs-enrichment
+        when: count:promises == 0
+    # Any entity that falls through (e.g., malformed promises field) lands
+    # in needs-enrichment — treat as authoring gap.
+    on_missing_attributes: needs-enrichment
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  # Category B rollup: parent capability inherits worst child status via
+  # contains. If any sub-cap is bare, parent surfaces as needs-enrichment.
+  rollup:
+    via: contains
+    category: B
+    strategy: worst-child
+
+  emit:
+    card_template: default
+    severity_from: verdict

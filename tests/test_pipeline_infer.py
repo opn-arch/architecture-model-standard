@@ -64,6 +64,58 @@ def get_items():
         assert len(result.output.actors) >= 1
         assert result.output.actors[0].name == "API Consumer"
 
+    def test_infer_behaviors_skips_cli_in_test_modules(self, tmp_path):
+        """CLI use-case inference must not fire on tests/test_*.py modules.
+
+        Regression: FIX-A4.1 — infer._infer_behaviors iterated
+        inventory.modules unfiltered, so a click-importing test_cli_*.py
+        would emit spurious ``CLI: Test Cli Foo`` behaviors.
+        """
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_cli_foo.py").write_text('''
+import click
+
+@click.command()
+def main():
+    """CLI entry (should not become a use case — this is a test file)."""
+    pass
+''')
+        # Add a real source module so the pipeline has something to infer
+        (tmp_path / "app.py").write_text("def helper(): pass\n")
+
+        result = _run_observe_then_infer(tmp_path)
+
+        spurious = [b for b in result.output.behaviors if "Test Cli Foo" in b.name]
+        assert not spurious, f"Test-file CLI leaked into behaviors: {[b.name for b in spurious]}"
+
+    def test_infer_behaviors_skips_handler_classes_in_test_modules(self, tmp_path):
+        """Handler/view class inference must not fire on tests/test_*.py modules.
+
+        Regression: FIX-A4.1 — same root cause as CLI case; handler class
+        loop also iterated inventory.modules without a non-source guard.
+        """
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        (tests_dir / "test_handlers.py").write_text('''
+class FakeHandler:
+    """Base for test doubles."""
+    pass
+
+class MyTestHandler(FakeHandler):
+    def dispatch(self):
+        pass
+
+    def render(self):
+        pass
+''')
+        (tmp_path / "app.py").write_text("def helper(): pass\n")
+
+        result = _run_observe_then_infer(tmp_path)
+
+        spurious = [b for b in result.output.behaviors if b.name == "MyTestHandler"]
+        assert not spurious, f"Test-file handler class leaked into behaviors: {[b.name for b in spurious]}"
+
     def test_infer_behaviors_from_routes(self, tmp_path):
         (tmp_path / "api.py").write_text('''
 from fastapi import APIRouter
@@ -159,7 +211,16 @@ def do_another():
 
         result = InferStage().run(ctx)
 
-        assert not any(b.source_file == "workflow.py" for b in result.output.behaviors)
+        # No behavior should have been invented from the free-text raw string
+        # (steps derived from "load -> transform -> save"). The natural library
+        # behavior for `def run()` (steps=["run"]) is legitimate and expected.
+        invented_steps = {"load", "transform", "save"}
+        for behavior in result.output.behaviors:
+            step_set = set(behavior.steps or [])
+            assert not (step_set & invented_steps), (
+                f"Free-text resolution invented workflow steps into behavior "
+                f"{behavior.id!r}: steps={behavior.steps}"
+            )
 
     def test_resolution_provenance_matches_stable_identity(self, tmp_path):
         from architecture_model.pipeline.corrections import get_resolutions_for_stage
@@ -225,6 +286,49 @@ def validate_card():
 
 class TestInferLibraryBehaviors:
     """Tests for _infer_library_behaviors() — detecting behaviors in pure libraries."""
+
+    def test_library_behaviors_always_carry_source_file(self):
+        """Every library behavior must stamp source_file with the emitting module.
+
+        Regression: without source_file, the SoS boundary filter can't scope
+        library behaviors to a specific inline boundary, so the same behavior
+        gets re-emitted (with hash-suffix IDs) once per boundary that shares
+        the capability. This produced 10x duplicate 'Load Config Loader'
+        behaviors in the top-level model.
+        """
+        modules = [
+            ModuleRecord(
+                path=Path("mylib/loader.py"),
+                functions=[
+                    FunctionRecord(name="load_config", signature="def load_config()", body_hint=""),
+                ],
+                classes=[
+                    ClassRecord(name="Connection", methods=["__enter__", "__exit__", "query"]),
+                    ClassRecord(name="Client", methods=["open", "close", "send"]),
+                    ClassRecord(name="WidgetFactory", methods=["create", "reset"]),
+                ],
+            ),
+            ModuleRecord(
+                path=Path("mylib/processor.py"),
+                functions=[
+                    FunctionRecord(name="parse", signature="def parse(data)", body_hint=""),
+                    FunctionRecord(name="validate", signature="def validate(x)", body_hint=""),
+                    FunctionRecord(name="apply", signature="def apply(y)", body_hint=""),
+                    FunctionRecord(name="create_widget", signature="def create_widget()", body_hint=""),
+                ],
+            ),
+        ]
+        caps = [
+            InferredCapability(id="CAP-1", name="Loader", description="Domain logic in mylib/loader.py"),
+            InferredCapability(id="CAP-2", name="Processor", description="Domain logic in mylib/processor.py"),
+        ]
+        behaviors = _infer_library_behaviors(modules, caps, [])
+        assert behaviors, "expected at least one library behavior"
+        missing = [b for b in behaviors if not b.source_file]
+        assert not missing, (
+            f"library behaviors emitted without source_file (would produce SoS duplicates): "
+            f"{[(b.id, b.name) for b in missing]}"
+        )
 
     def test_infer_library_behaviors_from_public_api(self):
         """Module with init/deinit/reinit → at least 1 behavior with 'init' in name."""

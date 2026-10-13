@@ -92,8 +92,27 @@ def load_block_model(
     return load_model(sub_model_path)
 
 
+_V21_DEPRECATION_MSG = (
+    "architecture_model.core.parser (schema 2.x) is deprecated; "
+    "use architecture_model.pipeline_v3 for v3 Promise-graph models. "
+    "The 2.x parser will remain functional through the deprecation window."
+)
+
+
+def _emit_v21_deprecation() -> None:
+    """Emit the schema-2.x parser deprecation warning (Phase 10)."""
+    import warnings as _warnings
+    _warnings.warn(_V21_DEPRECATION_MSG, DeprecationWarning, stacklevel=3)
+
+
 def load_model(path: str | Path) -> ArchitectureModel:
-    """Load and parse an architecture model YAML file."""
+    """Load and parse an architecture model YAML file.
+
+    .. deprecated::
+        Schema 2.x parser is deprecated in favor of
+        :mod:`architecture_model.pipeline_v3`. Still functional.
+    """
+    _emit_v21_deprecation()
     path = Path(path)
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
@@ -102,7 +121,7 @@ def load_model(path: str | Path) -> ArchitectureModel:
         from architecture_model.core.errors import ParseError
         raise ParseError(f"Empty model file: {path}")
 
-    model = _parse_raw(raw)
+    model = _parse_raw_impl(raw)
     model._source_path = path.resolve()
     from architecture_model.core.confidence import compute_model_confidence
     compute_model_confidence(model)
@@ -153,6 +172,17 @@ def _parse_priority(val: str | None) -> Priority:
 
 
 def _parse_raw(raw: dict) -> ArchitectureModel:
+    """Parse a raw dict into an ArchitectureModel.
+
+    .. deprecated::
+        Schema 2.x parser is deprecated in favor of
+        :mod:`architecture_model.pipeline_v3`. Still functional.
+    """
+    _emit_v21_deprecation()
+    return _parse_raw_impl(raw)
+
+
+def _parse_raw_impl(raw: dict) -> ArchitectureModel:
     meta = _parse_meta(raw.get("meta", {}))
     entities = _parse_entities(raw.get("entities", {}))
     relationships = [_parse_relationship(r) for r in raw.get("relationships", [])]
@@ -294,6 +324,7 @@ def _parse_base(d: dict) -> dict:
             for de in d.get("decisions", [])
         ],
         "monitored": d.get("monitored", []),
+        "acceptance_criteria": d.get("acceptance_criteria", []) or [],
     }
 
 
@@ -379,6 +410,8 @@ def _parse_behavior(d: dict) -> Behavior:
         open_questions=d.get("open_questions", []),
         verification=_parse_verification(d.get("verification", [])),
         maturity=_parse_maturity(d.get("maturity")),
+        # --- Schema 2.2 : behavior verification outcomes ---
+        verification_results=d.get("verification_results", []) or [],
     )
 
 
@@ -405,6 +438,8 @@ def _parse_interface(d: dict) -> Interface:
         verification=_parse_verification(d.get("verification", [])),
         slos=_parse_slos(d.get("slos", [])),
         maturity=_parse_maturity(d.get("maturity")),
+        # --- Schema 2.2 : detailed protocol specification ---
+        protocol_spec=d.get("protocol_spec", {}) or {},
     )
 
 
@@ -421,6 +456,11 @@ def _parse_constraint(d: dict) -> Constraint:
         open_questions=d.get("open_questions", []),
         verification=_parse_verification(d.get("verification", [])),
         maturity=_parse_maturity(d.get("maturity")),
+        # --- Schema 2.2 : enforceability + measurability + stakeholders ---
+        enforceable=bool(d.get("enforceable", False)),
+        measurable=bool(d.get("measurable", False)),
+        verification_method=d.get("verification_method", ""),
+        stakeholders=d.get("stakeholders", []) or [],
     )
 
 
@@ -552,6 +592,10 @@ def _parse_component(d: dict) -> Component:
         owner=d.get("owner"),
         maturity=_parse_maturity(d.get("maturity")),
         dependencies_rationale=d.get("dependencies_rationale", {}),
+        # --- Schema 2.2 : evidence + sub-model linkage ---
+        evidence=d.get("evidence", {}) or {},
+        sub_model_ref=d.get("sub_model_ref", ""),
+        parent_id=d.get("parent_id"),
     )
 
 
@@ -634,15 +678,57 @@ def _parse_lifecycle(d: dict) -> Lifecycle:
 
 def _parse_requirement(d: dict) -> Requirement:
     base = _parse_base(d)
-    return Requirement(**base, text=d.get("text",""), source_doc=d.get("source_doc",""), source_anchor=d.get("source_anchor",""), content_hash=d.get("content_hash",""), priority=d.get("priority",""), moe=d.get("moe",""))
+    return Requirement(
+        **base,
+        text=d.get("text", ""),
+        source_doc=d.get("source_doc", ""),
+        source_anchor=d.get("source_anchor", ""),
+        content_hash=d.get("content_hash", ""),
+        priority=d.get("priority", ""),
+        moe=d.get("moe", ""),
+        # --- Schema 2.2 : ISO/IEC/IEEE 29148 attributes ---
+        verification_method=d.get("verification_method", ""),
+        # acceptance_criteria now sourced from _parse_base (Plan B T0.11.6f)
+        stakeholder=d.get("stakeholder", ""),
+        stakeholders=d.get("stakeholders", []) or [],
+        derived_from=d.get("derived_from", []) or [],
+        req_status=d.get("req_status", ""),
+        req_version=d.get("req_version", ""),
+        risk=d.get("risk", ""),
+        verification_results=d.get("verification_results", []) or [],
+        status_history=d.get("status_history", []) or [],
+    )
 
 
 def _parse_relationship(d: dict) -> Relationship:
     # Accept multiple key formats agents might use
     from_id = d.get("from") or d.get("from_id") or d.get("source") or ""
     to_id = d.get("to") or d.get("to_id") or d.get("target") or ""
+    rel_type = RelationType.parse(d.get("type", "depends-on"))
+    # --- Part 16a (2026-09-20) : optional flow ordinal ---
+    sequence_raw = d.get("sequence")
+    sequence: int | None = None
+    if sequence_raw is not None:
+        if not isinstance(sequence_raw, int) or isinstance(sequence_raw, bool) or sequence_raw < 1:
+            import warnings as _w
+            _w.warn(
+                f"Relationship 'sequence' must be a positive int; got {sequence_raw!r} — dropping",
+                UserWarning,
+                stacklevel=2,
+            )
+        else:
+            sequence = sequence_raw
+            # Soft-warn if applied to a non-triggers edge (parses still succeed).
+            type_str = rel_type.value if hasattr(rel_type, "value") else str(rel_type)
+            if type_str != "triggers":
+                import warnings as _w
+                _w.warn(
+                    f"'sequence' on non-'triggers' relationship (type={type_str!r}) has no defined semantics",
+                    UserWarning,
+                    stacklevel=2,
+                )
     return Relationship(
-        type=RelationType.parse(d.get("type", "depends-on")),
+        type=rel_type,
         from_id=from_id,
         to_id=to_id,
         description=d.get("description", ""),
@@ -651,6 +737,7 @@ def _parse_relationship(d: dict) -> Relationship:
         imports=d.get("imports", []),
         import_count=d.get("import_count", 0),
         weight=d.get("weight", 0.0),
+        sequence=sequence,
     )
 
 
@@ -754,6 +841,7 @@ def _dump_base(entity: Any) -> dict:
     for field_name in (
         "goals", "requirements", "rationale", "moes", "value_function",
         "failure_modes", "trade_offs", "interface_refs", "monitored",
+        "acceptance_criteria",
     ):
         value = getattr(entity, field_name)
         if value:
@@ -840,6 +928,24 @@ def _dump_behavior(b: Behavior) -> dict:
             }.items() if v}
             for s in b.structured_steps
         ]
+    # --- Schema 2.2 : behavior verification outcomes ---
+    if b.verification_results:
+        d["verification_results"] = b.verification_results
+    # --- Phase 2 (schema 2.1) semantic fields ---
+    if b.stakeholders:
+        d["stakeholders"] = b.stakeholders
+    if b.success_criteria:
+        d["success_criteria"] = b.success_criteria
+    if b.assumptions:
+        d["assumptions"] = b.assumptions
+    if b.open_questions:
+        d["open_questions"] = b.open_questions
+    if b.verification:
+        d["verification"] = [
+            v.to_dict() if hasattr(v, "to_dict") else v for v in b.verification
+        ]
+    if b.maturity is not None:
+        d["maturity"] = _enum_val(b.maturity)
     return d
 
 
@@ -860,6 +966,9 @@ def _dump_interface(i: Interface) -> dict:
         d["schema"] = i.schema
     if i.contract:
         d["contract"] = i.contract
+    # --- Schema 2.2 : protocol_spec ---
+    if i.protocol_spec:
+        d["protocol_spec"] = i.protocol_spec
     return d
 
 
@@ -870,6 +979,15 @@ def _dump_constraint(c: Constraint) -> dict:
         d["metric"] = c.metric
     if c.threshold:
         d["threshold"] = c.threshold
+    # --- Schema 2.2 : enforceability, measurability, verification, stakeholders ---
+    if c.enforceable:
+        d["enforceable"] = c.enforceable
+    if c.measurable:
+        d["measurable"] = c.measurable
+    if c.verification_method:
+        d["verification_method"] = c.verification_method
+    if c.stakeholders:
+        d["stakeholders"] = c.stakeholders
     return d
 
 
@@ -960,6 +1078,13 @@ def _dump_component(c: Component) -> dict:
             | ({"symbols": ci.symbols} if ci.symbols else {})
             for ci in c.interfaces
         ]
+    # --- Schema 2.2 : evidence + sub_model_ref ---
+    if c.evidence:
+        d["evidence"] = c.evidence
+    if c.sub_model_ref:
+        d["sub_model_ref"] = c.sub_model_ref
+    if c.parent_id:
+        d["parent_id"] = c.parent_id
     return d
 
 
@@ -1057,6 +1182,17 @@ def _dump_requirement(req: Requirement) -> dict:
     if req.content_hash: r["content_hash"] = req.content_hash
     if req.priority: r["priority"] = req.priority
     if req.moe: r["moe"] = req.moe
+    # --- Schema 2.2 : 29148 attrs (emit only when non-empty for digest stability) ---
+    if req.verification_method: r["verification_method"] = req.verification_method
+    if req.acceptance_criteria: r["acceptance_criteria"] = req.acceptance_criteria
+    if req.stakeholder: r["stakeholder"] = req.stakeholder
+    if req.stakeholders: r["stakeholders"] = req.stakeholders
+    if req.derived_from: r["derived_from"] = req.derived_from
+    if req.req_status: r["req_status"] = req.req_status
+    if req.req_version: r["req_version"] = req.req_version
+    if req.risk: r["risk"] = req.risk
+    if req.verification_results: r["verification_results"] = req.verification_results
+    if req.status_history: r["status_history"] = req.status_history
     return r
 
 

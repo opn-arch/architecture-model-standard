@@ -426,6 +426,153 @@ class Family4EntityPage(EntityPageProjector):
 
 
 # ---------------------------------------------------------------------------
+# Family 5 — deployment topology per entity (Phase 5, deferred Phase 3)
+# ---------------------------------------------------------------------------
+
+
+_DEPLOYMENT_ENTITY_FIELDS = (
+    "components",
+    "environments",
+    "resources",
+)
+
+
+def _find_deployment_entity(model: ArchitectureModel, entity_id: str):
+    """Return an entity from the deployment-relevant kinds (components,
+    environments, resources), or ``None``.
+
+    Distinct from :func:`_find_entity_by_id` which only walks the seven
+    family-1 kinds — this variant covers the additional deployment
+    kinds required by Family 5.
+    """
+    for field_name in _DEPLOYMENT_ENTITY_FIELDS:
+        for ent in getattr(model.entities, field_name, ()):
+            if getattr(ent, "id", None) == entity_id:
+                return ent
+    return None
+
+
+def _family5_spec(
+    entity_id: str,
+    model: ArchitectureModel,
+    body: str,
+) -> DiagramSpec:
+    """Family-5 DiagramSpec envelope. Falls back to the shared helper
+    for components but uses the deployment-aware lookup for environments
+    and resources.
+    """
+    entity = _find_deployment_entity(model, entity_id)
+    name = getattr(entity, "name", "") if entity is not None else ""
+    display_name = name or entity_id
+    return DiagramSpec(
+        id=f"prose:family5.entity_page:{entity_id}",
+        title=f"{display_name} ({entity_id})",
+        facets={"content_kind": "markdown", "body": body},
+    )
+
+
+class Family5EntityPage(EntityPageProjector):
+    """Family 5: deployment topology per entity.
+
+    Kinds:
+
+    * **environment**: kind, region, infrastructure list, constraints
+      list, Deployed Components (inbound allocated-to).
+    * **resource**: kind, provider, location, SLA, Consumed By (inbound
+      consumes and depends-on, deduplicated).
+    * **component**: Deployed To (outbound allocated-to).
+
+    Empty sections are omitted; enum-backed ``kind`` is always emitted
+    because it carries a default value.
+    """
+
+    family = 5
+
+    def _project_environment(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        inbound_by_type = config.get("__scope_inbound_by_type", {}) or {}
+        entity = _find_deployment_entity(model, entity_id)
+
+        parts: list[str] = []
+        if entity is not None:
+            kind_val = getattr(entity, "kind", None)
+            if kind_val is not None:
+                kind_str = getattr(kind_val, "value", kind_val)
+                if kind_str:
+                    parts.append(f"## Kind\n\n{kind_str}")
+            region = (getattr(entity, "region", "") or "").strip()
+            if region:
+                parts.append(f"## Region\n\n{region}")
+            infra = tuple(getattr(entity, "infrastructure", ()) or ())
+            if infra:
+                parts.append(
+                    "## Infrastructure\n\n"
+                    + "\n".join(f"- {i}" for i in infra)
+                )
+            constraints = tuple(getattr(entity, "constraints", ()) or ())
+            if constraints:
+                parts.append(
+                    "## Constraints\n\n"
+                    + "\n".join(f"- {c}" for c in constraints)
+                )
+        deployed = tuple(inbound_by_type.get("allocated-to", ()) or ())
+        if deployed:
+            parts.append(
+                "## Deployed Components\n\n"
+                + "\n".join(f"- {d}" for d in deployed)
+            )
+        return _family5_spec(entity_id, model, "\n\n".join(parts))
+
+    def _project_resource(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        inbound_by_type = config.get("__scope_inbound_by_type", {}) or {}
+        entity = _find_deployment_entity(model, entity_id)
+
+        parts: list[str] = []
+        if entity is not None:
+            kind_val = getattr(entity, "kind", None)
+            if kind_val is not None:
+                kind_str = getattr(kind_val, "value", kind_val)
+                if kind_str:
+                    parts.append(f"## Kind\n\n{kind_str}")
+            for header, attr in (
+                ("Provider", "provider"),
+                ("Location", "location"),
+                ("SLA", "sla"),
+            ):
+                val = (getattr(entity, attr, "") or "").strip()
+                if val:
+                    parts.append(f"## {header}\n\n{val}")
+        consumers = set(inbound_by_type.get("consumes", ()) or ())
+        consumers |= set(inbound_by_type.get("depends-on", ()) or ())
+        if consumers:
+            parts.append(
+                "## Consumed By\n\n"
+                + "\n".join(f"- {c}" for c in sorted(consumers))
+            )
+        return _family5_spec(entity_id, model, "\n\n".join(parts))
+
+    def _project_component(
+        self, model: ArchitectureModel, config: dict[str, Any]
+    ) -> DiagramSpec:
+        entity_id = config.get("__scope_entity_id", "")
+        outbound = config.get("__scope_outbound_by_type", {}) or {}
+        deployed_to = tuple(outbound.get("allocated-to", ()) or ())
+
+        parts: list[str] = []
+        if deployed_to:
+            parts.append(
+                "## Deployed To\n\n"
+                + "\n".join(f"- {d}" for d in deployed_to)
+            )
+        return _family5_spec(entity_id, model, "\n\n".join(parts))
+
+
+# ---------------------------------------------------------------------------
 # Family 6 — interfaces + ICD per entity (Phase 3 Task 12)
 # ---------------------------------------------------------------------------
 

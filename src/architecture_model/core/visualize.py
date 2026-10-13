@@ -15,6 +15,7 @@ Produces 10 standard views:
 
 from __future__ import annotations
 
+import logging
 import re
 from collections import defaultdict
 from html import escape
@@ -23,7 +24,52 @@ from typing import TYPE_CHECKING
 
 from .curated_views import build_curated_views
 
+_log = logging.getLogger(__name__)
+
+# Track 4 Pass 1 Task 5: views whose panel model is swapped for the anchored sub-model.
+_APPLY_ANCHOR = frozenset({"functional", "logical", "conops", "use_cases"})
+
+# ── Mermaid shape mapping (Track 4 Pass 2 Task 1) ─────────────────────
+# Maps entity kind (lowercase singular) to a (left_bracket, right_bracket)
+# pair used to wrap the node label in Mermaid flowchart syntax.
+# Layer is subgraph-based and not included here.
+# Component uses Mermaid's asymmetric-flag shape (>text]) — a rectangle
+# with a pointy left edge — to visually distinguish structural components
+# from other entity kinds in composite diagrams. See SysML/Arcadia
+# convention where components carry directional markings.
+_MERMAID_SHAPE: dict[str, tuple[str, str]] = {
+    "component":  (">",   "]"),
+    "capability": ("{{",  "}}"),
+    "actor":      ("((",  "))"),
+    "behavior":   ("([",  "])"),
+    "interface":  ("[/",  "/]"),
+    "constraint": ("{",   "}"),
+    "layer":      ("[",   "]"),  # fallback; layers normally emitted as subgraphs
+}
+
+
+def _shape(kind: str, sid: str, label: str) -> str:
+    """Return a Mermaid node declaration with kind-appropriate brackets.
+
+    Unknown kinds fall back to rectangle brackets and emit a DEBUG log.
+    Label is always quoted to survive special characters.
+    """
+    brackets = _MERMAID_SHAPE.get(kind.lower())
+    if brackets is None:
+        _log.debug("visualize._shape: unknown kind %r; falling back to rect", kind)
+        brackets = ("[", "]")
+    left, right = brackets
+    return f'{sid}{left}"{label}"{right}'
+
+
+def _panel_model(view: str, full: "ArchitectureModel", anchors) -> "ArchitectureModel":
+    """Return the anchored sub-model for ``view`` when an anchor applies, else ``full``."""
+    if anchors and view in _APPLY_ANCHOR and view in anchors:
+        return anchors[view].model
+    return full
+
 if TYPE_CHECKING:
+    from .slice_anchor import SliceAnchor
     from .types import ArchitectureModel
 
 
@@ -48,8 +94,9 @@ def _rel_type(rel) -> str:
 
 
 # ── Standardized Shape Syntax ──────────────────────────────────
+# See `_MERMAID_SHAPE` docstring for the component pointy-flag rationale.
 _SHAPES: dict[str, tuple[str, str]] = {
-    "component":  ("[",   "]"),
+    "component":  (">",   "]"),
     "capability": ("(",   ")"),
     "behavior":   ("{{", "}}"),
     "interface":  ("((",  "))"),
@@ -113,6 +160,177 @@ def shape(entity_type: str, node_id: str, name: str) -> str:
     lbl = _label(name)
     prefix, suffix = _SHAPES.get(entity_type, ("[", "]"))
     return f"{sid}{prefix}{lbl}{suffix}"
+
+
+# ── Pipeline Flow + Operational Intelligence facet helpers ─────────────────────
+#
+# These render two extra behavior-facet and component-facet mini-diagrams
+# that surface the pipeline-shape of a behavior (root + sub-behaviors +
+# implementing components) and the operational-intelligence rollup of a
+# component (Logging / LLM / Learning / Measurement). They are pure
+# functions over the parsed model — no I/O — so they compose safely with
+# the existing per-entity facet builder in ``generate_entity_explorer``.
+
+def _get_component_evidence(model, component_id: str) -> dict:
+    """Return the ``evidence`` dict on the component, or ``{}`` if absent."""
+    for c in getattr(model.entities, "components", []) or []:
+        if c.id == component_id:
+            return dict(getattr(c, "evidence", None) or {})
+    return {}
+
+
+def _get_model_provider(model) -> dict:
+    """Return ``meta.provider`` if present, else ``{}``.
+
+    The 2.1+ schema records the frontier model that produced the artifacts
+    at ``meta.provider = {name, model, policy_ref}``. Used by the LLM block
+    of the Operational Intelligence facet.
+    """
+    meta = getattr(model, "meta", None)
+    if meta is None:
+        return {}
+    prov = getattr(meta, "provider", None)
+    if isinstance(prov, dict):
+        return dict(prov)
+    return {}
+
+
+def _pipeline_flow_facet_lines(
+    model, root_id: str, root_name: str,
+    entity_map: dict[str, tuple[str, str]],
+) -> str | None:
+    """Render 1-hop pipeline flow: root behavior → sub-behaviors → components.
+
+    Returns ``None`` when the behavior has neither sub-behaviors nor
+    implementing components — the facet would add no signal beyond what
+    the entity header already conveys.
+    """
+    # Direct sub-behaviors via `contains`
+    subs: list[tuple[str, str]] = []
+    for rel in model.relationships:
+        if _rel_type(rel) != "contains":
+            continue
+        if getattr(rel, "from_id", None) != root_id:
+            continue
+        tid = getattr(rel, "to_id", None)
+        if tid in entity_map and entity_map[tid][0] == "behavior":
+            subs.append((tid, entity_map[tid][1]))
+
+    # Implementing components (traces-to) for root AND each sub
+    def _impls_for(bid: str) -> list[tuple[str, str]]:
+        out: list[tuple[str, str]] = []
+        for rel in model.relationships:
+            if _rel_type(rel) != "traces-to":
+                continue
+            if getattr(rel, "to_id", None) != bid:
+                continue
+            fid = getattr(rel, "from_id", None)
+            if fid in entity_map and entity_map[fid][0] == "component":
+                out.append((fid, entity_map[fid][1]))
+        return out
+
+    root_impls = _impls_for(root_id)
+    sub_impls = {sid: _impls_for(sid) for sid, _ in subs}
+    total_impls = len(root_impls) + sum(len(v) for v in sub_impls.values())
+
+    if not subs and total_impls == 0:
+        return None
+
+    lines = ["graph LR"]
+    lines.append(f"  {shape('behavior', root_id, root_name)}")
+    seen_nodes: set[str] = {root_id}
+
+    for sid, sname in subs:
+        if sid not in seen_nodes:
+            lines.append(f"  {shape('behavior', sid, sname)}")
+            seen_nodes.add(sid)
+        lines.append(f"  {_sid(root_id)} {edge_style('contains')} {_sid(sid)}")
+
+    def _emit_impls(parent_id: str, impls: list[tuple[str, str]]) -> None:
+        for cid, cname in impls:
+            if cid not in seen_nodes:
+                lines.append(f"  {shape('component', cid, cname)}")
+                seen_nodes.add(cid)
+            lines.append(
+                f"  {_sid(cid)} {edge_style('traces-to')} {_sid(parent_id)}"
+            )
+
+    _emit_impls(root_id, root_impls)
+    for sid, _ in subs:
+        _emit_impls(sid, sub_impls.get(sid, []))
+
+    return "\n".join(lines)
+
+
+def _operational_intelligence_facet_lines(
+    model, component_id: str, component_name: str, evidence: dict,
+) -> str | None:
+    """Render a 4-block operational-intelligence rollup for a component.
+
+    Blocks: Logging (SI&L invocations/failure), LLM (provider stamped on the
+    model), Learning (pipeline-history activity), Measurement (test coverage).
+    Blocks with no evidence render as grey placeholder nodes so the facet is
+    always emitted for structural completeness. Returns ``None`` only when
+    ``component_id`` is unknown (should not happen at this call site).
+    """
+    sil = evidence.get("sil") if isinstance(evidence, dict) else None
+    coverage = evidence.get("test_coverage") if isinstance(evidence, dict) else None
+    provider = _get_model_provider(model)
+
+    def _fmt_sil(d: dict) -> str:
+        inv = d.get("invocations")
+        fr = d.get("failure_rate")
+        dur = d.get("avg_duration_ms")
+        parts = []
+        if inv is not None:
+            parts.append(f"{int(inv)} invocations")
+        if fr is not None:
+            parts.append(f"{float(fr) * 100:.2f}% fail")
+        if dur is not None:
+            parts.append(f"{float(dur):.1f}ms avg")
+        return ", ".join(parts) or "SI&L: no metrics"
+
+    def _fmt_provider(d: dict) -> str:
+        name = d.get("name") or d.get("model") or "provider"
+        model_name = d.get("model")
+        return f"{name}: {model_name}" if model_name else str(name)
+
+    def _fmt_coverage(d: dict) -> str:
+        n = d.get("test_count")
+        return f"{int(n)} tests" if n is not None else "coverage: unknown"
+
+    # (block_id, label_prefix, has_data, body)
+    blocks = [
+        ("OI_LOG", "Logging",
+         sil is not None,
+         _fmt_sil(sil) if sil else "absent"),
+        ("OI_LLM", "LLM",
+         bool(provider),
+         _fmt_provider(provider) if provider else "absent"),
+        ("OI_LRN", "Learning",
+         False,  # per-component learning evidence not yet stamped
+         "absent"),
+        ("OI_MSR", "Measurement",
+         coverage is not None,
+         _fmt_coverage(coverage) if coverage else "absent"),
+    ]
+
+    lines = ["graph LR"]
+    lines.append(f"  {shape('component', component_id, component_name)}")
+    lines.append('  classDef oi_grey fill:#E5E7EB,stroke:#9CA3AF,color:#4B5563;')
+    lines.append('  classDef oi_live fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A;')
+
+    for block_id, label, has_data, body in blocks:
+        node_label = f"{label}: {body}"
+        lines.append(f"  {shape('component', block_id, node_label)}")
+        style_class = "oi_live" if has_data else "oi_grey"
+        lines.append(f"  class {_sid(block_id)} {style_class};")
+        lines.append(
+            f"  {_sid(component_id)} {edge_style('depends-on')} {_sid(block_id)}"
+        )
+
+    return "\n".join(lines)
+
 
 
 def edge_style(rel_type: str) -> str:
@@ -813,7 +1031,7 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
     if model.entities.actors:
         lines.append('    subgraph ext["External Actors"]')
         for actor in model.entities.actors:
-            lines.append(f"        {shape('actor', actor.id, actor.name)}")
+            lines.append(f"        {_shape('actor', _sid(actor.id), _label(actor.name))}")
             class_assignments.append(_apply_class(actor.id, "actor"))
         lines.append("    end")
 
@@ -821,7 +1039,7 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
     if model.entities.systems:
         lines.append('    subgraph systems["Systems"]')
         for sys in model.entities.systems:
-            lines.append(f"        {shape('system', sys.id, sys.name)}")
+            lines.append(f"        {_shape('system', _sid(sys.id), _label(sys.name))}")
             class_assignments.append(_apply_class(sys.id, "system"))
         lines.append("    end")
 
@@ -842,12 +1060,12 @@ def generate_conops_diagram(model: "ArchitectureModel") -> str:
             for child_id in contains.get(g_id, []):
                 child = cap_map.get(child_id)
                 if child:
-                    lines.append(f"            {shape('capability', child.id, child.name)}")
+                    lines.append(f"            {_shape('capability', _sid(child.id), _label(child.name))}")
                     class_assignments.append(_apply_class(child.id, "capability"))
             lines.append("        end")
     else:
         for cap in model.entities.capabilities:
-            lines.append(f"        {shape('capability', cap.id, cap.name)}")
+            lines.append(f"        {_shape('capability', _sid(cap.id), _label(cap.name))}")
             class_assignments.append(_apply_class(cap.id, "capability"))
 
     lines.append("    end")
@@ -908,7 +1126,7 @@ def generate_functional_architecture_diagram(model: "ArchitectureModel") -> str:
     root_id = "CAP-0"
     root = cap_map.get(root_id)
     if root:
-        lines.append(f"    {shape('capability', root.id, root.name)}")
+        lines.append(f"    {_shape('capability', _sid(root.id), _label(root.name))}")
         class_assignments.append(_apply_class(root.id, "capability"))
 
     # L1 groups (children of root)
@@ -925,14 +1143,14 @@ def generate_functional_architecture_diagram(model: "ArchitectureModel") -> str:
             child = cap_map.get(child_id)
             if not child:
                 continue
-            lines.append(f"        {shape('capability', child.id, child.name)}")
+            lines.append(f"        {_shape('capability', _sid(child.id), _label(child.name))}")
             class_assignments.append(_apply_class(child.id, "capability"))
 
             # L2 sub-capabilities
             for sub_id in contains.get(child_id, []):
                 sub = cap_map.get(sub_id)
                 if sub:
-                    lines.append(f"        {shape('capability', sub.id, sub.name)}")
+                    lines.append(f"        {_shape('capability', _sid(sub.id), _label(sub.name))}")
                     class_assignments.append(_apply_class(sub.id, "capability"))
                     lines.append(f"        {_sid(child_id)} -.-> {_sid(sub_id)}")
 
@@ -951,7 +1169,7 @@ def generate_functional_architecture_diagram(model: "ArchitectureModel") -> str:
     if not l1_ids:
         for cap in model.entities.capabilities:
             if cap.id != root_id:
-                lines.append(f"    {shape('capability', cap.id, cap.name)}")
+                lines.append(f"    {_shape('capability', _sid(cap.id), _label(cap.name))}")
                 class_assignments.append(_apply_class(cap.id, "capability"))
 
     lines.extend(css_classes())
@@ -990,7 +1208,7 @@ def generate_logical_architecture_diagram(model: "ArchitectureModel") -> str:
             for cid in resolved:
                 comp = comp_map.get(cid)
                 if comp:
-                    lines.append(f"        {shape('component', comp.id, comp.name)}")
+                    lines.append(f"        {_shape('component', _sid(comp.id), _label(comp.name))}")
                     class_assignments.append(_apply_class(comp.id, "component"))
                     comp_in_system.add(cid)
             lines.append("    end")
@@ -1000,7 +1218,7 @@ def generate_logical_architecture_diagram(model: "ArchitectureModel") -> str:
     if unassigned:
         lines.append('    subgraph other["Other"]')
         for comp in unassigned:
-            lines.append(f"        {shape('component', comp.id, comp.name)}")
+            lines.append(f"        {_shape('component', _sid(comp.id), _label(comp.name))}")
             class_assignments.append(_apply_class(comp.id, "component"))
         lines.append("    end")
 
@@ -1217,7 +1435,7 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     class_assignments: list[str] = []
 
     # Central behavior node
-    lines.append(f"    {shape('behavior', beh.id, beh.name)}")
+    lines.append(f"    {_shape('behavior', _sid(beh.id), _label(beh.name))}")
     class_assignments.append(_apply_class(beh.id, "behavior"))
 
     # Build entity maps
@@ -1227,7 +1445,7 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     # Implementing components (reverse traces-to)
     for rel in model.relationships:
         if _rel_type(rel) == "traces-to" and rel.to_id == behavior_id and rel.from_id in comp_map:
-            lines.append(f"    {shape('component', rel.from_id, comp_map[rel.from_id])}")
+            lines.append(f"    {_shape('component', _sid(rel.from_id), _label(comp_map[rel.from_id]))}")
             class_assignments.append(_apply_class(rel.from_id, "component"))
             lines.append(f"    {_sid(rel.from_id)} {edge_style('traces-to')} {_sid(beh.id)}")
             lines.append(f"    click {_sid(rel.from_id)} \"component-{rel.from_id}.mmd\"")
@@ -1238,7 +1456,7 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     if sub_behs:
         lines.append(f"    subgraph sub[Sub-behaviors]")
         for sid, sname in sub_behs:
-            lines.append(f"        {shape('behavior', sid, sname)}")
+            lines.append(f"        {_shape('behavior', _sid(sid), _label(sname))}")
             class_assignments.append(_apply_class(sid, "behavior"))
         lines.append(f"    end")
         for sid, sname in sub_behs:
@@ -1248,20 +1466,30 @@ def generate_use_case_diagram(model: "ArchitectureModel", behavior_id: str) -> s
     # Triggered-by (other behaviors that trigger this one)
     for rel in model.relationships:
         if _rel_type(rel) == "triggers" and rel.to_id == behavior_id and rel.from_id in beh_map:
-            lines.append(f"    {shape('behavior', rel.from_id, beh_map[rel.from_id])}")
+            lines.append(f"    {_shape('behavior', _sid(rel.from_id), _label(beh_map[rel.from_id]))}")
             class_assignments.append(_apply_class(rel.from_id, "behavior"))
             lines.append(f"    {_sid(rel.from_id)} {edge_style('triggers')} {_sid(beh.id)}")
 
     # Triggers (behaviors this one triggers)
     for rel in model.relationships:
         if _rel_type(rel) == "triggers" and rel.from_id == behavior_id and rel.to_id in beh_map:
-            lines.append(f"    {shape('behavior', rel.to_id, beh_map[rel.to_id])}")
+            lines.append(f"    {_shape('behavior', _sid(rel.to_id), _label(beh_map[rel.to_id]))}")
             class_assignments.append(_apply_class(rel.to_id, "behavior"))
             lines.append(f"    {_sid(beh.id)} {edge_style('triggers')} {_sid(rel.to_id)}")
 
     lines.extend(css_classes())
     lines.extend(a for a in class_assignments if a)
     return "\n".join(lines)
+
+
+def generate_use_case_diagrams(model: "ArchitectureModel") -> dict[str, str]:
+    """Generate use-case diagrams for every behavior in the model.
+
+    Returns a mapping of ``behavior_id -> mermaid_source``. Thin wrapper over
+    :func:`generate_use_case_diagram`; exposed so callers can render the full
+    use-case panel without walking the model themselves.
+    """
+    return {beh.id: generate_use_case_diagram(model, beh.id) for beh in model.entities.behaviors}
 
 
 def _convert_clicks_to_anchors(mermaid_content: str) -> str:
@@ -1415,7 +1643,13 @@ def _render_mermaid_svg(code: str) -> str:
     nodes: dict[str, str] = {}
     edges: list[tuple[str, str, str]] = []
     edge_pattern = re.compile(r'\s*(-->|==>|-\.->|-\.-x)(?:\|([^|]*)\|)?\s*')
-    delimiters = sorted(set(_SHAPES.values()), key=lambda pair: len(pair[0]) + len(pair[1]), reverse=True)
+    # Include ("[", "]") as a permanent fallback: it is the generic Mermaid
+    # rectangle shape used by ad-hoc callers (and by pre-C15 output that
+    # predates the component pointy-flag shape). Sorted longest-prefix-first
+    # so ("[(", ")]") for layers wins over ("[", "]") when both apply.
+    _fallback_rect = ("[", "]")
+    _delim_set = set(_SHAPES.values()) | {_fallback_rect}
+    delimiters = sorted(_delim_set, key=lambda pair: len(pair[0]) + len(pair[1]), reverse=True)
 
     def parse_node(text: str) -> tuple[str, str] | None:
         match = re.fullmatch(r'([\w.-]+)\s*(.*)', text.strip())
@@ -1638,6 +1872,15 @@ def build_entity_properties(model: "ArchitectureModel") -> dict[str, dict]:
             ("interface_refs", "Interfaces"),
             ("decisions", "Decisions"),
             ("monitored", "Monitored"),
+            ("stakeholders", "Stakeholders"),
+            ("success_criteria", "Success Criteria"),
+            ("assumptions", "Assumptions"),
+            ("open_questions", "Open Questions"),
+            ("verification", "Verification"),
+            ("slos", "SLOs"),
+            ("owner", "Owner"),
+            ("maturity", "Maturity"),
+            ("dependencies_rationale", "Dependencies Rationale"),
         ):
             value = getattr(entity, field_name, None)
             if value not in (None, "", []):
@@ -2339,6 +2582,56 @@ def _load_submodel_view_data(
     return properties, comp_files, systems, modules, comp_modules
 
 
+def _load_requirements(repo_root: Path | None) -> dict[str, list[dict]]:
+    """Load .architecture/derived_requirements.yaml into entity_id -> requirements.
+
+    Returns an empty dict on missing file, malformed YAML, or unknown
+    structure. Logs INFO on absence, WARNING on parse error. Never raises.
+
+    Schema (as observed in this repo):
+        top-level key ``derived_requirements`` (list); each entry links
+        to a component via ``component_id``. For robustness, ``requirements``
+        is also accepted as a top-level key, and ``entity_id`` / ``traces_to``
+        are honored as alternate link fields.
+    """
+    if repo_root is None:
+        return {}
+    path = Path(repo_root) / ".architecture" / "derived_requirements.yaml"
+    if not path.exists():
+        _log.info("visualize: no derived_requirements.yaml at %s", path)
+        return {}
+    try:
+        import yaml as _yaml
+        raw = _yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001 — loader must be total
+        _log.warning("visualize: failed to parse %s: %r", path, exc)
+        return {}
+
+    if not isinstance(raw, dict):
+        return {}
+    reqs = raw.get("derived_requirements")
+    if reqs is None:
+        reqs = raw.get("requirements") or []
+    if not isinstance(reqs, list):
+        return {}
+
+    index: dict[str, list[dict]] = {}
+    for req in reqs:
+        if not isinstance(req, dict):
+            continue
+        targets: list[str] = []
+        for field in ("component_id", "entity_id"):
+            val = req.get(field)
+            if isinstance(val, str) and val:
+                targets.append(val)
+        traces = req.get("traces_to") or []
+        if isinstance(traces, list):
+            targets.extend(str(t) for t in traces if isinstance(t, str) and t)
+        for t in targets:
+            index.setdefault(t, []).append(req)
+    return index
+
+
 def _load_ops_data(repo_path: Path | None = None) -> dict[str, str]:
     """Load operational artifacts for embedding.
 
@@ -2429,6 +2722,7 @@ def generate_html_viewer(
     include_history: bool = True,
     model_path: Path | None = None,
     sil_store_path: Path | None = None,
+    anchors: "dict[str, SliceAnchor] | None" = None,
 ) -> Path:
     """Generate a self-contained HTML viewer with 7 SE model views and universal click navigation.
 
@@ -2486,6 +2780,22 @@ def generate_html_viewer(
         model, project_root, curation_path=curation_path,
         use_curation=use_curation and (trusted_root is not None or curation_path is not None), theme="dark",
     )
+    # Track 4 Pass 1 Task 5: swap the functional panel's model with the anchored slice.
+    # Anchor view names use underscores (per VIEW_TO_ARTIFACT); native_views keys
+    # follow NATIVE_VIEW_DEFINITIONS (hyphenated for multi-word ids). Bridge with
+    # a small alias map so hyphenated native keys still resolve.
+    _ANCHOR_TO_NATIVE_KEY = {"use_cases": "use-cases"}
+    for _anchored_view in _APPLY_ANCHOR:
+        _anchored_model = _panel_model(_anchored_view, model, anchors)
+        _native_key = _ANCHOR_TO_NATIVE_KEY.get(_anchored_view, _anchored_view)
+        if _anchored_model is model or _native_key not in native_views:
+            continue
+        _anchored_views = build_curated_views(
+            _anchored_model, project_root, curation_path=curation_path,
+            use_curation=use_curation and (trusted_root is not None or curation_path is not None), theme="dark",
+        )
+        if _native_key in _anchored_views:
+            native_views[_native_key] = _anchored_views[_native_key]
     se_views: dict[str, dict] = {}
     panels: dict[str, dict] = {}
     def store_panel(view_key: str, panel_ref: str, panel_data: dict) -> None:
@@ -2631,6 +2941,9 @@ def generate_html_viewer(
     )
     sil_by_component = _load_sil_data(sil_db_path)
 
+    # ── 5h. Linked requirements from derived_requirements.yaml ────
+    requirements_by_entity = _load_requirements(trusted_root)
+
     # ── 6. JSON data blob ─────────────────────────────────────────
     diagram_data = {
         "meta": {"project": model.meta.project},
@@ -2653,6 +2966,7 @@ def generate_html_viewer(
         "ops": ops_data,
         "pipeline_history": pipeline_history,
         "sil_by_component": sil_by_component,
+        "requirements_by_entity": requirements_by_entity,
         "subsystem_entities": subsystem_entities,
         "viewer_system_namespaces": {
             system_id: namespace for (_path, system_id), namespace in namespace_map.items()
@@ -2810,7 +3124,14 @@ def generate_html_viewer(
         .rel-section {{ grid-column: 1 / -1; margin-top: 8px; padding-top: 8px; border-top: 1px solid #0f3460; }}
         .rel-header {{ color: #7ec8e3; font-size: 13px; font-weight: 600; margin-bottom: 6px; }}
         .rel-item {{ font-size: 12px; color: #c0c0d0; margin-bottom: 3px; }}
+        .rel-group {{ margin-top: 8px; }}
+        .rel-group-header {{ font-weight: 600; color: #a0c0e0; margin: 4px 0 2px 0; font-size: 0.9em; }}
         .rel-type {{ background: #1a1a3e; color: #7ec8e3; padding: 1px 5px; border-radius: 3px; font-size: 10px; }}
+        .req-section {{ grid-column: 1 / -1; margin-top: 12px; padding: 8px; background: rgba(80, 100, 140, 0.1); border-radius: 4px; }}
+        .req-header {{ font-weight: 600; color: #b0d0f0; margin-bottom: 6px; }}
+        .req-item {{ padding: 3px 0; font-size: 0.9em; }}
+        .req-id {{ color: #ffcc70; font-family: monospace; }}
+        .req-text {{ color: #d0d0e0; }}
         .rel-link {{ color: #7ec8e3; text-decoration: none; }}
         .rel-link:hover {{ text-decoration: underline; }}
         .rel-desc {{ color: #808090; font-size: 11px; }}
@@ -3309,31 +3630,66 @@ def generate_html_viewer(
             if (p.description) {{
                 html += '<div class="prop-item prop-desc"><div class="prop-label">Description</div><div class="prop-value">' + escapeHtml(p.description) + '</div></div>';
             }}
-            if (p.properties && p.properties.behavior_diagram) {{
-                var diagramCode = p.properties.behavior_diagram;
-                var uid = 'pipeline_' + eid.replace(/[^a-zA-Z0-9]/g, '_');
-                html += '<div class="pipeline-view">';
-                html += '<div class="rel-header pipeline-toggle" data-target="' + escapeHtml(uid) + '" style="cursor:pointer">\\u25B6 Pipeline View</div>';
-                html += '<div id="' + uid + '" style="display:none;margin-top:8px"><div class="mermaid-target" data-mermaid="' + btoa(diagramCode) + '" data-svg="' + btoa(unescape(encodeURIComponent(p.properties.behavior_svg || ''))) + '"></div></div>';
+            var linkedReqs = (D.requirements_by_entity && D.requirements_by_entity[eid]) || [];
+            if (linkedReqs.length > 0) {{
+                html += '<div class="req-section"><div class="req-header">Linked Requirements (' + linkedReqs.length + ')</div>';
+                for (var qi = 0; qi < linkedReqs.length; qi++) {{
+                    var req = linkedReqs[qi];
+                    var reqText = req.name || req.text || req.description || req.id || '';
+                    html += '<div class="req-item">';
+                    html += '<span class="req-id">' + escapeHtml(req.id || '') + '</span> ';
+                    html += '<span class="req-text">' + escapeHtml(reqText) + '</span>';
+                    html += '</div>';
+                }}
                 html += '</div>';
             }}
             if (p.relationships) {{
                 var ro = p.relationships.outgoing || [];
                 var ri = p.relationships.incoming || [];
                 if (ro.length + ri.length > 0) {{
-                    html += '<div class="rel-section"><div class="rel-header">Relationships (' + (ro.length + ri.length) + ')</div>';
+                    var OUT_LABEL = {{
+                        "realizes": "Realizes", "contains": "Contains", "depends-on": "Depends On",
+                        "exposes": "Exposes", "consumes": "Consumes", "traces-to": "Traces To",
+                        "constrained-by": "Constrained By", "allocated-to": "Allocated To",
+                        "triggers": "Triggers", "produces": "Produces", "subscribes-to": "Subscribes To",
+                        "transforms": "Transforms", "supersedes": "Supersedes", "migrates-to": "Migrates To",
+                        "mounted-on": "Mounted On", "connected-at": "Connected At", "routed-through": "Routed Through"
+                    }};
+                    var IN_LABEL = {{
+                        "realizes": "Realized By", "contains": "Contained In", "depends-on": "Depended On By",
+                        "exposes": "Exposed By", "consumes": "Consumed By", "traces-to": "Traced From",
+                        "constrained-by": "Constrains", "allocated-to": "Allocation Target Of",
+                        "triggers": "Triggered By", "produces": "Produced By", "subscribes-to": "Subscription Target Of",
+                        "transforms": "Transformed From", "supersedes": "Superseded By", "migrates-to": "Migrated From",
+                        "mounted-on": "Mount Target Of", "connected-at": "Connection Target Of", "routed-through": "Routing Target Of"
+                    }};
+                    var groups = {{}};
+                    function pushGroup(header, itemHtml) {{
+                        if (!groups[header]) groups[header] = [];
+                        groups[header].push(itemHtml);
+                    }}
                     for (var oi = 0; oi < ro.length; oi++) {{
                         var r = ro[oi];
-                        html += '<div class="rel-item"><span class="rel-type">' + escapeHtml(r.type) + '</span> \\u2192 <a href="#" data-entity-id="' + escapeHtml(r.target) + '" class="rel-link">' + escapeHtml(r.target + (r.target_name ? ': ' + r.target_name : '')) + '</a>';
-                        if (r.description) html += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
-                        html += '</div>';
+                        var header = OUT_LABEL[r.type] || "Other (Outgoing)";
+                        var item = '<div class="rel-item">\\u2192 <a href="#" data-entity-id="' + escapeHtml(r.target) + '" class="rel-link">' + escapeHtml(r.target + (r.target_name ? ': ' + r.target_name : '')) + '</a>';
+                        if (r.description) item += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
+                        item += '</div>';
+                        pushGroup(header, item);
                     }}
                     for (var ii = 0; ii < ri.length; ii++) {{
                         var r = ri[ii];
-                        html += '<div class="rel-item"><a href="#" data-entity-id="' + escapeHtml(r.source) + '" class="rel-link">' + escapeHtml(r.source + (r.source_name ? ': ' + r.source_name : '')) + '</a> <span class="rel-type">' + escapeHtml(r.type) + '</span> \\u2192 this';
-                        if (r.description) html += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
-                        html += '</div>';
+                        var header = IN_LABEL[r.type] || "Other (Incoming)";
+                        var item = '<div class="rel-item"><a href="#" data-entity-id="' + escapeHtml(r.source) + '" class="rel-link">' + escapeHtml(r.source + (r.source_name ? ': ' + r.source_name : '')) + '</a> \\u2190';
+                        if (r.description) item += ' <span class="rel-desc">(' + escapeHtml(r.description) + ')</span>';
+                        item += '</div>';
+                        pushGroup(header, item);
                     }}
+                    html += '<div class="rel-section"><div class="rel-header">Relationships (' + (ro.length + ri.length) + ')</div>';
+                    Object.keys(groups).sort().forEach(function(header) {{
+                        html += '<div class="rel-group"><div class="rel-group-header">' + escapeHtml(header) + '</div>';
+                        html += groups[header].join('');
+                        html += '</div>';
+                    }});
                     html += '</div>';
                 }}
             }}
@@ -3626,6 +3982,8 @@ def generate_html_viewer(
             }}
 
             var facets = D.entities[eid];
+            var _pipelineDiagram = (p.properties && p.properties.behavior_diagram) ? p.properties.behavior_diagram : null;
+            var _pipelineSvg = (p.properties && p.properties.behavior_svg) ? p.properties.behavior_svg : '';
             if (facets && Object.keys(facets).length > 0) {{
                 var i = 0;
                 for (var facetName in facets) {{
@@ -3640,6 +3998,27 @@ def generate_html_viewer(
                         + '</div></div>';
                     i++;
                 }}
+                if (_pipelineDiagram) {{
+                    var pcid = 'f_' + eid.replace(/[^a-zA-Z0-9]/g,'_') + '_pipeline';
+                    html += '<div class="accordion">'
+                        + '<div class="accordion-header" data-target="' + pcid
+                        + '" data-code="' + btoa(unescape(encodeURIComponent(_pipelineDiagram)))
+                        + '" data-svg="' + btoa(unescape(encodeURIComponent(_pipelineSvg)))
+                        + '">Pipeline View</div>'
+                        + '<div class="accordion-body" id="' + pcid + '">'
+                        + '<div class="diagram-box" id="' + pcid + '_dia"></div>'
+                        + '</div></div>';
+                }}
+            }} else if (_pipelineDiagram) {{
+                var pcid = 'f_' + eid.replace(/[^a-zA-Z0-9]/g,'_') + '_pipeline';
+                html += '<div class="accordion">'
+                    + '<div class="accordion-header" data-target="' + pcid
+                    + '" data-code="' + btoa(unescape(encodeURIComponent(_pipelineDiagram)))
+                    + '" data-svg="' + btoa(unescape(encodeURIComponent(_pipelineSvg)))
+                    + '">Pipeline View</div>'
+                    + '<div class="accordion-body" id="' + pcid + '">'
+                    + '<div class="diagram-box" id="' + pcid + '_dia"></div>'
+                    + '</div></div>';
             }} else if (!files || files.length === 0) {{
                 html += '<p style="color:#a0a0c0;margin-top:12px">No relationship diagrams for this entity.</p>';
             }}
@@ -3685,9 +4064,10 @@ def generate_html_viewer(
                 a.addEventListener('click', function(ev) {{ ev.preventDefault(); showEntity(this.dataset.entityId); }});
             }});
             content.querySelectorAll('.pipeline-toggle').forEach(function(toggle) {{
+                // Legacy pipeline-toggle no longer emitted; kept as no-op for backward compat.
                 toggle.addEventListener('click', function() {{
                     var target = document.getElementById(this.dataset.target);
-                    target.style.display = target.style.display === 'none' ? 'block' : 'none';
+                    if (target) {{ target.style.display = target.style.display === 'none' ? 'block' : 'none'; }}
                 }});
             }});
             closeMobileNav();
@@ -3894,6 +4274,19 @@ def generate_entity_explorer(
     facets: dict[str, str] = {}
 
     if entity_type == "component":
+        # Operational Intelligence — four evidence blocks (Logging, LLM, Learning,
+        # Measurement) sourced from Component.evidence + model.meta.provider +
+        # pipeline-history. Absent-evidence blocks render grey to keep the layout
+        # stable and surface the audit gap. Placed first because it answers
+        # "how healthy/observed is this component?" before structural facets.
+        entity = entity_map.get(entity_id)
+        oi_lines = _operational_intelligence_facet_lines(
+            model, entity_id, ename,
+            _get_component_evidence(model, entity_id),
+        )
+        if oi_lines is not None:
+            facets["Operational Intelligence"] = oi_lines
+
         # Capabilities facet
         caps = []
         for rel in model.relationships:
@@ -3995,6 +4388,14 @@ def generate_entity_explorer(
             facets["Behaviors"] = _facet_diagram_reverse("capability", entity_id, ename, behs)
 
     elif entity_type == "behavior":
+        # Pipeline Flow — 1-hop composite: root + direct sub-behaviors + implementing
+        # components (via traces-to). Combines what previously appeared as three
+        # separate facets (Sub-Behaviors, Triggers, Components) into a single
+        # operational picture. Deep drilldown remains available via node clicks.
+        pf_lines = _pipeline_flow_facet_lines(model, entity_id, ename, entity_map)
+        if pf_lines is not None:
+            facets["Pipeline Flow"] = pf_lines
+
         # Sub-Behaviors
         children = []
         for rel in model.relationships:

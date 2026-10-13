@@ -233,5 +233,5 @@ def test_actual_logs_db_curated_primary_sections_match_executive_views(tmp_path:
         "Validate Generated Artifacts",
     ]
     assert re.findall(r"^### UC: (.+)$", catalog, re.MULTILINE) == expected_cases
-    assert "279" in _section(use_cases, "Appendix: Overview Omissions")
+    assert re.findall(r"^\d+ nonfeatured use cases are omitted", _section(use_cases, "Appendix: Overview Omissions"))
     assert "Inferred" in catalog and "scripts/_pipeline_ingest.py" in catalog

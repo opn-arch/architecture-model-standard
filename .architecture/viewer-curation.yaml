@@ -9,50 +9,178 @@ version: 1
 # Curated groupings surface Plan A + Plan B additions in the SE views:
 #   - Functional Architecture — "View-Comment Pipeline (Plan A)" and
 #     "SI&L + LLM Provider + Dashboard (Plan B)".
-#   - Logical Architecture — same two groups aggregated by component.
+#   - Logical Architecture — same two groups aggregated by component,
+#     with tier lanes for the 7-layer stack (Bug 3 fix visible).
+#   - ConOps — narrative scenarios anchored to the four operational
+#     use cases (BEH-26..29) plus the pipeline aggregator (BEH-P1).
+#   - Use Cases — the four narrative use cases with full annotations
+#     lifted from the behavior YAML fields.
+#
+# Evidence records point to files under the repo root; claims quote the
+# corresponding model field. This is the shape the curation loader
+# requires — entity-ID lists are not accepted as evidence.
 views:
   functional:
     featured:
-      - root::CAP-COMMENT-COLLABORATION
-      - root::CAP-SIL-INSTRUMENTATION
-      - root::CAP-LLM-ROUTING
-      - root::COMP-COMMENT-SYS
-      - root::COMP-SIL
-      - root::COMP-LLM
-      - root::COMP-DASHBOARD
+      - root::CAP-16
+      - root::CAP-17
+      - root::CAP-18
+      - root::COMP-16
+      - root::COMP-13
+      - root::COMP-14
+      - root::COMP-15
     groups:
       - id: view-comment-pipeline
         label: "View-Comment Pipeline (Plan A)"
         members:
-          - root::CAP-COMMENT-COLLABORATION
-          - root::COMP-COMMENT-SYS
+          - root::CAP-16
+          - root::COMP-16
       - id: sil-llm-dashboard
         label: "SIL + LLM Provider + Dashboard (Plan B)"
         members:
-          - root::CAP-SIL-INSTRUMENTATION
-          - root::CAP-LLM-ROUTING
-          - root::COMP-SIL
-          - root::COMP-LLM
-          - root::COMP-DASHBOARD
+          - root::CAP-17
+          - root::CAP-18
+          - root::COMP-13
+          - root::COMP-14
+          - root::COMP-15
     drilldowns:
-      view-comment-pipeline: root::CAP-COMMENT-COLLABORATION
-      sil-llm-dashboard: root::CAP-SIL-INSTRUMENTATION
+      view-comment-pipeline: root::CAP-16
+      sil-llm-dashboard: root::CAP-17
+
   logical:
     featured:
-      - root::COMP-COMMENT-SYS
-      - root::COMP-SIL
-      - root::COMP-LLM
-      - root::COMP-DASHBOARD
+      - root::COMP-16
+      - root::COMP-13
+      - root::COMP-14
+      - root::COMP-15
+    labels:
+      root::LAY-1: "Foundation (schema, types, parser)"
+      root::LAY-2: "Domain (core model operations)"
+      root::LAY-3: "Application (pipeline, orchestration)"
+      root::LAY-4: "Interface (CLI, MCP, viewer)"
+      root::LAY-5: "Infrastructure (persistence, export)"
+      root::LAY-6: "Observability (SI&L, monitoring)"
+      root::LAY-7: "AI Integration (LLM providers, proposals)"
+    # NOTE: `tiers` intentionally omitted. When `tiers` is present the
+    # projector's `if curation.tiers:` branch wins and model layers stop
+    # rendering as lanes (they become membership targets instead), so
+    # per-layer `labels` overrides have nothing to attach to. Dropping
+    # `tiers` lets the `elif model_layers:` branch render all 7 layers
+    # as lanes with the friendly captions above.
     groups:
       - id: view-comment-pipeline-logical
         label: "View-Comment Pipeline (Plan A)"
         kind: aggregate
         members:
-          - root::COMP-COMMENT-SYS
+          - root::COMP-16
       - id: sil-llm-dashboard-logical
         label: "SIL + LLM Provider + Dashboard (Plan B)"
         kind: aggregate
         members:
-          - root::COMP-SIL
-          - root::COMP-LLM
-          - root::COMP-DASHBOARD
+          - root::COMP-13
+          - root::COMP-14
+          - root::COMP-15
+
+  conops:
+    featured:
+      - root::BEH-26
+      - root::BEH-27
+      - root::BEH-28
+      - root::BEH-29
+      - root::BEH-P1
+    scenarios:
+      - id: scn-slice-scoped-context
+        label: "Agent loads compressed context"
+        members:
+          - root::BEH-26
+        goal: "Compressed architecture context under agent token budget"
+        outcomes:
+          - "Agent produces informed edits without loading full model"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-26 goal: Compressed architecture context under agent token budget"
+      - id: scn-development-loop
+        label: "Developer closes feedback loop"
+        members:
+          - root::BEH-28
+          - root::BEH-29
+        goal: "Close code-review feedback loop within one session"
+        outcomes:
+          - "Comment persisted; issue optionally filed via logs-db"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-28 postconditions: Comment persisted; issue optionally filed via logs-db"
+      - id: scn-learning-loop
+        label: "Pipeline learns from prior runs"
+        members:
+          - root::BEH-27
+          - root::BEH-P1
+        goal: "Monotonic quality improvement across successive pipeline runs"
+        outcomes:
+          - "New lessons appended; drift flags updated"
+          - "Novel-pattern rate reduces over time"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-27 postconditions: New lessons appended; drift flags updated"
+      - id: scn-comment-collaboration
+        label: "Reviewer traces decisions to artifacts"
+        members:
+          - root::BEH-29
+        goal: "Trace decisions back to specific artifact versions"
+        outcomes:
+          - "Comment record persisted with artifact digest reference"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-29 postconditions: Comment record persisted with artifact digest reference"
+
+  use_cases:
+    featured:
+      - root::BEH-26
+      - root::BEH-27
+      - root::BEH-28
+      - root::BEH-29
+    annotations:
+      - use_case: root::BEH-26
+        goal: "Compressed architecture context under agent token budget"
+        trigger: "AI agent invokes architect_slice with a focus target"
+        preconditions:
+          - "A published architecture model exists at .architecture-model.yaml"
+        postconditions:
+          - "Agent receives compressed context under budget"
+        success_outcome: "Agent produces informed edits without loading full model"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-26 fields: goal, trigger, preconditions, postconditions, success_outcome"
+      - use_case: root::BEH-27
+        goal: "Monotonic quality improvement across successive pipeline runs"
+        trigger: "Developer runs `architecture-model pipeline .`"
+        preconditions:
+          - ".architecture/learning/history.json is readable"
+        postconditions:
+          - "New lessons appended; drift flags updated"
+        success_outcome: "Successive runs show reduced novel-pattern rate"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-27 fields: goal, trigger, preconditions, postconditions, success_outcome"
+      - use_case: root::BEH-28
+        goal: "Close code-review feedback loop within one session"
+        trigger: "Developer modifies source files"
+        preconditions:
+          - "Architecture model exists; MCP tools available"
+        postconditions:
+          - "Comment persisted; issue optionally filed via logs-db"
+        success_outcome: "Feedback loop closes within one review session"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-28 fields: goal, trigger, preconditions, postconditions, success_outcome"
+      - use_case: root::BEH-29
+        goal: "Trace decisions back to specific artifact versions"
+        trigger: "User invokes `architecture-model comment <artifact>`"
+        preconditions:
+          - "The artifact exists under .architecture/lifecycle/artifacts/"
+        postconditions:
+          - "Comment record persisted with artifact digest reference"
+        success_outcome: "Reviewers can trace decisions back to artifact versions"
+        evidence:
+          - source: .architecture-model.yaml
+            claim: "BEH-29 fields: goal, trigger, preconditions, postconditions, success_outcome"

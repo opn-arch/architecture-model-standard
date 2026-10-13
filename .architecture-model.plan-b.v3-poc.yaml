@@ -1,0 +1,161 @@
+meta:
+  schema_version: 3.0-poc
+  project: architecture-model-standard-plan-b
+  derived_from: .architecture-model.plan-b.yaml
+  provenance: T0.14.2 CAP-PB-PIPELINE PoC migration
+entities:
+  capabilities:
+  - id: CAP-PB-PIPELINE
+    name: 7-Stage Promise-Graph Pipeline
+    status: ACTIVE
+    parent_id: CAP-PB-EXTRACT
+    description: Sub-capability of CAP-PB-EXTRACT. Provides the 7-stage pipeline (scan -> derive_promises -> cluster -> link -> containerize -> verify -> publish) with per-stage cache + deterministic replay.
+    intent: Execute 7-stage extraction pipeline with per-stage caching and deterministic replay
+    goals:
+    - Each stage isolated with typed input/output
+    - Cache resumability at any stage boundary
+    - Deterministic under fixed AMS_DETERMINISTIC_NOW
+    - LLM invocations only at derive_promises + link + containerize
+    stakeholders:
+    - CAP-PB-EXTRACT
+    - Human Architect
+    - CI/CD Pipeline
+    success_criteria:
+    - Full pipeline runs in <5min on 10k-LOC repo
+    - Deterministic replay produces byte-identical output
+    - Stage-by-stage cache resume works after failure
+    failure_modes:
+    - Non-deterministic ordering in cluster stage
+    - Cache invalidation logic incorrect
+    - LLM budget exhaustion mid-pipeline
+    moes:
+    - Deterministic replay success rate 100%
+    - Cache hit rate >80% on incremental runs
+    trade_offs:
+    - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+    - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+    assumptions:
+    - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+    - Embedding-based clustering produces stable families across runs
+    open_questions:
+    - Which embedding model produces most stable clusters?
+    - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+    requirements:
+    - REQ-PB-9
+    - REQ-PB-10
+    - REQ-PB-19
+    promises:
+    - id: PR-938a5eb338c0
+      attribute: intent
+      content: Execute 7-stage extraction pipeline with per-stage caching and deterministic replay
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-c84110b1b23a
+      attribute: goals
+      content:
+      - Each stage isolated with typed input/output
+      - Cache resumability at any stage boundary
+      - Deterministic under fixed AMS_DETERMINISTIC_NOW
+      - LLM invocations only at derive_promises + link + containerize
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-2e0139d6c811
+      attribute: stakeholders
+      content:
+      - CAP-PB-EXTRACT
+      - Human Architect
+      - CI/CD Pipeline
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-aad39b0b7cd3
+      attribute: success_criteria
+      content:
+      - Full pipeline runs in <5min on 10k-LOC repo
+      - Deterministic replay produces byte-identical output
+      - Stage-by-stage cache resume works after failure
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-f979081c4c9e
+      attribute: failure_modes
+      content:
+      - Non-deterministic ordering in cluster stage
+      - Cache invalidation logic incorrect
+      - LLM budget exhaustion mid-pipeline
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-0313be5da8e3
+      attribute: trade_offs
+      content:
+      - LLM-required stages improve extraction but add cost; budget cap enforces ceiling
+      - Consolidation-by-construction removes need for Phase 2 A/B post-hoc merger
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-76a781a1a1d2
+      attribute: assumptions
+      content:
+      - Existing scan stage from 2.1 pipeline reusable as-is via adapter
+      - Embedding-based clustering produces stable families across runs
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-d07823a64241
+      attribute: open_questions
+      content:
+      - Which embedding model produces most stable clusters?
+      - How to handle codebases with mixed documentation quality (rich docstrings vs. bare code)?
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-289cda920bf1
+      attribute: requirements
+      content:
+      - REQ-PB-9
+      - REQ-PB-10
+      - REQ-PB-19
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2
+    - id: PR-f14f5606125b
+      attribute: moes
+      content:
+      - Deterministic replay success rate 100%
+      - Cache hit rate >80% on incremental runs
+      owner_entity: CAP-PB-PIPELINE
+      delivered_from: null
+      verified_by: []
+      status: open
+      gap_type: null
+      provenance: T0.14.2

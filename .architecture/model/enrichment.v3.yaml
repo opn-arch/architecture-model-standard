@@ -1,0 +1,504 @@
+meta:
+  purpose: |
+    Enrichment fragment authored by the 2026-09-15 SE walk.
+    Adds min-viable semantic promises (stakeholders / success_criteria /
+    failure_modes / slos) to existing pipeline-emitted components without
+    modifying pipeline output. Also introduces Actor / Constraint / Layer
+    entities so the Functional / Use-Case / Logical SE views in the viewer
+    can render with real content.
+
+    Merge policy (build_v3_viewer.py C4): promise-level union on same-id
+    entities; kind collisions and conflicting promise content are hard
+    fails. See docs/reports/2026-09-15-dev-workflow-se-walk.md.
+  fragment_kind: enrichment
+
+entities:
+  # =====================================================================
+  # Enrichment of existing pipeline entities — promise-level union merge.
+  # =====================================================================
+  components:
+    - id: COMP-c5a72728
+      # Name intentionally omitted — pipeline is authoritative.
+      promises:
+        - id: PR-COMP-c5a72728-stakeholders
+          attribute: stakeholders
+          content:
+            - dev-team-running-pipeline-locally
+            - se-team-reviewing-self-model
+            - ci-gate-enforcing-byte-determinism (Phase 8 gates)
+            - external-adopter-running-pipeline_v3-on-third-party-repo
+          owner_entity: COMP-c5a72728
+          status: verified
+          verified_by:
+            - .architecture-model.v3.yaml commits show 8 pipeline stages producing 24 components deterministically
+            - tests/pipeline_v3/*.py — 95+ tests across 8 stages
+          provenance: 2026-09-15 SE walk enrichment
+        - id: PR-COMP-c5a72728-success-criteria
+          attribute: success_criteria
+          content:
+            - byte-deterministic YAML output under pinned AMS_DETERMINISTIC_NOW
+            - self-application yields 24-component / 650-promise model (2026-09-14 walk)
+            - each stage is a pure function returning a typed dataclass consumed by the next
+            - reproducible on any Python repo without configuration
+          owner_entity: COMP-c5a72728
+          status: verified
+          verified_by:
+            - docs/reports/2026-09-14-v3-se-walk.md Level 2 table (all 8 stage commits)
+            - tests/pipeline_v3/test_publish.py — byte-determinism round-trip
+          provenance: 2026-09-15 SE walk enrichment
+        - id: PR-COMP-c5a72728-failure-modes
+          attribute: failure_modes
+          content:
+            - schema drift breaks byte-determinism gate → Phase 8 CI failure
+            - import-edge asymmetry (src. prefix) causes cluster mis-attribution → mitigated by link.py root-prefix normalizer
+            - unpinned AMS_DETERMINISTIC_NOW causes CI timestamp flake
+            - pipeline emits only 1 of 7 entity kinds (components) — declared as Part 3 mainline gap CAP-DF.4 / BEH-S1
+          owner_entity: COMP-c5a72728
+          status: open
+          gap_type: null
+          provenance: 2026-09-15 SE walk enrichment; last item cited in publish.py:107
+        - id: PR-COMP-c5a72728-slos
+          attribute: slos
+          content:
+            - full extraction under 60s on 280-module repo (measured 2026-09-14 self-run)
+            - byte-determinism guaranteed under pinned AMS_DETERMINISTIC_NOW (Phase 8 gate)
+            - schema conformance validated by pipeline gates on every emit
+          owner_entity: COMP-c5a72728
+          status: verified
+          verified_by:
+            - Phase 8 gates in tests/pipeline_v3/test_orchestrator.py
+          provenance: 2026-09-15 SE walk enrichment
+        - id: PR-COMP-c5a72728-stage-decomposition
+          attribute: stage_decomposition
+          content:
+            - "1. scan — walk source tree, produce ScanResult (modules, imports, classes, functions)"
+            - "2. derive — extract behavior/promise candidates from scanned units (PromiseSet)"
+            - "3. cluster — group modules into candidate components by affinity (ClusterSet)"
+            - "4. link — resolve import edges to component-level dependencies (DependencyGraph)"
+            - "5. containerize — assign clusters to layers/components (ContainerizedModel)"
+            - "6. verify — schema + relationship integrity gates (VerificationReport)"
+            - "7. publish — emit .architecture-model.yaml deterministically (PublishedArtifact)"
+            - "8. orchestrator — runs 1..7 with resumability + typed intermediates"
+          owner_entity: COMP-c5a72728
+          status: verified
+          verified_by:
+            - src/architecture_model/pipeline_v3/{scan,derive,cluster,link,containerize,verify,publish,orchestrator}.py
+            - each stage has a corresponding tests/pipeline_v3/test_<stage>.py suite
+          provenance: 2026-09-16 CAP-DF walk enrichment (L10 — realization chain
+            populated in 3c6950b needs stage detail to be useful)
+        - id: PR-COMP-c5a72728-verification
+          attribute: verification
+          content:
+            - self-application — pipeline_v3 emits AMS's own .architecture-model.yaml every commit (CI gate)
+            - 95+ pytest tests across all 8 stages + orchestrator
+            - byte-determinism round-trip test (test_publish.py) catches ordering regressions
+            - Phase 8 orchestrator tests enforce end-to-end gate compliance
+            - external benchmark suite (arch-agent) exercises 4 third-party repos with 100% blind-regen fidelity
+          owner_entity: COMP-c5a72728
+          status: verified
+          verified_by:
+            - tests/pipeline_v3/ (95+ tests)
+            - CI enforces `pytest tests/ -v` on every push
+            - docs/reports/2026-09-14-v3-se-walk.md Level 2 (benchmark reference)
+          provenance: 2026-09-16 CAP-DF walk enrichment (L10)
+        - id: PR-COMP-c5a72728-assumptions
+          attribute: assumptions
+          content:
+            - source tree contains at least one Python file with importable modules
+            - AMS_DETERMINISTIC_NOW is pinned by caller when byte-determinism matters
+            - no LLM adapter is imported by any stage (CONS-ast-only)
+            - each stage's intermediate is small enough to hold in memory (measured OK for 3k-module repos)
+          owner_entity: COMP-c5a72728
+          status: open
+          gap_type: null
+          provenance: 2026-09-16 CAP-DF walk enrichment (L10)
+
+    - id: COMP-VIEWER
+      promises:
+        - id: PR-COMP-VIEWER-stakeholders
+          attribute: stakeholders
+          content:
+            - dev/se opening viewer to review the merged v3 model
+            - authors of .architecture/model/*.v3.yaml fragments who validate via viewer
+            - Part 3 LLM (ACT-llm) consuming rendered slices as prompt substrate
+          owner_entity: COMP-VIEWER
+          status: verified
+          verified_by:
+            - .architecture/viewers/v3_viewer.html rendered from COMP-VIEWER model (commits 1a721a5, ef632b9)
+          provenance: 2026-09-15 SE walk enrichment
+        - id: PR-COMP-VIEWER-success-criteria
+          attribute: success_criteria
+          content:
+            - single self-contained HTML file, no network deps
+            - byte-deterministic under fixed source set (verified via rerun-diff)
+            - sidebar surfaces every entity kind present in the merged payload
+            - any Promise attribute renders (open-schema-friendly)
+          owner_entity: COMP-VIEWER
+          status: verified
+          verified_by:
+            - scripts/build_v3_viewer.py determinism verified in commit 1a721a5
+            - selectEntity() iterates canonical attrs then Object.keys(by_attr) remainder
+          provenance: 2026-09-15 SE walk enrichment
+        - id: PR-COMP-VIEWER-failure-modes
+          attribute: failure_modes
+          content:
+            - fragment kind-collision aborts build (exit 3, by design)
+            - conflicting promise content across fragments aborts build (exit 3, C4)
+            - JS syntax errors in embedded template break browser render (mitigated by node --check in CI-adjacent workflow)
+            - unrealized-gap detection may false-positive if new realizing edge types are introduced
+          owner_entity: COMP-VIEWER
+          status: verified
+          verified_by:
+            - _merge_sources() error paths in build_v3_viewer.py
+          provenance: 2026-09-15 SE walk enrichment
+        - id: PR-COMP-VIEWER-slos
+          attribute: slos
+          content:
+            - viewer HTML under 500KB with current 50-entity payload (measured 326KB)
+            - full rebuild + JSON regen under 5s on developer laptop
+            - open-in-browser under 2s (no network waterfall)
+          owner_entity: COMP-VIEWER
+          status: verified
+          verified_by:
+            - stat .architecture/viewers/v3_viewer.html — 326034 bytes as of ef632b9
+          provenance: 2026-09-15 SE walk enrichment
+
+  # =====================================================================
+  # New Actor entities — drive Use-Case view.
+  # =====================================================================
+  actors:
+    - id: ACT-developer
+      name: Developer
+      promises:
+        - id: PR-ACT-developer-intent
+          attribute: intent
+          content:
+            - Runs pipeline_v3 locally, opens viewer, authors fragment YAMLs, takes notes.
+            - Primary daily user of the dev workflow loop (view → note → walk/author → validate → re-extract).
+          owner_entity: ACT-developer
+          status: verified
+          verified_by:
+            - docs/reports/2026-09-15-dev-workflow-se-walk.md Level 0
+          provenance: 2026-09-15 SE walk
+
+    - id: ACT-se
+      name: Systems Engineer
+      promises:
+        - id: PR-ACT-se-intent
+          attribute: intent
+          content:
+            - Performs SE graph walks; produces capability / behavior / interface fragments; reviews model coherence in viewer.
+            - Owns Functional / Logical / Use-Case views.
+          owner_entity: ACT-se
+          status: verified
+          verified_by:
+            - docs/reports/2026-09-14-v3-se-walk.md
+            - docs/reports/2026-09-15-dev-workflow-se-walk.md
+          provenance: 2026-09-15 SE walk
+
+    - id: ACT-llm
+      name: LLM (Part 3, deferred)
+      promises:
+        - id: PR-ACT-llm-intent
+          attribute: intent
+          content:
+            - Consumes IF-slicer output as prompt substrate.
+            - Produces authored fragment YAMLs via IF-llm-provider.
+            - Realizes BEH-S1 (entity-kind promotion) and BEH-S2 (gap remediation).
+          owner_entity: ACT-llm
+          status: open
+          gap_type: null
+          provenance: 2026-09-15 SE walk — declared not yet realized (Part 3 CAP-DF.4)
+
+    - id: ACT-ci
+      name: CI / Gate Enforcer
+      promises:
+        - id: PR-ACT-ci-intent
+          attribute: intent
+          content:
+            - Runs pipeline_v3 on every commit; enforces byte-determinism and schema gates.
+            - Consumes pipeline output as verification signal, not for interactive review.
+          owner_entity: ACT-ci
+          status: verified
+          verified_by:
+            - Phase 8 gates cited in docs/reports/2026-09-14-v3-se-walk.md (commit bbc922c)
+          provenance: 2026-09-15 SE walk
+
+  # =====================================================================
+  # New Constraint entities — drive Functional / Logical views.
+  # =====================================================================
+  constraints:
+    - id: CONS-determinism
+      name: Byte-determinism across runs
+      promises:
+        - id: PR-CONS-determinism-intent
+          attribute: intent
+          content:
+            - All artifact outputs (pipeline YAML, viewer HTML+JSON, notes.yaml serialization)
+              must be byte-identical across runs given identical inputs and pinned clock.
+          owner_entity: CONS-determinism
+          status: verified
+          verified_by:
+            - build_v3_viewer.py rerun-diff check in commit ef632b9
+            - Phase 8 byte-determinism gate (bbc922c)
+          provenance: 2026-09-15 SE walk
+
+    - id: CONS-pinned-clock
+      name: Pinned clock via AMS_DETERMINISTIC_NOW
+      promises:
+        - id: PR-CONS-pinned-clock-intent
+          attribute: intent
+          content:
+            - Timestamps consumed by publish / synthesize / sil.rollup must read AMS_DETERMINISTIC_NOW when set.
+            - Enables reproducible extraction across machines and CI runs.
+          owner_entity: CONS-pinned-clock
+          status: verified
+          verified_by:
+            - CONTEXT.md documents the AMS_DETERMINISTIC_NOW convention
+            - synthesize._now_iso and sil.rollup._now_iso implementations
+          provenance: 2026-09-15 SE walk
+
+    - id: CONS-no-runtime-deps
+      name: Viewer has zero runtime deps
+      promises:
+        - id: PR-CONS-no-runtime-deps-intent
+          attribute: intent
+          content:
+            - Viewer HTML must open in any modern browser with no network access, no build step, no npm.
+            - Bundled assets (if any) are checked-in static files loaded via relative path.
+          owner_entity: CONS-no-runtime-deps
+          status: verified
+          verified_by:
+            - .architecture/viewers/v3_viewer.html is a single self-contained file (326KB)
+          provenance: 2026-09-15 SE walk
+
+    - id: CONS-open-schema
+      name: Promise.attribute is an open string
+      promises:
+        - id: PR-CONS-open-schema-intent
+          attribute: intent
+          content:
+            - Promise.attribute accepts any non-empty string (no enum in spec/promise-graph.schema.json).
+            - Enables Phase-2 semantic vocabulary (14 fields) without schema bump.
+            - Pipeline's 3-attribute emission (intent/delivers/provides) is an emission choice, not a schema constraint.
+          owner_entity: CONS-open-schema
+          status: verified
+          verified_by:
+            - src/architecture_model/spec/promise-graph.schema.json — no enum on attribute
+            - src/architecture_model/core/promise.py:101 — accepts any non-empty string
+          provenance: 2026-09-15 SE walk
+
+    - id: CONS-ast-only
+      name: Extract path uses AST only
+      promises:
+        - id: PR-CONS-ast-only-intent
+          attribute: intent
+          content:
+            - No LLM invocation inside any pipeline_v3 stage (scan..publish, orchestrator).
+            - Guarantees determinism + zero external dependencies during extraction.
+            - Trades semantic richness for reproducibility; enrichment is a downstream (Part 3) concern.
+          owner_entity: CONS-ast-only
+          status: verified
+          verified_by:
+            - src/architecture_model/pipeline_v3/ modules import no LLM adapter
+            - IF-llm-provider has zero AMS-side callers (per CONTEXT.md)
+          provenance: 2026-09-16 CAP-PB walk L5
+
+    - id: CONS-resumable
+      name: Stages persist intermediate state
+      promises:
+        - id: PR-CONS-resumable-intent
+          attribute: intent
+          content:
+            - Each pipeline_v3 stage persists its typed intermediate (ScanResult, PromiseSet, ...) to disk cache.
+            - Enables resume from any stage boundary without re-running upstream work.
+            - Supports incremental development of downstream stages.
+          owner_entity: CONS-resumable
+          status: verified
+          verified_by:
+            - orchestrator.py implements per-stage cache
+          provenance: 2026-09-16 CAP-PB walk L5
+
+  # =====================================================================
+  # New Layer entities — drive Logical Architecture view.
+  # =====================================================================
+  layers:
+    - id: L-standard
+      name: Standard (schema + core types)
+      promises:
+        - id: PR-L-standard-intent
+          attribute: intent
+          content:
+            - Contains the promise-graph JSON Schema and core Promise / PromiseStatus types.
+            - Zero pipeline deps; usable by third-party extractors.
+          owner_entity: L-standard
+          status: verified
+          verified_by:
+            - src/architecture_model/spec/promise-graph.schema.json
+            - src/architecture_model/core/promise.py
+          provenance: 2026-09-15 SE walk
+
+    - id: L-tooling
+      name: Tooling (pipeline_v3)
+      promises:
+        - id: PR-L-tooling-intent
+          attribute: intent
+          content:
+            - Contains pipeline_v3 (scan..publish, orchestrator, slice).
+            - Depends on L-standard for schema conformance.
+          owner_entity: L-tooling
+          status: verified
+          verified_by:
+            - src/architecture_model/pipeline_v3/ — 8 stages + orchestrator + slicer
+          provenance: 2026-09-15 SE walk
+
+    - id: L-view
+      name: View (viewer + build script)
+      promises:
+        - id: PR-L-view-intent
+          attribute: intent
+          content:
+            - Contains build_v3_viewer.py + rendered .architecture/viewers/*.html + notes.yaml.
+            - Depends on L-standard for entity semantics; consumes L-authoring fragments.
+          owner_entity: L-view
+          status: verified
+          verified_by:
+            - scripts/build_v3_viewer.py
+            - .architecture/viewers/v3_viewer.html
+          provenance: 2026-09-15 SE walk
+
+    - id: L-authoring
+      name: Authoring (fragment YAMLs)
+      promises:
+        - id: PR-L-authoring-intent
+          attribute: intent
+          content:
+            - Contains hand-authored (or Part 3 LLM-authored) fragments under .architecture/model/*.v3.yaml.
+            - Merged into pipeline output at view time by L-view.
+          owner_entity: L-authoring
+          status: verified
+          verified_by:
+            - .architecture/model/capabilities.v3.yaml, viewer.v3.yaml, enrichment.v3.yaml
+          provenance: 2026-09-15 SE walk
+
+    - id: L-llm
+      name: LLM (Part 3, deferred)
+      promises:
+        - id: PR-L-llm-intent
+          attribute: intent
+          content:
+            - Contains llm/provider.py adapter and .architecture/llm/policy.yaml (both Part 3).
+            - Produces authored fragments deposited in L-authoring; realizes ACT-llm behaviors.
+          owner_entity: L-llm
+          status: open
+          gap_type: null
+          provenance: 2026-09-15 SE walk — Part 3 CAP-DF.4
+
+relationships:
+  # Actor → Behavior edges (drive Use-Case view).
+  - from: ACT-developer
+    to: BEH-view-browse
+    type: triggers
+  - from: ACT-developer
+    to: BEH-view-note
+    type: triggers
+  - from: ACT-developer
+    to: BEH-view-save
+    type: triggers
+  - from: ACT-developer
+    to: BEH-run-pipeline
+    type: triggers
+    note: 2026-09-16 CAP-PB walk L5 — developer runs `architecture-model pipeline .` which invokes the orchestrator (BEH-run-pipeline), not individual stages
+  - from: ACT-se
+    to: BEH-walk-descend
+    type: triggers
+  - from: ACT-se
+    to: BEH-walk-author
+    type: triggers
+  - from: ACT-se
+    to: BEH-walk-realize
+    type: triggers
+  - from: ACT-se
+    to: BEH-view-browse
+    type: triggers
+  - from: ACT-ci
+    to: BEH-run-pipeline
+    type: triggers
+    note: 2026-09-16 CAP-PB walk L5 — CI invokes the orchestrator as gate; retargeted from BEH-scan / BEH-publish
+  - from: ACT-llm
+    to: BEH-S1
+    type: triggers
+  - from: ACT-llm
+    to: BEH-S2
+    type: triggers
+
+  # Constraint → Capability edges (drive Functional view).
+  - from: CAP-PB
+    to: CONS-determinism
+    type: constrained-by
+  - from: CAP-PB
+    to: CONS-pinned-clock
+    type: constrained-by
+  - from: CAP-PB
+    to: CONS-ast-only
+    type: constrained-by
+    note: 2026-09-16 CAP-PB walk L5
+  - from: CAP-PB
+    to: CONS-resumable
+    type: constrained-by
+    note: 2026-09-16 CAP-PB walk L5
+  - from: CAP-SL
+    to: CONS-determinism
+    type: constrained-by
+  - from: CAP-DF.1
+    to: CONS-open-schema
+    type: constrained-by
+  - from: CAP-DF.2
+    to: CONS-determinism
+    type: constrained-by
+  - from: CAP-DF.2
+    to: CONS-no-runtime-deps
+    type: constrained-by
+  - from: CAP-DF.4
+    to: CONS-open-schema
+    type: constrained-by
+
+  # Layer → Component edges (drive Logical view).
+  - from: L-tooling
+    to: COMP-c5a72728
+    type: contains
+  - from: L-view
+    to: COMP-VIEWER
+    type: contains
+
+  # Layer → Capability edges.
+  - from: L-tooling
+    to: CAP-PB
+    type: contains
+    note: 2026-09-16 CAP-PB walk L5 — CAP-PB lives in the tooling layer
+  - from: L-tooling
+    to: CAP-SL
+    type: contains
+    note: 2026-09-16 CAP-PB walk L5 — CAP-SL lives in the tooling layer (same package)
+
+  # Layer → Layer dep edges.
+  - from: L-tooling
+    to: L-standard
+    type: depends-on
+  - from: L-view
+    to: L-standard
+    type: depends-on
+  - from: L-view
+    to: L-authoring
+    type: consumes
+    note: build_v3_viewer.py merges .architecture/model/*.v3.yaml
+  - from: L-authoring
+    to: L-standard
+    type: depends-on
+  - from: L-llm
+    to: L-standard
+    type: depends-on
+  - from: L-llm
+    to: L-authoring
+    type: produces
+    note: Part 3 — LLM authors fragments deposited here

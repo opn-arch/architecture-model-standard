@@ -208,9 +208,11 @@ relationships:
 
 ## Status
 
-- Schema version: 2.0
+- Schema version: 2.2.0 (additive, backward-compatible with 2.0/2.1)
 - Package version: 0.3.0
-- Test suite: 2918 passed (6 pre-existing failures documented)
+- Test suite: 3718 passed, 104 skipped
+- Model stats (self-model): 34 components, 154 behaviors, 77 interfaces, 787 relationships, 4 actors, validator score 84/100. Evidence coverage: SI&L on 6/34 components (5876 invocations), test coverage on 17/34 components (424 tests). See `.architecture-model.yaml` `meta.evidence_summary`.
+- Completeness audit CLI: `architecture-model audit [--pipeline <BEH-ID>] [--strict]` — reports per-pipeline missing descriptions, missing traces-to, isolated sub-behaviors, and containment gaps across the six operational pipelines (EXTRACT BEH-P1, SLICE BEH-26, SELF-IMPROVEMENT BEH-27, DEV-LOOP BEH-28, LLM-PROVIDER BEH-LLM, SI&L LOGGING BEH-SIL, FEEDBACK JOURNALS BEH-FBK). Regression-guarded by `tests/test_completeness_audit.py` (28 tests).
 - CLI entry point: `architecture-model`
 - Install: `pip install -e .` (editable) or `pip install architecture-model-standard`
 
@@ -457,7 +459,7 @@ family. `project()` injects `__scope_*` config keys from
 `scope_metadata` (entity_id, kind, inbound_depends_on,
 outbound_by_type, inbound_by_type, contains_descendants) so
 projectors can render roll-ups without re-walking the model.
-Family 5 is deferred to Phase 4 (needs populated deployment metadata).
+Family 5 landed in Phase 5 (deployment topology for environments, resources, components).
 
 **Supplementary fragments plumbing.** `project()` unconditionally
 injects `__scope_supplementary_fragments = dict(mat.supplementary_fragments)`
@@ -562,6 +564,67 @@ Design + plan docs:
 - `docs/plans/2026-09-08-phase-4-writeback-endpoints-federated.md` — 28-task plan
 - `docs/plans/2026-09-08-phase-3-recursion-and-entity-views.md` — Phase 3 (merged)
 - `docs/plans/2026-09-08-model-view-mapping-design.md` — overall design
+
+## Phase 5 substrate (deferred completion — deployment views, fan-out, provenance)
+
+Phase 5 closes three deferred sub-tasks from Phases 2 and 3 without
+changing any wire-level contracts. Fully backward-compatible: no schema
+bump (still 2.1), no digest perturbation, no new required fields.
+
+**Family 5 entity page.** ``Family5EntityPage`` in
+``architecture_model.lifecycle.projectors.entity_pages`` renders
+deployment topology per entity. Supported kinds:
+
+* ``environment``: kind, region, infrastructure list, constraints list,
+  and Deployed Components (inbound ``allocated-to``).
+* ``resource``: kind, provider, location, SLA, and Consumed By (inbound
+  ``consumes`` ∪ ``depends-on``, deduplicated, sorted).
+* ``component``: Deployed To (outbound ``allocated-to``).
+
+The enum-backed ``kind`` field is always emitted (it carries a default);
+all other sections are omitted when empty. Closes the latent gap
+referenced by ``invalidation.py:146`` which already routes SLO field
+edits to ``family5.entity_page``. A private
+``_find_deployment_entity`` helper walks ``components``,
+``environments``, and ``resources`` — distinct from
+``_find_entity_by_id`` which only covers the seven family-1 kinds.
+
+**Drill-down coverage extended.**
+``architecture_model.lifecycle.projectors.drill._FAMILY_KINDS`` now
+includes ``5: ("components", "environments", "resources")``. Renderers
+that read ``facets["drill_to"]`` can emit hyperlinks from root-family
+deployment views into family5 entity pages.
+
+**Per-subsystem fan-out (Phase 2 Task 27, shipped in OCA).** The
+``Scope`` literal ``"descendants:each"`` (already accepted by
+``ModelSlice`` since Phase 3) is honored by
+``opencode_arch.lifecycle_exec.rebuild.rebuild_artifacts``. When a
+slice carries this scope, the executor enumerates
+``iter_descendants(pkg, include_self=True)`` and materializes a
+per-descendant local slice, namespacing each artifact's ``spec_id``
+as ``<spec_id>.<subsystem_slug>`` so outputs like
+``conops.core.md`` / ``conops.manifest.md`` never collide. The merged-
+fragment ``"descendants"`` scope from Phase 1 is unchanged.
+
+**Provenance persistence (Phase 2 Task 28, shipped in OCA).** After
+every successful atomic body write, ``rebuild_artifacts`` also writes
+``<id>.<ext>.provenance.json`` next to the rendered artifact containing
+``{freshness, revision, produced_at, projector}`` sourced from
+``ProjectedView.provenance``. The ``pipeline-html`` renderer bypasses
+``project()``; those artifacts receive a synthesized provenance stub
+(``freshness="fresh"``, ``revision`` from the materialized slice) so
+they participate in the same freshness summary. Sidecar writes are
+best-effort — a failure never fails the artifact itself.
+``opencode_arch.mcp.tools.evaluate._collect_freshness_summary`` reads
+the sidecars to bucket artifacts as ``fresh``/``stale``/``pending``,
+falling back to ``unknown`` when the sidecar is absent (pre-Phase-5
+artifacts). Sidecar files are excluded from the artifact total count.
+
+Design + plan docs:
+- `docs/plans/2026-09-08-phase-2-schema-and-semantic-content.md` — Tasks 27, 28
+- `docs/plans/2026-09-08-phase-3-recursion-and-entity-views.md` — Family 5 note
+- `docs/plans/2026-09-08-model-view-mapping-design.md` — overall design
+
 
 ## E2E Benchmark Results (2026-07-07)
 
@@ -784,6 +847,470 @@ HTML output. This is guarded by
 `tests/lifecycle/test_dashboard_rebuild.py`, which round-trips the
 materialize→render path twice and asserts both string equality and
 node/edge ordering stability.
+
+## v3 SE walk + viewers (2026-09-14)
+
+The v3 standard + tooling story is written up at
+`docs/reports/2026-09-14-v3-se-walk.md` — an SE-style top-down walk from
+concept (standard + tooling for modeling any system) through 2
+capabilities (CAP-PB extract, CAP-DF evolve) into pipeline_v3's 8
+composable stages, then outward through Phases 7–11 (self-model, gates,
+slicer, deprecation, adapters). Two lenses ship alongside:
+
+- `.architecture/viewers/v3_viewer.html` — v3-native Promise-graph
+  viewer (self-contained HTML; drill-down by component; status badges;
+  gaps-only filter). Rebuild via `python scripts/build_v3_viewer.py`.
+- `.architecture/viewers/legacy_viewer.html` — Phase 11 adapter piped
+  through the existing 2.x HTML viewer for the classic box-and-arrow
+  lens. Rebuild via `python scripts/render_v3_in_legacy_viewer.py`.
+
+## Graph export (Stage 1, 2026-09-18)
+
+The AMS model is now exportable as a NetworkX ``MultiDiGraph`` for
+graph-analysis tooling (yEd, Gephi, Cytoscape, Neo4j import, Python
+analytics). Stage 1 is **export-only** — walks/traverse are unchanged
+and YAML remains source of truth.
+
+- `architecture_model.graph.to_networkx(model, ...)` builds a
+  deterministic ``MultiDiGraph`` with 17 canonical relationship types
+  plus synthetic ``has-promise`` and ``verified-by`` edges.
+- Promises promoted to first-class sub-nodes (id: ``{owner}#p{index}``);
+  evidence URIs deduped and promoted (id: ``ev:{sha1(uri)[:8]}``).
+- Parallel typed edges preserved (browse regression: CAP-A ↔ CAP-B via
+  ``contains`` **and** ``triggers`` survive as two distinct edges).
+- CLI: ``architecture-model export-graph [-f graphml|gpickle|json-graph|dot]``
+  (default graphml). ``--stats`` prints node/edge counts without writing.
+- Optional dep: ``pip install 'architecture-model-standard[graph]'``.
+- v3 fragment merge extracted to ``core.v3_loader.load_v3_model`` for
+  reuse across CLI and scripts.
+- Full docs: ``docs/graph-export.md``.
+
+Out of scope (Stage 2+): walk-backend swap, Neo4j Cypher surface,
+compliance-evidence walk.
+
+## Walk substrate (Parts 1–8, 2026-09-18)
+
+Walks are first-class capabilities. 13 hand-rolled Python walkers in
+``scripts/build_v3_viewer.py`` were collapsed to 13 declarative WalkSpec
+YAMLs + a 6-stage shared pipeline
+(``select → traverse → classify → rollup → evidence → emit``). Each walk
+lives as a sub-cap under ``CAP-WK`` in ``capabilities.v3.yaml``;
+``verified_by`` on each sub-cap points at its WalkSpec YAML.
+
+- ``architecture_model.walks.spec.loader.load_walk_spec(path)`` — parse
+  a WalkSpec YAML into typed dataclasses.
+- ``architecture_model.walks.runner.run_walk(spec, model)`` — execute
+  one walk; returns ``{walk_id, audits, cards}``.
+- Classify DSL atoms: ``has:<attr>``, ``missing:<attr>``,
+  ``count:<attr> {>=,>,<=,<,==} N``, ``verified:<attr>``,
+  ``unverified:<attr>``, ``inbound_count:<edge> …``,
+  ``outbound_count:<edge> …``, ``promise_status_count:<status> …``,
+  joined by ``and``/``or``. See ``walks/stages/classify.py``.
+- Kind-dispatched hops: ``HopSpec.by_kind`` maps source-node kind to
+  a sub-HopSpec. Realize splits into 7 WalkSpecs (per target kind);
+  realization-skip splits into 2 (both sides of ``realizes``).
+- Silent-skip heuristics: ``EmitSpec.subgraph_neighbor_threshold``
+  (max non-root neighbors) and ``silent_skip_when_last_hop_empty`` are
+  declarative.
+
+**Part 7 meta-walks** audit the substrate itself:
+
+- ``architecture_model.walks.meta.audit_walk_coverage(walks_dir, model)``
+  — Python meta-walk that scans ``.architecture/model/walks/*.v3.yaml``,
+  extracts ``audits`` lists, and cross-references the CAP-WK.* sub-cap
+  inventory. Emits Cards for covered / uncovered / dangling-ref /
+  duplicate-walk verdicts.
+- ``.architecture/model/walks/attribute-completeness.v3.yaml`` — pure
+  declarative meta-walk that audits promise coverage on every entity
+  using ``count:promises`` + ``promise_status_count:{verified,open}``.
+  Realizes ``CAP-WK.attribute-completeness``.
+
+**Part 8 additions** (2026-09-18):
+
+- ``architecture_model.walks.meta.lint_edge_note_directions(relationships)``
+  — Python meta-walk retrofitted from ``scripts/build_v3_viewer.py``
+  (helper deleted; single caller updated to import from
+  ``walks.meta``). Audits relationship notes for phrasing that
+  contradicts the stored edge direction (L2/L9 pattern). Realizes
+  ``CAP-WK.direction-lint``.
+- ``.architecture/model/walks/promotion.v3.yaml`` — declarative
+  ceremony walk (Q6=c) that buckets entities by Category B → C
+  promotion readiness using ``promise_status_count:{proposed,verified,
+  open}``. Realizes ``CAP-WK.promotion``. Real-repo signal
+  (2026-09-18): 24 ``ready-to-code``, 8 ``promotion-candidate``,
+  9 ``needs-validation`` on ``capabilities.v3.yaml``.
+- ``author`` / ``note`` / ``save`` sub-caps deferred pending CAP-DF
+  substrate design (no ceremony spec yet).
+
+Coverage after Part 8 (2026-09-18): 6 covered, 2 duplicate-walk
+(kind-dispatched), 5 uncovered. Two of the remaining uncovered are
+Python meta-walks (``direction-lint``, ``meta-coverage``) — the audit
+only sees declarative WalkSpecs. Extending discovery to
+``walks/meta/*.py`` is a follow-on (candidate lesson L22). The other
+three (``author``, ``note``, ``save``) await CAP-DF design.
+
+**Part 9 additions** (2026-09-18):
+
+- ``architecture_model.walks.meta.walk_coverage.audit_walk_coverage``
+  gained a ``python_meta_dir: Path | None = None`` parameter (defaults
+  to the package meta dir) and now merges Python meta-walks alongside
+  declarative WalkSpecs. Discovery uses ``discover_python_meta_walks``
+  + ``_extract_module_docstring`` and parses the RST marker
+  ``Realizes \`\`CAP-WK.<id>\`\``` (regex ``r"Realizes\s+``(CAP-WK\.[\w-]+)``"``,
+  ``\s+`` allows newlines). Walk id convention: ``META-<module_stem>``.
+  Closes L22 — meta-coverage now audits itself.
+- ``architecture_model.walks.stages.classify`` gained the
+  ``promise_attribute_count:<name> {>=,>,<=,<,==} N`` DSL atom.
+  Counts promises where ``p.get("attribute") == name`` (status-
+  independent). Enables Category B strict-gate expression without
+  new classifier code.
+- ``.architecture/model/walks/promotion-strict.v3.yaml`` — additive
+  strict-gate ceremony walk. Buckets entities by Category B attribute
+  coverage (``goals``, ``requirements``, ``success_criteria``,
+  ``failure_modes``, ``constraints``) into three verdicts:
+  ``ready-to-code-strict`` (5-attr AND), ``partial-strict`` (5-attr
+  OR), ``insufficient-strict`` (on_missing_attributes). Realizes
+  ``CAP-WK.promotion-strict``. Does NOT rewrite ``promotion.v3.yaml``.
+  Classify DSL predicate engine only supports pure-AND / pure-OR
+  splits (no mixed, no parens); N-of-M "3 of 5" cannot be expressed
+  cleanly, so promotion-strict uses 3 buckets instead of 5.
+- Real-repo signal on ``capabilities.v3.yaml`` (2026-09-18):
+  32 ``insufficient-strict``, 9 ``partial-strict``,
+  0 ``ready-to-code-strict``. Sharp drop from 24 ``ready-to-code``
+  under the loose gate confirms strict gate surfaces genuine
+  specification gaps.
+
+Coverage after Part 9 (2026-09-18): **9 covered**, 2 duplicate-walk,
+**3 uncovered** (``author``, ``note``, ``save`` — all await CAP-DF
+ceremony design in Part 10+).
+
+**Part 10 additions** (2026-09-18):
+
+- `src/architecture_model/comments/models.py`: added `PromiseTarget`
+  pydantic model (frozen, ``extra="forbid"``, entity_id + attribute) and
+  optional ``target: PromiseTarget | None`` field on ``CommentStub``.
+  Additive — existing stubs without ``target`` continue to parse.
+- `src/architecture_model/walks/meta/promise_note.py` (new Python
+  meta-walk, ``Realizes ``CAP-WK.note```): ``note_promise(repo_path,
+  model, entity_id, attribute, text, author, now=None) -> CommentStub``.
+  Validates target against v3 model, derives deterministic
+  ``comment_id`` (sha1 of entity|attr|body|author|iso-time), persists
+  via ``comments.store.write_stub`` with sentinel view-scope fields
+  (``artifact_id="promise-note:<entity>:<attr>"``, other view fields
+  fixed sentinel). Tier T1 (no LLM).
+- `.architecture/model/capabilities.v3.yaml`: ``PR-CAP-WK-note-intent``
+  flipped ``proposed`` → ``verified`` with verified_by wires.
+- `../opencode-arch/src/opencode_arch/mcp/tools/promise_note.py` (new
+  MCP tool): ``architect_promise_note`` envelope wrapper. Error codes:
+  INVALID_ARGUMENT | NOT_FOUND (repo_missing | model_missing) |
+  PRECONDITION_FAILED (unknown_entity | unknown_attribute) | INTERNAL.
+
+Coverage after Part 10 (2026-09-18): **10 covered**, 2 duplicate-walk,
+**2 uncovered** (``save``, ``author`` — Parts 11–12).
+
+**Part 11 additions** (2026-09-18):
+
+- `src/architecture_model/walks/meta/save_promise_note.py` (new Python
+  meta-walk, ``Realizes ``CAP-WK.save```): ``save_promise_note(
+  repo_path, comment_id, requested_by, now=None, parameters=None) ->
+  WorkOrder``. Loads a promise note via ``comments.store.load_stub``,
+  refuses stubs without ``target``, builds a WorkOrder with
+  ``intent="fill_promise:<entity>:<attr>"``,
+  ``expected_proposal_kinds=[MODEL_PATCH]``, T2 budget
+  (max_tokens=8000, max_wall_seconds=120), a single synthetic
+  ``SliceRef(slice_id="promise-slot:<entity>:<attr>",
+  model_revision=<current gen or "0000000">)`` (Option A —
+  materialization deferred to Part 12), and parameters
+  ``{kind: "fill_promise", entity_id, attribute, source_comment_id,
+  note_body}``. Tier T1 (no LLM); the enqueued Job is what Part 12's
+  author walk later executes.
+- `.architecture/model/capabilities.v3.yaml`: ``PR-CAP-WK-save-intent``
+  flipped ``proposed`` → ``verified`` with verified_by wires.
+- `../opencode-arch/src/opencode_arch/mcp/tools/promise_save.py` (new
+  MCP tool): ``architect_promise_save`` envelope wrapper. Persists the
+  WorkOrder atomically, creates a tracking Job via ``JobStore.create``,
+  and records an ``ai.workorder.submit`` journal event — reuses the
+  same primitives as ``architect_workorder_submit_tool``. Error codes:
+  INVALID_ARGUMENT | NOT_FOUND (repo_missing) | PRECONDITION_FAILED
+  (comment_missing | not_a_promise_note | already_exists) |
+  SCHEMA_VIOLATION | INTERNAL.
+
+Coverage after Part 11 (2026-09-18): **11 covered**, 2 duplicate-walk,
+**1 uncovered** (``author`` — Part 12).
+
+**Part 12 additions** (2026-09-18):
+
+- `src/architecture_model/llm/prompts/fill_promise.md` (new package
+  resource): default prompt template with `{attribute}`, `{entity_id}`,
+  `{entity_kind}`, `{entity_kind_singular}`, `{entity_name}`,
+  `{entity_description}`, `{note_body}`, `{promises_block}`,
+  `{parent_chain}`, `{siblings_block}`, `{relations_block}`
+  placeholders. Optional per-repo override at
+  `.architecture/llm/prompts/fill_promise.md` (checked first by
+  `_prompt_assembly.default_template_body`). One generic template —
+  `{attribute}` interpolation covers all five Category-B attributes.
+- `src/architecture_model/walks/meta/_prompt_assembly.py` (new):
+  `default_template_body(repo_path) -> str` and
+  `assemble_promise_prompt(model, entity_id, attribute, note_body,
+  template) -> str`. Hand-rolled v3-native projector — walks the v3
+  dict directly (no legacy `format_model_context` or
+  `slice_by_entity` call). Deterministic string output; excludes
+  target attribute from `promises_block`; empty sections rendered as
+  `(none)` so digest is stable.
+- `src/architecture_model/walks/meta/author_promise_note.py` (new
+  Python meta-walk, ``Realizes ``CAP-WK.author```):
+  `author_promise_note(repo_path, job_id, provider) -> Proposal`.
+  Pure walk (no MCP concerns, no journal writes). Loads Job, verifies
+  `state == queued`, loads WorkOrder + CommentStub, resolves entity
+  from v3 model (fallback path
+  `.architecture/model/capabilities.v3.yaml` when `load_v3_model`
+  returns nothing under `repo_path`), assembles prompt, calls
+  `provider.structured(prompt, schema=ModelPatchSchema)`, wraps
+  response in a `Proposal` with `ModelPatch` operations and
+  `Provenance(work_order_id, prompt_digest=sha256(prompt),
+  model_version="v3")`. Errors: `AuthorPromiseError` base +
+  `JobNotQueuedError`, `WorkOrderMissingError`, `CommentMissingError`,
+  `NotAPromiseNoteError`, `EntityNotFoundError`,
+  `ProviderResponseError`. Tier T2 (LLM call).
+- Job state chain (Part 12 executes): `queued → running → validating
+  → completed`. Terminal `completed` transition requires
+  `result_ref = "proposal:<proposal_id>"`. Actor `"promise_author"`.
+  Part 11 amendment (committed OCA `2a8ad2e`) auto-advances
+  `draft → approved → queued` at save time so Part 12's walk starts
+  from a queued job with no user intervention required.
+- Provider registry pattern (Task 4, in OCA):
+  `_PROVIDER_REGISTRY = {"none": lambda: None}` at MCP tool boundary.
+  Default `provider_name="none"` → `PRECONDITION_FAILED reason=
+  no_provider`. Real providers (mock, mcp, frontier, relay) register
+  via monkeypatch in tests and via OCA's own bootstrap in production.
+  The walk itself is provider-agnostic — takes any `LLMProvider`
+  Protocol implementation.
+- `.architecture/model/capabilities.v3.yaml`:
+  ``PR-CAP-WK-author-intent`` flipped ``proposed`` → ``verified`` with
+  4 ``verified_by`` entries (walk, prompt assembly, template, tests).
+
+Coverage after Part 12 (2026-09-18): **12 covered**, 2 duplicate-walk,
+**0 uncovered**. CAP-DF ceremony `note → save → author → apply` is
+now end-to-end wired; `apply` uses the existing
+`architect_proposal_apply` MCP tool.
+
+Full retrospective: ``docs/reports/2026-09-18-walk-substrate.md``.
+Lessons L18–L22 in ``PR-CAP-DF-lessons_learned`` on CAP-DF. L6 and L11
+superseded by L18 and L19 respectively.
+
+**Part 13 additions** (2026-09-18):
+
+- `src/architecture_model/walks/meta/llm_endpoint_inventory.py` (new
+  Python meta-walk, ``Realizes ``CAP-WK.llm-endpoint-inventory```):
+  `audit_llm_endpoints(repo_path, oca_path=None) -> InventoryReport`.
+  AST-based cross-repo audit of LLM integration points across AMS +
+  OCA. Detects six call patterns via `ast.walk` on attribute-name-only
+  match (receivers ignored): `provider.complete`, `provider.structured`,
+  `provider.stream`, `ctx.llm_enrich`, `llm_callback(...)` (bare call),
+  `run_via_policy`. Scans `src/` only (not tests/scripts). Endpoint id
+  form: `<repo_slug>:<posix_relpath>:<lineno>` where `repo_slug` is
+  the last path component of the repo root.
+- `.architecture/llm/endpoints.yaml` (declared inventory): top-level
+  `endpoints:` list with fields `{id, location, kind, task_class,
+  tier, migration_status, description}`. Ships with 29 declared
+  endpoints (13 AMS + 16 OCA) matching AST-derived ids.
+- `EndpointCard` dataclass with four verdicts: `covered` (declared
+  and detected), `undeclared` (detected but not declared), `stale`
+  (declared but not detected), `legacy` (overrides `covered` when
+  `migration_status == "legacy"`). `InventoryReport` carries
+  `{cards, counts}` where counts is a `dict[verdict, int]`.
+- Silent-skip on missing OCA sibling: emits informational
+  `__meta__:oca_missing` card (no raise). AMS-only usage is a
+  supported mode.
+- `.architecture/model/capabilities.v3.yaml`:
+  ``CAP-WK.llm-endpoint-inventory`` sub-cap added after
+  ``CAP-WK.attribute-completeness``; ``PR-CAP-WK-llm-endpoint-inventory-intent``
+  flipped ``proposed`` → ``verified`` with 3 ``verified_by`` entries
+  (walk, endpoints.yaml, tests).
+
+Coverage after Part 13 (2026-09-18): **13 covered**, 2 duplicate-walk,
+**0 uncovered**. Part 13 is AMS-only; no OCA changes required.
+
+**Part 14 additions** (2026-09-18):
+
+- `../opencode-arch/src/opencode_arch/llm/bundle.py` (new): `Bundle`
+  dataclass + `BundleScheduler.schedule(work_orders) -> list[Bundle]`
+  + `dispatch_bundle(bundle, provider) -> dict[wo_id, result]`. Groups
+  WorkOrders by `(task_class, provider, model, tier, prompt_template)`
+  where task_class is derived from intent prefix via
+  `TASK_CLASS_BY_INTENT_PREFIX`. Tier caps: T1=1 (never bundle),
+  T2=10, T3=3. Cost cap splits bundle when `sum(estimated_cost) >
+  rule.max_cost_usd_per_call * bundle_size` (only active when
+  `unit_cost_usd_per_token > 0`, default 0.0). Batched prompt shape:
+  numbered items with JSON demux keys `"1"..."N"`; missing/malformed
+  items omitted from results (per-item retry is caller's
+  responsibility).
+- `../opencode-arch/src/opencode_arch/llm/policy.py` (edit):
+  `RoutingRule.tier: str = "T2"` field added (additive; existing
+  fixtures parse unchanged). `load_policy` reads optional `tier:` key
+  from each rule spec, defaults to `"T2"`.
+- `../opencode-arch/.architecture/llm/policy.yaml` (new): declares 8
+  task classes matching master design taxonomy — `naming`,
+  `enrichment`, `review`, `authoring`, `diff`, `gate`,
+  `decomposition`, `merge`. All ship pointing at `mock` provider so
+  nothing accidentally hits a paid API; users edit post-install to
+  activate real providers. `global_budget_usd: 10.0`,
+  `retry_backoff: [1.0, 2.0, 4.0]`.
+- `../opencode-arch/src/opencode_arch/mcp/tools/promise_author.py`
+  (edit): new optional `job_ids: list[str] | None = None` parameter.
+  When present, dispatches each job through the batch path
+  (`_architect_promise_author_batch`) and returns
+  `{ok: True, results: [{job_id, ok, proposal_id?, work_order_id?,
+  error?}, ...]}`. Single-job path (`job_id=...`) unchanged for
+  backward-compat. First cut iterates single-job dispatches inside
+  the batch call — true one-round-trip batched provider calls
+  require hoisting the prompt-assembly step out of `author_promise_note`
+  (deferred to Part 15 alongside LLMCallRecord).
+
+**Part 14 test surface** (OCA): 19 tests in
+`tests/llm/test_bundle_scheduler.py` (grouping, tier caps, cost
+splits, prompt shape, dispatch demux, malformed-item degrade, Bundle
+invariants); 5 tests in `tests/mcp/test_promise_author_batch.py`
+(batch happy path, mixed success/failure, empty-list rejection,
+non-string rejection, single-job backward-compat). Baseline
+1081 → **1105 passed**.
+
+Coverage after Part 14 (2026-09-18): unchanged **13 covered**,
+2 duplicate-walk, **0 uncovered** (substrate hardening; no walk
+added).
+
+**Part 15 additions** (2026-09-18):
+
+- `src/architecture_model/feedback/llm_calls.py` (new): append-only
+  journal at `<repo>/.architecture/llm_calls.jsonl`. `append(repo,
+  record, endpoint_id="", task_class="") -> bool` uses `O_APPEND |
+  O_CREAT | O_WRONLY` + `fsync`, is fail-soft (returns `False` on any
+  error; never raises), and honors `AMS_DETERMINISTIC_NOW` for the
+  fallback timestamp. `read(repo) -> list[dict]` returns `[]` when
+  the file is absent and silently skips malformed lines. Mirrors the
+  `feedback/gates.py` + `feedback/drift.py` pattern. Reuses the
+  existing `LLMCallRecord` dataclass at `pipeline/protocol.py:269` —
+  the `endpoint_id` and `task_class` overlay fields are omitted from
+  JSON when empty so pre-Part-15 records stay byte-identical.
+- `src/architecture_model/walks/meta/prompt_refiner.py` (new Python
+  meta-walk, ``Realizes ``CAP-WK.prompt-refinement```):
+  `refine_prompts(repo_path) -> RefinerReport`. Reads the journal
+  plus optional `.architecture/llm/endpoints.yaml` and emits one
+  `PromptTemplateCard(template_id, verdict, details)` per template.
+  Verdicts:
+  * `high-failure` — `output_used=False` rate ≥ `HIGH_FAILURE_RATE`
+    (0.30) over ≥ `HIGH_FAILURE_MIN_CALLS` (3) calls.
+  * `high-cost` — median `total_tokens` ≥ `HIGH_COST_MULTIPLE` (4.0)
+    × overall median over ≥ `HIGH_COST_MIN_CALLS` (3) calls.
+  * `unused` — declared endpoint with zero journal entries.
+  * `stable` — declared+present or observed with no flag.
+  Thresholds are module constants. Endpoint discovery falls back to
+  the `task_class` field when `prompt_template` is absent on an
+  endpoint entry (accommodates the Part 13 shape).
+- `.architecture/model/capabilities.v3.yaml`:
+  ``CAP-WK.prompt-refinement`` sub-cap added after
+  ``CAP-WK.llm-endpoint-inventory``; ``PR-CAP-WK-prompt-refinement-intent``
+  flipped ``proposed`` → ``verified`` with 4 ``verified_by`` entries
+  (walk, journal writer, walk tests, journal tests).
+
+**Part 15 test surface** (AMS): 8 tests in
+`tests/feedback/test_llm_calls_journal.py` (create-on-demand,
+round-trip, endpoint/task_class overlay, empty-field elision,
+missing-file empty read, fail-soft on unwritable, append-never-
+truncates, malformed-line skip); 9 tests in
+`tests/walks/meta/test_prompt_refiner.py` (empty inputs, stable,
+high-failure, min-sample gating, high-cost, unused declared,
+declared+present endpoint_id passthrough, counts aggregation,
+docstring marker present). Baseline **4334 → 4351 passed**.
+
+Coverage after Part 15 (2026-09-18): **14 covered**, 2 duplicate-walk,
+**0 uncovered** on `capabilities.v3.yaml`. Part 15 closes the CAP-DF
+Part 13–15 arc; OCA provider-adapter journal wiring is a follow-on
+task (see JIT plan
+`docs/plans/2026-09-18-cap-df-part-15-llm-journal-and-refiner-plan.md`).
+
+## openAG — graph-native successor engine (design, 2026-10-04 → 2026-10-12)
+
+**openAG** is a greenfield sibling to AMS: a single-engine, graph-native
+architecture engine that **sustains a verified architecture graph of a
+target system by promise-discharge**. AMS is **frozen until openAG reaches
+parity** — all current openAG work is **design documentation only** (zero
+code, zero standard artifacts yet). The four session design docs live in
+`docs/plans/2026-10-04-openAG-*.md`; new normative/architecture/tooling
+docs live under `docs/openAG/`.
+
+**The one engine — B-ROUND.** openAG has exactly one engine, the `B-ROUND`
+fixpoint (`govern → grow → ground → reconcile → bind → gate`), and eight
+behaviors (`B0`–`B7`) that are entry points into it. It is a monotone
+worklist/dataflow framework: expanders are transfer functions, `reconcile`
+is the join (a closure operator), the budget is the widening operator.
+Runs are **confluent modulo budget** — scheduling changes *which gaps
+appear under a budget cut*, never the canonical grounded form.
+
+**Session locks (2026-10-12 brainstorming).**
+
+- **Extract = B-ROUND to promise-fixpoint** (top-down intent + bottom-up
+  grounding). `scan` survives only as a **code-scan fact source**; A1
+  decomposition is **emergent**, not a phase; downward termination =
+  structural fixpoint per branch.
+- **Conservation laws:** A1 `contains` = strict partition (module = atom;
+  cross-cutting escapes via shared component / `LAY-CrossCutting`); A2
+  `realizes` = many-to-many free. Re-binding fluid-until-grounded then
+  sticky; `reconcile` + σ is the single binding operator (θ ≥ 0.85 bind /
+  0.60–0.85 ambiguous / < 0.60 new).
+- **Neural govern** (replaces deterministic BudgetGovernor): symbolic
+  legality filter → symbolic budget read → **neural VoI prioritization** →
+  symbolic bundle + clamp. Safe because confluence makes scheduling
+  correctness-neutral (govern = accelerator, not guarantor); temp-0 for
+  reproducible gap-sets. `govern` schedules only the down-and-local half;
+  `reconcile` owns all up-flows (keeps the DAG acyclic).
+- **Ground = mixed per-axis** (structural→symbolic, semantic→neural),
+  arbitrating **four fact-source oracles**: code-scan, human-dialogue,
+  model-self, runtime/composition-execution — all VoI-arbitrated.
+- **VoI economic model:** `VoI = (value × expected confidence gain) ÷
+  cost`; termination = `top-VoI < cost-floor`. New gaps: `gap:trivial`
+  (neural), `gap:low-confidence` / `gap:confidence-ceiling` (mixed).
+- **Gate two layers:** L1 symbolic well-formedness (hard — never publish
+  malformed); L2 decision-authority go/no-go (same economic test; escalate
+  judgment calls to human/neural). Provisional roll-ups publish WITH gaps
+  visible.
+- **Attribute four end-states:** verified-promise / reservoir(open) /
+  **plain attribute** (non-verifiable prose — legitimate terminal
+  non-gap) / typed-gap (the only gap). Valence floor = a declarative
+  type-signature; `grow` proposes above it into the reservoir; `ground`
+  promotes only what verifies.
+- **B0 stakeholder-needs** = the continuous-ROUND opening: seed graph of
+  promised entities (OPEN, none grounded); need = an OPEN promise owned by
+  the voicing Actor; **no hard B0→B1 boundary**; termination = VoI test
+  with human-attention as budget.
+- **Risk is intrinsic** to every promise (`P(won't ground) ×
+  consequence`), collapsed into VoI (consequence = value, P = confidence —
+  no new math). Risk register = a VIEW over the gap register, surfaced at
+  gate L2.
+- **Integration no longer deferred:** two promises per interface/behavior
+  — **static** (left-of-Vee, grounded by reconcile/model-check) +
+  **dynamic** (right-of-Vee, grounded by the runtime oracle). Ungrounded
+  dynamic promise = `gap:integration-mismatch`. Failure localizes to the
+  interface's own promise; "A was wrong" = a superseded promise → a
+  diachronic `Generation` change, not a synchronic retraction.
+- **SE-completeness:** ROUND is a **convergent** engine (~60% of SE).
+  Trade-space / decision-management is a **diachronic meta-ROUND** (runs
+  ROUND per candidate, selects the winning `Generation`); lifecycle A6 is
+  a diachronic reading of the bind θ-crosswalk history. Both deferred;
+  ROUND stays synchronic.
+
+**Pipeline crosswalk.** openAG drops exactly one AMS pipeline (legacy
+10-stage linear batch) and absorbs the other four: v3 7-stage → B1
+Extract; walk 6-stage → `CAP-model.traverse` + the operator skeleton;
+lifecycle substrate → B4 Represent; CAP-DF ceremony → B2 Author. Zero
+prior AMS effort is lost (zero-loss `$defs` crosswalk).
+
+**Design docs.**
+- `docs/plans/2026-10-04-openAG-graph-native-engine-design.md` — formal core
+- `docs/plans/2026-10-04-openAG-entity-model.md` — gen-0 entity ledger
+- `docs/plans/2026-10-04-openAG-attribute-corpus.md` — provenance ledger
+- `docs/plans/2026-10-04-openAG-pipelines.md` — B-ROUND + B0–B7 pipelines
+- `docs/openAG/standard.md`, `engine-architecture.md`, `tooling.md` — normative
 
 <!-- opencode-arch:start -->
 # Architecture (auto-managed by opencode-arch)

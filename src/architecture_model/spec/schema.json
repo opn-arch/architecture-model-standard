@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://architecture-model-standard.dev/schema/v2.1.0/model.json",
+  "$id": "https://architecture-model-standard.dev/schema/v2.2.0/model.json",
   "title": "Architecture Model",
   "description": "Universal machine-readable architecture model for LLM-driven system engineering",
   "type": "object",
@@ -1659,6 +1659,11 @@
         },
         "description": {
           "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Ordinal position of this edge within a composite flow (triggers edges only). Absent/None = unordered."
         },
         "strength": {
           "type": "string",

@@ -1,0 +1,36 @@
+walk:
+  id: WALK-browse
+  audits:
+    - CAP-WK.browse
+
+  # 1-hop typed-edge neighborhood for every entity kind. Uniform.
+  scope:
+    kind: any
+
+  traverse:
+    # No edges filter -> all edge types; direction both -> outbound+inbound;
+    # depth 1 -> just root's immediate neighbors. depth==1 also disables
+    # the induced-subgraph pass so edges stay root-anchored (matches
+    # _mermaid_neighbors semantics).
+    edges: []
+    direction: both
+    depth: 1
+
+  classify:
+    verdicts:
+      - name: ready-to-code
+        when: "true"
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: neighbor-graph
+    severity_from: verdict
+    include_subgraph: true
+    # Silent-skip when 1-hop neighbor count is 0 or > 20 (mirrors
+    # _mermaid_neighbors' threshold).
+    subgraph_neighbor_threshold: 20

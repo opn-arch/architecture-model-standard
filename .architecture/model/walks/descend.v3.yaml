@@ -1,0 +1,35 @@
+walk:
+  id: WALK-descend
+  audits:
+    - CAP-WK.descend
+
+  # Any entity kind can carry a contains-tree. Traverse handles the
+  # silent-skip via subgraph emptiness at consumption time.
+  scope:
+    kind: any
+
+  traverse:
+    edges:
+      - contains
+    direction: outbound
+    depth: 2
+
+  classify:
+    # Diagram-mode walks are informational — every visited entity is
+    # ready-to-code. Viewers/consumers filter empty-subgraph cards for
+    # silent-skip behavior. No verdict-based prioritization.
+    verdicts:
+      - name: ready-to-code
+        when: "true"
+    on_missing_attributes: ready-to-code
+
+  evidence:
+    tier: structural
+    sources:
+      - model
+
+  emit:
+    card_template: decomposition-diagram
+    severity_from: verdict
+    include_subgraph: true
+    subgraph_cap: 30

@@ -10,7 +10,8 @@ import logging
 from pathlib import Path
 
 from architecture_model.core.types import (
-    ArchitectureModel, Component, Constant, FunctionSignature, TestContract
+    ArchitectureModel, Component, Constant, FunctionSignature,
+    ObservabilityContract, TestContract,
 )
 from architecture_model.manifest.body_hints import extract_file_hints
 from architecture_model.manifest.test_analyzer import analyze_test_file
@@ -38,6 +39,7 @@ def enrich_model(
         _enrich_signatures(comp, project_root)
         _enrich_constants(comp, project_root)
         _enrich_test_contracts(comp, project_root)
+        _enrich_observability(comp)
 
     return model
 
@@ -175,3 +177,35 @@ def _discover_test_files(comp: Component, root: Path) -> list[Path]:
                 test_files.append(typed_file)
 
     return test_files
+
+
+def _enrich_observability(comp: Component) -> None:
+    """Synthesize one ObservabilityContract per signature.
+
+    Seeds a default INFO/ERROR contract for every public function the
+    component exposes when the component has none. Deliberately additive
+    only: existing observability contracts (author-curated or LLM-refined)
+    are preserved. Skips components without signatures or test contracts —
+    those still surface as ``IMPROVEMENT_NO_SIGNATURES`` /
+    ``IMPROVEMENT_NO_TEST_CONTRACTS`` from the validator, which is the
+    stronger signal to act on first.
+    """
+    if not comp.signatures or not comp.test_contracts or comp.observability:
+        return
+
+    existing = {o.function for o in comp.observability}
+    for sig in comp.signatures:
+        if not sig.name or sig.name in existing:
+            continue
+        # Heuristic log level: private/underscore functions rarely surface
+        # in the public API (already filtered by extract_file_hints), but
+        # guard against future changes.
+        level = "DEBUG" if sig.name.startswith("_") else "INFO"
+        comp.observability.append(
+            ObservabilityContract(
+                function=sig.name,
+                log_level=level,
+                on_error="ERROR",
+            )
+        )
+        existing.add(sig.name)

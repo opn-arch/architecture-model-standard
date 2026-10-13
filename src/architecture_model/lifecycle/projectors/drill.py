@@ -15,6 +15,7 @@ matrix in ``entity_pages.py``:
 * family2 — capability, component, behavior
 * family3 — component, layer
 * family4 — behavior, actor
+* family5 — component, environment, resource
 * family6 — interface, component
 * family7 — component, capability, behavior, interface, constraint
 * family8 — component, capability, interface
@@ -30,6 +31,7 @@ _FAMILY_KINDS: dict[int, tuple[str, ...]] = {
     2: ("capabilities", "components", "behaviors"),
     3: ("components", "layers"),
     4: ("behaviors", "actors"),
+    5: ("components", "environments", "resources"),
     6: ("interfaces", "components"),
     7: ("components", "capabilities", "behaviors", "interfaces", "constraints"),
     8: ("components", "capabilities", "interfaces"),
